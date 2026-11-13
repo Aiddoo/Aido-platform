@@ -1,4 +1,4 @@
-import { getMemberNames } from '../ast.mjs';
+import { getCalleeName, getMemberNames, isFunction } from '../ast.mjs';
 
 const MODULE_MOCK_METHODS = new Set(['mock', 'doMock', 'setMock']);
 
@@ -46,15 +46,14 @@ const noJestModuleMock = {
         }
         context.report({
           node,
-          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderUi를 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
+          message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderScreen을 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
         });
       },
     };
   },
 };
 
-const RENDER_UI_MODULE = '@src/shared/__tests__/render-ui';
-const TEST_TOOLS_MODULE = '@src/shared/__tests__';
+const RENDER_SCREEN_MODULE = '@src/testing/render';
 const UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
   '@src/shared/ui',
@@ -64,19 +63,8 @@ const UI_TEST_MODULE_PREFIXES = [
   'react-native',
 ];
 
-function isRenderUiImport(statement) {
-  if (statement.type !== 'ImportDeclaration') {
-    return false;
-  }
-  const moduleName = statement.source.value;
-  return (
-    moduleName === RENDER_UI_MODULE ||
-    (moduleName === TEST_TOOLS_MODULE &&
-      statement.specifiers.some(
-        (specifier) =>
-          specifier.type === 'ImportSpecifier' && specifier.local.name.startsWith('renderUi'),
-      ))
-  );
+function isRenderScreenImport(statement) {
+  return statement.type === 'ImportDeclaration' && statement.source.value === RENDER_SCREEN_MODULE;
 }
 
 function isUiTestModule(moduleName) {
@@ -87,33 +75,33 @@ function isUiTestModule(moduleName) {
     moduleName.includes('/components/') ||
     moduleName.includes('/hooks/') ||
     moduleName.includes('/providers/') ||
-    moduleName.includes('/__tests__/render-ui')
+    moduleName.includes('/testing/render')
   );
 }
 
-// 댓글 테스트는 model, service/mapper, 순수 navigation·util·view-model 옆에 둔다. 컴포넌트 옆 테스트는 공용 renderUi로만 쓴다
+// 댓글 테스트는 model, service/mapper, 순수 navigation·util·view-model 옆에 둔다. 컴포넌트 옆 테스트는 공용 renderScreen로만 쓴다
 const todoCommentTestLocation = {
   meta: {
     type: 'suggestion',
     schema: [
       {
         type: 'object',
-        properties: { allowRenderUi: { type: 'boolean' } },
+        properties: { allowRenderScreen: { type: 'boolean' } },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
-    const allowRenderUi = context.options[0]?.allowRenderUi ?? false;
+    const allowRenderScreen = context.options[0]?.allowRenderScreen ?? false;
     return {
       Program(program) {
-        if (allowRenderUi && program.body.some(isRenderUiImport)) {
+        if (allowRenderScreen && program.body.some(isRenderScreenImport)) {
           return;
         }
         context.report({
           node: program,
           message:
-            '댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트 동작은 공용 renderUi로만 확인하고, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.',
+            '댓글 클라이언트 테스트는 model, service/mapper, pure navigation/util/view-model에만 둡니다. 컴포넌트 동작은 공용 renderScreen로만 확인하고, hook, Provider, Query Options 배선을 테스트 코드로 복제하지 마세요.',
         });
       },
     };
@@ -129,7 +117,7 @@ const todoCommentTestPurity = {
         const importsUi = program.body.some(
           (statement) =>
             statement.type === 'ImportDeclaration' &&
-            (isUiTestModule(statement.source.value) || isRenderUiImport(statement)),
+            (isUiTestModule(statement.source.value) || isRenderScreenImport(statement)),
         );
         if (context.filename.endsWith('x') || importsUi) {
           context.report({
@@ -143,8 +131,121 @@ const todoCommentTestPurity = {
   },
 };
 
+const DATE_OBJECTS = new Set(['Date', 'global.Date', 'globalThis.Date']);
+
+/** `jest.spyOn(대상, '메서드')`의 대상과 메서드 이름을 고친 이유 */
+function describeSpyTarget(target, methodName, sourceCode) {
+  const targetText = sourceCode.getText(target);
+  if (DATE_OBJECTS.has(targetText) && methodName === 'now') {
+    return 'Date.now를 spy하지 않습니다. 시각은 인자(now)로 넘기거나 setupFakeTimersPerTest의 시스템 시각을 씁니다.';
+  }
+  if (targetText === 'AppState') {
+    return 'AppState를 spy하지 않습니다. createAppLifecycleGatewayStub(initial)의 emit(state)로 앱 수명을 흘립니다.';
+  }
+  if (methodName === 'invalidateQueries') {
+    return 'invalidateQueries를 spy하지 않습니다. 무효화 뒤 캐시 상태(getQueryState·isInvalidated)로 단언합니다.';
+  }
+  return null;
+}
+
+// 시간·앱 수명·캐시는 내부 호출 횟수가 아니라 stub과 캐시 상태로 확인한다
+const testSpyTarget = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        const names = getMemberNames(node.callee);
+        const [target, method] = node.arguments;
+        if (names?.[0] !== 'jest' || names[1] !== 'spyOn' || target == null) {
+          return;
+        }
+        const message = describeSpyTarget(target, getStringValue(method), context.sourceCode);
+        if (message != null) {
+          context.report({ node, message });
+        }
+      },
+    };
+  },
+};
+
+const TIMER_NAMES = new Set(['setTimeout', 'setImmediate']);
+
+/** 타이머 호출을 감싼 가장 가까운 함수가 `new Promise(executor)`의 executor면 그 `new Promise` */
+function findSleepingPromise(timerCall) {
+  let current = timerCall.parent;
+  while (current != null && !isFunction(current) && current.type !== 'FunctionDeclaration') {
+    current = current.parent;
+  }
+  const promise = current?.parent;
+  return promise?.type === 'NewExpression' &&
+    promise.callee.type === 'Identifier' &&
+    promise.callee.name === 'Promise' &&
+    promise.arguments[0] === current
+    ? promise
+    : null;
+}
+
+// 실제 시간을 기다리면 테스트가 느리고 순서에 따라 흔들린다
+const noRealSleep = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        if (!TIMER_NAMES.has(getCalleeName(node.callee))) {
+          return;
+        }
+        const promise = findSleepingPromise(node);
+        if (promise != null) {
+          context.report({
+            node: promise,
+            message:
+              '테스트에서 실제 시간을 기다리지 않습니다. setupFakeTimersPerTest와 await jest.advanceTimersByTimeAsync(ms)를 쓰거나 findBy*로 결과를 기다립니다.',
+          });
+        }
+      },
+    };
+  },
+};
+
+const STYLE_MATCHERS = new Set(['toHaveStyle']);
+
+// 표시·배치는 기기에서 확인하고 테스트는 동작과 결과를 본다. 스타일을 단언하면 디자인을 바꿀 때마다 테스트가 깨진다
+const noStyleAssertion = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    const message =
+      '스타일을 단언하지 않습니다. 표시·배치는 기기에서 확인하고 테스트는 동작과 사용자 결과를 봅니다.';
+    return {
+      MemberExpression(node) {
+        if (node.computed || node.property.type !== 'Identifier') {
+          return;
+        }
+        const isStyleMatcher =
+          STYLE_MATCHERS.has(node.property.name) && node.parent.type === 'CallExpression';
+        const isPropsStyle =
+          node.property.name === 'style' &&
+          node.object.type === 'MemberExpression' &&
+          !node.object.computed &&
+          node.object.property.name === 'props';
+        if (isStyleMatcher || isPropsStyle) {
+          context.report({ node, message });
+        }
+      },
+      CallExpression(node) {
+        const names = getMemberNames(node.callee);
+        if (names?.[0] === 'StyleSheet' && names[1] === 'flatten') {
+          context.report({ node, message });
+        }
+      },
+    };
+  },
+};
+
 export default {
   'no-jest-module-mock': noJestModuleMock,
   'todo-comment-test-location': todoCommentTestLocation,
   'todo-comment-test-purity': todoCommentTestPurity,
+  'test-spy-target': testSpyTarget,
+  'no-real-sleep': noRealSleep,
+  'no-style-assertion': noStyleAssertion,
 };

@@ -1,3 +1,4 @@
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { t } from '@src/shared/i18n';
 
@@ -15,7 +16,10 @@ function buildWeeklySampleReport(): AiReport {
     type: 'WEEKLY',
     year: 2026,
     period: 10,
-    dateRange: { startDate: '2026-03-02', endDate: '2026-03-08' },
+    dateRange: {
+      startDate: dateKeySchema.parse('2026-03-02'),
+      endDate: dateKeySchema.parse('2026-03-08'),
+    },
     stats: {
       totalTodos: 35,
       completedTodos: 29,
@@ -95,7 +99,10 @@ function buildMonthlySampleReport(): AiReport {
     type: 'MONTHLY',
     year: 2026,
     period: 2,
-    dateRange: { startDate: '2026-02-01', endDate: '2026-02-28' },
+    dateRange: {
+      startDate: dateKeySchema.parse('2026-02-01'),
+      endDate: dateKeySchema.parse('2026-02-28'),
+    },
     stats: {
       totalTodos: 156,
       completedTodos: 128,

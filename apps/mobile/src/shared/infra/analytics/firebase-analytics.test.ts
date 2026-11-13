@@ -4,7 +4,7 @@ import {
   setUserProperties,
   setUserProperty,
 } from '@react-native-firebase/analytics';
-import { createLoggerStub } from '@src/shared/__tests__/create-logger-stub';
+import { createAppLoggerStub } from '@src/testing/ports/app-logger.stub';
 
 import { createFirebaseAnalytics } from './firebase-analytics';
 
@@ -40,7 +40,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('이벤트와 화면 조회를 Promise가 보존되는 Analytics instance로 기록한다', () => {
     // Given
-    const analytics = createFirebaseAnalytics(createLoggerStub());
+    const analytics = createFirebaseAnalytics(createAppLoggerStub());
 
     // When
     analytics.trackEvent('todo_created', { source: 'quick_add' });
@@ -60,7 +60,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('동기 logEvent 예외를 포트 밖으로 전파하지 않고 맥락과 함께 로깅한다', () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockAnalyticsLogEvent.mockImplementation(() => {
       throw new Error('invalid event');
@@ -78,7 +78,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('이벤트 전송 Promise rejection을 fire-and-forget 포트 밖으로 전파하지 않는다', async () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockAnalyticsLogEvent.mockRejectedValueOnce(new Error('native event rejected'));
 
@@ -95,7 +95,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('화면 조회의 동기 예외를 화면 맥락과 함께 로깅한다', () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockAnalyticsLogEvent.mockImplementation(() => {
       throw new Error('invalid screen');
@@ -113,7 +113,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('사용자 식별 Promise rejection을 fire-and-forget 포트 밖으로 전파하지 않는다', async () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockSetUserId.mockRejectedValueOnce(new Error('native rejected'));
 
@@ -129,7 +129,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('사용자 식별 API의 동기 인자 검증 예외도 포트 밖으로 전파하지 않는다', () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockSetUserId.mockImplementationOnce(() => {
       throw new Error('invalid user id');
@@ -146,7 +146,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('사용자 속성 값을 문자열로 변환하고 실패한 key를 로깅한다', async () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockSetUserProperty.mockRejectedValueOnce(new Error('property rejected'));
 
@@ -179,7 +179,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('로그아웃하면 사용자 id와 모든 사용자 속성을 지워 다음 계정에 남기지 않는다', () => {
     // Given
-    const analytics = createFirebaseAnalytics(createLoggerStub());
+    const analytics = createFirebaseAnalytics(createAppLoggerStub());
 
     // When
     analytics.clearUser();
@@ -195,7 +195,7 @@ describe('createFirebaseAnalytics', () => {
 
   it('reset Promise rejection을 로깅한다', async () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const analytics = createFirebaseAnalytics(logger);
     mockResetAnalyticsData.mockRejectedValueOnce(new Error('reset rejected'));
 

@@ -1,27 +1,28 @@
+import { i18n } from '@src/shared/i18n';
+import { LanguageProvider } from '@src/shared/providers/language-provider';
 import {
   createAnalyticsStub,
   createMemoryObservableSyncStorage,
-  renderUi,
-} from '@src/shared/__tests__';
-import { i18n } from '@src/shared/i18n';
-import { LanguageProvider } from '@src/shared/providers/language-provider';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import LanguageSettingsScreen from '../../../../app/(app)/(tabs)/(mypage)/settings/language';
+import LanguageSettingsScreen from '../../../../app/(app)/(tabs)/(me,memos,todos)/settings/language';
 
 afterEach(async () => {
   await i18n.changeLanguage('ko');
 });
 
-const renderScreen = async ({
+const renderLanguageSettings = async ({
   storage = createMemoryObservableSyncStorage(),
   analytics = createAnalyticsStub(),
 } = {}) => {
-  await renderUi(
+  await renderScreen(
     <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
       <LanguageSettingsScreen />
     </LanguageProvider>,
-    { di: { analytics } },
+    { di: createTestDi({ ports: { analytics } }) },
   );
   return { storage, analytics };
 };
@@ -30,7 +31,7 @@ describe('LanguageSettingsScreen', () => {
   it('English 선택 시 스토리지 저장·i18n 언어 변경·analytics 이벤트가 발생한다', async () => {
     // Given
     const storage = createMemoryObservableSyncStorage();
-    const { analytics } = await renderScreen({ storage });
+    const { analytics } = await renderLanguageSettings({ storage });
 
     // When
     await fireEvent.press(screen.getByTestId('language-option-en'));
@@ -48,7 +49,7 @@ describe('LanguageSettingsScreen', () => {
     // Given
     const storage = createMemoryObservableSyncStorage();
     storage.set('aido_language', 'en');
-    await renderScreen({ storage });
+    await renderLanguageSettings({ storage });
 
     // When
     await fireEvent.press(screen.getByTestId('language-option-system'));
@@ -65,7 +66,7 @@ describe('LanguageSettingsScreen', () => {
     storage.set('aido_language', 'en');
 
     // When
-    await renderScreen({ storage });
+    await renderLanguageSettings({ storage });
 
     // Then
     expect(screen.getByText('System default')).toBeTruthy();

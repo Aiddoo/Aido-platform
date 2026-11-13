@@ -2,26 +2,23 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTrack } from '@src/shared/analytics';
-import { getNowInstant, toHHmm } from '@src/shared/date/instant';
+import { useTrack, useTrackView } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/clock';
+import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import {
-  useOpenPushSettingsMutationOptions,
-  useRequestPushPermissionMutationOptions,
-} from '../queries/notification.mutations';
-import { useGetPushPermissionQueryOptions } from '../queries/notification.queries';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { pushNoticeDismissedAtStoredValue } from '../schemas/push-notice-dismissed-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'feed_card';
@@ -62,11 +59,11 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
     }) === PUSH_ASK_MOMENT.DENIED_NOTICE;
   const step = PushPermissionPolicy.getNextStep(permission, preference);
 
-  useEffect(() => {
-    if (isVisible) {
-      trackEvent('push_permission_prompt_shown', { source: SOURCE, step });
-    }
-  }, [isVisible, step, trackEvent]);
+  // 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계는 한 번만 센다
+  useTrackView(
+    'push_permission_prompt_shown',
+    isVisible ? { key: step, params: { source: SOURCE, step } } : null,
+  );
 
   if (!isVisible) {
     return null;
@@ -103,8 +100,7 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
   return (
     <InlineAlert
@@ -117,16 +113,8 @@ PushPermissionNotice.RequestSystem = function RequestSystem({
           size="small"
           variant="weak"
           display="inline"
-          isLoading={requestPermission.isPending}
-          onPress={() =>
-            requestPermission.mutate(undefined, {
-              onSuccess: (permission) =>
-                trackEvent('push_permission_requested', {
-                  source: SOURCE,
-                  status: permission.status,
-                }),
-            })
-          }
+          isLoading={isPending}
+          onPress={() => runStep(PUSH_PERMISSION_STEP.REQUEST_SYSTEM)}
         >
           {t('permission.continue')}
         </Button>
@@ -142,8 +130,7 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
   onDismiss,
 }: StepNoticeProps) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
-  const openSettings = useMutation(useOpenPushSettingsMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
   return (
     <InlineAlert
@@ -156,11 +143,8 @@ PushPermissionNotice.OpenSettings = function OpenSettings({
           size="small"
           variant="weak"
           display="inline"
-          onPress={() =>
-            openSettings.mutate(undefined, {
-              onSuccess: () => trackEvent('push_permission_settings_opened', { source: SOURCE }),
-            })
-          }
+          isLoading={isPending}
+          onPress={() => runStep(PUSH_PERMISSION_STEP.OPEN_SETTINGS)}
         >
           {t('permission.card.openSettings')}
         </Button>

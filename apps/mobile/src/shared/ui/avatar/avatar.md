@@ -37,12 +37,6 @@ import { PressableFeedback } from 'heroui-native';
 </PressableFeedback>;
 ```
 
-### Loading 상태
-
-```tsx
-<Avatar.Loading />
-```
-
 ## Props
 
 ### Avatar
@@ -65,19 +59,6 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 
 ### Sub-components
 
-| 컴포넌트          | 설명                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `Avatar.Image`    | HeroUI Avatar.Image(asChild) 안에서 expo-image로 그림. 메모리·디스크 캐시, 표시 크기 다운샘플링, 페이드 인 없이 바로 표시 |
-| `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩                                                                                             |
-| `Avatar.Loading`  | Skeleton 로딩 상태                                                                                                        |
-
-## 파일 구조
-
-```
-avatar/
-├── avatar.tsx                       # 메인 컴포넌트 + Loading + SelectedBadge
-├── avatar.md                        # 문서
-├── get-avatar-recycling-key.ts
-├── get-avatar-recycling-key.test.ts
-└── index.ts
-```
+| 컴포넌트       | 설명                                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `Avatar.Image` | HeroUI Avatar.Image(asChild) 안에서 expo-image로 그림. 메모리·디스크 캐시, 표시 크기 다운샘플링, 페이드 인 없이 바로 표시 |

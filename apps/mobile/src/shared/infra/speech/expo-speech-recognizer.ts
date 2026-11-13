@@ -1,7 +1,7 @@
 import type {
   MissingSpeechPermission,
   OfflineModelResult,
-  PermissionSnapshot,
+  SpeechPermission,
   SpeechEvent,
   SpeechLocale,
   SpeechMode,
@@ -10,7 +10,7 @@ import type {
 } from '@src/core/ports/speech-recognizer';
 import { ANDROID_API_LEVEL } from '@src/shared/infra/device/device-info';
 import { clamp } from 'es-toolkit';
-import { PermissionStatus } from 'expo';
+import { type PermissionResponse, PermissionStatus } from 'expo';
 import { getLocales } from 'expo-localization';
 import {
   type ExpoSpeechRecognitionOptions,
@@ -41,15 +41,15 @@ async function findMissingSpeechPermission(): Promise<MissingSpeechPermission> {
   return microphone.status === PermissionStatus.DENIED ? 'both' : 'speech-recognition';
 }
 
-async function toPermissionSnapshot(
-  { granted, canAskAgain }: { granted: boolean; canAskAgain: boolean },
+async function toSpeechPermission(
+  { status, canAskAgain }: PermissionResponse,
   { isMicrophoneOnly }: { isMicrophoneOnly: boolean },
-): Promise<PermissionSnapshot> {
-  if (granted) {
-    return { isGranted: true, canAskAgain };
+): Promise<SpeechPermission> {
+  if (status === PermissionStatus.GRANTED) {
+    return { status, canAskAgain };
   }
   return {
-    isGranted: false,
+    status,
     canAskAgain,
     missing: isMicrophoneOnly ? 'microphone' : await findMissingSpeechPermission(),
   };
@@ -151,7 +151,7 @@ export const expoSpeechRecognizer: SpeechRecognizer = {
   getPermission: async (mode, locale) => {
     const isMicrophoneOnly = await usesMicrophoneOnlyPermission(mode, locale);
 
-    return toPermissionSnapshot(
+    return toSpeechPermission(
       isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.getPermissionsAsync(),
@@ -162,7 +162,7 @@ export const expoSpeechRecognizer: SpeechRecognizer = {
   requestPermission: async (mode, locale) => {
     const isMicrophoneOnly = await usesMicrophoneOnlyPermission(mode, locale);
 
-    return toPermissionSnapshot(
+    return toSpeechPermission(
       isMicrophoneOnly
         ? await ExpoSpeechRecognitionModule.requestMicrophonePermissionsAsync()
         : await ExpoSpeechRecognitionModule.requestPermissionsAsync(),

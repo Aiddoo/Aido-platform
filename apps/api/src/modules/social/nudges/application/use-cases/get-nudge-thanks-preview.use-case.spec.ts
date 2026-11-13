@@ -179,7 +179,7 @@ describe("GetNudgeThanksPreviewUseCase — 감사 받을 친구 미리보기", (
       isEnabled: false,
       todo: {},
       throughNudgeId: undefined,
-      code: ErrorCode.NUDGE_1105,
+      code: ErrorCode.NUDGE_1111,
     },
     {
       name: "내 할 일이 아님",

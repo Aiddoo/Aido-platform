@@ -6,6 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 import { friendTodoListResponseSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { z } from "zod";
@@ -217,6 +218,53 @@ describe("할 일 카테고리 E2E", () => {
         .expect(400);
 
       // Then
+    });
+
+    it("공백만 있는 이름은 생성·수정 모두 400 SYS_0002", async () => {
+      // Given
+      const { accessToken } = await createPremiumUser("category-blank@example.com", testPassword);
+      const created = await request(ctx.app.getHttpServer())
+        .post("/v1/todo-categories")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "공부", color: "#00FF00" })
+        .expect(201);
+
+      // When
+      const createResponse = await request(ctx.app.getHttpServer())
+        .post("/v1/todo-categories")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "   ", color: "#00FF00" })
+        .expect(400);
+      const updateResponse = await request(ctx.app.getHttpServer())
+        .patch(`/v1/todo-categories/${created.body.data.category.id}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "   " })
+        .expect(400);
+
+      // Then
+      expect(createResponse.body.error.code).toBe(ErrorCode.SYS_0002);
+      expect(updateResponse.body.error.code).toBe(ErrorCode.SYS_0002);
+    });
+
+    it("이름의 앞뒤 공백은 지우고 저장하며 50자는 통과하고 51자는 400", async () => {
+      // Given
+      const { accessToken } = await createPremiumUser("category-trim@example.com", testPassword);
+
+      // When
+      const trimmedResponse = await request(ctx.app.getHttpServer())
+        .post("/v1/todo-categories")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: `  ${"가".repeat(50)}  `, color: "#00FF00" })
+        .expect(201);
+      const tooLongResponse = await request(ctx.app.getHttpServer())
+        .post("/v1/todo-categories")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "나".repeat(51), color: "#00FF00" })
+        .expect(400);
+
+      // Then
+      expect(trimmedResponse.body.data.category.name).toBe("가".repeat(50));
+      expect(tooLongResponse.body.error.code).toBe(ErrorCode.SYS_0002);
     });
 
     it("색상 누락 시 400 에러", async () => {

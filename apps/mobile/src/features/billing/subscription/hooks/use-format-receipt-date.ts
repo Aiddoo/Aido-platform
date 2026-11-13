@@ -1,5 +1,5 @@
-import { formatDateLabel, formatYearAwareDateLabel } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
+import { formatDateLabel, formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { match } from 'ts-pattern';

@@ -1,8 +1,8 @@
-import { appStoreVersionPattern } from "@aido/api/contracts/app-config";
+import { APP_STORE_VERSION_PATTERN } from "@aido/api/vocabulary";
 import { ApiProperty } from "@nestjs/swagger";
 
 class PlatformVersionDto {
-  @ApiProperty({ example: "1.9.1", pattern: appStoreVersionPattern })
+  @ApiProperty({ example: "1.9.1", pattern: APP_STORE_VERSION_PATTERN })
   declare latestVersion: string;
 }
 
@@ -33,7 +33,7 @@ const platform = {
   type: "object",
   additionalProperties: false,
   required: ["latestVersion"],
-  properties: { latestVersion: { type: "string", pattern: appStoreVersionPattern } },
+  properties: { latestVersion: { type: "string", pattern: APP_STORE_VERSION_PATTERN } },
 };
 const enabled = {
   title: "AppVersionEnabledResponse",

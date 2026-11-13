@@ -6,7 +6,7 @@ import {
   createFeatureQuotaDto,
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
-import { EntitlementPolicy, LimitedFeaturePolicy } from './entitlement.model';
+import { EntitlementPolicy, getBlockedDecision } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
@@ -40,6 +40,20 @@ describe('getAccessDecision', () => {
       tier,
       used: { AI_PARSE: PLAN_CATALOG.AI_PARSE.free },
     });
+
+    // When
+    const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
+
+    // Then
+    expect(decision).toBe(expected);
+  });
+
+  it.each([
+    [PLAN_CATALOG.AI_PARSE.free - 1, 'allow'],
+    [PLAN_CATALOG.AI_PARSE.free, 'limit-reached'],
+  ] as const)('무료 사용자가 AI 할 일 만들기를 %i번 썼으면 %s다', (used, expected) => {
+    // Given
+    const snapshot = createEntitlementSnapshot({ tier: 'FREE', used: { AI_PARSE: used } });
 
     // When
     const decision = EntitlementPolicy.getAccessDecision(snapshot, 'AI_PARSE', NOW);
@@ -363,7 +377,7 @@ describe('getBlockedDecision', () => {
     const limited = { feature, featureQuota };
 
     // When
-    const decision = LimitedFeaturePolicy.getBlockedDecision(limited);
+    const decision = getBlockedDecision(limited);
 
     // Then
     expect(decision).toBe(expected);

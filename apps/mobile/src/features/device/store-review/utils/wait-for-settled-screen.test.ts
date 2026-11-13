@@ -1,5 +1,5 @@
-import { createAppLifecycleGatewayStub } from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { createAppLifecycleGatewayStub } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { waitForSettledScreen } from './wait-for-settled-screen';
 

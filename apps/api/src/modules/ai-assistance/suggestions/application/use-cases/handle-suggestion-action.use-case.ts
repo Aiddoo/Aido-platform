@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 
 import {
@@ -14,7 +13,6 @@ import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -29,7 +27,12 @@ import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import type { SuggestionAction } from "../../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
-import { suggestionNotFound } from "../suggestions.errors.js";
+import {
+  invalidSuggestionDaysOfWeek,
+  suggestionCategoryRequired,
+  suggestionNotFound,
+  suggestionPremiumRequired,
+} from "../suggestions.errors.js";
 
 export interface HandleSuggestionActionCommand {
   readonly userId: string;
@@ -81,7 +84,7 @@ export class HandleSuggestionActionUseCase {
       if (
         !(await this.#dependencies.userMutationLock.lockById(UserId.reconstitute(command.userId)))
       ) {
-        throw new ApplicationException(ErrorCode.AI_1309);
+        throw suggestionPremiumRequired();
       }
       await this.#enforcePremium(command.userId);
       const suggestionId = SuggestionId.reconstitute(command.suggestionId);
@@ -116,17 +119,11 @@ export class HandleSuggestionActionUseCase {
     // 상태·만료 오류가 요청의 수락 데이터 오류보다 먼저 반환되는 계약을 유지한다.
     suggestion.accept(at.now);
     if (command.categoryId == null || command.categoryId === 0) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        field: "categoryId",
-        reason: "수락 시 categoryId는 필수입니다",
-      });
+      throw suggestionCategoryRequired();
     }
     const weekdays = suggestion.daysOfWeek;
     if (weekdays == null) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        field: "daysOfWeek",
-        reason: "제안의 요일 데이터가 유효하지 않습니다",
-      });
+      throw invalidSuggestionDaysOfWeek();
     }
     // 반복은 사용자 로컬 "오늘"부터 시작해야 KST 새벽·미주 저녁 수락이 하루 밀리지 않는다.
     const localToday = localDateAt(at.now, at.timezone);

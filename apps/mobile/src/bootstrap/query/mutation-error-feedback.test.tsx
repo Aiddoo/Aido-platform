@@ -1,14 +1,15 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
+import type { AppMutationMeta } from '@src/shared/constants/query-meta';
+import { NetworkError, ParseError } from '@src/shared/errors';
+import { i18n } from '@src/shared/i18n';
 import {
   createErrorReporterStub,
   createHapticsGatewayStub,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
-import type { AppMutationMeta } from '@src/shared/constants/query-meta';
-import { NetworkError, ParseError } from '@src/shared/errors';
-import { i18n } from '@src/shared/i18n';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { mutationOptions, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -24,7 +25,7 @@ async function failMutation(
 ) {
   const haptics = createHapticsGatewayStub();
   const errorReporter = createErrorReporterStub();
-  const rendered = await renderUiHook(
+  const rendered = await renderScreenHook(
     () =>
       useMutation(
         mutationOptions({
@@ -35,7 +36,7 @@ async function failMutation(
           meta,
         }),
       ),
-    { di: { haptics, errorReporter } },
+    { di: createTestDi({ ports: { haptics, errorReporter } }) },
   );
 
   await act(async () => {
@@ -104,6 +105,20 @@ describe('MutationErrorFeedback', () => {
     }
   });
 
+  it('fallbackKey가 없으면 공용 폴백 문구로, describe가 준 설명은 둘째 줄로 알린다', async () => {
+    // Given
+    const meta: AppMutationMeta = {
+      errorFeedback: { feature: 'memo', describe: () => '이번 요청은 차감하지 않았어요' },
+    };
+
+    // When
+    await failMutation(new ParseError(), { meta });
+
+    // Then
+    expect(await screen.findAllByText(i18n.t('errors:fallback'))).not.toHaveLength(0);
+    expect(screen.getAllByText('이번 요청은 차감하지 않았어요')).not.toHaveLength(0);
+  });
+
   it('onSettled가 다시 받기를 기다리는 동안에도 실패를 바로 알린다', async () => {
     // Given
     const refetchPausedOffline = () => new Promise<never>(noop);
@@ -123,7 +138,9 @@ describe('MutationErrorFeedback', () => {
     // Given
     const queryClient = createTestQueryClient();
     const haptics = createHapticsGatewayStub();
-    const { unmount } = await renderUiHook(() => null, { queryClient, di: { haptics } });
+    const { unmount } = await renderScreenHook(() => null, {
+      di: createTestDi({ ports: { haptics, queryClient } }),
+    });
     await act(async () => {
       unmount();
     });

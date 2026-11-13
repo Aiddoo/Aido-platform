@@ -1,22 +1,20 @@
-import { createTestQueryClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
 import type { InfiniteData } from '@tanstack/react-query';
 
 import { createMemo } from '../__tests__/memo.fixtures';
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 import type { MemoPage } from '../domains/memo.model';
-import { replaceMemoInList } from './memo-cache';
+import { refreshMemos, replaceMemoInList } from './memo-cache';
+import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 function createMemoList(): InfiniteData<MemoPage, number | undefined> {
   return {
     pages: [
       {
         items: [createMemo({ id: 1, content: '첫 메모' }), createMemo({ id: 2, content: '옛 글' })],
-        hasNext: true,
         nextCursor: 2,
       },
       {
         items: [createMemo({ id: 3, content: '다음 쪽 메모' })],
-        hasNext: false,
         nextCursor: null,
       },
     ],
@@ -65,5 +63,23 @@ describe('replaceMemoInList', () => {
 
     // Then
     expect(client.getQueryState(MEMO_QUERY_KEYS.list())).toBeUndefined();
+  });
+});
+
+describe('refreshMemos', () => {
+  it('목록과 개수 한도만 다시 읽고 열린 메모 상세는 다시 받지 않는다', async () => {
+    // Given
+    const client = createTestQueryClient();
+    client.setQueryData(MEMO_QUERY_KEYS.list(), createMemoList());
+    client.setQueryData(MEMO_QUERY_KEYS.resourceLimit(), { currentCount: 3, maxPerUser: 20 });
+    client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 1 }), createMemo({ id: 1 }));
+
+    // When
+    await refreshMemos(client);
+
+    // Then
+    expect(client.getQueryState(MEMO_QUERY_KEYS.list())?.isInvalidated).toBe(true);
+    expect(client.getQueryState(MEMO_QUERY_KEYS.resourceLimit())?.isInvalidated).toBe(true);
+    expect(client.getQueryState(MEMO_QUERY_KEYS.detail({ memoId: 1 }))?.isInvalidated).toBe(false);
   });
 });

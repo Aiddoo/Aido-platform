@@ -1,4 +1,4 @@
-import { createTestQueryClient } from '@src/shared/__tests__';
+import { createTestQueryClient } from '@src/testing/core';
 
 import { invalidateAfterBlockChange } from './moderation-cache';
 

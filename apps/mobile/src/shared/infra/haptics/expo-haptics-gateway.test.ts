@@ -1,3 +1,4 @@
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import * as Haptics from 'expo-haptics';
 
 import { expoHapticsGateway } from './expo-haptics-gateway';
@@ -13,6 +14,8 @@ jest.mock('expo-haptics', () => ({
 const notificationAsync = jest.mocked(Haptics.notificationAsync);
 
 describe('expoHapticsGateway', () => {
+  setupFakeTimersPerTest();
+
   it('알림 햅틱을 지원하지 않는 기기에서 실패해도 예외를 밖으로 내지 않는다', async () => {
     // Given
     const onUnhandledRejection = jest.fn();
@@ -21,7 +24,7 @@ describe('expoHapticsGateway', () => {
 
     // When
     expoHapticsGateway.notify('error');
-    await new Promise((resolve) => setImmediate(resolve));
+    await jest.advanceTimersByTimeAsync(0);
 
     // Then
     process.off('unhandledRejection', onUnhandledRejection);

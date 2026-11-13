@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { dateSchema } from "../../../common/datetime.js";
-import { TODO_SERIES_LIMITS } from "../../../vocabulary/todo.constants.js";
+import {
+  TODO_REPEAT_MONTH_DAY_MAX,
+  TODO_SERIES_LIMITS,
+} from "../../../vocabulary/todo.constants.js";
 import {
   DAYS_OF_WEEK,
   TODO_EDIT_SCOPES,
@@ -43,7 +46,7 @@ export const todoRepeatSchema = z
         .number()
         .int()
         .min(1)
-        .max(31)
+        .max(TODO_REPEAT_MONTH_DAY_MAX)
         .describe("매월 반복할 날짜 (1-31, 그 날이 없는 달은 말일)"),
       end: todoRepeatEndSchema,
     }),

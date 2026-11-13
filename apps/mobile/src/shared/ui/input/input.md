@@ -136,13 +136,3 @@ import { BottomSheetInput } from '@src/shared/ui';
   errorMessage=""
 />
 ```
-
-## 파일 구조
-
-| 파일                     | 역할                                           |
-| ------------------------ | ---------------------------------------------- |
-| `input.tsx`              | 기본 입력 컴포넌트                             |
-| `input.types.ts`         | 타입 정의 (`InputProps`, `InputInternalProps`) |
-| `input.variants.ts`      | Tailwind 스타일 (variant/size/상태)            |
-| `bottom-sheet-input.tsx` | BottomSheet용 Input 래퍼                       |
-| `index.ts`               | Export: `Input`, `BottomSheetInput`            |

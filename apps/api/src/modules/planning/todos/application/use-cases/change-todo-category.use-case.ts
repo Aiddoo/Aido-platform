@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -16,6 +14,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { categoryTodoLimitReached, todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
@@ -63,7 +62,7 @@ export class ChangeTodoCategoryUseCase {
 
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+        throw todoNotFound(id);
       }
 
       const changed = todo.changeCategory(categoryId, this.#dependencies.clock.now());
@@ -75,10 +74,7 @@ export class ChangeTodoCategoryUseCase {
           targetCategoryId,
         );
         if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
-          throw new ApplicationException(ErrorCode.TODO_0811, {
-            activeCount: activeInTarget,
-            maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-          });
+          throw categoryTodoLimitReached(activeInTarget);
         }
       }
       if (!changed) {
@@ -100,7 +96,7 @@ export class ChangeTodoCategoryUseCase {
 
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(todoId, ownerId);
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return response;
   }

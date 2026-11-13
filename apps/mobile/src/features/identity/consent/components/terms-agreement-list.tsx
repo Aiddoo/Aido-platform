@@ -1,6 +1,6 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
-import { formatDateLabel } from '@src/shared/date/date-format';
-import type { Instant } from '@src/shared/date/instant';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
+import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,16 +21,13 @@ export function TermsAgreementList(props: SettingsSectionProps) {
   const { resolvedLanguage } = useLanguage();
   const dateFormatContext = useDateFormatContext();
 
-  const formatAgreedDate = (date: Instant | null) => {
-    if (date == null) {
-      return t('terms.notAgreed');
-    }
-    return formatDateLabel(date, 'fullDate', dateFormatContext);
-  };
-
   const getConsentDescription = (agreedAt: Instant | null) =>
     compact([
-      t('terms.agreedAt', { date: formatAgreedDate(agreedAt) }),
+      agreedAt == null
+        ? t('terms.notAgreed')
+        : t('terms.agreedAt', {
+            date: formatDateLabel(agreedAt, 'monthDayYear', dateFormatContext),
+          }),
       consent.agreedTermsVersion && t('terms.version', { version: consent.agreedTermsVersion }),
     ]).join('\n');
 

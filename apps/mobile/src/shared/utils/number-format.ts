@@ -1,4 +1,4 @@
-import type { DateFormatContext } from '@src/shared/date/date-format';
+import { type DateFormatContext } from '@src/shared/date/format/date-format';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -60,9 +60,40 @@ export function formatCompactCount(count: number, language: ResolvedLanguage): s
     .exhaustive();
 }
 
-export function formatPercent(value: number): string {
-  const rounded = round(value, 1);
-  return Number.isInteger(rounded) ? `${rounded}` : `${rounded.toFixed(1)}`;
+type PercentSignDisplay = 'auto' | 'exceptZero';
+
+interface PercentFormatOptions {
+  signDisplay?: PercentSignDisplay;
+}
+
+// 로케일 2 × 부호 2로 많아야 네 개라 지우지 않는다. 행마다 새로 만들면 목록 스크롤이 무거워진다
+const percentFormats = new Map<string, Intl.NumberFormat>();
+
+function getPercentFormat(
+  locale: DateFormatContext['locale'],
+  signDisplay: PercentSignDisplay,
+): Intl.NumberFormat {
+  const key = `${locale}:${signDisplay}`;
+  const cached = percentFormats.get(key);
+  if (cached != null) {
+    return cached;
+  }
+  const format = new Intl.NumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 1,
+    signDisplay,
+  });
+  percentFormats.set(key, format);
+  return format;
+}
+
+// 값은 0~100이다. 먼저 반올림해야 100으로 나눌 때 생기는 부동소수 오차가 자리를 바꾸지 않는다(83.45 → 83.5%)
+export function formatPercent(
+  value: number,
+  locale: DateFormatContext['locale'],
+  { signDisplay = 'auto' }: PercentFormatOptions = {},
+): string {
+  return getPercentFormat(locale, signDisplay).format(round(value, 1) / 100);
 }
 
 export function formatCount(value: number, locale: DateFormatContext['locale']): string {

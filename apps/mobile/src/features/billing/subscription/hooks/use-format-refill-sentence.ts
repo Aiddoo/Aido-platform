@@ -1,5 +1,5 @@
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';

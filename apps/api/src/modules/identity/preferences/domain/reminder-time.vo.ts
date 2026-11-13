@@ -1,7 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { reminderTimeOutOfRange } from "./preferences.errors.js";
 
 export interface ReminderHours {
   readonly morningReminderHour?: number;
@@ -15,10 +14,10 @@ const EVENING_FIRST_HOUR = 12;
 export class ReminderTime extends ValueObject<ReminderHours> {
   static create(hours: ReminderHours): ReminderTime {
     if (hours.morningReminderHour != null && hours.morningReminderHour > MORNING_LAST_HOUR) {
-      throw new DomainException(ErrorCode.PREFERENCE_1702);
+      throw reminderTimeOutOfRange();
     }
     if (hours.eveningReminderHour != null && hours.eveningReminderHour < EVENING_FIRST_HOUR) {
-      throw new DomainException(ErrorCode.PREFERENCE_1702);
+      throw reminderTimeOutOfRange();
     }
     return new ReminderTime({
       morningReminderHour: hours.morningReminderHour,

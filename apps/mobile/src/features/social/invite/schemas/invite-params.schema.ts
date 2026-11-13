@@ -2,7 +2,7 @@ import { userIdParamSchema } from '@aido/api';
 import { z } from 'zod';
 
 import { inviteCodeSchema } from '../domains/invite-code.model';
-import { inviteLinkSourceSchema } from '../domains/invite-redemption.model';
+import { inviteLinkSourceSchema } from '../domains/pending-redemption.model';
 
 // 형식이 틀린 코드는 화면이 "찾을 수 없어요"로 보여 주도록 null로 받는다
 export const inviteParamsSchema = z.object({

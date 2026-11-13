@@ -1,4 +1,4 @@
-import { renderUi } from '@src/shared/__tests__';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { Tabs } from 'heroui-native';
 import { Text } from 'react-native';
@@ -9,7 +9,7 @@ import { ViewTabs } from './view-tabs';
 const viewSchema = z.enum(['friends', 'receiver']).catch('friends');
 
 async function renderViewTabs(onValueChange: (view: 'friends' | 'receiver') => void) {
-  await renderUi(
+  await renderScreen(
     <ViewTabs schema={viewSchema} value="receiver" onValueChange={onValueChange}>
       <Tabs.List>
         <Tabs.Trigger value="friends" testID="known">

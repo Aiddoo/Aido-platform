@@ -1,70 +1,70 @@
-import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createSpokenVoiceNote } from '@src/features/voice/__tests__/voice-note.fixtures';
+import { ok } from '@src/core/errors/result';
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import {
   createHttpClientStub,
-  createSpeechRecognizerStub,
-  createVoiceNoteStorageFake,
+  createTestDi,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { screen } from '@testing-library/react-native';
+  createVoiceNoteStorageFake,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
+import { createMemo } from '../__tests__/memo.fixtures';
+import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { MemoList } from './memo-list';
 
-const ACCOUNT_ID = 'account-1';
-const EMPTY_TITLE = '아직 메모가 없어요';
-
-async function renderMemoList({ hasVoiceNote }: { hasVoiceNote: boolean }) {
-  const queryClient = createTestQueryClient({
-    defaultOptions: { queries: { staleTime: Infinity } },
-  });
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
-  queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
-    pages: [{ items: [], hasNext: false, nextCursor: null }],
-    pageParams: [undefined],
-  });
-  const httpClient = createHttpClientStub();
-  httpClient.get.mockReturnValue(new Promise(() => undefined));
-  const voiceNoteStorage = createVoiceNoteStorageFake();
-  if (hasVoiceNote) {
-    voiceNoteStorage.drafts.save(ACCOUNT_ID, createSpokenVoiceNote());
-  }
-
-  await renderUi(
-    <Suspense fallback={null}>
-      <MemoList />
-    </Suspense>,
-    {
-      queryClient,
-      withLocalDate: true,
-      withOverlay: true,
-      di: {
-        httpClient,
-        speechRecognizer: createSpeechRecognizerStub(),
-        ...voiceNoteStorage.di,
-      },
-    },
-  );
-}
+const MEMO_ID = 5;
 
 describe('MemoList', () => {
-  it('메모도 말로 남긴 메모도 없으면 빈 화면을 보여 준다', async () => {
+  it('스크린리더 동작으로 카드에서 바로 메모를 고정한다', async () => {
+    // Given
+    const queryClient = createTestQueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
+    queryClient.setQueryData(MEMO_QUERY_KEYS.list(), {
+      pages: [{ items: [createMemo({ id: MEMO_ID, content: '장보기' })], nextCursor: null }],
+      pageParams: [undefined],
+    });
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(
+      ok({
+        message: 'updated',
+        memo: {
+          id: MEMO_ID,
+          userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+          content: '장보기',
+          isPinned: true,
+          sortOrder: 0,
+          createdAt: '2026-11-06T00:00:00.000Z',
+          updatedAt: '2026-11-06T00:01:00.000Z',
+        },
+      }),
+    );
+    await renderScreen(
+      <Suspense fallback={null}>
+        <MemoList />
+      </Suspense>,
+      {
+        di: createTestDi({
+          ports: { httpClient, queryClient, ...createVoiceNoteStorageFake().ports },
+        }),
+        withLocalDate: true,
+        withOverlay: true,
+      },
+    );
+
     // When
-    await renderMemoList({ hasVoiceNote: false });
+    await fireEvent(await screen.findByTestId(`memo-item-${MEMO_ID}`), 'accessibilityAction', {
+      nativeEvent: { actionName: 'togglePin' },
+    });
 
     // Then
-    expect(await screen.findByText(EMPTY_TITLE)).toBeTruthy();
-  });
-
-  it('말로 남긴 메모가 있으면 메모가 없다는 빈 화면을 숨긴다', async () => {
-    // When
-    await renderMemoList({ hasVoiceNote: true });
-
-    // Then
-    expect(screen.queryByText(EMPTY_TITLE)).toBeNull();
+    await waitFor(() =>
+      expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}/pin`, { isPinned: true }),
+    );
   });
 });

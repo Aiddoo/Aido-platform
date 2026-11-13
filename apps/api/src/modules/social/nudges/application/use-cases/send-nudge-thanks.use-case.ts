@@ -10,6 +10,7 @@ import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { judgeNudgeThanks } from "../../domain/nudge-interaction.domain-service.js";
 import { NUDGE_THANKS_BATCH_SIZE } from "../../domain/nudges.constants.js";
 import {
+  nudgeInteractionDisabled,
   nudgeInteractionNotFound,
   nudgeThanksRejected,
   thanksTodoNotFound,
@@ -63,7 +64,7 @@ export class SendNudgeThanksUseCase {
       clock,
     } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
-      throw nudgeInteractionNotFound();
+      throw nudgeInteractionDisabled();
     }
     const ownerId = UserId.reconstitute(command.userId);
     const throughNudgeId = NudgeId.reconstitute(command.throughNudgeId);

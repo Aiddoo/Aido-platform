@@ -60,7 +60,6 @@ describe('감사 미리보기 페이지 변환', () => {
     expect(preview).toMatchObject({
       totalRecipients: 1,
       nextCursor: null,
-      hasNext: false,
       thankedRecipientCount: 0,
       lastThankedAt: null,
     });
@@ -82,7 +81,7 @@ describe('감사 미리보기 페이지 변환', () => {
     expect(preview.lastThankedAt).toBe('2026-10-26T06:12:00.000Z');
   });
 
-  it('페이지 메타데이터가 있으면 전체 인원과 다음 커서를 보존한다', () => {
+  it('페이지 메타데이터가 있으면 전체 인원을 보존하고 다음 커서에 감사 기준을 함께 담는다', () => {
     // Given
     const dto = {
       todoId: 1,
@@ -99,8 +98,7 @@ describe('감사 미리보기 페이지 변환', () => {
     // Then
     expect(preview).toMatchObject({
       totalRecipients: 1000,
-      nextCursor: 80,
-      hasNext: true,
+      nextCursor: { cursor: 80, throughNudgeId: 100 },
       throughNudgeId: 100,
     });
   });
@@ -120,7 +118,7 @@ describe('감사 미리보기 페이지 변환', () => {
     // When
     const preview = toNudgeThanksPreview(dto);
     // Then
-    expect(preview.recipients).toEqual([]);
+    expect(preview.items).toEqual([]);
     expect(preview.throughNudgeId).toBeNull();
     expect(preview.nextCursor).toBeNull();
     expect(preview.totalRecipients).toBe(0);

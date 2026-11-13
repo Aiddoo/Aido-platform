@@ -2,10 +2,11 @@ import { track } from '@src/shared/analytics';
 import type { LocalDateChangeTrigger } from '@src/shared/analytics/event-map';
 import {
   createLocalDateState,
+  getNowInstant,
   isSameLocalDateState,
   millisecondsUntilNextLocalMidnight,
   type LocalDateState,
-} from '@src/shared/date/local-date-clock';
+} from '@src/shared/date/clock';
 import { useAnalytics, useAppLifecycle, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
 import {
@@ -27,8 +28,7 @@ const LocalDateContext = createContext<LocalDateState | null>(null);
 const FALLBACK_TIME_ZONE = 'UTC';
 
 function readLocalDateState(timeZone: string): LocalDateState {
-  const now = new Date();
-  return createLocalDateState(now, timeZone, -now.getTimezoneOffset());
+  return createLocalDateState(getNowInstant(), timeZone);
 }
 
 interface LocalDateProviderProps extends PropsWithChildren {
@@ -140,7 +140,7 @@ export function LocalDateProvider({
           reconcileCurrentLocalDate('midnight_timer');
           scheduleLocalMidnightTimer();
         },
-        millisecondsUntilNextLocalMidnight(new Date(), currentTimeZone),
+        millisecondsUntilNextLocalMidnight(getNowInstant(), currentTimeZone),
       );
     };
 

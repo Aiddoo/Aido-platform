@@ -1,3 +1,8 @@
+// 비밀번호에 쓸 수 있는 특수문자의 원본이다. PATTERN과 판정이 모두 여기서 만들어진다
+export const PASSWORD_ALLOWED_SYMBOLS = "@$!%*#?&";
+
+const PASSWORD_ALLOWED_CHARACTERS = `A-Za-z\\d${escapeCharacterClass(PASSWORD_ALLOWED_SYMBOLS)}`;
+
 export const PASSWORD_RULES = {
   MIN_LENGTH: 8,
   MAX_LENGTH: 72,
@@ -6,9 +11,20 @@ export const PASSWORD_RULES = {
   /** 숫자 포함 여부 검사 */
   HAS_NUMBER: /\d/,
   /** 8자 이상, 영문과 숫자 필수 조합 */
-  PATTERN: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/,
+  PATTERN: new RegExp(`^(?=.*[A-Za-z])(?=.*\\d)[${PASSWORD_ALLOWED_CHARACTERS}]{8,}$`),
   ERROR_MESSAGE: "비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다",
 } as const;
+
+const PASSWORD_DISALLOWED_CHARACTER = new RegExp(`[^${PASSWORD_ALLOWED_CHARACTERS}]`);
+
+export function hasDisallowedPasswordCharacter(password: string): boolean {
+  return PASSWORD_DISALLOWED_CHARACTER.test(password);
+}
+
+// 문자 집합 안에서 뜻이 바뀌는 \ ] ^ - 만 이스케이프한다. 지금 기호에는 없어 PATTERN 원문이 그대로다
+function escapeCharacterClass(characters: string): string {
+  return characters.replace(/[\\\]^-]/g, "\\$&");
+}
 
 // Argon2id 해싱 설정 (OWASP 권장: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 export const ARGON2_CONFIG = {

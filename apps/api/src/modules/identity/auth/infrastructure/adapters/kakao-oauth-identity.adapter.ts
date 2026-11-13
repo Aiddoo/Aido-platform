@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
@@ -8,6 +7,11 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
+import {
+  expiredSocialToken,
+  invalidCredentials,
+  invalidSocialToken,
+} from "../../application/auth.errors.js";
 import { AuthLogEvent } from "../../application/auth.log-events.js";
 import {
   type ExchangedToken,
@@ -48,7 +52,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
     const { clientId, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     await params.persistState("KAKAO", params.validatedRedirectUri, {
@@ -69,7 +73,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
   async exchangeCode(code: string): Promise<ExchangedToken> {
     const { clientId, clientSecret, callbackUrl, isConfigured } = this.#config;
     if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const { data: tokenResponse } = await this.#policy.execute((signal) =>
@@ -97,7 +101,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         statusCode: tokenResponse.status,
         providerError: await readOAuthProviderError(tokenResponse),
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const tokenData = await readJson(tokenResponse, kakaoTokenResponseSchema);
@@ -106,7 +110,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         event: AuthLogEvent.OAUTH_TOKEN_EXCHANGE_INVALID,
         provider: this.provider,
       });
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     return { token: tokenData.data.access_token };
   }
@@ -127,15 +131,12 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       );
 
       if (!response.ok) {
-        throw new ApplicationException(
-          response.status === 401 ? ErrorCode.SOCIAL_0203 : ErrorCode.SOCIAL_0202,
-          { provider: "KAKAO" },
-        );
+        throw response.status === 401 ? expiredSocialToken("KAKAO") : invalidSocialToken("KAKAO");
       }
 
       const parsed = await readJson(response, kakaoUserInfoSchema);
       if (!parsed.success) {
-        throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "KAKAO" });
+        throw invalidSocialToken("KAKAO");
       }
       const kakaoAccount = parsed.data.kakao_account;
       return {
@@ -150,7 +151,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       if (error instanceof ApplicationException) {
         throw error;
       }
-      throw new ApplicationException(ErrorCode.SOCIAL_0202, { provider: "KAKAO" });
+      throw invalidSocialToken("KAKAO");
     }
   }
 

@@ -1,3 +1,4 @@
+import { MemoIdempotencyKeyTakenError } from "#api/modules/notes/memos/application/memos.errors";
 import type { MemoRepositoryPort } from "#api/modules/notes/memos/application/ports/memo.repository.port";
 import type { Memo, MemoPrimitives } from "#api/modules/notes/memos/domain/memo.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -56,6 +57,42 @@ export function describeMemoRepositoryContract(
       // Then
       expect(found?.toPrimitives()).toEqual(changed.toPrimitives());
       expect(foreign).toBeNull();
+    });
+
+    it("Idempotency-Key로는 그 사용자가 그 키로 만든 메모만 찾는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const memo = await saveMemo(repository, { idempotencyKey: "memo-create-1" });
+      await saveMemo(repository, { idempotencyKey: null });
+      await saveMemo(repository, {
+        userId: MEMO_FIXTURE_OTHER_USER_ID,
+        idempotencyKey: "memo-create-2",
+      });
+
+      // When
+      const found = await repository.findByIdempotencyKey(USER_ID, "memo-create-1");
+      const foreign = await repository.findByIdempotencyKey(USER_ID, "memo-create-2");
+
+      // Then
+      expect(found?.toPrimitives()).toEqual(memo.toPrimitives());
+      expect(foreign).toBeNull();
+    });
+
+    it("같은 사용자의 같은 Idempotency-Key로 다른 메모를 저장하면 MemoIdempotencyKeyTakenError다", async () => {
+      // Given
+      const repository = await createRepository();
+      await saveMemo(repository, { idempotencyKey: "memo-create-1", requestHash: "a".repeat(64) });
+      const duplicate = createMemoFixture({
+        id: (await repository.nextId()).value,
+        idempotencyKey: "memo-create-1",
+        requestHash: "a".repeat(64),
+      });
+
+      // When
+      const saving = repository.save(duplicate);
+
+      // Then
+      await expect(saving).rejects.toBeInstanceOf(MemoIdempotencyKeyTakenError);
     });
 
     it("고정 메모가 먼저, 그다음 정렬 순서·id 내림차순으로 나열하고 after 메모 뒤부터 이어 준다", async () => {

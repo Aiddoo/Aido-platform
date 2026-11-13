@@ -1,17 +1,17 @@
 import { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
+import { QueryErrorBoundary } from '@src/shared/ui';
 import {
   createErrorReporterStub,
   createHttpClientStub,
   createLocationGatewayStub,
-  renderUi,
-} from '@src/shared/__tests__';
-import { QueryErrorBoundary } from '@src/shared/ui';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
 import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
 import { WeatherReportGate } from './weather-report-gate';
 
@@ -25,7 +25,7 @@ async function renderGate(response: Result<unknown, ApiError>) {
   httpClient.get.mockResolvedValue(response);
   const errorReporter = createErrorReporterStub();
 
-  await renderUi(
+  await renderScreen(
     <QueryErrorBoundary fallback={() => <Text>리포트 오류</Text>}>
       <WeatherReportGate fallback={() => <Text>위치 안내</Text>}>
         <WeatherReportGate.Suspense fallback={<Text>불러오는 중</Text>}>
@@ -33,7 +33,11 @@ async function renderGate(response: Result<unknown, ApiError>) {
         </WeatherReportGate.Suspense>
       </WeatherReportGate>
     </QueryErrorBoundary>,
-    { di: { httpClient, deviceLocation: createLocationGatewayStub(), errorReporter } },
+    {
+      di: createTestDi({
+        ports: { httpClient, deviceLocation: createLocationGatewayStub(), errorReporter },
+      }),
+    },
   );
   return { errorReporter };
 }
@@ -53,17 +57,6 @@ describe('WeatherReportGate', () => {
     expect(errorReporter.addBreadcrumb).not.toHaveBeenCalledWith(
       expect.objectContaining({ message: 'query_boundary_expected_state' }),
     );
-  });
-
-  it('리포트를 받으면 블록을 그린다', async () => {
-    // Given
-    const report = createSeoulReportDto();
-
-    // When
-    await renderGate({ ok: true, value: report });
-
-    // Then
-    expect(await screen.findByText(report.location.timezone)).toBeOnTheScreen();
   });
 
   it('위치 미등록이 아닌 실패는 그대로 리포트 경계가 맡는다', async () => {

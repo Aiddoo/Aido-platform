@@ -1,11 +1,14 @@
-import { createMemoryObservableSyncStorage } from '@src/shared/__tests__';
+import { toInstant } from '@src/shared/date/instant';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
+import { createMemoryObservableSyncStorage } from '@src/testing/core';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
+import { createWidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
+
+const TAPPED_AT = toInstant('2026-11-05T00:00:00.000Z');
 
 function createHandler(isAppActive = false) {
   const storage = createMemoryObservableSyncStorage();
@@ -21,7 +24,7 @@ function createHandler(isAppActive = false) {
       navigationRepository,
       openApp,
       isAppActive: () => isAppActive,
-      now: () => 1000,
+      now: () => TAPPED_AT,
       createCommandId: () => 'widget-tap',
       failureStorage: storage,
       renderStoredWidget,
@@ -61,7 +64,7 @@ describe('Android 위젯 작업 처리', () => {
         id: 'widget-tap',
         uri: 'aido://todo/12',
         userId: 'widget-owner',
-        createdAt: 1000,
+        createdAt: TAPPED_AT,
       });
     });
 
