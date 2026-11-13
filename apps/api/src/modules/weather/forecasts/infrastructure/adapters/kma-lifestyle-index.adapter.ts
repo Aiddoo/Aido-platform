@@ -5,19 +5,18 @@ import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { localDateTimeAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   LifestyleIndex,
   LifestyleIndexProviderPort,
 } from "../../application/ports/lifestyle-index-provider.port.js";
-import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
-import { getRegionCode } from "../../domain/region-code.domain-service.js";
 import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
+import { getRegionCode } from "./kma-lifestyle-area.mapper.js";
 import { kmaUvIndexSchema } from "./kma-lifestyle.wire.js";
+import { KMA_TIMEZONE } from "./kma.constants.js";
 import { KMA_LIFESTYLE_POLICY } from "./weather-outbound.policy.js";
 
 @Injectable()
@@ -43,7 +42,7 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
   async getIndex(
     lat: number,
     lon: number,
-    date: Date,
+    at: Temporal.Instant,
     currentTemp: number,
     windSpeed: number,
   ): Promise<LifestyleIndex> {
@@ -60,7 +59,7 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     }
 
     try {
-      const uvIndex = await this.#fetchUvIndex(apiKey, lat, lon, date);
+      const uvIndex = await this.#fetchUvIndex(apiKey, lat, lon, at);
       return { feelsLikeTemperature, uvIndex };
     } catch (error) {
       this.#logger.warn({
@@ -77,9 +76,9 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     apiKey: string,
     lat: number,
     lon: number,
-    date: Date,
+    at: Temporal.Instant,
   ): Promise<number | null> {
-    const local = localDateTimeAt(date, KMA_TIMEZONE);
+    const local = at.toZonedDateTimeISO(KMA_TIMEZONE);
     const localDate = local.toPlainDate().toString().replaceAll("-", "");
     const time = `${localDate}${String(local.hour).padStart(2, "0")}`;
 

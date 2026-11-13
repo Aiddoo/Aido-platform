@@ -47,7 +47,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
   describe("getSunTime", () => {
     const lat = 37.5;
     const lon = 126.9;
-    const date = new Date("2024-07-15");
+    const date = Temporal.Instant.from("2024-07-15T00:00:00Z");
 
     it('정상 응답 시 일출/일몰 시각을 "HH:mm" 형식으로 반환해야 한다', async () => {
       // Given - API 키 설정 및 정상 일출/일몰 응답 준비
@@ -145,7 +145,11 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       ),
     );
     // When
-    const result = await provider.getSunTime(37.5665, 126.978, new Date("2026-07-23T16:00:00Z"));
+    const result = await provider.getSunTime(
+      37.5665,
+      126.978,
+      Temporal.Instant.from("2026-07-23T16:00:00Z"),
+    );
     // Then
     expect(result).toEqual({ sunrise: "05:24", sunset: "19:00" });
     const request = fetchSpy.mock.calls[0]?.[0];
@@ -163,7 +167,11 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
     const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
     // When
-    const result = await provider.getSunTime(37.5665, 126.978, new Date("2026-07-23T00:00:00Z"));
+    const result = await provider.getSunTime(
+      37.5665,
+      126.978,
+      Temporal.Instant.from("2026-07-23T00:00:00Z"),
+    );
 
     // Then
     expect(result).toBeNull();

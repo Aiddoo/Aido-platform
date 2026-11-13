@@ -1,5 +1,8 @@
 import type { PrecipitationType, SkyCondition } from "@aido/api/vocabulary";
 
+/** 기상청 발표·예보 날짜는 서버 시간대와 무관하게 KST다 */
+export const KMA_TIMEZONE = "Asia/Seoul";
+
 /** 기상청 단기예보 API Base URL */
 export const KMA_BASE_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0";
 

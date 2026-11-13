@@ -1,13 +1,4 @@
-/**
- * getRegionCode 단위 테스트
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test region-code.spec
- * ```
- */
-
-import { getRegionCode } from "./region-code.domain-service.js";
+import { getRegionCode } from "./kma-lifestyle-area.mapper.js";
 
 describe("getRegionCode", () => {
   it.each([

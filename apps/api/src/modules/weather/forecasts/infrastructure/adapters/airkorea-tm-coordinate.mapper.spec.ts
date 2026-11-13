@@ -1,13 +1,4 @@
-/**
- * WGS84 → TM 중부원점 좌표 변환 테스트
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test wgs84-to-utmk.spec
- * ```
- */
-
-import { convertToTm } from "./wgs84-to-utmk.domain-service.js";
+import { convertToTm } from "./airkorea-tm-coordinate.mapper.js";
 
 describe("convertToTm", () => {
   it("서울시청 좌표를 TM 중부원점으로 변환해야 한다", () => {

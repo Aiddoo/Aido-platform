@@ -4,13 +4,13 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
-import { localDateAt } from "../../../shared/domain/weather-calendar.domain-service.js";
 import type {
   SunTime,
   SunTimeProviderPort,
 } from "../../application/ports/sun-time-provider.port.js";
-import { KMA_TIMEZONE } from "../../domain/kma-forecast-availability.domain-service.js";
 import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
@@ -39,7 +39,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     this.#policy = policies.get(KASI_POLICY);
   }
 
-  async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
+  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
     try {
       const apiKey = this.#config.kmaApiKey;
       if (apiKey == null || apiKey === "") {
@@ -51,7 +51,8 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
         return null;
       }
 
-      const locdate = localDateAt(date, KMA_TIMEZONE).toString().replaceAll("-", "");
+      // 천문연구원은 한국 날짜(KST)로 일출·일몰을 준다
+      const locdate = localDateOf(at, TimeZone.SEOUL).toString().replaceAll("-", "");
 
       const outcome = await this.#policy.execute((signal) =>
         requestVendorJson(

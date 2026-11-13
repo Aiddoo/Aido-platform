@@ -38,7 +38,7 @@ interface SuggestionContextBuilderDependencies {
     | "findUserStreakInfo"
     | "findRecentResponded"
   >;
-  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "getForecastsByGridBatch">;
+  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "execute">;
   readonly latestReportStats: Pick<LatestReportStatsReaderPort, "findLatestWeekly">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
@@ -92,7 +92,7 @@ export class SuggestionContextReader {
         timezone,
       ),
       this.#dependencies.activityReader.findUserStreakInfo(owner),
-      this.#fetchWeatherByGrid(weatherGrid, to, locale),
+      this.#fetchWeatherByGrid(weatherGrid, now, locale),
       this.#dependencies.latestReportStats.findLatestWeekly(owner),
       this.#dependencies.activityReader.findRecentResponded(owner, historySince),
     ]);
@@ -188,7 +188,7 @@ export class SuggestionContextReader {
    */
   async #fetchWeatherByGrid(
     grid: GridInput | null,
-    date: Date,
+    target: Temporal.Instant,
     locale: SupportedLocale,
   ): Promise<string | null> {
     if (grid == null) {
@@ -196,10 +196,10 @@ export class SuggestionContextReader {
     }
 
     try {
-      const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
-        [grid],
-        date,
-      );
+      const forecasts = await this.#dependencies.weatherForecastReader.execute({
+        grids: [grid],
+        target,
+      });
       const forecast = forecasts.get(`${grid.gridX}:${grid.gridY}`);
       if (forecast == null) {
         return null;

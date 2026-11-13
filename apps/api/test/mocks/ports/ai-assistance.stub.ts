@@ -10,7 +10,6 @@ import type {
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type {
   WeatherForecastReaderPort,
-  GridInput,
   WeatherForecast,
 } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -83,7 +82,7 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
   forecasts = new Map<string, WeatherForecast>();
   failure: Error | null = null;
   calls = 0;
-  async getForecastsByGridBatch(_grids: GridInput[], _date: Date) {
+  async execute() {
     this.calls += 1;
     if (this.failure) {
       throw this.failure;

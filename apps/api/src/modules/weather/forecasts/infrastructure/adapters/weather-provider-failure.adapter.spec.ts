@@ -3,9 +3,10 @@ import { HttpClient } from "@nestjs/http-client";
 
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
-import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
+import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { AirkoreaAirQualityAdapter } from "./airkorea-air-quality.adapter.js";
 import { KasiSunTimeAdapter } from "./kasi-sun-time.adapter.js";
 import { KmaLifestyleIndexAdapter } from "./kma-lifestyle-index.adapter.js";
@@ -69,7 +70,11 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
       const adapter = new KasiSunTimeAdapter(CONFIG, createHttp(respond), createPolicies());
 
       // When
-      const result = await adapter.getSunTime(37.5665, 126.978, new Date("2026-07-23T00:00:00Z"));
+      const result = await adapter.getSunTime(
+        37.5665,
+        126.978,
+        Temporal.Instant.from("2026-07-23T00:00:00Z"),
+      );
 
       // Then
       expect(result).toBeNull();
@@ -83,7 +88,7 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
       const result = await adapter.getIndex(
         37.5665,
         126.978,
-        new Date("2026-07-23T00:00:00Z"),
+        Temporal.Instant.from("2026-07-23T00:00:00Z"),
         20,
         2,
       );
@@ -99,9 +104,8 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
 
       // When
       const outcome = adapter.getForecast(
-        37.5665,
-        126.978,
-        kmaTimingFixture(new Date("2026-07-23T00:00:00Z")),
+        GridCoordinate.create(60, 127),
+        forecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
       );
 
       // Then
@@ -119,9 +123,8 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
 
     // When
     const outcome = adapter.getForecast(
-      37.5665,
-      126.978,
-      kmaTimingFixture(new Date("2026-07-23T00:00:00Z")),
+      GridCoordinate.create(60, 127),
+      forecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
     );
 
     // Then

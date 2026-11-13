@@ -18,7 +18,8 @@ import { WeatherReportReaderPort } from "./application/ports/weather-report.read
 import { GetWeatherConditionsUseCase } from "./application/use-cases/get-weather-conditions.use-case.js";
 import { GetWeatherForecastUseCase } from "./application/use-cases/get-weather-forecast.use-case.js";
 import { GetWeatherReportUseCase } from "./application/use-cases/get-weather-report.use-case.js";
-import { WeatherForecastReader } from "./application/weather-forecast.reader.js";
+import { ReadWeatherForecastUseCase } from "./application/use-cases/read-weather-forecast.use-case.js";
+import { ReadWeatherForecastsUseCase } from "./application/use-cases/read-weather-forecasts.use-case.js";
 import { WeatherReportReader } from "./application/weather-report.reader.js";
 import { AirkoreaAirQualityAdapter } from "./infrastructure/adapters/airkorea-air-quality.adapter.js";
 import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adapter.js";
@@ -44,30 +45,36 @@ export const WEATHER_FORECASTS_PROVIDERS = [
   { provide: WeatherReportProviderPort, useClass: WeatherKitReportAdapter },
   { provide: WeatherReportCachePort, useClass: WeatherReportCache },
   { provide: ScheduledTodoReaderPort, useClass: PlanningScheduledTodoAdapter },
-  provideUseCase(WeatherForecastReader, {
+  provideUseCase(ReadWeatherForecastUseCase, {
     weatherProvider: WeatherForecastProviderPort,
     weatherCache: WeatherForecastCachePort,
-    logger: loggerFor(WeatherForecastReader),
+    logger: loggerFor(ReadWeatherForecastUseCase),
     clock: ClockPort,
   }),
+  provideUseCase(ReadWeatherForecastsUseCase, {
+    weatherProvider: WeatherForecastProviderPort,
+    weatherCache: WeatherForecastCachePort,
+    logger: loggerFor(ReadWeatherForecastsUseCase),
+    clock: ClockPort,
+  }),
+  { provide: WeatherForecastReaderPort, useExisting: ReadWeatherForecastsUseCase },
   provideUseCase(WeatherReportReader, {
     weatherReportProvider: WeatherReportProviderPort,
     weatherReportCache: WeatherReportCachePort,
     timezoneResolver: TimezoneResolverPort,
     logger: loggerFor(WeatherReportReader),
   }),
-  { provide: WeatherForecastReaderPort, useExisting: WeatherForecastReader },
   { provide: WeatherReportReaderPort, useExisting: WeatherReportReader },
   provideUseCase(GetWeatherForecastUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
-    forecastReader: WeatherForecastReader,
+    readWeatherForecast: ReadWeatherForecastUseCase,
   }),
   provideUseCase(GetWeatherConditionsUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
     airQualityProvider: AirQualityProviderPort,
     lifestyleIndexProvider: LifestyleIndexProviderPort,
     sunTimeProvider: SunTimeProviderPort,
-    forecastReader: WeatherForecastReader,
+    readWeatherForecast: ReadWeatherForecastUseCase,
     weatherProvider: WeatherForecastProviderPort,
     weatherCache: WeatherForecastCachePort,
     logger: loggerFor(GetWeatherConditionsUseCase),

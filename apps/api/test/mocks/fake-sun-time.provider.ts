@@ -9,14 +9,14 @@ import type {
  * 실제 KASI(한국천문연구원) API를 호출하지 않고, 고정된 일출/일몰 데이터를 반환합니다.
  */
 export class FakeSunTimeProvider implements SunTimeProviderPort {
-  #calls: Array<{ lat: number; lon: number; date: Date }> = [];
+  #calls: Array<{ lat: number; lon: number; at: Temporal.Instant }> = [];
 
-  async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
-    this.#calls.push({ lat, lon, date });
+  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
+    this.#calls.push({ lat, lon, at });
     return { sunrise: "06:15", sunset: "18:45" };
   }
 
-  getCalls(): Array<{ lat: number; lon: number; date: Date }> {
+  getCalls(): Array<{ lat: number; lon: number; at: Temporal.Instant }> {
     return [...this.#calls];
   }
 

@@ -3,7 +3,7 @@ import type { PrecipitationType, SkyCondition } from "@aido/api/vocabulary";
 export interface HourlyForecast {
   readonly hour: number;
   readonly temperature: number;
-  readonly skyCondition: string;
+  readonly skyCondition: SkyCondition;
   readonly precipitationProbability: number;
   readonly precipitationAmount: number;
   readonly snowAmount: number;
@@ -18,9 +18,9 @@ export interface DailyForecast {
   readonly temperatureMax: number;
 }
 
-/** KMA 단기예보를 공급자 중립으로 정리한 하루치 예보(v1). */
+/** 한국 단기예보를 공급자 중립으로 정리한 하루치 예보(v1). date는 요청한 대상 순간이다. */
 export interface WeatherForecast {
-  readonly date: Date;
+  readonly date: Temporal.Instant;
   readonly skyCondition: SkyCondition;
   readonly precipitationType: PrecipitationType;
   readonly precipitationProbability: number;

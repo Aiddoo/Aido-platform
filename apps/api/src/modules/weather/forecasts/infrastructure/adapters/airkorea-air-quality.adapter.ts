@@ -9,12 +9,12 @@ import type {
   AirQuality,
   AirQualityProviderPort,
 } from "../../application/ports/air-quality-provider.port.js";
-import { convertToTm } from "../../domain/wgs84-to-utmk.domain-service.js";
 import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
+import { convertToTm } from "./airkorea-tm-coordinate.mapper.js";
 import { airkoreaAirQualitySchema, airkoreaNearbyStationSchema } from "./airkorea.wire.js";
 import { AIRKOREA_POLICY } from "./weather-outbound.policy.js";
 

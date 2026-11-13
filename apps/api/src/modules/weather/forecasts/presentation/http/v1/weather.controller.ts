@@ -10,10 +10,10 @@ import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.const
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { GetWeatherConditionsUseCase } from "../../../application/use-cases/get-weather-conditions.use-case.js";
 import { GetWeatherForecastUseCase } from "../../../application/use-cases/get-weather-forecast.use-case.js";
+import { toWeatherForecastResponse } from "./weather-forecast-response.mapper.js";
 import {
   GetForecastQueryDto,
   WeatherConditionsResponseDto,
@@ -21,8 +21,8 @@ import {
 } from "./weather.dto.js";
 
 // v1 앱이 보낸 날짜는 그 날 UTC 자정(KST 09:00)으로 해석해 왔다
-function utcMidnightOf(date: string): Date {
-  return new Date(Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds);
+function utcMidnightOf(date: string): Temporal.Instant {
+  return Temporal.PlainDate.from(date).toZonedDateTime("UTC").toInstant();
 }
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V1)
@@ -114,16 +114,11 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date == null ? instantToDate(this.#clock.now()) : utcMidnightOf(query.date);
-    const { forecast, location } = await this.#getWeatherForecast.execute({
+    const result = await this.#getWeatherForecast.execute({
       userId: user.userId,
-      date,
+      target: this.#targetOf(query),
     });
-    return {
-      latitude: location.latitude,
-      longitude: location.longitude,
-      ...forecast,
-    };
+    return toWeatherForecastResponse(result);
   }
 
   @Get("conditions")
@@ -181,10 +176,13 @@ export class WeatherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
-    const date = query.date == null ? instantToDate(this.#clock.now()) : utcMidnightOf(query.date);
     return this.#getWeatherConditions.execute({
       userId: user.userId,
-      date,
+      target: this.#targetOf(query),
     });
+  }
+
+  #targetOf(query: GetForecastQueryDto): Temporal.Instant {
+    return query.date == null ? this.#clock.now() : utcMidnightOf(query.date);
   }
 }

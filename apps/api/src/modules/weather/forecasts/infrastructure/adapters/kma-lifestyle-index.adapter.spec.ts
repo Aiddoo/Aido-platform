@@ -45,7 +45,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
   describe("getIndex", () => {
     const lat = 37.5;
     const lon = 126.9;
-    const date = new Date("2024-07-15T12:00:00Z");
+    const date = Temporal.Instant.from("2024-07-15T12:00:00Z");
     const currentTemp = 30;
     const windSpeed = 5;
 
@@ -165,7 +165,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
     const result = await provider.getIndex(
       37.5665,
       126.978,
-      new Date("2026-07-23T16:00:00Z"),
+      Temporal.Instant.from("2026-07-23T16:00:00Z"),
       25,
       3,
     );

@@ -174,7 +174,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const contextBuilder = new SuggestionContextReader({
       activityReader: activity,
-      weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
+      weatherForecastReader: { execute: async () => new Map() },
       latestReportStats: { findLatestWeekly: async () => null },
       clock,
       logger,

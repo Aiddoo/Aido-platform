@@ -1,17 +1,17 @@
 import type { WeatherForecast } from "../read-models/weather-forecast.read-model.js";
 
-/** 위치 조회 없이 예보를 묶어 읽는 소비자 계약. */
+/** 다른 Context가 저장해 둔 예보 격자 */
 export interface GridInput {
   readonly gridX: number;
   readonly gridY: number;
-  readonly lat: number;
-  readonly lon: number;
 }
 
-/** 다른 Context에는 배치 예보 조회 하나만 공개한다. */
+export interface ReadWeatherForecastsQuery {
+  readonly grids: readonly GridInput[];
+  readonly target: Temporal.Instant;
+}
+
+/** 다른 Context에는 위치 조회 없는 격자 묶음 예보 조회 하나만 연다. 결과 키는 `gridX:gridY`다. */
 export abstract class WeatherForecastReaderPort {
-  abstract getForecastsByGridBatch(
-    grids: readonly GridInput[],
-    date: Date,
-  ): Promise<Map<string, WeatherForecast>>;
+  abstract execute(query: ReadWeatherForecastsQuery): Promise<Map<string, WeatherForecast>>;
 }

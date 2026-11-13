@@ -5,10 +5,14 @@ import type { MockInstance } from "vitest";
 
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
-import { kmaTimingFixture } from "#test/fixtures/weather.fixture";
+import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
 
+import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { KmaWeatherForecastAdapter } from "./kma-weather-forecast.adapter.js";
+
+const SEOUL_GRID = GridCoordinate.create(60, 127);
+const TARGET = Temporal.Instant.from("2026-07-23T00:00:00Z");
 
 describe("KMA 예보 HTTP 요청·오류 계약", () => {
   let provider: KmaWeatherForecastAdapter;
@@ -29,9 +33,8 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     fetchSpy = vi.spyOn(globalThis, "fetch");
   });
 
-  it("실제 HTTP client가 KST 발표 시각·격자를 보내고 반환 Date를 유지한다", async () => {
+  it("실제 HTTP client가 KST 발표 시각·격자를 보내고 대상 순간을 그대로 싣는다", async () => {
     // Given
-    const date = new Date("2026-07-23T00:00:00Z");
     fetchSpy.mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -49,7 +52,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(37.5665, 126.978, kmaTimingFixture(date));
+    const result = await provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
     // Then
     const url = new URL(String(fetchSpy.mock.calls[0]?.[0]));
     expect(url.pathname).toBe("/1360000/VilageFcstInfoService_2.0/getVilageFcst");
@@ -63,7 +66,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       numOfRows: "1000",
       dataType: "JSON",
     });
-    expect(result.date).toBe(date);
+    expect(result.date).toBe(TARGET);
     expect(result.hourlyForecasts[0]?.temperature).toBe(25);
     expect(provider.timeZone).toBe("Asia/Seoul");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -88,16 +91,15 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
   ])("%s는 기존 WEATHER_1901 오류이며 retry하지 않는다", async (_description, response) => {
     // Given
     fetchSpy.mockResolvedValue(response());
-    // When / Then
-    await expect(
-      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
+    // When
+    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("현재 발표가 실패 코드이면 직전 발표로 한 번 재요청하고 대상일 예보를 반환한다", async () => {
     // Given
-    const date = new Date("2026-07-23T00:00:00Z");
     const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
     const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     fetchSpy.mockResolvedValueOnce(providerResultResponse("03")).mockResolvedValueOnce(
@@ -117,7 +119,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(37.5665, 126.978, kmaTimingFixture(date));
+    const result = await provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
     // Then
     const [current, previous] = fetchSpy.mock.calls.map(
       ([url]) => new URL(String(url)).searchParams,
@@ -146,10 +148,10 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     fetchSpy
       .mockResolvedValueOnce(providerResultResponse("03"))
       .mockResolvedValueOnce(providerResultResponse("99"));
-    // When / Then
-    await expect(
-      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
-    ).rejects.toMatchObject({
+    // When
+    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    // Then
+    await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,
       details: { code: "99", message: "UNKNOWN_ERROR" },
     });
@@ -167,14 +169,6 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("credential 미설정은 isConfigured false이며 한국 지역 미지원 판정이 아니다", () => {
-    // Given
-    config.kmaApiKey = undefined;
-    // When / Then
-    expect(provider.isConfigured()).toBe(false);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
   it("공급자 응답 원문은 로그에 노출하지 않고 기존 1901 details 계약을 유지한다", async () => {
     // Given
     const secret = "PRIVATE_KEY=secret&latitude=37.5665&longitude=126.978 BODY_SECRET";
@@ -182,10 +176,10 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     fetchSpy.mockImplementation(async () => providerResultResponse("03", secret));
 
-    // When / Then
-    await expect(
-      provider.getForecast(37.5665, 126.978, kmaTimingFixture(new Date("2026-07-23T00:00:00Z"))),
-    ).rejects.toMatchObject({
+    // When
+    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    // Then
+    await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,
       details: { code: "03", message: secret },
     });

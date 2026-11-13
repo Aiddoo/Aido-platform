@@ -1,8 +1,8 @@
+import type { ForecastTiming } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
 import type {
   WeatherConditions,
   WeatherForecast,
 } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import type { KmaForecastTiming } from "#api/modules/weather/forecasts/domain/kma-forecast-availability.domain-service";
 import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/domain/weather-report.vo";
 import type {
   WeatherReport,
@@ -25,12 +25,15 @@ export function weatherAttributionFixture(language = "ko"): WeatherReportAttribu
 }
 
 /** 대상 날짜와 같은 시각의 발표에서 예보를 받는 timing (발표를 당기지 않는 경우) */
-export function kmaTimingFixture(target: Date, issuance: Date = target): KmaForecastTiming {
+export function forecastTimingFixture(
+  target: Temporal.Instant,
+  issuance: Temporal.Instant = target,
+): ForecastTiming {
   return { target, issuance };
 }
 
 export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {}): WeatherForecast {
-  const date = overrides.date ?? new Date("2026-07-23T00:00:00.000Z");
+  const date = overrides.date ?? Temporal.Instant.from("2026-07-23T00:00:00.000Z");
   return {
     skyCondition: "CLEAR",
     precipitationType: "NONE",
@@ -49,7 +52,7 @@ export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {})
     })),
     dailyForecasts: [
       {
-        date: date.toISOString().slice(0, 10),
+        date: date.toZonedDateTimeISO("UTC").toPlainDate().toString(),
         skyCondition: "CLEAR",
         precipitationType: "NONE",
         precipitationProbability: 0,
@@ -58,7 +61,7 @@ export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {})
       },
     ],
     ...overrides,
-    date: new Date(date),
+    date,
   };
 }
 

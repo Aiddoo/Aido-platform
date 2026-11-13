@@ -6,26 +6,27 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundRejectedError } from "#api/platform/resilience/outbound-policy.errors";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 
-import { toKmaGrid } from "../../../locations/infrastructure/adapters/kma-weather-grid-resolver.adapter.js";
+import type { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { weatherServiceUnavailable } from "../../application/forecasts.errors.js";
-import type { WeatherForecastProviderPort } from "../../application/ports/weather-forecast-provider.port.js";
+import type {
+  ForecastAvailability,
+  ForecastTiming,
+  WeatherForecastProviderPort,
+} from "../../application/ports/weather-forecast-provider.port.js";
 import type { WeatherForecast } from "../../application/read-models/weather-forecast.read-model.js";
-import {
-  type KmaBaseDateTime,
-  getKmaBaseDateTime,
-  getPreviousKmaBaseDateTime,
-} from "../../domain/kma-base-datetime.domain-service.js";
-import {
-  KMA_TIMEZONE,
-  type KmaForecastTiming,
-} from "../../domain/kma-forecast-availability.domain-service.js";
 import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
 import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { parseKmaResponse } from "./kma-forecast-response.mapper.js";
-import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants.js";
+import {
+  type KmaBaseDateTime,
+  resolveKmaForecastAvailability,
+  toKmaBaseDateTime,
+  toPreviousKmaBaseDateTime,
+} from "./kma-issuance.mapper.js";
+import { KMA_BASE_URL, KMA_ENDPOINTS, KMA_TIMEZONE } from "./kma.constants.js";
 import { type KmaApiResponse, kmaApiResponseSchema } from "./kma.wire.js";
 import { KMA_FORECAST_POLICY } from "./weather-outbound.policy.js";
 
@@ -50,10 +51,15 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
     this.#policy = policies.get(KMA_FORECAST_POLICY);
   }
 
-  async getForecast(lat: number, lon: number, timing: KmaForecastTiming): Promise<WeatherForecast> {
-    const grid = toKmaGrid(lat, lon);
+  resolveAvailability(params: {
+    readonly target: Temporal.Instant;
+    readonly now: Temporal.Instant;
+  }): ForecastAvailability {
+    return resolveKmaForecastAvailability(params);
+  }
 
-    const current = await this.#requestForecast(grid, getKmaBaseDateTime(timing.issuance));
+  async getForecast(grid: GridCoordinate, timing: ForecastTiming): Promise<WeatherForecast> {
+    const current = await this.#requestForecast(grid, toKmaBaseDateTime(timing.issuance));
     if (current.response.header.resultCode === "00") {
       return parseKmaResponse(current, timing.target);
     }
@@ -65,7 +71,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
       operation: "forecast",
       resultCode: current.response.header.resultCode,
     });
-    const previous = await this.#requestForecast(grid, getPreviousKmaBaseDateTime(timing.issuance));
+    const previous = await this.#requestForecast(grid, toPreviousKmaBaseDateTime(timing.issuance));
     if (previous.response.header.resultCode === "00") {
       return parseKmaResponse(previous, timing.target);
     }
@@ -84,7 +90,7 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   }
 
   async #requestForecast(
-    { nx, ny }: ReturnType<typeof toKmaGrid>,
+    grid: GridCoordinate,
     { baseDate, baseTime }: KmaBaseDateTime,
   ): Promise<KmaApiResponse> {
     const outcome = await this.#policy
@@ -99,8 +105,8 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
             dataType: "JSON",
             base_date: baseDate,
             base_time: baseTime,
-            nx,
-            ny,
+            nx: grid.gridX,
+            ny: grid.gridY,
           },
           { signal },
         ),
@@ -144,9 +150,5 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
       });
     }
     return parsed.data;
-  }
-
-  isConfigured(): boolean {
-    return Boolean(this.#config.kmaApiKey);
   }
 }

@@ -7,7 +7,7 @@ export abstract class LifestyleIndexProviderPort {
   abstract getIndex(
     lat: number,
     lon: number,
-    date: Date,
+    at: Temporal.Instant,
     currentTemp: number,
     windSpeed: number,
   ): Promise<LifestyleIndex>;

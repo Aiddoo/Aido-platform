@@ -4,5 +4,5 @@ export interface SunTime {
 }
 
 export abstract class SunTimeProviderPort {
-  abstract getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null>;
+  abstract getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null>;
 }
