@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -34,7 +35,7 @@ import {
   required: false,
   description: "설치된 앱 버전. 1.11.0 이상에서 콕 답장·감사 알림을 표시합니다.",
 })
-@Controller("notifications/inbox")
+@Controller({ path: "notifications/inbox", version: API_VERSION.V1 })
 export class NotificationInboxController {
   readonly #listNotifications: ListNotificationsUseCase;
   readonly #getUnreadNotificationCount: GetUnreadNotificationCountUseCase;

@@ -4,6 +4,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from "@nestjs/comm
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
@@ -36,7 +37,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class SettingsController {
   readonly #getPreferenceUseCase: GetPreferenceUseCase;
   readonly #updatePreferenceUseCase: UpdatePreferenceUseCase;

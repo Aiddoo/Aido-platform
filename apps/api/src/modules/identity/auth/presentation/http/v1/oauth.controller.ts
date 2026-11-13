@@ -35,6 +35,7 @@ import {
   type RequestSource,
 } from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -69,7 +70,7 @@ type WebOAuthProvider = Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">;
 const OAUTH_STATE_BYTES = 16;
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class OAuthController {
   readonly #logger = new Logger(OAuthController.name);
 

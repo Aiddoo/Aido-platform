@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import { ApiForbiddenError } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
@@ -19,7 +20,7 @@ import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "./growth.dto.js
 
 @ApiTags(SWAGGER_TAGS.ADMIN_GROWTH)
 @ApiBearerAuth()
-@Controller("admin/growth")
+@Controller({ path: "admin/growth", version: API_VERSION.V1 })
 export class GrowthController {
   readonly #getGrowthSummary: Pick<GetGrowthSummaryUseCase, "execute">;
 

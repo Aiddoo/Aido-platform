@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorResponse,
@@ -24,7 +25,7 @@ const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
-@Controller("inquiries")
+@Controller({ path: "inquiries", version: API_VERSION.V1 })
 export class InquiryController {
   readonly #createInquiry: CreateInquiryUseCase;
 

@@ -14,6 +14,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
@@ -55,7 +56,7 @@ const PLAN_CATALOG_TABLE = PLAN_FEATURE_KEYS.map(
 
 @ApiTags(SWAGGER_TAGS.ENTITLEMENTS)
 @ApiBearerAuth()
-@Controller("entitlements")
+@Controller({ path: "entitlements", version: API_VERSION.V1 })
 export class EntitlementController {
   readonly #getEntitlementSnapshot: GetEntitlementSnapshotUseCase;
 

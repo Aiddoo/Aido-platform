@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiNotFoundError,
@@ -20,7 +21,7 @@ import { TodoSeriesIdParamDto, TodoSeriesResponseDto } from "./todo-series.dto.j
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
-@Controller("todo-series")
+@Controller({ path: "todo-series", version: API_VERSION.V1 })
 export class TodoSeriesController {
   readonly #getTodoSeriesUseCase: GetTodoSeriesUseCase;
 

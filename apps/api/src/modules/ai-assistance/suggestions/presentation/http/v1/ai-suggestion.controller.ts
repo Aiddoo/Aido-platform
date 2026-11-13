@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -69,7 +70,7 @@ import {
  */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
-@Controller("ai/suggestions")
+@Controller({ path: "ai/suggestions", version: API_VERSION.V1 })
 export class AiSuggestionController {
   readonly #getPendingSuggestionsUseCase: ListPendingSuggestionsUseCase;
   readonly #handleSuggestionActionUseCase: HandleSuggestionActionUseCase;

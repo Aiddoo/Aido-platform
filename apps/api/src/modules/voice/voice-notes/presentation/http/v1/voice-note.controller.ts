@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
@@ -44,7 +45,7 @@ const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
-@Controller("voice-notes")
+@Controller({ path: "voice-notes", version: API_VERSION.V1 })
 export class VoiceNoteController {
   readonly #digestVoiceNote: DigestVoiceNoteUseCase;
 

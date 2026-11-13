@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
@@ -36,7 +37,7 @@ const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
-@Controller("quick-plans")
+@Controller({ path: "quick-plans", version: API_VERSION.V1 })
 export class QuickPlanController {
   readonly #createQuickPlan: CreateQuickPlanUseCase;
 

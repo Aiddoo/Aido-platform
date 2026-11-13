@@ -14,6 +14,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
@@ -57,7 +58,7 @@ const AI_PARSE_THROTTLE = {
 
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
-@Controller("ai")
+@Controller({ path: "ai", version: API_VERSION.V1 })
 export class AiController {
   readonly #parseTodoUseCase: ParseTodoUseCase;
   readonly #parseMemoUseCase: ParseMemoUseCase;

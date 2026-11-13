@@ -35,6 +35,7 @@ import {
 } from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
 import { JwtRefreshGuard } from "#api/modules/identity/auth/presentation/http/guards/jwt-refresh.guard";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -66,7 +67,7 @@ import {
 } from "./auth.dto.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class AuthController {
   readonly #registerUseCase: RegisterUseCase;
   readonly #verifyEmailUseCase: VerifyEmailUseCase;

@@ -18,6 +18,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -97,7 +98,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
-@Controller("todos")
+@Controller({ path: "todos", version: API_VERSION.V1 })
 export class TodoController {
   readonly #getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase;
   readonly #getTodoSummaryUseCase: GetTodoSummaryUseCase;

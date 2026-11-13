@@ -20,6 +20,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -91,7 +92,7 @@ const FRIEND_REQUEST_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
-@Controller("follows")
+@Controller({ path: "follows", version: API_VERSION.V1 })
 export class FollowController {
   readonly #sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase;
   readonly #acceptFriendRequestUseCase: AcceptFriendRequestUseCase;

@@ -9,6 +9,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiBadRequestError,
@@ -32,7 +33,7 @@ import {
 
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
 @ApiBearerAuth()
-@Controller("admin/notifications")
+@Controller({ path: "admin/notifications", version: API_VERSION.V1 })
 export class AdminNotificationController {
   readonly #broadcastNotification: Pick<BroadcastNotificationUseCase, "execute">;
   readonly #sendTargetedNotification: Pick<SendTargetedNotificationUseCase, "execute">;

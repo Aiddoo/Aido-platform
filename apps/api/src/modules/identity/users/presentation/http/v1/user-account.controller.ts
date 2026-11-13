@@ -19,6 +19,7 @@ import {
   UpdateProfileDto,
   UpdateProfileResponseDto,
 } from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -37,7 +38,7 @@ import { UpdateProfileUseCase } from "../../../application/use-cases/update-prof
 // 출시 경로 /auth/me·/auth/profile·/auth/account를 그대로 두고 사용자 slice가 맡는다
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
-@Controller("auth")
+@Controller({ path: "auth", version: API_VERSION.V1 })
 export class UserAccountController {
   readonly #getCurrentUserQuery: GetCurrentUserUseCase;
   readonly #updateProfileUseCase: UpdateProfileUseCase;

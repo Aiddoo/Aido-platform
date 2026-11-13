@@ -7,6 +7,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -29,7 +30,7 @@ const ACTION_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 10 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
-@Controller("action-plans")
+@Controller({ path: "action-plans", version: API_VERSION.V1 })
 export class ActionPlanController {
   readonly #applyActionPlan: ApplyActionPlanUseCase;
 

@@ -6,6 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -31,7 +32,7 @@ import {
 /** 유료 사용자의 리포트 조회 HTTP 진입점. */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
-@Controller("ai/reports")
+@Controller({ path: "ai/reports", version: API_VERSION.V1 })
 export class AiReportController {
   readonly #getReportStatusUseCase: GetReportStatusUseCase;
   readonly #getReportsUseCase: ListReportsUseCase;
