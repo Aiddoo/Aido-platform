@@ -1,4 +1,4 @@
-import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 
 export interface WeeklyAchievementDetail {
   readonly achievement: WeeklyAchievement;

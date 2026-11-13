@@ -1,6 +1,8 @@
-/** notification 주간 리마인더가 넘기는 지난주 집계 */
-export interface WeeklyAchievementRecordInput {
-  readonly userId: string;
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+/** notification 주간 리마인더가 센 지난주 할 일 수 */
+export interface WeeklyAchievementTally {
+  readonly userId: UserId;
   readonly year: number;
   readonly week: number;
   readonly totalTodos: number;
@@ -8,11 +10,7 @@ export interface WeeklyAchievementRecordInput {
   readonly achievedAt: Temporal.Instant;
 }
 
-export interface RecordWeeklyAchievementsCommand {
-  readonly records: readonly WeeklyAchievementRecordInput[];
-}
-
-/** 다른 Context(notification)에 여는 주간 기록 쓰기 포트 */
+/** 다른 Context(notification)에 여는 주간 성취 기록 문 */
 export abstract class WeeklyAchievementWriterPort {
-  abstract execute(command: RecordWeeklyAchievementsCommand): Promise<void>;
+  abstract record(tallies: readonly WeeklyAchievementTally[]): Promise<void>;
 }

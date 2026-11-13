@@ -1,7 +1,7 @@
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import type { IsoWeek } from "#api/modules/insights/weekly-achievements/domain/iso-week.vo";
 import { WeeklyAchievementId } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement-id.vo";
-import { WeeklyAchievement } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
+import { WeeklyAchievement } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function weekKey(userId: UserId, isoWeek: IsoWeek): string {

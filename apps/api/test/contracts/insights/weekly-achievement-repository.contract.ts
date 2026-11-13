@@ -2,7 +2,7 @@ import type { WeeklyAchievementRepositoryPort } from "#api/modules/insights/week
 import type {
   WeeklyAchievement,
   WeeklyAchievementPrimitives,
-} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.entity";
+} from "#api/modules/insights/weekly-achievements/domain/weekly-achievement.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createWeeklyAchievementFixture,

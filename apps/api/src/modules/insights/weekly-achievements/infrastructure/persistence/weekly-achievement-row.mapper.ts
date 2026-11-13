@@ -1,6 +1,6 @@
 import type { weeklyAchievement } from "#api/platform/database/schema/insights.schema";
 
-import { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 
 /** createdAt은 DB 기본값이 채우고 도메인은 쓰지 않으므로 고르지 않는다 */
 type WeeklyAchievementRow = Omit<typeof weeklyAchievement.$inferSelect, "createdAt">;

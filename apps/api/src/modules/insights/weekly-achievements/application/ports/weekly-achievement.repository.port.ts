@@ -2,7 +2,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { IsoWeek } from "../../domain/iso-week.vo.js";
 import type { WeeklyAchievementId } from "../../domain/weekly-achievement-id.vo.js";
-import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 
 export abstract class WeeklyAchievementRepositoryPort {
   abstract nextIds(count: number): Promise<WeeklyAchievementId[]>;

@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { Entity } from "#api/shared/domain/model/entity";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { IsoWeek } from "./iso-week.vo.js";
 import { WeeklyAchievementId } from "./weekly-achievement-id.vo.js";
@@ -34,7 +34,7 @@ interface CreateWeeklyAchievementParams {
 }
 
 /** 지난 한 주(월~일)의 할 일 완료 기록. 주간 리마인더 배치가 사용자·주마다 하나씩 남긴다 */
-export class WeeklyAchievement extends Entity<WeeklyAchievementId, WeeklyAchievementProps> {
+export class WeeklyAchievement extends AggregateRoot<WeeklyAchievementId, WeeklyAchievementProps> {
   static create(params: CreateWeeklyAchievementParams): WeeklyAchievement {
     const { totalTodos, completedTodos } = params;
     if (totalTodos < 0) {
@@ -88,7 +88,7 @@ export class WeeklyAchievement extends Entity<WeeklyAchievementId, WeeklyAchieve
   }
 
   /** 할 일이 하나 이상이고 모두 끝낸 주 */
-  get isPerfect(): boolean {
+  isPerfect(): boolean {
     return this.props.totalTodos > 0 && this.props.completedTodos === this.props.totalTodos;
   }
 

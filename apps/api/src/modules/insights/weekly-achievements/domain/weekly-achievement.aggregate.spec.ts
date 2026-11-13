@@ -8,7 +8,7 @@ import {
 } from "#test/fixtures/insights/weekly-achievement.fixture";
 
 import { WeeklyAchievementId } from "./weekly-achievement-id.vo.js";
-import { WeeklyAchievement } from "./weekly-achievement.entity.js";
+import { WeeklyAchievement } from "./weekly-achievement.aggregate.js";
 
 function create(overrides: { totalTodos?: number; completedTodos?: number; week?: number } = {}) {
   return WeeklyAchievement.create({
@@ -51,7 +51,7 @@ describe("WeeklyAchievement", () => {
       // When
       const result = {
         completionRate: achievement.completionRate,
-        isPerfect: achievement.isPerfect,
+        isPerfect: achievement.isPerfect(),
       };
 
       // Then

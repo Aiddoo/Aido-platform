@@ -31,15 +31,15 @@ import {
 @ApiBearerAuth()
 @Controller({ path: "weekly-achievements", version: API_VERSION.V1 })
 export class WeeklyAchievementController {
-  readonly #readWeeklyAchievements: ListWeeklyAchievementsUseCase;
-  readonly #readWeeklyAchievement: GetWeeklyAchievementUseCase;
+  readonly #listWeeklyAchievements: ListWeeklyAchievementsUseCase;
+  readonly #getWeeklyAchievement: GetWeeklyAchievementUseCase;
 
   constructor(
-    readWeeklyAchievements: ListWeeklyAchievementsUseCase,
-    readWeeklyAchievement: GetWeeklyAchievementUseCase,
+    listWeeklyAchievements: ListWeeklyAchievementsUseCase,
+    getWeeklyAchievement: GetWeeklyAchievementUseCase,
   ) {
-    this.#readWeeklyAchievements = readWeeklyAchievements;
-    this.#readWeeklyAchievement = readWeeklyAchievement;
+    this.#listWeeklyAchievements = listWeeklyAchievements;
+    this.#getWeeklyAchievement = getWeeklyAchievement;
   }
 
   @Get()
@@ -84,7 +84,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementListResponseDto> {
-    const list = await this.#readWeeklyAchievements.execute({
+    const list = await this.#listWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
       cursor: query.cursor,
@@ -124,7 +124,7 @@ GET /weekly-achievements/2026/10
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    const { achievement, localToday } = await this.#readWeeklyAchievement.execute({
+    const { achievement, localToday } = await this.#getWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,
