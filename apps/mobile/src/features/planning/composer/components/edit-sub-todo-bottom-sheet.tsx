@@ -1,10 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type { SubTodo } from '@src/features/planning/todo/domains/sub-todo.model';
+import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
-import { useDeleteSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import {
+  useDeleteSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
+} from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, IconButton, TrashIcon, VStack } from '@src/shared/ui';
@@ -13,10 +16,9 @@ import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { useUpdateSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
-import { TodoComposerSubmitButton } from './todo-composer-fields';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 type EditSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet>, 'children'>;
 
@@ -49,9 +51,11 @@ function EditSubTodoForm({ todo, subTodo, onClose }: EditSubTodoFormProps) {
   const { t } = useTranslation('todo');
   const [date] = useTodoSheetDateKey();
   const fontScaledSize = useFontScaledSize();
+  // 다시 받은 제목으로 비교 기준을 맞춘다. 고치던 제목은 남는다
   const form = useForm({
     resolver: zodResolver(subTodoFormSchema),
-    defaultValues: { title: subTodo.title },
+    values: { title: subTodo.title },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const { isValid } = useFormState({ control: form.control });
   const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());

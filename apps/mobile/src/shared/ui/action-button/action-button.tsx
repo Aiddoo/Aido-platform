@@ -4,7 +4,7 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
 import type { StyledIcon } from '../icon/create-styled-icon';
-import { Text } from '../text';
+import { Text } from '../text/text';
 
 const ICON_SIZE = 16;
 const ICON_FONT_SCALE_RATIO = 0.3;

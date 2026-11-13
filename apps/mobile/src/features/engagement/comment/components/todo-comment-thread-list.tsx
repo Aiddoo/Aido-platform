@@ -1,12 +1,11 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
-import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
-import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -19,7 +18,6 @@ import {
   InfiniteList,
   InlineAlert,
   MenuContent,
-  QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
@@ -27,13 +25,25 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
-import { useQuery, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { useNavigation } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
-import { type ComponentProps, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -46,7 +56,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import {
   TodoCommentPolicy,
@@ -55,6 +64,7 @@ import {
 } from '../domains/todo-comment.model';
 import { useTodoCommentParams, useTodoCommentSort } from '../hooks/use-todo-comment-params';
 import { invalidateTodoComments } from '../queries/todo-comment-cache';
+import { usePrefetchTodoCommentThreadsMutationOptions } from '../queries/todo-comment.mutations';
 import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
 import { TodoCommentItem } from './todo-comment-item';
 import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
@@ -126,6 +136,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
     ),
   );
   const isHighlightActive = useScrollToAnchor({ threads, anchor });
+  useScrollToTopOnSortChange(sort);
   const renderItem = useCallback(
     ({ item }: { item: TodoCommentThread }) => (
       <ThreadRow thread={item} anchor={anchor} isHighlightActive={isHighlightActive} />
@@ -137,7 +148,8 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
     <InfiniteList
       {...listProps}
       ref={listRef}
-      key={`${todoId}:${sort}:${comment ?? ''}`}
+      // 알림으로 연 댓글이 바뀌면 새 위치로 처음부터 그린다. 정렬은 미리 받은 목록이라 다시 마운트하지 않는다(FlashList가 다시 재는 동안 행이 빈다)
+      key={`${todoId}:${comment ?? ''}`}
       data={threads}
       extraData={isHighlightActive ? anchor : null}
       keyExtractor={getThreadKey}
@@ -147,7 +159,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
       ListHeaderComponent={
         <>
           <TodoCommentThreadList.Header />
-          {threads.length > 0 && <DoubleTapHint className="mx-4 mb-1 mt-3" />}
+          {threads.length > 0 && <DoubleTapHint className="mx-4 mt-3 mb-1" />}
           {threadsQuery.hasPreviousPage && (
             <LoadPrevious
               isLoading={threadsQuery.isFetchingPreviousPage}
@@ -169,47 +181,43 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
   );
 }
 
-/** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다 */
+/** 할 일 본문과 댓글 수·정렬. 댓글과 함께 스크롤된다. 상세를 기다리는 동안은 목록을 감싼 경계 하나(`TodoCommentPane`)가 받는다 */
 TodoCommentThreadList.Header = function Header() {
+  return (
+    <>
+      {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
+      <Box px={16} py={18}>
+        <TodoDetailSummary />
+      </Box>
+
+      <Separator />
+
+      <TodoCommentThreadList.Toolbar />
+    </>
+  );
+};
+
+/** 댓글 수와 정렬. 상세를 기다리지 않아 로딩 중에도 같은 자리에 그린다 */
+TodoCommentThreadList.Toolbar = function Toolbar() {
   const [todoId] = useTodoId();
   const [sort, setSort] = useTodoCommentSort();
   const { trackEvent } = useTrack();
   const sortChange = useSortChange();
 
   return (
-    <>
-      <QueryErrorBoundary resetKeys={[todoId]}>
-        <Suspense
-          fallback={
-            // oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다
-            <Box px={16} py={18}>
-              <TodoDetailSummary.Loading />
-            </Box>
-          }
-        >
-          {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
-          <Box px={16} py={18}>
-            <TodoDetailSummary />
-          </Box>
-        </Suspense>
-      </QueryErrorBoundary>
-
-      <Separator />
-
-      <HStack justify="between" align="center" gap={12} px={16} py={4}>
-        <CommentCount />
-        <TodoCommentThreadList.SortBar
-          value={sort}
-          isLoading={sortChange.isPending}
-          onChange={(next) =>
-            sortChange.prefetchThenCommit(next, () => {
-              setSort(next);
-              trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
-            })
-          }
-        />
-      </HStack>
-    </>
+    <HStack justify="between" align="center" gap={12} px={16} py={4}>
+      <CommentCount />
+      <TodoCommentThreadList.SortBar
+        value={sort}
+        isLoading={sortChange.isPending}
+        onChange={(next) =>
+          sortChange.prefetchThenCommit(next, () => {
+            setSort(next);
+            trackEvent('todo_comment_sorted', { todo_id: todoId, sort: next });
+          })
+        }
+      />
+    </HStack>
   );
 };
 
@@ -225,6 +233,7 @@ TodoCommentThreadList.SortBar = function SortBar({
   isLoading = false,
 }: TodoCommentThreadListSortBarProps) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const currentLabel = match(value)
     .with(TODO_COMMENT_SORT.POPULAR, () => t('sort.popular'))
@@ -248,7 +257,11 @@ TodoCommentThreadList.SortBar = function SortBar({
             <Spinner size="sm" />
           ) : (
             <HStack className="rotate-90">
-              <ArrowRightIcon width={13} height={13} colorClassName="text-gray-6" />
+              <ArrowRightIcon
+                width={fontScaledSize(13)}
+                height={fontScaledSize(13)}
+                colorClassName="text-gray-6"
+              />
             </HStack>
           )}
         </PressableFeedback>
@@ -294,7 +307,12 @@ TodoCommentThreadList.Loading = function Loading() {
       style={styles.fallbackScrollView}
       showsVerticalScrollIndicator={false}
     >
-      <TodoCommentThreadList.Header />
+      {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
+      <Box px={16} py={18}>
+        <TodoDetailSummary.Loading />
+      </Box>
+      <Separator />
+      <TodoCommentThreadList.Toolbar />
       <VStack testID="todo-comment-thread-list-loading">
         {range(LOADING_ROW_COUNT).map((index) => (
           <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
@@ -430,12 +448,14 @@ function DoubleTapHint({ className }: { className?: string }) {
 }
 
 function PulsingHeart() {
-  const isReducedMotion = useIsReduceMotionEnabled();
+  const fontScaledSize = useFontScaledSize();
+  const isAnimating = useIsAnimationActive();
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   useEffect(() => {
-    if (isReducedMotion) {
+    if (!isAnimating) {
+      scale.set(1);
       return;
     }
     scale.set(
@@ -449,13 +469,13 @@ function PulsingHeart() {
     );
 
     return () => cancelAnimation(scale);
-  }, [isReducedMotion, scale]);
+  }, [isAnimating, scale]);
 
   return (
     <Animated.View style={style}>
       <HeartFilledIcon
-        width={HINT_HEART_SIZE}
-        height={HINT_HEART_SIZE}
+        width={fontScaledSize(HINT_HEART_SIZE)}
+        height={fontScaledSize(HINT_HEART_SIZE)}
         colorClassName="text-error"
       />
     </Animated.View>
@@ -465,51 +485,39 @@ function PulsingHeart() {
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
 function useSortChange() {
   const [todoId] = useTodoId();
-  const queryClient = useQueryClient();
-  const logger = useLogger();
   const navigation = useNavigation();
   // useIsFetching은 지금 정렬 목록의 배경 재조회에도 켜져 정렬 버튼이 꺼진다. 고른 정렬을 받는 동안만 켠다
-  const [isPending, setIsPending] = useState(false);
-  const isUnmountedRef = useRef(false);
-  useEffect(() => {
-    isUnmountedRef.current = false;
-    return () => {
-      isUnmountedRef.current = true;
-    };
-  }, []);
-  const latestOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
-    todoId,
-    sort: TODO_COMMENT_SORT.LATEST,
-    anchorCommentId: null,
-  });
-  const popularOptions = useGetTodoCommentThreadsInfiniteQueryOptions({
-    todoId,
-    sort: TODO_COMMENT_SORT.POPULAR,
-    anchorCommentId: null,
-  });
+  const prefetch = useMutation(usePrefetchTodoCommentThreadsMutationOptions({ todoId }));
 
-  const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) => {
-    setIsPending(true);
-    // oxlint-disable-next-line aido/query-client-location -- 1.15.2 전환 #1400
-    queryClient
-      .infiniteQuery(sort === TODO_COMMENT_SORT.POPULAR ? popularOptions : latestOptions)
-      .catch(noop)
-      .finally(() => {
-        if (isUnmountedRef.current) {
-          return;
-        }
-        setIsPending(false);
+  // mutate의 onSettled는 화면이 내려간 뒤에는 불리지 않는다
+  const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) =>
+    prefetch.mutate(sort, {
+      onSettled: () => {
         // router.setParams는 지금 보이는 화면에 걸린다. 받는 동안 떠났으면 그 화면의 params를 바꾸지 않는다
         if (navigation.isFocused()) {
           commit();
         }
-      })
-      .catch((error) =>
-        logger.warn(TODO_COMMENT_LOG_EVENT.SORT_CHANGE_FAILED, { error: getErrorMessage(error) }),
-      );
-  };
+      },
+    });
 
-  return { isPending, prefetchThenCommit };
+  return { isPending: prefetch.isPending, prefetchThenCommit };
+}
+
+/**
+ * 정렬을 바꾸면 새 순서를 맨 위부터 보인다. 목록을 다시 마운트하지 않아 FlashList가 보던 첫 행의 자리를 지키려 스크롤을 옮기므로,
+ * 그 보정(FlashList의 layout effect)이 끝난 같은 커밋에서 맨 위로 올린다
+ */
+function useScrollToTopOnSortChange(sort: TodoCommentSort) {
+  const { listRef } = useTodoCommentReveal();
+  const shownSortRef = useRef(sort);
+
+  useLayoutEffect(() => {
+    if (shownSortRef.current === sort) {
+      return;
+    }
+    shownSortRef.current = sort;
+    listRef.current?.scrollToTop({ animated: false });
+  }, [listRef, sort]);
 }
 
 /**

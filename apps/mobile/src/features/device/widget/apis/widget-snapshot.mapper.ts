@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant } from '@src/shared/date/instant';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 
@@ -12,7 +13,7 @@ import {
 
 /** todo feature에 의존하지 않도록 GET v1/todos/summary 모델과 같은 모양을 구조적 타입으로 둔다 */
 export interface WidgetSummaryInput {
-  date: string;
+  date: DateKey;
   totalTodos: number;
   completedTodos: number;
   completionRate: number;
@@ -86,7 +87,7 @@ function toWidgetDaySnapshot(
 }
 
 export function toLoggedOutWidgetSnapshot(
-  localDate: string,
+  localDate: DateKey,
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
   return {

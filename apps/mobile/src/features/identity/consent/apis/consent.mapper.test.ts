@@ -2,23 +2,6 @@ import { createConsentDto } from '../__tests__/consent.fixtures';
 import { toConsent } from './consent.mapper';
 
 describe('toConsent', () => {
-  it('null → null 유지', () => {
-    // Given
-    const dto = createConsentDto({
-      termsAgreedAt: null,
-      privacyAgreedAt: null,
-      marketingAgreedAt: null,
-    });
-
-    // When
-    const result = toConsent(dto);
-
-    // Then
-    expect(result.termsAgreedAt).toBeNull();
-    expect(result.privacyAgreedAt).toBeNull();
-    expect(result.marketingAgreedAt).toBeNull();
-  });
-
   it('AI 데이터 제공 동의 상태와 동의 시각을 옮긴다', () => {
     // Given
     const dto = createConsentDto({

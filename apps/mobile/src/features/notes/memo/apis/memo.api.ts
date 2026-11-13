@@ -10,15 +10,11 @@ import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
-import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
-import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';
 
-import { MEMO_LOG_EVENT } from '../constants/memo-log-events';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   type ParsedMemoPlan,
@@ -38,11 +34,9 @@ const PARSE_MEMO_TIMEOUT_MS = 30_000;
 
 export class MemoApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: Logger;
 
-  constructor(httpClient: HttpClient, logger: Logger) {
+  constructor(httpClient: HttpClient) {
     this.#httpClient = httpClient;
-    this.#logger = logger;
   }
 
   getMemo = async (memoId: number, signal?: AbortSignal) =>
@@ -132,25 +126,10 @@ export class MemoApi {
         { headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }, timeout: PARSE_MEMO_TIMEOUT_MS },
       ),
       parseMemoPlanResponseSchema,
-      (dto) => {
-        try {
-          return {
-            plan: toMemoVoicePlan(idempotencyKey, dto),
-            featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
-          };
-        } catch (error) {
-          this.#logger.error(VOICE_LOG_EVENT.PLAN_MAPPING_FAILED, undefined, {
-            method: 'parseMemo',
-            zodError: error instanceof Error ? error.message : undefined,
-          });
-          throw new ParseError('[MemoApi] Invalid parseMemo plan');
-        }
-      },
+      (dto) => ({
+        plan: toMemoVoicePlan(idempotencyKey, dto),
+        featureQuota: dto.featureQuota == null ? null : toFeatureQuota(dto.featureQuota),
+      }),
       '[MemoApi] Invalid parseMemo response',
-      (zodError) =>
-        this.#logger.error(MEMO_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
-          method: 'parseMemo',
-          zodError,
-        }),
     );
 }

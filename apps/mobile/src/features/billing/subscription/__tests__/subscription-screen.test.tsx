@@ -13,7 +13,7 @@ import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -24,9 +24,10 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
-import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
-import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(mypage)/settings/subscription';
+import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
@@ -102,12 +103,6 @@ async function renderSubscriptionScreen(
   const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto({ tier: state?.tier })));
-  const di = createTestDi({
-    httpClient,
-    analytics,
-    purchasesGateway: purchases,
-  });
-  di.purchasesSession.configure();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -119,6 +114,10 @@ async function renderSubscriptionScreen(
       createEntitlementSnapshot({ tier: state.tier }),
     );
   }
+  const di = createTestDi({ ports: { httpClient, analytics, purchases, queryClient } });
+  di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
   await renderScreen(
     <LocalDateProvider>
@@ -126,7 +125,7 @@ async function renderSubscriptionScreen(
         <SubscriptionRoute />
       </OverlayProvider>
     </LocalDateProvider>,
-    { di, queryClient },
+    { di },
   );
 
   return { purchases, analytics };
@@ -292,6 +291,43 @@ describe('구독 화면', () => {
       );
     expect(purchaseEvents).toEqual(['purchase_cancelled']);
   });
+  it('결제 버튼을 같은 프레임에 두 번 눌러도 결제 창은 한 번만 연다', async () => {
+    // Given
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockReturnValue(new Promise(() => {}));
+    const button = await screen.findByRole('button', { name: '연간으로 시작하기' });
+
+    // When
+    await act(async () => {
+      fireEvent.press(button);
+      fireEvent.press(button);
+    });
+
+    // Then
+    await waitFor(() => expect(purchases.purchase).toHaveBeenCalled());
+    expect(purchases.purchase).toHaveBeenCalledTimes(1);
+  });
+
+  it('스토어 연결이 끊겨 결제를 마치지 못하면 문의할 수 있는 다이얼로그를 띄운다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+      Promise.resolve(MONTHLY_AND_ANNUAL),
+    );
+    purchases.purchase.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
+
+    // When
+    await user.press(await screen.findByRole('button', { name: '연간으로 시작하기' }));
+
+    // Then
+    expect(await screen.findByText('결제를 마치지 못했어요')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: i18n.t('subscription:failure.contactSupport') }),
+    ).toBeTruthy();
+  });
+
   describe('결제 뒤 시작 화면', () => {
     it('체험으로 결제하면 서버 반영이 늦어도 방금 산 요금제로 체험 일정을 보여 주고 반영이 늦는다고 알린다', async () => {
       // Given
@@ -345,6 +381,29 @@ describe('구독 화면', () => {
       expect(
         await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
       ).not.toHaveLength(0);
+    });
+  });
+
+  describe('결제 뒤 시작 화면의 완료', () => {
+    it('완료를 연달아 눌러도 한 번만 돌아간다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const { purchases } = await renderSubscriptionScreen(FREE, () =>
+        Promise.resolve(ANNUAL_WITH_FREE_TRIAL),
+      );
+      purchases.purchase.mockResolvedValue({
+        type: 'purchased',
+        status: { activeEntitlements: [], managementUrl: null },
+      });
+      await user.press(await screen.findByRole('button', { name: '2주 무료로 시작하기' }));
+      const done = await screen.findByTestId('subscription-welcome-done');
+
+      // When
+      await fireEvent.press(done);
+      await fireEvent.press(done);
+
+      // Then
+      expect(router.back).toHaveBeenCalledTimes(1);
     });
   });
 

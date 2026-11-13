@@ -1,8 +1,8 @@
 import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import {
@@ -14,12 +14,16 @@ import {
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
+  useAddSubTodoMutationOptions,
   useDeleteSubTodoMutationOptions,
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
+import { useStopTodoSeriesMutationOptions } from '@src/features/planning/todo/queries/todo-series.mutations';
 import {
   useChangeTodoCategoryMutationOptions,
   useDeleteTodoMutationOptions,
@@ -41,7 +45,9 @@ import {
   createPendingResponse,
   createTestQueryClient,
   deliverQueryNotifications,
+  createTestDi,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
@@ -49,19 +55,24 @@ import { noop } from 'es-toolkit';
 import { Profiler } from 'react';
 
 import {
-  useAddSubTodoMutationOptions,
+  useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
-  useUpdateSubTodoMutationOptions,
   useUpdateTodoMutationOptions,
 } from './todo-composer.mutations';
 
-const DAY = '2026-03-08';
-const OTHER_DAY = '2026-03-20';
-const MOVED_DAY = '2026-04-20';
-const MONTH = { startDate: '2026-02-23', endDate: '2026-04-05' };
-const NEXT_MONTH = { startDate: '2026-04-06', endDate: '2026-05-10' };
+const DAY = createDateKey('2026-03-08');
+const OTHER_DAY = createDateKey('2026-03-20');
+const MOVED_DAY = createDateKey('2026-04-20');
+const MONTH = { startDate: createDateKey('2026-02-23'), endDate: createDateKey('2026-04-05') };
+const NEXT_MONTH = { startDate: createDateKey('2026-04-06'), endDate: createDateKey('2026-05-10') };
 const FRIEND_ID = 'friend-1';
 const OWNER_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
+const WEEKLY: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 1,
+  weekdays: ['SUN'],
+  end: { type: 'NEVER' },
+};
 
 /** 보는 화면이 붙들고 있는 조회. 이름으로 다시 받은 조회를 읽는다 */
 const WATCHED: Record<string, QueryKey> = {
@@ -188,7 +199,25 @@ function createTodoServer() {
       const created = createTodoDto({ id: state.nextId, title, startDate: DAY, sortOrder: 9 });
       state.nextId += 1;
       state.todos = [...state.todos, created];
-      return { message: 'ok', todo: created };
+      if (!('repeat' in input) || input.repeat == null) {
+        return { message: 'ok', todo: created };
+      }
+      const series = {
+        id: 'series-1',
+        title,
+        categoryId: created.category.id,
+        visibility: created.visibility,
+        scheduledTime: null,
+        timezone: 'Asia/Seoul',
+        repeat: input.repeat,
+        startDate: DAY,
+        nextOccurrenceDate: DAY,
+        isActive: true,
+        checklist: [],
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      };
+      return { message: 'ok', todo: created, series };
     }
     if (path[1] === 'complete') {
       return replace(todoId, (todo) => ({
@@ -264,7 +293,7 @@ function createTodoServer() {
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
   useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
@@ -291,6 +320,8 @@ function DetailProbe() {
 function useTodoWrites() {
   return {
     createTodo: useMutation(useCreateTodoMutationOptions()),
+    createRecurringTodo: useMutation(useCreateRecurringTodoMutationOptions()),
+    stopTodoSeries: useMutation(useStopTodoSeriesMutationOptions()),
     toggleTodo: useMutation(useToggleTodoMutationOptions()),
     deleteTodo: useMutation(useDeleteTodoMutationOptions()),
     reorderTodo: useMutation(useReorderTodoMutationOptions()),
@@ -356,7 +387,7 @@ async function renderFeed() {
         }}
       />
     </>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 
@@ -452,18 +483,18 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 순서 바꾸기',
       start: (w) =>
-        w.reorderTodo.mutateAsync({ id: 2, input: { targetTodoId: 1, position: 'before' } }),
+        w.reorderTodo.mutateAsync({ todoId: 2, input: { targetTodoId: 1, position: 'before' } }),
       expected: ['list:day', 'widget:day'],
     },
     {
       path: '제목 고치기',
-      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }),
+      start: (w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }),
       expected: ['list:day', 'widget:day'],
     },
     {
       path: '날짜 옮기기',
       start: (w) =>
-        w.updateTodo.mutateAsync({ todoId: 1, input: { startDate: MOVED_DAY, endDate: null } }),
+        w.updateTodo.mutateAsync({ todoId: 1, fields: { startDate: MOVED_DAY, endDate: null } }),
       expected: ['calendar:month', 'calendar:next-month', 'list:day', 'widget:day'],
     },
     {
@@ -658,7 +689,7 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
     // Given
     const { tap, settleWrite, listTodo, refetched } = await renderFeed();
     await tap((w) => w.toggleTodo.mutateAsync({ todoId: 2, body: { completed: true }, date: DAY }));
-    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, input: { title: '새 제목' } }));
+    await tap((w) => w.updateTodo.mutateAsync({ todoId: 1, fields: { title: '새 제목' } }));
 
     // When
     await settleWrite(1);
@@ -674,9 +705,82 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
     expect(listTodo(1)?.title).toBe('새 제목');
     expect(listTodo(2)?.completed).toBe(true);
   });
+
+  it.each<{ path: string; start: (writes: TodoWrites) => Promise<unknown> }>([
+    {
+      path: '반복 할 일 만들기',
+      start: (w) =>
+        w.createRecurringTodo.mutateAsync({
+          values: {
+            ...createTodoFormValues({ title: '매주 할 일', startDate: DAY }),
+            repeat: WEEKLY,
+          },
+        }),
+    },
+    {
+      path: '이후 회차까지 제목 고치기',
+      start: (w) =>
+        w.updateTodo.mutateAsync({
+          todoId: 1,
+          fields: { title: '새 제목' },
+          options: { scope: 'THIS_AND_FOLLOWING' },
+        }),
+    },
+    {
+      path: '이후 회차까지 카테고리 바꾸기',
+      start: (w) =>
+        w.changeCategory.mutateAsync({
+          todoId: 1,
+          input: { categoryId: 2 },
+          scope: 'THIS_AND_FOLLOWING',
+        }),
+    },
+    {
+      path: '이후 회차까지 시각 바꾸기',
+      start: (w) =>
+        w.updateSchedule.mutateAsync({
+          todoId: 1,
+          changedField: 'time',
+          input: { startDate: DAY, endDate: null, scheduledTime: '10:00', isAllDay: false },
+          scope: 'THIS_AND_FOLLOWING',
+        }),
+    },
+    {
+      path: '이후 회차까지 지우기',
+      start: (w) => w.deleteTodo.mutateAsync({ todoId: 3, date: DAY, scope: 'THIS_AND_FOLLOWING' }),
+    },
+    {
+      path: '반복 끝내기',
+      start: (w) => w.stopTodoSeries.mutateAsync({ todoId: 1 }),
+    },
+  ])(
+    '체크를 기다리는 동안 $path가 끝나도 목록은 체크가 끝난 뒤에 다시 받는다',
+    async ({ start }) => {
+      // Given
+      const { tap, settleWrite, listTodo, refetched } = await renderFeed();
+      await tap((w) =>
+        w.toggleTodo.mutateAsync({ todoId: 2, body: { completed: true }, date: DAY }),
+      );
+      await tap(start);
+
+      // When
+      await settleWrite(1);
+
+      // Then
+      expect(listTodo(2)?.completed).toBe(true);
+      expect(refetched()).not.toContain('list:day');
+
+      // When
+      await settleWrite(0);
+
+      // Then
+      expect(listTodo(2)?.completed).toBe(true);
+      expect(refetched()).toContain('list:day');
+    },
+  );
 });
 
-const WEEK = { startDate: '2026-03-02', endDate: '2026-03-08' };
+const WEEK = { startDate: createDateKey('2026-03-02'), endDate: createDateKey('2026-03-08') };
 const BLUE = '#3B82F6';
 const RED = '#EF4444';
 const EXISTING = createTodoDto({
@@ -748,7 +852,7 @@ function FeedListProbe() {
 
 function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY }));
+  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
   useQuery(useGetDailyCompletionsQueryOptions(WEEK));
   useQuery(useGetTodoOverviewQueryOptions());
   return null;
@@ -810,7 +914,7 @@ async function renderCreateFeed() {
         }}
       />
     </>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 

@@ -1,15 +1,4 @@
-import {
-  createErrorResponse,
-  ErrorCode,
-  Errors,
-  getAllErrorCodes,
-  getAllErrors,
-  getError,
-  getErrorsByDomain,
-  getErrorsByHttpStatus,
-  HttpStatus,
-  isErrorCode,
-} from "../src/errors/index.js";
+import { ErrorCode, Errors, HttpStatus, isErrorCode } from "../src/errors/index.js";
 
 describe("@aido/api/errors", () => {
   describe("ErrorCode", () => {
@@ -44,15 +33,6 @@ describe("@aido/api/errors", () => {
     });
   });
 
-  describe("getError", () => {
-    it("에러 코드로 에러 정의를 가져올 수 있어야 한다", () => {
-      const error = getError(ErrorCode.AUTH_0101);
-      expect(error.code).toBe("AUTH_0101");
-      expect(error.message).toBe("유효하지 않은 토큰입니다.");
-      expect(error.httpStatus).toBe(HttpStatus.UNAUTHORIZED);
-    });
-  });
-
   describe("isErrorCode", () => {
     it("유효한 에러 코드를 검증할 수 있어야 한다", () => {
       expect(isErrorCode("AUTH_0101")).toBe(true);
@@ -68,62 +48,6 @@ describe("@aido/api/errors", () => {
       expect(isErrorCode("toString")).toBe(false);
       expect(isErrorCode("constructor")).toBe(false);
       expect(isErrorCode("__proto__")).toBe(false);
-    });
-  });
-
-  describe("createErrorResponse", () => {
-    it("에러 응답 객체를 생성할 수 있어야 한다", () => {
-      const response = createErrorResponse(ErrorCode.USER_0601, {
-        details: { userId: "123" },
-        path: "/api/users/123",
-      });
-
-      expect(response.error.code).toBe("USER_0601");
-      expect(response.error.message).toBe("사용자를 찾을 수 없습니다.");
-      expect(response.error.details).toEqual({ userId: "123" });
-      expect(response.error.path).toBe("/api/users/123");
-    });
-  });
-
-  describe("getErrorsByHttpStatus", () => {
-    it("HTTP 상태 코드로 에러를 필터링할 수 있어야 한다", () => {
-      const unauthorizedErrors = getErrorsByHttpStatus(HttpStatus.UNAUTHORIZED);
-      expect(unauthorizedErrors.length).toBeGreaterThan(0);
-      for (const error of unauthorizedErrors) {
-        expect(error.httpStatus).toBe(HttpStatus.UNAUTHORIZED);
-      }
-    });
-  });
-
-  describe("getErrorsByDomain", () => {
-    it("도메인별 에러를 필터링할 수 있어야 한다", () => {
-      const authErrors = getErrorsByDomain("AUTH");
-      expect(authErrors.length).toBeGreaterThan(0);
-      for (const error of authErrors) {
-        expect(error.code).toMatch(/^AUTH_/);
-      }
-    });
-
-    it("KAKAO 도메인 에러를 필터링할 수 있어야 한다", () => {
-      const kakaoErrors = getErrorsByDomain("KAKAO");
-      expect(kakaoErrors.length).toBeGreaterThan(0);
-      for (const error of kakaoErrors) {
-        expect(error.code).toMatch(/^KAKAO_/);
-      }
-    });
-  });
-
-  describe("getAllErrorCodes", () => {
-    it("모든 에러 코드 목록을 가져올 수 있어야 한다", () => {
-      const codes = getAllErrorCodes();
-      expect(codes.length).toBe(Object.keys(ErrorCode).length);
-    });
-  });
-
-  describe("getAllErrors", () => {
-    it("모든 에러 정의를 가져올 수 있어야 한다", () => {
-      const errors = getAllErrors();
-      expect(errors.length).toBe(Object.keys(Errors).length);
     });
   });
 });

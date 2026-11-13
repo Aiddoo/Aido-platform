@@ -1,15 +1,13 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import {
-  createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { act } from '@testing-library/react-native';
 
 import type { NotificationType } from '../domains/notification.model';
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
@@ -26,13 +24,7 @@ async function setup(authStatus: AuthStatus) {
     canAskAgain: true,
     iosStatus: null,
   });
-  const container = createTestDi({ httpClient: createHttpClientStub(), pushNotification });
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </StaticDIProvider>
-  );
-  const hook = await renderHook(
+  const hook = await renderScreenHook(
     () => {
       // 알림 설정 행처럼 권한을 보고 있는 화면
       useQuery(useGetPushPermissionQueryOptions());
@@ -44,7 +36,7 @@ async function setup(authStatus: AuthStatus) {
       });
       useForegroundPushSync({ authStatus, invalidateByType });
     },
-    { wrapper },
+    { di: createTestDi({ ports: { queryClient, pushNotification } }) },
   );
   await act(() => jest.advanceTimersByTimeAsync(0));
   fetchUnreadCount.mockClear();

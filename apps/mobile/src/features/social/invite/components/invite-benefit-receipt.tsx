@@ -29,18 +29,17 @@ export function InviteBenefitReceipt() {
     return null;
   }
 
-  return <InviteBenefitReceipt.Contents inviteCode={inviteCode} />;
+  return <InviteBenefitReceipt.Receipt inviteCode={inviteCode} />;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: InviteCode }) {
+InviteBenefitReceipt.Receipt = function Receipt({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const { data: preview } = useSuspenseQuery(useGetInvitePreviewQueryOptions({ inviteCode }));
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
 
   return (
     <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-4.5 pt-3.5">
+      <VStack gap={14} className="px-5 pt-3.5 pb-4.5">
         <HStack className="gap-3" align="center">
           <FillTicketIcon width={40} height={40} />
 
@@ -100,7 +99,7 @@ InviteBenefitReceipt.Contents = function Contents({ inviteCode }: { inviteCode: 
 InviteBenefitReceipt.Loading = function Loading() {
   return (
     <ScallopedContainer>
-      <VStack gap={14} className="px-5 pb-4.5 pt-3.5" accessibilityState={{ busy: true }}>
+      <VStack gap={14} className="px-5 pt-3.5 pb-4.5" accessibilityState={{ busy: true }}>
         <HStack className="gap-3" align="center">
           <Skeleton className="size-10 rounded-xl" />
 

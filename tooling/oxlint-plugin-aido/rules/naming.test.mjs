@@ -40,6 +40,25 @@ tester.run('component-name (위치 이름)', rules['component-name'], {
   ],
 });
 
+const SHARED_NAMES = {
+  suffixes: ['Section', 'Content', 'Panel', 'Inner'],
+  standaloneNames: ['Header', 'Footer'],
+  allowNames: ['ReadableContent', 'MenuContent', 'HintPopoverContent'],
+};
+
+tester.run('component-name (shared 카탈로그 예외·Inner)', rules['component-name'], {
+  valid: [
+    { code: 'function ReadableContent() { return null; }', options: [SHARED_NAMES] },
+    { code: 'const MenuContent = memo(() => null);', options: [SHARED_NAMES] },
+    { code: 'function HintPopoverContent() { return null; }', options: [SHARED_NAMES] },
+  ],
+  invalid: [
+    { code: 'function SheetContent() { return null; }', options: [SHARED_NAMES], errors: 1 },
+    { code: 'function PaneInner() { return null; }', options: [SHARED_NAMES], errors: 1 },
+    { code: 'const Inner = () => null;', options: [SHARED_NAMES], errors: 1 },
+  ],
+});
+
 tester.run('function-name', rules['function-name'], {
   valid: [
     'function removeTodoFromList() {}',

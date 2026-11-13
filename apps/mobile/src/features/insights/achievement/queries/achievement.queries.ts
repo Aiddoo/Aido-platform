@@ -1,4 +1,4 @@
-import { useAchievementService } from '@src/bootstrap/providers/di-context';
+import { useAchievementApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
@@ -24,22 +24,22 @@ export function useGetWeeklyAchievementQueryOptions({
   year: number;
   week: number;
 }) {
-  const achievementService = useAchievementService();
+  const achievementApi = useAchievementApi();
 
   return queryOptions({
     queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyDetail({ year, week }),
     queryFn: async ({ signal }) =>
-      unwrap(await achievementService.getWeeklyAchievement(year, week, signal)),
+      unwrap(await achievementApi.getWeeklyAchievement(year, week, signal)),
   });
 }
 
 export function useGetWeeklyAchievementsInfiniteQueryOptions({ year }: { year: number }) {
-  const achievementService = useAchievementService();
+  const achievementApi = useAchievementApi();
 
   return infiniteQueryOptions({
     queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList({ year }),
     queryFn: async ({ pageParam, signal }) =>
-      unwrap(await achievementService.getWeeklyAchievements({ year, cursor: pageParam }, signal)),
+      unwrap(await achievementApi.getWeeklyAchievements({ year, cursor: pageParam }, signal)),
     initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: getNextCursor,
     select: selectWeeklyAchievements,

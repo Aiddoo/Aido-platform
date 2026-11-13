@@ -1,10 +1,10 @@
+import { createDateKey } from '@src/testing/date-key';
+
 import { fromEpochMs, toEpochMs, toInstant } from '../instant';
 import {
   type DateFormatContext,
   formatClockTime,
   formatDateKeyLabel,
-  formatDateKeyCompactRange,
-  formatDateKeyRange,
   formatDateLabel,
   formatHourLabel,
   formatInstantHour,
@@ -195,9 +195,9 @@ describe('formatInstantHour', () => {
 describe('formatDateKeyLabel', () => {
   it('위젯용 숫자 일과 MM.DD 표기는 로케일과 무관하게 유지한다', () => {
     // When
-    const dayNumber = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
-    const koDotted = formatDateKeyLabel('2026-09-07', 'dottedMonthDay', KO_SEOUL);
-    const enDotted = formatDateKeyLabel('2026-09-07', 'dottedMonthDay', EN_SEOUL);
+    const dayNumber = formatDateKeyLabel(createDateKey('2026-09-07'), 'dayNumber', KO_SEOUL);
+    const koDotted = formatDateKeyLabel(createDateKey('2026-09-07'), 'dottedMonthDay', KO_SEOUL);
+    const enDotted = formatDateKeyLabel(createDateKey('2026-09-07'), 'dottedMonthDay', EN_SEOUL);
 
     // Then
     expect(dayNumber).toBe('7');
@@ -219,7 +219,7 @@ describe('formatDateKeyLabel', () => {
 
     try {
       // When
-      const label = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
+      const label = formatDateKeyLabel(createDateKey('2026-09-07'), 'dayNumber', KO_SEOUL);
 
       // Then
       expect(label).toBe('7');
@@ -234,8 +234,8 @@ describe('formatDateKeyLabel', () => {
     const losAngeles = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' } as const;
 
     // When
-    const ko = formatDateKeyLabel('2026-10-20', 'fullDate', losAngeles);
-    const en = formatDateKeyLabel('2028-02-29', 'fullDate', EN_SEOUL);
+    const ko = formatDateKeyLabel(createDateKey('2026-10-20'), 'fullDate', losAngeles);
+    const en = formatDateKeyLabel(createDateKey('2028-02-29'), 'fullDate', EN_SEOUL);
 
     // Then
     expect(ko).toBe('2026년 10월 20일');
@@ -269,7 +269,10 @@ describe('formatDateKeyLabel', () => {
     ['en-US', '2028-02-29', 'dayNumber', '29'],
   ] as const)('%s %s %s는 이전과 같은 글자다', (locale, dateKey, kind, expected) => {
     // When
-    const label = formatDateKeyLabel(dateKey, kind, { locale, timeZone: 'Asia/Seoul' });
+    const label = formatDateKeyLabel(createDateKey(dateKey), kind, {
+      locale,
+      timeZone: 'Asia/Seoul',
+    });
 
     // Then
     expect(label).toBe(expected);
@@ -291,15 +294,10 @@ describe('formatYearAwareDateLabel', () => {
       '2027년 1월 1일',
     ],
     ['LA에서 오늘이 2026-12-31이면 같은 해라 연도를 뺀다', '2026-12-31', LA_EN, 'Dec 31'],
-    [
-      'LA에서 오늘이 2027-01-01이면 지난해라 연도를 붙인다',
-      '2027-01-01',
-      LA_EN,
-      'December 31, 2026',
-    ],
+    ['LA에서 오늘이 2027-01-01이면 지난해라 연도를 붙인다', '2027-01-01', LA_EN, 'Dec 31, 2026'],
   ] as const)('%s', (_name, todayDateKey, context, expected) => {
     // When
-    const label = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, todayDateKey, context);
+    const label = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, createDateKey(todayDateKey), context);
 
     // Then
     expect(label).toBe(expected);
@@ -307,8 +305,8 @@ describe('formatYearAwareDateLabel', () => {
 
   it('같은 순간도 사용자 시간대의 날짜로 해를 가른다', () => {
     // Given
-    const seoulToday = '2027-01-01';
-    const losAngelesToday = '2026-12-31';
+    const seoulToday = createDateKey('2027-01-01');
+    const losAngelesToday = createDateKey('2026-12-31');
 
     // When
     const seoul = formatYearAwareDateLabel(NEW_YEAR_BOUNDARY, seoulToday, KO_SEOUL);
@@ -321,7 +319,11 @@ describe('formatYearAwareDateLabel', () => {
 
   it('유효하지 않은 날짜는 빈 문자열이다', () => {
     // When
-    const label = formatYearAwareDateLabel(new Date('invalid'), '2026-11-09', KO_SEOUL);
+    const label = formatYearAwareDateLabel(
+      new Date('invalid'),
+      createDateKey('2026-11-09'),
+      KO_SEOUL,
+    );
 
     // Then
     expect(label).toBe('');
@@ -333,125 +335,20 @@ describe('formatYearAwareDateKeyLabel', () => {
     ['ko 올해', 'ko-KR', '2028-01-15', '2월 29일'],
     ['en 올해', 'en-US', '2028-01-15', 'Feb 29'],
     ['ko 다른 해', 'ko-KR', '2027-12-31', '2028년 2월 29일'],
-    ['en 다른 해', 'en-US', '2029-01-01', 'February 29, 2028'],
+    ['en 다른 해', 'en-US', '2029-01-01', 'Feb 29, 2028'],
   ] as const)('윤일 2028-02-29를 %s에는 %s', (_name, locale, todayDateKey, expected) => {
     // When
-    const label = formatYearAwareDateKeyLabel('2028-02-29', todayDateKey, {
-      locale,
-      timeZone: 'America/Los_Angeles',
-    });
+    const label = formatYearAwareDateKeyLabel(
+      createDateKey('2028-02-29'),
+      createDateKey(todayDateKey),
+      {
+        locale,
+        timeZone: 'America/Los_Angeles',
+      },
+    );
 
     // Then
     expect(label).toBe(expected);
-  });
-});
-
-describe('formatDateKeyRange', () => {
-  it('두 끝이 모두 올해면 월·일만 표시한다', () => {
-    // When
-    const ko = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', KO_SEOUL);
-    const en = formatDateKeyRange('2026-10-19', '2026-10-25', '2026-11-09', EN_SEOUL);
-
-    // Then
-    expect(ko).toBe('10월 19일 ~ 10월 25일');
-    expect(en).toBe('Oct 19 ~ Oct 25');
-  });
-
-  it('같은 해라도 올해가 아니면 연도까지 표시한다', () => {
-    // When
-    const lastYear = formatDateKeyRange('2025-10-19', '2025-10-25', '2026-11-09', KO_SEOUL);
-
-    // Then
-    expect(lastYear).toBe('2025년 10월 19일 ~ 2025년 10월 25일');
-  });
-
-  it('해를 넘는 기간은 연도까지 표시한다', () => {
-    // When
-    const ko = formatDateKeyRange('2026-12-28', '2027-01-03', '2026-12-31', KO_SEOUL);
-    const en = formatDateKeyRange('2026-12-28', '2027-01-03', '2027-01-01', EN_SEOUL);
-
-    // Then
-    expect(ko).toBe('2026년 12월 28일 ~ 2027년 1월 3일');
-    expect(en).toBe('December 28, 2026 ~ January 3, 2027');
-  });
-
-  it.each([
-    [
-      'ko-KR',
-      '2026-12-28',
-      '2027-01-06',
-      '2026-11-11',
-      '2026년 12월 28일 ~ 2027년 1월 6일',
-      '2026년 12월 28일 ~ 2027년 1월 6일',
-    ],
-    ['ko-KR', '2026-11-02', '2026-11-11', '2026-11-11', '11월 2일 ~ 11월 11일', '11월 2일~11일'],
-    [
-      'ko-KR',
-      '2026-12-28',
-      '2027-01-06',
-      '2025-12-31',
-      '2026년 12월 28일 ~ 2027년 1월 6일',
-      '2026년 12월 28일 ~ 2027년 1월 6일',
-    ],
-    [
-      'en-US',
-      '2026-12-28',
-      '2027-01-06',
-      '2026-11-11',
-      'December 28, 2026 ~ January 6, 2027',
-      'December 28, 2026 ~ January 6, 2027',
-    ],
-    ['en-US', '2026-11-02', '2026-11-11', '2026-11-11', 'Nov 2 ~ Nov 11', 'Nov 2~11'],
-    [
-      'en-US',
-      '2026-12-28',
-      '2027-01-06',
-      '2025-12-31',
-      'December 28, 2026 ~ January 6, 2027',
-      'December 28, 2026 ~ January 6, 2027',
-    ],
-  ] as const)(
-    '%s %s~%s(오늘 %s)는 이전과 같은 글자다',
-    (locale, startDateKey, endDateKey, todayDateKey, expected, expectedCompact) => {
-      // Given
-      const context = { locale, timeZone: 'Asia/Seoul' };
-
-      // When
-      const range = formatDateKeyRange(startDateKey, endDateKey, todayDateKey, context);
-      const compact = formatDateKeyCompactRange(startDateKey, endDateKey, todayDateKey, context);
-
-      // Then
-      expect([range, compact]).toEqual([expected, expectedCompact]);
-    },
-  );
-});
-
-describe('formatDateKeyCompactRange', () => {
-  it('올해 같은 달이면 끝은 날만 쓴다', () => {
-    // When
-    const ko = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', KO_SEOUL);
-    const en = formatDateKeyCompactRange('2026-11-05', '2026-11-07', '2026-11-09', EN_SEOUL);
-
-    // Then
-    expect(ko).toBe('11월 5일~7일');
-    expect(en).toBe('Nov 5~7');
-  });
-
-  it('달이 다르면 끝에도 달을 쓰고 올해가 아닌 끝이 있으면 연도까지 쓴다', () => {
-    // When
-    const otherMonth = formatDateKeyCompactRange(
-      '2026-11-30',
-      '2026-12-02',
-      '2026-11-09',
-      KO_SEOUL,
-    );
-    const otherYear = formatDateKeyCompactRange('2026-12-30', '2027-01-02', '2026-11-09', KO_SEOUL);
-    const nextYear = formatDateKeyCompactRange('2027-01-05', '2027-01-07', '2026-11-09', KO_SEOUL);
-
-    // Then
-    expect(otherMonth).toBe('11월 30일~12월 2일');
-    expect(otherYear).toBe('2026년 12월 30일 ~ 2027년 1월 2일');
-    expect(nextYear).toBe('2027년 1월 5일 ~ 2027년 1월 7일');
   });
 });
 
@@ -462,24 +359,68 @@ describe('formatRelativeTimeWith', () => {
     justNow: 'justNow',
     minutesAgo: (count: number) => `minutes:${count}`,
     hoursAgo: (count: number) => `hours:${count}`,
+    yesterday: 'yesterday',
     daysAgo: (count: number) => `days:${count}`,
   };
 
-  it('7일 미만은 경과 구간에 맞는 주입 문구를 내림한 개수로 고른다', () => {
+  it('하루 안은 경과 구간에 맞는 주입 문구를 내림한 개수로 고른다', () => {
     // When
     const justNow = formatRelativeTimeWith(minutesAgo(0.5), now, labels, KO_SEOUL);
     const minutes = formatRelativeTimeWith(minutesAgo(59), now, labels, KO_SEOUL);
     const hours = formatRelativeTimeWith(minutesAgo(3 * 60 + 59), now, labels, KO_SEOUL);
-    const days = formatRelativeTimeWith(minutesAgo(6 * 24 * 60), now, labels, KO_SEOUL);
 
     // Then
     expect(justNow).toBe('justNow');
     expect(minutes).toBe('minutes:59');
     expect(hours).toBe('hours:3');
-    expect(days).toBe('days:6');
   });
 
-  it('7일 이상은 같은 해면 월·일, 다른 해면 연도를 포함한 날짜로 표시한다', () => {
+  it.each([
+    [
+      '자정을 넘었어도 하루가 안 지났으면 시간',
+      '2026-10-24T14:00:00Z',
+      '2026-10-24T16:00:00Z',
+      'hours:2',
+    ],
+    [
+      '30시간 전이라도 달력으로 어제면 어제',
+      '2026-10-23T21:00:00Z',
+      '2026-10-25T03:00:00Z',
+      'yesterday',
+    ],
+    [
+      '25시간 전이라도 달력으로 이틀 전이면 2일',
+      '2026-10-23T14:30:00Z',
+      '2026-10-24T15:30:00Z',
+      'days:2',
+    ],
+    ['6일 전 달력 날짜', '2026-10-19T03:00:00Z', '2026-10-25T03:00:00Z', 'days:6'],
+  ] as const)('하루가 지나면 서울 달력 날짜로 센다: %s', (_name, date, current, expected) => {
+    // When
+    const label = formatRelativeTimeWith(toInstant(date), toInstant(current), labels, KO_SEOUL);
+
+    // Then
+    expect(label).toBe(expected);
+  });
+
+  it('25시간인 서머타임 해제일은 24시간이 넘어도 같은 날이면 시간으로 쓴다', () => {
+    // Given
+    // LA 2026-11-01 00:10(PDT)부터 23:50(PST)까지
+    const losAngeles: DateFormatContext = { locale: 'en-US', timeZone: 'America/Los_Angeles' };
+
+    // When
+    const label = formatRelativeTimeWith(
+      toInstant('2026-11-01T07:10:00Z'),
+      toInstant('2026-11-02T07:50:00Z'),
+      labels,
+      losAngeles,
+    );
+
+    // Then
+    expect(label).toBe('hours:24');
+  });
+
+  it('7일부터는 같은 해면 월·일, 다른 해면 연도까지 year-aware 날짜다', () => {
     // When
     const sameYear = formatRelativeTimeWith(
       toInstant('2026-01-05T03:00:00Z'),
@@ -496,7 +437,7 @@ describe('formatRelativeTimeWith', () => {
 
     // Then
     expect(sameYear).toBe('1월 5일');
-    expect(otherYear).toBe('1/5/2025');
+    expect(otherYear).toBe('Jan 5, 2025');
   });
 
   it('연도 경계는 context 시간대 기준으로 판단한다', () => {
@@ -583,112 +524,96 @@ describe('formatDateLabel', () => {
   it.each([
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'fullDate', '2026년 3월 8일'],
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'monthDay', '3월 8일'],
-    ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'numericDate', '2026. 3. 8.'],
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'dottedMonthDay', '03.08'],
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'dayNumber', '8'],
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'yearShortMonth', '2026년 3월'],
     ['Asia/Seoul', 'ko-KR', '2026-03-08T10:00:00.000Z', 'weekday', '일'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'fullDate', '2026년 11월 1일'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'monthDay', '11월 1일'],
-    ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'numericDate', '2026. 11. 1.'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'dottedMonthDay', '11.01'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'dayNumber', '1'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'yearShortMonth', '2026년 11월'],
     ['Asia/Seoul', 'ko-KR', '2026-11-01T08:00:00.000Z', 'weekday', '일'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'fullDate', '2026년 12월 31일'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'monthDay', '12월 31일'],
-    ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'numericDate', '2026. 12. 31.'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'dottedMonthDay', '12.31'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'dayNumber', '31'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'yearShortMonth', '2026년 12월'],
     ['Asia/Seoul', 'ko-KR', '2026-12-31T13:15:00.000Z', 'weekday', '목'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'fullDate', '2028년 2월 29일'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'monthDay', '2월 29일'],
-    ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'numericDate', '2028. 2. 29.'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'dottedMonthDay', '02.29'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'dayNumber', '29'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'yearShortMonth', '2028년 2월'],
     ['Asia/Seoul', 'ko-KR', '2028-02-29T12:00:00.000Z', 'weekday', '화'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'fullDate', 'March 8, 2026'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'monthDay', 'Mar 8'],
-    ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'numericDate', '3/8/2026'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'dottedMonthDay', '03.08'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'dayNumber', '8'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'yearShortMonth', 'Mar 2026'],
     ['Asia/Seoul', 'en-US', '2026-03-08T10:00:00.000Z', 'weekday', 'Sun'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'fullDate', 'November 1, 2026'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'monthDay', 'Nov 1'],
-    ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'numericDate', '11/1/2026'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'dottedMonthDay', '11.01'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'dayNumber', '1'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'yearShortMonth', 'Nov 2026'],
     ['Asia/Seoul', 'en-US', '2026-11-01T08:00:00.000Z', 'weekday', 'Sun'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'fullDate', 'December 31, 2026'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'monthDay', 'Dec 31'],
-    ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'numericDate', '12/31/2026'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'dottedMonthDay', '12.31'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'dayNumber', '31'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'yearShortMonth', 'Dec 2026'],
     ['Asia/Seoul', 'en-US', '2026-12-31T13:15:00.000Z', 'weekday', 'Thu'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'fullDate', 'February 29, 2028'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'monthDay', 'Feb 29'],
-    ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'numericDate', '2/29/2028'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'dottedMonthDay', '02.29'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'dayNumber', '29'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'yearShortMonth', 'Feb 2028'],
     ['Asia/Seoul', 'en-US', '2028-02-29T12:00:00.000Z', 'weekday', 'Tue'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'fullDate', '2026년 3월 8일'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'monthDay', '3월 8일'],
-    ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'numericDate', '2026. 3. 8.'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'dottedMonthDay', '03.08'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'dayNumber', '8'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'yearShortMonth', '2026년 3월'],
     ['America/Los_Angeles', 'ko-KR', '2026-03-08T10:00:00.000Z', 'weekday', '일'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'fullDate', '2026년 11월 1일'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'monthDay', '11월 1일'],
-    ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'numericDate', '2026. 11. 1.'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'dottedMonthDay', '11.01'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'dayNumber', '1'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'yearShortMonth', '2026년 11월'],
     ['America/Los_Angeles', 'ko-KR', '2026-11-01T08:00:00.000Z', 'weekday', '일'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'fullDate', '2026년 12월 31일'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'monthDay', '12월 31일'],
-    ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'numericDate', '2026. 12. 31.'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'dottedMonthDay', '12.31'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'dayNumber', '31'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'yearShortMonth', '2026년 12월'],
     ['America/Los_Angeles', 'ko-KR', '2026-12-31T13:15:00.000Z', 'weekday', '목'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'fullDate', '2028년 2월 29일'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'monthDay', '2월 29일'],
-    ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'numericDate', '2028. 2. 29.'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'dottedMonthDay', '02.29'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'dayNumber', '29'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'yearShortMonth', '2028년 2월'],
     ['America/Los_Angeles', 'ko-KR', '2028-02-29T12:00:00.000Z', 'weekday', '화'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'fullDate', 'March 8, 2026'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'monthDay', 'Mar 8'],
-    ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'numericDate', '3/8/2026'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'dottedMonthDay', '03.08'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'dayNumber', '8'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'yearShortMonth', 'Mar 2026'],
     ['America/Los_Angeles', 'en-US', '2026-03-08T10:00:00.000Z', 'weekday', 'Sun'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'fullDate', 'November 1, 2026'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'monthDay', 'Nov 1'],
-    ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'numericDate', '11/1/2026'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'dottedMonthDay', '11.01'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'dayNumber', '1'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'yearShortMonth', 'Nov 2026'],
     ['America/Los_Angeles', 'en-US', '2026-11-01T08:00:00.000Z', 'weekday', 'Sun'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'fullDate', 'December 31, 2026'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'monthDay', 'Dec 31'],
-    ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'numericDate', '12/31/2026'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'dottedMonthDay', '12.31'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'dayNumber', '31'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'yearShortMonth', 'Dec 2026'],
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'weekday', 'Thu'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'fullDate', 'February 29, 2028'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'monthDay', 'Feb 29'],
-    ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'numericDate', '2/29/2028'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'dottedMonthDay', '02.29'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'dayNumber', '29'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'yearShortMonth', 'Feb 2028'],

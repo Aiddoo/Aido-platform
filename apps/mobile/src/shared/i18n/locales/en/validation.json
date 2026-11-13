@@ -36,5 +36,8 @@
   "comment": {
     "required": "Please enter a comment",
     "tooLong": "Comments must be 500 characters or fewer"
+  },
+  "reportDetail": {
+    "tooLong": "Details must be 500 characters or fewer"
   }
 }
