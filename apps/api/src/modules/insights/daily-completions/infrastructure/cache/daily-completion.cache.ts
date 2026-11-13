@@ -140,14 +140,11 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
   }
 
   async invalidate(userId: UserId): Promise<void> {
-    const previousGeneration = await this.#getGeneration(userId);
+    // 세대를 회전하면 이전 범위 값은 닿지 않고 값 TTL(10분)에 사라진다. 키 전체 SCAN을 기다리지 않는다
     await this.#cache.set(
       DailyCompletionCacheKey.generation(userId.value),
       randomUUID(),
       DAILY_COMPLETION_GENERATION_TTL_MS,
-    );
-    await this.#cache.delByPattern(
-      DailyCompletionCacheKey.generationPattern(userId.value, previousGeneration),
     );
   }
 

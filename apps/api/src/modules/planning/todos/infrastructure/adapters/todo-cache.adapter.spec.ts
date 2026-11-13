@@ -3,7 +3,11 @@ import { vi } from "vitest";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { FRIEND_TODOS_INITIAL_GENERATION, TodoCacheKey } from "../cache/todo-cache.keyspace.js";
+import {
+  FRIEND_TODOS_INITIAL_GENERATION,
+  TODO_CACHE_TTL_MS,
+  TodoCacheKey,
+} from "../cache/todo-cache.keyspace.js";
 import { TodoCacheAdapter } from "./todo-cache.adapter.js";
 
 const OWNER_ID = UserId.reconstitute("friend-1");
@@ -115,6 +119,44 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     await expect(
       adapter.readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE),
     ).resolves.toEqual({ generation: cacheRead.generation, page });
+  });
+
+  it("무효화는 세대만 바꾸고 이전 세대 페이지는 짧은 TTL에 맡기며 새 조회에 보이지 않는다", async () => {
+    // Given
+    const cacheRead = await adapter.readFriendTodosFirstPage(
+      OWNER_ID,
+      START_DATE,
+      END_DATE,
+      PAGE_SIZE,
+    );
+    const page = {
+      items: [],
+      pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
+    };
+    await adapter.storeFriendTodosFirstPageIfCurrent(
+      OWNER_ID,
+      START_DATE,
+      END_DATE,
+      PAGE_SIZE,
+      cacheRead.generation,
+      page,
+    );
+    const previousPageKey = TodoCacheKey.friendTodosFirstPageVersioned(
+      OWNER_ID.value,
+      cacheRead.generation,
+      START_DATE,
+      END_DATE,
+      PAGE_SIZE,
+    );
+
+    // When
+    await adapter.invalidateFriendTodos(OWNER_ID);
+
+    // Then
+    expect(await backend.ttl(previousPageKey)).toBeLessThanOrEqual(TODO_CACHE_TTL_MS.FRIEND_VIEW);
+    await expect(
+      adapter.readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE),
+    ).resolves.toMatchObject({ page: undefined });
   });
 
   it("page lookup 중 generation이 회전하면 이전 cache hit도 반환하지 않는다", async () => {
