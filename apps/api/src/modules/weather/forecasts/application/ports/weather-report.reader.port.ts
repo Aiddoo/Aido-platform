@@ -1,7 +1,7 @@
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
 import type { WeatherReport } from "../../domain/weather-report.vo.js";
 
-export interface WeatherReportReadRequest {
+interface WeatherReportReadRequest {
   /** 호출자가 결과를 다시 찾을 키(사용자 ID 등). 공급자에는 보내지 않는다. */
   readonly key: string;
   readonly latitude: number;
