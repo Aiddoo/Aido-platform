@@ -311,13 +311,13 @@ export class AiSdkGeneratorAdapter extends AiGeneratorPort {
     if (last == null) {
       const hasEligibleProvider =
         planAiRoute({ ...routeInput, openCircuits: new Set() }).length > 0;
-      if (hasEligibleProvider) {
-        // 결제·인증 회로 경보는 업체마다 따로 오지만 AI 기능 전체가 멈춘 것은 이 경보 하나로 본다
-        this.#alert.raise({
-          ...AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN,
-          tags: { task: request.task, taskClass: request.taskClass },
-        });
-      }
+      // 업체별 회로 경보와 따로, AI 기능 전체가 멈춘 것은 이 경보 하나로 본다
+      this.#alert.raise({
+        ...(hasEligibleProvider
+          ? AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN
+          : AiAlerts.NO_PROVIDER_AVAILABLE),
+        tags: { task: request.task, taskClass: request.taskClass },
+      });
       throw new AiGenerationError(hasEligibleProvider ? "CIRCUIT_OPEN" : "UNAVAILABLE", {
         provider: null,
         attempts,

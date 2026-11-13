@@ -985,7 +985,17 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     // Then
     expect(duringCooldown).toBe(5);
     expect(chain.anthropic.callCount).toBe(6);
-    expect(chain.alert.alerts).toEqual([]);
+    expect(chain.alert.alerts).toEqual([
+      expect.objectContaining({
+        key: AiAlerts.PROVIDER_HEALTH_CIRCUIT_OPENED.key,
+        tags: expect.objectContaining({
+          policy: "ai:anthropic",
+          breaker: "health",
+          reason: "OVERLOADED",
+        }),
+      }),
+      expect.objectContaining({ key: AiAlerts.PROVIDER_HEALTH_CIRCUIT_OPENED.key }),
+    ]);
   });
 
   it("장애 사이에 한 번이라도 성공하면 연속 횟수를 다시 센다", async () => {
@@ -1043,7 +1053,12 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
       AiAlerts.PROVIDER_BILLING_CIRCUIT_OPENED.key,
       AiAlerts.ALL_PROVIDERS_CIRCUIT_OPEN.key,
     ]);
-    expect(noKey.alert.alerts).toEqual([]);
+    expect(noKey.alert.alerts).toEqual([
+      {
+        ...AiAlerts.NO_PROVIDER_AVAILABLE,
+        tags: { task: "parse-todo", taskClass: "interactive" },
+      },
+    ]);
     expect(unavailable).toMatchObject({ kind: "UNAVAILABLE", errorCode: "AI_1301" });
     expect(isTransientAiFailure("UNAVAILABLE")).toBe(false);
     expect(chain.google.callCount).toBe(1);

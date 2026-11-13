@@ -22,6 +22,20 @@ export const AiAlerts = defineAlerts("ai", {
     runbook:
       "태그 policy 업체의 API 키가 만료·폐기됐는지 보고 security.md 절차로 키를 바꿔 재배포한다.",
   },
+  PROVIDER_HEALTH_CIRCUIT_OPENED: {
+    key: "ai.provider.health-circuit-opened",
+    severity: "warning",
+    summary: "AI 업체 시간 초과·5xx·과부하가 이어져 그 업체를 잠시 건너뛴다",
+    runbook:
+      "태그 policy 업체 상태 페이지와 태그 reason(TIMEOUT·UPSTREAM·OVERLOADED)을 본다. 쿨다운 뒤 시험 호출로 저절로 다시 쓴다. 다른 업체까지 열리면 all-circuits-open이 따로 온다.",
+  },
+  NO_PROVIDER_AVAILABLE: {
+    key: "ai.provider.none-available",
+    severity: "error",
+    summary: "동의 범위 안에 키가 설정된 AI 업체가 없어 AI 기능이 실패한다",
+    runbook:
+      "태그 task의 업체 키·모델 설정을 확인한다. 동의 전 앱(1.13 미만)은 Google만 쓰므로 Google 키가 빠졌는지 먼저 보고 키를 넣어 재배포한다.",
+  },
   ALL_PROVIDERS_CIRCUIT_OPEN: {
     key: "ai.provider.all-circuits-open",
     severity: "error",
