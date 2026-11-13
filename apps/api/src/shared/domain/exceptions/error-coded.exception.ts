@@ -22,11 +22,7 @@ export abstract class ErrorCodedException extends Error {
     details?: unknown,
     options?: ErrorCodedExceptionOptions,
   ) {
-    // 패키지 버전 불일치 등으로 코드 매핑이 없어도 2차 TypeError 없이 안전하게 폴백
-    super(
-      options?.message ?? Errors[errorCode]?.message ?? "알 수 없는 오류가 발생했습니다.",
-      options,
-    );
+    super(options?.message ?? Errors[errorCode].message, options);
     this.errorCode = errorCode;
     this.details = details;
   }

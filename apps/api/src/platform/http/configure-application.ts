@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpStatus,
   type INestApplication,
   StandardSchemaValidationPipe,
 } from "@nestjs/common";
@@ -43,7 +44,7 @@ export function configureApplication(
     new StandardSchemaValidationPipe({
       exceptionFactory: (issues) =>
         new BadRequestException({
-          statusCode: 400,
+          statusCode: HttpStatus.BAD_REQUEST,
           message: "Validation failed",
           errors: issues,
         }),
