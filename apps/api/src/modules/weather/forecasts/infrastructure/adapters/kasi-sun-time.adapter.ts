@@ -15,9 +15,9 @@ import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
-import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { kasiSunTimeSchema } from "./kasi.wire.js";
 import { KASI_POLICY } from "./weather-outbound.policy.js";
+import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 
 @Injectable()
 export class KasiSunTimeAdapter implements SunTimeProviderPort {

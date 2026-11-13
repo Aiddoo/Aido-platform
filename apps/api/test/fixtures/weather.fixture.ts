@@ -81,7 +81,7 @@ export function weatherConditionsFixture(
   };
 }
 
-/** fetchedAt 정각부터 30시간·11일을 담은 서울 기준 공급자 중립 스냅샷 */
+/** fetchedAt 정각부터 30시간·11일을 담은 서울 기준 공급자 중립 리포트 */
 export function weatherReportFixture(
   fetchedAt = Temporal.Instant.from("2026-11-02T06:20:00.000Z"),
   overrides: Partial<WeatherReportValue> = {},

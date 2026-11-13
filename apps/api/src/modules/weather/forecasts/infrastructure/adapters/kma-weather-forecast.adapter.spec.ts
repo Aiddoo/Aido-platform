@@ -8,8 +8,8 @@ import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
 
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
-import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { KmaWeatherForecastAdapter } from "./kma-weather-forecast.adapter.js";
+import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 
 const SEOUL_GRID = GridCoordinate.create(60, 127);
 const TARGET = Temporal.Instant.from("2026-07-23T00:00:00Z");

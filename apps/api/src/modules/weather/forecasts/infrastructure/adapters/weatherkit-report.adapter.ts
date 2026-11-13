@@ -24,7 +24,6 @@ import {
   WEATHER_REPORT_CACHE_TTL_MS,
   WeatherReportCacheKey,
 } from "../cache/weather-report.keyspace.js";
-import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
 import { WeatherKitAttributionAdapter } from "./weatherkit-attribution.adapter.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
@@ -33,6 +32,7 @@ import {
   WeatherKitTokenAdapter,
 } from "./weatherkit-token.adapter.js";
 import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
+import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
 const WEATHERKIT_API_URL = "https://weatherkit.apple.com/api/v1";

@@ -316,7 +316,7 @@ function toAlert(alert: WeatherKitAlert): WeatherReportAlert {
   };
 }
 
-/** WeatherKit 응답(km/h·0~1 비율)을 공급자 중립 스냅샷(m/s·0~100)으로 바꾼다. 창 자르기는 읽을 때 한다. */
+/** WeatherKit 응답(km/h·0~1 비율)을 공급자 중립 리포트(m/s·0~100)로 바꾼다. 창 자르기는 읽을 때 한다. */
 export function toWeatherReport(
   weather: WeatherKitWeather & { readonly currentWeather: WeatherKitCurrentWeather },
   timezone: string,

@@ -11,7 +11,7 @@ export interface WeatherReportRequest {
   readonly signal?: AbortSignal;
 }
 
-/** 칸 중심 좌표의 날씨 스냅샷을 공급자에서 받는다. 실패는 예외로 알린다. */
+/** 칸 중심 좌표의 날씨 리포트를 공급자에서 받는다. 실패는 예외로 알린다. */
 export abstract class WeatherReportProviderPort {
   abstract getReport(cell: GeoCell, request: WeatherReportRequest): Promise<WeatherReport>;
 

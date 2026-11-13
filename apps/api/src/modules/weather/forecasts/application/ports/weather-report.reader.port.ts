@@ -22,7 +22,7 @@ export interface LocatedWeatherReport {
 
 /** 다른 Context(날씨 알림)가 화면 조회와 같은 칸 캐시·폴백으로 v2 리포트를 묶어 읽는다. */
 export abstract class WeatherReportReaderPort {
-  /** 같은 칸·언어 요청은 한 번만 읽는다. 캐시·마지막 스냅샷까지 없는 칸의 키는 결과에서 빠진다. */
+  /** 같은 칸·언어 요청은 한 번만 읽는다. 캐시·마지막 리포트까지 없는 칸의 키는 결과에서 빠진다. */
   abstract execute(
     query: ReadWeatherReportsQuery,
   ): Promise<ReadonlyMap<string, LocatedWeatherReport>>;

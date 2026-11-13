@@ -18,8 +18,8 @@ import { vi } from "vitest";
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 
-import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { KasiSunTimeAdapter } from "./kasi-sun-time.adapter.js";
+import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 
 describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
   let provider: KasiSunTimeAdapter;

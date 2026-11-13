@@ -13,7 +13,7 @@ export function weatherServiceUnavailable(
   return new ApplicationException(ErrorCode.WEATHER_1901, details, { cause });
 }
 
-/** KMA가 줄 수 없는 날짜다. 공급자를 부르지 않고 거절한다. */
+/** 공급자가 줄 수 없는 날짜다. 공급자를 부르지 않고 거절한다. */
 export function forecastDateUnsupported(): ApplicationException {
   return new ApplicationException(ErrorCode.SYS_0002, { field: "date" });
 }

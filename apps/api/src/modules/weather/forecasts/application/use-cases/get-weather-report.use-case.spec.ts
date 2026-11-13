@@ -174,7 +174,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     expect(provider.calls.map((call) => call.request.language)).toEqual(["ko", "en"]);
   });
 
-  it("캐시가 지나 공급자가 실패하면 6시간 안의 마지막 스냅샷을 응답 시각 기준으로 잘라 돌려준다", async () => {
+  it("캐시가 지나 공급자가 실패하면 6시간 안의 마지막 리포트를 응답 시각 기준으로 잘라 돌려준다", async () => {
     // Given
     provider.report = weatherReportFixture(now);
     await useCase.execute({ userId: "weather-user", language: "ko" });
@@ -208,7 +208,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
   });
 
-  it("공급자가 실패하고 마지막 스냅샷도 없으면 WEATHER_1901이다", async () => {
+  it("공급자가 실패하고 마지막 리포트도 없으면 WEATHER_1901이다", async () => {
     // Given
     provider.failure = new Error("weatherkit down");
     // When

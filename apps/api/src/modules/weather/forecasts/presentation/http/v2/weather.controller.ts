@@ -26,7 +26,7 @@ import { type SupportedLocale } from "#api/shared/domain/locale";
 import { GetWeatherReportUseCase } from "../../../application/use-cases/get-weather-report.use-case.js";
 import { resolveWeatherReportLanguage } from "../../../domain/weather-report-language.domain-service.js";
 import { toWeatherReportResponse } from "./weather-report-response.mapper.js";
-import { WeatherReportResponseDto } from "./weather-report.dto.js";
+import { WeatherReportResponseDto } from "./weather.dto.js";
 
 const WEATHER_REPORT_V2_THROTTLE = {
   GET: { default: { ttl: 60_000, limit: 60 } },

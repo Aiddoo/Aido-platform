@@ -16,9 +16,9 @@ import {
   WEATHER_REPORT_CACHE_TTL_MS,
   WeatherReportCacheKey,
 } from "../cache/weather-report.keyspace.js";
-import { WeatherKitLogEvent } from "../weatherkit.log-events.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
 import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
+import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
 const ATTRIBUTION_TIMEOUT_MS = 3000;

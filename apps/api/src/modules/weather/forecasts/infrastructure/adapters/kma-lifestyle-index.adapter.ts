@@ -13,11 +13,11 @@ import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
-import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { getRegionCode } from "./kma-lifestyle-area.mapper.js";
 import { kmaUvIndexSchema } from "./kma-lifestyle.wire.js";
 import { KMA_TIMEZONE } from "./kma.constants.js";
 import { KMA_LIFESTYLE_POLICY } from "./weather-outbound.policy.js";
+import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 
 @Injectable()
 export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {

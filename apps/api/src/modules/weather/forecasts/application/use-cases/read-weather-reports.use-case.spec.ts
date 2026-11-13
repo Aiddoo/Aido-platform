@@ -84,7 +84,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
     expect(timezoneResolver.coordinates.map((c) => c.latitude)).not.toContain(SEOUL.latitude);
   });
 
-  it("캐시가 지나 공급자가 실패하면 마지막 스냅샷을, 그것도 없으면 그 키를 결과에서 뺀다", async () => {
+  it("캐시가 지나 공급자가 실패하면 마지막 리포트를, 그것도 없으면 그 키를 결과에서 뺀다", async () => {
     // Given 서울만 한 번 성공해 둔다
     await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.failure = new Error("weatherkit 429");
@@ -107,7 +107,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
     );
   });
 
-  it("장애로 언어 판단이 실패해 공유 scope가 되어도 언어별로 받아 둔 스냅샷으로 폴백한다", async () => {
+  it("장애로 언어 판단이 실패해 공유 scope가 되어도 언어별로 받아 둔 리포트로 폴백한다", async () => {
     // Given 특보가 있는 칸이라 ko scope로 한 번 받아 두었다
     provider.hasLocalizedContent = true;
     await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
@@ -133,7 +133,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   });
 
   it("응답은 읽는 시각 기준으로 지난 시간을 잘라 돌려준다", async () => {
-    // Given 두 시간 전 받은 스냅샷이 캐시에 있다
+    // Given 두 시간 전 받은 리포트가 캐시에 있다
     provider.report = weatherReportFixture(Temporal.Instant.from("2026-11-02T04:20:00.000Z"));
     // When
     const reports = await reader.execute({

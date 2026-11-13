@@ -18,7 +18,6 @@ import {
   weatherForecastsConfig,
   type WeatherForecastsConfig,
 } from "../../weather-forecasts.config.js";
-import { WeatherProviderLogEvent } from "../weather-provider.log-events.js";
 import { parseKmaResponse } from "./kma-forecast-response.mapper.js";
 import {
   type KmaBaseDateTime,
@@ -29,6 +28,7 @@ import {
 import { KMA_BASE_URL, KMA_ENDPOINTS, KMA_TIMEZONE } from "./kma.constants.js";
 import { type KmaApiResponse, kmaApiResponseSchema } from "./kma.wire.js";
 import { KMA_FORECAST_POLICY } from "./weather-outbound.policy.js";
+import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 
 @Injectable()
 export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {

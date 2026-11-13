@@ -33,8 +33,8 @@ export interface ReadWeatherReportDependencies {
 }
 
 /**
- * 한 칸의 v2 리포트를 칸 캐시(동시 요청 한 번 load) → 공급자 → 마지막 성공 스냅샷 순으로 읽는다.
- * 창은 자르지 않는다. 스냅샷까지 없으면 `WEATHER_1901`이다.
+ * 한 칸의 v2 리포트를 칸 캐시(동시 요청 한 번 load) → 공급자 → 마지막 성공 리포트 순으로 읽는다.
+ * 창은 자르지 않는다. 마지막 리포트까지 없으면 `WEATHER_1901`이다.
  */
 export class ReadWeatherReportUseCase {
   readonly #dependencies: ReadWeatherReportDependencies;
@@ -75,8 +75,8 @@ export class ReadWeatherReportUseCase {
   }
 
   /**
-   * 장애 중 가용성 캐시가 없으면 scope가 공유로 바뀌므로, 그 scope의 스냅샷이 없을 때 다른 scope의 스냅샷도 본다.
-   * 공유 스냅샷은 특보 제목이 없을 뿐 같은 칸의 예보다.
+   * 장애 중 가용성 캐시가 없으면 scope가 공유로 바뀌므로, 그 scope의 리포트가 없을 때 다른 scope의 리포트도 본다.
+   * 공유 리포트는 특보 제목이 없을 뿐 같은 칸의 예보다.
    */
   async #latestReport(
     cell: GeoCell,

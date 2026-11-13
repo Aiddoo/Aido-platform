@@ -7,6 +7,7 @@ import { maxBy } from "es-toolkit";
 
 import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
+import type { WEATHER_DAY_PARTS, WEATHER_WET_HAZARDS } from "./forecasts.constants.js";
 import {
   findHourIndexAt,
   type ForecastTodo,
@@ -61,8 +62,8 @@ export interface WeatherBriefingClock {
   readonly locationTimezone: string;
 }
 
-type WetHazard = "rain" | "storm" | "snow";
-export type WeatherDayPart = "dawn" | "morning" | "afternoon" | "evening";
+type WetHazard = (typeof WEATHER_WET_HAZARDS)[number];
+export type WeatherDayPart = (typeof WEATHER_DAY_PARTS)[number];
 
 export type MorningWeatherBriefing =
   | {
@@ -114,10 +115,10 @@ function isChilly(day: WeatherBriefingDay): boolean {
 
 function toDayPart(instant: Temporal.Instant, timezone: string): WeatherDayPart {
   const { hour } = instant.toZonedDateTimeISO(resolveTimezone(timezone));
-  if (hour < 6) {
+  if (hour < WEATHER_BRIEFING_RULES.MORNING_START_HOUR) {
     return "dawn";
   }
-  if (hour < 12) {
+  if (hour < WEATHER_BRIEFING_RULES.AFTERNOON_START_HOUR) {
     return "morning";
   }
   return hour < WEATHER_BRIEFING_RULES.EVENING_HOUR ? "afternoon" : "evening";

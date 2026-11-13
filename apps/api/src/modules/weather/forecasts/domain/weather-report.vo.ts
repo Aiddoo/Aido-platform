@@ -120,7 +120,7 @@ export interface WeatherReportValue {
   readonly hourly: readonly WeatherReportHour[];
   readonly daily: readonly WeatherReportDay[];
   readonly alerts: readonly WeatherReportAlert[];
-  /** 공급자가 이 값을 읽은 순간. 폴백 스냅샷이면 지금보다 이르다 */
+  /** 공급자가 이 값을 읽은 순간. 폴백한 리포트면 지금보다 이르다 */
   readonly fetchedAt: Temporal.Instant;
 }
 
@@ -146,7 +146,7 @@ function windowNextHour(
   return { periods, minutes };
 }
 
-/** 공급자 중립 날씨 스냅샷. 단위는 °C·m/s·mm·hPa·m, 확률·비율은 0~100 정수다. */
+/** 공급자 중립 날씨 리포트. 단위는 °C·m/s·mm·hPa·m, 확률·비율은 0~100 정수다. */
 export class WeatherReport extends ValueObject<WeatherReportValue> {
   /** 공급자 응답에서 만든다. 값 검증은 공급자 wire가 끝냈다 */
   static create(value: WeatherReportValue): WeatherReport {
@@ -182,7 +182,7 @@ export class WeatherReport extends ValueObject<WeatherReportValue> {
   }
 
   /**
-   * 캐시·폴백 스냅샷은 받은 시점의 창을 담고 있으므로 응답 시각 기준으로 지난 구간을 잘라낸다.
+   * 캐시·폴백 리포트는 받은 시점의 창을 담고 있으므로 응답 시각 기준으로 지난 구간을 잘라낸다.
    * 시간별은 현재 시각이 속한 시간부터, 일별은 위치 시간대의 오늘부터 시작한다.
    */
   windowAt(now: Temporal.Instant, timezone: string): WeatherReport {
