@@ -66,6 +66,8 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                                                                                                                   |
 | 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                                                                                                                                           |
 
+**연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 약 47인데 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
+
 - 큐·스케줄은 모두 `defineQueue` + `JobQueuePort` 하나로 만든다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡고, pg-boss를 직접 부르거나 큐 이름 문자열을 따로 적지 않는다.
 - E2E 앱은 `JobQueuePort`를 [InMemoryJobQueue](../test/doubles/platform/in-memory-job-queue.ts)로 바꾼다.
 

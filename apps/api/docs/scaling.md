@@ -4,7 +4,7 @@
 
 ## 지금 (2026-11 측정)
 
-- 운영은 API 컨테이너 1대(512MB, 힙 384MiB)와 RDS `db.t4g.micro` 하나다. 앱 풀 10 + pg-boss 3, 7일 최대 연결 17, `max_connections` 약 100.
+- 운영은 API 컨테이너 1대(512MB, 힙 384MiB)와 RDS `db.t4g.micro` 하나다. 앱 풀 10 + pg-boss 3, 7일 최대 연결 17, `max_connections` 79.
 - 병목은 연결 수가 아니라 RDS 메모리(여유 약 55MB, 스왑 약 80MB)다. 연결 하나가 수 MB를 쓰므로 풀을 키우지 않는다.
 
 ## 캐시
