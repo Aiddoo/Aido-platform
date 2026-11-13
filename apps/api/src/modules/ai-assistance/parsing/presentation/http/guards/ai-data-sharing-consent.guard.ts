@@ -1,15 +1,17 @@
 import type { CurrentUserPayload } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 
 import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { canShareWithAi } from "../../../../shared/domain/ai-data-sharing-consent.domain-service.js";
+import {
+  aiDataSharingConsentRequired,
+  authenticationRequired,
+} from "../../../application/parsing.errors.js";
 
 interface AuthenticatedRequest extends Request {
   user?: CurrentUserPayload;
@@ -39,7 +41,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
     if (user == null) {
-      throw new ApplicationException(ErrorCode.AUTH_0107);
+      throw authenticationRequired();
     }
 
     const { appVersion } = this.#requestClientReader.current();
@@ -47,7 +49,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
       UserId.reconstitute(user.userId),
     );
     if (!canShareWithAi({ consent, appVersion, now: this.#clock.now() })) {
-      throw new ApplicationException(ErrorCode.AI_1311, { decision: consent.status().decision });
+      throw aiDataSharingConsentRequired(consent.status().decision);
     }
     return true;
   }

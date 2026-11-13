@@ -1,8 +1,9 @@
+import { fromEpochMs } from '@src/shared/date/instant';
 import {
   createAnalyticsStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemorySyncStorage,
-} from '@src/shared/__tests__';
+} from '@src/testing/core';
 
 import {
   createFeatureAttributionStore,
@@ -20,7 +21,7 @@ describe('FeatureAttributionStore', () => {
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     storage.remove.mockImplementation((key) => values.delete(key));
-    const attribution = createFeatureAttributionStore(storage, () => now);
+    const attribution = createFeatureAttributionStore(storage, () => fromEpochMs(now));
 
     // When
     attribution.record({
@@ -60,7 +61,7 @@ describe('FeatureAttributionStore', () => {
     // When
     const emit = () =>
       trackAttributedFeatureSuccess(
-        { analytics, attribution, logger: createLoggerStub() },
+        { analytics, attribution, logger: createAppLoggerStub() },
         {
           accountId: 'account-1',
           feature: 'todo_creation',
@@ -90,7 +91,7 @@ describe('FeatureAttributionStore', () => {
     // When
     const emit = () =>
       trackAttributedFeatureSuccess(
-        { analytics, attribution, logger: createLoggerStub() },
+        { analytics, attribution, logger: createAppLoggerStub() },
         {
           accountId: 'account-1',
           feature: 'todo_reorder',
@@ -108,7 +109,7 @@ describe('FeatureAttributionStore', () => {
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     storage.remove.mockImplementation((key) => values.delete(key));
-    const attribution = createFeatureAttributionStore(storage, () => now);
+    const attribution = createFeatureAttributionStore(storage, () => fromEpochMs(now));
     attribution.record({
       accountId: 'account-a',
       campaignId: 'feature-discovery-2026-08',
@@ -137,7 +138,7 @@ describe('FeatureAttributionStore', () => {
     storage.set.mockImplementation((key, value) => values.set(key, value));
     storage.remove.mockImplementation((key) => values.delete(key));
     let currentTime = now;
-    const attribution = createFeatureAttributionStore(storage, () => currentTime);
+    const attribution = createFeatureAttributionStore(storage, () => fromEpochMs(currentTime));
     attribution.record({
       accountId: 'account-a',
       campaignId: 'feature-discovery-2026-08',
@@ -165,7 +166,7 @@ describe('FeatureAttributionStore', () => {
         expiresAt: now + FEATURE_ATTRIBUTION_TTL_MS,
       }),
     );
-    const attribution = createFeatureAttributionStore(storage, () => now);
+    const attribution = createFeatureAttributionStore(storage, () => fromEpochMs(now));
 
     // When
     const broken = attribution.consume({ accountId: 'account-a', feature: 'memo_ai' });
@@ -184,7 +185,7 @@ describe('FeatureAttributionStore', () => {
     storage.get.mockImplementation((key) => values.get(key));
     storage.set.mockImplementation((key, value) => values.set(key, value));
     storage.remove.mockImplementation((key) => values.delete(key));
-    const attribution = createFeatureAttributionStore(storage, () => now);
+    const attribution = createFeatureAttributionStore(storage, () => fromEpochMs(now));
     const analytics = createAnalyticsStub();
     attribution.record({
       accountId: 'raw-account-id',
@@ -194,14 +195,14 @@ describe('FeatureAttributionStore', () => {
 
     // When
     trackAttributedFeatureSuccess(
-      { analytics, attribution, logger: createLoggerStub() },
+      { analytics, attribution, logger: createAppLoggerStub() },
       {
         accountId: 'raw-account-id',
         feature: 'category_reorder',
       },
     );
     trackAttributedFeatureSuccess(
-      { analytics, attribution, logger: createLoggerStub() },
+      { analytics, attribution, logger: createAppLoggerStub() },
       {
         accountId: 'raw-account-id',
         feature: 'category_reorder',

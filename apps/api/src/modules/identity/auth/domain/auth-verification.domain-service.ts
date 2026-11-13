@@ -14,6 +14,15 @@ export function resendCooldownStartsAt(now: Temporal.Instant): Temporal.Instant 
   return now.subtract({ seconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS });
 }
 
+/** 마지막 발급에서 다시 보낼 수 있을 때까지 남은 초. 막는 동안은 1초 밑도 1초로 올려 앱 타이머가 0에서 멈추지 않는다 */
+export function resendCooldownRemainingSeconds(
+  lastIssuedAt: Temporal.Instant,
+  now: Temporal.Instant,
+): number {
+  const endsAt = lastIssuedAt.add({ seconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS });
+  return Math.max(1, Math.ceil(endsAt.since(now).total("seconds")));
+}
+
 // 코드가 맞는지는 쓸 수 있는 코드일 때만 본다. 소진·만료 코드에 맞는 값을 넣어도 시도로 세지 않는다
 export function judgeVerificationAttempt(params: {
   readonly verification: AuthVerification | null;

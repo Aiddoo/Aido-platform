@@ -1,5 +1,6 @@
-import type { DateFormatContext } from '@src/shared/date/date-format';
-import { hasSameWallClock, type Instant } from '@src/shared/date/instant';
+import { type DateFormatContext } from '@src/shared/date/format/date-format';
+import { type Instant } from '@src/shared/date/instant';
+import { hasSameWallClock } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 

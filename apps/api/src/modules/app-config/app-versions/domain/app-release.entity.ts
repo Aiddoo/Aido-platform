@@ -1,11 +1,12 @@
+import type { AppPlatform } from "@aido/api/vocabulary";
+
 import { Entity } from "#api/shared/domain/model/entity";
 
 import { AppVersion } from "../../shared/app-version.vo.js";
 import { AppReleaseId } from "./app-release-id.vo.js";
-import type { AppReleasePlatform } from "./app-versions.constants.js";
 
 export interface AppReleasePrimitives {
-  readonly platform: AppReleasePlatform;
+  readonly platform: AppPlatform;
   readonly latestVersion: string;
 }
 
@@ -21,20 +22,12 @@ export class AppRelease extends Entity<AppReleaseId, AppReleaseProps> {
     });
   }
 
-  get platform(): AppReleasePlatform {
+  get platform(): AppPlatform {
     return this.id.value;
   }
 
   get latestVersion(): AppVersion {
     return this.props.latestVersion;
-  }
-
-  // 알 수 없거나 SemVer가 아닌 앱 버전은 업데이트를 강요하지 않는다
-  isUpdateRequired(clientVersion: string | null): boolean {
-    if (clientVersion == null) {
-      return false;
-    }
-    return AppVersion.reconstitute(clientVersion).isOlderThan(this.props.latestVersion);
   }
 
   toPrimitives(): AppReleasePrimitives {

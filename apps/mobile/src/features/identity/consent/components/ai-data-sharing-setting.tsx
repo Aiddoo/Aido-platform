@@ -1,5 +1,5 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { formatDateLabel } from '@src/shared/date/date-format';
+import { formatDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SettingsListGroup, Text, TextButton, useConfirmDialog } from '@src/shared/ui';
@@ -23,20 +23,19 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
   const isAgreed = ConsentPolicy.hasAgreedToAiDataSharing(consent);
 
   const handleSelectedChange = async (agreed: boolean) => {
-    if (!agreed) {
-      const isConfirmed = await confirmDialog.openAsync({
-        title: t('settings:terms.aiDataSharing.withdrawTitle'),
-        description: t('settings:terms.aiDataSharing.withdrawDescription'),
-        confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),
-        confirmColor: 'danger',
-        cancelLabel: t('common:actions.cancel'),
-        confirmTestID: 'ai-data-sharing-withdraw-confirm',
-      });
-      if (!isConfirmed) {
-        return;
-      }
+    if (agreed) {
+      updateConsent.mutate({ agreed });
+      return;
     }
-    updateConsent.mutate({ agreed });
+    await confirmDialog.openAsync({
+      title: t('settings:terms.aiDataSharing.withdrawTitle'),
+      description: t('settings:terms.aiDataSharing.withdrawDescription'),
+      confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),
+      confirmColor: 'danger',
+      cancelLabel: t('common:actions.cancel'),
+      confirmTestID: 'ai-data-sharing-withdraw-confirm',
+      onConfirm: () => updateConsent.mutateAsync({ agreed }),
+    });
   };
 
   return (
@@ -54,7 +53,7 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
         isDisabled={updateConsent.isPending}
         testID="ai-data-sharing-toggle"
       />
-      <SettingsListGroup.Content className="pt-0">
+      <SettingsListGroup.Custom className="pt-0">
         {match(consent)
           .with(
             {
@@ -63,8 +62,8 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
             },
             ({ aiDataSharingAgreedAt }) => (
               <Text size="e1" shade={6}>
-                {t('settings:terms.aiDataSharing.agreedOn', {
-                  date: formatDateLabel(aiDataSharingAgreedAt, 'numericDate', dateFormatContext),
+                {t('settings:terms.agreedAt', {
+                  date: formatDateLabel(aiDataSharingAgreedAt, 'monthDayYear', dateFormatContext),
                 })}
               </Text>
             ),
@@ -92,7 +91,7 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
             </HStack>
           ))
           .exhaustive()}
-      </SettingsListGroup.Content>
+      </SettingsListGroup.Custom>
     </SettingsListGroup>
   );
 }

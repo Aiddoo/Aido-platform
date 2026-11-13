@@ -1,14 +1,13 @@
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
+import { selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { uniqBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-const todoCommentAuthorSchema = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
+const todoCommentAuthorSchema = userSummarySchema.extend({
   userTag: z.string().nullable(),
-  profileImage: z.string().nullable(),
   isTodoOwner: z.boolean(),
 });
 export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;
@@ -176,15 +175,12 @@ export function hasRepliesToShow(thread: TodoCommentThread) {
 }
 
 export function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
-  return uniqBy(
-    pages.flatMap((page) => page.items),
-    (thread) => thread.comment.id,
-  );
+  return uniqBy(selectPageItems({ pages }), (thread) => thread.comment.id);
 }
 
 // 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다
 export function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
-  return uniqBy(pages.flatMap((page) => page.items).toReversed(), (reply) => reply.id).toReversed();
+  return uniqBy(selectPageItems({ pages }).toReversed(), (reply) => reply.id).toReversed();
 }
 
 export function withLiked(comment: TodoComment, isLiked: boolean): TodoComment {

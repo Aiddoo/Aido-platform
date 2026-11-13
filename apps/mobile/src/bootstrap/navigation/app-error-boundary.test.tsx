@@ -5,6 +5,7 @@ import {
   createAuthSession,
 } from '@src/features/identity/auth/__tests__/auth-session.test-utils';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
@@ -12,14 +13,7 @@ import { ErrorBoundary } from '../../../app/(app)/_layout';
 
 const StatusProbe = () => <Text testID="status">{useAuthStatus()}</Text>;
 
-beforeEach(() => {
-  jest.useFakeTimers();
-});
-
-afterEach(() => {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-});
+setupFakeTimersPerTest();
 
 describe('앱 오류 화면의 로그아웃', () => {
   it('토큰을 지워 다시 열어도 로그아웃 상태다', async () => {

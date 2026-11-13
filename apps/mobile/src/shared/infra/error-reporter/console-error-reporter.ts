@@ -22,20 +22,20 @@ function writeReport(kind: string, message: string, context?: ErrorReporterConte
 
 export function createConsoleErrorReporter(): ErrorReporter {
   return {
-    captureException(error: Error, context?: ErrorReporterContext): void {
+    captureException: (error: Error, context?: ErrorReporterContext): void => {
       writeReport('captureException', error.message, context);
     },
-    captureMessage(message: string, context?: ErrorReporterContext): void {
+    captureMessage: (message: string, context?: ErrorReporterContext): void => {
       writeReport('captureMessage', message, context);
     },
-    addBreadcrumb(breadcrumb: Breadcrumb): void {
+    addBreadcrumb: (breadcrumb: Breadcrumb): void => {
       console.info(
         `[ErrorReporter] breadcrumb(${breadcrumb.category}):`,
         breadcrumb.message,
         breadcrumb.data ?? {},
       );
     },
-    setUserId(userId: string | null): void {
+    setUserId: (userId: string | null): void => {
       console.info('[ErrorReporter] setUserId:', userId);
     },
   };

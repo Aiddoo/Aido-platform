@@ -19,7 +19,7 @@
 - 저장소 Entity나 ORM row를 공유 REST 타입으로 쓰지 않는다. HTTP 검증과 날짜 변환은 서버 presentation이 맡는다.
 - PATCH에서 빠진 필드는 기존 값을 유지하고, nullable 필드의 `null`은 값을 비운다. `false`와 `0`은 유효한 값이다([nullish](../../docs/conventions/nullish.md#4-계약-aidoapi-zod)).
 - 스키마를 옮길 때 required/optional/nullish/default, 검증 메시지, `.describe()`, 날짜 표현을 바꾸지 않는다. 배포된 앱의 OpenAPI fixture는 현재 스키마로 재생성하지 않는다.
-- 서버와 앱이 각자 구현한 규칙은 `test/fixtures/`의 표를 양쪽 테스트가 읽어 맞춘다(`repeat-occurrence-cases.json`: 서버 `RepeatRule`, 앱 `TodoRepeatPolicy`). `test/`는 `dist`와 패키지 `files` 밖이라 번들에 들어가지 않는다.
+- 서버와 앱이 각자 구현한 규칙은 `test/fixtures/`의 표를 양쪽 테스트가 읽어 맞춘다(`repeat-occurrence-cases.json`·`repeat-last-occurrence-cases.json`: 서버 `RepeatRule`, 앱 `TodoRepeatPolicy`). `test/`는 `dist`와 패키지 `files` 밖이라 번들에 들어가지 않는다.
 
 상세: [HTTP 계약](../../apps/api/docs/http-contracts.md), [호환](../../docs/conventions/compatibility.md), [오류](../../docs/conventions/errors.md)
 

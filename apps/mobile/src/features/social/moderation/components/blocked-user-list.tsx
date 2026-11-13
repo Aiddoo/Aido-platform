@@ -1,5 +1,5 @@
 import { UserList } from '@src/features/identity/user/components/user-list';
-import { formatYearAwareDateLabel } from '@src/shared/date/date-format';
+import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -31,19 +31,25 @@ const BLOCKED_USER_LIST_CONTENT_STYLE = { flexGrow: 1, paddingTop: 20, paddingBo
 /** 내가 차단한 사용자. 최근에 차단한 순서로 서버가 준 그대로 보여 준다 */
 export function BlockedUserList() {
   const { t } = useTranslation('moderation');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetBlockedUsersInfiniteQueryOptions());
+  const {
+    data: blockedUserList,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
+  } = useSuspenseInfiniteQuery(useGetBlockedUsersInfiniteQueryOptions());
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
 
   return (
     <InfiniteList
-      data={data.blockedUsers}
+      data={blockedUserList.blockedUsers}
       keyExtractor={(blockedUser) => blockedUser.id}
       renderItem={({ item, index }) => (
         <SettingsListGroup.Segment
-          label={t('blockedUsers.totalCount', { count: data.totalCount })}
+          label={t('blockedUsers.totalCount', { count: blockedUserList.totalCount })}
           isFirst={index === 0}
-          isLast={index === data.blockedUsers.length - 1}
+          isLast={index === blockedUserList.blockedUsers.length - 1}
         >
           <BlockedUserList.Item blockedUser={item} />
         </SettingsListGroup.Segment>
@@ -99,17 +105,14 @@ BlockedUserList.UnblockButton = function UnblockButton({
   const unblockUser = useMutation(useUnblockUserMutationOptions());
 
   const handleUnblock = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('moderation:unblock.confirmTitle', { name: displayName }),
       description: t('moderation:unblock.confirmDescription'),
       confirmLabel: t('moderation:unblock.confirm'),
       cancelLabel: t('common:actions.cancel'),
       confirmTestID: 'blocked-user-unblock-confirm',
+      onConfirm: () => unblockUser.mutateAsync({ userId, displayName }),
     });
-    if (!isConfirmed) {
-      return;
-    }
-    unblockUser.mutate({ userId, displayName });
   };
 
   return (
@@ -132,7 +135,7 @@ BlockedUserList.Loading = function Loading() {
   return (
     <VStack className="pt-5">
       <SettingsListGroup>
-        <TextSkeleton size="b2" className="mx-4 mb-1 mt-4 w-16" />
+        <TextSkeleton size="b2" className="mx-4 mt-4 mb-1 w-16" />
         {range(LOADING_ROW_COUNT).map((index) => (
           <Fragment key={index}>
             {index > 0 && <SettingsListGroup.Separator />}

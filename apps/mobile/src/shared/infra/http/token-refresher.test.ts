@@ -1,14 +1,19 @@
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import {
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryTokenStore,
   createPendingResponse,
-} from '@src/shared/__tests__';
-import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
+  createStalledBodyResponse,
+  observeSettlement,
+  setupFakeTimersPerTest,
+} from '@src/testing/core';
 import { TimeoutError as KyTimeoutError } from 'ky';
 
+import { REFRESH_TIMEOUT_MS, TOKEN_READ_TIMEOUT_MS } from './request-timeout';
 import { createTokenRefresher } from './token-refresher';
+import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 // ok는 status에서 정해진다. 호출부의 ok는 읽는 사람을 위한 표시로 status와 같게 둔다.
 const createFakeResponse = (params: { ok: boolean; status: number; body?: unknown }): Response =>
@@ -46,7 +51,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -61,23 +66,21 @@ describe('createTokenRefresher', () => {
     it('동시 호출은 하나의 갱신 요청을 공유한다 (single-flight)', async () => {
       // Given
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
-      let resolveResponse: (response: Response) => void = () => {};
-      const requestRefresh = jest.fn<Promise<Response>, [string]>().mockReturnValue(
-        new Promise<Response>((resolve) => {
-          resolveResponse = resolve;
-        }),
-      );
+      const response = Promise.withResolvers<Response>();
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockReturnValue(response.promise);
       const refresh = createTokenRefresher({
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
       const first = refresh();
       const second = refresh();
-      resolveResponse(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
+      response.resolve(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
 
       // Then
       await expect(first).resolves.toEqual({ kind: 'refreshed', accessToken: 'new-access' });
@@ -95,7 +98,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
@@ -125,7 +128,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -145,7 +148,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -168,7 +171,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -188,7 +191,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -209,7 +212,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -229,7 +232,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -248,7 +251,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -266,7 +269,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -274,46 +277,50 @@ describe('createTokenRefresher', () => {
       expect(requestRefresh).not.toHaveBeenCalled();
     });
 
-    it('새 토큰 저장에 실패하면 재시도 가능한 에러다 (grace 창 안에서 재시도 가능)', async () => {
+    it('새 토큰 저장에 실패해도 회전한 토큰으로 이어 가고 실패를 남긴다', async () => {
       // Given
+      // 서버는 이미 회전했다. 실패로 던지면 기다리던 요청이 지난 refresh 토큰으로 다시 갱신해 grace 뒤 SESSION_0704가 된다
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
       tokenStore.save.mockRejectedValue(new Error('keychain write failed'));
+      const logger = createAppLoggerStub();
       const requestRefresh = respondWith(
         createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }),
       );
 
       // When
-      const outcome = createTokenRefresher({
+      const outcome = await createTokenRefresher({
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger,
       })();
+      await Promise.resolve();
 
       // Then
-      await expect(outcome).rejects.toBeInstanceOf(NetworkError);
+      expect(outcome).toEqual({ kind: 'refreshed', accessToken: 'new-access' });
+      expect(logger.warn).toHaveBeenCalledWith(TOKEN_REFRESHER_LOG_EVENT.TOKEN_PERSIST_FAILED, {
+        error: 'keychain write failed',
+      });
     });
 
     it('동시 대기자들은 같은 실패를 공유한다 (single-flight)', async () => {
       // Given
       tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
-      let rejectResponse: (error: unknown) => void = () => {};
-      const requestRefresh = jest.fn<Promise<Response>, [string]>().mockReturnValue(
-        new Promise<Response>((_resolve, reject) => {
-          rejectResponse = reject;
-        }),
-      );
+      const response = Promise.withResolvers<Response>();
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockReturnValue(response.promise);
       const refresh = createTokenRefresher({
         tokenStore,
         requestRefresh,
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
 
       // When
       const first = refresh();
       const second = refresh();
-      rejectResponse(new TypeError('Network request failed'));
+      response.reject(new TypeError('Network request failed'));
 
       // Then
       await expect(first).rejects.toBeInstanceOf(NetworkError);
@@ -339,7 +346,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh: respondWith(response),
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })().catch(() => {});
 
       // Then
@@ -355,7 +362,7 @@ describe('createTokenRefresher', () => {
         tokenStore,
         requestRefresh: respondWith(createFakeResponse({ ok: true, status: 200 })),
         sessionEpoch: createSessionEpoch(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       })();
 
       // Then
@@ -382,7 +389,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh: () => pending.response,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const outcome = refresh();
       await Promise.resolve();
@@ -405,7 +412,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh: () => pending.response,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const outcome = refresh();
       await Promise.resolve();
@@ -433,7 +440,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const staleOutcome = refresh();
       await Promise.resolve();
@@ -465,7 +472,7 @@ describe('createTokenRefresher', () => {
         tokenStore: store,
         requestRefresh,
         sessionEpoch,
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
       });
       const staleOutcome = refresh();
       await Promise.resolve();
@@ -483,6 +490,128 @@ describe('createTokenRefresher', () => {
       // Then
       await Promise.all([first, second]);
       expect(requestRefresh).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('키체인이 멈출 때', () => {
+    setupFakeTimersPerTest();
+
+    it('갱신 응답 뒤 저장이 끝나지 않아도 refreshed로 바로 결론 나고 다음 갱신은 새로 보낸다', async () => {
+      // Given
+      tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
+      tokenStore.save.mockReturnValue(Promise.withResolvers<void>().promise);
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockImplementation(async () =>
+          createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }),
+        );
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+
+      // When
+      const first = observeSettlement(refresh());
+      await jest.advanceTimersByTimeAsync(0);
+      const next = observeSettlement(refresh());
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Then
+      expect(first.current).toEqual({
+        status: 'fulfilled',
+        value: { kind: 'refreshed', accessToken: 'new-access' },
+      });
+      expect(next.current.status).toBe('fulfilled');
+      expect(requestRefresh).toHaveBeenCalledTimes(2);
+    });
+
+    it('refresh 토큰 읽기가 끝나지 않으면 제한 시간에 TimeoutError로 끝나고 다음 갱신은 다시 읽는다', async () => {
+      // Given
+      tokenStore.getRefreshToken
+        .mockReturnValueOnce(Promise.withResolvers<string | null>().promise)
+        .mockResolvedValue('old-refresh');
+      const requestRefresh = respondWith(
+        createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }),
+      );
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+      const stuck = observeSettlement(refresh());
+      const joined = observeSettlement(refresh());
+
+      // When
+      await jest.advanceTimersByTimeAsync(TOKEN_READ_TIMEOUT_MS);
+      const next = observeSettlement(refresh());
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Then
+      expect(stuck.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(joined.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(next.current).toEqual({
+        status: 'fulfilled',
+        value: { kind: 'refreshed', accessToken: 'new-access' },
+      });
+      expect(requestRefresh).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('갱신 응답 본문이 오지 않을 때', () => {
+    setupFakeTimersPerTest();
+
+    it('200 헤더만 받은 갱신을 기다리는 대기자 모두가 제한 시간에 TimeoutError로 끝난다', async () => {
+      // Given
+      tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
+      const stalled = createStalledBodyResponse(200);
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh: respondWith(stalled.response),
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+      const first = observeSettlement(refresh());
+      const second = observeSettlement(refresh());
+
+      // When
+      await jest.advanceTimersByTimeAsync(REFRESH_TIMEOUT_MS);
+
+      // Then
+      expect(first.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(second.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      stalled.finish(JSON.stringify(TOKENS_BODY));
+    });
+
+    it('제한 시간 뒤 늦게 온 본문으로 토큰을 저장하지 않고 다음 401은 새로 갱신한다', async () => {
+      // Given
+      tokenStore.getRefreshToken.mockResolvedValue('old-refresh');
+      const stalled = createStalledBodyResponse(200);
+      const requestRefresh = jest
+        .fn<Promise<Response>, [string]>()
+        .mockResolvedValueOnce(stalled.response)
+        .mockResolvedValueOnce(createFakeResponse({ ok: true, status: 200, body: TOKENS_BODY }));
+      const refresh = createTokenRefresher({
+        tokenStore,
+        requestRefresh,
+        sessionEpoch: createSessionEpoch(),
+        logger: createAppLoggerStub(),
+      });
+      const timedOut = observeSettlement(refresh());
+      await jest.advanceTimersByTimeAsync(REFRESH_TIMEOUT_MS);
+
+      // When
+      stalled.finish(JSON.stringify(TOKENS_BODY));
+      await jest.advanceTimersByTimeAsync(0);
+      const next = await refresh();
+
+      // Then
+      expect(timedOut.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(next).toEqual({ kind: 'refreshed', accessToken: 'new-access' });
+      expect(requestRefresh).toHaveBeenCalledTimes(2);
+      expect(tokenStore.save).toHaveBeenCalledTimes(1);
     });
   });
 });

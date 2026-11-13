@@ -12,10 +12,19 @@ dist/
 .expo/
 *.tsbuildinfo
 
-# Tests & coverage
+# Tests & coverage (번들은 Metro blockList가 따로 뺀다)
 coverage/
+**/__tests__/
+*.test.*
+*.spec.*
+*.fixtures.ts
+/apps/mobile/src/testing/
+/apps/mobile/jest.*
 /apps/mobile/.maestro/
 /apps/mobile/maestro-output/
+
+# Mobile: 스토어 문구·그림은 빌드에 들어가지 않는다
+/apps/mobile/store-metadata/
 
 # Environment & secrets
 .env*

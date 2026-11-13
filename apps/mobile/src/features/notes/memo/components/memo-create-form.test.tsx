@@ -1,8 +1,11 @@
 import { ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
-import { createHttpClientStub, createTestQueryClient, renderUi } from '@src/shared/__tests__';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { TimeoutError } from '@src/shared/errors/infra-error';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
@@ -25,11 +28,11 @@ async function renderForm() {
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-1' }));
   const httpClient = createHttpClientStub();
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <MemoCreateForm />
     </Suspense>,
-    { queryClient, withLocalDate: true, di: { httpClient } },
+    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
   );
 
   return { httpClient };
@@ -61,14 +64,82 @@ describe('MemoCreateForm', () => {
     expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
-  it('공백만 넣으면 저장 버튼이 꺼진다', async () => {
-    // Given
-    await renderForm();
+  describe('저장 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
 
-    // When
-    await typeContent('   ');
+    it('저장해 화면이 내려가는 동안 저장을 다시 눌러도 메모는 하나만 만든다', async () => {
+      // Given
+      const { httpClient } = await renderForm();
+      httpClient.post.mockResolvedValue(ok({ message: 'created', memo: CREATED_MEMO_DTO }));
+      await typeContent('새 메모');
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+      // 연타 가드(600ms)가 지난 뒤다. 성공하면 요청 키를 지워 같은 글도 새 키로 간다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
 
-    // Then
-    expect((await screen.findByLabelText('저장')).props.accessibilityState.disabled).toBe(true);
+      // When
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('저장'));
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('시간 초과 뒤 다시 저장', () => {
+    setupFakeTimersPerTest();
+
+    async function saveAfterTimeout(httpClient: ReturnType<typeof createHttpClientStub>) {
+      httpClient.post
+        .mockRejectedValueOnce(new TimeoutError())
+        .mockResolvedValueOnce(ok({ message: 'created', memo: CREATED_MEMO_DTO }));
+      await typeContent('새 메모');
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+      await screen.findAllByText('응답이 늦어지고 있어요. 잠시 후 다시 시도해주세요');
+      // 연타 가드(600ms)가 지난 뒤의 두 번째 저장이다
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+    }
+
+    it('같은 글을 다시 저장하면 같은 키를 보내 서버가 메모를 하나만 만든다', async () => {
+      // Given
+      const { httpClient } = await renderForm();
+      await saveAfterTimeout(httpClient);
+
+      // When
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      const [first, retried] = httpClient.post.mock.calls;
+      expect(first?.[2]).toEqual({ headers: { 'Idempotency-Key': expect.any(String) } });
+      expect(retried?.[2]).toEqual(first?.[2]);
+    });
+
+    it('글을 고쳐 저장하면 새 키를 보내 고친 글이 새 메모로 남는다', async () => {
+      // Given
+      const { httpClient } = await renderForm();
+      await saveAfterTimeout(httpClient);
+
+      // When
+      await typeContent('새 메모 고침');
+      await act(async () => {
+        fireEvent.press(await screen.findByLabelText('저장'));
+      });
+
+      // Then
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      const [first, edited] = httpClient.post.mock.calls;
+      expect(edited?.[2]).not.toEqual(first?.[2]);
+    });
   });
 });

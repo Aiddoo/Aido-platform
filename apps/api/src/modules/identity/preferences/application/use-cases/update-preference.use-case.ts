@@ -1,7 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
-
 import { assertEntitled } from "#api/modules/access/entitlements/access-entitlements.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -15,6 +12,7 @@ import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
+import { invalidTimezone } from "../preferences.errors.js";
 import { PreferenceLogEvent } from "../preferences.log-events.js";
 import {
   buildUpdatedPreferenceView,
@@ -61,9 +59,7 @@ export class UpdatePreferenceUseCase {
 
     const timezone = input.timezone == null ? undefined : normalizeIanaTimezone(input.timezone);
     if (input.timezone != null && timezone == null) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        field: "timezone",
-      });
+      throw invalidTimezone();
     }
 
     const { preferenceRepository, todoTimezoneRebase, clock } = this.#dependencies;

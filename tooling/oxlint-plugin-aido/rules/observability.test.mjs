@@ -1,0 +1,133 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { after } from 'node:test';
+
+import { createRuleTester } from '../rule-tester.mjs';
+import rules from './observability.mjs';
+
+const tester = createRuleTester();
+
+const FROZEN = { frozenNames: ['ai_parse_used'] };
+
+tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
+  valid: [
+    {
+      code: "declare module '@src/shared/analytics/event-map' { interface AppEventMap { memo_share_tapped: { source: 'toolbar' }; offline_banner_shown: undefined } }",
+      options: [FROZEN],
+    },
+    {
+      code: 'interface AppEventMap { ai_parse_used: { todo_count: number } }',
+      options: [FROZEN],
+    },
+    'interface OtherMap { todoCompleted: { field: string } }',
+    'interface AppEventMap { push_permission_prompt_shown: { step: PushPermissionStep } }',
+    'interface AppEventMap { push_permission_requested: { source: PushPermissionPromptSource } }',
+    'interface AppEventMap { auth_email_verification_resent: undefined; auth_email_verified: undefined }',
+    'interface AppEventMap { auth_password_reset_completed: undefined; auth_password_changed: undefined }',
+    'interface AppEventMap { subscription_management_opened: undefined; support_inquiry_submitted: undefined }',
+    'interface AppEventMap { marketing_push_opted_in: undefined; marketing_push_opted_out: undefined }',
+  ],
+  invalid: [
+    { code: 'interface AppEventMap { ai_parse_used: undefined }', errors: 1 },
+    { code: 'interface AppEventMap { memo_shared: undefined }', errors: 1 },
+    { code: 'interface AppEventMap { opted_in: undefined }', errors: 1 },
+    { code: 'interface AppEventMap { push_permission_result: undefined }', errors: 1 },
+    { code: 'interface AppEventMap { MemoShareTapped: undefined }', errors: 1 },
+    { code: 'interface AppEventMap { memo_share_tapped: { shareTarget: Target } }', errors: 1 },
+    { code: 'interface AppEventMap { memo_share_tapped: { target: string } }', errors: 1 },
+    { code: 'interface AppEventMap { memo_share_tapped: { target?: string | null } }', errors: 1 },
+    {
+      code: 'interface AppEventMap { ai_parse_used: { field: string } }',
+      options: [FROZEN],
+      errors: 1,
+    },
+  ],
+});
+
+const packageRoot = mkdtempSync(join(tmpdir(), 'aido-log-event-key-'));
+after(() => rmSync(packageRoot, { recursive: true, force: true }));
+writeFileSync(join(packageRoot, 'package.json'), '{}');
+mkdirSync(join(packageRoot, 'src/memo'), { recursive: true });
+mkdirSync(join(packageRoot, 'src/voice'), { recursive: true });
+writeFileSync(
+  join(packageRoot, 'src/memo/memo-log-events.ts'),
+  "export const MEMO_LOG_EVENT = { SAVE_FAILED: 'memo.save.failed' } as const;\n",
+);
+const voiceFile = join(packageRoot, 'src/voice/voice-log-events.ts');
+
+tester.run('log-event-key', rules['log-event-key'], {
+  valid: [
+    {
+      code: "export const VOICE_LOG_EVENT = { START_FAILED: 'voice.recording.start-failed', STOPPED: 'voice.recording.stopped' } as const;",
+      filename: voiceFile,
+    },
+  ],
+  invalid: [
+    {
+      code: "export const VOICE_LOG_EVENT = { START_FAILED: 'voice.recordingStartFailed' } as const;",
+      filename: voiceFile,
+      errors: 1,
+    },
+    {
+      code: "export const VOICE_LOG_EVENT = { A: 'voice.recording.failed', B: 'voice.recording.failed' } as const;",
+      filename: voiceFile,
+      errors: 1,
+    },
+    {
+      code: "export const VOICE_LOG_EVENT = { SAVE_FAILED: 'memo.save.failed' } as const;",
+      filename: voiceFile,
+      errors: 1,
+    },
+    {
+      code: "export const VOICE_EVENTS = { STOPPED: 'voice.recording.stopped' } as const;",
+      filename: voiceFile,
+      errors: 1,
+    },
+    {
+      code: "export const VOICE_LOG_EVENT = { STOPPED: 'voice.recording.stopped' } as const;\nexport const VOICE_RETRY_LIMIT = 3;",
+      filename: voiceFile,
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('logger-event-constant', rules['logger-event-constant'], {
+  valid: [
+    'logger.warn(VOICE_LOG_EVENT.START_FAILED, { error });',
+    'this.logger.info(MEMO_LOG_EVENT.SAVED);',
+    "appLogger.info('memo.save.failed');",
+    "console.warn('plain');",
+    "logger.child('voice');",
+  ],
+  invalid: [
+    { code: "logger.warn('voice.recording.failed');", errors: 1 },
+    { code: 'logger.error(`voice.${step}.failed`, { error });', errors: 1 },
+    { code: "this.logger.debug('memo.list.loaded');", errors: 1 },
+    { code: "class A { #logger; run() { this.#logger.info('memo.list.loaded'); } }", errors: 1 },
+  ],
+});
+
+tester.run('no-tracking-in-effect', rules['no-tracking-in-effect'], {
+  valid: [
+    "const onPress = () => { trackEvent('memo_share_tapped'); };",
+    "useEffect(() => store.subscribe(() => trackEvent('local_day_changed')), [store]);",
+    "useEffect(() => { load().then(() => analytics.trackEvent('x')); }, []);",
+    "const emit = useEffectEvent(() => trackEvent('x')); useEffect(() => emit(), []);",
+    "useMemo(() => trackEvent('x'), []);",
+    'useEffect(() => { logger.info(EVENT); }, []);',
+    'useEffect(() => { tracker.trackPage(); }, []);',
+  ],
+  invalid: [
+    { code: "useEffect(() => { trackEvent('ai_report_viewed', { id }); }, [id]);", errors: 1 },
+    { code: "useEffect(() => trackEvent('weather_opened'), []);", errors: 1 },
+    { code: "React.useEffect(() => { if (isOpen) { trackEvent('x'); } }, [isOpen]);", errors: 1 },
+    {
+      code: 'useLayoutEffect(function () { analytics.trackScreenView(name); }, [name]);',
+      errors: 1,
+    },
+    { code: "useInsertionEffect(() => { track(analytics, 'x'); });", errors: 1 },
+    { code: "useFocusEffect(() => { this.analytics.trackEvent('x'); });", errors: 1 },
+    { code: "useFocusEffect(useCallback(() => { trackEvent('x'); }, []));", errors: 1 },
+  ],
+});

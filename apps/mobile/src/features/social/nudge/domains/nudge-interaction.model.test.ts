@@ -72,9 +72,9 @@ describe('hasThankableRecipients', () => {
     [1, [], false],
   ])(
     '마지막 콕 %s와 받을 친구 목록으로 감사 가능 여부를 판단한다',
-    (throughNudgeId, recipients, expected) => {
+    (throughNudgeId, items, expected) => {
       // Given
-      const preview = createNudgeThanksPreview({ throughNudgeId, recipients });
+      const preview = createNudgeThanksPreview({ throughNudgeId, items });
 
       // When
       const hasThankable = NudgeThanksPreviewPolicy.hasThankableRecipients(preview);
@@ -120,7 +120,7 @@ describe('getThanksSummary', () => {
       // Given
       const preview = createNudgeThanksPreview({
         throughNudgeId,
-        recipients: totalRecipients > 0 ? [recipient] : [],
+        items: totalRecipients > 0 ? [recipient] : [],
         totalRecipients,
         thankedRecipientCount,
       });
@@ -137,7 +137,7 @@ describe('getThanksSummary', () => {
     // Given
     const preview = createNudgeThanksPreview({
       throughNudgeId: null,
-      recipients: [recipient],
+      items: [recipient],
       totalRecipients: 1,
       thankedRecipientCount: 0,
     });

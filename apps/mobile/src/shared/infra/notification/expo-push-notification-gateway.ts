@@ -1,4 +1,4 @@
-import type { Logger } from '@src/core/ports/logger';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
   ForegroundPushPresentation,
   IosPushAuthorizationStatus,
@@ -72,27 +72,8 @@ function presentAsBanner(): ForegroundPushPresentation {
   return 'banner';
 }
 
-let decideForegroundPresentation: (
-  notification: ReceivedPushNotification,
-) => ForegroundPushPresentation = presentAsBanner;
-
-/** 첫 알림을 놓치지 않게 앱이 그려지기 전에 부른다. 화면이 정하기 전과 판단이 실패하면 배너로 보인다 */
-export function registerForegroundNotificationPresentation() {
-  Notifications.setNotificationHandler({
-    handleNotification: async (notification) => {
-      try {
-        return FOREGROUND_BEHAVIOR[
-          decideForegroundPresentation({ data: notification.request.content.data ?? {} })
-        ];
-      } catch {
-        return FOREGROUND_BEHAVIOR.banner;
-      }
-    },
-  });
-}
-
 /** Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 못 만들어도 권한 상태는 읽으므로 실패는 기록만 한다 */
-async function ensureChannel(logger: Logger): Promise<void> {
+async function ensureChannel(logger: AppLogger): Promise<void> {
   try {
     await Notifications.setNotificationChannelAsync(DEFAULT_CHANNEL_ID, {
       name: t('common:pushChannel.default'),
@@ -107,7 +88,27 @@ async function ensureChannel(logger: Logger): Promise<void> {
   }
 }
 
-export function createExpoPushNotificationGateway(logger: Logger): PushNotificationGateway {
+/**
+ * 프로세스에 한 번 만든다. 첫 알림을 놓치지 않게 앱이 그려지기 전인 여기서 표시 판단을 SDK에 건다.
+ * 화면이 정하기 전과 판단이 실패하면 배너로 보인다
+ */
+export function createExpoPushNotificationGateway(logger: AppLogger): PushNotificationGateway {
+  let decideForegroundPresentation: (
+    notification: ReceivedPushNotification,
+  ) => ForegroundPushPresentation = presentAsBanner;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      try {
+        return FOREGROUND_BEHAVIOR[
+          decideForegroundPresentation({ data: notification.request.content.data ?? {} })
+        ];
+      } catch {
+        return FOREGROUND_BEHAVIOR.banner;
+      }
+    },
+  });
+
   return {
     getPermission: async () => toPushPermissionResponse(await Notifications.getPermissionsAsync()),
     requestPermission: async () => {
@@ -165,6 +166,9 @@ export function createExpoPushNotificationGateway(logger: Logger): PushNotificat
     },
     setBadgeCount: async (count) => {
       await Notifications.setBadgeCountAsync(count);
+    },
+    dismissDelivered: async () => {
+      await Notifications.dismissAllNotificationsAsync();
     },
     setForegroundPresentation: (decide) => {
       decideForegroundPresentation = decide;

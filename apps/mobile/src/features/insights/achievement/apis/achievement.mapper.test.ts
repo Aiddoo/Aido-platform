@@ -61,7 +61,7 @@ describe('toWeeklyAchievementPage', () => {
 
     // Then
     expect(weeklyAchievementPageSchema.parse(page)).toEqual(page);
-    expect(page).toMatchObject({ nextCursor: 21, hasNext: true, summary: { perfectWeeks: 3 } });
+    expect(page).toMatchObject({ nextCursor: 21, summary: { perfectWeeks: 3 } });
     expect(page.items).toHaveLength(1);
   });
 });

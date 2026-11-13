@@ -34,6 +34,7 @@ import { CreateTodoUseCase } from "./application/use-cases/create-todo.use-case.
 import { DeleteTodoItemUseCase } from "./application/use-cases/delete-todo-item.use-case.js";
 import { DeleteTodoUseCase } from "./application/use-cases/delete-todo.use-case.js";
 import { EditTodoUseCase } from "./application/use-cases/edit-todo.use-case.js";
+import { GetTodoOverviewUseCase } from "./application/use-cases/get-todo-overview.use-case.js";
 import { GetTodoResourceLimitUseCase } from "./application/use-cases/get-todo-resource-limit.use-case.js";
 import { GetTodoSummaryUseCase } from "./application/use-cases/get-todo-summary.use-case.js";
 import { GetTodoUseCase } from "./application/use-cases/get-todo.use-case.js";
@@ -242,6 +243,11 @@ export const PLANNING_TODOS_PROVIDERS = [
   provideUseCase(GetTodoSummaryUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
     streakPort: StreakPort,
+    seriesCatchUp: CatchUpTodoSeriesUseCase,
+  }),
+  provideUseCase(GetTodoOverviewUseCase, {
+    todoReadRepository: TodoReadRepositoryPort,
+    seriesRepository: TodoSeriesRepositoryPort,
     seriesCatchUp: CatchUpTodoSeriesUseCase,
   }),
   TodoTimezoneRebaseProcessor,

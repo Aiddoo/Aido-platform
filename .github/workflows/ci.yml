@@ -43,6 +43,7 @@ jobs:
       api: ${{ steps.policy.outputs.api }}
       mobile: ${{ steps.policy.outputs.mobile }}
       shared: ${{ steps.policy.outputs.shared }}
+      docs: ${{ steps.policy.outputs.docs }}
       base_sha: ${{ steps.policy.outputs.base_sha }}
       head_sha: ${{ steps.policy.outputs.head_sha }}
     steps:
@@ -62,7 +63,7 @@ jobs:
             const { mkdirSync, writeFileSync } = require('node:fs');
             const { join } = require('node:path');
             const { planPullRequestCI, validationProofName } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
-            const { dependencyScope } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
+            const { dependencyScope, touchesDocumentation } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
             const { owner, repo } = context.repo;
             const event = context.payload;
             let plan = { run: true, base: 'main', reason: 'push-or-dispatch', ancestors: [] };
@@ -103,6 +104,7 @@ jobs:
             core.setOutput('api', scope.api);
             core.setOutput('mobile', scope.mobile);
             core.setOutput('shared', scope.shared);
+            core.setOutput('docs', touchesDocumentation(paths));
             core.setOutput('base_sha', baseSha);
             core.setOutput('head_sha', headSha);
             await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
@@ -270,6 +272,10 @@ jobs:
       - name: Oxfmt Check
         run: pnpm format:check
 
+      # 문서의 상대 링크·앵커·저장소 경로·길이·에이전트 파일 모양을 본다(docs/conventions/docs.md).
+      - name: Docs check
+        run: pnpm docs:check
+
       # 위험을 수용한 advisory는 pnpm-workspace.yaml auditConfig.ignoreGhsas에서 관리한다.
       - name: Dependency audit
         run: pnpm audit --prod --audit-level high
@@ -301,11 +307,28 @@ jobs:
       # 테스트 러너마다 코어 비율로 worker를 잡아 겹치면 4 vCPU 러너를 과포화시키므로 테스트 작업은 한 번에 하나씩 돈다.
       - name: Test
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run test test:integration --affected --concurrency=1 ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        run: pnpm turbo run test test:node test:integration --affected --concurrency=1 ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Build API and dependency closure
         if: needs.gate.outputs.api == 'true'
         run: pnpm turbo run build --affected --filter='!@aido/mobile'
+
+  # 문서만 바뀐 diff는 verify 범위가 비어 건너뛰므로 문서 검사만 의존성 설치 없이 돈다(docs-check는 Node 내장 모듈만 쓴다).
+  docs:
+    name: Docs Check
+    needs: gate
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.docs == 'true' && needs.gate.outputs.api != 'true' && needs.gate.outputs.mobile != 'true' && needs.gate.outputs.shared != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Docs check
+        run: node scripts/docs/docs-check.mjs
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).

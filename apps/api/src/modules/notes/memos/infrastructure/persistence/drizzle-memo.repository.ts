@@ -2,18 +2,25 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, desc, eq, gte, lte, max, sql } from "drizzle-orm";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
+import {
+  databaseConstraint,
+  isUniqueConstraintViolation,
+  requireRecord,
+} from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { memo as memoTable } from "#api/platform/database/schema/notes.schema";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { MemoIdempotencyKeyTakenError } from "../../application/memos.errors.js";
 import { MemoRepositoryPort } from "../../application/ports/memo.repository.port.js";
 import { MemoId } from "../../domain/memo-id.vo.js";
 import type { SortOrderShift } from "../../domain/memo-ordering.domain-service.js";
 import type { Memo } from "../../domain/memo.aggregate.js";
 import { toMemo, toMemoRow } from "./memo-row.mapper.js";
+
+const IDEMPOTENCY_KEY_CONSTRAINT = "Memo_userId_idempotencyKey_key";
 
 @Injectable()
 export class DrizzleMemoRepository implements MemoRepositoryPort {
@@ -34,6 +41,13 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
   async findByIdAndUserId(memoId: MemoId, userId: UserId): Promise<Memo | null> {
     const row = await this.#db.query.memo.findFirst({
       where: { id: memoId.value, userId: userId.value },
+    });
+    return row == null ? null : toMemo(row);
+  }
+
+  async findByIdempotencyKey(userId: UserId, idempotencyKey: string): Promise<Memo | null> {
+    const row = await this.#db.query.memo.findFirst({
+      where: { userId: userId.value, idempotencyKey },
     });
     return row == null ? null : toMemo(row);
   }
@@ -106,18 +120,28 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
 
   async save(memo: Memo): Promise<void> {
     const row = toMemoRow(memo);
-    await this.#db
-      .insert(memoTable)
-      .values(row)
-      .onConflictDoUpdate({
-        target: memoTable.id,
-        set: {
-          content: row.content,
-          isPinned: row.isPinned,
-          sortOrder: row.sortOrder,
-          updatedAt: row.updatedAt,
-        },
-      });
+    try {
+      await this.#db
+        .insert(memoTable)
+        .values(row)
+        .onConflictDoUpdate({
+          target: memoTable.id,
+          set: {
+            content: row.content,
+            isPinned: row.isPinned,
+            sortOrder: row.sortOrder,
+            updatedAt: row.updatedAt,
+          },
+        });
+    } catch (error) {
+      if (
+        isUniqueConstraintViolation(error) &&
+        databaseConstraint(error) === IDEMPOTENCY_KEY_CONSTRAINT
+      ) {
+        throw new MemoIdempotencyKeyTakenError();
+      }
+      throw error;
+    }
   }
 
   async delete(memo: Memo): Promise<void> {

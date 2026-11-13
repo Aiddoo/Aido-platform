@@ -1,4 +1,4 @@
-import { createMemorySyncStorage } from '@src/shared/__tests__';
+import { createMemorySyncStorage } from '@src/testing/core';
 import { z } from 'zod';
 
 import {

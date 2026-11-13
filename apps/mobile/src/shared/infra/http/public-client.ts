@@ -6,7 +6,7 @@ import { createPublicApiFailureBreadcrumbHook } from './api-failure-breadcrumb';
 import { type AppHeaderSource, applyPerRequestHeaders, createAppHeaders } from './request-headers';
 import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 
-interface PublicClientDeps extends AppHeaderSource {
+interface PublicClientPorts extends AppHeaderSource {
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
 }
 
@@ -14,7 +14,7 @@ export function createPublicClient({
   appVersion,
   appBuild,
   errorReporter,
-}: PublicClientDeps): KyInstance {
+}: PublicClientPorts): KyInstance {
   return ky.create({
     prefix: ENV.API_URL,
     timeout: API_REQUEST_TIMEOUT_MS,

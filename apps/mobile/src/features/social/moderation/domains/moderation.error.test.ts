@@ -17,7 +17,7 @@ describe('isReportTargetUnavailableError', () => {
 
   it('다른 서버 오류는 다시 시도할 수 있다고 본다', () => {
     // Given
-    const error = new ApiError('MEMO_0301', '한도 초과', 409);
+    const error = new ApiError('MEMO_2001', '한도 초과', 409);
 
     // When
     const result = isReportTargetUnavailableError(error);

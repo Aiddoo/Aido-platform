@@ -1,6 +1,6 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { subscribeTodoCreated } from '@src/core/events/todo-created';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 

@@ -1,12 +1,9 @@
 import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
-import { useSyncStorageString } from '@src/shared/hooks/use-sync-storage-string';
 import { deviceSyncStorage } from '@src/shared/infra/storage/device-sync-storage';
-import {
-  FONT_SCALE_STORAGE_KEY,
-  type FontScale,
-  toFontScale,
-} from '@src/shared/preferences/font-scale.preference';
-import type { TextSize } from '@src/shared/ui/text/text.types';
+import type { FontScale } from '@src/shared/preferences/font-scale.preference';
+import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
+import { useStoredValueIn } from '@src/shared/storage/use-stored-value';
+import type { TextSize } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { createContext, type PropsWithChildren, use, useCallback, useMemo } from 'react';
 
@@ -83,8 +80,7 @@ export function FontScaleProvider({
   children,
   syncStorage = deviceSyncStorage,
 }: FontScaleProviderProps) {
-  const [savedScale, setFontScale] = useSyncStorageString(syncStorage, FONT_SCALE_STORAGE_KEY);
-  const fontScale = toFontScale(savedScale);
+  const [fontScale, setFontScale] = useStoredValueIn(syncStorage, fontScaleStoredValue);
 
   const resolveSize = useCallback(
     (size: TextSize): TextSize => {

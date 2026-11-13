@@ -1,42 +1,30 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
-import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
+import { useAddSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { Box, HStack, VStack } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { type ComponentProps, useEffect } from 'react';
+import { type ComponentProps } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { useAddSubTodoMutationOptions } from '../queries/todo-composer.mutations';
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
-import { TodoComposerSubmitButton } from './todo-composer-fields';
+import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 type AddSubTodoBottomSheetProps = Omit<ComponentProps<typeof SubTodoBottomSheet>, 'children'>;
 
 export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
   return (
     <SubTodoBottomSheet {...props}>
-      {(close) => <AddSubTodoBottomSheet.Contents onClose={close} />}
+      {(close) => <AddSubTodoBottomSheet.Form onClose={close} />}
     </SubTodoBottomSheet>
   );
 }
 
-AddSubTodoBottomSheet.Contents = function Contents({ onClose }: { onClose: () => void }) {
-  const [todoId] = useTodoId();
-  const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
-
-  useEffect(() => {
-    if (todo == null) {
-      onClose();
-    }
-  }, [todo, onClose]);
+AddSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
+  const todo = useSheetTodo({ onMissing: onClose });
 
   if (todo == null) {
     return null;

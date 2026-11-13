@@ -8,6 +8,7 @@ export const customerInfoSchema = z.object({
   activeEntitlements: z.array(
     z.object({ store: subscriptionStoreSchema, productIdentifier: z.string() }),
   ),
+  managementUrl: z.string().nullable(),
 });
 export type CustomerInfo = z.infer<typeof customerInfoSchema>;
 

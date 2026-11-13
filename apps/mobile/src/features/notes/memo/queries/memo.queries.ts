@@ -1,46 +1,41 @@
-import { useMemoService } from '@src/bootstrap/providers/di-context';
+import { useMemoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
-import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
-import type { MemoPage } from '../domains/memo.model';
+import { MEMO_QUERY_KEYS } from './memo-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
-function selectMemos(data: InfiniteData<MemoPage>) {
-  return data.pages.flatMap((page) => page.items);
-}
-
 export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
 
   return queryOptions({
     queryKey: MEMO_QUERY_KEYS.detail({ memoId }),
-    queryFn: async ({ signal }) => unwrap(await memoService.getMemo(memoId, signal)),
+    queryFn: async ({ signal }) => unwrap(await memoApi.getMemo(memoId, signal)),
   });
 }
 
 export function useGetMemosInfiniteQueryOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
 
   return infiniteQueryOptions({
     queryKey: MEMO_QUERY_KEYS.list(),
     queryFn: async ({ pageParam, signal }) =>
-      unwrap(await memoService.getMemos({ cursor: pageParam, size: DEFAULT_PAGE_SIZE }, signal)),
+      unwrap(await memoApi.getMemos({ cursor: pageParam, size: DEFAULT_PAGE_SIZE }, signal)),
     initialPageParam: FIRST_PAGE_CURSOR,
-    getNextPageParam: ({ hasNext, nextCursor }) =>
-      hasNext ? (nextCursor ?? undefined) : undefined,
-    select: selectMemos,
+    getNextPageParam: getNextCursor,
+    select: selectPageItems,
   });
 }
 
 export function useGetMemoResourceLimitQueryOptions() {
-  const memoService = useMemoService();
+  const memoApi = useMemoApi();
 
   return queryOptions({
     queryKey: MEMO_QUERY_KEYS.resourceLimit(),
-    queryFn: async ({ signal }) => unwrap(await memoService.getResourceLimit(signal)),
+    queryFn: async ({ signal }) => unwrap(await memoApi.getResourceLimit(signal)),
     meta: { refreshOnPremiumChange: true },
   });
 }
