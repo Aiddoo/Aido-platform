@@ -9,7 +9,7 @@ import type { EntitlementFeature } from '../domains/entitlement.model';
 export const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 export const PLAY_STORE_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions';
 /** 웹훅이 서버에 도착·처리될 때까지 대기하는 시간 (ms) */
-export const WEBHOOK_SYNC_DELAY = 3_000;
+export const WEBHOOK_SYNC_DELAY_MS = 3_000;
 
 export type BenefitSlideTone = 'brand' | 'dark';
 
@@ -27,3 +27,6 @@ export const BENEFIT_SLIDES = [
   { feature: 'AI_SUGGESTION', image: benefitAiRoutineImage, tone: 'brand' },
   { feature: 'VOICE_NOTE', image: benefitAiVoiceNoteImage, tone: 'dark' },
 ] as const satisfies readonly BenefitSlide[];
+
+/** 결제 SDK 로그인·로그아웃과 그 뒤 속성 동기화가 멈춰도 다음 요청(로그아웃·다른 계정 로그인)과 결제를 막지 않게 끊는다. 토큰 발급과 같은 15초다 */
+export const PURCHASES_SDK_CALL_TIMEOUT_MS = 15_000;

@@ -1,45 +1,8 @@
-import type { SpeechStartOptions } from '@src/core/ports/speech-recognizer';
-
 import { createCaptureState, createTranscript } from '../__tests__/voice.fixtures';
-import { COMMON_SPEECH_HINTS } from '../constants/speech-hints';
-import { VoiceCapturePolicy } from './voice-capture.model';
+import { VoiceCapturePolicy, createVoiceCaptureState } from './voice-capture.model';
 import { voicePlanSchema } from './voice-plan.model';
 
 const NOW = 100_000;
-
-describe('getRecognizerStartOptions', () => {
-  const baseOptions: SpeechStartOptions = {
-    locale: 'ko-KR',
-    mode: 'quick',
-    hintWords: ['기획팀', '민지'],
-    isOnDevice: false,
-    recordingDirectory: null,
-  };
-
-  it('네트워크 인식이면 내 카테고리·할 일 이름은 빼고 흔한 단어만 준다', () => {
-    // Given
-    const options = { ...baseOptions, isOnDevice: false };
-
-    // When
-    const result = VoiceCapturePolicy.getRecognizerStartOptions(options);
-
-    // Then
-    expect(result.hintWords).toEqual(COMMON_SPEECH_HINTS['ko-KR']);
-    expect(result.hintWords).not.toContain('기획팀');
-  });
-
-  it('기기 안 인식이면 내 카테고리·할 일 이름을 앞에 두고 겹치는 단어는 한 번만 준다', () => {
-    // Given
-    const options = { ...baseOptions, isOnDevice: true, hintWords: ['기획팀', '분기'] };
-
-    // When
-    const result = VoiceCapturePolicy.getRecognizerStartOptions(options);
-
-    // Then
-    expect(result.hintWords.slice(0, 2)).toEqual(['기획팀', '분기']);
-    expect(result.hintWords.filter((hint) => hint === '분기')).toHaveLength(1);
-  });
-});
 
 describe('reduceVoiceCapture', () => {
   const plan = voicePlanSchema.parse({
@@ -52,7 +15,7 @@ describe('reduceVoiceCapture', () => {
 
   it('준비 → 듣기 시작 순서로 진행한다', () => {
     // Given
-    const idle = VoiceCapturePolicy.createVoiceCaptureState();
+    const idle = createVoiceCaptureState();
 
     // When
     const preparing = VoiceCapturePolicy.reduceVoiceCapture(idle, { type: 'prepare' });
@@ -324,13 +287,13 @@ describe('reduceVoiceCapture', () => {
     const cancelled = VoiceCapturePolicy.reduceVoiceCapture(planning, { type: 'cancel' });
 
     // Then
-    expect(planned).toEqual(VoiceCapturePolicy.createVoiceCaptureState());
-    expect(cancelled).toEqual(VoiceCapturePolicy.createVoiceCaptureState());
+    expect(planned).toEqual(createVoiceCaptureState());
+    expect(cancelled).toEqual(createVoiceCaptureState());
   });
 
   it('상태에 맞지 않는 이벤트는 무시한다', () => {
     // Given
-    const idle = VoiceCapturePolicy.createVoiceCaptureState();
+    const idle = createVoiceCaptureState();
 
     // When
     const state = VoiceCapturePolicy.reduceVoiceCapture(idle, { type: 'start', at: NOW });
@@ -418,7 +381,7 @@ describe('reduceVoiceCapture', () => {
     // Given
     const state = VoiceCapturePolicy.reduceVoiceCapture(
       VoiceCapturePolicy.reduceVoiceCapture(
-        VoiceCapturePolicy.reduceVoiceCapture(VoiceCapturePolicy.createVoiceCaptureState(), {
+        VoiceCapturePolicy.reduceVoiceCapture(createVoiceCaptureState(), {
           type: 'prepare',
         }),
         {
@@ -523,6 +486,7 @@ describe('canResumeWithinLimit', () => {
 describe('shouldAutoFinish', () => {
   it('말이 2.5초 멈추고 글자가 있을 때만 자동으로 마무리한다', () => {
     // Given
+    const silenceLimitMs = 2_500;
     const spoken = createCaptureState({
       status: 'listening',
       listeningSince: NOW,
@@ -532,9 +496,9 @@ describe('shouldAutoFinish', () => {
 
     // When
     const results = [
-      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_499),
-      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_500),
-      VoiceCapturePolicy.shouldAutoFinish(empty, 5_000),
+      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_499, silenceLimitMs),
+      VoiceCapturePolicy.shouldAutoFinish(spoken, 2_500, silenceLimitMs),
+      VoiceCapturePolicy.shouldAutoFinish(empty, 5_000, silenceLimitMs),
     ];
 
     // Then
@@ -597,27 +561,39 @@ describe('getDismissAction', () => {
 });
 
 describe('shouldOfferVoiceNote', () => {
-  it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
+  const LIMIT_SECONDS = 90;
+  const causes = ['limit', 'user', 'interrupted', 'app-background'] as const;
+
+  it.each(
+    causes.flatMap((cause) => [
+      { cause, elapsedMs: 89_999, expected: false },
+      { cause, elapsedMs: 90_000, expected: true },
+      { cause, elapsedMs: 120_000, expected: true },
+    ]),
+  )(
+    '$cause로 $elapsedMs ms에 멈추면 남은 시간이 없을 때만 말로 메모하기를 제안한다($expected)',
+    ({ cause, elapsedMs, expected }) => {
+      // Given
+      const paused = createCaptureState({ status: 'paused', cause, elapsedMs });
+
+      // When
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, LIMIT_SECONDS);
+
+      // Then
+      expect(offers).toBe(expected);
+    },
+  );
+
+  it('듣는 중에는 시간을 다 써도 제안하지 않는다', () => {
     // Given
-    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
-
-    // When
-    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
-
-    // Then
-    expect(offers).toBe(true);
-  });
-
-  it('앱 이탈로 잠깐 멈춘 것은 제안하지 않는다', () => {
-    // Given
-    const paused = createCaptureState({
-      status: 'paused',
-      cause: 'app-background',
-      elapsedMs: 30_000,
+    const listening = createCaptureState({
+      status: 'listening',
+      listeningSince: NOW,
+      elapsedMs: 90_000,
     });
 
     // When
-    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused);
+    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(listening, LIMIT_SECONDS);
 
     // Then
     expect(offers).toBe(false);

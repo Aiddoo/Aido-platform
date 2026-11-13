@@ -2,7 +2,7 @@ import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-export const aiSuggestionSchema = z.object({
+const aiSuggestionSchema = z.object({
   id: z.number(),
   title: z.string(),
   daysOfWeek: z.array(z.enum(DAYS_OF_WEEK)),

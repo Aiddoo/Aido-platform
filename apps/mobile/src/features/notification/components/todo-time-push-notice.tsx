@@ -1,11 +1,10 @@
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
-import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
+import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import { useOpenPushSettingsMutationOptions } from '../queries/push-permission.mutations';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 
 interface TodoTimePushNoticeProps {
@@ -16,10 +15,9 @@ interface TodoTimePushNoticeProps {
 /** 알림이 꺼진 채 시간을 정하면 저장은 막지 않고 알림이 가지 않는다는 것만 한 줄로 알린다 */
 export function TodoTimePushNotice({ isTimed }: TodoTimePushNoticeProps) {
   const { t } = useTranslation('notification');
-  const { trackEvent } = useTrack();
   // 권한을 아직 모르면 칩 줄이 밀리지 않게 그리지 않는다
   const { data: permission } = useQuery(useGetPushPermissionQueryOptions());
-  const openSettings = useMutation(useOpenPushSettingsMutationOptions());
+  const { runStep, isPending } = usePushPermissionAction({ source: 'todo_time' });
 
   if (
     !isTimed ||
@@ -41,11 +39,8 @@ export function TodoTimePushNotice({ isTimed }: TodoTimePushNoticeProps) {
       <TextButton
         size="small"
         variant="underline"
-        onPress={() =>
-          openSettings.mutate(undefined, {
-            onSuccess: () => trackEvent('push_permission_settings_opened', { source: 'todo_time' }),
-          })
-        }
+        isDisabled={isPending}
+        onPress={() => runStep(PUSH_PERMISSION_STEP.OPEN_SETTINGS)}
       >
         {t('permission.card.openSettings')}
       </TextButton>

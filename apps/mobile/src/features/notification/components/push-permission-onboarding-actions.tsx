@@ -1,17 +1,16 @@
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, STACK_CLOSE_ICON } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { PUSH_PERMISSION_STEP } from '../constants/notification.constants';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { useRequestPushPermissionMutationOptions } from '../queries/push-permission.mutations';
+import { usePushPermissionAction } from '../hooks/use-push-permission-action';
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 
 const SOURCE: PushPermissionPromptSource = 'onboarding';
@@ -20,13 +19,17 @@ const SOURCE: PushPermissionPromptSource = 'onboarding';
 export function PushPermissionOnboardingActions() {
   const { t } = useTranslation(['notification', 'common']);
   const { trackEvent } = useTrack();
-  const { data: me } = useQuery(useGetMeQueryOptions());
-  const [_deferredAt, setDeferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
-  const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
+  const accountId = useMyAccountId();
+  const [_deferredAt, setDeferredAt] = useStoredValue(
+    pushPermissionDeferredAtStoredValue,
+    accountId,
+  );
+  const { runStep, isPending } = usePushPermissionAction({ source: SOURCE });
 
-  useEffect(() => {
-    trackEvent('push_permission_prompt_shown', { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK });
-  }, [trackEvent]);
+  useTrackView('push_permission_prompt_shown', {
+    key: PUSH_PERMISSION_STEP.ASK,
+    params: { source: SOURCE, step: PUSH_PERMISSION_STEP.ASK },
+  });
 
   const handleClose = useCallback(() => {
     trackEvent('push_permission_prompt_dismissed', {
@@ -45,9 +48,7 @@ export function PushPermissionOnboardingActions() {
   });
 
   const handleContinue = () => {
-    requestPermission.mutate(undefined, {
-      onSuccess: (permission) =>
-        trackEvent('push_permission_requested', { source: SOURCE, status: permission.status }),
+    runStep(PUSH_PERMISSION_STEP.ASK, {
       // 권한 창을 띄우지 못하면 권한이 그대로라 화면이 닫히지 않는다. 앱은 알림 없이도 쓸 수 있게 넘긴다
       onError: () => setDeferredAt(getNowInstant()),
     });
@@ -59,11 +60,11 @@ export function PushPermissionOnboardingActions() {
         <Stack.Toolbar.Button
           icon={STACK_CLOSE_ICON}
           accessibilityLabel={t('common:actions.close')}
-          disabled={requestPermission.isPending}
+          disabled={isPending}
           onPress={handleClose}
         />
       </Stack.Toolbar>
-      <Button size="large" isLoading={requestPermission.isPending} onPress={handleContinue}>
+      <Button size="large" isLoading={isPending} onPress={handleContinue}>
         {t('notification:permission.continue')}
       </Button>
     </>

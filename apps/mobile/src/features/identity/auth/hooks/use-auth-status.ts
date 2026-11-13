@@ -3,5 +3,5 @@ import { useSyncExternalStore } from 'react';
 
 export function useAuthStatus() {
   const store = useAuthSessionStore();
-  return useSyncExternalStore(store.subscribe, () => store.getState().status);
+  return useSyncExternalStore(store.subscribe, () => store.getSnapshot().status);
 }

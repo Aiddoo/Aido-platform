@@ -74,3 +74,15 @@ export const DEMO_SCRIPT = {
   sentenceMs: 900,
   digestStepMs: 700,
 } as const;
+
+/** 소개 단계 순서. 이름은 지표 값(whats_new_step_viewed.step)이라 바꾸지 않는다 */
+export const RELEASE_1_15_0_STEPS = [
+  'intro',
+  'voiceTodoCapture',
+  'voiceTodoReview',
+  'voiceTodoList',
+  'voiceNoteRecord',
+  'voiceNoteResult',
+  'freeQuota',
+  'finish',
+] as const;

@@ -6,11 +6,13 @@ import {
 import { toNullableInstant } from '@src/shared/date/instant';
 import { mapValues, pick } from 'es-toolkit';
 
+import { findLimitedFeatureByErrorCode, findQuotaErrorDetails } from '../domains/entitlement.error';
 import {
   type EntitlementSnapshot,
   entitlementSnapshotSchema,
   type FeatureQuota,
   featureQuotaSchema,
+  type LimitedFeature,
 } from '../domains/entitlement.model';
 
 export function toFeatureQuota(dto: FeatureQuotaDto): FeatureQuota {
@@ -37,4 +39,18 @@ export function toEntitlementSnapshot(dto: EntitlementSnapshotDto): EntitlementS
     tier: dto.tier,
     features: mapValues(pick(dto.features, PLAN_FEATURE_KEYS), toFeatureQuota),
   } satisfies Record<keyof EntitlementSnapshotDto, unknown>);
+}
+
+/** 한도 오류의 기능과 서버가 함께 준 현재 한도. 한도 오류가 아니면 null이다 */
+export function parseLimitedFeature(error: unknown): LimitedFeature | null {
+  const feature = findLimitedFeatureByErrorCode(error);
+  if (feature == null) {
+    return null;
+  }
+  return { feature, featureQuota: parseErrorFeatureQuota(error) };
+}
+
+export function parseErrorFeatureQuota(error: unknown): FeatureQuota | null {
+  const details = findQuotaErrorDetails(error);
+  return details == null ? null : toFeatureQuota(details.featureQuota);
 }

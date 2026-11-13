@@ -1,4 +1,5 @@
 import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
+import { IDEMPOTENCY_KEY_HEADER } from "@aido/api/vocabulary";
 /**
  * Memo E2E 테스트
  *
@@ -119,6 +120,49 @@ describe("메모 E2E", () => {
       expect(response.body.data.memo.content).toBe("장보기: 우유, 계란");
       expect(response.body.data.memo.isPinned).toBe(false);
       expect(response.body.data.memo.userId).toBe(user.userId);
+    });
+
+    it("같은 Idempotency-Key로 다시 보내면 처음 만든 메모를 201로 돌려주고 하나만 남는다", async () => {
+      // Given - 응답을 받지 못한 저장의 키
+      const user = await ctx.helpers.createVerifiedUser("memo-create-retry@test.com", password);
+      const send = () =>
+        request(ctx.app.getHttpServer())
+          .post("/v1/memos")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set(IDEMPOTENCY_KEY_HEADER, "memo-create-retry-1")
+          .send({ content: "시간 초과된 메모" })
+          .expect(201);
+      const first = await send();
+
+      // When - 같은 키로 다시 저장
+      const retried = await send();
+
+      // Then - 같은 메모이고 응답에 키가 실리지 않는다
+      const list = await request(ctx.app.getHttpServer())
+        .get("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      expect(retried.body.data.memo).toEqual(first.body.data.memo);
+      expect(retried.body.data.memo).not.toHaveProperty("idempotencyKey");
+      expect(list.body.data.items).toHaveLength(1);
+    });
+
+    it("같은 Idempotency-Key로 글이 다른 저장은 409 MEMO_2004다", async () => {
+      // Given - 이미 그 키로 저장한 메모
+      const user = await ctx.helpers.createVerifiedUser("memo-create-mismatch@test.com", password);
+      const send = (content: string) =>
+        request(ctx.app.getHttpServer())
+          .post("/v1/memos")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set(IDEMPOTENCY_KEY_HEADER, "memo-create-mismatch-1")
+          .send({ content });
+      await send("처음 글").expect(201);
+
+      // When - 같은 키로 다른 글
+      const response = await send("고친 글").expect(409);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2004");
     });
 
     it("빈 내용으로 생성 시 400 에러 반환 (SYS_0002)", async () => {

@@ -3,7 +3,8 @@ import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { useTranslation } from '@src/shared/i18n';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import {
   HStack,
   PawIcon,
@@ -18,13 +19,14 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { NudgeLimitPolicy } from '../domains/todo-nudge.model';
+import { isLimitReached } from '../domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/todo-nudge.queries';
 
 export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
-  const isLimitReached = NudgeLimitPolicy.isLimitReached(limitInfo);
+  const isReached = isLimitReached(limitInfo);
 
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
   // 다시 생기는 때는 서버 한도 스냅샷이 원본이다. 아직 없으면 제목만 보인다
@@ -33,13 +35,11 @@ export function NudgeLimitBanner() {
   const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (
-    <>
-      {t('nudge.promptPrefix')}{' '}
-      <Text size="b3" weight="bold" className="text-main">
-        {t('nudge.promptHighlight')}
-      </Text>{' '}
-      {t('nudge.promptSuffix')}
-    </>
+    <Trans
+      t={t}
+      i18nKey="nudge.prompt"
+      components={{ highlight: <Text size="b3" weight="bold" className="text-main" /> }}
+    />
   );
 
   const hint = {
@@ -49,7 +49,11 @@ export function NudgeLimitBanner() {
         <Text size="e1" shade={6}>
           {t('nudge.hintPrefix')}
         </Text>
-        <PawIcon width={14} height={14} colorClassName="text-main" />
+        <PawIcon
+          width={fontScaledSize(14)}
+          height={fontScaledSize(14)}
+          colorClassName="text-main"
+        />
         <Text size="e1" shade={6}>
           {t('nudge.hintSuffix')}
         </Text>
@@ -57,8 +61,8 @@ export function NudgeLimitBanner() {
     ),
   };
 
-  const bannerText = match({ ...limitInfo, isLimitReached })
-    .with({ isLimitReached: true }, () => ({
+  const bannerText = match({ ...limitInfo, isReached })
+    .with({ isReached: true }, () => ({
       title: t('nudge.limitSpentTitle'),
       description: refill != null && (
         <Text size="e1" shade={6}>
@@ -80,12 +84,12 @@ export function NudgeLimitBanner() {
   return (
     <PressableFeedback
       onPress={() => gate.promptIfBlocked()}
-      isDisabled={!isLimitReached}
+      isDisabled={!isReached}
       className="rounded-xl"
     >
       <HStack className="rounded-xl bg-gray-1 px-3" align="center" gap={12}>
         <Image
-          source={isLimitReached ? aidoNoBannerImage : aidoBannerImage}
+          source={isReached ? aidoNoBannerImage : aidoBannerImage}
           className="size-[72px]"
           contentFit="contain"
         />

@@ -1,10 +1,10 @@
-/** null은 내 정보·권한을 아직 몰라 알림 화면을 열지 말지 정하지 못한 때다 */
-type PushOnboardingGuardState = boolean | null;
+/** `pending`은 내 정보·권한을 아직 몰라 알림 화면을 열지 말지 정하지 못한 때다 */
+export type PushOnboardingGuardState = 'open' | 'closed' | 'pending';
 
 export interface PushOnboardingGuardStore {
   getSnapshot(): PushOnboardingGuardState;
   subscribe(listener: () => void): () => void;
-  markRendered(isDue: PushOnboardingGuardState): void;
+  markRendered(state: PushOnboardingGuardState): void;
   clear(): void;
 }
 
@@ -14,7 +14,7 @@ export interface PushOnboardingGuardStore {
  */
 export function createPushOnboardingGuardStore(): PushOnboardingGuardStore {
   const listeners = new Set<() => void>();
-  let state: PushOnboardingGuardState = null;
+  let state: PushOnboardingGuardState = 'pending';
 
   function setState(next: PushOnboardingGuardState) {
     if (next === state) {
@@ -35,6 +35,6 @@ export function createPushOnboardingGuardStore(): PushOnboardingGuardStore {
       };
     },
     markRendered: setState,
-    clear: () => setState(null),
+    clear: () => setState('pending'),
   };
 }

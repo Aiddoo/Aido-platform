@@ -1,9 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { BroadcastDeliveryMode } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { invalidBroadcastDelivery } from "./broadcasts.errors.js";
 
 type NowMode = Extract<BroadcastDeliveryMode, "NOW">;
 type LocalTimeMode = Extract<BroadcastDeliveryMode, "RECIPIENT_LOCAL_TIME">;
@@ -37,7 +37,7 @@ export class BroadcastDelivery extends ValueObject<BroadcastDeliveryValue> {
             date: Temporal.PlainDate.from(local.date),
           });
         } catch {
-          throw new DomainException(ErrorCode.SYS_0002, { field: "delivery" });
+          throw invalidBroadcastDelivery();
         }
       })
       .exhaustive();

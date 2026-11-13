@@ -13,7 +13,7 @@ paths:
 - 컴포넌트는 자기 데이터를 스스로 조회한다. 화면 id는 prop이 아니라 route 훅으로 읽는다. 목록 행은 route 훅을 부르지 않는다.
 - 부모 없이 의미 없는 조각은 종류와 무관하게 `Parent.Part`로 부모 파일에 둔다(`X.Item = function Item()`). 쓰지 않는 부속은 만들지 않는다.
 - 같은 모양으로 반복되는 고정 UI는 역할이 드러나는 지역 컴포넌트를 만들고 항목마다 한 줄씩 쓴다. 설정 배열을 `.map`하지 않는다. 서버 데이터 목록만 `.map`·`FlashList`다.
-- 위치 이름을 쓰지 않는다: `*Section/*Detail/*Content/*Panel/*Area/*Info`, 단독 `*Header/*Footer`, `Wrapper/Inner/Body/Frame`.
+- 위치 이름(`*Section`·`*Detail`·`*Content`·`*Panel`·`*Inner` 등, 단독 `*Header`·`*Footer`)을 쓰지 않는다(`aido/component-name`, 전체 목록은 [UI](../../docs/architecture/ui.md#네임스페이스반복-ui추출)).
 - 컴포넌트는 바깥 여백(`m*`)을 모른다. 간격은 부모가 `<Spacing>`으로 둔다.
 
 **부품과 스타일**

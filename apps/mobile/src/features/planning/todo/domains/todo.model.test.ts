@@ -1,12 +1,17 @@
 import { toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
+import type { TodoRepeat } from './todo-repeat.model';
 import {
   getShiftedEndDate,
   getVisibility,
   hasScheduleChanged,
   isPrivateVisibility,
+  type TodoSchedule,
   TodoPolicy,
+  withScheduleRepeat,
+  withScheduleStartDate,
   withVisibilityToggled,
 } from './todo.model';
 
@@ -26,8 +31,8 @@ describe('isLastOpenTodo', () => {
     // Given
     const multiDay = createParentTodo({
       id: 7,
-      startDate: '2026-10-26',
-      endDate: '2026-10-28',
+      startDate: createDateKey('2026-10-26'),
+      endDate: createDateKey('2026-10-28'),
       completed: false,
     });
     const lastOpen = [createParentTodo({ id: 1, completed: true }), multiDay];
@@ -60,12 +65,15 @@ describe('isLastOpenTodo', () => {
 describe('getShiftedEndDate', () => {
   it('날짜를 옮겨도 기간 길이를 유지하고 하루짜리는 null이다', () => {
     // Given
-    const multiDay = { startDate: '2026-11-05', endDate: '2026-11-07' };
-    const oneDay = { startDate: '2026-11-05', endDate: null };
+    const multiDay = {
+      startDate: createDateKey('2026-11-05'),
+      endDate: createDateKey('2026-11-07'),
+    };
+    const oneDay = { startDate: createDateKey('2026-11-05'), endDate: null };
 
     // When
-    const shifted = getShiftedEndDate(multiDay, '2026-11-29');
-    const unchanged = getShiftedEndDate(oneDay, '2026-11-29');
+    const shifted = getShiftedEndDate(multiDay, createDateKey('2026-11-29'));
+    const unchanged = getShiftedEndDate(oneDay, createDateKey('2026-11-29'));
 
     // Then
     expect(shifted).toBe('2026-12-01');
@@ -133,15 +141,23 @@ describe('getLocalTime', () => {
 });
 
 describe('hasUpcomingTimedTodo', () => {
-  const now = { dateKey: '2026-11-05', time: '12:00', timeZone: 'Asia/Seoul' };
+  const now = { dateKey: createDateKey('2026-11-05'), time: '12:00', timeZone: 'Asia/Seoul' };
 
   it.each([
-    ['내일 시간 있는 할 일', { startDate: '2026-11-06', localTime: '09:00' }, true],
-    ['오늘 아직 지나지 않은 시각', { startDate: '2026-11-05', localTime: '12:30' }, true],
-    ['오늘 이미 지난 시각', { startDate: '2026-11-05', localTime: '11:59' }, false],
-    ['어제 시각', { startDate: '2026-11-04', localTime: '23:00' }, false],
-    ['종일 할 일', { startDate: '2026-11-06', localTime: null }, false],
-    ['완료한 할 일', { startDate: '2026-11-06', localTime: '09:00', completed: true }, false],
+    ['내일 시간 있는 할 일', { startDate: createDateKey('2026-11-06'), localTime: '09:00' }, true],
+    [
+      '오늘 아직 지나지 않은 시각',
+      { startDate: createDateKey('2026-11-05'), localTime: '12:30' },
+      true,
+    ],
+    ['오늘 이미 지난 시각', { startDate: createDateKey('2026-11-05'), localTime: '11:59' }, false],
+    ['어제 시각', { startDate: createDateKey('2026-11-04'), localTime: '23:00' }, false],
+    ['종일 할 일', { startDate: createDateKey('2026-11-06'), localTime: null }, false],
+    [
+      '완료한 할 일',
+      { startDate: createDateKey('2026-11-06'), localTime: '09:00', completed: true },
+      false,
+    ],
   ])('%s', (_name, overrides, expected) => {
     // Given
     const todos = [createParentTodo({ completed: false, ...overrides })];
@@ -186,13 +202,16 @@ describe('findTodo', () => {
 describe('getOptimisticListDate', () => {
   it('오늘이 기간 안인 여러 날 할 일은 오늘 목록을, 그 밖은 시작일 목록을 고친다', () => {
     // Given
-    const multiDay = createParentTodo({ startDate: '2026-11-05', endDate: '2026-11-09' });
-    const pastOneDay = createParentTodo({ startDate: '2026-11-01', endDate: null });
+    const multiDay = createParentTodo({
+      startDate: createDateKey('2026-11-05'),
+      endDate: createDateKey('2026-11-09'),
+    });
+    const pastOneDay = createParentTodo({ startDate: createDateKey('2026-11-01'), endDate: null });
 
     // When
     const dates = [
-      TodoPolicy.getOptimisticListDate(multiDay, '2026-11-07'),
-      TodoPolicy.getOptimisticListDate(pastOneDay, '2026-11-07'),
+      TodoPolicy.getOptimisticListDate(multiDay, createDateKey('2026-11-07')),
+      TodoPolicy.getOptimisticListDate(pastOneDay, createDateKey('2026-11-07')),
     ];
 
     // Then
@@ -217,7 +236,6 @@ describe('withVisibilityToggled', () => {
 describe('getVisibility', () => {
   it.each([
     [null, 'PUBLIC'],
-    [undefined, 'PUBLIC'],
     ['PUBLIC', 'PUBLIC'],
     ['PRIVATE', 'PRIVATE'],
   ] as const)('공개 범위를 %s로 두면 %s로 본다', (visibility, expected) => {
@@ -281,38 +299,38 @@ describe('isTodoOnDate', () => {
   it.each([
     {
       title: '하루짜리는 그날만 포함한다',
-      todo: { startDate: '2026-11-05', endDate: null },
-      date: '2026-11-05',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: null },
+      date: createDateKey('2026-11-05'),
       expected: true,
     },
     {
       title: '하루짜리는 다음 날에는 포함하지 않는다',
-      todo: { startDate: '2026-11-05', endDate: null },
-      date: '2026-11-06',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: null },
+      date: createDateKey('2026-11-06'),
       expected: false,
     },
     {
       title: '여러 날은 시작일을 포함한다',
-      todo: { startDate: '2026-11-05', endDate: '2026-11-07' },
-      date: '2026-11-05',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: createDateKey('2026-11-07') },
+      date: createDateKey('2026-11-05'),
       expected: true,
     },
     {
       title: '여러 날은 종료일을 포함한다',
-      todo: { startDate: '2026-11-05', endDate: '2026-11-07' },
-      date: '2026-11-07',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: createDateKey('2026-11-07') },
+      date: createDateKey('2026-11-07'),
       expected: true,
     },
     {
       title: '여러 날은 시작일 전날을 포함하지 않는다',
-      todo: { startDate: '2026-11-05', endDate: '2026-11-07' },
-      date: '2026-11-04',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: createDateKey('2026-11-07') },
+      date: createDateKey('2026-11-04'),
       expected: false,
     },
     {
       title: '여러 날은 종료일 다음 날을 포함하지 않는다',
-      todo: { startDate: '2026-11-05', endDate: '2026-11-07' },
-      date: '2026-11-08',
+      todo: { startDate: createDateKey('2026-11-05'), endDate: createDateKey('2026-11-07') },
+      date: createDateKey('2026-11-08'),
       expected: false,
     },
   ])('$title', ({ todo, date, expected }) => {
@@ -327,11 +345,19 @@ describe('isTodoOnDate', () => {
 describe('isMultiDayTodo', () => {
   it.each([
     { title: '종료일이 없으면 여러 날이 아니다', endDate: null, expected: false },
-    { title: '종료일이 시작일과 같으면 여러 날이 아니다', endDate: '2026-11-05', expected: false },
-    { title: '종료일이 시작일보다 늦으면 여러 날이다', endDate: '2026-11-06', expected: true },
+    {
+      title: '종료일이 시작일과 같으면 여러 날이 아니다',
+      endDate: createDateKey('2026-11-05'),
+      expected: false,
+    },
+    {
+      title: '종료일이 시작일보다 늦으면 여러 날이다',
+      endDate: createDateKey('2026-11-06'),
+      expected: true,
+    },
   ])('$title', ({ endDate, expected }) => {
     // Given
-    const todo = createParentTodo({ startDate: '2026-11-05', endDate });
+    const todo = createParentTodo({ startDate: createDateKey('2026-11-05'), endDate });
 
     // When
     const result = TodoPolicy.isMultiDayTodo(todo);
@@ -430,8 +456,68 @@ describe('isRecurringTodo', () => {
   });
 });
 
+const REPEAT_RULE: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 1,
+  weekdays: ['MON'],
+  end: { type: 'NEVER' },
+};
+const RULE_OCCURRENCE = createParentTodo({ recurrenceGroupId: 'series-1', repeat: REPEAT_RULE });
+const RULELESS_OCCURRENCE = createParentTodo({ recurrenceGroupId: 'old-group', repeat: null });
+const SINGLE_TODO = createParentTodo({ recurrenceGroupId: null, repeat: null });
+
+describe('hasRepeatRule', () => {
+  it.each([
+    { title: '규칙 있는 회차는 반복 규칙이 있다', todo: RULE_OCCURRENCE, expected: true },
+    { title: '규칙 없는 묶음은 반복 규칙이 없다', todo: RULELESS_OCCURRENCE, expected: false },
+    { title: '단일 할 일은 반복 규칙이 없다', todo: SINGLE_TODO, expected: false },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const result = TodoPolicy.hasRepeatRule(todo);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('canChangeRepeat', () => {
+  it.each([
+    { title: '규칙 있는 회차는 반복을 바꿀 수 있다', todo: RULE_OCCURRENCE, expected: true },
+    { title: '규칙 없는 묶음은 반복을 바꿀 수 없다', todo: RULELESS_OCCURRENCE, expected: false },
+    { title: '단일 할 일은 반복을 새로 정할 수 있다', todo: SINGLE_TODO, expected: true },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const result = TodoPolicy.canChangeRepeat(todo);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getDeleteScopes', () => {
+  it.each([
+    {
+      title: '규칙 있는 회차는 이번만, 이후 전체, 전체를 고를 수 있다',
+      todo: RULE_OCCURRENCE,
+      expected: ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'],
+    },
+    {
+      title: '규칙 없는 묶음은 이후 전체를 정할 수 없어 이번만과 전체만 고른다',
+      todo: RULELESS_OCCURRENCE,
+      expected: ['THIS_ONLY', 'ALL'],
+    },
+    { title: '단일 할 일은 고를 범위가 없다', todo: SINGLE_TODO, expected: [] },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const scopes = TodoPolicy.getDeleteScopes(todo);
+
+    // Then
+    expect(scopes).toEqual(expected);
+  });
+});
+
 describe('getTodayToggleDates', () => {
-  const TODAY = '2026-03-08';
+  const TODAY = createDateKey('2026-03-08');
 
   it('오늘 시작한 할 일은 내일로 옮긴다', () => {
     // Given
@@ -447,8 +533,8 @@ describe('getTodayToggleDates', () => {
 
   it('다른 날 할 일은 오늘로 옮긴다', () => {
     // Given
-    const yesterday = createParentTodo({ startDate: '2026-03-07', endDate: null });
-    const tomorrow = createParentTodo({ startDate: '2026-03-09', endDate: null });
+    const yesterday = createParentTodo({ startDate: createDateKey('2026-03-07'), endDate: null });
+    const tomorrow = createParentTodo({ startDate: createDateKey('2026-03-09'), endDate: null });
 
     // When
     const fromYesterday = TodoPolicy.getTodayToggleDates(yesterday, TODAY);
@@ -461,7 +547,10 @@ describe('getTodayToggleDates', () => {
 
   it('끝 날짜가 새 시작일보다 하루 앞서면 지운다', () => {
     // Given
-    const todo = createParentTodo({ startDate: '2026-03-05', endDate: '2026-03-07' });
+    const todo = createParentTodo({
+      startDate: createDateKey('2026-03-05'),
+      endDate: createDateKey('2026-03-07'),
+    });
 
     // When
     const result = TodoPolicy.getTodayToggleDates(todo, TODAY);
@@ -473,8 +562,11 @@ describe('getTodayToggleDates', () => {
 
   it('끝 날짜가 새 시작일과 같거나 뒤면 남긴다', () => {
     // Given
-    const endsToday = createParentTodo({ startDate: '2026-03-05', endDate: TODAY });
-    const endsTomorrow = createParentTodo({ startDate: '2026-03-05', endDate: '2026-03-09' });
+    const endsToday = createParentTodo({ startDate: createDateKey('2026-03-05'), endDate: TODAY });
+    const endsTomorrow = createParentTodo({
+      startDate: createDateKey('2026-03-05'),
+      endDate: createDateKey('2026-03-09'),
+    });
 
     // When
     const sameDay = TodoPolicy.getTodayToggleDates(endsToday, TODAY);
@@ -488,7 +580,7 @@ describe('getTodayToggleDates', () => {
   it('오늘 끝나는 여러 날 할 일을 내일로 옮기면 지난 끝 날짜를 지운다', () => {
     // Given
     const endsToday = createParentTodo({ startDate: TODAY, endDate: TODAY });
-    const endsLater = createParentTodo({ startDate: TODAY, endDate: '2026-03-10' });
+    const endsLater = createParentTodo({ startDate: TODAY, endDate: createDateKey('2026-03-10') });
 
     // When
     const shortened = TodoPolicy.getTodayToggleDates(endsToday, TODAY);
@@ -502,12 +594,104 @@ describe('getTodayToggleDates', () => {
 
   it('달의 마지막 날에 오늘 할 일을 옮기면 다음 달 1일이다', () => {
     // Given
-    const todo = createParentTodo({ startDate: '2026-03-31', endDate: null });
+    const todo = createParentTodo({ startDate: createDateKey('2026-03-31'), endDate: null });
 
     // When
-    const result = TodoPolicy.getTodayToggleDates(todo, '2026-03-31');
+    const result = TodoPolicy.getTodayToggleDates(todo, createDateKey('2026-03-31'));
 
     // Then
     expect(result).toEqual({ startDate: '2026-04-01', endDate: null });
+  });
+});
+
+describe('withScheduleStartDate', () => {
+  const schedule = (overrides: Partial<TodoSchedule> = {}): TodoSchedule => ({
+    startDate: createDateKey('2026-11-05'),
+    endDate: null,
+    scheduledTime: null,
+    isAllDay: true,
+    repeat: null,
+    ...overrides,
+  });
+
+  it.each([
+    {
+      label: '평일',
+      startDate: '2026-11-05',
+      endDate: '2026-11-07',
+      movedTo: '2026-11-10',
+      expected: '2026-11-12',
+    },
+    {
+      label: 'LA 서머타임이 끝나는 날(25시간)을 낀 기간',
+      startDate: '2026-10-31',
+      endDate: '2026-11-02',
+      movedTo: '2026-11-01',
+      expected: '2026-11-03',
+    },
+    {
+      label: 'LA 서머타임이 시작하는 날(23시간)을 낀 기간',
+      startDate: '2026-03-07',
+      endDate: '2026-03-09',
+      movedTo: '2026-03-08',
+      expected: '2026-03-10',
+    },
+    {
+      label: '연말을 넘는 기간',
+      startDate: '2026-12-30',
+      endDate: '2027-01-02',
+      movedTo: '2027-02-27',
+      expected: '2027-03-02',
+    },
+  ])(
+    '시작일을 옮기면 기간 일수를 유지한다: $label',
+    ({ startDate, endDate, movedTo, expected }) => {
+      // When
+      const result = withScheduleStartDate(
+        schedule({ startDate: createDateKey(startDate), endDate: createDateKey(endDate) }),
+        createDateKey(movedTo),
+        {
+          isSeriesOccurrence: false,
+        },
+      );
+
+      // Then
+      expect(result).toMatchObject({ startDate: movedTo, endDate: expected });
+    },
+  );
+
+  it('반복 회차의 날짜를 옮기면 반복 규칙은 그대로 둔다', () => {
+    // Given
+    const repeat: TodoRepeat = { frequency: 'MONTHLY', monthDay: 5, end: { type: 'NEVER' } };
+
+    // When
+    const result = withScheduleStartDate(schedule({ repeat }), createDateKey('2026-11-09'), {
+      isSeriesOccurrence: true,
+    });
+
+    // Then
+    expect(result.repeat).toBe(repeat);
+  });
+});
+
+describe('withScheduleRepeat', () => {
+  it('반복으로 바꾸면 기간(끝 날짜)을 지운다', () => {
+    // When
+    const result = withScheduleRepeat(
+      {
+        startDate: createDateKey('2026-11-05'),
+        endDate: createDateKey('2026-11-07'),
+        scheduledTime: null,
+        isAllDay: true,
+        repeat: null,
+      },
+      {
+        startDate: createDateKey('2026-11-05'),
+        repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+      },
+    );
+
+    // Then
+    expect(result.endDate).toBeNull();
   });
 });

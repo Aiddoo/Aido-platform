@@ -1,12 +1,11 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { OAUTH_STATE_EXPIRY_MINUTES, type OAuthMode } from "../../domain/auth.constants.js";
+import { invalidCredentials, unsupportedOAuthProvider } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
@@ -38,10 +37,7 @@ export class StartOAuthAuthorizationUseCase {
   async execute(input: StartOAuthAuthorizationCommand): Promise<string> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
-      throw new ApplicationException(ErrorCode.SOCIAL_0204, {
-        provider: input.provider,
-        reason: `Unsupported provider: ${input.provider}`,
-      });
+      throw unsupportedOAuthProvider(input.provider);
     }
     const url = await strategy.generateAuthUrl({
       state: input.state,
@@ -60,7 +56,7 @@ export class StartOAuthAuthorizationUseCase {
         }),
     });
     if (url == null || url === "") {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
     return url;
   }

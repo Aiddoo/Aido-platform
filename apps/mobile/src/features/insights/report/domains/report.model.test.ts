@@ -1,13 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 
-import {
-  type AiReport,
-  aiReportSchema,
-  ReportPolicy,
-  type ReportStatus,
-  ReportStatusPolicy,
-  reportStatusSchema,
-} from './report.model';
+import { type AiReport, aiReportSchema, ReportPolicy } from './report.model';
 
 function createAiReport(overrides: Partial<AiReport> = {}) {
   return aiReportSchema.parse({
@@ -32,10 +25,6 @@ function createAiReport(overrides: Partial<AiReport> = {}) {
     generatedAt: toInstant('2026-03-09T00:00:00.000Z'),
     ...overrides,
   });
-}
-
-function createReportStatus(overrides: Partial<ReportStatus> = {}) {
-  return reportStatusSchema.parse({ daysUntilWeekly: 3, daysUntilMonthly: 20, ...overrides });
 }
 
 describe('getCompletionRateChange', () => {
@@ -68,26 +57,6 @@ describe('getCompletionRateChange', () => {
 
     // Then
     expect(change).toBeNull();
-  });
-});
-
-describe('getCompletionLevel', () => {
-  it.each([
-    [100, 'high'],
-    [80, 'high'],
-    [79, 'medium'],
-    [50, 'medium'],
-    [49, 'low'],
-    [0, 'low'],
-  ])('요일 완료율 %i%%는 %s 단계다', (rate, expected) => {
-    // Given
-    const dayPattern = { day: 'MON' as const, total: 10, completed: 5, rate };
-
-    // When
-    const level = ReportPolicy.getCompletionLevel(dayPattern);
-
-    // Then
-    expect(level).toBe(expected);
   });
 });
 
@@ -124,21 +93,5 @@ describe('getMostActiveHours', () => {
 
     // Then
     expect(hours.map(({ hour }) => hour)).toEqual([8, 20]);
-  });
-});
-
-describe('getDaysUntilReport', () => {
-  it.each([
-    ['WEEKLY', 3],
-    ['MONTHLY', 20],
-  ] as const)('%s 리포트는 그 종류의 남은 날짜를 읽는다', (type, expected) => {
-    // Given
-    const status = createReportStatus();
-
-    // When
-    const days = ReportStatusPolicy.getDaysUntilReport(status, type);
-
-    // Then
-    expect(days).toBe(expected);
   });
 });

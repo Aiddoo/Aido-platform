@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { TodoEditScope } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -18,6 +16,7 @@ import { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import { todoNotFound, todoNotRepeating, todoSeriesNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
@@ -70,10 +69,10 @@ export class DeleteTodoUseCase {
       ]);
       const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+        throw todoNotFound(id);
       }
       if (input.scope != null && todo.seriesId == null) {
-        throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope: input.scope });
+        throw todoNotRepeating(id, input.scope);
       }
 
       await this.#dependencies.todoRepository.delete(todoId);
@@ -101,15 +100,15 @@ export class DeleteTodoUseCase {
       await mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
       const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(id), ownerId);
       if (todo == null) {
-        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+        throw todoNotFound(id);
       }
       const { seriesId } = todo;
       if (seriesId == null) {
-        throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
+        throw todoNotRepeating(id, scope);
       }
       const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
       if (series != null && series.userId.value !== userId) {
-        throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
+        throw todoSeriesNotFound(seriesId);
       }
       const deletedTodoIds = await match(scope)
         .with("ALL", async () => {
@@ -131,7 +130,7 @@ export class DeleteTodoUseCase {
           // 규칙이 없는 묶음은 회차 날짜도 없어 "이후"의 기준이 없다.
           const { occurrenceDate } = todo;
           if (occurrenceDate == null) {
-            throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope });
+            throw todoNotRepeating(id, scope);
           }
           const pivot = occurrenceDate.toString();
           const following =

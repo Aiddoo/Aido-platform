@@ -33,7 +33,9 @@ describe("DomainException — 도메인 예외", () => {
     const customMessage = "커스텀 에러 메시지";
 
     // When
-    const exception = new DomainException(ErrorCode.TODO_0801, undefined, customMessage);
+    const exception = new DomainException(ErrorCode.TODO_0801, undefined, {
+      message: customMessage,
+    });
 
     // Then
     expect(exception.message).toBe(customMessage);

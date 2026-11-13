@@ -1,12 +1,6 @@
-import {
-  type UserReportReason,
-  USER_REPORT_TARGET_TYPES,
-  type UserReportTargetType,
-} from '@aido/api/vocabulary';
+import { USER_REPORT_TARGET_TYPES } from '@aido/api/vocabulary';
 import type { TodoDetails } from '@src/features/planning/todo/domains/todo.model';
 import { z } from 'zod';
-
-export type { UserReportReason, UserReportTargetType };
 
 // 시트를 연 화면이 대상을 정하고 시트는 사유와 상세만 받는다. 대상은 route의 id로 만들어 Policy 밖 함수로 둔다
 const userReportTargetSchema = z.object({

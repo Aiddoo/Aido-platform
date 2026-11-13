@@ -1,30 +1,64 @@
 import { computePeriodLabel } from "./report-period-label.messages.js";
 
-describe("computePeriodLabel — en 로케일", () => {
-  it("en 주간 라벨은 'Week N, YYYY' 형식이다", () => {
-    expect(computePeriodLabel("WEEKLY", 2026, 10, "en")).toBe("Week 10, 2026");
-  });
-
-  it("en 월간 라벨은 영어 월 이름을 사용한다", () => {
-    expect(computePeriodLabel("MONTHLY", 2026, 3, "en")).toBe("March 2026");
-  });
-
-  it("locale 생략 시 한국어 라벨을 유지한다 (하위 호환)", () => {
-    expect(computePeriodLabel("WEEKLY", 2026, 10)).toBe("2026년 10주차");
-    expect(computePeriodLabel("MONTHLY", 2026, 3)).toBe("2026년 3월");
-  });
-});
+const THIS_YEAR_TODAY = Temporal.PlainDate.from("2026-11-12");
 
 describe("computePeriodLabel", () => {
-  it("WEEKLY 타입일 때 '년 주차' 형식으로 반환해야 한다", () => {
-    expect(computePeriodLabel("WEEKLY", 2026, 10)).toBe("2026년 10주차");
+  it.each([
+    ["2026-W10은 목요일 3월 5일의 주", 2026, 10, "3월 1주차", "Week 1 of Mar"],
+    ["2026-W53은 목요일 12월 31일의 주", 2026, 53, "12월 5주차", "Week 5 of Dec"],
+    [
+      "2026-W01은 목요일 1월 1일의 주라 2025년 12월 29일에 시작해도 1월",
+      2026,
+      1,
+      "1월 1주차",
+      "Week 1 of Jan",
+    ],
+    [
+      "지난해 2025-W49는 연도를 붙여 올해 12월 1주차와 구별한다",
+      2025,
+      49,
+      "2025년 12월 1주차",
+      "Week 1 of Dec 2025",
+    ],
+  ] as const)("주간 라벨은 주간 성취와 같은 모양이다: %s", (_name, year, week, ko, en) => {
+    // When
+    const korean = computePeriodLabel({
+      type: "WEEKLY",
+      year,
+      period: week,
+      locale: "ko",
+      localToday: THIS_YEAR_TODAY,
+    });
+    const english = computePeriodLabel({
+      type: "WEEKLY",
+      year,
+      period: week,
+      locale: "en",
+      localToday: THIS_YEAR_TODAY,
+    });
+
+    // Then
+    expect([korean, english]).toEqual([ko, en]);
   });
 
-  it("MONTHLY 타입일 때 '년 월' 형식으로 반환해야 한다", () => {
-    expect(computePeriodLabel("MONTHLY", 2026, 3)).toBe("2026년 3월");
-  });
+  it("월간 라벨은 연도와 달이다", () => {
+    // When
+    const korean = computePeriodLabel({
+      type: "MONTHLY",
+      year: 2026,
+      period: 3,
+      locale: "ko",
+      localToday: THIS_YEAR_TODAY,
+    });
+    const english = computePeriodLabel({
+      type: "MONTHLY",
+      year: 2026,
+      period: 3,
+      locale: "en",
+      localToday: THIS_YEAR_TODAY,
+    });
 
-  it("1주차를 올바르게 표현해야 한다", () => {
-    expect(computePeriodLabel("WEEKLY", 2026, 1)).toBe("2026년 1주차");
+    // Then
+    expect([korean, english]).toEqual(["2026년 3월", "March 2026"]);
   });
 });

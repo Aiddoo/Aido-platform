@@ -139,6 +139,31 @@ export function describeTodoSeriesRepositoryContract(
       expect(behind).toEqual([SERIES_IDS[0]]);
     });
 
+    it("진행 중 반복은 다음 회차가 남은 자기 규칙만 있다고 답한다", async () => {
+      // Given
+      const context = await createContext();
+      const owner = UserId.reconstitute(TODO_FIXTURE_USER_ID);
+      await insertSeries(context, {
+        id: SERIES_IDS[0],
+        originSeriesId: SERIES_IDS[0],
+        nextOccurrenceDate: null,
+      });
+      await insertSeries(context, {
+        id: SERIES_IDS[1],
+        originSeriesId: SERIES_IDS[1],
+        userId: TODO_FIXTURE_OTHER_USER_ID,
+      });
+      const onlyEnded = await context.seriesRepository.existsActiveByUserId(owner);
+
+      // When
+      await insertSeries(context, { id: SERIES_IDS[2], originSeriesId: SERIES_IDS[2] });
+      const withActive = await context.seriesRepository.existsActiveByUserId(owner);
+
+      // Then
+      expect(onlyEnded).toBe(false);
+      expect(withActive).toBe(true);
+    });
+
     it("같은 원본으로 나뉜 구간을 묶고 뒤 구간만 따로 잠근다", async () => {
       // Given
       const context = await createContext();

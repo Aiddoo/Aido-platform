@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -10,6 +7,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { CategoryColor } from "../../domain/category-color.vo.js";
 import { CategoryName } from "../../domain/category-name.vo.js";
 import { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import { duplicateCategoryName, todoCategoryLimitReached } from "../categories.errors.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -59,20 +57,14 @@ export class CreateTodoCategoryUseCase {
       const maxCount = await this.#dependencies.limitReader.readLimitInTx(userId);
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
       if (maxCount != null && categoryCount >= maxCount) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0857, {
-          charged: false,
-          featureQuota: await this.#dependencies.limitReader.readFeatureQuotaInTx(
-            userId,
-            categoryCount,
-          ),
-        });
+        throw todoCategoryLimitReached(
+          await this.#dependencies.limitReader.readFeatureQuotaInTx(userId, categoryCount),
+        );
       }
 
       const { repository } = this.#dependencies;
       if (await repository.existsByUserIdAndName(userId, name.value)) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-          name: name.value,
-        });
+        throw duplicateCategoryName(name.value);
       }
 
       const maxSortOrder = await repository.getMaxSortOrder(userId);
