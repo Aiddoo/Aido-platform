@@ -7,6 +7,7 @@ import { validStoreEntitlementCondition } from "#api/modules/access/entitlements
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
+import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -89,20 +90,23 @@ export class DrizzlePremiumGrantRepository extends PremiumGrantRepositoryPort {
     if (grants.length === 0) {
       return;
     }
-    // 행마다 다른 기간은 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
-    const values = grants.map((grant) => {
+    const changes = grants.map((grant) => {
       const { id, status, startsAt, endsAt, updatedAt } = grant.toPrimitives();
-      return sql`(${id}, ${status}, ${sql.param(startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(endsAt, premiumGrant.endsAt)}::timestamp(3), ${sql.param(updatedAt, premiumGrant.updatedAt)}::timestamp(3))`;
+      return sql`(${id}, ${status}::${premiumGrantStatus}, ${sql.param(startsAt, premiumGrant.startsAt)}::timestamp(3), ${sql.param(endsAt, premiumGrant.endsAt)}::timestamp(3), ${sql.param(updatedAt, premiumGrant.updatedAt)}::timestamp(3))`;
     });
-    await this.#db.execute(sql`
-      UPDATE ${premiumGrant}
-      SET ${sql.identifier(premiumGrant.status.name)} = changed."status"::"PremiumGrantStatus",
-          ${sql.identifier(premiumGrant.startsAt.name)} = changed."startsAt",
-          ${sql.identifier(premiumGrant.endsAt.name)} = changed."endsAt",
-          ${sql.identifier(premiumGrant.updatedAt.name)} = changed."updatedAt"
-      FROM (VALUES ${sql.join(values, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt", "updatedAt")
-      WHERE ${premiumGrant.id} = changed."id"
-    `);
+    // 행마다 다른 기간을 UPDATE … FROM (VALUES …) 한 문장으로 바꾼다
+    await this.#db
+      .update(premiumGrant)
+      .set({
+        status: sql`changed."status"`,
+        startsAt: sql`changed."startsAt"`,
+        endsAt: sql`changed."endsAt"`,
+        updatedAt: sql`changed."updatedAt"`,
+      })
+      .from(
+        sql`(VALUES ${sql.join(changes, sql`, `)}) AS changed("id", "status", "startsAt", "endsAt", "updatedAt")`,
+      )
+      .where(eq(premiumGrant.id, sql`changed."id"`));
   }
 
   async listUserIdsToReconcile(params: ListPremiumGrantUsersToReconcileParams): Promise<UserId[]> {

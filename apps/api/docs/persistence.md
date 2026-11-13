@@ -42,9 +42,23 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## raw SQL
 
-기본은 ORM API다: `leftJoinLateral`, `$with`(CTE), `.for("update", { skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
+기본은 ORM API다: `leftJoinLateral`, `$with`(CTE. `update … returning`을 받는 데이터 변경 CTE도 된다), `.for("update", { of, skipLocked: true })`, `$count`, `exists`. 튜플 keyset 비교는 `platform/database/keyset.ts`의 `tupleLessThan(columns, values)` 하나다.
 
-raw SQL은 ORM으로 쓸 수 없을 때만 Drizzle `sql` 템플릿에 테이블·칼럼을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 경우는 `pg_advisory_xact_lock`(`PostgresMutationLockAdapter`), 시퀀스 `nextval`(`sequence.ts`), `UPDATE … FROM (VALUES …)`(푸시 receipt·보상 기간 묶음 갱신), pg-boss SQL 브리지(`platform/jobs/drizzle-pg-boss.database.ts`)다.
+- 행마다 값이 다른 묶음 갱신은 query builder ``update(table).set({ col: sql`v."col"` }).from(sql`(VALUES …) AS v(…)`)``다. 사례: 보상 기간 `DrizzlePremiumGrantRepository.saveAll`, 댓글 수 정리, 푸시 receipt 종결·세대 재개방.
+- `GREATEST`·`COALESCE`·`CASE` 같은 값 식은 `set`·`select` 안의 `sql` 조각으로 쓰고 칼럼은 참조로 넘긴다. 사례: 마지막 활동 기록(`DrizzleUserRepository.updateLastActiveAt`, `$with` + `insert().select()`).
+
+`db.execute(sql…)`는 ORM으로 쓸 수 없을 때만 테이블·칼럼·enum을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`, `::${pushDispatchStatus}`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 곳은 다음뿐이다.
+
+| 경우                                                                   | 위치                                                            |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `pg_advisory_xact_lock`                                                | `PostgresMutationLockAdapter`                                   |
+| 시퀀스 `nextval`                                                       | `sequence.ts`                                                   |
+| 트랜잭션 한정 `set_config('statement_timeout', …)`                     | `ClsUnitOfWork`                                                 |
+| VALUES CTE + `FOR UPDATE OF` + 데이터 변경 CTE(claim·finalize·release) | `DrizzlePushDeliveryLifecycleRepository`                        |
+| 리텐션 단계 후보 CTE, 시스템 뷰 `pg_timezone_names`                    | `DrizzleRetentionRepository`                                    |
+| 성장 지표 요약 CTE                                                     | `DrizzleGrowthMetricsReader`                                    |
+| pg-boss 테이블 조회·SQL 브리지                                         | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
+| 연결 확인 `SELECT 1`                                                   | `DatabaseHealthIndicator`                                       |
 
 ## 시간 칼럼
 
