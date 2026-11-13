@@ -1,4 +1,4 @@
-import { createLoggerStub, createPushNotificationGatewayStub } from '@src/testing/core';
+import { createAppLoggerStub, createPushNotificationGatewayStub } from '@src/testing/core';
 
 import { NotificationBadgeService } from './notification-badge.service';
 
@@ -7,7 +7,7 @@ describe('NotificationBadgeService.syncBadge', () => {
     // Given
     const badgeGateway = createPushNotificationGatewayStub();
     badgeGateway.setBadgeCount.mockRejectedValue(new Error('unsupported launcher'));
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const service = new NotificationBadgeService({ badge: badgeGateway, logger });
 
     // When

@@ -11,7 +11,7 @@ import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowUpIcon, IconButton, StyledSafeAreaView } from '@src/shared/ui';
 import { range } from 'es-toolkit';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   clamp,
@@ -85,6 +85,8 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
     () => matchFont({ fontSize: percentFontSize, fontWeight: '600' }),
     [percentFontSize],
   );
+  // Skia 글꼴은 네이티브 객체라 글자 크기가 바뀌거나 화면이 내려가면 직접 놓는다
+  useEffect(() => () => percentFont.dispose(), [percentFont]);
   const percentWidths = useMemo(
     () => PERCENT_LABELS.map((label) => percentFont.measureText(label).width),
     [percentFont],

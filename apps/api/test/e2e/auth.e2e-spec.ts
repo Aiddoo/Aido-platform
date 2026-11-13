@@ -161,6 +161,33 @@ describe("인증 E2E", () => {
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("VERIFY_0751");
     });
+
+    it("POST /auth/resend-verification - 운영 응답에도 마지막 발급에서 남은 대기 초를 싣는다", async () => {
+      // Given - 가입이 코드를 보낸 20초 뒤
+      const cooldownEmail = "resend-cooldown@example.com";
+      const issuedAt = Temporal.Instant.from("2026-11-12T01:00:00Z");
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        vi.setSystemTime(issuedAt.epochMilliseconds);
+        await ctx.helpers.registerUser(cooldownEmail, testPassword);
+        vi.setSystemTime(issuedAt.add({ seconds: 20 }).epochMilliseconds);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/auth/resend-verification")
+          .send({ email: cooldownEmail })
+          .expect(429);
+
+        // Then
+        expect(response.body.error).toEqual({
+          code: ErrorCode.VERIFY_0753,
+          message: expect.any(String),
+          details: { remainingSeconds: 40 },
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe("회원가입 플로우 - 이메일 전송 실패", () => {

@@ -1,3 +1,4 @@
+import { getNowInstant } from '@src/shared/date/clock';
 import { reactNativeAppLifecycleGateway } from '@src/shared/infra/app-lifecycle/react-native-app-lifecycle-gateway';
 import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generator';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
@@ -15,7 +16,7 @@ export function registerWidgetTaskHandler(): void {
       navigationRepository: createWidgetNavigationRepository(widgetStorage),
       openApp: expoExternalLinkGateway.open,
       isAppActive: () => reactNativeAppLifecycleGateway.getCurrentState() === 'active',
-      now: Date.now,
+      now: getNowInstant,
       createCommandId: expoIdGenerator.create,
       failureStorage: widgetStorage,
       renderStoredWidget: renderStoredAndroidWidget,

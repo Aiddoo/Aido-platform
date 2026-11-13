@@ -12,7 +12,7 @@ import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { RELEASE_ID } from '../constants/whats-new.constants';
 import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
 import { WHATS_NEW_QUERY_KEYS } from '../queries/whats-new-query-keys';

@@ -11,20 +11,26 @@ export interface VoiceNoteRecordingUsage {
   notes: { note: VoiceNote; bytes: number }[];
 }
 
+interface VoiceNoteStorageServicePorts {
+  drafts: VoiceNoteDraftRepository;
+  recordings: VoiceRecordingRepository;
+  now: () => Instant;
+  /** 암호화 초안 저장소를 열었는지. 열지 못한 실행의 초안은 이번 실행 것뿐이라 기기 녹음의 주인을 모른다 */
+  isDraftStorageOpen: boolean;
+}
+
 /** 기기에 저장하는 말로 메모하기 초안과 녹음 파일(서버로 보내지 않는다). 둘은 항상 함께 지우고 사용자 범위를 지킨다 */
 export class VoiceNoteStorageService {
   readonly #drafts: VoiceNoteDraftRepository;
   readonly #recordings: VoiceRecordingRepository;
   readonly #now: () => Instant;
+  readonly #isDraftStorageOpen: boolean;
 
-  constructor(
-    drafts: VoiceNoteDraftRepository,
-    recordings: VoiceRecordingRepository,
-    now: () => Instant,
-  ) {
+  constructor({ drafts, recordings, now, isDraftStorageOpen }: VoiceNoteStorageServicePorts) {
     this.#drafts = drafts;
     this.#recordings = recordings;
     this.#now = now;
+    this.#isDraftStorageOpen = isDraftStorageOpen;
   }
 
   /** 아직 쓰지 않은 대기 쓰기도 함께 취소해 지운 초안이 되살아나지 않게 한다 */
@@ -58,12 +64,15 @@ export class VoiceNoteStorageService {
     this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note));
   };
 
+  /** 초안 저장소를 열지 못한 실행은 폴더를 비우지 않고 보이는 메모의 녹음만 지운다 */
   removeAllRecordings = (accountId: string): void => {
-    this.#recordings.removeOwned(accountId);
-    this.#drafts
-      .findAll(accountId)
-      .filter((note) => note.recordings.length > 0)
-      .forEach((note) => this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note)));
+    const notes = this.#drafts.findAll(accountId).filter((note) => note.recordings.length > 0);
+    if (this.#isDraftStorageOpen) {
+      this.#recordings.removeOwned(accountId);
+    } else {
+      notes.forEach((note) => this.#removeFiles(accountId, note));
+    }
+    notes.forEach((note) => this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note)));
   };
 
   removeExpired = (accountId: string): void => {
@@ -73,6 +82,10 @@ export class VoiceNoteStorageService {
     );
     expired.forEach((note) => this.#remove(accountId, note));
 
+    // 읽지 못한 것은 빈 것이 아니다. 초안을 다 읽은 실행에서만 어느 초안도 가리키지 않는 녹음을 지운다
+    if (!this.#isDraftStorageOpen) {
+      return;
+    }
     const referencedFileNames = new Set(
       alive.flatMap((note) => note.recordings.map((recording) => recording.fileName)),
     );

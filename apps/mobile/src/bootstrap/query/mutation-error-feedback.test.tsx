@@ -105,6 +105,20 @@ describe('MutationErrorFeedback', () => {
     }
   });
 
+  it('fallbackKey가 없으면 공용 폴백 문구로, describe가 준 설명은 둘째 줄로 알린다', async () => {
+    // Given
+    const meta: AppMutationMeta = {
+      errorFeedback: { feature: 'memo', describe: () => '이번 요청은 차감하지 않았어요' },
+    };
+
+    // When
+    await failMutation(new ParseError(), { meta });
+
+    // Then
+    expect(await screen.findAllByText(i18n.t('errors:fallback'))).not.toHaveLength(0);
+    expect(screen.getAllByText('이번 요청은 차감하지 않았어요')).not.toHaveLength(0);
+  });
+
   it('onSettled가 다시 받기를 기다리는 동안에도 실패를 바로 알린다', async () => {
     // Given
     const refetchPausedOffline = () => new Promise<never>(noop);

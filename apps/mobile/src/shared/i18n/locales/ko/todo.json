@@ -177,9 +177,7 @@
   },
   "nudge": {
     "limitSpentTitle": "오늘 콕 찌르기를 다 썼어요",
-    "promptPrefix": "친구에게",
-    "promptHighlight": "콕",
-    "promptSuffix": "응원을 보내볼까요?",
+    "prompt": "친구에게 <highlight>콕</highlight> 응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
     "hintSuffix": "을 눌러 마음을 전해보세요",
     "remaining": "오늘 {{count}}회 남았어요",

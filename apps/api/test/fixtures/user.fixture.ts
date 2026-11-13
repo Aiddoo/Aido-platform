@@ -29,8 +29,6 @@ export const UserFixture = {
       role: overrides.role ?? "USER",
       status: overrides.status ?? "ACTIVE",
       emailVerifiedAt: overrides.emailVerifiedAt === undefined ? now : overrides.emailVerifiedAt,
-      twoFactorEnabled: overrides.twoFactorEnabled ?? false,
-      twoFactorSecret: overrides.twoFactorSecret ?? null,
       subscriptionStatus: overrides.subscriptionStatus ?? "FREE",
       subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
       revenueCatUserId: overrides.revenueCatUserId ?? null,

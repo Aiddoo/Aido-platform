@@ -11,6 +11,7 @@
   "ignore": [
     "@aido/mobile",
     "@aido/database-migrate",
+    "@aido/test-config",
     "@aido/typescript-config",
     "@aido/vitest-config"
   ]

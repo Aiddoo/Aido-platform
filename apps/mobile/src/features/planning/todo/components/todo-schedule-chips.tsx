@@ -1,11 +1,10 @@
 import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
-import { toLocalDay } from '@src/shared/date/native-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -19,6 +18,7 @@ import {
   QueryErrorBoundary,
   RepeatIcon,
   SheetChipRow,
+  type OpenSheetOptions,
   useOpenSheet,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -33,10 +33,10 @@ import {
   withScheduleStartDate,
   withVisibilityToggled,
 } from '../domains/todo.model';
-import { type SheetOptions, useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
+import { useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
-import { formatRepeatSummary } from '../utils/format-repeat-summary';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
+import { formatRepeatSummary } from '../utils/todo-repeat-summary.view-model';
 import { TodoDatePicker } from './todo-date-picker';
 import { TodoTimePicker } from './todo-time-picker';
 
@@ -46,7 +46,7 @@ export type TodoScheduleChipsValue = TodoSchedule &
 interface ChipProps<T> {
   value: TodoScheduleChipsValue;
   onChange: (next: T) => void;
-  sheetOptions: SheetOptions;
+  sheetOptions: OpenSheetOptions;
 }
 
 interface TodoScheduleChipsProps {
@@ -156,7 +156,6 @@ function TimeChip({
         <QueryErrorBoundary>
           <Suspense fallback={<TodoTimePicker.Loading />}>
             <TodoTimePicker
-              date={toLocalDay(value.startDate)}
               value={{ scheduledTime: value.scheduledTime, isAllDay: value.isAllDay }}
               onChange={close}
               onCancel={() => close()}
@@ -267,8 +266,8 @@ function CategoryChip({ value, onChange, sheetOptions }: ChipProps<number>) {
     const categoryId = await openSheet<number>(
       (close) => (
         <QueryErrorBoundary>
-          <Suspense fallback={<CategorySelectInput.Loading />}>
-            <CategorySelectInput
+          <Suspense fallback={<CategoryPickForm.Loading />}>
+            <CategoryPickForm
               defaultValue={value.categoryId}
               onSubmit={close}
               submitLabel={t('add.submit')}

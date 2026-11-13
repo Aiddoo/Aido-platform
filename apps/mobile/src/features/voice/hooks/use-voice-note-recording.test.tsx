@@ -5,7 +5,7 @@ import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createLocalFileSystemFake,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemorySyncStorage,
   createSpeechRecognizerStub,
   createTestDi,
@@ -22,10 +22,10 @@ import { useVoiceNoteRecording } from './use-voice-note-recording';
 
 const ACCOUNT_ID = 'user-1';
 const RECORDING_DIRECTORY = ['voice-notes', ACCOUNT_ID];
-let logger: ReturnType<typeof createLoggerStub>;
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 interface ProbeProps {

@@ -1,4 +1,5 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -144,6 +145,8 @@ TermsAgreementBottomSheet.Item = function Item({
   onPressLink,
   ...props
 }: TermsAgreementItemProps) {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <ControlField {...props}>
       <ControlField.Indicator>
@@ -156,8 +159,14 @@ TermsAgreementBottomSheet.Item = function Item({
         {onPressLink && (
           <IconButton
             accessibilityLabel={label}
-            icon={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <ArrowRightIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-4 min-h-0 min-w-0"
             hitSlop={8}
             onPress={onPressLink}
           />

@@ -1,3 +1,6 @@
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useGetTodoOverviewQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { INVITEE_PREMIUM_DAYS } from '@src/features/social/invite/constants/invite.constants';
 import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
@@ -5,11 +8,13 @@ import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-i
 import { useGetInviteQueryOptions } from '@src/features/social/invite/queries/invite.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, CheckmarkIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
+import { Box, CheckmarkIcon, HStack, LabelChip, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
-import { Chip, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -20,7 +25,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { useActivationChecklist } from '../hooks/use-activation-checklist';
+import { ActivationPolicy } from '../domains/activation.model';
+import { activationProgressStoredValue } from '../schemas/activation-progress-storage.schema';
 
 interface ActivationChecklistProps {
   className?: string;
@@ -202,17 +208,18 @@ function ActivationStep({ label, isCompleted, reward }: ActivationStepProps) {
         </Text>
         {/* 초대 단계는 PressableFeedback 안이라 Pressable인 Chip이 탭을 가로채지 않게 한다 */}
         {hasReward && (
-          <Chip size="sm" variant="soft" color="accent" className="max-w-full" pointerEvents="none">
-            <Text
-              size="e1"
-              weight="semibold"
-              lineBreakStrategyIOS="hangul-word"
-              textBreakStrategy="highQuality"
-              className="shrink text-accent-soft-foreground"
-            >
-              {reward}
-            </Text>
-          </Chip>
+          <LabelChip
+            color="accent"
+            label={reward}
+            labelProps={{
+              weight: 'semibold',
+              lineBreakStrategyIOS: 'hangul-word',
+              textBreakStrategy: 'highQuality',
+              className: 'shrink',
+            }}
+            className="max-w-full"
+            pointerEvents="none"
+          />
         )}
       </VStack>
     </HStack>
@@ -246,4 +253,36 @@ function ActivationStepIndicator({ isCompleted }: ActivationStepIndicatorProps) 
       )}
     </Box>
   );
+}
+
+function useActivationChecklist() {
+  const isAuthenticated = useAuthStatus() === 'authenticated';
+  const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  // 진행은 기기 저장소가 원본이다. 할 일 저장이 기록하면 구독으로 바로 따라간다
+  const [progress] = useStoredValue(
+    activationProgressStoredValue,
+    isAuthenticated ? user?.id : undefined,
+  );
+  const now = useMinuteNow();
+  const shouldOfferChecklist =
+    isAuthenticated &&
+    user != null &&
+    ActivationPolicy.shouldOfferChecklist(user, { progress, now });
+  // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
+  const todoRecordQuery = useQuery({
+    ...useGetTodoOverviewQueryOptions(),
+    select: ({ hasTodo, hasCompletedTodo }) => ({ hasTodo, hasCompletedTodo }),
+    enabled: shouldOfferChecklist,
+  });
+  const steps = ActivationPolicy.getChecklistSteps(progress, todoRecordQuery.data);
+  // 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 서버 기록을 읽은 뒤 띄우고, 실패하면 기기 기록만 본다
+  const hasSettledTodoRecord = todoRecordQuery.isSuccess || todoRecordQuery.isError;
+
+  return {
+    steps,
+    isVisible:
+      shouldOfferChecklist &&
+      hasSettledTodoRecord &&
+      !ActivationPolicy.hasFinishedRequiredSteps(steps),
+  };
 }

@@ -5,13 +5,13 @@ import { err, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
-import { NetworkError } from '@src/shared/errors';
+import { NetworkError, ServerError } from '@src/shared/errors';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider, Text } from '@src/shared/ui';
 import {
   createHttpClientStub,
-  createLoggerStub,
-  createMemoryStorage,
+  createAppLoggerStub,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createTestDi,
   createTestQueryClient,
@@ -28,10 +28,14 @@ import { useVoiceNoteDigest } from './use-voice-note-digest';
 
 const ACCOUNT_ID = 'user-1';
 const DRAFT_ID = 'draft-1';
-let logger: ReturnType<typeof createLoggerStub>;
+
+/** AI 업체 장애는 503이라 HTTP 클라이언트가 서버 코드와 details를 실은 ServerError로 던진다 */
+const aiUnavailable = (details: Record<string, unknown> | null) =>
+  new ServerError(503, { serverCode: 'AI_1301', details, requestId: null, request: null });
+let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
-  logger = createLoggerStub();
+  logger = createAppLoggerStub();
 });
 
 function DigestProbe() {
@@ -63,7 +67,7 @@ async function renderDigest() {
       httpClient,
       queryClient,
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
-      storage: createMemoryStorage(),
+      storage: createMemoryKeyValueStorage(),
       ...createVoiceNoteStorageFake().ports,
       logger,
     },
@@ -193,9 +197,7 @@ describe('useVoiceNoteDigest', () => {
   it('차감되지 않은 실패면 글자를 그대로 두고 그 사실을 알린다', async () => {
     // Given
     const { httpClient, di } = await renderDigest();
-    httpClient.post.mockResolvedValue(
-      err(new ApiError('AI_1301', '실패', 503, { charged: false })),
-    );
+    httpClient.post.mockRejectedValue(aiUnavailable({ charged: false }));
 
     // When
     await fireEvent.press(screen.getByTestId('digest'));
@@ -211,7 +213,7 @@ describe('useVoiceNoteDigest', () => {
   it('차감 여부를 서버가 말하지 않은 실패면 차감되지 않았다고 말하지 않는다', async () => {
     // Given
     const { httpClient } = await renderDigest();
-    httpClient.post.mockResolvedValue(err(new ApiError('AI_1301', '실패', 503)));
+    httpClient.post.mockRejectedValue(aiUnavailable(null));
 
     // When
     await fireEvent.press(screen.getByTestId('digest'));
@@ -225,7 +227,7 @@ describe('useVoiceNoteDigest', () => {
   it('다시 정리는 같은 키로 보내 두 번 차감되지 않고, 키는 초안에 남아 앱을 다시 켜도 같다', async () => {
     // Given
     const { httpClient, di } = await renderDigest();
-    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
+    httpClient.post.mockRejectedValueOnce(aiUnavailable(null));
     httpClient.post.mockResolvedValueOnce(ok(createVoiceNoteDigestDto()));
     await fireEvent.press(screen.getByTestId('digest'));
     await waitFor(() => expect(httpClient.post).toHaveBeenCalledTimes(1));

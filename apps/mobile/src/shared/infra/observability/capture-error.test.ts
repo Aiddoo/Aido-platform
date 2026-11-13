@@ -59,7 +59,7 @@ describe('captureError', () => {
 
   it('4xx는 이슈 대신 breadcrumb로 남긴다', () => {
     // Given
-    const error = new ApiError('TODO_1001', '없는 할 일', 404);
+    const error = new ApiError('TODO_0801', '없는 할 일', 404);
 
     // When
     createSentryErrorReporter().captureException(error, { feature: 'todo' });
@@ -77,7 +77,12 @@ describe('captureError', () => {
 
   it('5xx는 requestId를 request_id 태그로 싣는다', () => {
     // Given
-    const error = new ServerError(503, 'req-1');
+    const error = new ServerError(503, {
+      serverCode: null,
+      details: null,
+      requestId: 'req-1',
+      request: null,
+    });
 
     // When
     createSentryErrorReporter().captureException(error, { feature: 'todo' });

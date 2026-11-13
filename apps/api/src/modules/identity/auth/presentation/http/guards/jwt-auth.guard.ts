@@ -1,5 +1,4 @@
 import { userRoleSchema } from "@aido/api/contracts/auth";
-import { ErrorCode } from "@aido/api/errors";
 import {
   type CanActivate,
   type ExecutionContext,
@@ -14,9 +13,9 @@ import type { Request } from "express";
 import { z } from "zod";
 
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import { invalidAccessToken } from "../../../application/auth.errors.js";
 import { AuthenticateSessionUseCase } from "../../../application/use-cases/authenticate-session.use-case.js";
 import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator.js";
@@ -64,7 +63,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const claims = await this.#verify(readBearerToken(request.headers.authorization));
     if (claims == null) {
-      throw new ApplicationException(ErrorCode.AUTH_0101, { reason: INVALID_ACCESS_TOKEN_REASON });
+      throw invalidAccessToken(INVALID_ACCESS_TOKEN_REASON);
     }
 
     try {
@@ -75,9 +74,7 @@ export class JwtAuthGuard implements CanActivate {
       if (!(error instanceof HttpException) && !(error instanceof ErrorCodedException)) {
         throw error;
       }
-      throw new ApplicationException(ErrorCode.AUTH_0101, {
-        reason: error.message || INVALID_ACCESS_TOKEN_REASON,
-      });
+      throw invalidAccessToken(error.message || INVALID_ACCESS_TOKEN_REASON);
     }
     return true;
   }

@@ -1,6 +1,8 @@
+import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { err, ok, type Result } from '@src/core/errors/result';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
@@ -65,6 +67,7 @@ async function renderApply(
   const httpClient = createHttpClientStub();
   httpClient.post.mockResolvedValue(response);
   const queryClient = createTestQueryClient();
+  queryClient.setQueryData(TODO_QUERY_KEYS.lists(), []);
   const onMemoChanged = jest.fn();
 
   await renderScreen(<ApplyProbe sourceMemoId={sourceMemoId} onMemoChanged={onMemoChanged} />, {
@@ -72,7 +75,7 @@ async function renderApply(
   });
   await fireEvent.press(screen.getByText('저장'));
 
-  return { analytics, httpClient, onMemoChanged };
+  return { analytics, httpClient, onMemoChanged, queryClient };
 }
 
 describe('useApplyActionPlanMutationOptions', () => {
@@ -115,6 +118,19 @@ describe('useApplyActionPlanMutationOptions', () => {
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(
       'memo_converted_to_todos',
       expect.anything(),
+    );
+  });
+
+  it('저장 응답이 실패로 와도 서버에 저장됐을 수 있어 할 일 목록을 다시 받게 표시한다', async () => {
+    // When
+    const { queryClient } = await renderApply(
+      null,
+      err(new ApiError(ErrorCode.SYS_0001, '서버 오류', 500)),
+    );
+
+    // Then
+    await waitFor(() =>
+      expect(queryClient.getQueryState(TODO_QUERY_KEYS.lists())?.isInvalidated).toBe(true),
     );
   });
 

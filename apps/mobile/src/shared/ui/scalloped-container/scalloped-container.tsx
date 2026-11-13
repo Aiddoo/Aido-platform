@@ -1,10 +1,11 @@
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { range } from 'es-toolkit';
-import { type ReactNode, useCallback, useState } from 'react';
-import { type ColorValue, type LayoutChangeEvent } from 'react-native';
+import type { ReactNode } from 'react';
+import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 const SCALLOP_RADIUS = 8;
 
@@ -13,15 +14,12 @@ export interface ScallopedContainerProps {
 }
 
 export function ScallopedContainer({ children }: ScallopedContainerProps) {
-  const [width, setWidth] = useState(0);
+  const [size, handleLayout] = useLayoutSize();
   const { backgroundColor: fill } = useResolveClassNames('bg-gray-1');
-
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    setWidth(event.nativeEvent.layout.width);
-  }, []);
+  const width = size?.width ?? 0;
 
   return (
-    <Box onLayout={onLayout}>
+    <Box onLayout={handleLayout}>
       {/* 폭을 재기 전에도 물결 자리를 잡아 첫 프레임 뒤에 내용이 밀리지 않게 한다 */}
       <Box style={{ height: SCALLOP_RADIUS }}>
         {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}

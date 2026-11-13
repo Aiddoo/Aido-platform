@@ -1,12 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Input, KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
+import { router } from 'expo-router';
 import {
   Controller,
   useController,
@@ -16,6 +17,7 @@ import {
 } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { findVerificationCodeFieldError } from '../domains/auth.error';
 import {
   useForgotPasswordMutationOptions,
   useResetPasswordMutationOptions,
@@ -58,9 +60,9 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     initial: { step: 'email' },
     onStepChange: ({ step }) => trackEvent('auth_password_reset_step_viewed', { step }),
   });
+  const { t } = useTranslation('auth');
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
-  const { t } = useTranslation('auth');
   const newPassword = useController({
     control: form.control,
     name: 'newPassword',
@@ -68,7 +70,8 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     rules: { deps: 'newPasswordConfirm' },
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
-  const { isSubmitting } = useFormState({ control: form.control });
+  const { isSubmitting, errors } = useFormState({ control: form.control });
+  const replace = useSingleTap(router.replace);
 
   const requestCode = async () => {
     try {
@@ -80,8 +83,22 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     }
   };
 
+  // 코드는 마지막에 서버가 확인한다. 틀렸거나 만료됐으면 새 비밀번호를 둔 채 코드 단계로 돌아가 다시 받게 한다
   const submitNewPassword = form.handleSubmit(async (input) => {
-    await resetPassword.mutateAsync(input).catch(noop);
+    try {
+      await resetPassword.mutateAsync(input);
+      replace('/(auth)/email-login');
+    } catch (error) {
+      // 문구는 mutation의 meta.errorFeedback이 카탈로그로 보인다
+      const fieldError = findVerificationCodeFieldError(error);
+      const codeStepIndex = stepper.historySteps.findIndex(
+        (entry) => entry.step === 'verificationCode',
+      );
+      if (fieldError != null && 0 <= codeStepIndex) {
+        form.setError('code', fieldError);
+        stepper.history.go(codeStepIndex - stepper.index);
+      }
+    }
   });
 
   const renderNewPassword = ({ step }: { step: 'newPassword' | 'newPasswordConfirm' }) => (
@@ -111,6 +128,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
       verificationCode={({ context: { email }, history }) => (
         <EmailVerificationCodeStep
           email={email}
+          isRejected={errors.code != null}
           isResending={forgotPassword.isPending}
           onComplete={async (code) => {
             form.setValue('code', code, { shouldValidate: true });
@@ -118,7 +136,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
           }}
           onResend={async () => {
             await forgotPassword.mutateAsync({ email });
-            return {};
+            return { retryAfterSeconds: null };
           }}
         />
       )}
@@ -173,7 +191,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
                     autoFocus
                     returnKeyType="done"
                     submitBehavior="submit"
-                    isInvalid={!!error}
+                    isInvalid={error != null}
                     errorMessage={resolveValidationMessage(error, {
                       default: 'email.invalid',
                       byType: { too_big: 'email.tooLong' },

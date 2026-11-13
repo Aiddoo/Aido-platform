@@ -1,3 +1,4 @@
+import { emitSessionConfirmed } from '@src/core/events/session-confirmed';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
@@ -60,6 +61,13 @@ export function createAuthClient({
       ],
       afterResponse: [
         createApiFailureBreadcrumbHook(errorReporter),
+        // 인증 요청 성공은 결과를 모르던 탈퇴가 일어나지 않았다는 증거다(SessionCleanupService)
+        ({ response }) => {
+          if (response.ok) {
+            emitSessionConfirmed();
+          }
+          return response;
+        },
         createTokenRefreshHook({
           tokenStore,
           refresh,

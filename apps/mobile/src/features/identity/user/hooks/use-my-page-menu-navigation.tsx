@@ -1,4 +1,5 @@
 import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
+import { createEventChannel } from '@src/core/events/event-channel';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { type Href, router, usePathname } from 'expo-router';
@@ -12,13 +13,14 @@ import {
 } from 'react';
 import { Keyboard } from 'react-native';
 
-import { isMyPageMenuItemSelected } from '../utils/my-page-menu-navigation';
+import { isMyPageMenuItemSelected } from '../utils/my-page-menu.view-model';
 
 export type MyPageMenuPathname = Extract<Href, string>;
 
+// 경로 원천은 router다. 행마다 usePathname을 구독하면 이동마다 메뉴 행이 모두 다시 그려져, 칸이 한 번 받아 선택이 바뀐 행만 알린다
 function createCurrentPathnameStore(initialPathname: string) {
   let pathname = initialPathname;
-  const listeners = new Set<() => void>();
+  const changed = createEventChannel('my-page-menu-pathname');
 
   return {
     get: () => pathname,
@@ -27,14 +29,9 @@ function createCurrentPathnameStore(initialPathname: string) {
         return;
       }
       pathname = nextPathname;
-      listeners.forEach((listener) => listener());
+      changed.emit();
     },
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: (listener: () => void) => changed.subscribe(listener),
   };
 }
 

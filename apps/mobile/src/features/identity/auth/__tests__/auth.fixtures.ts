@@ -6,6 +6,7 @@ import type {
   ResendVerificationResponse,
   ResetPasswordResponse,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 
@@ -173,16 +174,14 @@ export function createLinkedAccountsDto(
 }
 
 export function createAuthApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
-    overrides?.code ?? 'AUTH_ERROR',
+    overrides?.code ?? 'AUTH_0101',
     overrides?.message ?? '인증 오류',
     overrides?.status ?? 401,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };
 
 export function createAppleSignInSuccess(): AppleSignInResult {
   return {

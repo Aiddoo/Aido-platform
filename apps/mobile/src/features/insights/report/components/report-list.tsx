@@ -25,7 +25,8 @@ import { match } from 'ts-pattern';
 
 import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
-import { type AiReport, ReportStatusPolicy } from '../domains/report.model';
+import { ReportStatusPolicy } from '../domains/report-status.model';
+import type { AiReport } from '../domains/report.model';
 import { useReportType } from '../hooks/use-report-type';
 import {
   useGetReportsQueryOptions,
@@ -112,7 +113,7 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
               <HStack gap={20}>
                 <Stat
                   label={t('report.card.completionRate')}
-                  value={`${formatPercent(report.stats.completionRate)}%`}
+                  value={formatPercent(report.stats.completionRate, dateFormatContext.locale)}
                 />
                 <Stat
                   label={t('report.card.completed')}

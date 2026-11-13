@@ -7,18 +7,20 @@ import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persis
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
+import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { createLocalFileSystemFake } from './fakes/local-file-system.fake';
 import { createMemoryDeviceIdStore } from './fakes/memory-device-id-store.fake';
+import { createMemoryKeyValueStorage } from './fakes/memory-key-value-storage.fake';
 import { createMemoryObservableSyncStorage } from './fakes/memory-observable-sync-storage.fake';
-import { createMemoryStorage } from './fakes/memory-storage.fake';
 import { createMemorySyncStorage } from './fakes/memory-sync-storage.fake';
 import { createMemoryTokenStore } from './fakes/memory-token-store.fake';
 import { mockMethod } from './mock-method';
 import { createAnalyticsStub } from './ports/analytics.stub';
 import { createAppIconGatewayStub } from './ports/app-icon-gateway.stub';
 import { createAppLifecycleGatewayStub } from './ports/app-lifecycle-gateway.stub';
+import { createAppLoggerStub } from './ports/app-logger.stub';
 import {
   createAppStoreListingGatewayStub,
   createAppStoreReviewGatewayStub,
@@ -39,7 +41,6 @@ import { createHttpClientStub } from './ports/http-client.stub';
 import { createIdGeneratorStub } from './ports/id-generator.stub';
 import { createJsonFetcherStub } from './ports/json-fetcher.stub';
 import { createLocationGatewayStub } from './ports/location-gateway.stub';
-import { createLoggerStub } from './ports/logger.stub';
 import { createNativeApplicationMetadataGatewayStub } from './ports/native-application-metadata-gateway.stub';
 import { createNetworkStatusGatewayStub } from './ports/network-status-gateway.stub';
 import { createPurchasesGatewayStub } from './ports/purchases-gateway.stub';
@@ -91,7 +92,7 @@ export function createTestPorts({
   authHttpClient = httpClient,
   sessionEpoch = createSessionEpoch(),
   tokenStore = createMemoryTokenStore(),
-  logger = createLoggerStub(),
+  logger = createAppLoggerStub(),
   analytics = createAnalyticsStub(),
   errorReporter = createErrorReporterStub(),
   haptics = createHapticsGatewayStub(),
@@ -99,7 +100,7 @@ export function createTestPorts({
   speechRecognizer = createSpeechRecognizerStub(),
   purchases = createPurchasesGatewayStub(),
   pushNotification = createPushNotificationGatewayStub(),
-  storage = createMemoryStorage(),
+  storage = createMemoryKeyValueStorage(),
   jsonFetcher = createJsonFetcherStub(),
   requestRefresh = mockMethod<RefreshTokensRequest>(async () => {
     throw new Error('createTestPorts: requestRefresh를 정하지 않았습니다');
@@ -134,6 +135,7 @@ export function createTestPorts({
   deviceModel = null,
   getTimeZone = () => 'Asia/Seoul',
   getLanguage = () => 'ko',
+  inviteLinkOpenedStore = createInviteLinkOpenedStore(),
 }: TestPortOverrides = {}): AppContainerPorts {
   return {
     publicHttpClient,
@@ -182,6 +184,7 @@ export function createTestPorts({
     deviceModel,
     getTimeZone,
     getLanguage,
+    inviteLinkOpenedStore,
   };
 }
 
