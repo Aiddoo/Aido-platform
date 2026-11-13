@@ -10,8 +10,7 @@ import type { PublishPushDeliveryOutboxUseCase } from "./publish-push-delivery-o
 const RELAY_BATCH_SIZE = 100;
 const MAX_BATCHES_PER_TRIGGER = 10;
 
-// lease가 작업 만료보다 짧으면 아직 실행 중인 작업의 dispatch를 되돌려 두 번 보낸다.
-// 공급자 전송은 끊기지 않아 만료 뒤에도 이어질 수 있으므로 그 여유를 더한다
+// lease가 작업 만료보다 짧으면 실행 중인 작업을 되돌려 두 번 보내고, 공급자 전송은 만료 뒤에도 이어질 수 있어 그 여유를 더한다
 function processingLeaseMs(timing: PushProviderTiming): number {
   return PUSH_DELIVERY_JOB_EXPIRE_SECONDS * 1000 + timing.unabortableSendGraceMs;
 }

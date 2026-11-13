@@ -184,8 +184,7 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
   provide: PG_BOSS_CLIENT,
   inject: [databaseConfig.KEY, jobConfig.KEY],
   useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) => {
-    // pg-boss는 이 설정을 pg Pool에 그대로 넘긴다. 앱 풀과 같은 세션 시간 제한·TimeZone·TLS·유휴 정리를 쓰고
-    // 크기와 연결 이름만 다르게 둔다. idleTimeoutMillis·query_timeout은 pg-boss 타입에 없어 pg 타입으로 더한다
+    // pg-boss가 이 설정을 pg Pool에 그대로 넘겨 앱 풀과 같은 세션 옵션·TLS·유휴 정리를 쓴다(pg 전용 칸은 PoolConfig 타입으로 받는다)
     const options: ConstructorOptions & PoolConfig = {
       ...createPostgresPoolConfig(database.url, {
         applicationName: "aido-pg-boss",
