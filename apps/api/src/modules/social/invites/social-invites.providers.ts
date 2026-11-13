@@ -1,9 +1,9 @@
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
-import { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
+import { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
 import {
-  FollowReaderPort,
+  MutualFriendReaderPort,
   FriendshipEstablisherPort,
 } from "#api/modules/social/friends/social-friends.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
@@ -111,7 +111,7 @@ export const SOCIAL_INVITES_PROVIDERS = [
     inviteConfig: InviteConfigPort,
   }),
   provideUseCase(CheckInvitePairReachabilityUseCase, {
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     blockReader: UserBlockReaderPort,
   }),
   provideUseCase(RedeemInviteUseCase, {
@@ -123,7 +123,7 @@ export const SOCIAL_INVITES_PROVIDERS = [
     rewardGrantRepository: RewardGrantRepositoryPort,
     userReader: InviteUserReaderPort,
     rewardApplier: RewardApplierPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     blockReader: UserBlockReaderPort,
     friendshipEstablisher: FriendshipEstablisherPort,
     claimHasher: ClaimHasherPort,

@@ -1,7 +1,7 @@
-import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
+import { FakeFriendshipCache } from "#test/doubles/social/fake-friendship-cache";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
-import { InMemoryFriendshipReader } from "#test/doubles/social/in-memory-friendship.reader";
+import { InMemoryFriendReader } from "#test/doubles/social/in-memory-friend.reader";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
 import {
   createFriendshipFixture,
   createMutualFriendshipFixtures,
@@ -9,7 +9,7 @@ import {
   FRIENDSHIP_FIXTURE_USER_ID,
 } from "#test/fixtures/social/friendship.fixture";
 
-import { FollowReaderAdapter } from "../../infrastructure/adapters/follow-reader.adapter.js";
+import { MutualFriendReaderAdapter } from "../../infrastructure/adapters/mutual-friend-reader.adapter.js";
 import { GetFriendsUseCase } from "./get-friends.use-case.js";
 
 const ME = FRIENDSHIP_FIXTURE_USER_ID;
@@ -20,7 +20,7 @@ const FRIENDS = [
 ] as const;
 
 function setup() {
-  const followRepository = new InMemoryFollowRepository([
+  const friendshipRepository = new InMemoryFriendshipRepository([
     ...FRIENDS.flatMap((friend, index) =>
       createMutualFriendshipFixtures({ userId: ME, friendId: friend.id, userSortOrder: index }),
     ),
@@ -40,8 +40,12 @@ function setup() {
     profileReader.addUser(friend);
   }
   const useCase = new GetFriendsUseCase({
-    friendshipReader: new InMemoryFriendshipReader(followRepository, profileReader),
-    followReader: new FollowReaderAdapter(followRepository, profileReader, new FakeFollowCache()),
+    friendReader: new InMemoryFriendReader(friendshipRepository, profileReader),
+    mutualFriendReader: new MutualFriendReaderAdapter(
+      friendshipRepository,
+      profileReader,
+      new FakeFriendshipCache(),
+    ),
   });
   return { useCase };
 }

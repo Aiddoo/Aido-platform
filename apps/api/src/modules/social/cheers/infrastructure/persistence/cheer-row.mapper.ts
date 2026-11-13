@@ -1,6 +1,6 @@
+import type { UserBriefRow } from "#api/modules/social/friends/social-friends.public";
 import type { cheer as cheerTable } from "#api/platform/database/schema/index";
 
-import type { UserBriefRow } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type {
   CheerListItem,
   CheerUserSummary,

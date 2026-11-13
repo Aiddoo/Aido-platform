@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -34,7 +34,10 @@ export interface SendRemindNudgeDependencies {
     NudgeRepositoryPort,
     "countTodosOn" | "findLastReminderSentTo" | "nextReminderId" | "saveReminder"
   >;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly mutualFriendReader: Pick<
+    MutualFriendReaderPort,
+    "isMutualFriend" | "getUserDisplayName"
+  >;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -48,15 +51,22 @@ export class SendRemindNudgeUseCase {
   }
 
   async execute(command: SendRemindNudgeCommand): Promise<ReminderNudge> {
-    const { unitOfWork, mutationLock, nudgeRepository, followReader, notifier, clock, logger } =
-      this.#dependencies;
+    const {
+      unitOfWork,
+      mutationLock,
+      nudgeRepository,
+      mutualFriendReader,
+      notifier,
+      clock,
+      logger,
+    } = this.#dependencies;
     const senderId = UserId.reconstitute(command.senderId);
     const receiverId = UserId.reconstitute(command.receiverId);
 
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
+    if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
       throw nudgeTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
@@ -92,7 +102,7 @@ export class SendRemindNudgeUseCase {
         nudgeId: created.id.value,
         senderId: senderId.value,
         receiverId: receiverId.value,
-        senderName: await followReader.getUserDisplayName(senderId),
+        senderName: await mutualFriendReader.getUserDisplayName(senderId),
         message: message?.value,
       });
       return created;

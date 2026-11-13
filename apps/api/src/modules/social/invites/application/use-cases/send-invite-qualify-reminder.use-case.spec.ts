@@ -2,8 +2,8 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryInviteRedemptionRepository } from "#test/doubles/social/in-memory-invite-redemption.repository";
 import { RecordingInviteNotifier } from "#test/doubles/social/recording-invite-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { StubInviteUserReader } from "#test/doubles/social/stub-invite-user-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { StubUserBlockReader } from "#test/doubles/social/stub-user-block-reader";
 import {
   activeDaysOf,
@@ -48,9 +48,9 @@ function createSender(
   if (options.isQuiet === true) {
     notifier.quietUserIds.add(INVITE_FIXTURE_INVITEE_ID);
   }
-  const followReader = new StubFollowReader();
+  const mutualFriendReader = new StubMutualFriendReader();
   if (options.areFriends !== false) {
-    followReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
+    mutualFriendReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
   }
   const blockReader = new StubUserBlockReader();
   const userReader = new StubInviteUserReader();
@@ -58,7 +58,7 @@ function createSender(
     unitOfWork: new ImmediateUnitOfWork(),
     inviteRedemptionRepository,
     userReader,
-    pairReachability: new CheckInvitePairReachabilityUseCase({ followReader, blockReader }),
+    pairReachability: new CheckInvitePairReachabilityUseCase({ mutualFriendReader, blockReader }),
     notifier,
     inviteConfig: { isEnabled: options.isEnabled ?? true },
     logger: new SilentLogger(),

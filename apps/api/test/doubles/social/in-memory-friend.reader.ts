@@ -1,4 +1,4 @@
-import { FriendshipReaderPort } from "#api/modules/social/friends/application/ports/friendship.reader.port";
+import { FriendReaderPort } from "#api/modules/social/friends/application/ports/friend.reader.port";
 import type {
   FriendReadModel,
   FriendRequestReadModel,
@@ -7,24 +7,24 @@ import type { FriendshipId } from "#api/modules/social/friends/domain/friendship
 import type { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { InMemoryFollowRepository } from "./in-memory-follow.repository.js";
 import type { InMemoryFriendProfileReader } from "./in-memory-friend-profile.reader.js";
+import type { InMemoryFriendshipRepository } from "./in-memory-friendship.repository.js";
 
 function compareIds(left: Friendship, right: Friendship): number {
   return left.id.value < right.id.value ? -1 : Number(left.id.value > right.id.value);
 }
 
 // Drizzle 조회와 같은 순서로 같은 저장소 상태를 읽는다. 사용자 요약이 없는 관계는 FK가 없는 행처럼 뺀다
-export class InMemoryFriendshipReader extends FriendshipReaderPort {
-  readonly #followRepository: InMemoryFollowRepository;
+export class InMemoryFriendReader extends FriendReaderPort {
+  readonly #friendshipRepository: InMemoryFriendshipRepository;
   readonly #profileReader: InMemoryFriendProfileReader;
 
   constructor(
-    followRepository: InMemoryFollowRepository,
+    friendshipRepository: InMemoryFriendshipRepository,
     profileReader: InMemoryFriendProfileReader,
   ) {
     super();
-    this.#followRepository = followRepository;
+    this.#friendshipRepository = friendshipRepository;
     this.#profileReader = profileReader;
   }
 
@@ -35,7 +35,7 @@ export class InMemoryFriendshipReader extends FriendshipReaderPort {
     readonly limit: number;
   }): Promise<FriendReadModel[]> {
     const { userId, afterFriendshipId, tagSearch, limit } = params;
-    const all = this.#followRepository.listAll();
+    const all = this.#friendshipRepository.listAll();
     const anchor = afterFriendshipId == null ? null : this.#findById(all, afterFriendshipId);
     if (afterFriendshipId != null && anchor == null) {
       return [];
@@ -57,7 +57,7 @@ export class InMemoryFriendshipReader extends FriendshipReaderPort {
           (friendship.sortOrder === anchor.sortOrder && compareIds(friendship, anchor) > 0),
       );
     for (const friendship of candidates) {
-      const isMutual = await this.#followRepository.existsMutualFriendship(
+      const isMutual = await this.#friendshipRepository.existsMutualFriendship(
         userId,
         friendship.followingId,
       );
@@ -73,7 +73,7 @@ export class InMemoryFriendshipReader extends FriendshipReaderPort {
   }
 
   async findFriendById(friendshipId: FriendshipId): Promise<FriendReadModel | null> {
-    const friendship = this.#findById(this.#followRepository.listAll(), friendshipId);
+    const friendship = this.#findById(this.#friendshipRepository.listAll(), friendshipId);
     return friendship == null ? null : this.#toFriend(friendship);
   }
 
@@ -100,14 +100,14 @@ export class InMemoryFriendshipReader extends FriendshipReaderPort {
   }
 
   async countReceivedRequests(userId: UserId): Promise<number> {
-    return this.#followRepository
+    return this.#friendshipRepository
       .listAll()
       .filter((friendship) => friendship.isPending() && friendship.followingId.equals(userId))
       .length;
   }
 
   async countSentRequests(userId: UserId): Promise<number> {
-    return this.#followRepository
+    return this.#friendshipRepository
       .listAll()
       .filter((friendship) => friendship.isPending() && friendship.followerId.equals(userId))
       .length;
@@ -117,7 +117,7 @@ export class InMemoryFriendshipReader extends FriendshipReaderPort {
     params: { readonly afterFriendshipId: FriendshipId | null; readonly limit: number },
     toSide: (friendship: Friendship) => { isOwned: boolean; counterpartId: string },
   ): FriendRequestReadModel[] {
-    const all = this.#followRepository.listAll();
+    const all = this.#friendshipRepository.listAll();
     const anchor =
       params.afterFriendshipId == null ? null : this.#findById(all, params.afterFriendshipId);
     if (params.afterFriendshipId != null && anchor == null) {

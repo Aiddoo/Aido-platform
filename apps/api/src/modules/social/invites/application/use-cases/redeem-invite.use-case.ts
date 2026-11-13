@@ -1,12 +1,12 @@
 import { INVITE_FRIENDSHIP, REDEEM_OUTCOME, REWARD_TYPE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
-import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
-import type {
-  FollowReaderPort,
-  FriendshipEstablisherPort,
-  FriendshipEstablishment,
+import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
+import {
+  FriendLockKeys,
+  type FriendshipEstablisherPort,
+  type FriendshipEstablishment,
+  type MutualFriendReaderPort,
 } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -80,7 +80,7 @@ export interface RedeemInviteDependencies {
   >;
   readonly userReader: Pick<InviteUserReaderPort, "findInviteeIdentity">;
   readonly rewardApplier: Pick<RewardApplierPort, "apply">;
-  readonly followReader: Pick<FollowReaderPort, "isCurrentMutualFriend">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "isCurrentMutualFriend">;
   readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly friendshipEstablisher: Pick<FriendshipEstablisherPort, "establish">;
   readonly claimHasher: Pick<ClaimHasherPort, "hash">;
@@ -192,7 +192,7 @@ export class RedeemInviteUseCase {
     const inviteeId = UserId.reconstitute(identity.userId);
     // 친구 수가 많아도 두 사람 쌍만 확인한다
     const [areAlreadyFriends, blockRelation, previous, hasClaimedReward] = await Promise.all([
-      this.#dependencies.followReader.isCurrentMutualFriend(inviteeId, invite.inviterId),
+      this.#dependencies.mutualFriendReader.isCurrentMutualFriend(inviteeId, invite.inviterId),
       this.#dependencies.blockReader.findRelation(inviteeId, invite.inviterId),
       this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(inviteeId),
       this.#dependencies.rewardClaimRepository.existsAny(claims),

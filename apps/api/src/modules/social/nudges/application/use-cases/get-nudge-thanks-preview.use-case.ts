@@ -1,7 +1,7 @@
 import { match } from "ts-pattern";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -38,7 +38,7 @@ export interface GetNudgeThanksPreviewDependencies {
     | "countThanksRecipients"
   >;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
 }
 
 interface ThanksPreviewTarget {
@@ -81,7 +81,7 @@ export class GetNudgeThanksPreviewUseCase {
     query: GetNudgeThanksPreviewQuery,
     { ownerId, todoId, canListRecipients }: ThanksPreviewTarget,
   ): Promise<NudgeThanksPreview> {
-    const { nudgeReader, followReader } = this.#dependencies;
+    const { nudgeReader, mutualFriendReader } = this.#dependencies;
     // 다음 페이지는 첫 미리보기 시점의 마지막 콕까지만 보여 그 사이 새 콕이 끼어들지 않게 한다
     if (query.throughNudgeId != null) {
       const cutoff = await nudgeReader.findInteraction(
@@ -109,7 +109,7 @@ export class GetNudgeThanksPreviewUseCase {
       };
     }
 
-    const friendIds = await followReader.getCurrentMutualFriendIds(ownerId);
+    const friendIds = await mutualFriendReader.getCurrentMutualFriendIds(ownerId);
     const candidateQuery = {
       ownerId,
       todoId,

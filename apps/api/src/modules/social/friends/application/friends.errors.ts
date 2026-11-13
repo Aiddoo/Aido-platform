@@ -70,6 +70,9 @@ export function acceptedFriendNotFound(params: {
   });
 }
 
-export function invalidUserSearchCursor(cursor: string): ApplicationException {
-  return new ApplicationException(ErrorCode.FOLLOW_0912, { cursor });
+export function displayNameUserNotFound(userId: UserId): ApplicationException {
+  return new ApplicationException(ErrorCode.SYS_0001, {
+    detail: "User for display name not found",
+    userId: userId.value,
+  });
 }

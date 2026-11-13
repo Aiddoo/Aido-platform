@@ -4,7 +4,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
 import {
   createFriendshipFixture,
   createMutualFriendshipFixtures,
@@ -22,15 +22,15 @@ const REQUESTER = FRIENDSHIP_FIXTURE_FRIEND_ID;
 const OTHER = FRIENDSHIP_FIXTURE_OTHER_USER_ID;
 
 function setup(friendships: readonly Friendship[]) {
-  const followRepository = new InMemoryFollowRepository(friendships);
+  const friendshipRepository = new InMemoryFriendshipRepository(friendships);
   const mutationLock = new RecordingMutationLock();
   const useCase = new RejectFriendRequestUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock,
-    followRepository,
+    friendshipRepository,
     logger: new SilentLogger(),
   });
-  return { useCase, followRepository, mutationLock };
+  return { useCase, friendshipRepository, mutationLock };
 }
 
 describe("RejectFriendRequestUseCase — 친구 요청 거절", () => {
@@ -42,7 +42,7 @@ describe("RejectFriendRequestUseCase — 친구 요청 거절", () => {
     },
   ])("$name FOLLOW_0903으로 거절하고 아무것도 지우지 않는다", async ({ friendships }) => {
     // Given
-    const { useCase, followRepository } = setup(friendships);
+    const { useCase, friendshipRepository } = setup(friendships);
 
     // When
     const result = useCase.execute({ userId: ME, requesterUserId: REQUESTER });
@@ -52,13 +52,13 @@ describe("RejectFriendRequestUseCase — 친구 요청 거절", () => {
       errorCode: ErrorCode.FOLLOW_0903,
       details: { targetUserId: REQUESTER },
     });
-    expect(followRepository.size).toBe(friendships.length);
+    expect(friendshipRepository.size).toBe(friendships.length);
   });
 
   it("받은 대기 요청만 지우고 다른 사람의 요청은 둔다", async () => {
     // Given
     const other = createFriendshipFixture({ followerId: OTHER, followingId: ME });
-    const { useCase, followRepository, mutationLock } = setup([
+    const { useCase, friendshipRepository, mutationLock } = setup([
       createFriendshipFixture({ followerId: REQUESTER, followingId: ME }),
       other,
     ]);
@@ -67,7 +67,7 @@ describe("RejectFriendRequestUseCase — 친구 요청 거절", () => {
     await useCase.execute({ userId: ME, requesterUserId: REQUESTER });
 
     // Then
-    expect(followRepository.listAll().map((friendship) => friendship.id.value)).toEqual([
+    expect(friendshipRepository.listAll().map((friendship) => friendship.id.value)).toEqual([
       other.id.value,
     ]);
     expect(mutationLock.acquiredKeys).toEqual([

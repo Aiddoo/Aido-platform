@@ -22,6 +22,8 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { compact, groupBy } from "es-toolkit";
 
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { hasNoBlockWith } from "#api/modules/social/blocks/social-block-queries.public";
+import { USER_BRIEF_RELATION } from "#api/modules/social/friends/social-friends.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import {
@@ -32,8 +34,6 @@ import {
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { hasNoBlockWith } from "../../../blocks/infrastructure/persistence/drizzle-user-block.repository.js";
-import { USER_BRIEF_RELATION } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";
 import type {
   ListNudgesParams,

@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -37,7 +37,10 @@ export interface SendCheerDependencies {
     "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
   readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly mutualFriendReader: Pick<
+    MutualFriendReaderPort,
+    "isMutualFriend" | "getUserDisplayName"
+  >;
   readonly notifier: CheerNotifierPort;
   readonly countCache: Pick<CheerCountCachePort, "invalidate">;
   readonly clock: ClockPort;
@@ -57,7 +60,7 @@ export class SendCheerUseCase {
       mutationLock,
       cheerRepository,
       limitReader,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
       logger,
@@ -69,7 +72,7 @@ export class SendCheerUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotCheerSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
+    if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
       throw cheerTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : CheerMessage.create(command.message);
@@ -112,7 +115,7 @@ export class SendCheerUseCase {
         cheerId: created.id.value,
         senderId: senderId.value,
         receiverId: receiverId.value,
-        senderName: await followReader.getUserDisplayName(senderId),
+        senderName: await mutualFriendReader.getUserDisplayName(senderId),
         message: message?.value,
       });
       return created;

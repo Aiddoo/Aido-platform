@@ -10,17 +10,16 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { follow } from "#api/platform/database/schema/social.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { friendRequestAlreadySent } from "../../application/friends.errors.js";
-import { FollowRepositoryPort } from "../../application/ports/follow.repository.port.js";
+import { FriendshipRepositoryPort } from "../../application/ports/friendship.repository.port.js";
 import type { SortOrderShift } from "../../domain/friend-ordering.domain-service.js";
-import { FriendshipId } from "../../domain/friendship-id.vo.js";
+import type { FriendshipId } from "../../domain/friendship-id.vo.js";
 import type { Friendship } from "../../domain/friendship.aggregate.js";
 import { toFriendship, toFriendshipRow } from "./friendship-row.mapper.js";
 
 @Injectable()
-export class DrizzleFollowRepository implements FollowRepositoryPort {
+export class DrizzleFriendshipRepository implements FriendshipRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -29,10 +28,6 @@ export class DrizzleFollowRepository implements FollowRepositoryPort {
 
   get #db() {
     return this.#txHost.tx;
-  }
-
-  async nextId(): Promise<FriendshipId> {
-    return FriendshipId.reconstitute(createEntityId());
   }
 
   async findByFollowerAndFollowing(

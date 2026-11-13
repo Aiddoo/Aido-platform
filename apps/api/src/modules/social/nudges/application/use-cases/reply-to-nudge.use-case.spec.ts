@@ -11,7 +11,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -76,10 +76,10 @@ async function seedReceivedNudge(
   return repository;
 }
 
-function createFollowReader(): StubFollowReader {
-  const followReader = new StubFollowReader();
-  followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
-  return followReader;
+function createFollowReader(): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+  return mutualFriendReader;
 }
 
 function createReplyToNudgeUseCase(
@@ -91,7 +91,7 @@ function createReplyToNudgeUseCase(
     nudgeRepository,
     nudgeReader: nudgeRepository,
     interactionConfig: { isEnabled: true },
-    followReader: createFollowReader(),
+    mutualFriendReader: createFollowReader(),
     notifier: new RecordingNudgeNotifier(),
     clock: new FixedClock(NUDGE_FIXTURE_NOW),
     ...overrides,
@@ -186,11 +186,11 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
   ])("$state이면 $code로 거절하고 답장을 저장하지 않는다", async ({ state, code }) => {
     // Given
     const nudgeRepository = await seedReceivedNudge();
-    const followReader = createFollowReader();
+    const mutualFriendReader = createFollowReader();
     const notifier = new RecordingNudgeNotifier();
     const todoId = (await nudgeRepository.findById(NUDGE_ID))?.todoId ?? 0;
     if (state === "친구 관계 해제") {
-      followReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+      mutualFriendReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     }
     if (state === "비공개 할 일") {
       nudgeRepository.updateTodo(todoId, { visibility: "PRIVATE" });
@@ -198,7 +198,7 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
     if (state === "지운 할 일") {
       nudgeRepository.deleteTodo(todoId);
     }
-    const useCase = createReplyToNudgeUseCase(nudgeRepository, { followReader, notifier });
+    const useCase = createReplyToNudgeUseCase(nudgeRepository, { mutualFriendReader, notifier });
 
     // When
     const result = useCase.execute({

@@ -2,7 +2,7 @@ import { CheerLimitReaderPort } from "#api/modules/social/cheers/application/por
 import type {
   DailySendFeatureQuota,
   DailySendQuotaUsage,
-} from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
+} from "#api/modules/social/shared/application/ports/daily-send-usage.reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 

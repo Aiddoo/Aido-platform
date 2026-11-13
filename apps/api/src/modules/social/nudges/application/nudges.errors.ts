@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { DailySendFeatureQuota } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
+import type { DailySendFeatureQuota } from "../../shared/application/ports/daily-send-usage.reader.port.js";
 import type { NudgeId } from "../domain/nudge-id.vo.js";
 import type { NudgeThanksRejection } from "../domain/nudge-interaction.domain-service.js";
 

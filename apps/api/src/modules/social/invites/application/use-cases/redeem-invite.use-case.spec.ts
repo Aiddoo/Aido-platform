@@ -14,9 +14,9 @@ import { InMemoryRewardGrantRepository } from "#test/doubles/social/in-memory-re
 import { RecordingInviteNotifier } from "#test/doubles/social/recording-invite-notifier";
 import { RecordingInviteRewardScheduler } from "#test/doubles/social/recording-invite-reward-scheduler";
 import { RecordingRewardApplier } from "#test/doubles/social/recording-reward-applier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { StubFriendshipEstablisher } from "#test/doubles/social/stub-friendship-establisher";
 import { StubInviteUserReader } from "#test/doubles/social/stub-invite-user-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { StubUserBlockReader } from "#test/doubles/social/stub-user-block-reader";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";
 import {
@@ -57,7 +57,7 @@ function createRedeemer(options: { readonly isEnabled?: boolean } = {}) {
   const rewardGrantRepository = new InMemoryRewardGrantRepository();
   const userReader = new StubInviteUserReader();
   const rewardApplier = new RecordingRewardApplier();
-  const followReader = new StubFollowReader();
+  const mutualFriendReader = new StubMutualFriendReader();
   const blockReader = new StubUserBlockReader();
   const friendshipEstablisher = new StubFriendshipEstablisher();
   const notifier = new RecordingInviteNotifier();
@@ -72,7 +72,7 @@ function createRedeemer(options: { readonly isEnabled?: boolean } = {}) {
     rewardGrantRepository,
     userReader,
     rewardApplier,
-    followReader,
+    mutualFriendReader,
     blockReader,
     friendshipEstablisher,
     claimHasher: new FakeClaimHasher(),
@@ -90,7 +90,7 @@ function createRedeemer(options: { readonly isEnabled?: boolean } = {}) {
     rewardGrantRepository,
     userReader,
     rewardApplier,
-    followReader,
+    mutualFriendReader,
     blockReader,
     friendshipEstablisher,
     notifier,
@@ -218,7 +218,7 @@ describe("RedeemInviteUseCase — 초대 수락", () => {
   it("이미 친구면 아무것도 바꾸지 않고 ALREADY_FRIENDS다", async () => {
     // Given
     const redeemer = createRedeemer();
-    redeemer.followReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
+    redeemer.mutualFriendReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
 
     // When
     const result = await redeemer.useCase.execute(COMMAND);

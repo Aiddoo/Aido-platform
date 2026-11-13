@@ -3,19 +3,22 @@ import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { BlockUserUseCase } from "#api/modules/social/blocks/application/use-cases/block-user.use-case";
+import { DrizzleUserBlockReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.reader";
 import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
 import { FriendLockKeys } from "#api/modules/social/friends/application/friends.lock-keys";
-import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
-import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
+import type { FriendshipCachePort } from "#api/modules/social/friends/application/ports/friendship-cache.port";
+import type { FriendshipNotifierPort } from "#api/modules/social/friends/application/ports/friendship-notifier.port";
 import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
-import { CheckFirstFriendMilestoneUseCase } from "#api/modules/social/friends/application/use-cases/check-first-friend-milestone.use-case";
+import { NotifyFirstFriendMilestoneUseCase } from "#api/modules/social/friends/application/use-cases/notify-first-friend-milestone.use-case";
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
+import { SeverFriendshipUseCase } from "#api/modules/social/friends/application/use-cases/sever-friendship.use-case";
 import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
-import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
+import { FriendshipSeveranceAdapter } from "#api/modules/social/friends/infrastructure/adapters/friendship-severance.adapter";
 import { DrizzleFriendProfileReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-profile.reader";
 import { DrizzleFriendSearchReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-search.reader";
-import { DrizzleFriendshipReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.reader";
+import { DrizzleFriendReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend.reader";
+import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -33,6 +36,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CheerFixture,
@@ -57,7 +61,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
   let acceptFriendRequest: AcceptFriendRequestUseCase;
   let sendFriendRequest: SendFriendRequestUseCase;
   let friendSearchReader: DrizzleFriendSearchReader;
-  let blockRepository: DrizzleUserBlockRepository;
+  let blockReader: DrizzleUserBlockReader;
   let nudgeRepository: DrizzleNudgeRepository;
   let cheerRepository: DrizzleCheerRepository;
 
@@ -82,7 +86,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
 
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     const mutationLock = new PostgresMutationLockAdapter(txHost);
-    const cache: FollowCachePort = {
+    const cache: FriendshipCachePort = {
       getMutualFriend: async () => undefined,
       setMutualFriend: async () => {},
       invalidateMutualFriend: async () => {},
@@ -91,21 +95,22 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       wrapFriendCount: async (_userId, read) => read(),
       invalidateFriendCount: async () => {},
     };
-    const notifier: FollowNotifierPort = {
+    const notifier: FriendshipNotifierPort = {
       async notifyFollowNew() {},
       async notifyFollowMutual() {},
       async notifyFirstFriendMilestone() {},
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
-    const followRepository = new DrizzleFollowRepository(txHost);
+    const friendshipRepository = new DrizzleFriendshipRepository(txHost);
     const profileReader = new DrizzleFriendProfileReader(txHost);
     friendSearchReader = new DrizzleFriendSearchReader(txHost);
-    blockRepository = new DrizzleUserBlockRepository(txHost);
+    const blockRepository = new DrizzleUserBlockRepository(txHost);
+    blockReader = new DrizzleUserBlockReader(txHost);
     nudgeRepository = new DrizzleNudgeRepository(txHost);
     cheerRepository = new DrizzleCheerRepository(txHost);
     const clock = new DateClock();
-    const checkFirstFriendMilestone = new CheckFirstFriendMilestoneUseCase({
-      followRepository,
+    const notifyFirstFriendMilestone = new NotifyFirstFriendMilestoneUseCase({
+      friendshipRepository,
       notifier,
     });
     blockUser = new BlockUserUseCase({
@@ -114,26 +119,34 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       userBlockRepository: blockRepository,
       unitOfWork: uow,
       mutationLock,
-      friendshipCache: cache,
+      friendshipSeverance: new FriendshipSeveranceAdapter(
+        new SeverFriendshipUseCase({
+          unitOfWork: uow,
+          mutationLock,
+          afterCommit: new RecordingAfterCommitRegistry(),
+          friendshipRepository,
+          cache,
+        }),
+      ),
       clock: new FixedClock(instantFromDate(BLOCK_TIME)),
       logger,
     });
     acceptFriendRequest = new AcceptFriendRequestUseCase({
       unitOfWork: uow,
       mutationLock,
-      followRepository,
-      friendshipReader: new DrizzleFriendshipReader(txHost),
+      friendshipRepository,
+      friendReader: new DrizzleFriendReader(txHost),
       profileReader,
       cache,
       notifier,
-      checkFirstFriendMilestone,
+      notifyFirstFriendMilestone,
       clock,
       logger,
     });
     sendFriendRequest = new SendFriendRequestUseCase({
       unitOfWork: uow,
       mutationLock,
-      followRepository,
+      friendshipRepository,
       profileReader,
       limitReader: {
         readLimitInTx: async () => null,
@@ -141,10 +154,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
           throw new Error("친구 한도가 없으면 한도 오류 featureQuota를 읽지 않는다");
         },
       },
-      blockReader: blockRepository,
+      blockReader,
       cache,
       notifier,
-      checkFirstFriendMilestone,
+      notifyFirstFriendMilestone,
       clock,
       logger,
     });
@@ -215,7 +228,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     }
     expect(await countFollowsBetween()).toBe(0);
     expect(
-      await blockRepository.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+      await blockReader.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
     ).toEqual({
       isBlocking: false,
       isBlockedBy: true,
@@ -256,7 +269,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(await countFollowsBetween()).toBe(0);
     expect(
-      await blockRepository.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+      await blockReader.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
     ).toEqual({
       isBlocking: true,
       isBlockedBy: true,

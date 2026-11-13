@@ -2,25 +2,26 @@ import { Injectable } from "@nestjs/common";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { FollowCachePort } from "../../application/ports/follow-cache.port.js";
-import type { FollowReaderPort } from "../../application/ports/follow.reader.port.js";
-import { FollowRepositoryPort } from "../../application/ports/follow.repository.port.js";
-import type { FriendCountReaderPort } from "../../application/ports/friend-count.reader.port.js";
-import { FriendProfileReaderPort } from "../../application/ports/friend-profile.reader.port.js";
+import {
+  FriendProfileReaderPort,
+  readDisplayName,
+} from "../../application/ports/friend-profile.reader.port.js";
+import { FriendshipCachePort } from "../../application/ports/friendship-cache.port.js";
+import { FriendshipRepositoryPort } from "../../application/ports/friendship.repository.port.js";
+import type { MutualFriendReaderPort } from "../../application/ports/mutual-friend.reader.port.js";
 
-// 다른 Context가 보는 친구 판정이다. current 메서드는 권한을 판단하는 쓰기 경로라 캐시를 거치지 않는다
 @Injectable()
-export class FollowReaderAdapter implements FollowReaderPort, FriendCountReaderPort {
-  readonly #followRepository: FollowRepositoryPort;
+export class MutualFriendReaderAdapter implements MutualFriendReaderPort {
+  readonly #friendshipRepository: FriendshipRepositoryPort;
   readonly #profileReader: FriendProfileReaderPort;
-  readonly #cache: FollowCachePort;
+  readonly #cache: FriendshipCachePort;
 
   constructor(
-    followRepository: FollowRepositoryPort,
+    friendshipRepository: FriendshipRepositoryPort,
     profileReader: FriendProfileReaderPort,
-    cache: FollowCachePort,
+    cache: FriendshipCachePort,
   ) {
-    this.#followRepository = followRepository;
+    this.#friendshipRepository = friendshipRepository;
     this.#profileReader = profileReader;
     this.#cache = cache;
   }
@@ -39,16 +40,16 @@ export class FollowReaderAdapter implements FollowReaderPort, FriendCountReaderP
   }
 
   isCurrentMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
-    return this.#followRepository.existsMutualFriendship(userId, targetUserId);
+    return this.#friendshipRepository.existsMutualFriendship(userId, targetUserId);
   }
 
   countFriends(userId: UserId): Promise<number> {
     return this.#cache.wrapFriendCount(userId, () => this.countCurrentFriends(userId));
   }
 
-  // 권한 스냅샷이 한도 검사와 같은 값을 보이도록 캐시 대신 지금 친구 수를 센다
+  // 권한 현황이 한도 검사와 같은 값을 보이도록 캐시 대신 지금 친구 수를 센다
   countCurrentFriends(userId: UserId): Promise<number> {
-    return this.#followRepository.countMutualFriends(userId);
+    return this.#friendshipRepository.countMutualFriends(userId);
   }
 
   getMutualFriendIds(userId: UserId): Promise<string[]> {
@@ -56,11 +57,11 @@ export class FollowReaderAdapter implements FollowReaderPort, FriendCountReaderP
   }
 
   async getCurrentMutualFriendIds(userId: UserId): Promise<string[]> {
-    const friendIds = await this.#followRepository.listMutualFriendIds(userId);
+    const friendIds = await this.#friendshipRepository.listMutualFriendIds(userId);
     return friendIds.map((friendId) => friendId.value);
   }
 
-  async getUserDisplayName(userId: UserId): Promise<string> {
-    return (await this.#profileReader.findDisplayName(userId)) ?? userId.value;
+  getUserDisplayName(userId: UserId): Promise<string> {
+    return readDisplayName(this.#profileReader, userId);
   }
 }

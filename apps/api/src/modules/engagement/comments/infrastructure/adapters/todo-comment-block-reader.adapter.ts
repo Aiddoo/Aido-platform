@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UserBlockReaderPort } from "#api/modules/social/blocks/social-blocks.public";
+import { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentBlockReaderPort } from "../../application/ports/todo-comment-block-reader.port.js";

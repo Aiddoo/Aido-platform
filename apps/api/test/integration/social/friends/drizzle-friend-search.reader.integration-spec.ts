@@ -1,7 +1,8 @@
+import { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
 import type { FriendshipPrimitives } from "#api/modules/social/friends/domain/friendship.aggregate";
 import { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
-import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
 import { DrizzleFriendSearchReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-search.reader";
+import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture } from "#test/fixtures/index";
@@ -20,7 +21,7 @@ const INACTIVE = "cuser0000000000000000006";
 describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
-  let followRepository: DrizzleFollowRepository;
+  let friendshipRepository: DrizzleFriendshipRepository;
   let searchReader: DrizzleFriendSearchReader;
 
   beforeAll(async () => {
@@ -46,7 +47,7 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
       { userId: NAME_PREFIX, name: "Kim 지수" },
     ]);
     const { txHost } = createDatabaseTransactionFixture(client);
-    followRepository = new DrizzleFollowRepository(txHost);
+    friendshipRepository = new DrizzleFriendshipRepository(txHost);
     searchReader = new DrizzleFriendSearchReader(txHost);
   });
 
@@ -55,8 +56,8 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
   });
 
   async function save(overrides: Partial<FriendshipPrimitives>): Promise<void> {
-    await followRepository.save(
-      createFriendshipFixture({ id: (await followRepository.nextId()).value, ...overrides }),
+    await friendshipRepository.save(
+      createFriendshipFixture({ id: FriendshipId.generate().value, ...overrides }),
     );
   }
 

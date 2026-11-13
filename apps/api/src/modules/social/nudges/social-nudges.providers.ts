@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
-import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -55,7 +55,7 @@ export const SOCIAL_NUDGES_PROVIDERS = [
     mutationLock: MutationLockPort,
     nudgeRepository: NudgeRepositoryPort,
     limitReader: NudgeLimitReaderPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     notifier: NudgeNotifierPort,
     countCache: NudgeCountCachePort,
     clock: ClockPort,
@@ -65,7 +65,7 @@ export const SOCIAL_NUDGES_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     nudgeRepository: NudgeRepositoryPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     notifier: NudgeNotifierPort,
     clock: ClockPort,
     logger: loggerFor(SendRemindNudgeUseCase),
@@ -106,24 +106,24 @@ export const SOCIAL_NUDGES_PROVIDERS = [
   provideUseCase(GetNudgeInteractionsUseCase, {
     nudgeReader: NudgeReaderPort,
     interactionConfig: NudgeInteractionConfigPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
   }),
   provideUseCase(GetNudgeInteractionUseCase, {
     nudgeReader: NudgeReaderPort,
     interactionConfig: NudgeInteractionConfigPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
   }),
   provideUseCase(GetNudgeThanksPreviewUseCase, {
     nudgeReader: NudgeReaderPort,
     interactionConfig: NudgeInteractionConfigPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
   }),
   provideUseCase(ReplyToNudgeUseCase, {
     unitOfWork: UnitOfWorkPort,
     nudgeRepository: NudgeRepositoryPort,
     nudgeReader: NudgeReaderPort,
     interactionConfig: NudgeInteractionConfigPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     notifier: NudgeNotifierPort,
     clock: ClockPort,
   }),
@@ -132,7 +132,7 @@ export const SOCIAL_NUDGES_PROVIDERS = [
     nudgeRepository: NudgeRepositoryPort,
     nudgeReader: NudgeReaderPort,
     interactionConfig: NudgeInteractionConfigPort,
-    followReader: FollowReaderPort,
+    mutualFriendReader: MutualFriendReaderPort,
     notifier: NudgeNotifierPort,
     clock: ClockPort,
   }),

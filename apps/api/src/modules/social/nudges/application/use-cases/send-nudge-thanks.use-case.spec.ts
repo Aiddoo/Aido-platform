@@ -6,7 +6,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -43,12 +43,12 @@ async function seedCompletedTodo(
   return todoId;
 }
 
-function createFollowReader(friendIds: readonly string[]): StubFollowReader {
-  const followReader = new StubFollowReader();
+function createFollowReader(friendIds: readonly string[]): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
   for (const friendId of friendIds) {
-    followReader.addMutual(friendId, NUDGE_FIXTURE_RECEIVER_ID);
+    mutualFriendReader.addMutual(friendId, NUDGE_FIXTURE_RECEIVER_ID);
   }
-  return followReader;
+  return mutualFriendReader;
 }
 
 function createSendNudgeThanksUseCase(
@@ -60,7 +60,7 @@ function createSendNudgeThanksUseCase(
     nudgeRepository,
     nudgeReader: nudgeRepository,
     interactionConfig: { isEnabled: true },
-    followReader: createFollowReader([NUDGE_FIXTURE_SENDER_ID]),
+    mutualFriendReader: createFollowReader([NUDGE_FIXTURE_SENDER_ID]),
     notifier: new RecordingNudgeNotifier(),
     clock: new FixedClock(THANKED_AT),
     ...overrides,
@@ -75,7 +75,7 @@ describe("SendNudgeThanksUseCase — 완료한 할 일의 콕에 감사", () => 
     const todoId = await seedCompletedTodo(nudgeRepository, friendIds);
     const notifier = new RecordingNudgeNotifier();
     const useCase = createSendNudgeThanksUseCase(nudgeRepository, {
-      followReader: createFollowReader(friendIds),
+      mutualFriendReader: createFollowReader(friendIds),
       notifier,
     });
 

@@ -1,13 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 import { eq, sql } from "drizzle-orm";
 
-import type { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
-import type { FollowNotifierPort } from "#api/modules/social/friends/application/ports/follow-notifier.port";
+import type { FriendshipCachePort } from "#api/modules/social/friends/application/ports/friendship-cache.port";
+import type { FriendshipNotifierPort } from "#api/modules/social/friends/application/ports/friendship-notifier.port";
 import { AcceptFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/accept-friend-request.use-case";
-import { CheckFirstFriendMilestoneUseCase } from "#api/modules/social/friends/application/use-cases/check-first-friend-milestone.use-case";
-import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
+import { NotifyFirstFriendMilestoneUseCase } from "#api/modules/social/friends/application/use-cases/notify-first-friend-milestone.use-case";
 import { DrizzleFriendProfileReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-profile.reader";
-import { DrizzleFriendshipReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.reader";
+import { DrizzleFriendReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend.reader";
+import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import { follow, user } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -56,8 +56,8 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     }
     requestId = request.id;
     const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const followRepository = new DrizzleFollowRepository(txHost);
-    const cache: FollowCachePort = {
+    const friendshipRepository = new DrizzleFriendshipRepository(txHost);
+    const cache: FriendshipCachePort = {
       getMutualFriend: async () => undefined,
       setMutualFriend: async () => {},
       invalidateMutualFriend: async () => {},
@@ -66,7 +66,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       wrapFriendCount: async (_userId, read) => read(),
       invalidateFriendCount: async () => {},
     };
-    const notifier: FollowNotifierPort = {
+    const notifier: FriendshipNotifierPort = {
       async notifyFollowNew() {},
       async notifyFollowMutual() {
         mutualNotifications++;
@@ -79,13 +79,13 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     acceptFriendRequest = new AcceptFriendRequestUseCase({
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(txHost),
-      followRepository,
-      friendshipReader: new DrizzleFriendshipReader(txHost),
+      friendshipRepository,
+      friendReader: new DrizzleFriendReader(txHost),
       profileReader: new DrizzleFriendProfileReader(txHost),
       cache,
       notifier,
-      checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
-        followRepository,
+      notifyFirstFriendMilestone: new NotifyFirstFriendMilestoneUseCase({
+        friendshipRepository,
         notifier,
       }),
       clock: new DateClock(),

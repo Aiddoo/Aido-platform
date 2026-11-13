@@ -1,10 +1,10 @@
+import type { UserBriefRow } from "#api/modules/social/friends/social-friends.public";
 import type {
   nudge as nudgeTable,
   reminderNudge as reminderNudgeTable,
   todo as todoTable,
 } from "#api/platform/database/schema/index";
 
-import type { UserBriefRow } from "../../../friends/infrastructure/persistence/user-brief-relation.constants.js";
 import type { NudgeInteractionTodo } from "../../application/read-models/nudge-interaction.read-model.js";
 import type {
   NudgeListItem,

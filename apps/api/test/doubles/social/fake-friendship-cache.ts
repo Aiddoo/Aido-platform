@@ -1,4 +1,4 @@
-import { FollowCachePort } from "#api/modules/social/friends/application/ports/follow-cache.port";
+import { FriendshipCachePort } from "#api/modules/social/friends/application/ports/friendship-cache.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function pairKey(user: UserId, target: UserId): string {
@@ -7,7 +7,7 @@ function pairKey(user: UserId, target: UserId): string {
 }
 
 // 운영 어댑터처럼 값을 담고 지우며, 무엇을 지웠는지 남겨 무효화 범위를 확인할 수 있게 한다
-export class FakeFollowCache extends FollowCachePort {
+export class FakeFriendshipCache extends FriendshipCachePort {
   readonly mutual = new Map<string, boolean>();
   readonly friendIds = new Map<string, string[]>();
   readonly friendCounts = new Map<string, number>();

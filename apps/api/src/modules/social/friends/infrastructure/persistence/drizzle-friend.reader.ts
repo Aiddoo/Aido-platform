@@ -7,7 +7,7 @@ import { tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
 import { follow } from "#api/platform/database/schema/social.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { FriendshipReaderPort } from "../../application/ports/friendship.reader.port.js";
+import { FriendReaderPort } from "../../application/ports/friend.reader.port.js";
 import type {
   FriendReadModel,
   FriendRequestReadModel,
@@ -49,7 +49,7 @@ function toContainsPattern(search: string): string {
 }
 
 @Injectable()
-export class DrizzleFriendshipReader implements FriendshipReaderPort {
+export class DrizzleFriendReader implements FriendReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {

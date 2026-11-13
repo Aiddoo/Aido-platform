@@ -1,7 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { FollowReaderPort } from "../ports/follow.reader.port.js";
 import type { FriendLimitReaderPort } from "../ports/friend-limit.reader.port.js";
+import type { MutualFriendReaderPort } from "../ports/mutual-friend.reader.port.js";
 
 export interface GetFriendResourceLimitQuery {
   readonly userId: string;
@@ -14,7 +14,7 @@ export interface FriendResourceLimit {
 }
 
 export interface GetFriendResourceLimitDependencies {
-  readonly followReader: Pick<FollowReaderPort, "countFriends">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "countFriends">;
   readonly limitReader: Pick<FriendLimitReaderPort, "readLimit">;
 }
 
@@ -26,11 +26,11 @@ export class GetFriendResourceLimitUseCase {
   }
 
   async execute(query: GetFriendResourceLimitQuery): Promise<FriendResourceLimit> {
-    const { followReader, limitReader } = this.#dependencies;
+    const { mutualFriendReader, limitReader } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const [maxCount, friendCount] = await Promise.all([
       limitReader.readLimit(userId),
-      followReader.countFriends(userId),
+      mutualFriendReader.countFriends(userId),
     ]);
     return { friendCount, maxCount };
   }

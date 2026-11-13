@@ -6,7 +6,7 @@ import { GetEntitlementUsageUseCase } from "#api/modules/access/entitlement-usag
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
 import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
-import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { follow, resourceBonus, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -25,14 +25,14 @@ const FREE_FRIEND_LIMIT = PLAN_CATALOG.FRIEND.free;
 describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 같은 값이다 (실제 PostgreSQL)", () => {
   let context: E2eTestContext;
   let categoryCountReader: TodoCategoryCountReaderPort;
-  let friendCountReader: FriendCountReaderPort;
+  let friendCountReader: MutualFriendReaderPort;
   let getEntitlementUsage: GetEntitlementUsageUseCase;
   let userId: string;
 
   beforeAll(async () => {
     context = await createE2eApp();
     categoryCountReader = context.module.get(TodoCategoryCountReaderPort);
-    friendCountReader = context.module.get(FriendCountReaderPort);
+    friendCountReader = context.module.get(MutualFriendReaderPort);
     getEntitlementUsage = context.module.get(GetEntitlementUsageUseCase);
   });
 

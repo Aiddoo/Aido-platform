@@ -2,7 +2,7 @@ import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendshipId } from "../../domain/friendship-id.vo.js";
-import type { FriendshipReaderPort } from "../ports/friendship.reader.port.js";
+import type { FriendReaderPort } from "../ports/friend.reader.port.js";
 import type { FriendRequestReadModel } from "../read-models/friend.read-model.js";
 
 export interface GetReceivedFriendRequestsQuery {
@@ -17,10 +17,7 @@ export interface GetReceivedFriendRequestsResult {
 }
 
 export interface GetReceivedFriendRequestsDependencies {
-  readonly friendshipReader: Pick<
-    FriendshipReaderPort,
-    "listReceivedRequests" | "countReceivedRequests"
-  >;
+  readonly friendReader: Pick<FriendReaderPort, "listReceivedRequests" | "countReceivedRequests">;
 }
 
 export class GetReceivedFriendRequestsUseCase {
@@ -31,16 +28,16 @@ export class GetReceivedFriendRequestsUseCase {
   }
 
   async execute(query: GetReceivedFriendRequestsQuery): Promise<GetReceivedFriendRequestsResult> {
-    const { friendshipReader } = this.#dependencies;
+    const { friendReader } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
     const [requests, totalCount] = await Promise.all([
-      friendshipReader.listReceivedRequests({
+      friendReader.listReceivedRequests({
         userId,
         afterFriendshipId: query.cursor == null ? null : FriendshipId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      friendshipReader.countReceivedRequests(userId),
+      friendReader.countReceivedRequests(userId),
     ]);
     return {
       page: toCursorPage({ rows: requests, size, toCursor: (request) => request.friendshipId }),

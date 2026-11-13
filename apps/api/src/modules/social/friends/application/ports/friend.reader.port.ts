@@ -4,7 +4,7 @@ import type { FriendshipId } from "../../domain/friendship-id.vo.js";
 import type { FriendReadModel, FriendRequestReadModel } from "../read-models/friend.read-model.js";
 
 // after 관계는 주인과 상관없이 id로 찾는다(출시 커서). 없으면 빈 목록이다
-export abstract class FriendshipReaderPort {
+export abstract class FriendReaderPort {
   // 맞팔 친구를 sortOrder·id 오름차순으로 준다. tagSearch는 상대 태그 부분 일치(대소문자 무시)다
   abstract listFriends(params: {
     readonly userId: UserId;

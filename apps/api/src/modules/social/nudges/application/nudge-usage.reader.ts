@@ -2,7 +2,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type { DailySendUsage } from "../../cheers/application/ports/daily-send-usage.reader.port.js";
+import type { DailySendUsage } from "../../shared/application/ports/daily-send-usage.reader.port.js";
 import { dailySendWindowAt } from "../../shared/domain/daily-send-window.domain-service.js";
 import { NudgeUsageReaderPort } from "./ports/nudge-usage.reader.port.js";
 import type { NudgeRepositoryPort } from "./ports/nudge.repository.port.js";

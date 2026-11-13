@@ -5,8 +5,7 @@ import type { FriendshipId } from "../../domain/friendship-id.vo.js";
 import type { Friendship } from "../../domain/friendship.aggregate.js";
 
 // 맞팔(mutual)은 두 방향 관계가 모두 ACCEPTED인 상대다. 친구 수·친구 판정은 모두 이 기준이다
-export abstract class FollowRepositoryPort {
-  abstract nextId(): Promise<FriendshipId>;
+export abstract class FriendshipRepositoryPort {
   abstract findByFollowerAndFollowing(
     followerId: UserId,
     followingId: UserId,

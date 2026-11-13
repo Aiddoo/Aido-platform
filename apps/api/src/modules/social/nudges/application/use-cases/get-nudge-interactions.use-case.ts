@@ -1,4 +1,4 @@
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -20,7 +20,7 @@ export interface GetNudgeInteractionsQuery {
 export interface GetNudgeInteractionsDependencies {
   readonly nudgeReader: Pick<NudgeReaderPort, "listInteractions">;
   readonly interactionConfig: NudgeInteractionConfigPort;
-  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class GetNudgeInteractionsUseCase {
@@ -31,7 +31,7 @@ export class GetNudgeInteractionsUseCase {
   }
 
   async execute(query: GetNudgeInteractionsQuery): Promise<CursorPage<NudgeInteraction, number>> {
-    const { nudgeReader, interactionConfig, followReader } = this.#dependencies;
+    const { nudgeReader, interactionConfig, mutualFriendReader } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
       throw nudgeInteractionDisabled();
     }
@@ -45,7 +45,7 @@ export class GetNudgeInteractionsUseCase {
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      followReader.getCurrentMutualFriendIds(viewerId),
+      mutualFriendReader.getCurrentMutualFriendIds(viewerId),
     ]);
     const friends = new Set(friendIds);
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });

@@ -11,7 +11,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
 import {
@@ -167,14 +167,14 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
     const clock = new FixedClock(REPLIED_AT);
-    const followReader = new StubFollowReader();
-    followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+    const mutualFriendReader = new StubMutualFriendReader();
+    mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     const reply = new ReplyToNudgeUseCase({
       unitOfWork: uow,
       nudgeRepository: repository,
       nudgeReader: repository,
       interactionConfig: { isEnabled: true },
-      followReader,
+      mutualFriendReader,
       notifier: new RecordingNudgeNotifier(),
       clock,
     });

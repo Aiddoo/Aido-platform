@@ -4,11 +4,11 @@ import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-e
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader.port.js";
 import type {
   DailySendFeatureQuota,
   DailySendQuotaUsage,
-} from "../../application/ports/daily-send-usage.reader.port.js";
+} from "../../../shared/application/ports/daily-send-usage.reader.port.js";
+import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader.port.js";
 
 @Injectable()
 export class CheerLimitReaderAdapter extends CheerLimitReaderPort {

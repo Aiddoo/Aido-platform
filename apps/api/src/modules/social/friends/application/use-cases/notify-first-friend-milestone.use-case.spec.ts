@@ -1,5 +1,5 @@
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
-import { RecordingFollowNotifier } from "#test/doubles/social/recording-follow-notifier";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
+import { RecordingFriendshipNotifier } from "#test/doubles/social/recording-friendship-notifier";
 import {
   createMutualFriendshipFixtures,
   FRIENDSHIP_FIXTURE_FRIEND_ID,
@@ -7,12 +7,12 @@ import {
   FRIENDSHIP_FIXTURE_USER_ID,
 } from "#test/fixtures/social/friendship.fixture";
 
-import { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
+import { NotifyFirstFriendMilestoneUseCase } from "./notify-first-friend-milestone.use-case.js";
 
-describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
+describe("NotifyFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
   it("친구가 정확히 한 명인 사람에게만 첫 친구 알림을 보낸다", async () => {
     // Given
-    const followRepository = new InMemoryFollowRepository([
+    const friendshipRepository = new InMemoryFriendshipRepository([
       ...createMutualFriendshipFixtures({
         userId: FRIENDSHIP_FIXTURE_USER_ID,
         friendId: FRIENDSHIP_FIXTURE_FRIEND_ID,
@@ -22,9 +22,9 @@ describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
         friendId: FRIENDSHIP_FIXTURE_OTHER_USER_ID,
       }),
     ]);
-    const notifier = new RecordingFollowNotifier();
-    const useCase = new CheckFirstFriendMilestoneUseCase({
-      followRepository,
+    const notifier = new RecordingFriendshipNotifier();
+    const useCase = new NotifyFirstFriendMilestoneUseCase({
+      friendshipRepository,
       notifier,
     });
 
@@ -39,9 +39,9 @@ describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
 
   it("친구 수를 세지 못하면 오류를 던져 친구 관계 저장과 함께 되돌린다", async () => {
     // Given
-    const notifier = new RecordingFollowNotifier();
-    const useCase = new CheckFirstFriendMilestoneUseCase({
-      followRepository: {
+    const notifier = new RecordingFriendshipNotifier();
+    const useCase = new NotifyFirstFriendMilestoneUseCase({
+      friendshipRepository: {
         countMutualFriends: async () => {
           throw new TypeError("connection reset");
         },

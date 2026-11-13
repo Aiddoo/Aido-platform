@@ -1,7 +1,8 @@
-import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
+import { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
+import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { user } from "#api/platform/database/schema/index";
-import { describeFollowRepositoryContract } from "#test/contracts/social/follow-repository.contract";
+import { describeFriendshipRepositoryContract } from "#test/contracts/social/friendship-repository.contract";
 import { UserFixture } from "#test/fixtures/index";
 import {
   createFriendshipFixture,
@@ -12,7 +13,7 @@ import {
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-describe("DrizzleFollowRepository (실제 PostgreSQL)", () => {
+describe("DrizzleFriendshipRepository (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
 
@@ -36,17 +37,17 @@ describe("DrizzleFollowRepository (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  function createRepository(): DrizzleFollowRepository {
+  function createRepository(): DrizzleFriendshipRepository {
     const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleFollowRepository(txHost);
+    return new DrizzleFriendshipRepository(txHost);
   }
 
-  describeFollowRepositoryContract(async () => createRepository());
+  describeFriendshipRepositoryContract(async () => createRepository());
 
   it("없는 관계를 지우면 부재 오류를 낸다", async () => {
     // Given
     const repository = createRepository();
-    const missing = createFriendshipFixture({ id: (await repository.nextId()).value });
+    const missing = createFriendshipFixture({ id: FriendshipId.generate().value });
 
     // When
     const result = repository.delete(missing);
@@ -60,7 +61,7 @@ describe("DrizzleFollowRepository (실제 PostgreSQL)", () => {
     const repository = createRepository();
     const createdAt = Temporal.Instant.from("2027-01-08T12:00:00.123Z");
     const friendship = createFriendshipFixture({
-      id: (await repository.nextId()).value,
+      id: FriendshipId.generate().value,
       createdAt,
       updatedAt: createdAt.add({ seconds: 5 }),
     });

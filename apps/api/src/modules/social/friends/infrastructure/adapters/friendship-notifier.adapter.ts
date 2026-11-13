@@ -6,11 +6,11 @@ import type {
   FirstFriendMilestoneNotification,
   FollowMutualNotification,
   FollowNewNotification,
-  FollowNotifierPort,
-} from "../../application/ports/follow-notifier.port.js";
+  FriendshipNotifierPort,
+} from "../../application/ports/friendship-notifier.port.js";
 
 @Injectable()
-export class FollowNotifierAdapter implements FollowNotifierPort {
+export class FriendshipNotifierAdapter implements FriendshipNotifierPort {
   readonly #queue: NotificationQueueAdapter;
 
   constructor(queue: NotificationQueueAdapter) {

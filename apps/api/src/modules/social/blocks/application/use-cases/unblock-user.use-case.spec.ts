@@ -1,3 +1,4 @@
+import { FriendLockKeys } from "#api/modules/social/friends/social-friends.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
@@ -10,7 +11,6 @@ import {
   USER_BLOCK_FIXTURE_BLOCKER_ID,
 } from "#test/fixtures/social/user-block.fixture";
 
-import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
 import { type UnblockUserDependencies, UnblockUserUseCase } from "./unblock-user.use-case.js";
 

@@ -1,6 +1,6 @@
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
-import { InMemoryFriendshipReader } from "#test/doubles/social/in-memory-friendship.reader";
+import { InMemoryFriendReader } from "#test/doubles/social/in-memory-friend.reader";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
 import {
   createFriendshipFixture,
   createMutualFriendshipFixtures,
@@ -19,7 +19,7 @@ const REQUESTERS = [
 ] as const;
 
 function setup() {
-  const followRepository = new InMemoryFollowRepository([
+  const friendshipRepository = new InMemoryFriendshipRepository([
     ...REQUESTERS.map((requesterId, index) =>
       createFriendshipFixture({
         followerId: requesterId,
@@ -35,10 +35,10 @@ function setup() {
     profileReader.addUser({ id: requesterId, userTag: `REQS000${index}` });
   });
   profileReader.addUser({ id: "cfriend000000000000000001", userTag: "FRND0001" });
-  const friendshipReader = new InMemoryFriendshipReader(followRepository, profileReader);
+  const friendReader = new InMemoryFriendReader(friendshipRepository, profileReader);
   return {
-    received: new GetReceivedFriendRequestsUseCase({ friendshipReader }),
-    sent: new GetSentFriendRequestsUseCase({ friendshipReader }),
+    received: new GetReceivedFriendRequestsUseCase({ friendReader }),
+    sent: new GetSentFriendRequestsUseCase({ friendReader }),
   };
 }
 

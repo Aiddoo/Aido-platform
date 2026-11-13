@@ -25,17 +25,17 @@ import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.p
 import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import type { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
 import type { CheerNotifierPort } from "#api/modules/social/cheers/application/ports/cheer-notifier.port";
-import type { DailySendQuotaUsage } from "#api/modules/social/cheers/application/ports/daily-send-usage.reader.port";
 import { GetCheerLimitUseCase } from "#api/modules/social/cheers/application/use-cases/get-cheer-limit.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
 import type { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use-cases/get-nudge-limit.use-case";
 import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-nudge.use-case";
 import { SendRemindNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/send-remind-nudge.use-case";
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
+import type { DailySendQuotaUsage } from "#api/modules/social/shared/application/ports/daily-send-usage.reader.port";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { DRIZZLE, type DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -542,7 +542,10 @@ async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promis
   }
 }
 
-function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName"> {
+function createMutualFriendReaderStub(): Pick<
+  MutualFriendReaderPort,
+  "isMutualFriend" | "getUserDisplayName"
+> {
   return { isMutualFriend: async () => true, getUserDisplayName: async (userId) => userId.value };
 }
 
@@ -856,7 +859,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });
@@ -891,7 +894,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });
@@ -933,7 +936,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createNudgeLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });
@@ -969,7 +972,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createNudgeLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });
@@ -1007,7 +1010,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       notifier: createNudgeNotifier(),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });
@@ -1270,7 +1273,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(1),
       mutationLock: mutationLock,
       unitOfWork: uow,
-      followReader: createFollowReaderStub(),
+      mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
       logger: new SilentLogger(),
     });

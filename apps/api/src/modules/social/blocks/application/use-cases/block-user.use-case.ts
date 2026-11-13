@@ -1,16 +1,16 @@
+import type { CheerCountCachePort } from "#api/modules/social/cheers/social-cheers.public";
+import {
+  FriendLockKeys,
+  type FriendshipSeverancePort,
+} from "#api/modules/social/friends/social-friends.public";
+import type { NudgeCountCachePort } from "#api/modules/social/nudges/social-nudges.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { CheerCountCachePort } from "../../../cheers/application/ports/cheer-count-cache.port.js";
-import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
-import {
-  type FriendshipCacheInvalidator,
-  invalidateFriendshipCaches,
-} from "../../../friends/application/ports/follow-cache.port.js";
-import type { NudgeCountCachePort } from "../../../nudges/application/ports/nudge-count-cache.port.js";
+import { UserBlockId } from "../../domain/user-block-id.vo.js";
 import { UserBlock } from "../../domain/user-block.aggregate.js";
 import { blockTargetNotFound } from "../blocks.errors.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
@@ -26,9 +26,9 @@ export interface BlockUserDependencies {
   readonly mutationLock: MutationLockPort;
   readonly userBlockRepository: Pick<
     UserBlockRepositoryPort,
-    "nextId" | "existsActiveUser" | "findByPair" | "removeFriendshipsBetween" | "save"
+    "existsActiveUser" | "findByPair" | "save"
   >;
-  readonly friendshipCache: FriendshipCacheInvalidator;
+  readonly friendshipSeverance: Pick<FriendshipSeverancePort, "severBetween">;
   // 차단한 상대의 콕·응원은 목록 수에서 빠진다
   readonly nudgeCountCache: Pick<NudgeCountCachePort, "invalidate">;
   readonly cheerCountCache: Pick<CheerCountCachePort, "invalidate">;
@@ -45,13 +45,13 @@ export class BlockUserUseCase {
   }
 
   async execute(command: BlockUserCommand): Promise<UserBlock> {
-    const { unitOfWork, mutationLock, userBlockRepository, friendshipCache, clock, logger } =
+    const { unitOfWork, mutationLock, userBlockRepository, friendshipSeverance, clock, logger } =
       this.#dependencies;
     const blockerId = UserId.reconstitute(command.blockerId);
     const blockedId = UserId.reconstitute(command.blockedId);
     // 자기 자신 차단은 잠금을 잡기 전에 거부한다
     const created = UserBlock.create({
-      id: await userBlockRepository.nextId(),
+      id: UserBlockId.generate(),
       blockerId,
       blockedId,
       now: clock.now(),
@@ -72,10 +72,8 @@ export class BlockUserUseCase {
       if (existing == null) {
         await userBlockRepository.save(created);
       }
-      const removedFriendshipCount = await userBlockRepository.removeFriendshipsBetween(
-        blockerId,
-        blockedId,
-      );
+      // 친구 관계 캐시는 friends가 커밋 뒤 비운다
+      const removedFriendshipCount = await friendshipSeverance.severBetween(blockerId, blockedId);
       return {
         block: existing ?? created,
         isNewlyBlocked: existing == null,
@@ -83,9 +81,6 @@ export class BlockUserUseCase {
       };
     });
 
-    if (result.removedFriendshipCount > 0) {
-      await invalidateFriendshipCaches(friendshipCache, blockerId, blockedId);
-    }
     if (result.isNewlyBlocked) {
       await Promise.all([
         this.#dependencies.nudgeCountCache.invalidate([blockerId, blockedId]),

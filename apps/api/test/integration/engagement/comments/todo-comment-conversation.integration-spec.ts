@@ -21,7 +21,7 @@ import { DrizzleTodoCommentRepository } from "#api/modules/engagement/comments/i
 import { toTodoConversationResponse } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment-response.mapper";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { DrizzleUserBlockRepository } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.repository";
+import { DrizzleUserBlockReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.reader";
 import {
   todo,
   todoCategory,
@@ -56,7 +56,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
   let reader: DrizzleTodoCommentReader;
-  let blockRepository: DrizzleUserBlockRepository;
+  let blockReader: DrizzleUserBlockReader;
   let repository: DrizzleTodoCommentRepository;
   let cursorCodec: TodoCommentCursorCodecPort;
   let cursorModule: TestingModule;
@@ -73,7 +73,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     client = await testDatabase.start();
     const { txHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    blockRepository = new DrizzleUserBlockRepository(txHost);
+    blockReader = new DrizzleUserBlockReader(txHost);
     repository = new DrizzleTodoCommentRepository(txHost);
     cursorModule = await Test.createTestingModule({
       providers: [
@@ -381,7 +381,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       const useCase = new ListTodoCommentThreadsUseCase({
         reader: reader,
         cursorCodec: cursorCodec,
-        blockReader: blockRepository,
+        blockReader,
       });
       const firstPage = await useCase.execute({
         todoId,
@@ -416,7 +416,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const useCase = new ListTodoCommentThreadsUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
-      blockReader: blockRepository,
+      blockReader,
     });
     const firstPage = await useCase.execute({
       todoId,
@@ -776,7 +776,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
-      blockReader: blockRepository,
+      blockReader,
     });
 
     // When
@@ -809,7 +809,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
-      blockReader: blockRepository,
+      blockReader,
     });
 
     // When
@@ -849,7 +849,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     const useCase = new GetTodoConversationUseCase({
       reader: reader,
       cursorCodec: cursorCodec,
-      blockReader: blockRepository,
+      blockReader,
     });
 
     // When

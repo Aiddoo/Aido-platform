@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -25,10 +25,10 @@ async function seedInteractions(): Promise<InMemoryNudgeRepository> {
   return nudgeReader;
 }
 
-function createFollowReader(): StubFollowReader {
-  const followReader = new StubFollowReader();
-  followReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
-  return followReader;
+function createFollowReader(): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+  return mutualFriendReader;
 }
 
 describe("콕 주고받기 조회", () => {
@@ -37,7 +37,7 @@ describe("콕 주고받기 조회", () => {
     const useCase = new GetNudgeInteractionsUseCase({
       nudgeReader: await seedInteractions(),
       interactionConfig: { isEnabled: true },
-      followReader: createFollowReader(),
+      mutualFriendReader: createFollowReader(),
     });
 
     // When
@@ -66,16 +66,16 @@ describe("콕 주고받기 조회", () => {
 
   it("보낸 콕 하나는 받은 친구가 지금 친구인지로 답장 가능 여부를 정한다", async () => {
     // Given
-    const followReader = createFollowReader();
+    const mutualFriendReader = createFollowReader();
     const useCase = new GetNudgeInteractionUseCase({
       nudgeReader: await seedInteractions(),
       interactionConfig: { isEnabled: true },
-      followReader,
+      mutualFriendReader,
     });
 
     // When
     const before = await useCase.execute({ userId: NUDGE_FIXTURE_SENDER_ID, nudgeId: 1 });
-    followReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
+    mutualFriendReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     const after = await useCase.execute({ userId: NUDGE_FIXTURE_SENDER_ID, nudgeId: 1 });
 
     // Then
@@ -104,7 +104,7 @@ describe("콕 주고받기 조회", () => {
     const single = new GetNudgeInteractionUseCase({
       nudgeReader,
       interactionConfig: { isEnabled },
-      followReader: createFollowReader(),
+      mutualFriendReader: createFollowReader(),
     });
 
     // When

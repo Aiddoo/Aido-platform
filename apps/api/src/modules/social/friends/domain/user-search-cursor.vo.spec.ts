@@ -1,18 +1,18 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { decodeUserSearchCursor, encodeUserSearchCursor } from "./user-search-cursor.mapper.js";
+import { UserSearchCursor } from "./user-search-cursor.vo.js";
 
-describe("사용자 검색 커서", () => {
+describe("UserSearchCursor", () => {
   it.each([
     { rank: 2, id: "clz7x5p8k0005qz0z8z8z8z8z" },
     { rank: 0, id: "clz7x5p8k0001qz0z8z8z8z8z" },
   ])("총수 없는 rank $rank 커서는 출시 앱이 받던 base64url 그대로 만들고 되돌린다", (position) => {
     // When
-    const encoded = encodeUserSearchCursor({ position, totalCount: null });
+    const encoded = UserSearchCursor.reconstitute({ position, totalCount: null }).toString();
 
     // Then
     expect(encoded).toBe(Buffer.from(`${position.rank}:${position.id}`).toString("base64url"));
-    expect(decodeUserSearchCursor(encoded)).toEqual({ position, totalCount: null });
+    expect(UserSearchCursor.create(encoded).value).toEqual({ position, totalCount: null });
   });
 
   it("첫 쪽에서 센 총수는 커서 끝에 실어 되돌린다", () => {
@@ -20,13 +20,13 @@ describe("사용자 검색 커서", () => {
     const cursor = { position: { rank: 3, id: "clz7x5p8k0005qz0z8z8z8z8z" }, totalCount: 42 };
 
     // When
-    const encoded = encodeUserSearchCursor(cursor);
+    const encoded = UserSearchCursor.reconstitute(cursor).toString();
 
     // Then
     expect(Buffer.from(encoded, "base64url").toString("utf8")).toBe(
       "3:clz7x5p8k0005qz0z8z8z8z8z:42",
     );
-    expect(decodeUserSearchCursor(encoded)).toEqual(cursor);
+    expect(UserSearchCursor.create(encoded).value).toEqual(cursor);
   });
 
   it.each([
@@ -39,7 +39,7 @@ describe("사용자 검색 커서", () => {
     { name: "남는 칸", raw: Buffer.from("2:clz7x5p8k0001:3:4").toString("base64url") },
   ])("$name 커서는 FOLLOW_0912로 거절한다", ({ raw }) => {
     // When
-    const decoding = () => decodeUserSearchCursor(raw);
+    const decoding = () => UserSearchCursor.create(raw);
 
     // Then
     expect(decoding).toThrow(

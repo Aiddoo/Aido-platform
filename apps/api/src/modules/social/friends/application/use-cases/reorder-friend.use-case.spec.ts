@@ -5,9 +5,9 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
 import { InMemoryFriendProfileReader } from "#test/doubles/social/in-memory-friend-profile.reader";
-import { InMemoryFriendshipReader } from "#test/doubles/social/in-memory-friendship.reader";
+import { InMemoryFriendReader } from "#test/doubles/social/in-memory-friend.reader";
+import { InMemoryFriendshipRepository } from "#test/doubles/social/in-memory-friendship.repository";
 import {
   createMutualFriendshipFixtures,
   FRIENDSHIP_FIXTURE_NOW,
@@ -36,7 +36,7 @@ function setup() {
     }),
   );
   const mine = pairs.map(([friendship]) => friendship);
-  const followRepository = new InMemoryFollowRepository(pairs.flat());
+  const friendshipRepository = new InMemoryFriendshipRepository(pairs.flat());
   const profileReader = new InMemoryFriendProfileReader();
   FRIEND_IDS.forEach((friendId, index) => {
     profileReader.addUser({ id: friendId, userTag: `FRND000${index}` });
@@ -45,21 +45,21 @@ function setup() {
   const useCase = new ReorderFriendUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock,
-    followRepository,
-    friendshipReader: new InMemoryFriendshipReader(followRepository, profileReader),
+    friendshipRepository,
+    friendReader: new InMemoryFriendReader(friendshipRepository, profileReader),
     clock: new FixedClock(NOW),
     logger: new SilentLogger(),
   });
-  return { useCase, followRepository, mutationLock, mine };
+  return { useCase, friendshipRepository, mutationLock, mine };
 }
 
 async function readSortOrders(
-  followRepository: InMemoryFollowRepository,
+  friendshipRepository: InMemoryFriendshipRepository,
   friendships: readonly Friendship[],
 ): Promise<(number | undefined)[]> {
   const sortOrders = [];
   for (const friendship of friendships) {
-    const found = await followRepository.findByFollowerAndFollowing(
+    const found = await friendshipRepository.findByFollowerAndFollowing(
       friendship.followerId,
       friendship.followingId,
     );
@@ -74,9 +74,9 @@ describe("ReorderFriendUseCase — 친구 목록 순서 변경", () => {
     { name: "없는 기준 관계", userId: ME, target: "missing", missingId: "missing" },
   ])("$name이면 FOLLOW_0910으로 거절하고 순서를 둔다", async ({ userId, target, missingId }) => {
     // Given
-    const { useCase, followRepository, mine } = setup();
+    const { useCase, friendshipRepository, mine } = setup();
     const [first] = mine;
-    const before = followRepository.listAll().map((friendship) => friendship.toPrimitives());
+    const before = friendshipRepository.listAll().map((friendship) => friendship.toPrimitives());
 
     // When
     const result = useCase.execute({
@@ -91,16 +91,16 @@ describe("ReorderFriendUseCase — 친구 목록 순서 변경", () => {
       errorCode: ErrorCode.FOLLOW_0910,
       details: { targetFollowId: missingId === "mine" ? first?.id.value : missingId },
     });
-    expect(followRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
+    expect(friendshipRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
       before,
     );
   });
 
   it("자기 자신을 기준으로 옮기면 쓰지 않고 지금 친구를 돌려준다", async () => {
     // Given
-    const { useCase, followRepository, mine } = setup();
+    const { useCase, friendshipRepository, mine } = setup();
     const [first] = mine;
-    const before = followRepository.listAll().map((friendship) => friendship.toPrimitives());
+    const before = friendshipRepository.listAll().map((friendship) => friendship.toPrimitives());
 
     // When
     const friend = await useCase.execute({
@@ -115,7 +115,7 @@ describe("ReorderFriendUseCase — 친구 목록 순서 변경", () => {
       friendshipId: first?.id.value,
       friendsSince: FRIENDSHIP_FIXTURE_NOW,
     });
-    expect(followRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
+    expect(friendshipRepository.listAll().map((friendship) => friendship.toPrimitives())).toEqual(
       before,
     );
   });
@@ -146,7 +146,7 @@ describe("ReorderFriendUseCase — 친구 목록 순서 변경", () => {
     "$name 옮기면 내 목록 구간만 다시 매긴다",
     async ({ source, target, position, expected }) => {
       // Given
-      const { useCase, followRepository, mutationLock, mine } = setup();
+      const { useCase, friendshipRepository, mutationLock, mine } = setup();
       const moving = mine[source];
       const targetFriendship = target == null ? undefined : mine[target];
 
@@ -159,9 +159,9 @@ describe("ReorderFriendUseCase — 친구 목록 순서 변경", () => {
       });
 
       // Then
-      expect(await readSortOrders(followRepository, mine)).toEqual(expected);
+      expect(await readSortOrders(friendshipRepository, mine)).toEqual(expected);
       expect(
-        followRepository
+        friendshipRepository
           .listAll()
           .filter((friendship) => !friendship.followerId.equals(UserId.reconstitute(ME)))
           .map((friendship) => friendship.sortOrder),

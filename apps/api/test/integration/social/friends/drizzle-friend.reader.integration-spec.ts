@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 import { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
 import type { FriendshipPrimitives } from "#api/modules/social/friends/domain/friendship.aggregate";
 import { UserTag } from "#api/modules/social/friends/domain/user-tag.vo";
-import { DrizzleFollowRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-follow.repository";
 import { DrizzleFriendProfileReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend-profile.reader";
-import { DrizzleFriendshipReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.reader";
+import { DrizzleFriendReader } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friend.reader";
+import { DrizzleFriendshipRepository } from "#api/modules/social/friends/infrastructure/persistence/drizzle-friendship.repository";
 import { user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture } from "#test/fixtures/index";
@@ -26,8 +26,8 @@ const LOCKED = "clockd000000000000000005";
 describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
-  let followRepository: DrizzleFollowRepository;
-  let friendshipReader: DrizzleFriendshipReader;
+  let friendshipRepository: DrizzleFriendshipRepository;
+  let friendReader: DrizzleFriendReader;
   let profileReader: DrizzleFriendProfileReader;
 
   beforeAll(async () => {
@@ -52,8 +52,8 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
       { userId: ALPHA, name: "알파", profileImage: "alpha.png" },
     ]);
     const { txHost } = createDatabaseTransactionFixture(client);
-    followRepository = new DrizzleFollowRepository(txHost);
-    friendshipReader = new DrizzleFriendshipReader(txHost);
+    friendshipRepository = new DrizzleFriendshipRepository(txHost);
+    friendReader = new DrizzleFriendReader(txHost);
     profileReader = new DrizzleFriendProfileReader(txHost);
   });
 
@@ -63,10 +63,10 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
 
   async function save(overrides: Partial<FriendshipPrimitives>) {
     const friendship = createFriendshipFixture({
-      id: (await followRepository.nextId()).value,
+      id: FriendshipId.generate().value,
       ...overrides,
     });
-    await followRepository.save(friendship);
+    await friendshipRepository.save(friendship);
     return friendship;
   }
 
@@ -92,19 +92,19 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
       bravo.id.value < underscore.id.value ? [bravo, underscore] : [underscore, bravo];
 
     // When
-    const all = await friendshipReader.listFriends({
+    const all = await friendReader.listFriends({
       userId,
       afterFriendshipId: null,
       tagSearch: null,
       limit: 10,
     });
-    const afterAlpha = await friendshipReader.listFriends({
+    const afterAlpha = await friendReader.listFriends({
       userId,
       afterFriendshipId: alpha.id,
       tagSearch: null,
       limit: 1,
     });
-    const afterMissing = await friendshipReader.listFriends({
+    const afterMissing = await friendReader.listFriends({
       userId,
       afterFriendshipId: FriendshipId.reconstitute("cmissing00000000000000000"),
       tagSearch: null,
@@ -135,7 +135,7 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     // When
     const [byWord, byUnderscore, byPercent] = await Promise.all(
       ["alpha", "_", "%"].map((tagSearch) =>
-        friendshipReader.listFriends({ userId, afterFriendshipId: null, tagSearch, limit: 10 }),
+        friendReader.listFriends({ userId, afterFriendshipId: null, tagSearch, limit: 10 }),
       ),
     );
 
@@ -150,7 +150,7 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     const pending = await save({ followerId: ME, followingId: BRAVO });
 
     // When
-    const friend = await friendshipReader.findFriendById(pending.id);
+    const friend = await friendReader.findFriendById(pending.id);
 
     // Then
     expect(friend).toEqual({
@@ -178,24 +178,24 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     const userId = UserId.reconstitute(ME);
 
     // When
-    const firstPage = await friendshipReader.listReceivedRequests({
+    const firstPage = await friendReader.listReceivedRequests({
       userId,
       afterFriendshipId: null,
       limit: 2,
     });
-    const nextPage = await friendshipReader.listReceivedRequests({
+    const nextPage = await friendReader.listReceivedRequests({
       userId,
       afterFriendshipId: middle.id,
       limit: 2,
     });
-    const sentRequests = await friendshipReader.listSentRequests({
+    const sentRequests = await friendReader.listSentRequests({
       userId,
       afterFriendshipId: null,
       limit: 10,
     });
     const counts = await Promise.all([
-      friendshipReader.countReceivedRequests(userId),
-      friendshipReader.countSentRequests(userId),
+      friendReader.countReceivedRequests(userId),
+      friendReader.countSentRequests(userId),
     ]);
 
     // Then

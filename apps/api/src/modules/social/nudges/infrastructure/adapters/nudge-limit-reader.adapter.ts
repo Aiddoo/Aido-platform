@@ -7,7 +7,7 @@ import { instantToDate } from "#api/shared/domain/time/instant";
 import type {
   DailySendFeatureQuota,
   DailySendQuotaUsage,
-} from "../../../cheers/application/ports/daily-send-usage.reader.port.js";
+} from "../../../shared/application/ports/daily-send-usage.reader.port.js";
 import { NudgeLimitReaderPort } from "../../application/ports/nudge-limit.reader.port.js";
 
 @Injectable()

@@ -7,8 +7,8 @@ import { InMemoryInviteRedemptionRepository } from "#test/doubles/social/in-memo
 import { InMemoryRewardGrantRepository } from "#test/doubles/social/in-memory-reward-grant.repository";
 import { RecordingInviteNotifier } from "#test/doubles/social/recording-invite-notifier";
 import { RecordingInviteRewardScheduler } from "#test/doubles/social/recording-invite-reward-scheduler";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { StubInviteUserReader } from "#test/doubles/social/stub-invite-user-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import { StubUserBlockReader } from "#test/doubles/social/stub-user-block-reader";
 import {
   activeDaysOf,
@@ -59,9 +59,9 @@ function createRecorder(
   const rewardScheduler = new RecordingInviteRewardScheduler();
   const notifier = new RecordingInviteNotifier();
   const mutationLock = new RecordingMutationLock();
-  const followReader = new StubFollowReader();
+  const mutualFriendReader = new StubMutualFriendReader();
   if (options.areFriends !== false) {
-    followReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
+    mutualFriendReader.addMutual(INVITE_FIXTURE_INVITEE_ID, INVITE_FIXTURE_INVITER_ID);
   }
   const blockReader = new StubUserBlockReader();
   const useCase = new RecordInviteeActivityUseCase({
@@ -70,7 +70,7 @@ function createRecorder(
     inviteRedemptionRepository,
     rewardGrantRepository,
     userReader: new StubInviteUserReader(),
-    pairReachability: new CheckInvitePairReachabilityUseCase({ followReader, blockReader }),
+    pairReachability: new CheckInvitePairReachabilityUseCase({ mutualFriendReader, blockReader }),
     rewardScheduler,
     notifier,
     inviteConfig: { isEnabled: true },

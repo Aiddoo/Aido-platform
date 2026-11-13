@@ -11,6 +11,10 @@ export function invalidUserSearchTerm(query: string): DomainException {
   return new DomainException(ErrorCode.FOLLOW_0911, { query });
 }
 
+export function invalidUserSearchCursor(cursor: string): DomainException {
+  return new DomainException(ErrorCode.FOLLOW_0912, { cursor });
+}
+
 export function invalidUserTag(userTag: string): DomainException {
   return new DomainException(ErrorCode.SYS_0002, { userTag });
 }

@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
+import type { FriendshipRepositoryPort } from "#api/modules/social/friends/application/ports/friendship.repository.port";
 import type {
   Friendship,
   FriendshipPrimitives,
@@ -20,19 +20,16 @@ const OTHER_USER_ID = UserId.reconstitute(FRIENDSHIP_FIXTURE_OTHER_USER_ID);
 const LATER = FRIENDSHIP_FIXTURE_NOW.add({ minutes: 1 });
 
 async function saveFriendship(
-  repository: FollowRepositoryPort,
+  repository: FriendshipRepositoryPort,
   overrides: Partial<FriendshipPrimitives> = {},
 ): Promise<Friendship> {
-  const friendship = createFriendshipFixture({
-    id: (await repository.nextId()).value,
-    ...overrides,
-  });
+  const friendship = createFriendshipFixture(overrides);
   await repository.save(friendship);
   return friendship;
 }
 
 async function saveMutual(
-  repository: FollowRepositoryPort,
+  repository: FriendshipRepositoryPort,
   userId: string,
   friendId: string,
   userSortOrder = 0,
@@ -51,21 +48,10 @@ async function saveMutual(
   return mine;
 }
 
-export function describeFollowRepositoryContract(
-  createRepository: () => Promise<FollowRepositoryPort>,
+export function describeFriendshipRepositoryContract(
+  createRepository: () => Promise<FriendshipRepositoryPort>,
 ): void {
   describe("친구 관계 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 준다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const [first, second] = [await repository.nextId(), await repository.nextId()];
-
-      // Then
-      expect(first.equals(second)).toBe(false);
-    });
-
     it("저장한 관계는 그 방향으로만 찾고 다시 저장하면 생성 시각을 두고 상태·순서·수정 시각을 덮어쓴다", async () => {
       // Given
       const repository = await createRepository();
@@ -91,7 +77,7 @@ export function describeFollowRepositoryContract(
       // Given
       const repository = await createRepository();
       const first = await saveFriendship(repository);
-      const duplicate = createFriendshipFixture({ id: (await repository.nextId()).value });
+      const duplicate = createFriendshipFixture();
 
       // When
       const saving = repository.save(duplicate);

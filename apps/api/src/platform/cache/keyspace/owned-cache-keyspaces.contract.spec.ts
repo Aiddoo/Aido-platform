@@ -7,9 +7,9 @@ import {
   IdentityCacheKey,
 } from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
 import {
-  FOLLOW_CACHE_TTL_MS,
-  FollowCacheKey,
-} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+  FRIENDSHIP_CACHE_TTL_MS,
+  FriendshipCacheKey,
+} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
 describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
   describe("TTL 상수", () => {
     it("세션 TTL은 30초이다", () => {
@@ -50,7 +50,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
       const expectedTtl = 60_000;
 
       // When
-      const actualTtl = FOLLOW_CACHE_TTL_MS.MUTUAL;
+      const actualTtl = FRIENDSHIP_CACHE_TTL_MS.MUTUAL;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -135,7 +135,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
         const targetUserId = "user_2";
 
         // When
-        const key = FollowCacheKey.mutual(userId, targetUserId);
+        const key = FriendshipCacheKey.mutual(userId, targetUserId);
 
         // Then
         expect(key).toBe("aido:v1:follow:mutual:user_1:user_2");
@@ -147,8 +147,8 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
         const userB = "user_b";
 
         // When
-        const key1 = FollowCacheKey.mutual(userA, userB);
-        const key2 = FollowCacheKey.mutual(userB, userA);
+        const key1 = FriendshipCacheKey.mutual(userA, userB);
+        const key2 = FriendshipCacheKey.mutual(userB, userA);
 
         // Then
         expect(key1).toBe("aido:v1:follow:mutual:user_a:user_b");

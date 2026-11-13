@@ -1,35 +1,32 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import {
-  FollowCacheKey,
-  FOLLOW_CACHE_TTL_MS,
-} from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { FollowCachePort } from "../../application/ports/follow-cache.port.js";
+import type { FriendshipCachePort } from "../../application/ports/friendship-cache.port.js";
+import { FriendshipCacheKey, FRIENDSHIP_CACHE_TTL_MS } from "../cache/friendship-cache.keyspace.js";
 
 @Injectable()
-export class FollowCacheAdapter implements FollowCachePort {
-  readonly #cacheService: CacheStorePort;
+export class FriendshipCacheAdapter implements FriendshipCachePort {
+  readonly #cacheStore: CacheStorePort;
 
-  constructor(cacheService: CacheStorePort) {
-    this.#cacheService = cacheService;
+  constructor(cacheStore: CacheStorePort) {
+    this.#cacheStore = cacheStore;
   }
 
   getMutualFriend(smallerId: UserId, largerId: UserId): Promise<boolean | undefined> {
-    return this.#cacheService.get(
-      FollowCacheKey.mutual(smallerId.value, largerId.value),
+    return this.#cacheStore.get(
+      FriendshipCacheKey.mutual(smallerId.value, largerId.value),
       z.boolean(),
     );
   }
 
   setMutualFriend(smallerId: UserId, largerId: UserId, isMutual: boolean): Promise<void> {
-    return this.#cacheService.set(
-      FollowCacheKey.mutual(smallerId.value, largerId.value),
+    return this.#cacheStore.set(
+      FriendshipCacheKey.mutual(smallerId.value, largerId.value),
       isMutual,
-      FOLLOW_CACHE_TTL_MS.MUTUAL,
+      FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
     );
   }
 
@@ -38,32 +35,32 @@ export class FollowCacheAdapter implements FollowCachePort {
       userId.value < targetUserId.value
         ? [userId.value, targetUserId.value]
         : [targetUserId.value, userId.value];
-    return this.#cacheService.del(FollowCacheKey.mutual(smallerId, largerId));
+    return this.#cacheStore.del(FriendshipCacheKey.mutual(smallerId, largerId));
   }
 
   wrapMutualFriendIds(userId: UserId, factory: () => Promise<string[]>): Promise<string[]> {
-    return this.#cacheService.wrap(
-      FollowCacheKey.ids(userId.value),
+    return this.#cacheStore.wrap(
+      FriendshipCacheKey.ids(userId.value),
       z.array(z.string()),
       factory,
-      FOLLOW_CACHE_TTL_MS.IDS,
+      FRIENDSHIP_CACHE_TTL_MS.IDS,
     );
   }
 
   invalidateMutualFriendIds(userId: UserId): Promise<void> {
-    return this.#cacheService.del(FollowCacheKey.ids(userId.value));
+    return this.#cacheStore.del(FriendshipCacheKey.ids(userId.value));
   }
 
   wrapFriendCount(userId: UserId, factory: () => Promise<number>): Promise<number> {
-    return this.#cacheService.wrap(
-      FollowCacheKey.count(userId.value),
+    return this.#cacheStore.wrap(
+      FriendshipCacheKey.count(userId.value),
       z.number(),
       factory,
-      FOLLOW_CACHE_TTL_MS.COUNT,
+      FRIENDSHIP_CACHE_TTL_MS.COUNT,
     );
   }
 
   invalidateFriendCount(userId: UserId): Promise<void> {
-    return this.#cacheService.del(FollowCacheKey.count(userId.value));
+    return this.#cacheStore.del(FriendshipCacheKey.count(userId.value));
   }
 }

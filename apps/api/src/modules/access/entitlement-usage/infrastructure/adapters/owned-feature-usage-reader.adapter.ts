@@ -6,7 +6,7 @@ import {
   type DailySendUsage,
   type DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
-import { FriendCountReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -26,13 +26,13 @@ function toQuotaUsageReading(usage: DailySendUsage): QuotaUsageReading {
 export class OwnedFeatureUsageReaderAdapter implements OwnedFeatureUsageReaderPort {
   readonly #cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly #nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
-  readonly #friendCountReader: Pick<FriendCountReaderPort, "countCurrentFriends">;
+  readonly #friendCountReader: Pick<MutualFriendReaderPort, "countCurrentFriends">;
   readonly #categoryCountReader: Pick<TodoCategoryCountReaderPort, "countCategories">;
 
   constructor(
     @Inject(CheerUsageReaderPort) cheerUsageReader: CheerUsageReaderPort,
     @Inject(NudgeUsageReaderPort) nudgeUsageReader: NudgeUsageReaderPort,
-    @Inject(FriendCountReaderPort) friendCountReader: FriendCountReaderPort,
+    @Inject(MutualFriendReaderPort) friendCountReader: MutualFriendReaderPort,
     @Inject(TodoCategoryCountReaderPort) categoryCountReader: TodoCategoryCountReaderPort,
   ) {
     this.#cheerUsageReader = cheerUsageReader;

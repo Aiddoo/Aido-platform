@@ -1,4 +1,4 @@
-import { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function pairKey(userId: string, targetUserId: string): string {
@@ -6,7 +6,7 @@ function pairKey(userId: string, targetUserId: string): string {
 }
 
 // 맞팔 쌍과 표시 이름만 들고 친구 판정을 돌려준다. 캐시가 없어 current와 캐시 경로가 같은 값을 준다
-export class StubFollowReader extends FollowReaderPort {
+export class StubMutualFriendReader extends MutualFriendReaderPort {
   readonly #mutualPairs = new Set<string>();
   readonly #displayNames = new Map<string, string>();
 
@@ -32,6 +32,10 @@ export class StubFollowReader extends FollowReaderPort {
 
   async countFriends(userId: UserId): Promise<number> {
     return (await this.getMutualFriendIds(userId)).length;
+  }
+
+  async countCurrentFriends(userId: UserId): Promise<number> {
+    return this.countFriends(userId);
   }
 
   async getUserDisplayName(userId: UserId): Promise<string> {

@@ -1,13 +1,14 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { FriendLockKeys } from "#api/modules/social/friends/social-friends.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
 import { InMemoryUserBlockRepository } from "#test/doubles/social/in-memory-user-block.repository";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
+import { StubFriendshipSeverance } from "#test/doubles/social/stub-friendship-severance";
 import {
   createUserBlockFixture,
   USER_BLOCK_FIXTURE_BLOCKED_ID,
@@ -15,7 +16,6 @@ import {
   USER_BLOCK_FIXTURE_NOW,
 } from "#test/fixtures/social/user-block.fixture";
 
-import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
 import { type BlockUserDependencies, BlockUserUseCase } from "./block-user.use-case.js";
 
@@ -43,7 +43,7 @@ function createBlockUserUseCase(overrides: Partial<BlockUserDependencies> = {}) 
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     userBlockRepository: createRepository(),
-    friendshipCache: new FakeFollowCache(),
+    friendshipSeverance: new StubFriendshipSeverance(),
     clock: new FixedClock(NOW),
     logger: new SilentLogger(),
     ...overrides,
@@ -51,18 +51,24 @@ function createBlockUserUseCase(overrides: Partial<BlockUserDependencies> = {}) 
 }
 
 describe("BlockUserUseCase — 사용자 차단", () => {
-  it("친구를 차단하면 쌍·목록 잠금 안에서 저장하고 친구 관계와 두 사람의 친구·콕·응원 수 캐시를 지운다", async () => {
+  it("친구를 차단하면 쌍·목록 잠금 안에서 저장하고 두 사람 사이 친구 관계와 콕·응원 수 캐시를 지운다", async () => {
     // Given
     const userBlockRepository = createRepository();
-    userBlockRepository.seedFollow(USER_BLOCK_FIXTURE_BLOCKER_ID, USER_BLOCK_FIXTURE_BLOCKED_ID);
-    userBlockRepository.seedFollow(USER_BLOCK_FIXTURE_BLOCKED_ID, USER_BLOCK_FIXTURE_BLOCKER_ID);
-    const friendshipCache = new FakeFollowCache();
+    const friendshipSeverance = new StubFriendshipSeverance();
+    friendshipSeverance.seedFriendship(
+      USER_BLOCK_FIXTURE_BLOCKER_ID,
+      USER_BLOCK_FIXTURE_BLOCKED_ID,
+    );
+    friendshipSeverance.seedFriendship(
+      USER_BLOCK_FIXTURE_BLOCKED_ID,
+      USER_BLOCK_FIXTURE_BLOCKER_ID,
+    );
     const mutationLock = new RecordingMutationLock();
     const logger = new SilentLogger();
     const countCache = new PassThroughCountCache();
     const useCase = createBlockUserUseCase({
       userBlockRepository,
-      friendshipCache,
+      friendshipSeverance,
       mutationLock,
       logger,
       nudgeCountCache: countCache,
@@ -82,16 +88,7 @@ describe("BlockUserUseCase — 사용자 차단", () => {
     expect((await userBlockRepository.findByPair(BLOCKER_ID, BLOCKED_ID))?.toPrimitives()).toEqual(
       block.toPrimitives(),
     );
-    expect(userBlockRepository.followCount).toBe(0);
-    expect(friendshipCache.invalidated.toSorted()).toEqual(
-      [
-        `mutual:${USER_BLOCK_FIXTURE_BLOCKER_ID}:${USER_BLOCK_FIXTURE_BLOCKED_ID}`,
-        `ids:${USER_BLOCK_FIXTURE_BLOCKER_ID}`,
-        `ids:${USER_BLOCK_FIXTURE_BLOCKED_ID}`,
-        `count:${USER_BLOCK_FIXTURE_BLOCKER_ID}`,
-        `count:${USER_BLOCK_FIXTURE_BLOCKED_ID}`,
-      ].toSorted(),
-    );
+    expect(friendshipSeverance.friendshipCount).toBe(0);
     expect(mutationLock.acquiredKeys).toEqual([
       [
         FriendLockKeys.pair(BLOCKER_ID, BLOCKED_ID),
@@ -113,18 +110,6 @@ describe("BlockUserUseCase — 사용자 차단", () => {
       USER_BLOCK_FIXTURE_BLOCKER_ID,
       USER_BLOCK_FIXTURE_BLOCKED_ID,
     ]);
-  });
-
-  it("친구 관계가 없으면 친구 캐시를 비우지 않는다", async () => {
-    // Given
-    const friendshipCache = new FakeFollowCache();
-    const useCase = createBlockUserUseCase({ friendshipCache });
-
-    // When
-    await useCase.execute(COMMAND);
-
-    // Then
-    expect(friendshipCache.invalidated).toEqual([]);
   });
 
   it("이미 차단한 사용자를 다시 차단하면 처음 차단을 돌려주고 새로 저장하거나 로그를 남기지 않는다", async () => {

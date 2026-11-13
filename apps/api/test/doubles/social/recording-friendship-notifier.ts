@@ -2,10 +2,10 @@ import {
   type FirstFriendMilestoneNotification,
   type FollowMutualNotification,
   type FollowNewNotification,
-  FollowNotifierPort,
-} from "#api/modules/social/friends/application/ports/follow-notifier.port";
+  FriendshipNotifierPort,
+} from "#api/modules/social/friends/application/ports/friendship-notifier.port";
 
-export class RecordingFollowNotifier extends FollowNotifierPort {
+export class RecordingFriendshipNotifier extends FriendshipNotifierPort {
   readonly newRequests: FollowNewNotification[] = [];
   readonly mutual: FollowMutualNotification[] = [];
   readonly milestones: FirstFriendMilestoneNotification[] = [];

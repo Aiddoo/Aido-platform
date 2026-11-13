@@ -1,17 +1,16 @@
 import { friendRequestAlreadySent } from "#api/modules/social/friends/application/friends.errors";
-import { FollowRepositoryPort } from "#api/modules/social/friends/application/ports/follow.repository.port";
+import { FriendshipRepositoryPort } from "#api/modules/social/friends/application/ports/friendship.repository.port";
 import type { SortOrderShift } from "#api/modules/social/friends/domain/friend-ordering.domain-service";
 import { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
 import { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
 function copyOf(friendship: Friendship): Friendship {
   return Friendship.reconstitute(friendship.toPrimitives());
 }
 
-export class InMemoryFollowRepository extends FollowRepositoryPort {
+export class InMemoryFriendshipRepository extends FriendshipRepositoryPort {
   readonly #friendships = new Map<string, Friendship>();
 
   constructor(friendships: readonly Friendship[] = []) {
@@ -28,10 +27,6 @@ export class InMemoryFollowRepository extends FollowRepositoryPort {
   // InMemory 조회 대역이 같은 상태를 읽도록 연다(저장 순서)
   listAll(): Friendship[] {
     return [...this.#friendships.values()].map(copyOf);
-  }
-
-  async nextId(): Promise<FriendshipId> {
-    return FriendshipId.reconstitute(createEntityId());
   }
 
   async findByFollowerAndFollowing(

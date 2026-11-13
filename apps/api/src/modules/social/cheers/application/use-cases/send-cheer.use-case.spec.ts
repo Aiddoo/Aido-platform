@@ -11,7 +11,7 @@ import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.re
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingCheerNotifier } from "#test/doubles/social/recording-cheer-notifier";
 import { StubCheerLimitReader } from "#test/doubles/social/stub-cheer-limit-reader";
-import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 import {
   CHEER_FIXTURE_NOW,
   CHEER_FIXTURE_OTHER_USER_ID,
@@ -41,11 +41,11 @@ class ClockAdvancingLock extends MutationLockPort {
   }
 }
 
-function createFollowReader(): StubFollowReader {
-  const followReader = new StubFollowReader();
-  followReader.addMutual(CHEER_FIXTURE_SENDER_ID, CHEER_FIXTURE_RECEIVER_ID);
-  followReader.setDisplayName(CHEER_FIXTURE_SENDER_ID, "보낸이");
-  return followReader;
+function createFollowReader(): StubMutualFriendReader {
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(CHEER_FIXTURE_SENDER_ID, CHEER_FIXTURE_RECEIVER_ID);
+  mutualFriendReader.setDisplayName(CHEER_FIXTURE_SENDER_ID, "보낸이");
+  return mutualFriendReader;
 }
 
 function createSendCheerUseCase(overrides: Partial<SendCheerDependencies> = {}) {
@@ -55,7 +55,7 @@ function createSendCheerUseCase(overrides: Partial<SendCheerDependencies> = {}) 
     mutationLock: new RecordingMutationLock(),
     cheerRepository: new InMemoryCheerRepository(),
     limitReader: new StubCheerLimitReader(DAILY_LIMIT),
-    followReader: createFollowReader(),
+    mutualFriendReader: createFollowReader(),
     notifier: new RecordingCheerNotifier(),
     clock: new FixedClock(CHEER_FIXTURE_NOW),
     logger: new SilentLogger(),

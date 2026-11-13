@@ -1,5 +1,5 @@
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { FollowReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -41,7 +41,10 @@ export interface SendNudgeDependencies {
     "nextId" | "countSentBetween" | "findLastSentForTodo" | "findTargetTodo" | "save"
   >;
   readonly limitReader: Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
-  readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
+  readonly mutualFriendReader: Pick<
+    MutualFriendReaderPort,
+    "isMutualFriend" | "getUserDisplayName"
+  >;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
   readonly countCache: Pick<NudgeCountCachePort, "invalidate">;
   readonly clock: ClockPort;
@@ -61,7 +64,7 @@ export class SendNudgeUseCase {
       mutationLock,
       nudgeRepository,
       limitReader,
-      followReader,
+      mutualFriendReader,
       notifier,
       clock,
       logger,
@@ -75,7 +78,7 @@ export class SendNudgeUseCase {
     if (senderId.equals(receiverId)) {
       throw cannotNudgeSelf();
     }
-    if (!(await followReader.isMutualFriend(senderId, receiverId))) {
+    if (!(await mutualFriendReader.isMutualFriend(senderId, receiverId))) {
       throw nudgeTargetNotFriend(receiverId);
     }
     const message = command.message == null ? null : NudgeMessage.create(command.message);
@@ -127,7 +130,7 @@ export class SendNudgeUseCase {
         nudgeId: created.id.value,
         senderId: senderId.value,
         receiverId: receiverId.value,
-        senderName: await followReader.getUserDisplayName(senderId),
+        senderName: await mutualFriendReader.getUserDisplayName(senderId),
         todoId,
         todoTitle: target.title,
         message: message?.value,
