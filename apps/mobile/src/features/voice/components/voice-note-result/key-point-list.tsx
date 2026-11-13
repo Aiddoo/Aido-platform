@@ -13,7 +13,7 @@ import { formatMediaTime } from '../../utils/media-time.view-model';
 /** 위로 뜨는 시간 칩 안내의 높이. 이만큼 비워 요약과 "핵심 포인트" 제목을 가리지 않는다 */
 const KEY_POINT_HINT_HEIGHT = 116;
 
-interface KeyPointListProps extends Omit<ComponentProps<typeof VStack>, 'children'> {
+interface KeyPointListProps {
   keyPoints: readonly VoiceNoteKeyPoint[];
   activeKeyPointId?: string;
   onPressKeyPoint?: (keyPoint: VoiceNoteKeyPoint) => void;
@@ -25,7 +25,6 @@ export function KeyPointList({
   activeKeyPointId,
   onPressKeyPoint,
   hasTimeCoachmark = false,
-  ...stackProps
 }: KeyPointListProps) {
   // 들을 녹음이 없으면 안내가 사실이 아니라 띄우지 않고 소비하지도 않는다
   const coachmarkKeyPointId =
@@ -34,7 +33,7 @@ export function KeyPointList({
       : undefined;
 
   return (
-    <VStack gap={4} {...stackProps}>
+    <VStack gap={4}>
       {coachmarkKeyPointId != null && <KeyPointHintSpace />}
       {keyPoints.map((keyPoint, index) => (
         <KeyPointList.Item
@@ -111,6 +110,7 @@ KeyPointList.Item = function Item({
   ...pressableProps
 }: KeyPointItemProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const time = keyPoint.startMs == null ? null : formatMediaTime(keyPoint.startMs);
   const canPlay = isPlayable && time != null;
   const timeChip =
@@ -145,14 +145,14 @@ KeyPointList.Item = function Item({
         ) : (
           timeChip
         )}
-        <WordWrapText size="b3" className="shrink flex-1">
+        <WordWrapText size="b3" className="flex-1">
           {keyPoint.text}
         </WordWrapText>
         {keyPoint.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"
-            width={16}
-            height={16}
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
             accessibilityLabel={t('keyPoints.marked')}
           />
         )}

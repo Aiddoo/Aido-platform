@@ -5,6 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { LabelChip, SettingsListGroup } from '@src/shared/ui';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
+import { match } from 'ts-pattern';
 
 import type { RescheduleOption } from '../../domains/weather-report.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
@@ -58,12 +59,14 @@ function RescheduleTimeOption({ option, reason, timeFormat, ...props }: Reschedu
   const dateFormat = useDateFormatContext();
   const unit = useTemperatureUnit();
   const time = formatClockTime(option.startsAt, timeFormat, dateFormat);
-  const description =
-    reason === 'heat'
-      ? t('reschedule.heat.option', {
-          temperature: formatTemperature(option.apparentTemperature, unit),
-        })
-      : t('reschedule.option', { chance: option.precipitationChance });
+  const description = match(reason)
+    .with('heat', () =>
+      t('reschedule.heat.option', {
+        temperature: formatTemperature(option.apparentTemperature, unit),
+      }),
+    )
+    .with('rain', () => t('reschedule.option', { chance: option.precipitationChance }))
+    .exhaustive();
 
   return (
     <SettingsListGroup.Radio

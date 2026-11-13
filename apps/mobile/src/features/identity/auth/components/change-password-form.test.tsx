@@ -14,6 +14,8 @@ async function renderChangePasswordForm(session: ReturnType<typeof createAuthSes
   );
 }
 
+const DISALLOWED_CHARACTER_NOTICE = '쓸 수 없는 문자가 있어요. 특수문자는 @$!%*#?&만 쓸 수 있어요';
+
 async function fillAllSteps() {
   await fireEvent.changeText(
     await screen.findByPlaceholderText('현재 비밀번호를 입력해주세요'),
@@ -137,5 +139,31 @@ describe('비밀번호 변경 폼', () => {
     await waitFor(() => expect(session.authHttp.patch).toHaveBeenCalledTimes(1));
     expect(await screen.findAllByText('서버가 거절한 이유')).not.toHaveLength(0);
     expect(screen.getAllByDisplayValue('NewPass1234')).toHaveLength(2);
+  });
+
+  it('새 비밀번호에 쓸 수 없는 문자가 있으면 이유를 보이고 고치면 다음으로 갈 수 있다', async () => {
+    // Given
+    const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
+    await renderChangePasswordForm(session);
+    await fireEvent.changeText(
+      await screen.findByPlaceholderText('현재 비밀번호를 입력해주세요'),
+      'Current123',
+    );
+    await fireEvent.press(screen.getByText('다음'));
+    const newPasswordInput = await screen.findByPlaceholderText('새 비밀번호를 입력해주세요');
+
+    // When
+    await fireEvent.changeText(newPasswordInput, 'abcd1234.');
+
+    // Then
+    expect(screen.getByText(DISALLOWED_CHARACTER_NOTICE)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+
+    // When
+    await fireEvent.changeText(newPasswordInput, 'abcd1234!');
+
+    // Then
+    expect(screen.queryByText(DISALLOWED_CHARACTER_NOTICE)).toBeNull();
+    expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
   });
 });

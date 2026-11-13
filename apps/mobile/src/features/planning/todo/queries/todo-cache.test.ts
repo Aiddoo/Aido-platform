@@ -193,6 +193,8 @@ describe('todo-cache', () => {
       return client;
     }
 
+    // 화면 없이 쓰기를 돌리려고 TanStack 내부 MutationCache.build().execute()를 쓰고, 쓰기는 onSettled가 끝나야
+    // success가 된다는 순서에 기댄다. TanStack을 올려 이 테스트가 깨지면 이 두 가정부터 본다
     /** 쓰기 콜백 안에서 부르는 정리라 그 쓰기 자신을 진행 중으로 센다. 돌려준 함수가 쓰기를 끝낸다 */
     function startWrite(client: QueryClient) {
       const response = createPendingResponse(undefined);

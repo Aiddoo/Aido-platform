@@ -3,10 +3,12 @@ import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  respondByPath,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
@@ -21,7 +23,10 @@ import {
   useUpdateMarketingPushConsentMutationOptions,
 } from './consent.mutations';
 
-async function renderMarketing(httpClient = createHttpClientStub()) {
+async function renderMarketing(
+  httpClient = createHttpClientStub(),
+  analytics = createAnalyticsStub(),
+) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(
     CONSENT_QUERY_KEYS.detail(),
@@ -32,13 +37,14 @@ async function renderMarketing(httpClient = createHttpClientStub()) {
       marketing: useMutation(useUpdateMarketingConsentMutationOptions()),
       marketingPush: useMutation(useUpdateMarketingPushConsentMutationOptions()),
     }),
-    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    { di: createTestDi({ ports: { httpClient, queryClient, analytics } }), withLocalDate: true },
   );
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),
     updateMarketing: (agreed = true) => result.current.marketing.mutateAsync({ agreed }),
-    updateMarketingPush: () => result.current.marketingPush.mutateAsync({ agreed: true }),
+    updateMarketingPush: (agreed = true) =>
+      result.current.marketingPush.mutateAsync({ agreed, source: 'settings' }),
   };
 }
 
@@ -116,6 +122,41 @@ describe('마케팅 수신 동의 결과 알림', () => {
       await screen.findAllByText('2026년 3월 2일에 아이두 마케팅 정보 수신 동의를 철회했어요'),
     ).not.toHaveLength(0);
   });
+});
+
+describe('마케팅 수신 동의 분석', () => {
+  it.each([
+    ['마케팅 정보 수신 동의', 'marketing', true, 'marketing_opted_in'],
+    ['마케팅 정보 수신 철회', 'marketing', false, 'marketing_opted_out'],
+    ['광고성 푸시 동의', 'marketingPush', true, 'marketing_push_opted_in'],
+    ['광고성 푸시 철회', 'marketingPush', false, 'marketing_push_opted_out'],
+  ] as const)(
+    '설정에서 바꾼 %s를 서버가 기록하면 설정에서 바꿨다고 한 번 센다',
+    async (_name, consent, agreed, eventName) => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.patch.mockImplementation(
+        respondByPath({
+          'v1/auth/consent/marketing': ok(createUpdateMarketingConsentDto()),
+          'v1/auth/consent/marketing-push': ok({
+            marketingPushAgreedAt: '2026-02-01T00:00:00.000Z',
+            marketingPushWithdrawnAt: null,
+          }),
+        }),
+      );
+      const analytics = createAnalyticsStub();
+      const { updateMarketing, updateMarketingPush } = await renderMarketing(httpClient, analytics);
+
+      // When
+      await act(async () => {
+        await (consent === 'marketing' ? updateMarketing(agreed) : updateMarketingPush(agreed));
+      });
+
+      // Then
+      expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+      expect(analytics.trackEvent).toHaveBeenCalledWith(eventName, { source: 'settings' });
+    },
+  );
 });
 
 describe('마케팅 수신 동의를 연달아 바꿈', () => {

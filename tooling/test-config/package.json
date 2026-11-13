@@ -1,0 +1,15 @@
+{
+  "name": "@aido/test-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./test-workers": {
+      "types": "./test-workers.d.mts",
+      "default": "./test-workers.mjs"
+    }
+  },
+  "scripts": {
+    "test": "node --test test-workers.test.mjs"
+  }
+}

@@ -3,7 +3,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { PlanReview } from '@src/features/voice/components/plan-review';
+import { PlanReview } from '@src/features/voice/components/plan-review/plan-review';
 import { voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
 import { planReviewFormSchema } from '@src/features/voice/schemas/plan-review-form.schema';
 import { toDraftVoicePlan } from '@src/features/voice/utils/plan-review-draft';
@@ -15,7 +15,7 @@ import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
@@ -36,7 +36,7 @@ export function MemoPlanReview() {
   const toast = useAppToast();
   const refreshMemos = useRefreshMemos();
   const [memoId] = useMemoId();
-  const [{ data: memo }, { data: user }, { data: categoriesResult }] = useSuspenseQueries({
+  const [{ data: memo }, { data: me }, { data: categoriesResult }] = useSuspenseQueries({
     queries: [
       useGetMemoQueryOptions({ memoId }),
       useGetMeQueryOptions(),
@@ -46,7 +46,7 @@ export function MemoPlanReview() {
     ],
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoPlanDraftKey({ userId: user.id, memoId, timeZone }),
+    createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
   const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(

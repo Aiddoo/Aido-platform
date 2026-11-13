@@ -331,7 +331,11 @@ function buildEdgeFrost(width: number, height: number): SkPath[] {
   for (const root of roots) {
     branch(root.x, root.y, root.angle, between(FROST.rootLength), FROST.depth);
   }
-  return builders.map((builder) => builder.detach());
+  return builders.map((builder) => {
+    const path = builder.detach();
+    builder.dispose();
+    return path;
+  });
 }
 
 FrostLayer.EdgeFrost = function EdgeFrost({
@@ -340,6 +344,7 @@ FrostLayer.EdgeFrost = function EdgeFrost({
   time,
 }: Omit<FrostLayerProps, 'isLowEndDevice'>) {
   const paths = useMemo(() => buildEdgeFrost(width, height), [width, height]);
+  // prop 경로는 Canvas가 커밋 때 복사해 기록하므로 정리 함수에서 바로 놓는다(shared value 경로와 다르다)
   useEffect(
     () => () => {
       for (const path of paths) {

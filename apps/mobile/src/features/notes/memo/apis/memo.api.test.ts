@@ -12,10 +12,10 @@ describe('MemoApi.parseMemo', () => {
     httpClient.post.mockResolvedValue(
       err(new ApiError(ErrorCode.SYS_0001, '서버 오류', HttpStatus.INTERNAL_SERVER_ERROR)),
     );
-    const service = new MemoApi(httpClient);
+    const memoApi = new MemoApi(httpClient);
 
     // When
-    await service.parseMemo('메모', 1, 'memo-key');
+    await memoApi.parseMemo('메모', 1, 'memo-key');
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith(

@@ -4,7 +4,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
   ChatBubbleIcon,
@@ -12,6 +11,7 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   TodoIllustration,
@@ -123,7 +123,7 @@ FriendTodoList.Item = function Item({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
-  const showDateTime = formattedTime != null;
+  const shouldShowTime = formattedTime != null;
 
   const openComments = () => selectTodo(todo.id);
   const hasSubTodos = SubTodoPolicy.hasSubTodos(todo.subTodos);
@@ -140,7 +140,7 @@ FriendTodoList.Item = function Item({
         left={<TodoRow.Checkbox isSelected={todo.completed} />}
         top={<TodoRow.Label isCompleted={todo.completed}>{todo.title}</TodoRow.Label>}
         middle={
-          showDateTime && (
+          shouldShowTime && (
             <Text size="e1" shade={6}>
               {formattedTime}
             </Text>

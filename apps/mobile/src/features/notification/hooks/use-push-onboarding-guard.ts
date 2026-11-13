@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useSyncExternalStore } from 'react';
 
 import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
-import { PushPermissionPolicy } from '../domains/push-permission.model';
+import { getOnboardingWindowEndsAt, PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 import type { PushOnboardingGuardState } from '../stores/push-onboarding-guard.store';
@@ -49,7 +49,7 @@ function usePushOnboardingDueState(): PushOnboardingGuardState {
   const [deferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
   // 앱 화면 묶음의 guard라 분마다 다시 그리지 않는다. 가입 창이 끝나는 순간에 한 번만 다시 읽는다
   const now = useNow({
-    until: me == null ? null : PushPermissionPolicy.getOnboardingWindowEndsAt(me.createdAt),
+    until: me == null ? null : getOnboardingWindowEndsAt(me.createdAt),
   });
 
   if (!isAuthenticated || me == null) {

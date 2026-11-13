@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -19,6 +20,7 @@ import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.querie
 export function NudgeTodoButton() {
   const [nudgeId] = useNudgeId();
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const { data: nudge } = useSuspenseQuery(useGetNudgeInteractionQueryOptions({ nudgeId }));
   const openTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
@@ -33,7 +35,11 @@ export function NudgeTodoButton() {
       onPress={openTodo}
     >
       <HStack align="center" gap={12} className="w-full">
-        <PawIcon width={28} height={28} colorClassName="text-main" />
+        <PawIcon
+          width={fontScaledSize(28)}
+          height={fontScaledSize(28)}
+          colorClassName="text-main"
+        />
         <VStack flex={1} gap={4}>
           <Text size="b3" weight="semibold" numberOfLines={3}>
             {nudge.todoTitle ?? t('interaction.unavailableTodo')}
@@ -42,7 +48,11 @@ export function NudgeTodoButton() {
             {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
           </Text>
         </VStack>
-        <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
+        <ArrowRightIcon
+          width={fontScaledSize(18)}
+          height={fontScaledSize(18)}
+          colorClassName="text-gray-5"
+        />
       </HStack>
     </Button>
   );

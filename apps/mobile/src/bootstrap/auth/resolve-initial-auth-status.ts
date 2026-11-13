@@ -9,7 +9,9 @@ export async function resolveInitialAuthStatus(
 ): Promise<ResolvedAuthStatus> {
   try {
     const refreshToken = await tokenStore.getRefreshToken();
-    return refreshToken ? 'authenticated' : 'unauthenticated';
+    // 빈 문자열은 지우다 만 값이라 토큰이 없는 것으로 본다
+    const hasRefreshToken = refreshToken != null && refreshToken !== '';
+    return hasRefreshToken ? 'authenticated' : 'unauthenticated';
   } catch (error) {
     if (isKeychainLockedError(error)) {
       return 'locked';

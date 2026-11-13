@@ -1,5 +1,6 @@
 import type { NudgeReplyKind } from '@aido/api/vocabulary';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -123,10 +124,15 @@ function ReplyActions({ selectedKind }: { selectedKind: NudgeReplyKind | null })
 
 function ThanksStatus() {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <HStack align="center" gap={8}>
-      <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
+      <HeartFilledIcon
+        width={fontScaledSize(20)}
+        height={fontScaledSize(20)}
+        colorClassName="text-main"
+      />
       <Text size="b3" tone="brand" className="shrink">
         {t('interaction.thanked')}
       </Text>
@@ -147,6 +153,7 @@ type ReplyButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & {
 
 function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const Icon = REPLY_ICONS[value];
 
   return (
@@ -159,7 +166,7 @@ function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
       accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
     >
       <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
-        <Icon width={20} height={20} colorClassName="text-main" />
+        <Icon width={fontScaledSize(20)} height={fontScaledSize(20)} colorClassName="text-main" />
         <Text
           size="b3"
           weight="medium"
@@ -167,7 +174,13 @@ function ReplyButton({ value, isSelected, ...props }: ReplyButtonProps) {
         >
           {t(NUDGE_REPLY_LABEL_KEYS[value])}
         </Text>
-        {isSelected && <CheckIcon width={20} height={20} colorClassName="text-main" />}
+        {isSelected && (
+          <CheckIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-main"
+          />
+        )}
       </HStack>
     </Button>
   );

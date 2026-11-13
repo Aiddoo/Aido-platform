@@ -4,7 +4,7 @@ import {
   verificationResendCooldownErrorDetailsSchema,
 } from '@aido/api/errors';
 import { isCodedError } from '@src/core/errors/result';
-import { isApiError, isConnectivityError } from '@src/shared/errors';
+import { isApiError, isConnectivityError, NetworkError, TimeoutError } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
 import { type OAuthProviderSlug } from './oauth.model';
@@ -35,6 +35,14 @@ export function isEmailAlreadyRegisteredError(error: unknown) {
 /** 로그인에서는 이메일·비밀번호가, 탈퇴·비밀번호 변경에서는 현재 비밀번호가 틀렸다 */
 export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
+}
+
+/**
+ * 탈퇴 요청이 서버에 닿았을 수 있는데 응답을 받지 못했다. 시간 초과와 온라인에서의 연결 오류(보낸 뒤 끊겼을 수 있다)다.
+ * 오프라인에서 난 연결 오류는 요청이 기기를 떠나지 않았다
+ */
+export function isAccountDeletionUnanswered(error: unknown, { wasOnline }: { wasOnline: boolean }) {
+  return error instanceof TimeoutError || (wasOnline && error instanceof NetworkError);
 }
 
 /** 현재 비밀번호 칸(탈퇴 password, 비밀번호 변경 currentPassword)에 보일 서버 오류. type은 그 칸 문구를 고르는 byType 키다 */

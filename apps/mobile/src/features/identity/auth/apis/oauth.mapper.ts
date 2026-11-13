@@ -29,6 +29,7 @@ export function findOAuthCode(url: string, queryParams: Record<string, string>):
   }
   try {
     const parsedUrl = new URL(url);
+    // 빈 code는 없는 것으로 보고 해시 쪽을 읽는다
     return (
       parsedUrl.searchParams.get('code') ||
       new URLSearchParams(parsedUrl.hash.replace(/^#/, '')).get('code') ||

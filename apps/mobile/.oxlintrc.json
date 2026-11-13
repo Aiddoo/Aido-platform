@@ -18,7 +18,11 @@
     "eslint/curly": ["error", "all"],
     "eslint/no-void": "error",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "error"
+    "react/exhaustive-deps": "error",
+    // 루트 AGENTS 공통 규칙(중첩 삼항 금지, `#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다
+    "eslint/no-nested-ternary": "error",
+    "aido/no-member-accessibility": "error",
+    "typescript/parameter-properties": ["error", { "prefer": "class-property" }]
   },
   "overrides": [
     {
@@ -396,7 +400,7 @@
       }
     },
     {
-      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}", "src/shared/ui/**/__tests__/**"],
+      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -487,12 +491,26 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -529,7 +547,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -537,8 +555,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           }
         ]
       }
@@ -575,12 +612,26 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -613,12 +664,26 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
     },
     {
-      "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
+      "files": ["**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -650,6 +715,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           },
           {
             "object": "z",
@@ -660,10 +739,7 @@
       }
     },
     {
-      "files": [
-        "src/features/**/hooks/use-*-param.{ts,tsx}",
-        "src/features/**/hooks/use-*-params.{ts,tsx}"
-      ],
+      "files": ["src/features/**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -697,8 +773,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           },
           {
             "object": "z",
@@ -719,7 +814,7 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "src/**/generated/**", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/no-strict-nullish": "off"
       }
@@ -796,6 +891,14 @@
         "aido/query-key-location": "error",
         "aido/namespace-function-name": "error",
         "aido/no-destructured-search-params": "error",
+        "aido/no-class-method": "error",
+        "aido/no-object-method-shorthand": "error",
+        "aido/dto-alias": "error",
+        "aido/time-constant-unit": "error",
+        "aido/no-return-type-of-hook": "error",
+        "aido/query-data-alias": "error",
+        "aido/logger-event-constant": "error",
+        "aido/no-tracking-in-effect": "error",
         "react/forbid-elements": [
           "error",
           {
@@ -810,13 +913,13 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/function-declaration": "off"
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "rules": {
         "aido/no-role-comparison": "off"
       }
@@ -852,7 +955,8 @@
               "Panels",
               "Area",
               "Areas",
-              "Info"
+              "Info",
+              "Inner"
             ],
             "standaloneNames": ["Header", "Footer"]
           }
@@ -860,7 +964,51 @@
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/shared/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        // allowNames는 shared/ui 카탈로그가 정한 이름(heroui와 같은 TextArea, 칸 영역 PaneArea)이다
+        "aido/component-name": [
+          "error",
+          {
+            "suffixes": [
+              "Body",
+              "Bodies",
+              "Frame",
+              "Frames",
+              "Section",
+              "Sections",
+              "Block",
+              "Blocks",
+              "Wrapper",
+              "Wrappers",
+              "Detail",
+              "Details",
+              "Content",
+              "Contents",
+              "Panel",
+              "Panels",
+              "Area",
+              "Areas",
+              "Info",
+              "Inner"
+            ],
+            "standaloneNames": ["Header", "Footer"],
+            "allowNames": [
+              "ReadableContent",
+              "MenuContent",
+              "HintPopoverContent",
+              "TextArea",
+              "BottomSheetTextArea",
+              "PaneArea",
+              "MeasuredPaneArea"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/domains/**"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -882,7 +1030,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
+      "files": ["src/**/queries/*.mutations.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -898,7 +1046,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
+      "files": ["src/**/queries/*.mutations.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -952,16 +1100,14 @@
       "files": [
         "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/**/__tests__/**",
-        "src/testing/**",
-        "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
-        "app/**/__tests__/**"
+        "src/testing/**"
       ],
       "rules": {
         "aido/no-jest-module-mock": "error"
       }
     },
     {
-      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}", "src/shared/infra/**/__tests__/**"],
+      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "aido/no-jest-module-mock": [
           "error",
@@ -972,14 +1118,28 @@
       }
     },
     {
-      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "src/shared/ui/index.ts",
+        "src/shared/{i18n,errors,analytics}/index.ts",
+        "src/shared/infra/{analytics,logger}/index.ts",
+        "src/bootstrap/providers/di-context.tsx",
+        "src/testing/**",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**"
+      ],
       "rules": {
         "aido/no-re-export": [
           "error",
           {
             "checkDefaultExport": true
           }
-        ],
+        ]
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "rules": {
         "aido/no-inline-query-options": "error",
         "aido/no-router-push": "error"
       }
@@ -988,6 +1148,20 @@
       "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
       "rules": {
         "aido/no-router-push": "off"
+      }
+    },
+    {
+      // 원시 setParams는 params 훅에서만 꺼낸다. 펼친 피드의 할 일 선택은 칸 크기와 함께 이름 있는 setter를 만든다
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/hooks/use-*-params.{ts,tsx}",
+        "src/features/planning/todo/hooks/use-feed-selected-todo-id.ts",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/route-setter-location": "error"
       }
     },
     {
@@ -1040,7 +1214,6 @@
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
-    // 남은 위반은 줄마다 `-- 1.15.2 전환 #1400` 지시문이다. 줄이는 방법: docs/architecture/guardrails.md#baseline-1400
     {
       "files": ["src/**", "app/**"],
       "excludeFiles": [
@@ -1115,6 +1288,16 @@
       "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
       "rules": {
         "aido/no-clock-read": "error"
+      }
+    },
+    {
+      // 보기마다 한 번을 지키는 공용 장치 둘만 효과에서 보낸다
+      "files": [
+        "src/shared/analytics/use-track-view.ts",
+        "src/shared/hooks/use-screen-tracking.ts"
+      ],
+      "rules": {
+        "aido/no-tracking-in-effect": "off"
       }
     },
     {

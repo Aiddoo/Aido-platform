@@ -12,7 +12,7 @@ import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { CalendarIcon } from '@src/shared/ui/icon';
+import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';
@@ -28,11 +28,14 @@ import {
 import { FORECAST_DAYS, VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
 import { getTodayKey } from '../domains/weather-report.model';
 import type { DailyForecastEntry } from '../domains/weather-report.model';
-import { useForecastCompletionsQueryOptions } from '../hooks/use-forecast-completions-query-options';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
-import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import {
+  useGetForecastCompletionsQueryOptions,
+  useGetWeatherReportQueryOptions,
+  WeatherReportSelect,
+} from '../queries/weather.queries';
 import { getTemperatureColor } from '../utils/temperature-color.view-model';
 import {
   type TemperatureBar,
@@ -51,6 +54,8 @@ import { WeatherIcon } from './weather-icon';
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
 const ICON_SIZE = 26;
+/** 카드 제목 아이콘(`WeatherIcon.Card`)과 같은 크기 */
+const TITLE_ICON_SIZE = 13;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
 const EXPAND_ENTERING = FadeInDown.duration(600)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
@@ -73,7 +78,7 @@ export function DailyForecast() {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const { data: completions } = useQuery(useForecastCompletionsQueryOptions());
+  const { data: completions } = useQuery(useGetForecastCompletionsQueryOptions());
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
@@ -122,11 +127,16 @@ export function DailyForecast() {
 
 DailyForecast.Header = function Header({ count }: { count: number }) {
   const { t } = useTranslation('weather');
+  const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
   return (
     <HStack align="center" justify="between" gap={8}>
       <HStack align="center" gap={6} accessibilityRole="header" className="shrink">
-        <CalendarIcon width={13} height={13} colorClassName="text-on-sky/[0.62]" />
+        <CalendarIcon
+          width={titleIconSize}
+          height={titleIconSize}
+          colorClassName="text-on-sky/[0.62]"
+        />
         <Text size="b4" weight="medium" className="text-on-sky/[0.62]" numberOfLines={1}>
           {t('daily.title', { count })}
         </Text>
@@ -248,7 +258,7 @@ DailyForecast.Item = memo(function Item({
 
       <Accordion.Content
         animation={{ entering: { value: EXPAND_ENTERING } }}
-        className="gap-2 px-0 pb-3.5 pt-0.5"
+        className="gap-2 px-0 pt-0.5 pb-3.5"
       >
         <HStack className="gap-2">
           {day.daytime != null && (

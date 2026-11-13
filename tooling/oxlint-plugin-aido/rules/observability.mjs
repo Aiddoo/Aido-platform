@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
-import { getKeyName } from '../ast.mjs';
+import { getCalleeName, getKeyName, unwrap } from '../ast.mjs';
 
 const EVENT_VERBS = [
   'shown',
@@ -154,12 +154,35 @@ function collectOtherFileKeys(filename) {
 
 // 로그·breadcrumb 키는 {feature}.{subject}.{outcome} 세 마디 kebab-case이고 앱 전체에서 하나의 뜻만 갖는다.
 // 다른 파일과 겹치는지는 같은 패키지 src/의 *log-events.ts를 읽어 본다
+const LOG_EVENT_CONSTANT = /_LOG_EVENT$/u;
+
+function collectExportedConstNames(program) {
+  return program.body.flatMap((statement) =>
+    statement.type === 'ExportNamedDeclaration' &&
+    statement.declaration?.type === 'VariableDeclaration' &&
+    statement.declaration.kind === 'const'
+      ? statement.declaration.declarations
+          .filter((declarator) => declarator.id.type === 'Identifier')
+          .map((declarator) => declarator.id.name)
+      : [],
+  );
+}
+
 const logEventKey = {
   meta: { type: 'suggestion' },
   create(context) {
     const seen = new Set();
     let otherFileKeys = null;
     return {
+      Program(program) {
+        const exported = collectExportedConstNames(program);
+        if (exported.length !== 1 || !LOG_EVENT_CONSTANT.test(exported[0])) {
+          context.report({
+            node: program,
+            message: `로그 키 파일은 *_LOG_EVENT 상수 하나만 내보냅니다(지금: ${exported.join(', ') || '없음'}).`,
+          });
+        }
+      },
       Property(node) {
         const { value } = node;
         if (value.type !== 'Literal' || typeof value.value !== 'string') {
@@ -189,7 +212,130 @@ const logEventKey = {
   },
 };
 
+const LOGGER_METHODS = new Set(['debug', 'info', 'warn', 'error']);
+
+function getTerminalName(node) {
+  if (node.type === 'Identifier') {
+    return node.name;
+  }
+  if (node.type === 'MemberExpression' && !node.computed) {
+    return node.property.name ?? null;
+  }
+  return null;
+}
+
+// logger 호출은 *_LOG_EVENT 상수로 키를 넘긴다. 문자열을 바로 쓰면 log-event-key의 형식·유일성 검사를 건너뛴다
+const loggerEventConstant = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        const { callee } = node;
+        if (
+          callee.type !== 'MemberExpression' ||
+          callee.computed ||
+          !LOGGER_METHODS.has(callee.property.name) ||
+          getTerminalName(callee.object) !== 'logger'
+        ) {
+          return;
+        }
+        const [key] = node.arguments;
+        if (
+          (key?.type === 'Literal' && typeof key.value === 'string') ||
+          key?.type === 'TemplateLiteral'
+        ) {
+          context.report({
+            node: key,
+            message:
+              'logger에는 문자열 대신 {feature}-log-events.ts의 *_LOG_EVENT 상수로 키를 넘깁니다(observability.md).',
+          });
+        }
+      },
+    };
+  },
+};
+
+const EFFECT_HOOKS = new Set([
+  'useEffect',
+  'useLayoutEffect',
+  'useInsertionEffect',
+  'useFocusEffect',
+]);
+const CALLBACK_HOOKS = new Set(['useCallback']);
+const TRACKING_FUNCTIONS = new Set(['track', 'trackEvent', 'trackScreenView']);
+const TRACKING_METHODS = new Set(['trackEvent', 'trackScreenView']);
+const FUNCTION_TYPES = new Set([
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+  'FunctionDeclaration',
+]);
+
+function isTrackingCall(callee) {
+  const target = unwrap(callee);
+  if (target?.type === 'Identifier') {
+    return TRACKING_FUNCTIONS.has(target.name);
+  }
+  return (
+    target?.type === 'MemberExpression' &&
+    !target.computed &&
+    TRACKING_METHODS.has(target.property.name)
+  );
+}
+
+function findEnclosingFunction(node) {
+  for (let current = node.parent; current != null; current = current.parent) {
+    if (FUNCTION_TYPES.has(current.type)) {
+      return current;
+    }
+  }
+  return null;
+}
+
+function isFirstArgumentOf(node, hookNames) {
+  const { parent } = node;
+  return (
+    parent?.type === 'CallExpression' &&
+    parent.arguments[0] === node &&
+    hookNames.has(getCalleeName(parent.callee))
+  );
+}
+
+/** `useEffect(() => …)`·`useFocusEffect(useCallback(() => …))`의 본문 함수 */
+function isEffectBody(fn) {
+  if (isFirstArgumentOf(fn, EFFECT_HOOKS)) {
+    return true;
+  }
+  const { parent } = fn;
+  return isFirstArgumentOf(fn, CALLBACK_HOOKS) && isFirstArgumentOf(parent, EFFECT_HOOKS);
+}
+
+// 보기 하나에 장치 하나다. 경로 보기는 전역 screen_view, 경로가 아닌 보기는 useTrackView가 key마다 한 번 보낸다.
+// 효과 본문에서 바로 보내면 deps가 바뀌거나 다시 마운트될 때 같은 보기를 다시 센다. 구독 콜백·.then 같은 중첩 함수는 사건이라 보지 않는다
+const noTrackingInEffect = {
+  meta: { type: 'problem' },
+  createOnce(context) {
+    return {
+      CallExpression(node) {
+        if (!isTrackingCall(node.callee)) {
+          return;
+        }
+        const fn = findEnclosingFunction(node);
+        if (fn == null || !isEffectBody(fn)) {
+          return;
+        }
+        context.report({
+          node,
+          message:
+            '효과 본문에서 추적하지 않습니다. 경로 보기는 전역 screen_view, 시트·카드·받은 내용 노출은 useTrackView, 누름·결과는 핸들러·mutation에서 보냅니다(observability.md).',
+        });
+      },
+    };
+  },
+};
+
 export default {
   'analytics-event-catalog': analyticsEventCatalog,
   'log-event-key': logEventKey,
+  'logger-event-constant': loggerEventConstant,
+  'no-tracking-in-effect': noTrackingInEffect,
 };

@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from 'react';
-
 /**
  * jest 환경용 react-native-mmkv(v4 · Nitro) 목.
  *
@@ -50,22 +48,6 @@ class InMemoryMMKV {
 }
 
 export const createMMKV = (): InMemoryMMKV => new InMemoryMMKV();
-
-export function useMMKVString(key: string, instance: InMemoryMMKV) {
-  const value = useSyncExternalStore(
-    (onChange) => {
-      const subscription = instance.addOnValueChangedListener((changedKey) => {
-        if (changedKey === key) {
-          onChange();
-        }
-      });
-      return subscription.remove;
-    },
-    () => instance.getString(key),
-  );
-
-  return [value, (next: string) => instance.set(key, next)] as const;
-}
 
 export const MMKV = InMemoryMMKV;
 export const existsMMKV = (): boolean => false;

@@ -81,7 +81,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
                   colorClassName="text-gray-5"
                 />
               }
-              className="min-h-0 min-w-0 p-1"
+              className="size-5 min-h-0 min-w-0"
               hitSlop={8}
               onPress={(event) => {
                 event.stopPropagation();

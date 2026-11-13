@@ -305,7 +305,7 @@ Calendar.Error = function ErrorFallback({ onRetry }: { onRetry: () => void }) {
       message={t('todo:calendar.loadFailed')}
       messageProps={{ size: 'e1' }}
       reset={onRetry}
-      py={4}
+      className="py-1"
     />
   );
 };
