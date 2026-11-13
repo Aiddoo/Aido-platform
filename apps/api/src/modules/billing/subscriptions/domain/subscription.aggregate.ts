@@ -13,15 +13,12 @@ import { storeEntitlementEndsAt } from "../../shared/domain/store-renewal-grace.
 import { planTypeOfProduct } from "../../shared/domain/subscription-plan.domain-service.js";
 import { StoreSubscriptionId } from "./store-subscription-id.vo.js";
 import { SubscriptionId } from "./subscription-id.vo.js";
-import type { SubscriptionProvider } from "./subscriptions.constants.js";
 
 type Instant = Temporal.Instant;
 
 export interface SubscriptionPrimitives {
   readonly id: number;
   readonly userId: string;
-  /** 결제를 알려 주는 공급자. 지금은 하나라 저장하지 않고 복원할 때 정한다. */
-  readonly provider: SubscriptionProvider;
   readonly storeSubscriptionId: string;
   readonly productId: string;
   readonly status: SubscriptionStatus;
@@ -41,8 +38,7 @@ export interface SubscriptionPrimitives {
 }
 
 interface SubscriptionProps {
-  readonly userId: UserId;
-  readonly provider: SubscriptionProvider;
+  userId: UserId;
   readonly storeSubscriptionId: StoreSubscriptionId;
   productId: string;
   status: SubscriptionStatus;
@@ -60,7 +56,6 @@ interface SubscriptionProps {
 interface CreateSubscriptionParams {
   readonly id: SubscriptionId;
   readonly userId: UserId;
-  readonly provider: SubscriptionProvider;
   readonly storeSubscriptionId: StoreSubscriptionId;
   readonly productId: string;
   readonly startedAt: Instant;
@@ -94,7 +89,6 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
   static create(params: CreateSubscriptionParams): Subscription {
     return new Subscription(params.id, {
       userId: params.userId,
-      provider: params.provider,
       storeSubscriptionId: params.storeSubscriptionId,
       productId: params.productId,
       status: "ACTIVE",
@@ -113,7 +107,6 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
   static reconstitute(primitives: SubscriptionPrimitives): Subscription {
     return new Subscription(SubscriptionId.reconstitute(primitives.id), {
       userId: UserId.reconstitute(primitives.userId),
-      provider: primitives.provider,
       storeSubscriptionId: StoreSubscriptionId.reconstitute(primitives.storeSubscriptionId),
       productId: primitives.productId,
       status: primitives.status,
@@ -131,10 +124,6 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
 
   get userId(): UserId {
     return this.props.userId;
-  }
-
-  get provider(): SubscriptionProvider {
-    return this.props.provider;
   }
 
   get storeSubscriptionId(): StoreSubscriptionId {
@@ -179,12 +168,22 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     return this.props.status === "ACTIVE";
   }
 
-  isActiveWithSameExpiry(expiresAt: Instant): boolean {
-    return this.isActive() && this.props.expiresAt.equals(expiresAt);
+  /** 배포 이전 행에 남은 마지막 이벤트 ID와 같으면 이미 반영한 이벤트다. */
+  isAlreadyProcessed(eventId: string): boolean {
+    return this.props.lastProcessedEventId === eventId;
   }
 
-  wasProcessedWith(eventId: string): boolean {
-    return this.props.lastProcessedEventId === eventId;
+  /**
+   * 체인의 이벤트가 다른 사용자로 오면 구매가 옮겨 간 것이다. 행의 소유자를 그 사용자로 바꿔 프리미엄 판단이
+   * User projection 대신 행 자체를 믿게 한다. 이미 그 사용자 것이면 false다.
+   */
+  transferTo(userId: UserId, now: Instant): boolean {
+    if (this.props.userId.equals(userId)) {
+      return false;
+    }
+    this.props.userId = userId;
+    this.props.updatedAt = now;
+    return true;
   }
 
   /**
@@ -200,7 +199,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     readonly productId?: string;
   }): boolean {
     if (
-      this.isActiveWithSameExpiry(input.expiresAt) ||
+      (this.isActive() && this.props.expiresAt.equals(input.expiresAt)) ||
       Temporal.Instant.compare(input.expiresAt, this.props.expiresAt) < 0
     ) {
       return false;
@@ -367,7 +366,6 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     return {
       id: this.id.value,
       userId: this.props.userId.value,
-      provider: this.props.provider,
       storeSubscriptionId: this.props.storeSubscriptionId.value,
       productId: this.props.productId,
       status: this.props.status,

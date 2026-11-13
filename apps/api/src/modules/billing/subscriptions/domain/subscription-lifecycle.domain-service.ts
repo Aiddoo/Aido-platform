@@ -1,6 +1,7 @@
 import { STORE_PERIOD_TYPE, type StorePeriodType } from "@aido/api/vocabulary";
 import { match, P } from "ts-pattern";
 
+import type { StoreSubscriptionChainEvent } from "./store-subscription.event.js";
 import type { StoreSubscriptionEventKind } from "./subscriptions.constants.js";
 
 /** 무료 체험의 단계. 스토어에 체험 전용 이벤트가 없어 이벤트 종류와 기간 유형으로 판단한다. */
@@ -74,6 +75,21 @@ export function classifySubscriptionLifecycle(
     .with({ kind: "RENEWAL", isTrialConversion: false }, () => null)
     .with({ kind: "OTHER" }, () => null)
     .exhaustive();
+}
+
+/** 체험 판단에 쓰는 스토어 이벤트의 값 */
+export function lifecycleEventOf(event: StoreSubscriptionChainEvent): StoreLifecycleEvent {
+  return {
+    kind: event.kind,
+    isOneTime: event.kind === "STARTED" && event.isOneTime,
+    periodType: event.periodKind,
+    isTrialConversion: event.kind === "RENEWED" && event.isTrialConversion,
+  };
+}
+
+/** 이 이벤트 뒤 구독 행에 저장할 기간 유형. undefined면 저장값을 둔다. */
+export function periodTypeAfter(event: StoreSubscriptionChainEvent): StorePeriodType | undefined {
+  return periodTypeAfterEvent(lifecycleEventOf(event));
 }
 
 /**

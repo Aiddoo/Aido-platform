@@ -217,7 +217,6 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       Subscription.create({
         id: await subscriptions.nextId(),
         userId: UserId.reconstitute(invitee.userId),
-        provider: "REVENUECAT",
         storeSubscriptionId: StoreSubscriptionId.create("store-invitee-chain"),
         productId: "premium_monthly",
         startedAt: now,

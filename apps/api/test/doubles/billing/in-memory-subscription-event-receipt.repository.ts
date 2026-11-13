@@ -1,16 +1,19 @@
-import {
-  type ClaimSubscriptionEventReceiptInput,
-  SubscriptionEventReceiptRepositoryPort,
-} from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";
+import { SubscriptionEventReceiptRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";
+import type {
+  SubscriptionEventReceipt,
+  SubscriptionEventReceiptPrimitives,
+} from "#api/modules/billing/subscriptions/domain/subscription-event-receipt.entity";
 
 export class InMemorySubscriptionEventReceiptRepository extends SubscriptionEventReceiptRepositoryPort {
-  readonly receipts = new Map<string, ClaimSubscriptionEventReceiptInput>();
+  readonly receipts = new Map<string, SubscriptionEventReceiptPrimitives>();
 
-  async claim(input: ClaimSubscriptionEventReceiptInput): Promise<boolean> {
-    if (this.receipts.has(input.eventId)) {
+  async claim(receipt: SubscriptionEventReceipt): Promise<boolean> {
+    const primitives = receipt.toPrimitives();
+    const key = `${primitives.provider}:${primitives.eventId}`;
+    if (this.receipts.has(key)) {
       return false;
     }
-    this.receipts.set(input.eventId, input);
+    this.receipts.set(key, primitives);
     return true;
   }
 }

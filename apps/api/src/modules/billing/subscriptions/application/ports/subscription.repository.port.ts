@@ -17,18 +17,15 @@ export abstract class SubscriptionRepositoryPort {
   abstract listReconcilableByUserId(userId: UserId): Promise<Subscription[]>;
   /** 이 사용자가 소유한 삭제되지 않은 스토어 구독 행이 하나라도 있는지 */
   abstract existsByUserId(userId: UserId): Promise<boolean>;
-  /** 이 체인의 이벤트가 온 사용자를 행의 소유자로 정한다. 다른 사용자 행이었으면 옮기고 true를 반환한다. */
-  abstract claimChain(
-    storeSubscriptionId: StoreSubscriptionId,
-    userId: UserId,
-    now: Temporal.Instant,
-  ): Promise<boolean>;
-  /** TRANSFER로 넘겨준 사용자의 삭제되지 않은 행을 받은 사용자에게 옮기고 옮긴 행 수를 반환한다. */
+  /**
+   * TRANSFER로 넘겨준 사용자의 삭제되지 않은 행을 한 문장으로 받은 사용자에게 옮기고 옮긴 행 수를 반환한다.
+   * 이전 이벤트에 체인 ID가 없어 행마다 읽지 않는 묶음 메서드다.
+   */
   abstract takeOverChains(
     fromUserId: UserId,
     toUserId: UserId,
     now: Temporal.Instant,
   ): Promise<number>;
-  /** 새 행이면 넣고, 있으면 도메인이 바꾸는 칸(상품·상태·만료·유예·해지·이벤트·예약 상품·기간 유형)만 갱신한다. */
+  /** 새 행이면 넣고, 있으면 도메인이 바꾸는 칸(소유자·상품·상태·만료·유예·해지·이벤트·예약 상품·기간 유형)만 갱신한다. */
   abstract save(subscription: Subscription): Promise<void>;
 }

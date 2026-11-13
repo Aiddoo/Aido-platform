@@ -2,11 +2,12 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-/** 웹훅의 앱 사용자 ID로 우리 사용자를 찾지 못했다. 다시 보내도 같아 받은 것으로 닫는다. */
+/** 웹훅 Authorization이 없거나 다르다. */
 export function invalidWebhookSignature(): ApplicationException {
   return new ApplicationException(ErrorCode.SUBSCRIPTION_1601);
 }
 
+/** 웹훅의 앱 사용자 ID로 우리 사용자를 찾지 못했다. 다시 보내도 같아 받은 것으로 닫는다. */
 export function subscriptionUserNotFound(appUserId: string): ApplicationException {
   return new ApplicationException(ErrorCode.SUBSCRIPTION_1602, { appUserId });
 }

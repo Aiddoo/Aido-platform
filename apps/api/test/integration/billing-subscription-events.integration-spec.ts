@@ -10,7 +10,9 @@ import { SubscriptionEventReceiptRepositoryPort } from "#api/modules/billing/sub
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+import { ProviderEventId } from "#api/modules/billing/subscriptions/domain/provider-event-id.vo";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
+import { SubscriptionEventReceipt } from "#api/modules/billing/subscriptions/domain/subscription-event-receipt.entity";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
@@ -158,7 +160,6 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       Subscription.reconstitute({
         id: (await repository.nextId()).value,
         userId: data.userId,
-        provider: "REVENUECAT",
         storeSubscriptionId: data.storeSubscriptionId.value,
         productId: data.productId,
         status: data.status,
@@ -439,11 +440,13 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
 
   it("같은 트랜잭션에서 중복 claim을 건너뛰어도 뒤의 사용자 변경을 커밋한다", async () => {
     // Given
-    const input = {
-      eventId: "duplicate-in-same-transaction",
+    const input = SubscriptionEventReceipt.create({
+      provider: "REVENUECAT",
+      eventId: ProviderEventId.reconstitute("duplicate-in-same-transaction"),
       eventType: "RENEWAL",
-      processedAt: instantFromDate(at),
-    };
+      environment: null,
+      now: instantFromDate(at),
+    });
 
     // When
     await unitOfWork.run(async () => {
@@ -719,11 +722,12 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         UserId.reconstitute(receiver.id),
         instantFromDate(at),
       );
-      await repository.claimChain(
+      const chain = await repository.findByStoreSubscriptionId(
         StoreSubscriptionId.create(transactionId),
-        UserId.reconstitute(userId),
-        instantFromDate(at),
       );
+      if (chain?.transferTo(UserId.reconstitute(userId), instantFromDate(at)) === true) {
+        await repository.save(chain);
+      }
 
       // When
       await useCase.receive({ body: expiration("no-automatic-reactivation") });

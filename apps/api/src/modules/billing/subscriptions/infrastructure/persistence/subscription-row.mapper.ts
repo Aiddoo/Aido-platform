@@ -10,7 +10,6 @@ export function toSubscription(row: SubscriptionRow): Subscription {
   return Subscription.reconstitute({
     id: row.id,
     userId: row.userId,
-    provider: "REVENUECAT",
     storeSubscriptionId: row.storeSubscriptionId,
     productId: row.productId,
     status: row.status,
