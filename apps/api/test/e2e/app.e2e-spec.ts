@@ -6,6 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -44,6 +45,18 @@ describe("앱 컨트롤러 E2E", () => {
 
     // Then - E2E에서만 열렸던 무-prefix 경로는 노출되지 않는다
     await request(ctx.app.getHttpServer()).get("/").expect(404);
+  });
+
+  it("기본 한도 100KB를 넘는 본문은 경로와 상관없이 413 SYS_0002로 거절한다", async () => {
+    // Given
+    const tooLarge = { email: "body@test.com", password: "a".repeat(101 * 1024) };
+
+    // When
+    const response = await request(ctx.app.getHttpServer()).post("/v1/auth/login").send(tooLarge);
+
+    // Then
+    expect(response.status).toBe(413);
+    expect(response.body).toMatchObject({ success: false, error: { code: ErrorCode.SYS_0002 } });
   });
 
   it("CORS preflight가 X-Timezone 요청 헤더를 허용한다", async () => {

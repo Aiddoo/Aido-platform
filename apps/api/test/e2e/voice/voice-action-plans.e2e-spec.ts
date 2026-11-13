@@ -310,6 +310,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
       // Then
       expect(accepted.status).toBe(200);
       expect(rejected.status).toBe(413);
+      expect(rejected.body.error.code).toBe(ErrorCode.SYS_0002);
       expect(aiGenerator.getCallCount()).toBe(1);
     });
   });
