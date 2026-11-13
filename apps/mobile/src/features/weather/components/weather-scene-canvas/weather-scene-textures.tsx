@@ -13,6 +13,7 @@ import {
   RoundedRect,
   Shader,
   Skia,
+  type SkImage,
   type SkPath,
   type SkPathBuilder,
   type SkSize,
@@ -21,7 +22,7 @@ import {
 } from '@shopify/react-native-skia';
 import { range } from 'es-toolkit';
 import { type DependencyList, type ReactElement, useEffect, useMemo } from 'react';
-import { useAnimatedReaction } from 'react-native-reanimated';
+import { type SharedValue, useAnimatedReaction } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 
 import { createSeededRandom } from '../../utils/weather-scene-particles.view-model';
@@ -95,7 +96,13 @@ const GLASS_DROP = {
 } as const;
 
 /** 한 번만 구운 텍스처를 캔버스가 사라질 때 UI 스레드에서 해제한다. */
-function useOwnedTexture(element: ReactElement, size: SkSize, deps: DependencyList = []) {
+export type SceneTexture = SharedValue<SkImage | null>;
+
+function useOwnedTexture(
+  element: ReactElement,
+  size: SkSize,
+  deps: DependencyList = [],
+): SceneTexture {
   const texture = useTexture(element, size, deps);
   useAnimatedReaction(
     () => texture.get(),
@@ -470,7 +477,7 @@ function createSunRays(): SunRay[] {
 const SUN_RAY_SHAPES = createSunRays();
 
 /** 가는 빛살 64개를 미리 흐리게 구워 두고, 그리는 동안에는 돌리기만 한다. */
-export function useSunRaysTexture() {
+export function useSunRaysTexture(): SceneTexture {
   const center = SUN_RAYS_SIZE / 2;
   return useOwnedTexture(
     <Group

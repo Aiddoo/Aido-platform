@@ -86,7 +86,7 @@ export function CategoryPickForm({
                     ) : undefined
                   }
                   horizontalPadding="medium"
-                  className="bg-gray-1 rounded-xl dark:bg-gray-2"
+                  className="rounded-xl bg-gray-1 dark:bg-gray-2"
                 />
               </PressableFeedback>
             )}
@@ -117,7 +117,7 @@ CategoryPickForm.Loading = function Loading() {
             left={<Skeleton className="size-2 rounded-full" />}
             contents={<TextSkeleton size="b3" className="w-24" />}
             horizontalPadding="medium"
-            className="bg-gray-1 rounded-xl dark:bg-gray-2"
+            className="rounded-xl bg-gray-1 dark:bg-gray-2"
           />
         ))}
       </VStack>

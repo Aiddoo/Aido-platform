@@ -146,6 +146,7 @@ export function MemoList({ header }: MemoListProps) {
 
   const columnCount = getMemoColumnCount(paneSizeClass, memos.length);
   const isSavedTitleShown = voiceNotes.length > 0 && memos.length > 0;
+  const isEmptyShown = voiceNotes.length === 0 && memos.length === 0;
 
   // FlashList는 스크롤을 JS에서 받아 칸을 재사용한다. 같은 이벤트로 진행 비율만 UI 스레드 값에 쓴다
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -180,7 +181,7 @@ export function MemoList({ header }: MemoListProps) {
             <MemoList.Header isSavedTitleShown={isSavedTitleShown}>{header}</MemoList.Header>
           }
           ListHeaderComponentStyle={EDGE_ITEM_STYLE}
-          ListEmptyComponent={voiceNotes.length > 0 ? null : <MemoList.Empty />}
+          ListEmptyComponent={isEmptyShown ? <MemoList.Empty /> : null}
           ListEmptyComponentStyle={[EDGE_ITEM_STYLE, { flex: 1 }]}
           ListFooterComponent={
             hasNextPage ? (
@@ -195,8 +196,11 @@ export function MemoList({ header }: MemoListProps) {
             ) : null
           }
           ListFooterComponentStyle={EDGE_ITEM_STYLE}
+          // 아래 safe area를 빼지 않은 칸이라 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 카드는 유리 밑으로 스크롤된다
+          contentInsetAdjustmentBehavior="automatic"
+          // 빈 안내만 칸을 채운다. 카드가 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
           contentContainerStyle={{
-            flexGrow: 1,
+            flexGrow: isEmptyShown ? 1 : 0,
             paddingHorizontal: HORIZONTAL_PADDING - CELL_INSET,
             paddingBottom: LIST_BOTTOM_PADDING,
           }}
@@ -512,11 +516,14 @@ MemoList.Empty = function Empty() {
   );
 };
 
-/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
-type MemoCardActions = ReturnType<typeof useMemoCardActions>;
+type MemoCardActions = {
+  isPinPending: boolean;
+  togglePin: () => void;
+  openDeleteDialog: () => void;
+};
 
 /** 카드에서 바로 하는 고정·삭제. iOS 길게 누르기 메뉴와 스크린리더 동작이 같은 것을 부른다 */
-function useMemoCardActions(memo: Memo) {
+function useMemoCardActions(memo: Memo): MemoCardActions {
   const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
 
@@ -531,6 +538,7 @@ function useMemoCardActions(memo: Memo) {
   };
 }
 
+/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
 function useDisplayedMemos(
   memos: readonly Memo[],
   listRef: RefObject<FlashListRef<Memo> | null>,

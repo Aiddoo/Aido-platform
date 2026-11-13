@@ -123,6 +123,21 @@ describe('createAppContainer', () => {
       },
     );
 
+    it('암호화 저장소를 열지 못한 실행에서 로그아웃하면 그 실행이 메모리에 들고 있던 초안도 버린다', () => {
+      // Given
+      const draftStorage = createMemorySyncStorage();
+      const container = createAppContainer(
+        createTestPorts({ draftStorage, queryCacheStorage: null }),
+      );
+      draftStorage.set('aido_draft_v1:account-1:memo:create', '{"value":{}}');
+
+      // When
+      container.sessionCleanupService.afterSignedOut();
+
+      // Then
+      expect(draftStorage.keys()).toEqual([]);
+    });
+
     it('암호화 저장소를 연 실행의 로그아웃은 바로 지워 정리 표시를 남기지 않는다', () => {
       // Given
       const syncStorage = createMemorySyncStorage();

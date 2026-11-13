@@ -51,8 +51,14 @@ export class SessionCleanupService {
   readonly #pushNotification: SessionCleanupServicePorts['pushNotification'];
   readonly #signOutEpoch: SessionCleanupServicePorts['signOutEpoch'];
   readonly #logger: SessionCleanupServicePorts['logger'];
-  /** 보낸 탈퇴 요청의 결과를 모른다. 계정 id를 몰라도 남겨 세션이 끝날 때 로그아웃처럼 지운다 */
-  #pendingAccountDeletion: { accountId: string | null } | null = null;
+  /**
+   * 서버가 지웠을 수 있는 탈퇴. 응답을 기다리거나(`requested`) 응답 없이 끝났다(`unanswered`). 계정 id를 몰라도 남겨
+   * 세션이 끝날 때 로그아웃처럼 지운다. 모르는 것은 지운 것이 아니라 계정이 살아 있다는 증거가 오면 잊는다
+   */
+  #pendingAccountDeletion: {
+    accountId: string | null;
+    status: 'requested' | 'unanswered';
+  } | null = null;
 
   constructor({
     queryCache,
@@ -105,12 +111,26 @@ export class SessionCleanupService {
     if (accountId == null) {
       this.#logger.warn(AUTH_LOG_EVENT.ACCOUNT_DELETION_OWNER_UNKNOWN);
     }
-    this.#pendingAccountDeletion = { accountId };
+    this.#pendingAccountDeletion = { accountId, status: 'requested' };
   };
 
-  /** 서버가 탈퇴를 거절했다. 계정이 남아 같은 사람이 이어 쓰므로 세션 만료는 초안을 남긴다 */
+  /** 서버가 탈퇴를 거절했거나 요청이 기기를 떠나지 못했다(오프라인). 계정이 남아 같은 사람이 이어 쓰므로 세션 만료는 초안을 남긴다 */
   afterAccountDeletionRejected = (): void => {
     this.#pendingAccountDeletion = null;
+  };
+
+  /** 요청이 서버에 닿았을 수 있는데 응답을 받지 못했다(시간 초과, 보낸 뒤 끊김) */
+  afterAccountDeletionUnanswered = (): void => {
+    if (this.#pendingAccountDeletion != null) {
+      this.#pendingAccountDeletion = { ...this.#pendingAccountDeletion, status: 'unanswered' };
+    }
+  };
+
+  /** 인증 요청이 성공했다. 응답을 기다리는 동안 온 성공은 탈퇴 전의 계정일 수 있어 응답 없이 끝난 뒤의 것만 본다 */
+  afterSessionConfirmed = (): void => {
+    if (this.#pendingAccountDeletion?.status === 'unanswered') {
+      this.#pendingAccountDeletion = null;
+    }
   };
 
   /** 세션 만료: 서버에 로그아웃을 알리지 못했으므로 이 기기의 푸시 등록도 푼다 */
@@ -134,6 +154,8 @@ export class SessionCleanupService {
 
   /** 마운트된 채 다시 그려진 관찰자가 비운 콜백을 복구해 정리 뒤 캐시를 채울 수 있어 로그인 직전에 다시 비운다 */
   beforeSignIn = (): void => {
+    // 다시 로그인하는 계정은 지운 계정이 아니다
+    this.#pendingAccountDeletion = null;
     this.#run('sign-in-queries', () => this.#queryCache.clearQueries());
   };
 

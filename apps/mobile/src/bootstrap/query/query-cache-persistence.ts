@@ -82,7 +82,7 @@ export function createQueryCacheStorage(storage: QueryCacheInstance): QueryCache
   };
 }
 
-/** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다. 1.16에서 지운다(compatibility.md) */
+/** 암호화 이전에 기본 MMKV에 평문으로 남긴 캐시와 주인을 지운다. 1.16.0에서 지운다(compatibility.md) */
 export function removePlaintextQueryCache(
   storage: Pick<EnumerableSyncStorage, 'keys' | 'remove'>,
 ): void {

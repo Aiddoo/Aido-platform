@@ -33,6 +33,9 @@ const PATH_BUILDER_COMMANDS = new Set<string | symbol>([
   'build',
   'detach',
 ]);
+/** 위에 없는 그리기 명령. undefined를 돌려주면 원인을 알기 어려운 TypeError가 나므로 이름을 대며 던진다 */
+const UNSUPPORTED_PATH_BUILDER_COMMAND =
+  /^(?:move|line|quad|cubic|conic|arc|rMove|rLine|rQuad|rCubic|rConic)To\w*$|^add(?:Oval|Poly|Path|Arc\w+|Circle\w+|Rect\w+)$/;
 
 // 앱에서 놓은 빌더를 다시 쓰면 실패하듯 여기서도 던진다
 function createPathBuilder() {
@@ -48,6 +51,11 @@ function createPathBuilder() {
           };
         }
         if (!PATH_BUILDER_COMMANDS.has(name)) {
+          if (typeof name === 'string' && UNSUPPORTED_PATH_BUILDER_COMMAND.test(name)) {
+            throw new Error(
+              `mock에 없는 PathBuilder 메서드 ${name}입니다. PATH_BUILDER_COMMANDS에 더하세요`,
+            );
+          }
           return undefined;
         }
         return (...args: unknown[]) => {

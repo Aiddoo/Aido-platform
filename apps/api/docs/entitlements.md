@@ -6,12 +6,12 @@
 
 누구인가(주체 `tier`)와 어느 요금제의 값을 받는가(`plan`)를 나눈다. 주체는 FREE·PREMIUM(유효한 스토어 구독 또는 보상 기간)·ADMIN 셋이고 출시 앱 표시(관리자 라벨)에만 쓴다. 요금제는 `PLANS`(`free`·`premium`) 둘이고 `planOfTier`가 ADMIN을 `premium`으로 옮긴다. 기능·횟수·개수·공정 사용 상한·길이 상한·휴면 제외는 모두 요금제로만 정하므로 ADMIN은 프리미엄과 같은 기능·한도를 받고 무제한 경로가 없다. 결제 사실(`isPremium`)은 [paid-access.domain-service](../src/modules/access/entitlements/domain/paid-access.domain-service.ts)의 `hasPaidAccess`이고 ADMIN 역할을 반영하지 않는다. 플랜 숫자는 `@aido/api/vocabulary`의 `PLAN_CATALOG` 한 곳에만 두고(출시 앱이 읽는 `PREMIUM_FEATURES`는 그 부분집합), 판단은 [entitlement.domain-service](../src/modules/access/entitlements/domain/entitlement.domain-service.ts)의 `resolveAccessSubject`→`resolveFeatureEntitlement`/`resolveFeatureLimit`/`resolveQuotaLimit` 하나다. 무제한으로 보이는 프리미엄 quota에 `fairUse.premium`이 있으면 서버는 그 상한으로 막고(`resolveQuotaLimit`), 출시 앱 응답은 표시 한도(null)를 그대로 보여 준다. AI 사용자 일 비용 예산은 요금제와 무관하게 모두 같다.
 
-| 질문                         | 쓰는 곳                                                                                                                                                                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 이 기능을 쓸 수 있나·한도는  | `EntitlementReaderPort`의 `can`/`getFeatureLimit`(잠금 뒤 재확인은 `canInTx`/`getFeatureLimitInTx`), 전체는 `getEntitlements`(tier·plan·isPremium·features), 거부는 `assertEntitled`/`assertEntitledInTx`(기능별 기존 ErrorCode) |
-| 여러 사용자를 SQL로 고를 때  | `access-entitlements.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                                      |
-| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(`billing-premium-grants.public`). 권한 판단에는 쓰지 않는다                                                                                                                                            |
-| 돈이 드는 횟수(AI·녹음 정리) | `QuotaLedgerPort`(`access-quotas.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`가 주는 `featureQuota`. 남은 0을 미리 막을 때는 `@RequireQuota(meter)`                                                                     |
+| 질문                         | 쓰는 곳                                                                                                                                                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 이 기능을 쓸 수 있나·한도는  | `EntitlementReaderPort`의 `can`/`getFeatureLimit`(잠금 뒤 재확인은 `canInTx`/`getFeatureLimitInTx`), 전체는 `getEntitlements`(tier·plan·isPremium·features), 거부는 `assertEntitled`(기능별 기존 ErrorCode) |
+| 여러 사용자를 SQL로 고를 때  | `access-entitlements.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                 |
+| 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(`billing-premium-grants.public`). 권한 판단에는 쓰지 않는다                                                                                                                       |
+| 돈이 드는 횟수(AI·녹음 정리) | `QuotaLedgerPort`(`access-quotas.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`가 주는 `featureQuota`. 남은 0을 미리 막을 때는 `@RequireQuota(meter)`                                                |
 
 ## 사용 횟수 원장
 

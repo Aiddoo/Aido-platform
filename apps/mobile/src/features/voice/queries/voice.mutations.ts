@@ -13,7 +13,7 @@ import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 

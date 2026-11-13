@@ -2,8 +2,8 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { LinkButton } from 'heroui-native';
 
-import { Box } from '../box';
-import { ArrowRightIcon } from '../icon';
+import { Box } from '../box/box';
+import { ArrowRightIcon } from '../icon/icons';
 import { Text } from '../text/text';
 import type { TextButtonProps } from './text-button.types';
 

@@ -33,7 +33,7 @@ import {
 } from 'react-native-gesture-handler';
 
 import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
 import { getLatestRelease } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
@@ -261,7 +261,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
 
   return (
     <Box flex={1} className="justify-center overflow-hidden rounded-3xl bg-highlight p-3">
-      <Mascot name="catHi" size={132} className="absolute -bottom-6 -right-2.5" />
+      <Mascot name="catHi" size={132} className="absolute -right-2.5 -bottom-6" />
       <VStack gap={8}>
         <FeatureCard
           Icon={VoiceDuoIcon}

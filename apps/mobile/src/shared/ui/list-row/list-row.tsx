@@ -1,4 +1,3 @@
-import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
 import { PressableFeedback } from 'heroui-native';
@@ -6,7 +5,8 @@ import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
+import { HStack } from '../h-stack/h-stack';
 import { ListRowTexts } from './list-row-texts';
 
 const listRowVariants = tv({

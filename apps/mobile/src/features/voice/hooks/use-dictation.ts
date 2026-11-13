@@ -3,7 +3,7 @@ import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { tDynamic } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';

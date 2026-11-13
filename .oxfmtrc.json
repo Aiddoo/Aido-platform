@@ -19,6 +19,16 @@
         "useTabs": false,
         "singleQuote": false
       }
+    },
+    {
+      // 클래스 순서는 Tailwind가 CSS를 내보내는 순서다. cn·tv는 tailwind-merge가 뒤의 클래스를 남기므로 한 문자열 안에 같은 속성 클래스를 두지 않는다
+      "files": ["apps/mobile/**/*.{ts,tsx}"],
+      "options": {
+        "sortTailwindcss": {
+          "stylesheet": "./apps/mobile/global.css",
+          "functions": ["cn", "tv", "clsx"]
+        }
+      }
     }
   ],
   "ignorePatterns": [

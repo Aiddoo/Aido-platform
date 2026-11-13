@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { HStack } from '../h-stack/h-stack';
-import { ErrorIllustration, type IllustrationSize } from '../illustration';
+import { ErrorIllustration, type IllustrationSize } from '../illustration/illustration';
 import { Result } from '../result/result';
 import { Text } from '../text/text';
 import type { TextProps } from '../text/text.types';

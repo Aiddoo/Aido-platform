@@ -27,13 +27,3 @@ import { Meter } from '@src/shared/ui';
 
 접근성 역할은 `progressbar`이고 `accessibilityValue`로 값을 읽어 준다. 옆 글자가 같은 숫자를 읽으면
 `accessibilityElementsHidden`·`importantForAccessibility="no-hide-descendants"`로 막대를 숨긴다.
-
-## 파일 구조
-
-```
-meter/
-├── meter.tsx
-├── meter.md
-├── meter.test.tsx
-└── index.ts
-```

@@ -13,7 +13,7 @@ import {
   useOpenSheet,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 
 interface SettingsTimeInputProps extends Omit<

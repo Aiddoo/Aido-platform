@@ -67,12 +67,14 @@ describe('SubscriptionService', () => {
     ['결제', (service: SubscriptionService) => service.purchase('$rc_annual')],
     ['복원', (service: SubscriptionService) => service.restorePurchases()],
   ])(
-    '계정을 바꾼 결제 SDK 로그인이 실패했으면 앞 계정에 귀속되지 않게 막고 스토어 연결 오류로 알린다(%s)',
+    '계정을 바꾼 결제 SDK 로그인이 다시 해도 실패하면 앞 계정에 귀속되지 않게 막고 스토어 연결 오류로 알린다(%s)',
     async (_name, run) => {
       // Given
       const { service, session, purchases } = createConfiguredService();
       await session.logIn('user-a');
-      purchases.logIn.mockRejectedValueOnce(new Error('network'));
+      purchases.logIn
+        .mockRejectedValueOnce(new Error('network'))
+        .mockRejectedValueOnce(new Error('network'));
       session.logOut();
       await session.logIn('user-b');
 
@@ -88,6 +90,22 @@ describe('SubscriptionService', () => {
       expect(purchases.restore).not.toHaveBeenCalled();
     },
   );
+
+  it('계정을 바꾼 결제 SDK 로그인이 실패했어도 다시 로그인이 붙으면 첫 탭에 결제 창을 연다', async () => {
+    // Given
+    const { service, session, purchases } = createConfiguredService();
+    await session.logIn('user-a');
+    purchases.logIn.mockRejectedValueOnce(new Error('network'));
+    session.logOut();
+    await session.logIn('user-b');
+
+    // When
+    await service.purchase('$rc_annual');
+
+    // Then
+    expect(purchases.logIn).toHaveBeenLastCalledWith('user-b');
+    expect(purchases.purchase).toHaveBeenCalledTimes(1);
+  });
 
   it('보상 기간만 있는 계정은 복원해도 복원할 구매가 없다', async () => {
     // Given

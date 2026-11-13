@@ -23,20 +23,19 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
   const isAgreed = ConsentPolicy.hasAgreedToAiDataSharing(consent);
 
   const handleSelectedChange = async (agreed: boolean) => {
-    if (!agreed) {
-      const isConfirmed = await confirmDialog.openAsync({
-        title: t('settings:terms.aiDataSharing.withdrawTitle'),
-        description: t('settings:terms.aiDataSharing.withdrawDescription'),
-        confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),
-        confirmColor: 'danger',
-        cancelLabel: t('common:actions.cancel'),
-        confirmTestID: 'ai-data-sharing-withdraw-confirm',
-      });
-      if (!isConfirmed) {
-        return;
-      }
+    if (agreed) {
+      updateConsent.mutate({ agreed });
+      return;
     }
-    updateConsent.mutate({ agreed });
+    await confirmDialog.openAsync({
+      title: t('settings:terms.aiDataSharing.withdrawTitle'),
+      description: t('settings:terms.aiDataSharing.withdrawDescription'),
+      confirmLabel: t('settings:terms.aiDataSharing.withdrawConfirm'),
+      confirmColor: 'danger',
+      cancelLabel: t('common:actions.cancel'),
+      confirmTestID: 'ai-data-sharing-withdraw-confirm',
+      onConfirm: () => updateConsent.mutateAsync({ agreed }),
+    });
   };
 
   return (
