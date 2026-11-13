@@ -85,6 +85,7 @@ WeatherAlerts.Item = function Item({
       ? t('alerts.sourceWithMore', { source, more: t('alerts.more', { count: otherCount }) })
       : source;
   const chevronSize = Math.round(CHEVRON_SIZE * fontScaleRatio);
+  const glyphSize = Math.round(GLYPH_SIZE * fontScaleRatio);
 
   const handlePress = () => {
     trackEvent('weather_alert_opened', { severity: alert.severity });
@@ -106,7 +107,7 @@ WeatherAlerts.Item = function Item({
               ALERT_GLYPH_BACKGROUND_CLASS,
             )}
           >
-            <WeatherIcon.Warning width={GLYPH_SIZE} height={GLYPH_SIZE} />
+            <WeatherIcon.Warning width={glyphSize} height={glyphSize} />
           </Box>
           <VStack flex={1} gap={1}>
             <Text

@@ -18,8 +18,7 @@ import { isNotNil } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-import { isRecurring } from '../domains/todo.model';
-import { type Todo } from '../domains/todo.model';
+import { isRecurring, type Todo } from '../domains/todo.model';
 import {
   formatRepeatCadence,
   formatRepeatRuleLabel,

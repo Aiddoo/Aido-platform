@@ -8,7 +8,7 @@ import {
   marketingPushPromptStorageSchema,
 } from '../schemas/marketing-push-prompt-storage.schema';
 
-// 1.14.x까지 계정 구분 없이 쓰던 키. 지우지 않으면 다음 계정이 앞사람이 닫은 기록을 이어받는다. 1.16.0에서 옮기는 코드와 함께 지운다
+// 1.14.x까지 계정 구분 없이 쓰던 키. 지우지 않으면 다음 계정이 앞사람이 닫은 기록을 이어받는다. 옮기는 코드와 함께 1.16.0에서 지운다(compatibility.md)
 const LEGACY_DEVICE_KEY = 'aido_marketing_push_prompt';
 const KEY_PREFIX = 'aido_notification_marketing_push_prompt_v1';
 

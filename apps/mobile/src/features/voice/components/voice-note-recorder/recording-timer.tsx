@@ -3,9 +3,7 @@ import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Text } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { clamp } from 'es-toolkit';
-import type { ComponentProps } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -15,20 +13,14 @@ import { getRecordingRingLayout } from '../../utils/recording-timer.geometry';
 /** 원은 3시 방향에서 시작하므로 12시부터 차오르게 돌린다 */
 const RING_START_ANGLE = -90;
 
-interface RecordingTimerProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+interface RecordingTimerProps {
   elapsedMs: number;
   /** 한 번에 녹음할 수 있는 최대 길이. 서버 `featureQuota.perUse.maxSeconds`에서 온 값이고, 끝이 없으면 null이다 */
   limitMs: number | null;
   label?: string;
 }
 
-export function RecordingTimer({
-  elapsedMs,
-  limitMs,
-  label,
-  className,
-  ...boxProps
-}: RecordingTimerProps) {
+export function RecordingTimer({ elapsedMs, limitMs, label }: RecordingTimerProps) {
   const { t } = useTranslation('voiceNote');
   const trackColor = useResolvedColor('text-gray-2');
   const progressColor = useResolvedColor('text-main');
@@ -51,9 +43,8 @@ export function RecordingTimer({
           ? t('timer.a11yNoLimit', { elapsed: formatMediaTime(elapsedMs) })
           : t('timer.a11y', { elapsed: formatMediaTime(elapsedMs), remaining: remainingTime })
       }
-      className={cn('items-center justify-center', className)}
+      className="items-center justify-center"
       style={{ width: ring.size, height: ring.size }}
-      {...boxProps}
     >
       {/* Android의 Skia는 앱을 켤 때의 화면 배율을 계속 쓴다. 켜 둔 채 디스플레이 크기를 바꾸면 링만 커져 잘리므로 SVG로 그린다 */}
       <Svg width={ring.size} height={ring.size} style={StyleSheet.absoluteFill}>

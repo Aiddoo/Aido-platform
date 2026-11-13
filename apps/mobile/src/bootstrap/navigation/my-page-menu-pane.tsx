@@ -37,7 +37,6 @@ import {
   SettingsListGroup,
   Spacing,
   TermsDuoIcon,
-  Text,
   ThemeDuoIcon,
   usePaneSizeClass,
   VoiceDuoIcon,
@@ -218,22 +217,14 @@ function ThemeValue() {
   const { t } = useTranslation('settings');
   const { mode } = useAppTheme();
 
-  return (
-    <Text size="b3" shade={7}>
-      {t(THEME_LABEL_KEYS[mode])}
-    </Text>
-  );
+  return <SettingsListGroup.Value>{t(THEME_LABEL_KEYS[mode])}</SettingsListGroup.Value>;
 }
 
 function FontScaleValue() {
   const { t } = useTranslation('settings');
   const { fontScale } = useFontScale();
 
-  return (
-    <Text size="b3" shade={7}>
-      {t(FONT_SCALE_LABEL_KEYS[fontScale])}
-    </Text>
-  );
+  return <SettingsListGroup.Value>{t(FONT_SCALE_LABEL_KEYS[fontScale])}</SettingsListGroup.Value>;
 }
 
 function LanguageValue() {
@@ -242,8 +233,8 @@ function LanguageValue() {
 
   // 언어 이름은 언어 설정 화면처럼 그 언어로 고정해 적는다
   return (
-    <Text size="b3" shade={7}>
+    <SettingsListGroup.Value>
       {languageMode === 'system' ? t('language.system') : APP_LOCALES[languageMode].nativeName}
-    </Text>
+    </SettingsListGroup.Value>
   );
 }

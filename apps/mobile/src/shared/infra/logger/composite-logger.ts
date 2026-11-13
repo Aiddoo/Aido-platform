@@ -1,4 +1,4 @@
-import type { LogContext, AppLogger } from '@src/core/ports/app-logger';
+import type { AppLogger, DebugLogContext, LogContext } from '@src/core/ports/app-logger';
 
 export function createCompositeLogger(loggers: AppLogger[]): AppLogger {
   function forEachLogger(write: (logger: AppLogger) => void): void {
@@ -14,7 +14,7 @@ export function createCompositeLogger(loggers: AppLogger[]): AppLogger {
   }
 
   return {
-    debug: (message: string, context?: LogContext): void => {
+    debug: (message: string, context?: DebugLogContext): void => {
       forEachLogger((logger) => logger.debug(message, context));
     },
     info: (message: string, context?: LogContext): void => {

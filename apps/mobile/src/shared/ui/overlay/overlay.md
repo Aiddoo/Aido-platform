@@ -74,7 +74,7 @@ const choice = await openSheet<UpsellChoice>(
 
 - 전역 `overlay` 대신 훅으로 받습니다. 부른 컴포넌트가 unmount되면 띄운 것도 함께 사라져 화면을 떠난 뒤 시트가 남지 않습니다.
 - 훅 하나는 overlay 하나를 띄웁니다. 같은 훅으로 다시 열면 이전 것을 바꿉니다.
-- `reject`와 `closeAll` 같은 전역 제어는 없습니다. 로그아웃 때는 `OverlayProvider`의 `resetKey`가 전부 지웁니다.
+- `reject`와 `closeAll` 같은 전역 제어는 없습니다. 화면 경로가 바뀌면(로그아웃 이동 포함) `OverlayProvider`의 `resetKey`(`usePathname()`)가 전부 지웁니다.
 
 ## 주의
 

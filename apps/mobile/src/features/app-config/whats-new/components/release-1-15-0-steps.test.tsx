@@ -18,7 +18,7 @@ import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases';
+import { RELEASE_1_15_0 } from '../constants/releases.constants';
 import { Release1150Steps } from './release-1-15-0-steps';
 
 const ACCOUNT_ID = 'user-1';
@@ -169,10 +169,10 @@ describe('Release1150Steps', () => {
     await unmount();
 
     // Then
-    expect(router.dismissTo).toHaveBeenCalledWith({
-      pathname: '/feed',
-      params: { action: 'add-voice-todo' },
-    });
+    expect(router.dismissTo).toHaveBeenCalledWith(
+      { pathname: '/feed', params: { action: 'add-voice-todo' } },
+      undefined,
+    );
     expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
       campaign_id: RELEASE_1_15_0.campaignId,
       feature: 'voice_quick',
@@ -197,10 +197,10 @@ describe('Release1150Steps', () => {
     await fireEvent.press(screen.getByTestId('whats-new-start-voice-note'));
 
     // Then
-    expect(router.dismissTo).toHaveBeenCalledWith({
-      pathname: '/memo',
-      params: { startVoiceNote: '1' },
-    });
+    expect(router.dismissTo).toHaveBeenCalledWith(
+      { pathname: '/memo', params: { startVoiceNote: '1' } },
+      undefined,
+    );
     expect(router.push).not.toHaveBeenCalled();
   });
 

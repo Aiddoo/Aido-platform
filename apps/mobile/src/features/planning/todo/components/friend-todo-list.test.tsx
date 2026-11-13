@@ -9,13 +9,18 @@ import {
   createHttpClientStub,
   createRouteParamsFake,
   createTestDi,
+  createTestQueryClient,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
+import { stubWindowDimensions } from '@src/testing/window-dimensions';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
 
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
+import { TODO_QUERY_KEYS } from '../queries/todo-query-keys';
 import { FriendCalendar } from './calendar/friend-calendar';
 import { FriendTodoList } from './friend-todo-list';
 
@@ -61,5 +66,45 @@ describe('FriendTodoList', () => {
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
     expect(screen.queryByText(CALENDAR_RETRY_LABEL)).toBeNull();
     expect(router.setParams).toHaveBeenCalledWith(expect.objectContaining({ friendId: undefined }));
+  });
+
+  it('하위 항목이 없는 행을 연달아 눌러도 상세를 한 번만 연다', async () => {
+    // Given
+    stubWindowDimensions(390);
+    const date = createDateKey('2026-03-08');
+    createRouteParamsFake({ friendId: FRIEND_ID, date });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createPreferenceDto()));
+    const queryClient = createTestQueryClient({
+      defaultOptions: { queries: { staleTime: Infinity } },
+    });
+    queryClient.setQueryData(TODO_QUERY_KEYS.friendListByDate({ userId: FRIEND_ID, date }), {
+      todos: [createParentTodo({ id: 7, title: '친구 할 일', startDate: date, subTodos: [] })],
+      hasNext: false,
+      nextCursor: null,
+    });
+    await renderScreen(
+      <Suspense fallback={null}>
+        <FriendTodoList
+          friendId={FRIEND_ID}
+          renderRowAction={() => null}
+          getMenuAction={() => null}
+          emptyAction={null}
+        />
+      </Suspense>,
+      { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    );
+    const row = await screen.findByText('친구 할 일');
+
+    // When
+    await fireEvent.press(row);
+    await fireEvent.press(row);
+
+    // Then
+    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith({
+      pathname: '/todo/[todoId]',
+      params: { todoId: 7 },
+    });
   });
 });

@@ -181,7 +181,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
         <VStack key={item.name} gap={4}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
-              <Box className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+              <Box className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
               <Text size="b4" shade={8}>
                 {item.name}
               </Text>
@@ -190,7 +190,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
               {item.completed}/{item.total} ({formatPercent(item.rate, locale)})
             </Text>
           </HStack>
-          <Box className="h-2 bg-gray-3 rounded-full overflow-hidden">
+          <Box className="h-2 overflow-hidden rounded-full bg-gray-3">
             <Box
               className="h-full rounded-full"
               style={{ width: `${item.rate}%`, backgroundColor: item.color }}
@@ -220,7 +220,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
               </Text>
               <Box
                 className={cn(
-                  'w-8 h-8 rounded-full items-center justify-center',
+                  'h-8 w-8 items-center justify-center rounded-full',
                   match(level)
                     .with('high', () => 'bg-main/20')
                     .with('medium', () => 'bg-main/10')

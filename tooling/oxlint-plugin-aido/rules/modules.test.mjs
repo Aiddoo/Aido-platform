@@ -57,10 +57,23 @@ tester.run('no-inline-coded-exception', rules['no-inline-coded-exception'], {
     'throw memoNotFound(memoId);',
     'const error = new Error("boom");',
     'if (error instanceof ApplicationException) { throw error; }',
+    'export class ApplicationException extends ErrorCodedException {}',
+    'export class DomainException extends ErrorCodedException {}',
+    'class Repository extends BaseRepository {}',
   ],
   invalid: [
     { code: 'throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });', errors: 1 },
     { code: 'throw new DomainException(ErrorCode.SYS_0002, { field: "title" });', errors: 1 },
     { code: 'const e = new ApplicationException(code, undefined, { cause });', errors: 1 },
+    { code: 'throw new ErrorCodedException(ErrorCode.SYS_0001);', errors: 1 },
+    {
+      code: [
+        "import { ApplicationException as Rejected } from '@/shared/application/application.exception';",
+        'throw new Rejected(ErrorCode.MEMO_2001);',
+      ].join('\n'),
+      errors: 1,
+    },
+    { code: 'class MemoNotFound extends ApplicationException {}', errors: 1 },
+    { code: 'const Invalid = class extends DomainException {};', errors: 1 },
   ],
 });

@@ -1,6 +1,8 @@
 import { ErrorCode } from '@aido/api/errors';
 import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
+import { getNowInstant } from '@src/shared/date/clock';
+import { fromEpochMs } from '@src/shared/date/instant';
 import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
@@ -44,7 +46,7 @@ function setup() {
     requestRefresh,
     authApi: new AuthApi({ publicHttpClient, authHttpClient: createHttpClientStub() }),
     logger: { info: record, warn: record },
-    now: () => now,
+    now: () => fromEpochMs(now),
   });
   return {
     storage,
@@ -325,7 +327,7 @@ describe('SessionRevocationService', () => {
         authHttpClient: createHttpClientStub(),
       }),
       logger: { info: jest.fn(), warn: jest.fn() },
-      now: Date.now,
+      now: getNowInstant,
     });
     await service.record(REFRESH_A);
 

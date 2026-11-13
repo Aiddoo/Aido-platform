@@ -4,6 +4,7 @@ import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-su
 import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -96,6 +97,7 @@ VoiceNoteDraftList.All = function All() {
 
 VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   // Link가 navigate로 열어 같은 초안은 한 번만 쌓인다. 메뉴의 열기도 같은 동사여야 겹쳐 쌓이지 않는다
@@ -109,12 +111,23 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
       <Link.Trigger>
         <PressableFeedback
           accessibilityRole="button"
+          // 삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 행에서 바로 한다
+          accessibilityActions={[{ name: 'delete', label: t('result.delete') }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'delete') {
+              deleteDraft();
+            }
+          }}
           className="rounded-2xl bg-gray-1 px-3 py-3"
           testID="voice-note-draft"
         >
           <HStack gap={12} align="center">
             <Box className="size-10 items-center justify-center rounded-full bg-gray-2">
-              <MicIcon width={20} height={20} colorClassName="text-gray-7" />
+              <MicIcon
+                width={fontScaledSize(20)}
+                height={fontScaledSize(20)}
+                colorClassName="text-gray-7"
+              />
             </Box>
             <VStack flex={1} gap={4}>
               <Text size="b3" weight="medium" numberOfLines={1}>

@@ -1,6 +1,6 @@
 import { createPushNotificationGatewayStub, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
-import { useGlobalSearchParams, usePathname } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 
 import { useForegroundPushPresentation } from './use-foreground-push-presentation';
 
@@ -15,7 +15,7 @@ const NUDGE_PUSH = {
 
 async function setup({ pathname, params }: { pathname: string; params: Record<string, string> }) {
   jest.mocked(usePathname).mockReturnValue(pathname);
-  jest.mocked(useGlobalSearchParams).mockReturnValue(params);
+  jest.mocked(useLocalSearchParams).mockReturnValue(params);
   const gateway = createPushNotificationGatewayStub();
   await renderScreenHook(() => useForegroundPushPresentation(), {
     di: createTestDi({ ports: { pushNotification: gateway } }),

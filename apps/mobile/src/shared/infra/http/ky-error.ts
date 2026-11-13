@@ -61,6 +61,7 @@ export function toApiError(error: HTTPError): ApiError {
     resolveMessage(envelope?.code ?? null, envelope?.message ?? null),
     error.response.status,
     envelope?.details ?? null,
+    { requestId: error.request.headers.get(REQUEST_ID_HEADER) ?? undefined },
   );
 }
 

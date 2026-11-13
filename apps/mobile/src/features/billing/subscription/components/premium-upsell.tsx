@@ -1,5 +1,6 @@
 import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -21,10 +22,11 @@ import { match } from 'ts-pattern';
 
 import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { getPlanComparison } from '../utils/plan-benefit.view-model';
+import { toPlanFeatureComparison } from '../utils/plan-benefit.view-model';
 import { PremiumFeatureIcon } from './premium-feature-icon';
 
 interface PremiumUpsellProps {
@@ -189,22 +191,10 @@ function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
 
 function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
   const { t } = useTranslation('subscription');
-  const { locale } = useDateFormatContext();
+  const fontScaledSize = useFontScaledSize();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { unit, free, premium } = getPlanComparison(entitlements, feature);
-
-  const formatAmount = (amount: number | null) => {
-    if (amount == null) {
-      return t('upsell.unlimited');
-    }
-    const value = formatCount(amount, locale);
-    return match(unit)
-      .with('perMonth', () => t('upsell.amount.perMonth', { amount: value }))
-      .with('perDay', () => t('upsell.amount.perDay', { amount: value }))
-      .with('people', () => t('upsell.amount.people', { amount: value }))
-      .with('items', () => t('upsell.amount.items', { amount: value }))
-      .exhaustive();
-  };
+  const { free, premium } = toPlanFeatureComparison(entitlements, feature);
+  const formatPlanValue = useFormatPlanValue();
 
   return (
     <SurfaceCard className="flex-row items-center gap-3">
@@ -213,16 +203,20 @@ function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
           {t('upsell.free')}
         </Text>
         <Text size="b3" weight="bold" shade={8}>
-          {formatAmount(free)}
+          {formatPlanValue(free)}
         </Text>
       </VStack>
-      <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+      <ArrowRightIcon
+        width={fontScaledSize(16)}
+        height={fontScaledSize(16)}
+        colorClassName="text-gray-5"
+      />
       <VStack flex={1} gap={2} align="center">
         <Text size="e1" shade={6}>
           {t('upsell.premium')}
         </Text>
         <Text size="b3" weight="bold" tone="brand">
-          {formatAmount(premium)}
+          {formatPlanValue(premium)}
         </Text>
       </VStack>
     </SurfaceCard>

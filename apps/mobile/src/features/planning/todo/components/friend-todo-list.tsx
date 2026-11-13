@@ -4,7 +4,6 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import type { QueryErrorFallbackProps } from '@src/shared/ui';
 import {
   Box,
   ChatBubbleIcon,
@@ -12,6 +11,7 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Result,
   Text,
   TodoIllustration,
@@ -123,7 +123,7 @@ FriendTodoList.Item = function Item({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
-  const showDateTime = formattedTime != null;
+  const shouldShowTime = formattedTime != null;
 
   const openComments = () => selectTodo(todo.id);
   const hasSubTodos = SubTodoPolicy.hasSubTodos(todo.subTodos);
@@ -140,7 +140,7 @@ FriendTodoList.Item = function Item({
         left={<TodoRow.Checkbox isSelected={todo.completed} />}
         top={<TodoRow.Label isCompleted={todo.completed}>{todo.title}</TodoRow.Label>}
         middle={
-          showDateTime && (
+          shouldShowTime && (
             <Text size="e1" shade={6}>
               {formattedTime}
             </Text>
@@ -198,7 +198,10 @@ interface FriendTodoListItemLinkProps {
   children: ReactNode;
 }
 
-/** 친구 할 일 행을 길게 눌러 상세를 미리보고 메뉴로 연다(iOS). 미리보기를 눌러 가는 이동은 Link가 맡는다 */
+/**
+ * 친구 할 일 행을 길게 눌러 상세를 미리보고 메뉴로 연다(iOS). 탭 이동은 메뉴·댓글 버튼과 같은 `onOpen`(연타 막기)이 맡고
+ * Link는 미리보기를 눌러 가는 이동만 맡는다
+ */
 FriendTodoList.ItemLink = function ItemLink({
   todo,
   isLinked,
@@ -218,8 +221,9 @@ FriendTodoList.ItemLink = function ItemLink({
       href={{ pathname: '/todo/[todoId]', params: { todoId: todo.id } }}
       asChild
       onPress={(event) => {
-        if (!isTapOpening) {
-          event.preventDefault();
+        event.preventDefault();
+        if (isTapOpening) {
+          onOpen();
         }
       }}
     >

@@ -1,4 +1,4 @@
-const { resolveTestWorkers } = require('@aido/vitest-config/test-workers');
+const { resolveTestWorkers } = require('@aido/test-config/test-workers');
 
 /**
  * process.env.EXPO_OS는 babel-preset-expo가 transform 때 플랫폼 상수로 바꾼다.
@@ -65,6 +65,8 @@ module.exports = {
   // 매 실행이 순서 의존을 검사한다. 실패하면 출력된 seed로 `pnpm test --seed <seed>` 재현
   randomize: true,
   showSeed: true,
+  // 지원 중단 API(jest.genMockFromModule 등)를 쓰면 다음 Jest에서 깨지기 전에 바로 실패시킨다
+  errorOnDeprecated: true,
   projects: [
     {
       ...base,

@@ -193,6 +193,8 @@ describe('todo-cache', () => {
       return client;
     }
 
+    // 화면 없이 쓰기를 돌리려고 TanStack 내부 MutationCache.build().execute()를 쓰고, 쓰기는 onSettled가 끝나야
+    // success가 된다는 순서에 기댄다. TanStack을 올려 이 테스트가 깨지면 이 두 가정부터 본다
     /** 쓰기 콜백 안에서 부르는 정리라 그 쓰기 자신을 진행 중으로 센다. 돌려준 함수가 쓰기를 끝낸다 */
     function startWrite(client: QueryClient) {
       const response = createPendingResponse(undefined);
@@ -286,7 +288,7 @@ describe('todo-cache', () => {
       await finishWrite();
     });
 
-    it('다른 쓰기가 진행 중이면 낡음만 표시하고 화면에 붙은 조회도 다시 받지 않는다', async () => {
+    it('낡음 표시를 기다리는 사이 이 쓰기가 끝나도 다른 쓰기가 남아 있으면 다시 받지 않는다', async () => {
       // Given
       const client = createSeededClient();
       const queryFn = jest.fn(async () => toList([]));
@@ -296,22 +298,37 @@ describe('todo-cache', () => {
         staleTime: Infinity,
       }).subscribe(noop);
       const finishOtherWrite = startWrite(client);
-      const finishWrite = startWrite(client);
+      const response = createPendingResponse(undefined);
+      const settled = Promise.withResolvers<void>();
+      // 실제 쓰기처럼 onSettled가 정리를 기다리지 않아, 정리가 낡음 표시를 기다리는 사이 이 쓰기가 끝난다
+      const running = client
+        .getMutationCache()
+        .build(client, {
+          mutationKey: TODO_MUTATION_KEYS.listWrites(),
+          mutationFn: () => response.response,
+          onSettled: () => {
+            settleTodoWrite(client, {
+              date: DAY,
+              todoId: 1,
+              span: { startDate: DAY, endDate: DAY },
+              isCompletionAffected: false,
+              hasFailed: true,
+              ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+            }).then(settled.resolve, settled.reject);
+          },
+        })
+        .execute(undefined);
 
       // When
-      await settleTodoWrite(client, {
-        date: DAY,
-        todoId: 1,
-        span: { startDate: DAY, endDate: DAY },
-        isCompletionAffected: false,
-        hasFailed: true,
-        ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
-      });
+      response.settle();
+      await running;
+      await settled.promise;
 
       // Then
+      expect(client.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() })).toBe(1);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
       expect(queryFn).not.toHaveBeenCalled();
-      await Promise.all([finishOtherWrite(), finishWrite()]);
+      await finishOtherWrite();
       unsubscribe();
     });
   });

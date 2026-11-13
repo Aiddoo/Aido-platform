@@ -160,7 +160,6 @@ function useOpenMarketingPushOffer() {
       { dismissedValue: null },
     );
     match(choice)
-      .with('agree', () => trackEvent('marketing_push_opted_in', { source: 'completion_sheet' }))
       .with('dismiss', () => {
         // 시트가 떠 있는 사이 세션이 끝났으면 끝난 계정에 거절 시각을 남기지 않는다
         if (!isCurrent()) {
@@ -169,7 +168,8 @@ function useOpenMarketingPushOffer() {
         repository.dismiss(accountId, getNowInstant());
         trackEvent('marketing_push_prompt_dismissed', { source: 'completion_sheet' });
       })
-      .with(null, noop)
+      // 동의는 서버가 기록한 뒤 동의 mutation이 센다
+      .with('agree', null, noop)
       .exhaustive();
   };
 }

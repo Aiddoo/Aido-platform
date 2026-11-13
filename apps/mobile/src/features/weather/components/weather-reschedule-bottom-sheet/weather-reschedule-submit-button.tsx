@@ -1,5 +1,4 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { useMutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
@@ -9,8 +8,9 @@ import { getErrorMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import { Button } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 

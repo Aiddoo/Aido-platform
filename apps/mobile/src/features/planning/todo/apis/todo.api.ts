@@ -292,13 +292,13 @@ export class TodoApi {
     todoId: number,
     signal?: AbortSignal,
   ): Promise<Result<TodoDetails, ApiError>> => {
-    const response = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
+    const result = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
 
     return parseApiResponse(
-      response,
+      result,
       todoDetailsEnvelopeSchema,
       toTodoDetails,
-      '[TodoApi] Invalid todo details',
+      '[TodoApi] Invalid getTodoDetails response',
     );
   };
 

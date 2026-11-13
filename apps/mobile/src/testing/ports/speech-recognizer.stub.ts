@@ -1,5 +1,5 @@
 import type {
-  PermissionSnapshot,
+  SpeechPermission,
   SpeechCapabilities,
   SpeechEvent,
   SpeechRecognizer,
@@ -7,7 +7,7 @@ import type {
 
 import { mockMethod } from '../mock-method';
 
-const GRANTED: PermissionSnapshot = { isGranted: true, canAskAgain: true };
+const GRANTED: SpeechPermission = { status: 'granted', canAskAgain: true };
 const FULL_CAPABILITIES: SpeechCapabilities = {
   isAvailable: true,
   canRecognizeOnDevice: true,
@@ -28,10 +28,10 @@ export function createSpeechRecognizerStub(): SpeechRecognizerStub {
 
   return {
     getPermission: jest
-      .fn<Promise<PermissionSnapshot>, Parameters<SpeechRecognizer['getPermission']>>()
+      .fn<Promise<SpeechPermission>, Parameters<SpeechRecognizer['getPermission']>>()
       .mockResolvedValue(GRANTED),
     requestPermission: jest
-      .fn<Promise<PermissionSnapshot>, Parameters<SpeechRecognizer['requestPermission']>>()
+      .fn<Promise<SpeechPermission>, Parameters<SpeechRecognizer['requestPermission']>>()
       .mockResolvedValue(GRANTED),
     getCapabilities: jest
       .fn<Promise<SpeechCapabilities>, Parameters<SpeechRecognizer['getCapabilities']>>()

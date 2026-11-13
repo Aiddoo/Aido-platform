@@ -1,0 +1,3 @@
+-- 스키마에서만 뺀다. 1.15.1 이미지는 User·Subscription을 읽고 쓸 때마다 이 칸을 이름으로 적어 DB 칸은 남긴다.
+-- 생성기가 만든 DROP COLUMN(Subscription.dataRetentionUntil, User.twoFactorEnabled·twoFactorSecret)은 지웠다.
+-- 1.15.2가 롤백 바닥이 된 뒤 값이 비었음을 다시 확인하는 guard와 함께 1.16.0에서 지운다(compatibility.md).

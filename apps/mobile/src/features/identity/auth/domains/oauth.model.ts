@@ -38,3 +38,16 @@ const linkedAccountsResultSchema = z.object({
   canUnlink: z.boolean(),
 });
 export type LinkedAccountsResult = z.infer<typeof linkedAccountsResultSchema>;
+
+function countLinkedAccounts({ accounts }: LinkedAccountsResult): number {
+  return accounts.filter((account) => account.linked).length;
+}
+
+function isProviderLinked({ accounts }: LinkedAccountsResult, provider: OAuthProvider): boolean {
+  return accounts.some((account) => account.provider === provider && account.linked);
+}
+
+export const LinkedAccountsPolicy = {
+  countLinkedAccounts,
+  isProviderLinked,
+} as const;

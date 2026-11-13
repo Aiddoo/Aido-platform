@@ -34,7 +34,7 @@ interface TodoComposerChipsProps extends Omit<
   form: ComposerForm;
 }
 
-/** 할 일을 만들고 고치는 시트의 일정 칩 줄. 시트가 가진 폼의 일정 칸을 칩에 잇고, 시간을 정하면 알림 권한을 묻는다 */
+// 시간을 정하면 알림 권한을 묻는다
 export function TodoComposerChips({ form, ...chipsProps }: TodoComposerChipsProps) {
   const askPushPermission = useAskPushPermissionOnTodoTime();
   const focusTitle = useFocusTodoTitle(form);

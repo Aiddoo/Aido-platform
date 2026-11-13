@@ -5,9 +5,10 @@ import { Alert, CloseButton, PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { Box } from '../box';
-import { CloseIcon } from '../icon';
-import { Text, type TextTone } from '../text';
+import { Box } from '../box/box';
+import { CloseIcon } from '../icon/icons';
+import { Text } from '../text/text';
+import { type TextTone } from '../text/text.types';
 
 const CLOSE_ICON_SIZE = 20;
 /** 닫기 버튼은 작게 그리고 손가락 닿는 자리는 44로 맞춘다 */

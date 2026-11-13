@@ -1,7 +1,7 @@
 import { createMemoryKeyValueStorage } from '@src/testing/fakes/memory-key-value-storage.fake';
 import { type createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
 
-import { disabledDraftStorage, openEncryptedStorage } from './encrypted-draft-storage';
+import { openEncryptedStorage } from './encrypted-draft-storage';
 
 type MmkvConfig = Parameters<typeof createMMKV>[0];
 
@@ -99,21 +99,22 @@ describe('openEncryptedStorage', () => {
     expect(deleteMMKV).toHaveBeenCalledWith('aido.drafts');
   });
 
-  it('키를 읽거나 저장하지 못하면 초안과 조회 캐시 저장을 끄고 사유를 돌려준다', async () => {
+  it('키를 읽거나 저장하지 못하면 초안은 이번 실행 동안 메모리에만 두고 조회 캐시는 남기지 않는다', async () => {
     // Given
     const secureStorage = createMemoryKeyValueStorage();
     const failure = new Error('keychain unavailable');
     secureStorage.get.mockRejectedValue(failure);
+    const result = await openEncryptedStorage(secureStorage, null);
+    const listener = jest.fn();
+    result.draftStorage.subscribe('aido_draft_v1:user-1:memo:create', listener);
 
     // When
-    const result = await openEncryptedStorage(secureStorage, null);
+    result.draftStorage.set('aido_draft_v1:user-1:memo:create', '{"v":1}');
 
     // Then
-    expect(result).toEqual({
-      draftStorage: disabledDraftStorage,
-      queryCacheStorage: null,
-      failure,
-    });
+    expect(result.draftStorage.get('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ queryCacheStorage: null, failure });
     expect(mockCreateMMKV).not.toHaveBeenCalled();
   });
 

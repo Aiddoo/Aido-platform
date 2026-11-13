@@ -5,7 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isTransientError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { pick } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
@@ -203,7 +203,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
   const mutationKey = TODO_COMMENT_MUTATION_KEYS.deleteComment({ todoId });
 
   return mutationOptions({
-    // 지우는 동안 메뉴 버튼이 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌린다
+    // 지우는 동안 확인 다이얼로그가 진행 중이다. 오프라인에 멈춰 두면 연결될 때까지 닫을 수 없으니 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey,
     mutationFn: async ({ comment }: DeleteTodoCommentVariables) =>

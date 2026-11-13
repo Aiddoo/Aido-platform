@@ -15,12 +15,17 @@ import { useGetSentRequestsInfiniteQueryOptions } from '../queries/friend.querie
 
 export function SentRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(useGetSentRequestsInfiniteQueryOptions());
+  const {
+    data: sentRequests,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetSentRequestsInfiniteQueryOptions());
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: requests, totalCount } = data;
+  const { items: requests, totalCount } = sentRequests;
 
   return (
     <InfiniteList

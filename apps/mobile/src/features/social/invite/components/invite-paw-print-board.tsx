@@ -256,13 +256,14 @@ InvitePawPrintBoard.Connector = function Connector({
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));
   const isHorizontal = orientation === 'horizontal';
+  const horizontalStyle = length == null ? styles.fill : { width: length };
 
   return (
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       className={cn(isHorizontal ? 'h-3' : 'h-[22px] w-3')}
-      style={isHorizontal ? (length == null ? styles.fill : { width: length }) : undefined}
+      style={isHorizontal ? horizontalStyle : undefined}
     >
       <Svg width="100%" height="100%">
         <Defs>

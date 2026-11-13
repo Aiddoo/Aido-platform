@@ -5,7 +5,7 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { Text } from '../text';
+import { Text } from '../text/text';
 
 export const ICON_COUNT_BUTTON_ICON_SIZE = 18;
 

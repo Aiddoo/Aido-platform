@@ -3,10 +3,8 @@ import type {
   ForegroundPushPresentation,
   ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { useQueryClient } from '@tanstack/react-query';
-import { useGlobalSearchParams, usePathname } from 'expo-router';
+import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
+import { usePathname } from 'expo-router';
 import { useEffect, useEffectEvent } from 'react';
 
 import { parsePushNotification } from '../apis/push-notification.mapper';
@@ -15,17 +13,16 @@ import { getForegroundPushPresentation } from '../utils/foreground-push-presenta
 import {
   isViewingNotificationDestination,
   NOTIFICATION_INBOX_DESTINATION,
-  toNotificationDestination,
 } from '../utils/notification-destination.view-model';
+import { useResolveNotificationDestination } from './use-notification-destination';
 
 /** 앱이 앞에 있을 때 받은 알림을 지금 보고 있는 화면에 맞춰 배너로 보일지 정한다 */
 export function useForegroundPushPresentation() {
   const gateway = usePushNotification();
   const logger = useLogger();
-  const queryClient = useQueryClient();
-  const windowSizeClass = useWindowSizeClass();
+  const resolveDestination = useResolveNotificationDestination();
   const pathname = usePathname();
-  const params = useGlobalSearchParams();
+  const params = useFocusedRouteParams();
 
   const decide = useEffectEvent(
     (notification: ReceivedPushNotification): ForegroundPushPresentation => {
@@ -35,7 +32,7 @@ export function useForegroundPushPresentation() {
       if (droppedPaths.length > 0) {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
           source: 'foreground',
-          droppedPaths,
+          droppedPaths: droppedPaths.join(','),
           isReadable: pushNotification != null,
         });
       }
@@ -43,10 +40,7 @@ export function useForegroundPushPresentation() {
         return 'banner';
       }
       const currentRoute = { pathname, params };
-      const destination = toNotificationDestination(pushNotification.target, {
-        windowSizeClass,
-        viewerId: getCachedMe(queryClient)?.id,
-      });
+      const destination = resolveDestination(pushNotification.target);
       return getForegroundPushPresentation(pushNotification, {
         isViewingInbox: isViewingNotificationDestination(
           NOTIFICATION_INBOX_DESTINATION,

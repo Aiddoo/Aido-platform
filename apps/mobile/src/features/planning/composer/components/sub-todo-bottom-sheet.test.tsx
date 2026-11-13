@@ -16,10 +16,11 @@ import {
   createSpeechRecognizerStub,
   createTestQueryClient,
   createTestDi,
+  deliverQueryNotifications,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
@@ -50,6 +51,7 @@ async function renderEditSheet() {
   jest
     .mocked(useLocalSearchParams)
     .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
+  const speechRecognizer = createSpeechRecognizerStub();
 
   await renderScreen(<EditSubTodoBottomSheet />, {
     withLocalDate: true,
@@ -59,7 +61,7 @@ async function renderEditSheet() {
         httpClient,
         analytics: createAnalyticsStub(),
         errorReporter: createErrorReporterStub(),
-        speechRecognizer: createSpeechRecognizerStub(),
+        speechRecognizer,
         queryClient,
       },
     }),
@@ -67,6 +69,24 @@ async function renderEditSheet() {
 
   return {
     httpClient,
+    /** 마이크를 눌러 받아쓴 글자를 넣는다 */
+    dictate: async (transcript: string) => {
+      await fireEvent.press(screen.getByLabelText('말로 입력'));
+      await act(async () =>
+        speechRecognizer.emit({ type: 'result', transcript, isFinal: true, segments: [] }),
+      );
+    },
+    /** 다른 기기에서 하위 항목 제목이 바뀌어 할 일 목록을 다시 받는다 */
+    refetchWithSubTodoTitle: async (title: string) => {
+      await act(async () => {
+        queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {
+          todos: [{ ...todo, subTodos: [createSubTodo({ title })] }],
+          hasNext: false,
+          nextCursor: null,
+        });
+        await deliverQueryNotifications();
+      });
+    },
     settleRequests: () => {
       pendingPatch.settle();
       pendingDelete.settle();
@@ -118,6 +138,36 @@ describe('EditSubTodoBottomSheet', () => {
 
     // Then
     expect(httpClient.patch).not.toHaveBeenCalled();
+    settleRequests();
+  });
+
+  it('받아쓴 제목은 하위 항목을 다시 받아도 덮지 않는다', async () => {
+    // Given
+    const { dictate, refetchWithSubTodoTitle, settleRequests } = await renderEditSheet();
+    await dictate('우유 사기');
+
+    // When
+    await refetchWithSubTodoTitle('다른 기기 제목');
+
+    // Then
+    expect(screen.getByTestId('sub-todo-input')).toHaveDisplayValue('장 보기 우유 사기');
+    settleRequests();
+  });
+
+  it('비운 제목에 받아쓰면 완료 키가 닫지 않고 저장한다', async () => {
+    // Given
+    const { httpClient, dictate, settleRequests } = await renderEditSheet();
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '');
+    await waitFor(() => expect(submitButton()).toBeDisabled());
+    await dictate('우유 사기');
+
+    // When
+    await fireEvent(screen.getByTestId('sub-todo-input'), 'submitEditing');
+
+    // Then
+    await waitFor(() => {
+      expect(httpClient.patch).toHaveBeenCalledWith(expect.any(String), { title: '우유 사기' });
+    });
     settleRequests();
   });
 });

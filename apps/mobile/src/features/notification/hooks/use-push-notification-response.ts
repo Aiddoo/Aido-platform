@@ -11,6 +11,8 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { useIsRestoring, useMutation } from '@tanstack/react-query';
 import {
   useCallback,
@@ -82,7 +84,7 @@ export function usePushNotificationResponse(): void {
         logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
           source: 'response',
           responseId: response.id,
-          droppedPaths,
+          droppedPaths: droppedPaths.join(','),
           isReadable: notification != null,
         });
       }
@@ -132,6 +134,7 @@ function useMarketingOptOut(
   const status = useAuthStatus();
   const appLifecycle = useAppLifecycle();
   const logger = useLogger();
+  const reportUnexpectedError = useReportUnexpectedError('notification');
   const { mutateAsync: optOut } = useMutation(useOptOutMarketingPushMutationOptions());
   // 앞에 온 순간과 응답이 같은 틱에 두 번 부를 수 있어 응답 id로 한 번만 보낸다
   const inFlightIdRef = useRef<string | null>(null);
@@ -154,7 +157,9 @@ function useMarketingOptOut(
     try {
       await optOut(token);
     } catch (error) {
+      // 응답을 남겨 앞에 오면 다시 보낸다. 연결 끊김·4xx는 다시 보내면 되고 5xx·파싱 실패만 이슈로 남긴다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
+      reportUnexpectedError(error);
       return;
     } finally {
       inFlightIdRef.current = null;
@@ -259,7 +264,8 @@ function useOpenReadyEntry(
 ) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
-  const openDestination = useOpenNotificationDestination();
+  // 앱이 켜져 있을 때 누른 푸시도 OS 링크처럼 연다. 탭 위 화면에서 열어도 탭 묶음·첫 화면이 두 번 쌓이지 않는다
+  const openDestination = useOpenNotificationDestination({ openRoute: openEntryHref });
   const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
   const openedByIndexIdRef = useRef<string | null>(null);
