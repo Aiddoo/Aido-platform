@@ -34,7 +34,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 
 - 행동 하나가 `<Verb><Noun>UseCase.execute(command)` 하나다. "잠금 → 읽기 → 도메인 행동 → 저장 → enqueue·publish"가 위에서 아래로 읽히게 쓴다.
 - 같은 Aggregate를 바꾸는 UseCase는 모두 같은 잠금을 읽기 전에 잡는다([저장과 잠금](persistence.md#저장과-잠금)).
-- 업무 오류는 `<slice>.errors.ts`의 이름 있는 함수(`memoNotFound(memoId)`)로 만들고 기존 `ErrorCode`를 쓴다. 새 코드가 필요하면 `@aido/api/errors`와 ko·en 오류 문구에 함께 더한다.
+- 업무 오류는 `<slice>.errors.ts`의 이름 있는 함수(`memoNotFound(memoId)`)로 만들고 기존 `ErrorCode`를 쓴다. 거부는 `application/`, 불변식은 `domain/`의 errors 파일이다. 새 코드가 필요하면 `@aido/api/errors`와 ko·en 오류 문구에 함께 더한다.
 - 포트는 abstract class, 구현은 `Drizzle<Noun>Repository`·`<Vendor><Capability>Adapter`다. 조립은 `*.providers.ts`의 `provideUseCase`이고 의존성은 `Pick<Port, "…">`로 좁힌다.
 - 외부 공급자는 어댑터 + `*.wire.ts` Zod + `<vendor>-outbound.policy.ts`로만 부르고 트랜잭션 밖에서 한다([외부 호출](outbound.md)). 고르는 방법은 [공급자 선택](configuration.md#공급자-선택)이다.
 - 후속 작업이 상태를 바꾸면 같은 트랜잭션 enqueue(`defineQueue`) 또는 `publish` + durable 구독이다. 커밋 뒤 in-process는 캐시 정리만이다([작업과 이벤트](jobs-and-events.md)).

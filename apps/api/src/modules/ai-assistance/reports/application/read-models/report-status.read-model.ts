@@ -8,4 +8,6 @@ export interface ReportStatusReadModel {
   readonly daysUntilMonthly: number;
   readonly latestWeekly: AiReport | null;
   readonly latestMonthly: AiReport | null;
+  /** 사용자 시간대의 오늘. 기간 라벨의 연도를 정한다 */
+  readonly localToday: Temporal.PlainDate;
 }

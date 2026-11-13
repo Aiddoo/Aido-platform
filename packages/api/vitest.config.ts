@@ -1,5 +1,5 @@
+import { resolveTestWorkers } from "@aido/test-config/test-workers";
 import baseConfig from "@aido/vitest-config";
-import { resolveTestWorkers } from "@aido/vitest-config/test-workers";
 import { defineConfig, mergeConfig } from "vitest/config";
 
 export default mergeConfig(

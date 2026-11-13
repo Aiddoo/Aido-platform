@@ -6,7 +6,9 @@ import { mockMethod } from '../mock-method';
 export function createSystemShareGatewayStub(): jest.Mocked<SystemShareGateway> {
   return {
     share: mockMethod<SystemShareGateway['share']>(async () => true),
-    isImageShareAvailable: jest.fn(async () => true),
+    isImageShareAvailable: mockMethod<SystemShareGateway['isImageShareAvailable']>(
+      async () => true,
+    ),
     shareImage: mockMethod<SystemShareGateway['shareImage']>(async () => {}),
   };
 }

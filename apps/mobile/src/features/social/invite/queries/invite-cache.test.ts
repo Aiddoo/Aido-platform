@@ -1,3 +1,4 @@
+import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
 import { createTestQueryClient } from '@src/testing/core';
@@ -41,24 +42,21 @@ describe('invite-cache', () => {
     });
   });
 
-  describe('invalidateInvite', () => {});
-
   describe('invalidateAfterRedeem', () => {
     it('친구·요청 목록과 내 정보를 다시 불러오고 쓴 코드의 미리보기를 지운다', async () => {
       // Given
-      const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
       queryClient.setQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }), {
         inviter: { name: null, profileImage: null },
       });
+      queryClient.setQueryData(FRIEND_QUERY_KEYS.all, []);
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser());
 
       // When
       await invalidateAfterRedeem(queryClient, { inviteCode: 'K7M2QX' });
 
       // Then
-      expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
-        FRIEND_QUERY_KEYS.all,
-        USER_QUERY_KEYS.me(),
-      ]);
+      expect(queryClient.getQueryState(FRIEND_QUERY_KEYS.all)?.isInvalidated).toBe(true);
+      expect(queryClient.getQueryState(USER_QUERY_KEYS.me())?.isInvalidated).toBe(true);
       expect(
         queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' })),
       ).toBeUndefined();
@@ -68,20 +66,27 @@ describe('invite-cache', () => {
   describe('invalidateOnInviteNotification', () => {
     it('초대 요약·초대한 친구 목록, 친구 목록과 내 정보를 다시 불러오게 한다', async () => {
       // Given
-      const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+      queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite());
+      queryClient.setQueryData(INVITE_QUERY_KEYS.invitees({}), { pages: [], pageParams: [] });
+      queryClient.setQueryData(FRIEND_QUERY_KEYS.all, []);
+      queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser());
 
       // When
       await invalidateOnInviteNotification(queryClient);
 
       // Then
-      expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
+      const keys = [
         INVITE_QUERY_KEYS.me(),
-        INVITE_QUERY_KEYS.inviteeLists(),
+        INVITE_QUERY_KEYS.invitees({}),
         FRIEND_QUERY_KEYS.all,
         USER_QUERY_KEYS.me(),
+      ];
+      expect(keys.map((key) => queryClient.getQueryState(key)?.isInvalidated)).toEqual([
+        true,
+        true,
+        true,
+        true,
       ]);
     });
   });
-
-  describe('storeRedemptionResult', () => {});
 });

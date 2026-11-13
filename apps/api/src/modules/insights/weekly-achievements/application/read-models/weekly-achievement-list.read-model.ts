@@ -8,4 +8,6 @@ export interface WeeklyAchievementList {
   readonly page: CursorPage<WeeklyAchievement, number>;
   /** 페이지와 상관없이 그해 기록 전부로 계산한다 */
   readonly summary: WeeklyAchievementSummary;
+  /** 사용자 저장 시간대의 오늘. 주차 라벨의 연도를 정한다 */
+  readonly localToday: Temporal.PlainDate;
 }

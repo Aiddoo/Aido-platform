@@ -1,7 +1,5 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { UserRole } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -9,7 +7,12 @@ import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import { SessionId } from "../../domain/session-id.vo.js";
 import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
-import { sessionRejection } from "../auth.errors.js";
+import {
+  accountLocked,
+  accountSuspended,
+  invalidAccessToken,
+  sessionRejection,
+} from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachedSession, AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthSessionRepositoryPort } from "../ports/auth-session.repository.port.js";
@@ -53,10 +56,10 @@ export class AuthenticateSessionUseCase {
   async execute(claims: AccessTokenClaims): Promise<AuthenticatedUser> {
     const { sessionRepository, userRepository } = this.#dependencies;
     if (claims.type !== "access") {
-      throw new ApplicationException(ErrorCode.AUTH_0101, { reason: "Not an access token" });
+      throw invalidAccessToken("Not an access token");
     }
     if (!claims.sessionId) {
-      throw new ApplicationException(ErrorCode.AUTH_0101, { reason: "Missing sessionId" });
+      throw invalidAccessToken("Missing sessionId");
     }
     const authenticated: AuthenticatedUser = {
       userId: claims.sub,
@@ -148,12 +151,9 @@ function toInstant(value: Date | string): Temporal.Instant {
 
 function assertUserStatus(status: string, deletedAt: string | null | undefined): void {
   if (status === "LOCKED") {
-    throw new ApplicationException(ErrorCode.USER_0607, {
-      email: "User",
-      remainingMinutes: undefined,
-    });
+    throw accountLocked("User");
   }
   if (status === "SUSPENDED" || deletedAt) {
-    throw new ApplicationException(ErrorCode.USER_0605, { userId: "User" });
+    throw accountSuspended("User");
   }
 }

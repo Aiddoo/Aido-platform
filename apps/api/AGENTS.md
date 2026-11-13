@@ -4,7 +4,7 @@
 
 ## 시작
 
-- 새 기능은 [새 기능 추가](docs/new-feature.md) 순서를 따른다. 뼈대는 `pnpm gen:api-slice`(slice·계약·fixture·InMemory·계약 테스트)다.
+- 새 기능은 [새 기능 추가](docs/new-feature.md) 순서를 따른다(Claude Code 스킬 `/api-module <기능>`). 뼈대는 `pnpm gen:api-slice`(slice·계약·fixture·InMemory·계약 테스트)다.
 - 기준 구현은 notes/memos다([도메인 모델](docs/domain-modeling.md#기준-구현-notesmemos)). 모든 Context가 slice 구조이고 규칙은 모든 Context에 같다.
 - 검사: `pnpm lint`(Oxlint와 `aido/*` 관례 규칙), `pnpm lint:names`(ls-lint), `pnpm --filter @aido/server lint:deps`(dependency-cruiser), `pnpm check:unused`(knip, 설정은 루트 `knip.jsonc`). 모두 `pnpm check`에 있고 `apps/api/src` 전체에 걸린다. Claude Code는 서버 파일을 고친 직후 `scripts/agent-hooks/lint-edited-file.mjs` hook이 Oxlint를 돌린다.
 
@@ -30,7 +30,7 @@
 
 - [ ] 베이스는 `shared/domain/model`. 상태 전이는 바뀌면 `true`, `false`면 저장·발송을 건너뛴다.
 - [ ] 복원은 `*-row.mapper.ts` 한 곳. 시퀀스 id는 `nextId()`. 포트의 식별자는 id VO.
-- [ ] 업무 오류는 `<slice>.errors.ts`의 이름 있는 생성 함수. 불변식은 `DomainException`, 거부는 `ApplicationException`.
+- [ ] 업무 오류는 `<slice>.errors.ts`의 이름 있는 생성 함수. 거부는 `application/`의 `ApplicationException`, 불변식은 `domain/`의 `DomainException`. 그 밖에서 바로 만들지 않는다(Oxlint `aido/no-inline-coded-exception`).
 
 **포트·조립**
 

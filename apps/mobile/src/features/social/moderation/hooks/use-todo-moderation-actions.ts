@@ -2,6 +2,7 @@ import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queri
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
 import { TodoReportPolicy } from '../domains/user-report.model';
@@ -16,7 +17,7 @@ export function useTodoModerationActions({ todoId }: { todoId: number }) {
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
   if (detail == null || !TodoReportPolicy.canReportTodo(detail)) {
-    return { isAvailable: false, report: () => undefined, block: () => undefined } as const;
+    return { isAvailable: false, report: noop, block: noop } as const;
   }
 
   const owner = { userId: detail.owner.id, displayName: detail.owner.name ?? t('fallbackName') };

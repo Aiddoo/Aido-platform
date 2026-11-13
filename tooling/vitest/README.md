@@ -31,7 +31,7 @@ export default mergeConfig(
 
 ## Worker 수
 
-`@aido/vitest-config/test-workers`의 `resolveTestWorkers(env, fallback)`가 API unit(`50%`)·`packages/api`(`25%`)·Mobile Jest(`50%`)의 `maxWorkers`를 정한다. 여러 러너·에이전트가 함께 돌 때 `AIDO_TEST_WORKERS`(양의 정수 또는 `1%`~`100%`)로 한꺼번에 줄이고, 잘못된 값은 바로 실패한다. DB suite는 `AIDO_TEST_DB_WORKERS`를 쓴다([API 테스트 가이드](../../apps/api/docs/testing.md#실행-자원과-flake)).
+Vitest·Jest가 함께 쓰는 `@aido/test-config/test-workers`(`tooling/test-config`)의 `resolveTestWorkers(env, fallback)`가 API unit(`50%`)·`packages/api`(`25%`)·Mobile Jest(`50%`)의 `maxWorkers`를 정한다. 여러 러너·에이전트가 함께 돌 때 `AIDO_TEST_WORKERS`(양의 정수 또는 `1%`~`100%`)로 한꺼번에 줄이고, 잘못된 값은 바로 실패한다. DB suite는 `AIDO_TEST_DB_WORKERS`를 쓴다([API 테스트 가이드](../../apps/api/docs/testing.md#실행-자원과-flake)).
 
 `vi.spyOn`은 `beforeEach` 또는 테스트 내부에서 등록합니다. `beforeAll`에서 만든 spy는 `restoreMocks`가 다음 테스트 전에 복원하므로 이후 테스트에 적용되지 않습니다. ESM 모듈 mock은 `vi.mock`과 `vi.hoisted`를 사용하며, 생성자 mock은 일반 함수로 작성합니다.
 

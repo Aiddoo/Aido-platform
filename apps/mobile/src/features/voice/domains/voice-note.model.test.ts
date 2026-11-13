@@ -9,12 +9,13 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { createLocalFileEntry } from '../__tests__/voice.fixtures';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import {
   findRecordingIndexAt,
   VoiceNotePolicy,
-  VoiceRecordingFilePolicy,
+  createVoiceNote,
+  createDigestInput,
+  createDigestMemo,
 } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 
@@ -229,49 +230,6 @@ describe('isExpired', () => {
   });
 });
 
-describe('isRecordingFileExpired', () => {
-  const now = toInstant('2026-11-05T01:00:00.000Z');
-
-  it('수정 시각을 모르는 파일은 기한이 지난 것으로 본다', () => {
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt: null }),
-      now,
-    );
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('수정한 지 1시간이 되기 직전까지는 만료되지 않는다', () => {
-    // Given
-    const modifiedAt = new Date('2026-11-05T00:00:00.001Z');
-
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt }),
-      now,
-    );
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('수정한 지 1시간이 되는 순간 만료된다', () => {
-    // Given
-    const modifiedAt = new Date('2026-11-05T00:00:00.000Z');
-
-    // When
-    const result = VoiceRecordingFilePolicy.isRecordingFileExpired(
-      createLocalFileEntry({ modifiedAt }),
-      now,
-    );
-
-    // Then
-    expect(result).toBe(true);
-  });
-});
-
 describe('createDigestInput', () => {
   it('문장을 글자와 시각 구간으로 만들고 길이는 초로 보낸다', () => {
     // Given
@@ -290,7 +248,7 @@ describe('createDigestInput', () => {
     });
 
     // When
-    const input = VoiceNotePolicy.createDigestInput(note);
+    const input = createDigestInput(note);
 
     // Then
     expect(input).toEqual({
@@ -316,7 +274,7 @@ describe('createDigestInput', () => {
     const note = createSpokenVoiceNote({ sentences });
 
     // When
-    const { segments } = VoiceNotePolicy.createDigestInput(note);
+    const { segments } = createDigestInput(note);
 
     // Then
     expect(segments.length).toBeLessThanOrEqual(ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS);
@@ -406,7 +364,7 @@ describe('createDigestMemo', () => {
     });
 
     // When
-    const memo = VoiceNotePolicy.createDigestMemo(note);
+    const memo = createDigestMemo(note);
 
     // Then
     expect(memo).toMatchObject({ type: 'create-memo', title: '회의', content: '요약\n- 포인트' });
@@ -530,14 +488,14 @@ describe('getMarkCount', () => {
   });
 });
 
-describe('findSentenceIndexAt', () => {
+describe('getSentenceIndexAt', () => {
   it('재생 위치의 문장을 찾고 첫 문장 앞이면 -1이다', () => {
     // Given
     const note = createSpokenVoiceNote({ sentences: spokenSentences });
 
     // When
-    const before = VoiceNotePolicy.findSentenceIndexAt(note, 500);
-    const atSecond = VoiceNotePolicy.findSentenceIndexAt(note, 5_000);
+    const before = VoiceNotePolicy.getSentenceIndexAt(note, 500);
+    const atSecond = VoiceNotePolicy.getSentenceIndexAt(note, 5_000);
 
     // Then
     expect(before).toBe(-1);
@@ -723,7 +681,7 @@ describe('createVoiceNote', () => {
     const createdAt = toInstant('2026-11-01T00:00:00.000Z');
 
     // When
-    const note = VoiceNotePolicy.createVoiceNote({
+    const note = createVoiceNote({
       draftId: 'draft-1',
       locale: 'ko-KR',
       createdAt,
@@ -753,8 +711,7 @@ describe('createVoiceNote', () => {
     const createdAt = toInstant('2026-11-01T00:00:00.000Z');
 
     // When
-    const create = () =>
-      VoiceNotePolicy.createVoiceNote({ draftId: '', locale: 'ko-KR', createdAt });
+    const create = () => createVoiceNote({ draftId: '', locale: 'ko-KR', createdAt });
 
     // Then
     expect(create).toThrow(ZodError);
@@ -814,47 +771,49 @@ describe('withoutRecordings', () => {
   });
 });
 
-describe('멱등 요청 기록', () => {
-  it('정리 요청 키를 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const digestRequest = { idempotencyKey: 'digest-key' };
+describe('VoiceNotePolicy', () => {
+  describe('멱등 요청 기록', () => {
+    it('정리 요청 키를 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const digestRequest = { idempotencyKey: 'digest-key' };
 
-    // When
-    const requested = VoiceNotePolicy.withDigestRequest(note, digestRequest);
-    const cleared = VoiceNotePolicy.withDigestRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withDigestRequest(note, digestRequest);
+      const cleared = VoiceNotePolicy.withDigestRequest(requested, null);
 
-    // Then
-    expect(requested.digestRequest).toEqual(digestRequest);
-    expect(cleared.digestRequest).toBeNull();
-  });
+      // Then
+      expect(requested.digestRequest).toEqual(digestRequest);
+      expect(cleared.digestRequest).toBeNull();
+    });
 
-  it('카드 저장 요청은 키와 내용 지문을 함께 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const planApplyRequest = { idempotencyKey: 'apply-key', fingerprint: 'cards-v1' };
+    it('카드 저장 요청은 키와 내용 지문을 함께 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const planApplyRequest = { idempotencyKey: 'apply-key', fingerprint: 'cards-v1' };
 
-    // When
-    const requested = VoiceNotePolicy.withPlanApplyRequest(note, planApplyRequest);
-    const cleared = VoiceNotePolicy.withPlanApplyRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withPlanApplyRequest(note, planApplyRequest);
+      const cleared = VoiceNotePolicy.withPlanApplyRequest(requested, null);
 
-    // Then
-    expect(requested.planApplyRequest).toEqual(planApplyRequest);
-    expect(cleared.planApplyRequest).toBeNull();
-  });
+      // Then
+      expect(requested.planApplyRequest).toEqual(planApplyRequest);
+      expect(cleared.planApplyRequest).toBeNull();
+    });
 
-  it('메모 저장 요청 키를 남기고 null이면 지운다', () => {
-    // Given
-    const note = createSpokenVoiceNote();
-    const memoSaveRequest = { idempotencyKey: 'memo-key' };
+    it('메모 저장 요청 키를 남기고 null이면 지운다', () => {
+      // Given
+      const note = createSpokenVoiceNote();
+      const memoSaveRequest = { idempotencyKey: 'memo-key' };
 
-    // When
-    const requested = VoiceNotePolicy.withMemoSaveRequest(note, memoSaveRequest);
-    const cleared = VoiceNotePolicy.withMemoSaveRequest(requested, null);
+      // When
+      const requested = VoiceNotePolicy.withMemoSaveRequest(note, memoSaveRequest);
+      const cleared = VoiceNotePolicy.withMemoSaveRequest(requested, null);
 
-    // Then
-    expect(requested.memoSaveRequest).toEqual(memoSaveRequest);
-    expect(cleared.memoSaveRequest).toBeNull();
+      // Then
+      expect(requested.memoSaveRequest).toEqual(memoSaveRequest);
+      expect(cleared.memoSaveRequest).toBeNull();
+    });
   });
 });
 

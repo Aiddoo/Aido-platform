@@ -1,25 +1,15 @@
-import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import type { InfiniteData } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
+import { createNotification } from '../__tests__/notification.fixtures';
 import type { NotificationPage } from '../domains/notification.model';
 import { optimisticallyMarkNotificationsRead, revertNotificationsRead } from './notification-cache';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const makePage = (id: number): NotificationPage => ({
-  items: [
-    {
-      id,
-      userId: 'user-1',
-      type: 'SYSTEM_NOTICE',
-      title: 'title',
-      body: 'body',
-      isRead: false,
-      createdAt: toInstant('2026-07-14T00:00:00.000Z'),
-      readAt: null,
-    },
-  ],
+  items: [createNotification({ id, isRead: false })],
   nextCursor: null,
 });
 
@@ -29,19 +19,16 @@ const makeData = (...ids: number[]): InfiniteData<NotificationPage, number | und
 });
 
 describe('notification cache optimistic update', () => {
+  setupFakeTimersPerTest({ now: new Date('2026-07-15T00:00:00.000Z') });
+
   let client: QueryClient;
 
   beforeEach(() => {
     client = createTestQueryClient();
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   it('모든 필터와 infinite page를 즉시 읽음 처리하고 롤백한다', async () => {
     // Given
-    jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
     const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const categoryKey = NOTIFICATION_QUERY_KEYS.list({ category: 'SOCIAL', limit: 20 });
     const data = makeData(1, 2);
@@ -74,7 +61,6 @@ describe('notification cache optimistic update', () => {
 
   it('단일 미읽음 알림은 모든 필터에서 한 번만 감소한다', async () => {
     // Given
-    jest.useFakeTimers().setSystemTime(new Date('2026-07-15T00:00:00.000Z'));
     const allKey = NOTIFICATION_QUERY_KEYS.list({ limit: 20 });
     const categoryKey = NOTIFICATION_QUERY_KEYS.list({ category: 'SOCIAL', limit: 20 });
     client.setQueryData(allKey, makeData(1, 2));
@@ -105,11 +91,7 @@ describe('notification cache optimistic update', () => {
       pages: [
         {
           ...page,
-          items: page.items.map((notification) => ({
-            ...notification,
-            isRead: true,
-            readAt: toInstant('2026-07-14T01:00:00.000Z'),
-          })),
+          items: page.items.map((notification) => ({ ...notification, isRead: true })),
         },
       ],
       pageParams: [undefined],

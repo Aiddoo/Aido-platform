@@ -1,4 +1,3 @@
-import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
@@ -23,13 +22,14 @@ const BARCODE = BARCODE_BAR_WIDTHS.reduce(
 );
 const BARCODE_WIDTH = BARCODE.x - BAR_GAP;
 
-export interface BarcodeProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
+interface BarcodeProps {
   /** 막대 높이(pt) */
   height?: number;
+  className?: string;
 }
 
 /** 영수증 카드 아래쪽 바코드 장식. 스크린 리더에서는 읽지 않는다. */
-export function Barcode({ height = 32, ...props }: BarcodeProps) {
+export function Barcode({ height = 32, className }: BarcodeProps) {
   const { backgroundColor: fill } = useResolveClassNames('bg-gray-7');
 
   return (
@@ -37,7 +37,7 @@ export function Barcode({ height = 32, ...props }: BarcodeProps) {
       justify="center"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      {...props}
+      className={className}
     >
       <Svg
         width={BARCODE_WIDTH}
