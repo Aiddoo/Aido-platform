@@ -212,7 +212,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     this.props.expiresAt = input.expiresAt;
     this.props.gracePeriodEndsAt = null;
     this.props.cancelledAt = null;
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -236,7 +236,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
       return false;
     }
     this.props.gracePeriodEndsAt = input.gracePeriodEndsAt;
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -266,7 +266,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
       this.props.gracePeriodEndsAt = null;
     }
     this.props.cancelledAt = input.now;
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -282,7 +282,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     this.props.status = "ACTIVE";
     this.props.cancelledAt = null;
     this.#changeExpiry(input.expiresAt);
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -309,7 +309,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     }
     this.props.status = "EXPIRED";
     this.props.gracePeriodEndsAt = null;
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -328,7 +328,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
       return false;
     }
     this.props.nextProductId = input.newProductId ?? null;
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -343,7 +343,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     }
     this.props.status = "ACTIVE";
     this.#changeExpiry(input.expiresAt);
-    this.#recordEvent(input.eventId, input.now);
+    this.#markEventApplied(input.eventId, input.now);
     return true;
   }
 
@@ -453,7 +453,7 @@ export class Subscription extends AggregateRoot<SubscriptionId, SubscriptionProp
     }
   }
 
-  #recordEvent(eventId: string | undefined, now: Instant): void {
+  #markEventApplied(eventId: string | undefined, now: Instant): void {
     if (eventId != null && eventId !== "") {
       this.props.lastProcessedEventId = eventId;
     }
