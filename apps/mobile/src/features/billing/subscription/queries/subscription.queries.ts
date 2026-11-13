@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query';
 import {
   type OfferingsAvailability,
   toOfferingsAvailability,
-} from '../utils/offerings-availability.view-model';
+} from '../domains/subscription-failure.model';
 import { SUBSCRIPTION_QUERY_KEYS } from './subscription-query-keys';
 
 const OFFERINGS_STALE_TIME_MS = 10 * MINUTE_MS;

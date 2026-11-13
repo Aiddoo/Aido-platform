@@ -2,7 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -12,7 +12,6 @@ import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
 import { PUSH_ASK_MOMENT, PUSH_PERMISSION_STEP } from '../constants/notification.constants';
@@ -60,11 +59,11 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
     }) === PUSH_ASK_MOMENT.DENIED_NOTICE;
   const step = PushPermissionPolicy.getNextStep(permission, preference);
 
-  useEffect(() => {
-    if (isVisible) {
-      trackEvent('push_permission_prompt_shown', { source: SOURCE, step });
-    }
-  }, [isVisible, step, trackEvent]);
+  // 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계는 한 번만 센다
+  useTrackView(
+    'push_permission_prompt_shown',
+    isVisible ? { key: step, params: { source: SOURCE, step } } : null,
+  );
 
   if (!isVisible) {
     return null;

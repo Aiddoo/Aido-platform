@@ -1,14 +1,17 @@
 import { FlashList, type FlashListProps, type FlashListRef } from '@shopify/flash-list';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { Ref } from 'react';
 
-import { HStack } from '../h-stack';
-import { RefreshIcon } from '../icon';
-import { Text } from '../text';
-import { TintedRefreshControl } from '../tinted-refresh-control';
+import { HStack } from '../h-stack/h-stack';
+import { RefreshIcon } from '../icon/icons';
+import { Text } from '../text/text';
+import { TintedRefreshControl } from '../tinted-refresh-control/tinted-refresh-control';
 import { useFetchNextPage } from './use-fetch-next-page';
+
+const RETRY_ICON_SIZE = 16;
 
 const END_REACHED_THRESHOLD = 0.5;
 
@@ -77,6 +80,8 @@ export function InfiniteListFooter({
   onRetry: () => void;
 }) {
   const { t } = useTranslation('common');
+  const fontScaledSize = useFontScaledSize();
+  const retryIconSize = fontScaledSize(RETRY_ICON_SIZE);
 
   if (isFetchingNextPage) {
     return (
@@ -96,7 +101,11 @@ export function InfiniteListFooter({
           className="min-h-11 justify-center px-4"
         >
           <HStack align="center" gap={6}>
-            <RefreshIcon width={16} height={16} colorClassName="text-gray-6" />
+            <RefreshIcon
+              width={retryIconSize}
+              height={retryIconSize}
+              colorClassName="text-gray-6"
+            />
             <Text size="b4" shade={6}>
               {t('infiniteList.loadMoreFailed')}
             </Text>

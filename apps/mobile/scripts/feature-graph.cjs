@@ -20,7 +20,7 @@ const FEATURE_AREAS = [
   'support',
 ];
 
-// 층이 낮을수록 아래다. core·shared(0)가 맨 아래, app·bootstrap이 맨 위다. 근거는 .claude/architecture.md#층과-의존
+// 층이 낮을수록 아래다. core·shared(0)가 맨 아래, app·bootstrap이 맨 위다. 근거는 docs/architecture/structure.md#층과-의존
 const FEATURE_LAYERS = {
   'identity/auth': 1,
   'identity/user': 1,
@@ -229,7 +229,7 @@ function checkFeatureGraph(modules, root) {
       const targetLayer = FEATURE_LAYERS[target];
       if (ownerLayer == null || targetLayer == null) {
         errors.push(
-          `${location} ${ownerLayer == null ? owner : target}의 층이 정해지지 않았습니다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 .claude/architecture.md의 층 표에 더하세요.`,
+          `${location} ${ownerLayer == null ? owner : target}의 층이 정해지지 않았습니다. scripts/feature-graph.cjs의 FEATURE_LAYERS와 docs/architecture/structure.md의 층 표에 더하세요.`,
         );
       } else if (ownerLayer < targetLayer) {
         errors.push(

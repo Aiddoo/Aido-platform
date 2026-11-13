@@ -1,4 +1,4 @@
-import { fromEpochMs, type Instant, toEpochMs } from './instant';
+import { type Instant, toEpochMs } from './instant';
 import type { TimeOfDay } from './time-of-day';
 
 // Date가 드나드는 유일한 경계다. 네이티브 피커·달력·Intl·위젯 타임라인이 Date를 주고받는다
@@ -9,10 +9,6 @@ export function toNativeDate(epochMs: number): Date {
 
 export function isValidDate(date: Date): boolean {
   return Number.isFinite(date.getTime());
-}
-
-export function instantFromDate(date: Date): Instant {
-  return fromEpochMs(date.getTime());
 }
 
 export function instantToDate(instant: Instant): Date {

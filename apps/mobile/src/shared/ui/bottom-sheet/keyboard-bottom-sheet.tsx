@@ -36,6 +36,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { FocusedFieldContext } from '../input/focused-field';
 import { FieldMaxHeightContext } from '../text-area/field-max-height';
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import {
   HANDLE_HEIGHT,
   SHARED_SHEET_STYLES,
@@ -89,6 +90,7 @@ export function KeyboardBottomSheet({
 }: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
   const portalTarget = usePortalTarget();
+  const startToastLayerClosing = use(ToastLayerClosingContext);
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
   const animatedPosition = useSharedValue(0);
   const animatedIndex = useSharedValue<number>(SHEET_INDEX.CLOSED);
@@ -332,6 +334,7 @@ export function KeyboardBottomSheet({
     if (toIndex === SHEET_INDEX.CLOSED) {
       isClosingRef.current = true;
       Keyboard.dismiss();
+      startToastLayerClosing?.();
       onCloseStart?.();
     }
   };

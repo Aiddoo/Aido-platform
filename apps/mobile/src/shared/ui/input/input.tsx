@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import { Text } from '../text/text';
 import { type FocusedFieldNode, useReportFocusedField } from './focused-field';
 import type { InputInternalProps } from './input.types';

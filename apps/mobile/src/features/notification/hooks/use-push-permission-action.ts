@@ -1,3 +1,4 @@
+import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
@@ -8,7 +9,6 @@ import type { PushPermissionStep } from '../domains/push-permission.model';
 import {
   useOpenPushSettingsMutationOptions,
   useRequestPushPermissionMutationOptions,
-  useUpdatePushEnabledAndAskPermissionMutationOptions,
 } from '../queries/push-permission.mutations';
 
 interface UsePushPermissionActionOptions {
@@ -24,7 +24,7 @@ interface RunStepOptions {
 export function usePushPermissionAction({ source }: UsePushPermissionActionOptions) {
   const requestPermission = useMutation(useRequestPushPermissionMutationOptions());
   const openSettings = useMutation(useOpenPushSettingsMutationOptions());
-  const enableInApp = useMutation(useUpdatePushEnabledAndAskPermissionMutationOptions());
+  const enableInApp = useMutation(useUpdatePreferenceMutationOptions());
 
   const runStep = (step: PushPermissionStep, { onError }: RunStepOptions = {}) =>
     match(step)
@@ -32,9 +32,13 @@ export function usePushPermissionAction({ source }: UsePushPermissionActionOptio
         requestPermission.mutate({ source }, { onError }),
       )
       .with(PUSH_PERMISSION_STEP.OPEN_SETTINGS, () => openSettings.mutate({ source }, { onError }))
-      // 기기는 이미 허용이라 권한 창이 뜨지 않는다. 앱 알림을 켠 것은 설정 변경(settings_changed)으로 남는다
+      // 기기는 이미 허용이라 권한 창이 뜨지 않는다. 앱 알림을 켠 것은 설정 변경(settings_changed)으로 남고,
+      // 뒤이은 권한 읽기는 기기 등록만 맞추므로 추적하지 않는다
       .with(PUSH_PERMISSION_STEP.ENABLE_IN_APP, () =>
-        enableInApp.mutate({ pushEnabled: true }, { onError }),
+        enableInApp.mutate(
+          { pushEnabled: true },
+          { onSuccess: () => requestPermission.mutate({}, { onError }), onError },
+        ),
       )
       .with(PUSH_PERMISSION_STEP.NONE, noop)
       .exhaustive();

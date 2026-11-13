@@ -1,10 +1,12 @@
 import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
+import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -48,8 +50,8 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             <Text size="b2" weight="semibold" numberOfLines={1} className="shrink">
               {displayName}
             </Text>
-            <Text size="b4" shade={6} className="tabular-nums tracking-[0.3px]">
-              #{friend.userTag}
+            <Text size="b4" shade={6} className="tracking-[0.3px] tabular-nums">
+              {formatUserHashtag(friend.userTag)}
             </Text>
           </HStack>
 
@@ -133,6 +135,7 @@ InvitedFriendRow.Loading = function Loading(
 /** 행 높이가 바뀌지 않게 칩이 없을 때도 같은 자리를 둔다 */
 function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
 
   return match(InvitedFriendPolicy.getPawPrintState(friend))
     .with('stamped', () => (
@@ -141,7 +144,11 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
         accessibilityLabel={t('friendList.chipDoneLabel')}
       >
         <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <CheckmarkIcon width={11} height={11} colorClassName="text-white dark:text-gray-9" />
+          <CheckmarkIcon
+            width={fontScaledSize(11)}
+            height={fontScaledSize(11)}
+            colorClassName="text-white dark:text-gray-9"
+          />
         </Box>
         <Text size="e1" weight="bold" tone="brand">
           {t('friendList.chipDone')}
@@ -155,7 +162,11 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
           count: InvitedFriendPolicy.getActiveDaysLeft(friend),
         })}
       >
-        <FishIcon width={16} height={10} colorClassName="text-main" />
+        <FishIcon
+          width={fontScaledSize(16)}
+          height={fontScaledSize(10)}
+          colorClassName="text-main"
+        />
         <Text size="e1" weight="bold" tone="brand" numberOfLines={1} className="tabular-nums">
           {t('friendList.chipWaiting', { count: InvitedFriendPolicy.getActiveDaysLeft(friend) })}
         </Text>

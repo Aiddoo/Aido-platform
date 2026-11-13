@@ -150,7 +150,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Segment
 
-`Box` props와 같아요. 가상 목록의 행 하나를 카드 조각으로 그려요.
+가상 목록의 행 하나를 카드 조각으로 그려요. 받는 prop은 아래 셋과 `children`이에요.
 
 | Prop      | Type      | Default | Description                     |
 | --------- | --------- | ------- | ------------------------------- |
@@ -175,7 +175,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Custom
 
-행 모양이 아닌 내용을 직접 그리는 칸이에요. 행과 같은 여백으로 담아요. `VStack` props와 같아요.
+행 모양이 아닌 내용을 직접 그리는 칸이에요. 행과 같은 여백으로 담아요. `children`, 줄 사이 `gap`(기본 12), `className`만 받아요.
 
 ### SettingsListGroup.Error
 
@@ -188,12 +188,3 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 ### SettingsScreenLayout
 
 `ScrollView` props와 같아요. `gap`(기본 12)은 카드 사이 간격이에요. `SafeAreaScrollView` 위에 있어 스크롤바와 배경은 가장자리까지 두고 내용만 가로·아래 safe area를 피하며(공식 iPhone Duo 안내), 마이 탭 칸의 context inset을 따라요. `ReadableContent`로 넓은 화면의 폭을 모아요.
-
-## 파일 구조
-
-```
-settings-list-group/
-├── index.ts
-├── settings-list-group.tsx   # SettingsListGroup, .Item, .Toggle, .Radio, .Segment, .Empty, 스켈레톤, SettingsScreenLayout
-└── settings-list-group.md
-```

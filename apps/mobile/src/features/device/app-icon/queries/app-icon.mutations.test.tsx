@@ -5,7 +5,7 @@ import {
   createTestDi,
   createTestQueryClient,
 } from '@src/testing/core';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { screen } from '@testing-library/react-native';
 
@@ -18,15 +18,7 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
   queryClient.setQueryData(APP_ICON_QUERY_KEYS.current(), 'default');
   const errorReporter = createErrorReporterStub();
   const analytics = createAnalyticsStub();
-  let mutateAsync: ReturnType<typeof useChange> | undefined;
-  function useChange() {
-    return useMutation(useChangeAppIconMutationOptions()).mutateAsync;
-  }
-  function Capture() {
-    mutateAsync = useChange();
-    return null;
-  }
-  await renderScreen(<Capture />, {
+  const { result } = await renderScreenHook(() => useMutation(useChangeAppIconMutationOptions()), {
     di: createTestDi({ ports: { appIcon: gateway, queryClient, errorReporter, analytics } }),
   });
 
@@ -34,7 +26,7 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
     analytics,
     errorReporter,
     cached: () => queryClient.getQueryData(APP_ICON_QUERY_KEYS.current()),
-    change: (key: AppIconKey) => mutateAsync?.(key),
+    change: (key: AppIconKey) => result.current.mutateAsync(key),
   };
 }
 

@@ -1,10 +1,25 @@
 import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { NetworkError, ParseError, ServerError } from '@src/shared/errors/infra-error';
+import { unwrap } from '@src/core/errors/result';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
+import {
+  NetworkError,
+  ParseError,
+  ServerError,
+  TimeoutError,
+} from '@src/shared/errors/infra-error';
 import { i18n } from '@src/shared/i18n';
+import { shouldRetryQuery } from '@src/shared/query/query-retry';
+import {
+  createStalledBodyResponse,
+  createTestQueryClient,
+  observeSettlement,
+  setupFakeTimersPerTest,
+} from '@src/testing/core';
 import ky from 'ky';
 
 import { KyHttpClient } from './ky-client';
+import { API_REQUEST_TIMEOUT_MS } from './request-timeout';
 
 function createClient(respond: () => Promise<Response>) {
   const fetch = jest.fn(respond);
@@ -13,6 +28,7 @@ function createClient(respond: () => Promise<Response>) {
       baseUrl: 'https://api.test/',
       fetch,
       retry: 0,
+      timeout: API_REQUEST_TIMEOUT_MS,
       headers: { 'X-Request-Id': 'req-1' },
     }),
   );
@@ -23,6 +39,85 @@ function failure(status: number, error: Record<string, unknown>) {
 }
 
 describe('KyHttpClient', () => {
+  it('봉투를 지킨 200은 data를 Result.ok로 돌려준다', async () => {
+    // Given
+    const client = createClient(async () =>
+      Response.json({ success: true, data: { id: 1758 }, timestamp: 0 }),
+    );
+
+    // When
+    const result = await client.get('v1/todos/1758/details');
+
+    // Then
+    expect(result).toEqual({ ok: true, value: { id: 1758 } });
+  });
+
+  it('봉투와 다른 200 JSON은 ParseError로 던진다', async () => {
+    // Given
+    const client = createClient(async () => Response.json({ data: { id: 1758 } }));
+
+    // When
+    const result = client.get('v1/todos/1758/details');
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(ParseError);
+  });
+
+  describe('200 헤더 뒤 본문이 멈추면', () => {
+    setupFakeTimersPerTest();
+
+    /** 첫 시도와 재시도 6번이 각각 요청 제한 시간을 다 쓰고, 그 사이 React Query 재시도 대기까지 넘긴다 */
+    const QUERY_GIVE_UP_MS = 3 * MINUTE_MS;
+
+    it('요청 제한 시간에 TimeoutError로 끝난다', async () => {
+      // Given
+      const stalled = createStalledBodyResponse(200);
+      const client = createClient(async () => stalled.response);
+
+      // When
+      const result = observeSettlement(client.get('v1/todos/1758/details'));
+      await jest.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
+
+      // Then
+      expect(result.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      stalled.finish('{}');
+    });
+
+    it('조회는 로딩에 남지 않고 다시 시도한 뒤 오류로 끝나 경계가 다시 시도 화면을 보인다', async () => {
+      // Given
+      const stalledResponses: Array<ReturnType<typeof createStalledBodyResponse>> = [];
+      const client = createClient(async () => {
+        const stalled = createStalledBodyResponse(200);
+        stalledResponses.push(stalled);
+        return stalled.response;
+      });
+      const queryClient = createTestQueryClient();
+      const queryKey = ['todo-detail', 1758];
+
+      // When
+      const query = observeSettlement(
+        queryClient.fetchQuery({
+          queryKey,
+          queryFn: async ({ signal }) =>
+            unwrap(await client.get('v1/todos/1758/details', { signal })),
+          retry: shouldRetryQuery,
+        }),
+      );
+      await jest.advanceTimersByTimeAsync(QUERY_GIVE_UP_MS);
+
+      // Then
+      expect(query.current).toEqual({ status: 'rejected', reason: expect.any(TimeoutError) });
+      expect(queryClient.getQueryState(queryKey)).toMatchObject({
+        status: 'error',
+        fetchStatus: 'idle',
+      });
+      expect(stalledResponses.length).toBeGreaterThan(1);
+      for (const stalled of stalledResponses) {
+        stalled.finish('{}');
+      }
+    });
+  });
+
   it('JSON이 아닌 성공 응답은 봉투 검증 실패와 같은 ParseError로 던진다', async () => {
     // Given
     const client = createClient(
@@ -60,7 +155,7 @@ describe('KyHttpClient', () => {
       async () => new Response('Not Found', { status: 404 }),
       { code: ErrorCode.SYS_0001, message: i18n.t('errors:fallback') },
     ],
-  ])('4xx — %s로 ApiError를 돌려준다', async (_case, respond, expected) => {
+  ])('4xx — %s로 요청 ID를 실은 ApiError를 돌려준다', async (_case, respond, expected) => {
     // Given
     const client = createClient(respond);
 
@@ -69,7 +164,7 @@ describe('KyHttpClient', () => {
 
     // Then
     expect(result.ok).toBe(false);
-    expect(result.ok ? null : result.error).toMatchObject(expected);
+    expect(result.ok ? null : result.error).toMatchObject({ ...expected, requestId: 'req-1' });
   });
 
   it('4xx의 details는 공유 스키마로 읽을 객체로 넘긴다', async () => {

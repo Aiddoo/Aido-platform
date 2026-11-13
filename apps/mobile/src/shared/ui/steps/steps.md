@@ -41,4 +41,4 @@ import { Steps } from '@src/shared/ui';
 
 ## 출처
 
-[enzomanuelmangano/demos](https://github.com/enzomanuelmangano/demos)의 `src/animations/steps` 동작(상호작용과 보이는 모양)을 참고해 앱 안에서 다시 구현했습니다. 이 저장소의 `LICENSE.md` 1.1은 앱 안의 구현·수정·상용 사용을 허용하고, 1.2는 코드 재배포와 라이브러리화를 금지합니다. 그래서 원본 코드를 복사하지 않고 앱 전용 값으로 썼으며, 이 컴포넌트를 앱 밖으로 내보내지 않습니다.
+[enzomanuelmangano/demos](https://github.com/enzomanuelmangano/demos)의 [src/animations/steps](https://github.com/enzomanuelmangano/demos/tree/main/src/animations/steps) 동작(상호작용과 보이는 모양)을 참고해 앱 안에서 다시 구현했습니다. 그 저장소의 [LICENSE.md](https://github.com/enzomanuelmangano/demos/blob/main/LICENSE.md) 1.1은 앱 안의 구현·수정·상용 사용을 허용하고, 1.2는 코드 재배포와 라이브러리화를 금지합니다. 그래서 원본 코드를 복사하지 않고 앱 전용 값으로 썼으며, 이 컴포넌트를 앱 밖으로 내보내지 않습니다.
