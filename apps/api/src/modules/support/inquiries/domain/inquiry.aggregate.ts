@@ -1,10 +1,10 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { Entity } from "#api/shared/domain/model/entity";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import type { InquiryContent } from "./inquiry-content.vo.js";
-import type { InquiryId } from "./inquiry-id.vo.js";
+import { InquiryContent } from "./inquiry-content.vo.js";
+import { InquiryId } from "./inquiry-id.vo.js";
 
 export interface InquiryPrimitives {
   readonly id: string;
@@ -33,7 +33,7 @@ interface CreateInquiryParams {
 }
 
 // 저장하지 않는다. 접수한 문의를 담당자에게 전달하는 동안만 존재한다
-export class Inquiry extends Entity<InquiryId, InquiryProps> {
+export class Inquiry extends AggregateRoot<InquiryId, InquiryProps> {
   static create(params: CreateInquiryParams): Inquiry {
     return new Inquiry(params.id, {
       userId: params.userId,
@@ -41,6 +41,16 @@ export class Inquiry extends Entity<InquiryId, InquiryProps> {
       category: params.category,
       content: params.content,
       submittedAt: params.now,
+    });
+  }
+
+  static reconstitute(primitives: InquiryPrimitives): Inquiry {
+    return new Inquiry(InquiryId.reconstitute(primitives.id), {
+      userId: UserId.reconstitute(primitives.userId),
+      userEmail: primitives.userEmail,
+      category: primitives.category,
+      content: InquiryContent.reconstitute(primitives.content),
+      submittedAt: primitives.submittedAt,
     });
   }
 

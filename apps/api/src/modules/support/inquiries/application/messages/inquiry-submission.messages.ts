@@ -1,6 +1,6 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-import type { Inquiry } from "../../domain/inquiry.entity.js";
+import type { Inquiry } from "../../domain/inquiry.aggregate.js";
 import type { InquirySubmission } from "../read-models/inquiry-submission.read-model.js";
 
 const SUPPORT_TIME_ZONE = "Asia/Seoul";
