@@ -10,9 +10,14 @@ import {
   createUser,
 } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { createDraftKey } from '@src/shared/draft/draft.model';
+import { KeychainLockedError } from '@src/shared/errors';
+import { openEncryptedStorage } from '@src/shared/infra/storage/encrypted-draft-storage';
 import {
   createHttpClientStub,
+  createLocalFileSystemFake,
+  createMemoryKeyValueStorage,
   createMemorySyncStorage,
   createPendingResponse,
   createTestDi,
@@ -119,5 +124,33 @@ describe('useClaimDeviceDataForUser', () => {
     expect(restored.draftService.restore(createMemoDraftKey(CURRENT_USER_ID)).status).toBe(
       'restored',
     );
+  });
+
+  it('키체인이 잠겨 초안 저장소를 열지 못한 실행에서 로그인해도 1시간 지난 녹음을 고아로 지우지 않는다', async () => {
+    // Given
+    // 재부팅 뒤 잠금 해제 전에 깨어나 초안 저장소를 열지 못했고, 같은 실행에서 잠금이 풀려 인증됐다
+    const secureStorage = createMemoryKeyValueStorage();
+    secureStorage.get.mockRejectedValue(new KeychainLockedError(new Error('locked')));
+    const { draftStorage } = await openEncryptedStorage(secureStorage, null);
+    const files = createLocalFileSystemFake();
+    files.addFile(['voice-notes', CURRENT_USER_ID], 'draft-1-0.wav', {
+      modifiedAtMs: Date.now() - 2 * HOUR_MS,
+    });
+    files.addFile(['voice-notes', 'user-2'], 'draft-9-0.wav');
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+    const locked = createTestDi({
+      ports: { httpClient, draftStorage, queryCacheStorage: null, localFileSystem: files },
+      seeds: { authSessionStore: createAuthSessionStoreStub('authenticated') },
+    });
+
+    // When
+    await renderScreenHook(useClaimDeviceDataForUser, { di: locked });
+
+    // Then
+    await waitFor(() =>
+      expect(files.hasFile(['voice-notes', 'user-2'], 'draft-9-0.wav')).toBe(false),
+    );
+    expect(files.hasFile(['voice-notes', CURRENT_USER_ID], 'draft-1-0.wav')).toBe(true);
   });
 });

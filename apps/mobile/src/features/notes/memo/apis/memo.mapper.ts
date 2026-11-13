@@ -18,7 +18,8 @@ import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
-import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
+import type { MemoResourceLimit } from '../domains/memo-resource-limit.model';
+import type { Memo, MemoPage } from '../domains/memo.model';
 import { type MemoFormValues, memoFormSchema } from '../schemas/memo-form.schema';
 import type { ParseMemoPlanResponse } from '../schemas/memo-plan-response.schema';
 

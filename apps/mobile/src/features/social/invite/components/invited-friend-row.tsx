@@ -50,7 +50,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             <Text size="b2" weight="semibold" numberOfLines={1} className="shrink">
               {displayName}
             </Text>
-            <Text size="b4" shade={6} className="tabular-nums tracking-[0.3px]">
+            <Text size="b4" shade={6} className="tracking-[0.3px] tabular-nums">
               {formatUserHashtag(friend.userTag)}
             </Text>
           </HStack>

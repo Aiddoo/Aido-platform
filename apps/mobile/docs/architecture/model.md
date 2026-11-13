@@ -8,14 +8,14 @@
 
 - **모양.** Zod 클라이언트 모델 `xSchema`와 `type X = z.infer<typeof xSchema>`다. 서버 응답 모양이 아니라 앱이 쓰는 모양이다. 목록 인터페이스의 타입(`FilterX = (x: X) => boolean`, `OrderByX`)도 여기에 둔다.
 - **규칙은 이름 있는 모듈 `function`이다.** 이름은 `can`·`should`·`is`·`has`(긍정형), `get`, `calculate`, `find`(없으면 `null`), `with`(불변 갱신), `filterBy`·`orderBy`로 시작한다. 정렬은 es-toolkit `orderBy`·`take`로 한다(원본을 바꾸지 않고, Hermes에 `toSorted`가 없다).
-- **Policy는 모듈 함수를 모은 객체다.** `export const XPolicy = { fnA, fnB } as const`. 인라인 함수, 별칭, 메서드, `this`, class를 쓰지 않는다. 그래서 콜백으로 넘겨도 안전하다(`notifications.filter(NotificationPolicy.isUnread)`).
+- **Policy는 모듈 함수를 모은 객체다.** `export const XPolicy = { fnA, fnB } as const`. 인라인 함수, 별칭, 메서드, `this`, class를 쓰지 않는다(`aido/policy-facade`, `aido/no-this-outside-class`). 그래서 콜백으로 넘겨도 안전하다(`notifications.filter(NotificationPolicy.isUnread)`).
 - **Policy 멤버의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 Policy 밖 export 함수다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). 모델을 만드는 `create*` 함수는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
   - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)·할 일 감사 가능(`TodoThanksPolicy`)은 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. `canThankTodo`는 할 일을 받지만 규칙의 주인이 콕 감사라 todo 모델로 옮기지 않는다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
 - **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다).
-- **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다. 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
-- **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), i18n, `shared/ui`, `react-native`, React, `constants/`를 import하지 않는다(lint).
+- **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다(`aido/no-clock-read`, `domain-model-clock`). 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
+- **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), i18n, `shared/ui`, `react-native`, React, `constants/`를 import하지 않는다(`domain-model-contract`, `domain-model-presentation`, `domain-model-constants`).
 - **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.*`, `z.email()`·`z.url()`, `z.enum(튜플)`, `z.discriminatedUnion`, `z.codec`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`는 쓰지 않는다.
 
 Policy는 의미 값(등급, 단계, 종류)을 돌려준다. 그 값을 문구·색으로 그리는 일은 아래 자리가 맡는다.
@@ -32,6 +32,7 @@ Policy는 의미 값(등급, 단계, 종류)을 돌려준다. 그 값을 문구�
 ```ts
 // features/notification/domains/notification.model.ts
 import { notificationTypeSchema } from '@aido/api/common';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -45,7 +46,7 @@ export const notificationTargetSchema = z.discriminatedUnion('kind', [
     kind: z.literal('TODO'),
     todoId: z.int().positive(),
     ownerId: z.string().nullable(),
-    dateKey: z.iso.date().nullable(),
+    dateKey: dateKeySchema.nullable(),
   }),
   // … 종류마다 한 줄
 ]);
@@ -88,7 +89,7 @@ export const NotificationPolicy = { isAiFeature, isUnread } as const;
 - `apis/{entity}.mapper.ts`에만, 엔티티당 하나다. 서버 DTO든 OS·SDK 값이든 "바깥 값 ↔ 모델"은 이 파일에서 바꾼다.
 - 순수 함수다. 포트·시계·로그를 쓰지 않고 DI에 넣지 않는다.
 - 이름은 `to{Model}(dto)`, `to{X}Request(values)`, `to{X}FormValues(model)`, `parse{X}(unknown): X | null`이다. 같은 요청을 만드는 곳이 여럿이면 mapper 하나로 모은다.
-- 버린 칸을 로그로 남겨야 하는 입력(푸시 data)은 `parse{X}`가 `{ x: X | null, droppedPaths }`를 돌려준다. 경로에는 값을 싣지 않고, 로그는 부르는 훅이 남긴다.
+- 버린 칸을 로그로 남겨야 하는 입력(푸시 data)은 `parse{X}`가 `{ x: X | null, droppedPaths }`를 돌려준다(`parsePushNotification`: 엄격 스키마가 실패하면 칸마다 `.catch`한 스키마로 다시 읽는다). 경로에는 값을 싣지 않고, 로그는 부르는 훅이 남긴다.
 - 계약의 열거·유니온은 `satisfies Record<ContractEnum, …>`나 `match().exhaustive()`로 빠짐없이 바꾼다. brand·enum은 `schema.parse`로 붙이고 `as`로 단정하지 않는다.
 - 결과는 plain 값이다. 날짜는 문자열 brand(`Instant`, `DateKey`, `TimeOfDay`)로 바꾸고 `Date`·class를 넣지 않는다. 그래야 Query의 structural sharing이 같은 값의 참조를 지킨다(`memo.mapper.test.ts`의 `toMemoPage` › `재조회의 구조 공유`, `bootstrap/providers/query-cache-structural-sharing.test.tsx`).
 
@@ -108,24 +109,11 @@ export function toNotificationTarget(
         kind: 'TODO',
         todoId,
         ownerId: todoOwnerId ?? null,
-        dateKey: todoDate ?? null,
+        dateKey: todoDate == null ? null : dateKeySchema.parse(todoDate),
       }))
       // … 종류마다 .with 한 줄
       .exhaustive()
   );
-}
-
-// apis/push-notification.mapper.ts: 푸시 data를 읽는 곳은 이 함수 하나다. 칸 하나가 틀리면 그 칸만 버리고 경로를 돌려준다
-export function parsePushNotification(data: unknown): ParsedPushNotification {
-  const exact = pushNotificationPayloadSchema.safeParse(data);
-  if (exact.success) {
-    return { notification: toPushNotification(exact.data), droppedPaths: [] };
-  }
-  const lenient = lenientPushNotificationPayloadSchema.safeParse(data); // 칸마다 .catch
-  return {
-    notification: lenient.success ? toPushNotification(lenient.data) : null,
-    droppedPaths: exact.error.issues.map(({ path }) => path.map(String).join('.')),
-  };
 }
 ```
 
@@ -180,21 +168,14 @@ export function parsePushNotification(data: unknown): ParsedPushNotification {
 
 ## null·undefined
 
-"없음" 검사는 `== null`, 기본값은 `??`다. 곳마다 `null`·`undefined` 중 무엇을 쓰는지는 [nullish의 클라이언트 표](../../../../docs/conventions/nullish.md#6-클라이언트-모바일)가 원본이다. 모델에는 두 가지만 기억한다.
+곳마다 `null`·`undefined` 중 무엇을 쓰는지는 [nullish의 클라이언트 표](../../../../docs/conventions/nullish.md#6-클라이언트-모바일)가 원본이다. 모델에 해당하는 것은 둘이다.
 
 - 모델·Policy·`find*`의 "없음"은 `null`이다. 모델 스키마에 `.optional()`을 쓰지 않고, 계약이 `.optional()`로 더한 응답 칸은 mapper가 `null`로 바꾼다.
 - `?? undefined`로 `null`의 출처를 지우지 않는다. 결과가 세 갈래 이상이면 판별 유니온이다.
 
-## 호환 (1.15.2)
+## 호환
 
-원본은 [compatibility](../../../../docs/conventions/compatibility.md)다.
-
-- 앱은 이 버전의 코드와 지금 서버만 본다. 옛 앱·옛 서버 응답을 위한 분기와 대체 경로, mapper 기본값을 두지 않는다.
-- 남기는 것은 셋이다.
-  1. **업그레이드한 기기의 저장 값.** `defineStoredValue`의 `migrate`나 repository 이주로 한 번 옮기고, 옛 키를 읽는 코드는 1.16에서 지운다.
-  2. **이미 퍼진 링크.** 초대 링크, 위젯 URI, 공개 딥링크. 새 경로는 추가만 한다.
-  3. **앞으로 나올 서버 값.** 열거의 `.catch(UNKNOWN)`과 `parse{X}`의 `null`.
-- 기기 저장 key·초대 링크·위젯 URI는 외부 계약이라 바꾸지 않는다.
+앱은 이 버전의 코드와 지금 서버만 보고 옛 앱·옛 서버 응답을 위한 분기, 대체 경로, mapper 기본값을 두지 않는다. 남기는 셋(업그레이드한 기기의 저장 값, 이미 퍼진 링크, 앞으로 나올 서버 값)과 지울 시점은 [compatibility](../../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)가 원본이다.
 
 ## 서버·클라이언트 계산 경계
 

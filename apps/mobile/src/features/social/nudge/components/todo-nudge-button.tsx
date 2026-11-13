@@ -13,7 +13,6 @@ interface TodoNudgeButtonProps extends Omit<
   todo: NudgeTargetTodo;
 }
 
-/** 친구 할 일 목록과 상세가 공유하는 콕 버튼 */
 export function TodoNudgeButton({
   receiver,
   todo,

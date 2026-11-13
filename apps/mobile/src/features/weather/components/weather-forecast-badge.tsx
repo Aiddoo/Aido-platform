@@ -1,3 +1,5 @@
+import { getNowInstant } from '@src/shared/date/clock';
+import { toEpochMs } from '@src/shared/date/instant';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -12,7 +14,7 @@ import type { CurrentWeather, WeatherReport } from '../domains/weather-report.mo
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
-import type { WeatherEntry } from '../schemas/weather-entry-params.schema';
+import { toWeatherHref } from '../utils/weather-link.view-model';
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
@@ -56,15 +58,13 @@ WeatherForecastBadge.Item = function Item({
 }) {
   const { t } = useTranslation('weather');
   const fontScaledSize = useFontScaledSize();
-  const push = useSingleTap(router.push);
+  const openWeather = useOpenBadgeWeather();
   const unit = useTemperatureUnit();
   const temperature = toDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback
-      onPress={() =>
-        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
-      }
+      onPress={openWeather}
       accessibilityRole="button"
       accessibilityLabel={t('badge.temperature', { temperature, serviceName })}
       hitSlop={4}
@@ -90,13 +90,11 @@ WeatherForecastBadge.Item = function Item({
 WeatherForecastBadge.Entry = function Entry() {
   const { t } = useTranslation('weather');
   const fontScaledSize = useFontScaledSize();
-  const push = useSingleTap(router.push);
+  const openWeather = useOpenBadgeWeather();
 
   return (
     <PressableFeedback
-      onPress={() =>
-        push({ pathname: '/weather', params: { entry: 'feed_badge' satisfies WeatherEntry } })
-      }
+      onPress={openWeather}
       accessibilityRole="button"
       accessibilityLabel={t('badge.entry')}
       hitSlop={4}
@@ -126,3 +124,9 @@ WeatherForecastBadge.Loading = function Loading() {
     </HStack>
   );
 };
+
+function useOpenBadgeWeather() {
+  const push = useSingleTap(router.push);
+
+  return () => push(toWeatherHref({ entry: 'feed_badge', openedAt: toEpochMs(getNowInstant()) }));
+}

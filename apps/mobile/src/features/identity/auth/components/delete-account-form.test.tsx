@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { err } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { ACCOUNT_A_TOKENS, createAuthSession } from '../__tests__/auth-session.test-utils';

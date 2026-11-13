@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { ApiError, NetworkError, ParseError } from '@src/shared/errors';
-import { QueryErrorBoundary } from '@src/shared/ui/query-error-boundary';
+import { QueryErrorBoundary } from '@src/shared/ui';
 import { createErrorReporterStub, createTestDi, createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';

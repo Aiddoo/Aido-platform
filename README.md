@@ -231,9 +231,9 @@ flowchart LR
 ├── packages/api/           # @aido/api — 공유 REST 계약·오류 코드·vocabulary
 ├── tooling/                # database-migrate CLI · typescript · vitest 프리셋
 ├── turbo/generators/       # 서버 slice 생성기
-├── docs/conventions/       # 앱·서버 공통 규칙 (오류·날짜·호환·null·Git)
+├── docs/conventions/       # 앱·서버 공통 규칙 (오류·날짜·호환·null·테스트·문서·Git)
 ├── docs/releases/          # 현재 릴리스 기록
-└── scripts/                # CI 정책·배포·에이전트 hook
+└── scripts/                # CI 정책·문서 검사·배포·에이전트 hook
 ```
 
 ## 시작하기
@@ -251,15 +251,15 @@ pnpm dev                                       # API + Expo Metro
 - API는 `http://localhost:8080`, Swagger UI는 `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)다. 서버만은 `pnpm --filter @aido/server dev`.
 - API까지 Docker로 띄우려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
 
-| 명령어                                                  | 설명                                                          |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| `pnpm check`                                            | lint(관례 포함) → format:check → 이름·경계·미사용 → typecheck |
-| `pnpm gen:api-slice`                                    | 규칙대로 새 서버 slice 뼈대 생성                              |
-| `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` | unit · 실제 PostgreSQL 통합 · HTTP E2E                        |
-| `pnpm test:contract`                                    | 출시 앱 OpenAPI 계약 테스트                                   |
-| `pnpm check:unused`                                     | 모바일 밖 workspace의 안 쓰는 파일·export·의존성(knip)        |
-| `pnpm db:generate` · `pnpm db:migrate`                  | Drizzle 마이그레이션 생성 · 적용                              |
-| `pnpm changeset` · `pnpm commit`                        | 변경 기록 · Conventional Commit 작성기                        |
+| 명령어                                                  | 설명                                                                       |
+| ------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm check`                                            | lint(관례 포함) → format:check → docs:check → 이름·경계·미사용 → typecheck |
+| `pnpm gen:api-slice`                                    | 규칙대로 새 서버 slice 뼈대 생성                                           |
+| `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` | unit · 실제 PostgreSQL 통합 · HTTP E2E                                     |
+| `pnpm test:contract`                                    | 출시 앱 OpenAPI 계약 테스트                                                |
+| `pnpm check:unused`                                     | 모바일 밖 workspace의 안 쓰는 파일·export·의존성(knip)                     |
+| `pnpm db:generate` · `pnpm db:migrate`                  | Drizzle 마이그레이션 생성 · 적용                                           |
+| `pnpm changeset` · `pnpm commit`                        | 변경 기록 · Conventional Commit 작성기                                     |
 
 ## 테스트와 CI
 
@@ -271,22 +271,22 @@ pnpm dev                                       # API + Expo Metro
 
 - 실행마다 `aido_test_<run-id>` DB에 마이그레이션을 한 번 적용하고 worker별로 나눈다. 순서를 섞어 순서 의존을 드러내고, 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 줄인다.
 - 푸시·메일·AI·날씨는 Fake나 고정 원문으로 격리한다. 유료 AI 평가(`ai:eval`)와 `test:performance`는 CI 밖이다.
-- lefthook: pre-commit은 staged 파일 lint·format·이름 검사, pre-push는 `turbo run typecheck test build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
+- lefthook: pre-commit은 staged 파일 lint·format·이름 검사와 문서 검사(`pnpm docs:check`), pre-push는 `turbo run typecheck test build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
 - tip CI는 lint·typecheck·build와 함께 단위·통합 테스트를 같은 원격 캐시로 다시 확인하고, 캐시에 없는 작업만 러너에서 한 번에 하나씩 돈다.
 - `main`은 같은 Git tree의 성공 결과를 재사용해 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 migrate가 먼저 끝난 뒤 API를 바꾸고 health gate가 실패하면 이전 이미지로 돌린다.
 
 ## 문서
 
-| 주제                | 문서                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 작업 진입점         | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                             |
-| 새 서버 기능        | [새 기능 추가](./apps/api/docs/new-feature.md), [서버 문서 안내](./apps/api/docs/README.md)                                                                                                                        |
-| 서버 구조·모델·이름 | [아키텍처](./apps/api/docs/architecture.md), [도메인 모델](./apps/api/docs/domain-modeling.md), [이름 사전](./apps/api/docs/conventions.md)                                                                        |
-| 계약·DB·작업        | [HTTP 계약](./apps/api/docs/http-contracts.md), [영속성](./apps/api/docs/persistence.md), [작업과 이벤트](./apps/api/docs/jobs-and-events.md), [공유 계약 패키지](./packages/api/README.md)                        |
-| 권한·설정·관측      | [유료 기능과 권한](./apps/api/docs/entitlements.md), [설정](./apps/api/docs/configuration.md), [관측](./apps/api/docs/observability.md), [보안](./apps/api/docs/security.md), [테스트](./apps/api/docs/testing.md) |
-| 공통 규칙           | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [Git·PR](./docs/conventions/git.md)  |
-| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/docs/architecture/structure.md), [UI](./apps/mobile/docs/architecture/ui.md)                                                            |
-| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/docs/build-and-release.md)                                                                                    |
+| 주제                | 문서                                                                                                                                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 작업 진입점         | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                                                                |
+| 새 서버 기능        | [새 기능 추가](./apps/api/docs/new-feature.md), [서버 문서 안내](./apps/api/docs/README.md)                                                                                                                                                           |
+| 서버 구조·모델·이름 | [아키텍처](./apps/api/docs/architecture.md), [도메인 모델](./apps/api/docs/domain-modeling.md), [이름 사전](./apps/api/docs/conventions.md)                                                                                                           |
+| 계약·DB·작업        | [HTTP 계약](./apps/api/docs/http-contracts.md), [영속성](./apps/api/docs/persistence.md), [작업과 이벤트](./apps/api/docs/jobs-and-events.md), [공유 계약 패키지](./packages/api/README.md)                                                           |
+| 권한·설정·관측      | [유료 기능과 권한](./apps/api/docs/entitlements.md), [설정](./apps/api/docs/configuration.md), [관측](./apps/api/docs/observability.md), [보안](./apps/api/docs/security.md), [테스트](./apps/api/docs/testing.md)                                    |
+| 공통 규칙           | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [문서](./docs/conventions/docs.md), [Git·PR](./docs/conventions/git.md) |
+| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/docs/architecture/structure.md), [UI](./apps/mobile/docs/architecture/ui.md)                                                                                               |
+| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/docs/build-and-release.md)                                                                                                                       |
 
 ## 라이선스
 

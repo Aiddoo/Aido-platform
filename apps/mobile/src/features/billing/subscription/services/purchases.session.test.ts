@@ -12,6 +12,7 @@ import { PurchasesSession } from './purchases.session';
 setupFakeTimersPerTest();
 
 const flushPromises = () => jest.advanceTimersByTimeAsync(0);
+const hang = () => new Promise<never>(() => undefined);
 
 function createManager({
   purchases = createPurchasesGatewayStub(),
@@ -26,6 +27,8 @@ function createManager({
   });
   return { manager, purchases, logger, analytics };
 }
+
+type CreatedManager = ReturnType<typeof createManager>;
 
 describe('RevenueCat 구독자 속성', () => {
   it('로그인하면 운영 알림에 쓸 앱 버전과 기기 모델을 설정한다', async () => {
@@ -227,10 +230,10 @@ describe('PurchasesSession 결제 계정', () => {
   });
 
   it.each([
-    ['실패하면', () => Promise.reject(new Error('network'))],
-    ['시간 초과면', () => new Promise<void>(() => undefined)],
+    ['실패했어도', () => Promise.reject(new Error('network'))],
+    ['시간 초과였어도', () => new Promise<void>(() => undefined)],
   ])(
-    '계정을 바꾼 로그인이 %s 앞 계정에 귀속되지 않게 null을 돌려주고 그 계정으로 다시 로그인한다',
+    '계정을 바꾼 로그인이 %s 다시 로그인이 성공하면 첫 결제에 그 계정을 돌려준다',
     async (_name, failLogIn) => {
       // Given
       const { manager, purchases } = createManager();
@@ -244,12 +247,75 @@ describe('PurchasesSession 결제 계정', () => {
 
       // When
       const signedInUser = await manager.waitForSignedInUser();
-      await flushPromises();
 
       // Then
-      expect(signedInUser).toBeNull();
+      expect(signedInUser).toBe('user-b');
       expect(purchases.logIn).toHaveBeenLastCalledWith('user-b');
+    },
+  );
+
+  it.each([
+    ['실패하면', () => Promise.reject(new Error('network'))],
+    ['시간 초과면', () => new Promise<void>(() => undefined)],
+  ])(
+    '다시 로그인도 %s 앞 계정에 귀속되지 않게 null을 돌려주고 다음 결제에 다시 로그인한다',
+    async (_name, failLogIn) => {
+      // Given
+      const { manager, purchases } = createManager();
+      manager.configure();
+      await manager.logIn('user-a');
+      purchases.logIn.mockImplementationOnce(failLogIn).mockImplementationOnce(failLogIn);
+      manager.logOut();
+      const loggingIn = manager.logIn('user-b');
+      await jest.advanceTimersByTimeAsync(PURCHASES_SDK_CALL_TIMEOUT_MS);
+      await loggingIn;
+
+      // When
+      const waiting = manager.waitForSignedInUser();
+      await jest.advanceTimersByTimeAsync(PURCHASES_SDK_CALL_TIMEOUT_MS);
+
+      // Then
+      await expect(waiting).resolves.toBeNull();
       await expect(manager.waitForSignedInUser()).resolves.toBe('user-b');
+    },
+  );
+
+  it.each([
+    [
+      '앱 인스턴스 ID 조회',
+      ({ analytics }: CreatedManager) => analytics.getAnalyticsId.mockImplementation(hang),
+      SUBSCRIPTION_LOG_EVENT.PURCHASES_ANALYTICS_ID_SYNC_FAILED,
+    ],
+    [
+      '구독자 속성 설정',
+      ({ purchases }: CreatedManager) => purchases.setAttributes.mockImplementation(hang),
+      SUBSCRIPTION_LOG_EVENT.PURCHASES_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED,
+    ],
+  ])(
+    '%s가 끝나지 않아도 정해 둔 시간 뒤 경고만 남기고 결제할 계정을 돌려준다',
+    async (_name, hangSync, warnedEvent) => {
+      // Given
+      const created = createManager();
+      const { manager, logger } = created;
+      manager.configure();
+      await flushPromises();
+      hangSync(created);
+      manager.logIn('user-1');
+      let signedInUser: string | null | undefined;
+
+      // When
+      const waiting = manager.waitForSignedInUser().then((userId) => {
+        signedInUser = userId;
+      });
+      await jest.advanceTimersByTimeAsync(PURCHASES_SDK_CALL_TIMEOUT_MS);
+
+      // Then
+      expect(signedInUser).toBe('user-1');
+      expect(logger.warn).toHaveBeenCalledWith(
+        warnedEvent,
+        expect.objectContaining({ error: expect.any(String) }),
+      );
+      await waiting;
     },
   );
 

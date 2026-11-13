@@ -6,7 +6,7 @@ import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/u
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useEffect, useRef } from 'react';
 import { Keyboard } from 'react-native';
 

@@ -39,7 +39,7 @@ export function NotificationListRow({
   return (
     <PressableFeedback {...props}>
       <HStack className={cn('bg-white', isUnread && 'bg-highlight')}>
-        {isUnread && <Box className="w-[3.5px] bg-main self-stretch" />}
+        {isUnread && <Box className="w-[3.5px] self-stretch bg-main" />}
 
         <ListRow
           contents={

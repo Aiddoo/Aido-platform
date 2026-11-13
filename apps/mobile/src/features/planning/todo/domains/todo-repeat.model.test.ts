@@ -43,17 +43,19 @@ const SHARED_LAST_OCCURRENCE_CASES = z
 const MONDAY = createDateKey('2026-11-02');
 const WEDNESDAY = createDateKey('2026-11-04');
 
-const createWeekly = (overrides: Partial<Extract<TodoRepeat, { frequency: 'WEEKLY' }>> = {}) =>
-  todoRepeatSchema.parse({
+function createWeekly(overrides: Partial<Extract<TodoRepeat, { frequency: 'WEEKLY' }>> = {}) {
+  return todoRepeatSchema.parse({
     frequency: 'WEEKLY',
     interval: 1,
     weekdays: ['MON'],
     end: { type: 'NEVER' },
     ...overrides,
   });
+}
 
-const createMonthly = (monthDay: number) =>
-  todoRepeatSchema.parse({ frequency: 'MONTHLY', monthDay, end: { type: 'NEVER' } });
+function createMonthly(monthDay: number) {
+  return todoRepeatSchema.parse({ frequency: 'MONTHLY', monthDay, end: { type: 'NEVER' } });
+}
 
 const withUntil = (repeat: TodoRepeat, date: string): TodoRepeat => ({
   ...repeat,
@@ -368,13 +370,13 @@ describe('hasSameRepeat', () => {
   });
 });
 
-describe('todoRepeatSchema 끝 횟수', () => {
+describe('todoRepeatSchema', () => {
   it.each([
     { count: 0, isValid: false },
     { count: 1, isValid: true },
     { count: 365, isValid: true },
     { count: 366, isValid: false },
-  ])('$count번은 쓸 수 있는지: $isValid', ({ count, isValid }) => {
+  ])('끝 횟수 $count번은 쓸 수 있는지: $isValid', ({ count, isValid }) => {
     // When
     const result = todoRepeatSchema.safeParse({
       frequency: 'DAILY',

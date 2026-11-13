@@ -12,7 +12,7 @@ import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { CalendarIcon } from '@src/shared/ui/icon';
+import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';
@@ -258,7 +258,7 @@ DailyForecast.Item = memo(function Item({
 
       <Accordion.Content
         animation={{ entering: { value: EXPAND_ENTERING } }}
-        className="gap-2 px-0 pb-3.5 pt-0.5"
+        className="gap-2 px-0 pt-0.5 pb-3.5"
       >
         <HStack className="gap-2">
           {day.daytime != null && (

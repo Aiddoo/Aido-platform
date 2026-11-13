@@ -21,12 +21,3 @@ import { Barcode, DashedDivider, ScallopedContainer } from '@src/shared/ui';
 | --------- | -------- | ------ | ------------------------------ |
 | height    | `number` | `32`   | 막대 높이(pt). 레이아웃 고정용 |
 | className | `string` | -      | 여백 등 배치만 조정한다        |
-
-## 파일 구조
-
-```
-barcode/
-├── barcode.tsx
-├── barcode.md
-└── index.ts
-```

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useOverlay } from '../overlay';
+import { useOverlay } from '../overlay/use-overlay';
 import { ConfirmDialog } from './confirm-dialog';
 import type { ConfirmDialogOptions } from './confirm-dialog.types';
 

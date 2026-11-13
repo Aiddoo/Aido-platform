@@ -4,7 +4,7 @@ import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstac
 import type { Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
 
-/** 동의 조회 옵션. 조회 함수가 DI Api를 써서 `useGetConsentQueryOptions`가 만든다 */
+/** 조회 함수가 DI Api를 써서 `useGetConsentQueryOptions`가 만든다 */
 type ConsentQueryOptions = EnsureQueryDataOptions<
   Consent,
   DefaultError,
