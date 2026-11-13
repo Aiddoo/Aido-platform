@@ -1,6 +1,19 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, gte, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -93,12 +106,20 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return this.#txHost.tx;
   }
 
-  async findOwnerId(id: TodoId): Promise<string | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { userId: true },
-      where: { id: id.value },
-    });
-    return row?.userId ?? null;
+  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.#db
+      .selectDistinct({ userId: todo.userId })
+      .from(todo)
+      .where(
+        inArray(
+          todo.id,
+          ids.map((id) => id.value),
+        ),
+      );
+    return rows.map((row) => row.userId);
   }
 
   async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {

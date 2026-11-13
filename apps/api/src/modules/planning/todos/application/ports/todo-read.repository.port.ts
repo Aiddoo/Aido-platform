@@ -40,8 +40,8 @@ export interface TodaySummaryTodoRow {
 export abstract class TodoReadRepositoryPort {
   abstract findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null>;
 
-  /** 소유자만 알면 되는 자리 — 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. */
-  abstract findOwnerId(id: TodoId): Promise<string | null>;
+  /** 할 일들의 소유자(중복 없이). 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. 없는 할 일은 빠진다 */
+  abstract findOwnerIds(ids: readonly TodoId[]): Promise<string[]>;
 
   /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
   abstract findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]>;

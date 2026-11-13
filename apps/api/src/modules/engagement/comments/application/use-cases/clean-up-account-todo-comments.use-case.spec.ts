@@ -77,7 +77,7 @@ describe("CleanUpAccountTodoCommentsUseCase — 계정 정리 경계", () => {
 });
 
 describe("InvalidateCleanedTodoCachesUseCase — 계정 정리 뒤 캐시", () => {
-  it("첫 캐시 정리가 실패해도 나머지 할 일을 정리하고 오류 원문을 로그에 남기지 않는다", async () => {
+  it("할 일 묶음을 한 번에 넘기고, 첫 캐시 정리가 실패해도 나머지를 정리하며 오류 원문을 남기지 않는다", async () => {
     // Given
     const fixture = createTodoCommentsFixture();
     fixture.todoViewCache.failures.set(8, new Error("private cache failure"));
@@ -86,11 +86,12 @@ describe("InvalidateCleanedTodoCachesUseCase — 계정 정리 뒤 캐시", () =
     await new InvalidateCleanedTodoCachesUseCase(fixture).execute({ todoIds: [8, 13] });
 
     // Then
+    expect(fixture.todoViewCache.batchCalls).toBe(1);
     expect(fixture.todoViewCache.invalidatedTodoIds).toEqual([13]);
     expect(fixture.logger.messages).toEqual([
       expect.objectContaining({
         event: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
-        todoId: 8,
+        todoCount: 2,
       }),
     ]);
     expect(JSON.stringify(fixture.logger.messages)).not.toContain("private cache failure");

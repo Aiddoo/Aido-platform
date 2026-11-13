@@ -30,7 +30,7 @@ function setUp(options: {
   };
   const readRepository: TodoReadRepositoryPort = {
     findByIdAndUserId: unused,
-    findOwnerId: unused,
+    findOwnerIds: unused,
     findManyBySeriesId: unused,
     findManyByUserId: unused,
     findPublicTodosByUserId: unused,

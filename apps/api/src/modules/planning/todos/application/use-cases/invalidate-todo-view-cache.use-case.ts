@@ -5,7 +5,7 @@ import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 
 interface TodoViewCacheInvalidatorDependencies {
-  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findOwnerId">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findOwnerIds">;
   readonly cache: Pick<TodoCachePort, "invalidateFriendTodos">;
 }
 
@@ -16,13 +16,19 @@ export class InvalidateTodoViewCacheUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(todoId: TodoId): Promise<void> {
-    const ownerUserId = await this.#dependencies.todoReadRepository.findOwnerId(todoId);
-
-    if (ownerUserId == null) {
-      return;
+  async execute(todoIds: readonly TodoId[]): Promise<void> {
+    const ownerUserIds = await this.#dependencies.todoReadRepository.findOwnerIds(todoIds);
+    // 한 소유자의 캐시 장애가 다른 소유자 정리를 막지 않게 모두 시도하고 첫 실패를 알린다
+    const settled = await Promise.allSettled(
+      ownerUserIds.map((ownerUserId) =>
+        this.#dependencies.cache.invalidateFriendTodos(UserId.reconstitute(ownerUserId)),
+      ),
+    );
+    const failure = settled.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure != null) {
+      throw failure.reason;
     }
-
-    await this.#dependencies.cache.invalidateFriendTodos(UserId.reconstitute(ownerUserId));
   }
 }

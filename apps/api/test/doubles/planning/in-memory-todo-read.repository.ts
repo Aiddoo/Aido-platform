@@ -1,4 +1,5 @@
 import type { Todo as TodoResponse } from "@aido/api";
+import { uniq } from "es-toolkit";
 
 import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
@@ -51,8 +52,8 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     record.category = this.categories.get(record.categoryId) ?? null;
     return createTodoReadModelFromRecord(record);
   }
-  async findOwnerId(id: TodoId): Promise<string | null> {
-    return this.records.get(id.value)?.userId ?? null;
+  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+    return uniq(ids.flatMap((id) => this.records.get(id.value)?.userId ?? []));
   }
   async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const records = [...this.records.values()]
