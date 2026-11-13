@@ -16,7 +16,7 @@ EAS 빌드·로컬 빌드, 환경 변수와 Secrets, 스토어 제출, 배포 �
 | `production-device` | production  | 위와 같음                     | 실기기 Release 검증              | Ad Hoc         | APK     |
 
 - `--profile`을 생략하면 `production`이다. `production-device`는 `production` EAS environment를 명시적으로 상속한다(내부 배포의 기본 environment인 preview로 production 설정이 바뀌지 않게 한다).
-- 개발 API URL은 자동 감지한다. Android 에뮬레이터는 `localhost → 10.0.2.2`, iOS 시뮬레이터는 `localhost` 유지, 실기기는 개발 머신 IP이며 같은 Wi-Fi여야 한다. 환경 변수 파일은 `.env` + `.env.development`(개발), `.env.preview`, `.env.production`이고 필수 값은 `APP_ENV`·`EXPO_PUBLIC_API_URL`이다.
+- 개발 API URL은 자동 감지한다. Android 에뮬레이터는 `localhost → 10.0.2.2`, iOS 시뮬레이터는 `localhost` 유지, 실기기는 개발 머신 IP이며 같은 Wi-Fi여야 한다. 로컬 환경 변수 파일은 `.env`(운영 로컬 빌드) · `.env.development`(개발) · `.env.example`(예시)이고 필수 값은 `APP_ENV`·`EXPO_PUBLIC_API_URL`이다. Expo는 개발에서도 `.env`를 읽으므로 두 파일의 키를 같게 둔다. EAS 빌드는 EAS 환경변수를 쓴다.
 - 번들 ID는 환경마다 다르다(`com.aido.mobile` · `.preview` · `.dev`). 한 기기에 함께 설치되고 키체인·App Group·푸시 토큰도 분리된다.
 
 ## 환경 변수
@@ -172,7 +172,7 @@ Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 �
 ## 배포 전 체크리스트
 
 - [ ] 서버: 프로덕션 DB·환경 변수(OAuth 키 포함)·HTTPS, `pnpm db:migrate`, `curl https://api.aido.kr/health`
-- [ ] 앱: `.env.production`(`APP_ENV`, `EXPO_PUBLIC_API_URL`), Google Services Secrets, 버전 번호
+- [ ] 앱: EAS `production` 환경변수(`APP_ENV`, `EXPO_PUBLIC_API_URL`), Google Services Secrets, 버전 번호
 - [ ] 실기기: 소셜 로그인(Google·Apple·Kakao·Naver), API 호출, 푸시 알림, 오류 처리
 - [ ] 보안: 민감 정보는 환경 변수, OAuth 콜백 URL은 프로덕션 도메인(API 서버 설정), HTTPS
 

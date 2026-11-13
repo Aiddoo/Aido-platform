@@ -70,7 +70,7 @@ function toDeviceUrl(url: string, devMachineIp?: string): string {
     logger.warn(ENV_LOG_EVENT.DEV_MACHINE_IP_MISSING, {
       hint:
         '실제 기기에서 개발 서버에 연결할 수 없습니다. 개발 머신과 기기를 같은 Wi-Fi에 연결하거나 ' +
-        '.env.local에 EXPO_PUBLIC_DEV_MACHINE_IP(예: 192.168.1.100)를 설정하세요.',
+        '.env.development에 EXPO_PUBLIC_DEV_MACHINE_IP(예: 192.168.1.100)를 설정하세요.',
     });
     return url;
   }

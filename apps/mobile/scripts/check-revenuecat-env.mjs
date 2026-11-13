@@ -62,7 +62,7 @@ function main() {
   if (problems.length > 0) {
     console.error(`\nRevenueCat 키 점검 실패:\n- ${problems.join('\n- ')}`);
     console.error(
-      '키는 `eas env:pull --environment development`로 .env.local에 받아요(커밋 금지).',
+      '키는 EAS 환경변수(`eas env:list --environment <환경>`)와 같게 .env.development·.env에 둬요(커밋 금지).',
     );
     process.exitCode = 1;
     return;
