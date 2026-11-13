@@ -119,6 +119,8 @@ pnpm --filter @aido/server exec vitest run --project integration test/integratio
 2. 실패를 고친 뒤 실패한 범위와 영향 범위만 다시 돌린다.
 3. 넓은 구조 변경은 소스를 동결한 뒤 관련 전체 suite와 lint·format·typecheck를 한 번 확인한다.
 
+로컬 개발 DB에 앱 QA용 댓글 대화를 만들 때는 `pnpm --filter @aido/server fixture:todo-comments -- --owner-id <id> --todo-id <id>`를 쓴다. `--apply` 없이는 계획만 출력하고, 개발 환경·loopback API·로컬 DB가 아니면 멈춘다([fixture](../test/dev-fixtures/todo-comment-development-fixture.ts)).
+
 DB 프로젝트는 worker마다 자기 DB를 받아 파일을 병렬로 돌리고 순서를 섞는다. 결과에는 파일·seed·실행 수를 남기고, 수집 오류로 0개가 돈 결과를 통과로 적지 않는다. 정본은 [vitest.config.ts](../vitest.config.ts)다.
 
 ## 실행 자원과 flake

@@ -8,8 +8,8 @@
 #   태그 ghcr.io/aiddoo/aido-platform-{api,migrate}:<40자리 HEAD SHA>
 #   CI처럼 trivy(HIGH/CRITICAL, ignore-unfixed) 검사를 통과한 이미지만 push 한다.
 #
-# 사용: bash scripts/release/build-push-api-images.sh            # 빌드만 (기본)
-#       bash scripts/release/build-push-api-images.sh --push     # 빌드 → 검사 → GHCR push
+# 사용: bash scripts/ops/build-push-api-images.sh            # 빌드만 (기본)
+#       bash scripts/ops/build-push-api-images.sh --push     # 빌드 → 검사 → GHCR push
 # 옵션: --allow-local  변경 있는 작업 tree·origin/main에 없는 SHA도 빌드 (로컬 시험용, --push 불가)
 #       --skip-scan    trivy 없이 push (CI와 달라지므로 비상시에만)
 # 전제: --push 전에 소유자가 `docker login ghcr.io`(write:packages)를 해 둔다. 이 스크립트는

@@ -3,7 +3,8 @@
   // 모바일은 apps/mobile/knip.jsonc로 따로 검사한다. 루트 스크립트가 --workspace '!apps/mobile'로 빼되 catalog 참조는 모바일 package.json까지 센다
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.mjs", "turbo/generators/config.ts"],
+      // Claude Code PostToolUse hook(.claude/settings.json)이 부르는 파일은 knip이 설정에서 찾지 못한다
+      "entry": ["turbo/generators/config.ts", "scripts/agent-hooks/lint-edited-file.mjs"],
       "project": ["*.ts", "scripts/**/*.mjs", "turbo/generators/**/*.ts"],
       // vite: vitest의 필수 peer다. pnpm resolvePeersFromWorkspaceRoot로 모든 workspace의 vitest가 이 catalog 버전을 쓴다
       // remark-*: docs-check.mjs가 추적 문서 목록을 넘겨 경로로 실행한다

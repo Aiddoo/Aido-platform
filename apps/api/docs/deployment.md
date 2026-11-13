@@ -36,11 +36,11 @@ migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는
 
 서버(t4g.small, 메모리 2GB)에서 이미지를 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 그래서 수동 배포도 Mac에서 CI image job과 같은 설정(Dockerfile·target·linux/arm64·SHA 태그)으로 빌드해 GHCR에 올리고, 서버는 pull만 한다.
 
-1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../../scripts/release/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
+1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../../scripts/ops/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
 
    ```sh
    git switch main && git pull --ff-only
-   bash scripts/release/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
+   bash scripts/ops/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
    ```
 
 2. 서버: script가 출력한 명령을 실행한다.
@@ -104,7 +104,7 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
   - Android: 100% 출시하고 Play 화면에 업데이트가 보인 뒤. 단계 출시 대상이 아닌 기기는 업데이트를 받을 수 없다.
   - iOS: 공개(Ready for Sale) 뒤. 단계적 출시 중에도 App Store에서 직접 업데이트할 수 있다.
   - 두 값은 따로 정한다. 한쪽만 공개됐으면 다른 쪽은 이전 공개값을 둔다.
-- **반영**: `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
+- **반영**: `scripts/ops/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 - **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
 - **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 

@@ -40,7 +40,7 @@ OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 
 
 ## EAS Secrets
 
-`eas-build-pre-install.sh`가 빌드 전에 환경 변수를 Base64 디코딩해 `google-services.json`을 복원하고, `app.config.ts`의 `googleServicesFile`이 그 파일을 참조한다.
+`app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
 
 ```bash
 # Android: 모든 환경이 같은 파일을 쓴다

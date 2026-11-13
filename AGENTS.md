@@ -8,7 +8,7 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 - API: [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → 필요한 문서만 [서버 문서 안내](apps/api/docs/README.md)에서 고른다. 새 서버 기능은 [새 기능 추가](apps/api/docs/new-feature.md) 순서를 따른다.
 - Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
-- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md).
+- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md) · [스크립트](docs/conventions/scripts.md).
 - 문서·`AGENTS.md`·rules·스킬을 고칠 때는 [문서 규칙](docs/conventions/docs.md)을 읽는다.
 
 ## 스택
@@ -30,7 +30,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 - `pnpm install` · `pnpm docker:up`(PostgreSQL) · `pnpm dev` · `pnpm build`
 - `pnpm check`: lint(관례 포함)·format:check·docs:check·이름(ls-lint)·경계(dependency-cruiser)·미사용(knip)·typecheck를 turbo 한 번으로 돌린다(커밋 전 한 번, 바뀐 패키지만)
 - 가드레일: `pnpm lint`(Oxlint, 관례 규칙은 `tooling/oxlint-plugin-aido`의 `aido/*`) · `pnpm docs:check`(문서 링크·경로·길이·에이전트 파일) · `pnpm lint:names`(ls-lint) · `turbo run lint:deps`(dependency-cruiser, 서버·모바일) · `pnpm check:unused`(knip: 모바일을 뺀 모든 workspace의 파일·export·의존성·catalog) · `pnpm --filter @aido/mobile check:unused`(모바일 knip)
-- `pnpm lint` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
+- `pnpm lint` · `pnpm lint:fix` · `pnpm format` · `pnpm format:check` · `pnpm typecheck`
 - `pnpm test` · `pnpm test:integration` · `pnpm test:e2e` · `pnpm test:contract`. 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 worker를 줄인다
 - `pnpm db:generate` · `pnpm db:migrate` · `pnpm commit`
 - Swagger UI: `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)

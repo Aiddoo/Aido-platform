@@ -8,11 +8,15 @@
         "app/**/*.{ts,tsx}",
         "src/features/**/constants/*.events.ts",
         "plugins/*.js",
-        "scripts/*.mjs",
         // jest 설정이 문자열 경로로만 가리키는 SDK 대체
         "src/testing/mocks/*",
       ],
-      "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "app/**/*.{ts,tsx}",
+        "scripts/**/*.{mjs,cjs}",
+        "plugins/**/*.js",
+      ],
       // TanStack Register 모듈 보강 파일이다. 보강과 컴파일 검사용 타입(AppQueryMetaGuard 등)은 import하는 곳 없이 쓰인다
       "ignore": ["src/shared/constants/query-meta.ts"],
       "ignoreDependencies": [
