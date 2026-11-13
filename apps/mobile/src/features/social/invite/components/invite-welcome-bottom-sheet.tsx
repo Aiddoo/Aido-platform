@@ -70,7 +70,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {
     if (redemption == null) {
-      sheet.exit({ type: 'replace', href: '/feed' });
+      sheet.exit();
     }
   }, [redemption, sheet]);
 
@@ -88,13 +88,13 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
           redemption={redemption}
           onCreateFirstTodo={() =>
             sheet.close({
-              type: 'replace',
+              type: 'dismiss-to',
               href: { pathname: '/feed', params: { action: 'add-todo' } },
             })
           }
           onOpenFriendFeed={() =>
             sheet.close({
-              type: 'replace',
+              type: 'dismiss-to',
               href: { pathname: '/feed', params: { friendId: redemption.inviter.userId } },
             })
           }
@@ -107,7 +107,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
         fallback={(fallbackProps) => (
           <InviteWelcomeBottomSheet.Error
             {...fallbackProps}
-            onInquiry={(href) => sheet.close({ type: 'replace', href })}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
           />
         )}
       >

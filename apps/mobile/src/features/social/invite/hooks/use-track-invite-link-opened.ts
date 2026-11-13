@@ -14,6 +14,7 @@ export function useTrackInviteLinkOpened() {
     if (openedAt == null || !inviteLinkOpenedStore.markOpened(`${source}:${openedAt}`)) {
       return;
     }
+    // oxlint-disable-next-line aido/no-tracking-in-effect -- 마운트를 넘어 링크마다 한 번이라 프로세스 수명 store가 막는다
     trackEvent('invite_link_opened', { source });
   }, [inviteLinkOpenedStore, openedAt, source, trackEvent]);
 }

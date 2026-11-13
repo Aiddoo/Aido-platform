@@ -3,7 +3,7 @@ import { PressableFeedback, Toast } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { FadeIn } from 'react-native-reanimated';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import type { StyledIcon } from '../icon/create-styled-icon';
 import { ToastErrorIcon, ToastSuccessIcon, ToastWarningIcon } from '../icon/icons';
 import { Text } from '../text/text';
@@ -23,7 +23,7 @@ interface AppToastProps {
   variant?: AppToastVariant;
   icon?: ReactNode;
   action?: AppToastAction;
-  /** 닫힌 시트에서 아래 면으로 옮겨 온 토스트. 이미 보이던 자리라 다시 내려오지 않는다 */
+  /** 닫히는 시트에서 이미 보이다 아래 면으로 옮겨 온 토스트. 같은 자리라 다시 내려오지 않는다 */
   isMoved?: boolean;
   toastProps: Omit<ToastRootProps, 'children' | 'className'>;
 }

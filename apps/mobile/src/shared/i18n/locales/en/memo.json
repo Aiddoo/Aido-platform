@@ -41,7 +41,8 @@
     "deleteRetry": "Please try deleting again later",
     "limitReached": "You can keep up to {{max}} memos",
     "limitReachedDescription": "Delete memos you no longer need to add new ones",
-    "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
+    "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded",
+    "unavailable": "This memo no longer exists"
   },
   "aiReview": {
     "draftLost": "We couldn't load the split to-dos. Please split the memo again",

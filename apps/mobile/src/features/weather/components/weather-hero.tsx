@@ -1,4 +1,4 @@
-import { useTrack } from '@src/shared/analytics';
+import { useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
@@ -20,7 +20,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { compact, noop } from 'es-toolkit';
-import { type ComponentProps, type ReactNode, useEffect } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { match, P } from 'ts-pattern';
 
@@ -39,6 +39,7 @@ import {
 } from '../domains/weather.error';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
+import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
 import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
 import {
   useGetWeatherLocationQueryOptions,
@@ -345,17 +346,16 @@ WeatherHero.Loading = function Loading() {
 WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['weather', 'common']);
   const location = useWeatherLocation();
-  const { trackEvent } = useTrack();
+  const openKey = useWeatherOpenKey();
   const cause = toWeatherReportFailedCause(error);
   // 위치 등록을 기다리는 동안은 실패가 아니라 로딩으로 보인다
   const isWaitingForLocation = cause === 'no_location' && location.status === 'checking';
 
-  useEffect(() => {
-    if (isWaitingForLocation) {
-      return;
-    }
-    trackEvent('weather_report_failed', { cause });
-  }, [trackEvent, cause, isWaitingForLocation]);
+  // 위치 확인이 다시 돌아 로딩과 실패를 오가도 같은 열기의 같은 원인은 한 번만 센다
+  useTrackView(
+    'weather_report_failed',
+    isWaitingForLocation ? null : { key: `${openKey}:${cause}`, params: { cause } },
+  );
 
   const retryButton = (
     <WeatherResult.Action onPress={reset}>{t('common:actions.retry')}</WeatherResult.Action>

@@ -75,17 +75,3 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
 - 글자 버튼(완료·편집·저장)은 라벨을 자식으로 둡니다. Android 툴바는 라벨을 그리지 않으므로 Android에만 아이콘을 줍니다.
 - `AdaptivePane` 안의 pane은 Stack 화면이 아니므로 `Stack.Toolbar`를 쓰지 않습니다(바깥 화면 헤더에 붙는다).
   pane 꼭대기는 피처의 JS 바를 씁니다([`adaptive-pane.md`](../adaptive-pane/adaptive-pane.md#상세-pane-헤더)).
-
-## 파일 구조
-
-```
-stack-header/
-├── use-stack-screen-options.ts   # 공통 네이티브 헤더 옵션
-├── use-stack-back-toolbar.tsx    # 중첩 Stack 첫 화면의 뒤로가기
-├── stack-back-icon.ts            # 플랫폼별 뒤로가기 아이콘
-├── stack-close-icon.ts           # 플랫폼별 닫기 아이콘
-├── stack-more-icon.ts            # 플랫폼별 더 보기·메뉴 항목 아이콘
-├── stack-header-title.tsx        # 네이티브 제목과 같은 글자의 제목 뷰
-├── stack-header.md               # 이 문서
-└── index.ts                      # 배럴
-```

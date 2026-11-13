@@ -11,16 +11,20 @@ import {
 import type { ComponentProps, ReactNode } from 'react';
 import type { ScrollView } from 'react-native';
 
-import { Box } from '../box';
-import { ChoiceRadio } from '../choice-radio';
-import { HStack } from '../h-stack';
-import { ArrowRightIcon, type StyledIcon } from '../icon';
-import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
-import { ReadableContent } from '../readable-content';
-import { Result } from '../result';
-import { SafeAreaScrollView } from '../safe-area-scroll-view';
-import { Text, type TextProps, TextSkeleton } from '../text';
-import { VStack } from '../v-stack';
+import { Box } from '../box/box';
+import { ChoiceRadio } from '../choice-radio/choice-radio';
+import { HStack } from '../h-stack/h-stack';
+import { type StyledIcon } from '../icon/create-styled-icon';
+import { ArrowRightIcon } from '../icon/icons';
+import { type QueryErrorFallbackProps } from '../query-error-boundary/query-error-boundary';
+import { QueryErrorFallback } from '../query-error-boundary/query-error-fallback';
+import { ReadableContent } from '../readable-content/readable-content';
+import { Result } from '../result/result';
+import { SafeAreaScrollView } from '../safe-area-scroll-view/safe-area-scroll-view';
+import { Text } from '../text/text';
+import { TextSkeleton } from '../text/text-skeleton';
+import { type TextProps } from '../text/text.types';
+import { VStack } from '../v-stack/v-stack';
 
 export interface SettingsListGroupProps extends ComponentProps<typeof ListGroup> {
   label?: string;

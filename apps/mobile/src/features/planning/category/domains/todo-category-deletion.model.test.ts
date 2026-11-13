@@ -1,5 +1,5 @@
 import { createTodoCategoryDeletionPreview } from '../__tests__/todo-category.fixtures';
-import { hasTodosToHandle, TodoCategoryDeletionPolicy } from './todo-category-deletion.model';
+import { TodoCategoryDeletionPolicy } from './todo-category-deletion.model';
 
 describe('TodoCategoryDeletionPolicy.canDelete', () => {
   it.each([
@@ -130,21 +130,4 @@ describe('TodoCategoryDeletionPolicy.toDeletionRequest', () => {
     // Then
     expect(deletionRequest).toEqual(expected);
   });
-});
-
-describe('hasTodosToHandle', () => {
-  it.each([
-    { todoCount: 1, activeSeriesCount: 0, expected: true },
-    { todoCount: 0, activeSeriesCount: 1, expected: true },
-    { todoCount: 0, activeSeriesCount: 0, expected: false },
-  ])(
-    '할 일 $todoCount개·반복 $activeSeriesCount개면 $expected다',
-    ({ todoCount, activeSeriesCount, expected }) => {
-      // When
-      const result = hasTodosToHandle(todoCount, activeSeriesCount);
-
-      // Then
-      expect(result).toBe(expected);
-    },
-  );
 });
