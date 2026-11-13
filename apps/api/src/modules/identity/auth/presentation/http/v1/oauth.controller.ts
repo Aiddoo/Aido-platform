@@ -15,7 +15,7 @@ import {
   Query,
   Res,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Response } from "express";
 
@@ -43,6 +43,7 @@ import {
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -172,11 +173,7 @@ export class OAuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "교환 코드로 토큰 획득",
     operationId: "exchangeOAuthCode",
@@ -225,11 +222,7 @@ export class OAuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "Apple 로그인 (모바일 네이티브)",
     operationId: "appleCallback",
@@ -291,11 +284,7 @@ export class OAuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "Google 로그인 (모바일 네이티브)",
     operationId: "googleMobileCallback",
@@ -394,11 +383,7 @@ export class OAuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "Kakao 로그인 (모바일 네이티브)",
     operationId: "kakaoMobileCallback",
@@ -508,11 +493,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Public()
   @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "Naver 로그인 (모바일 네이티브)",
     operationId: "naverMobileCallback",

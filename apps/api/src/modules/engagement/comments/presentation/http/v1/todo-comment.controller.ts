@@ -12,7 +12,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -30,6 +30,7 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
   ApiCreatedSuccessResponse,
@@ -117,11 +118,7 @@ export class TodoCommentController {
 
   @Get("details")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "댓글 화면용 할 일 상세 조회",
     operationId: "getTodoDetails",
@@ -146,11 +143,7 @@ export class TodoCommentController {
 
   @Get("comments/overview")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 개요 조회",
     operationId: "getTodoCommentOverview",
@@ -179,11 +172,7 @@ export class TodoCommentController {
 
   @Get("conversation")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 대화 조회",
     operationId: "getTodoConversation",
@@ -216,11 +205,7 @@ export class TodoCommentController {
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "할 일 댓글 작성 (한 번에 이어 쓰기 가능)",
     operationId: "createTodoComment",
@@ -253,11 +238,7 @@ export class TodoCommentController {
   @ThrottleByUser()
   @Throttle(TODO_COMMENT_THROTTLE.WRITE)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "본인 댓글 수정",
     operationId: "updateTodoComment",

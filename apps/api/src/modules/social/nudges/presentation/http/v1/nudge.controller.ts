@@ -30,6 +30,7 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
   ApiCreatedSuccessResponse,
@@ -147,11 +148,7 @@ export class NudgeController {
 
   @Get("received")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 콕 찌름 목록 조회",
     operationId: "getReceivedNudges",
@@ -179,11 +176,7 @@ export class NudgeController {
 
   @Get("sent")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "보낸 콕 찌름 목록 조회",
     operationId: "getSentNudges",

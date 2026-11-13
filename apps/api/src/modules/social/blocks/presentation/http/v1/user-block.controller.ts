@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -27,6 +27,7 @@ import {
   ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
@@ -133,11 +134,7 @@ export class UserBlockController {
 
   @Get()
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "차단한 사용자 목록",
     operationId: "getBlockedUsers",

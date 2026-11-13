@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
@@ -43,6 +43,7 @@ import {
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
   ApiCreatedSuccessResponse,
@@ -158,11 +159,7 @@ export class AuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.VERIFY_EMAIL })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "이메일 인증 코드 확인",
     operationId: "verifyEmail",
@@ -244,11 +241,7 @@ export class AuthController {
   @Public()
   @Throttle({ default: AUTH_THROTTLE.LOGIN })
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "이메일 로그인",
     operationId: "login",

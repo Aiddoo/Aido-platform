@@ -17,12 +17,12 @@ import {
   ApiNotFoundError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { ApplyActionPlanUseCase } from "../../../application/use-cases/apply-action-plan.use-case.js";
-import { ApiIdempotencyKeyHeader } from "../plan-request.decorator.js";
 import { toApplyActionPlanResponse } from "./action-plan-response.mapper.js";
 import { ApplyActionPlanRequestDto, ApplyActionPlanResponseDto } from "./action-plan.dto.js";
 

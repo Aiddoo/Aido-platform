@@ -23,13 +23,14 @@ import {
   ApiServiceUnavailableError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
-import { ApiIdempotencyKeyHeader, ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
+import { ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
 import { toQuickPlanResponse } from "./action-plan-response.mapper.js";
 import { QuickPlanRequestDto, QuickPlanResponseDto } from "./action-plan.dto.js";
 

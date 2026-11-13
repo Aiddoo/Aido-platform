@@ -13,7 +13,7 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import {
@@ -31,6 +31,7 @@ import {
   ApiNotFoundError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import {
   ApiCreatedSuccessResponse,
@@ -170,11 +171,7 @@ export class FollowController {
   @Patch(":userId/accept")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiParam({
     name: "userId",
     description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
@@ -263,11 +260,7 @@ export class FollowController {
   @Patch("friends/:followId/reorder")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "친구 순서 변경",
     operationId: "reorderFriend",
@@ -315,11 +308,7 @@ export class FollowController {
 
   @Get("friends")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "친구 목록 조회",
     operationId: "getFriends",
@@ -353,11 +342,7 @@ export class FollowController {
 
   @Get("search")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "사용자 검색 (이름 또는 Aido ID)",
     operationId: "searchUsers",
@@ -391,11 +376,7 @@ export class FollowController {
 
   @Get("requests/received")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "받은 친구 요청 목록",
     operationId: "getReceivedFriendRequests",
@@ -423,11 +404,7 @@ export class FollowController {
 
   @Get("requests/sent")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "보낸 친구 요청 목록",
     operationId: "getSentFriendRequests",

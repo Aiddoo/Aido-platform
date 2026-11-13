@@ -1,7 +1,7 @@
 import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import { Header, Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
@@ -27,6 +27,7 @@ import {
   ApiErrorResponse,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
@@ -56,11 +57,7 @@ export class UserAccountController {
 
   @Get("me")
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "내 정보 조회",
     operationId: "getCurrentUser",
@@ -98,11 +95,7 @@ export class UserAccountController {
   @Patch("profile")
   @HttpCode(HttpStatus.OK)
   @Header("Vary", "Origin, X-App-Version")
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-  })
+  @ApiAppVersionHeader()
   @ApiDoc({
     summary: "프로필 수정",
     operationId: "updateProfile",

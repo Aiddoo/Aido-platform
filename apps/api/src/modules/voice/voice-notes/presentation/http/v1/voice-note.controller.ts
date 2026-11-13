@@ -23,15 +23,13 @@ import {
   ApiServiceUnavailableError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
+import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { ThrottleByUser, ThrottleDaily } from "#api/platform/throttle/user-aware-throttler.guard";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import {
-  ApiIdempotencyKeyHeader,
-  ApiPlanningLocaleHeaders,
-} from "../../../../action-plans/presentation/http/plan-request.decorator.js";
+import { ApiPlanningLocaleHeaders } from "../../../../action-plans/presentation/http/plan-request.decorator.js";
 import { DigestVoiceNoteUseCase } from "../../../application/use-cases/digest-voice-note.use-case.js";
 import { toVoiceNoteDigestResponse } from "./voice-note-response.mapper.js";
 import { VoiceNoteDigestRequestDto, VoiceNoteDigestResponseDto } from "./voice-note.dto.js";
