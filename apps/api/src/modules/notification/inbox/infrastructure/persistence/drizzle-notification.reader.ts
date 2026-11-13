@@ -112,10 +112,12 @@ export class DrizzleNotificationReader
     userId: string,
     milestone: NotificationMilestone,
   ): Promise<boolean> {
+    // 마일스톤은 처음부터 WEEKLY_ACHIEVEMENT로만 보냈다. 종류를 걸어 (userId, type) 인덱스로 좁힌다
     const row = await this.#db.query.notification.findFirst({
       columns: { id: true },
       where: {
         userId,
+        type: "WEEKLY_ACHIEVEMENT",
         RAW: (table) => sql`${table.metadata} ->> 'milestone' = ${milestone}`,
       },
     });

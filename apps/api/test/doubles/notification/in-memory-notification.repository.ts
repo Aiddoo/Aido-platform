@@ -230,7 +230,10 @@ export class InMemoryNotificationRepository
     milestone: NotificationMilestone,
   ): Promise<boolean> {
     return [...this.#rows.values()].some(
-      (row) => row.userId === userId && metadataField(row, "milestone") === milestone,
+      (row) =>
+        row.userId === userId &&
+        row.type === "WEEKLY_ACHIEVEMENT" &&
+        metadataField(row, "milestone") === milestone,
     );
   }
 
