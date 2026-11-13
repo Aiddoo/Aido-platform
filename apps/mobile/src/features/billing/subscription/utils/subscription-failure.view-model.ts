@@ -1,11 +1,11 @@
 import { match } from 'ts-pattern';
 
 import {
+  type StoreUnavailable,
   type SubscriptionFailureCause,
   SubscriptionFailurePolicy,
 } from '../domains/subscription-failure.model';
-import type { StoreUnavailable } from './offerings-availability.view-model';
-import { getDiagnosticCode } from './subscription-diagnostic.view-model';
+import { getSubscriptionDiagnosticCode } from '../domains/subscription.error';
 
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
 export type SubscriptionActionTarget = 'purchase' | 'restore';
@@ -65,7 +65,7 @@ function toSupportFailure(
   return {
     titleKey: FAILURE_TITLE_KEYS[target],
     descriptionKey: toDescriptionKey(SubscriptionFailurePolicy.getFailureCause(error)),
-    diagnosticCode: getDiagnosticCode(error),
+    diagnosticCode: getSubscriptionDiagnosticCode(error),
   };
 }
 

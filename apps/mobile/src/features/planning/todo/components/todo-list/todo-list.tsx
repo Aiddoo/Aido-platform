@@ -37,10 +37,8 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoPolicy } from '../../domains/sub-todo.model';
-import { type SubTodo } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
-import { type Todo } from '../../domains/todo.model';
+import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
+import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
@@ -54,15 +52,7 @@ import {
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/todo-time.view-model';
 import { SubTodoList } from '../sub-todo-list';
-import {
-  TODO_ROW_ACCESSIBILITY_ACTION,
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-  TodoScheduleLine,
-  TodoTitleLine,
-} from '../todo-row';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
 
 interface TodoListProps {
   /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
@@ -132,12 +122,12 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-interface CategoryHeaderProps {
+interface CategoryAddPillProps {
   category: TodoCategoryWithCount;
   date: DateKey;
 }
 
-function CategoryAddPill({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
@@ -185,7 +175,7 @@ function TodoReorderableList({
     isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedId,
+        todoId: movedId,
         input: { targetTodoId: targetId, position },
       });
     },
@@ -226,6 +216,7 @@ TodoList.Item = function Item({
   onOpenDetail,
 }: TodoListItemProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
 
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -307,7 +298,7 @@ TodoList.Item = function Item({
       }
       onAccessibilityAction={handleAccessibilityAction}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
@@ -316,18 +307,18 @@ TodoList.Item = function Item({
         />
       }
       top={
-        <TodoTitleLine
+        <TodoRow.TitleLine
           label={
-            <TodoLabel isCompleted={todo.completed} className="flex-1">
+            <TodoRow.Label isCompleted={todo.completed} className="flex-1">
               {todo.title}
-            </TodoLabel>
+            </TodoRow.Label>
           }
           isPrivate={isPrivateVisibility(todo.visibility)}
         />
       }
       middle={
         formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
-          <TodoScheduleLine
+          <TodoRow.ScheduleLine
             todo={todo}
             timeLabel={formattedTime}
             isReminderOff={isReminderOff && !todo.completed}
@@ -336,7 +327,7 @@ TodoList.Item = function Item({
       }
       bottom={
         SubTodoPolicy.hasSubTodos(todo.subTodos) ? (
-          <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+          <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
         ) : undefined
       }
       right={
@@ -357,8 +348,14 @@ TodoList.Item = function Item({
           />
           <IconButton
             accessibilityLabel={t('actions.more')}
-            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <MoreIcon
+                width={fontScaledSize(20)}
+                height={fontScaledSize(20)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-5 min-h-0 min-w-0"
             hitSlop={8}
             onPress={isOptimistic ? undefined : handleActionsPress}
             testID={`todo-more-${todo.id}`}

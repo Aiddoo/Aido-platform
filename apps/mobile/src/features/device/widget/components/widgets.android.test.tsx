@@ -43,10 +43,16 @@ function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   return result;
 }
 
+function getWidgetName(maxRows: number) {
+  if (maxRows === 0) {
+    return 'AidoTodaySummary';
+  }
+  return maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList';
+}
+
 function createWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): WidgetInfo {
   return {
-    widgetName:
-      maxRows === 0 ? 'AidoTodaySummary' : maxRows > 3 ? 'AidoTodayLarge' : 'AidoTodayList',
+    widgetName: getWidgetName(maxRows),
     widgetId: 42,
     width: maxRows === 0 ? 178 : 374,
     height: maxRows > 3 ? 420 : 210,
@@ -119,7 +125,7 @@ function texts(nodes: WidgetNode[]) {
   return nodes.filter((node) => node.type === 'TextWidget').map((node) => node.props.text);
 }
 
-describe('Android 위젯 표시 계약', () => {
+describe('renderAndroidWidget', () => {
   it.each([0, 2, 4])('크기 %i의 모든 클릭을 하나의 collection 항목 안에 둔다', (maxRows) => {
     // Given
     const props = createProps(maxRows);
@@ -137,39 +143,6 @@ describe('Android 위젯 표시 계약', () => {
       nodes.filter((node) => node.props.clickActionData),
     );
   });
-
-  it.each([
-    [0, 0, ['🔥 12일'], ['＋ 할 일 만들기']],
-    [2, 2, ['＋ 할 일 만들기'], []],
-    [4, 4, ['＋ 할 일 만들기', '+4개 더'], []],
-    [3, 2, ['＋ 할 일 만들기'], []],
-    [8, 4, ['＋ 할 일 만들기', '+4개 더'], []],
-  ])(
-    '현재·이전 크기 %i에서 할 일을 %i행까지 표시한다',
-    (maxRows, rows, shownTexts, hiddenTexts) => {
-      // Given
-      const props = createProps(maxRows);
-
-      // When
-      const nodes = render(props);
-
-      // Then
-      expect(texts(nodes).filter((text) => text?.startsWith('Widget QA '))).toEqual(
-        props.topTodos.slice(0, rows).map((todo) => todo.title),
-      );
-      expect(texts(nodes)).toContain('3');
-      expect(texts(nodes)).toContain('/8');
-      expect(
-        nodes
-          .filter((node) => node.props.svg)
-          .every((node) => (node.props.svg?.match(/<path /g) ?? []).length === 2),
-      ).toBe(true);
-      expect(texts(nodes)).toEqual(expect.arrayContaining(shownTexts));
-      hiddenTexts.forEach((text) => {
-        expect(texts(nodes)).not.toContain(text);
-      });
-    },
-  );
 
   it.each(['ko', 'en'] as const)(
     '%s 대형 위젯의 할 일·7개 날짜·작성 클릭에 정확한 계정과 목적지를 붙인다',

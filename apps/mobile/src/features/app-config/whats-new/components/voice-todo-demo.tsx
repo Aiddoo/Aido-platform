@@ -1,7 +1,7 @@
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import { PlanReview } from '@src/features/voice/components/plan/plan-review';
-import { LiveTranscript } from '@src/features/voice/components/quick-voice/live-transcript';
-import { VoiceVisual } from '@src/features/voice/components/visualizers/voice-visual';
+import { LiveTranscript } from '@src/features/voice/components/live-transcript';
+import { PlanReview } from '@src/features/voice/components/plan-review/plan-review';
+import { VoiceVisual } from '@src/features/voice/components/voice-visual';
 import {
   createVoiceTranscript,
   type VoiceTranscript,

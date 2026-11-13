@@ -1,4 +1,5 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -25,8 +26,9 @@ import {
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
 /** 내 초대 코드와 링크. 코드는 길게 눌러 고를 수 있고 복사 버튼으로 링크를 복사한다 */
-export function MyInviteCode({ className, ...props }: ComponentProps<typeof VStack>) {
+export function MyInviteCode() {
   const { t } = useTranslation(['invite', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const createInviteShareContent = useCreateInviteShareContent();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
@@ -36,20 +38,17 @@ export function MyInviteCode({ className, ...props }: ComponentProps<typeof VSta
   const confirmDialog = useConfirmDialog();
 
   const handleRotatePress = async () => {
-    const isConfirmed = await confirmDialog.openAsync({
+    await confirmDialog.openAsync({
       title: t('myInvite.rotate.title'),
       description: t('myInvite.rotate.description'),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('myInvite.rotate.confirm'),
+      onConfirm: () => rotate.mutateAsync(),
     });
-
-    if (isConfirmed) {
-      rotate.mutate();
-    }
   };
 
   return (
-    <MyInviteCodeSurface className={className} {...props}>
+    <MyInviteCodeSurface>
       <Text size="b4" weight="semibold" shade={6}>
         {t('myInvite.codeLabel')}
       </Text>
@@ -85,7 +84,11 @@ export function MyInviteCode({ className, ...props }: ComponentProps<typeof VSta
           }
         >
           <HStack align="center" gap={6}>
-            <CopyIcon width={16} height={16} colorClassName="text-main" />
+            <CopyIcon
+              width={fontScaledSize(16)}
+              height={fontScaledSize(16)}
+              colorClassName="text-main"
+            />
             <Text size="b4" weight="semibold" tone="brand">
               {t('myInvite.copy')}
             </Text>

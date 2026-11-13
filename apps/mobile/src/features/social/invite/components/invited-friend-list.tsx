@@ -28,14 +28,19 @@ export function InvitedFriendList({
   ListEmptyComponent = <InvitedFriendList.Empty />,
 }: InvitedFriendListProps) {
   const queryClient = useQueryClient();
-  const { data, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
-    useSuspenseInfiniteQuery(useGetInvitedFriendsInfiniteQueryOptions({ status }));
+  const {
+    data: invitedFriends,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useSuspenseInfiniteQuery(useGetInvitedFriendsInfiniteQueryOptions({ status }));
   // 발자국 요약(탭 숫자)과 목록을 함께 새로 고친다
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshInvite(queryClient));
 
   return (
     <InfiniteList
-      data={data}
+      data={invitedFriends}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       contentContainerStyle={USER_LIST_CONTENT_STYLE}

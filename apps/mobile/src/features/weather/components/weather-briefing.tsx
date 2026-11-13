@@ -1,13 +1,9 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoCheckbox,
-  TodoProgress,
-  TodoRow,
-} from '@src/features/planning/todo/components/todo-row';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import {
   formatClockTime,
   formatInstantHour,
@@ -17,6 +13,7 @@ import { type Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -40,7 +37,7 @@ import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query
 import { mapValues } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, Separator } from 'heroui-native';
-import { type ComponentProps, Fragment, useEffect, useRef } from 'react';
+import { type ComponentProps, Fragment } from 'react';
 import { match } from 'ts-pattern';
 
 import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
@@ -52,6 +49,7 @@ import {
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
+import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherBriefingKind } from '../utils/weather-analytics';
 import {
@@ -130,8 +128,7 @@ WeatherBriefing.Card = function Card({
 }) {
   const { t } = useTranslation('weather');
   const translate = useTranslateBriefingCopy();
-  const { trackEvent } = useTrack();
-  const hasTrackedShownRef = useRef(false);
+  const openKey = useWeatherOpenKey();
   const dateFormat = useDateFormatContext();
   const unit = useTemperatureUnit();
   const view = toBriefingView(briefing, {
@@ -146,14 +143,11 @@ WeatherBriefing.Card = function Card({
   const hiddenCount = view.rows.length - visibleRows.length;
   const { action } = view;
 
-  // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 화면에서는 처음 보인 브리핑만 센다
-  useEffect(() => {
-    if (hasTrackedShownRef.current) {
-      return;
-    }
-    hasTrackedShownRef.current = true;
-    trackEvent('weather_briefing_shown', { kind: toWeatherBriefingKind(briefing.kind) });
-  }, [trackEvent, briefing.kind]);
+  // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 열기에서는 처음 보인 브리핑만 센다
+  useTrackView('weather_briefing_shown', {
+    key: openKey,
+    params: { kind: toWeatherBriefingKind(briefing.kind) },
+  });
 
   return (
     <WeatherCard
@@ -226,6 +220,7 @@ WeatherBriefing.Item = function Item({
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation(['todo', 'weather']);
+  const fontScaledSize = useFontScaledSize();
   const translate = useTranslateBriefingCopy();
   const dateFormat = useDateFormatContext();
   const todayKey = useTodayKey();
@@ -260,7 +255,7 @@ WeatherBriefing.Item = function Item({
       onPress={openActions}
       className={cn('min-h-[60px] justify-center rounded-none', todo.completed && 'opacity-60')}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
           isDisabled={toggleTodo.isPending}
@@ -302,7 +297,7 @@ WeatherBriefing.Item = function Item({
         todo.subTodoProgress == null && !isChipStacked ? undefined : (
           <VStack gap={6} className="mt-1">
             {todo.subTodoProgress != null && (
-              <TodoProgress
+              <TodoRow.Progress
                 tone="onSky"
                 value={todo.subTodoProgress.completed}
                 total={todo.subTodoProgress.total}
@@ -322,7 +317,12 @@ WeatherBriefing.Item = function Item({
             hitSlop={12}
             className="size-6 items-center justify-center"
           >
-            <MoreIcon width={20} height={20} colorClassName="text-on-sky/60" />
+            {/* 누름 칸(size-6)이 고정이라 칸 안에 들어가는 앱 기본 비율로 키운다 */}
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-on-sky/60"
+            />
           </PressableFeedback>
         </HStack>
       }

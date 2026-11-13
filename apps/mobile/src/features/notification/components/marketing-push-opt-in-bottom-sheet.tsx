@@ -56,7 +56,12 @@ export function MarketingPushOptInBottomSheet({
             <Button
               size="large"
               isLoading={agree.isPending}
-              onPress={() => agree.mutate({ agreed: true }, { onSuccess: () => onAgree() })}
+              onPress={() =>
+                agree.mutate(
+                  { agreed: true, source: 'completion_sheet' },
+                  { onSuccess: () => onAgree() },
+                )
+              }
             >
               {t('marketingOptIn.agree')}
             </Button>

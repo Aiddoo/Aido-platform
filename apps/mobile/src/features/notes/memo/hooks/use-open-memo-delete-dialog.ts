@@ -6,7 +6,6 @@ import { useDeleteMemoMutationOptions } from '../queries/memo.mutations';
 
 interface UseOpenMemoDeleteDialogOptions {
   memoId: number;
-  /** 다이얼로그에서 지운 뒤 */
   onDeleted?: () => void;
 }
 

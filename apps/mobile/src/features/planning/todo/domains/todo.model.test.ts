@@ -456,6 +456,66 @@ describe('isRecurringTodo', () => {
   });
 });
 
+const REPEAT_RULE: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 1,
+  weekdays: ['MON'],
+  end: { type: 'NEVER' },
+};
+const RULE_OCCURRENCE = createParentTodo({ recurrenceGroupId: 'series-1', repeat: REPEAT_RULE });
+const RULELESS_OCCURRENCE = createParentTodo({ recurrenceGroupId: 'old-group', repeat: null });
+const SINGLE_TODO = createParentTodo({ recurrenceGroupId: null, repeat: null });
+
+describe('hasRepeatRule', () => {
+  it.each([
+    { title: '규칙 있는 회차는 반복 규칙이 있다', todo: RULE_OCCURRENCE, expected: true },
+    { title: '규칙 없는 묶음은 반복 규칙이 없다', todo: RULELESS_OCCURRENCE, expected: false },
+    { title: '단일 할 일은 반복 규칙이 없다', todo: SINGLE_TODO, expected: false },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const result = TodoPolicy.hasRepeatRule(todo);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('canChangeRepeat', () => {
+  it.each([
+    { title: '규칙 있는 회차는 반복을 바꿀 수 있다', todo: RULE_OCCURRENCE, expected: true },
+    { title: '규칙 없는 묶음은 반복을 바꿀 수 없다', todo: RULELESS_OCCURRENCE, expected: false },
+    { title: '단일 할 일은 반복을 새로 정할 수 있다', todo: SINGLE_TODO, expected: true },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const result = TodoPolicy.canChangeRepeat(todo);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('getDeleteScopes', () => {
+  it.each([
+    {
+      title: '규칙 있는 회차는 이번만, 이후 전체, 전체를 고를 수 있다',
+      todo: RULE_OCCURRENCE,
+      expected: ['THIS_ONLY', 'THIS_AND_FOLLOWING', 'ALL'],
+    },
+    {
+      title: '규칙 없는 묶음은 이후 전체를 정할 수 없어 이번만과 전체만 고른다',
+      todo: RULELESS_OCCURRENCE,
+      expected: ['THIS_ONLY', 'ALL'],
+    },
+    { title: '단일 할 일은 고를 범위가 없다', todo: SINGLE_TODO, expected: [] },
+  ])('$title', ({ todo, expected }) => {
+    // When
+    const scopes = TodoPolicy.getDeleteScopes(todo);
+
+    // Then
+    expect(scopes).toEqual(expected);
+  });
+});
+
 describe('getTodayToggleDates', () => {
   const TODAY = createDateKey('2026-03-08');
 

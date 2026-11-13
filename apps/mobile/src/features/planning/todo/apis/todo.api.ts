@@ -214,7 +214,7 @@ export class TodoApi {
     );
   };
 
-  /** 친구의 일일 완료 현황 — 공개(PUBLIC) 할 일 기준 집계 (친구 캘린더 마커용) */
+  /** 친구가 공개(PUBLIC)한 할 일만 센다 */
   getFriendDailyCompletions = async (
     friendUserId: string,
     startDate: string,
@@ -234,7 +234,7 @@ export class TodoApi {
     );
   };
 
-  /** 하루의 할 일 요약 (홈 위젯 스냅샷) — 서버는 기기 시간대 기준 오늘·내일만 허용한다 */
+  /** 서버는 사용자 시간대(X-Timezone) 기준 오늘·내일만 받는다(그 밖은 SYS_0002) */
   getTodoSummary = async (
     date: string,
     signal?: AbortSignal,
@@ -292,13 +292,13 @@ export class TodoApi {
     todoId: number,
     signal?: AbortSignal,
   ): Promise<Result<TodoDetails, ApiError>> => {
-    const response = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
+    const result = await this.#httpClient.get(`v1/todos/${todoId}/details`, { signal });
 
     return parseApiResponse(
-      response,
+      result,
       todoDetailsEnvelopeSchema,
       toTodoDetails,
-      '[TodoApi] Invalid todo details',
+      '[TodoApi] Invalid getTodoDetails response',
     );
   };
 

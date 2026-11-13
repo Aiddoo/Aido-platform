@@ -82,6 +82,8 @@ async function renderPurchase({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
   const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
   di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
   // 결제 화면처럼 내 정보를 구독해 두어야 결제 뒤 다시 받을 수 있다
   const { result } = await renderScreenHook(
@@ -194,6 +196,8 @@ async function renderRestore({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
   const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
   di.purchasesSession.configure();
+  // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
+  await di.purchasesSession.logIn('user-1');
 
   const { result } = await renderScreenHook(
     () => {

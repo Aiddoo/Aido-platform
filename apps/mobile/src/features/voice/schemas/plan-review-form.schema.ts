@@ -21,7 +21,7 @@ export const planTodoEditFormSchema = z.object({ todo: selectablePlannedTodoSche
 export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
 
 // 저장 시간대가 없는 옛 ISO 초안은 지금 기기 시간대로 읽는다. 자정 반올림 추측은 날짜 선택기 값에서 더 자주 틀린다.
-// 초안 보관 기간(30일)이 지난 1.16.0에서 옮기는 코드와 함께 지운다
+// 초안 보관 기간(30일)이 지나면 옮기는 코드와 함께 1.16.0에서 지운다(compatibility.md)
 export function restoreDraftDateKey(value: unknown, timeZone: string) {
   const instant = z.iso.datetime().safeParse(value);
   return instant.success ? toDateKey(toInstant(instant.data), timeZone) : value;

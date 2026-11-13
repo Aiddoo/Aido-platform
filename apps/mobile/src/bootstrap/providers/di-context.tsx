@@ -213,7 +213,7 @@ export {
 function useDI(): DIContainer {
   const context = use(DIContext);
 
-  if (!context) {
+  if (context == null) {
     throw new Error('useDI must be used within DIProvider');
   }
 

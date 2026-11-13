@@ -22,7 +22,7 @@ function AiReviewScreen() {
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
       <ReadableContent flex={1}>
         <QueryErrorBoundary resetKeys={[memoId]} fallback={MemoPlanReview.Error}>
-          <Box className="flex-1 px-4 pb-3 pt-4">
+          <Box className="flex-1 px-4 pt-4 pb-3">
             <Suspense fallback={<MemoPlanReview.Loading />}>
               <MemoPlanReview />
             </Suspense>

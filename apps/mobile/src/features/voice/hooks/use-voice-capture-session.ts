@@ -14,12 +14,14 @@ import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useStat
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
 import {
   AUTO_FINISH_SILENCE_MS,
   VOICE_NO_VOLUME_GAP_MS,
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
+import { getRecognizerStartOptions } from '../domains/speech-context.model';
 import {
   type VoiceCaptureEvent,
   VoiceCapturePolicy,
@@ -36,7 +38,6 @@ import {
   createVoiceRecognizerLink,
 } from '../domains/voice-recognizer-link.model';
 import { VoiceTranscriptPolicy, type VoiceTranscript } from '../domains/voice-transcript.model';
-import { getRecognizerStartOptions } from '../utils/speech-context';
 import { toCaptureOutcome } from '../utils/voice-analytics';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
@@ -454,9 +455,12 @@ function useRecognizerLink(): RecognizerLink {
     linkRef.current = VoiceRecognizerLinkPolicy.reduceRecognizerLink(linkRef.current, event);
   };
 
+  const startRecognizer = (options: SpeechStartOptions) =>
+    speechRecognizer.start(getRecognizerStartOptions(options, COMMON_SPEECH_HINTS[options.locale]));
+
   const start = (options: SpeechStartOptions) => {
     update({ type: 'start-requested', at: Date.now() });
-    speechRecognizer.start(getRecognizerStartOptions(options));
+    startRecognizer(options);
   };
 
   return {
@@ -469,7 +473,7 @@ function useRecognizerLink(): RecognizerLink {
         return false;
       }
       update({ type: 'segment-restarted', at: now });
-      speechRecognizer.start(getRecognizerStartOptions(options));
+      startRecognizer(options);
       return true;
     },
     stop: () => {
