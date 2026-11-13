@@ -70,7 +70,6 @@ function isPushDeliverable(permission: PushPermission): boolean {
   );
 }
 
-/** 사용자가 아직 OS 알림 권한에 답하지 않았다 */
 function isUndecided(permission: PushPermission): boolean {
   return permission.status === PUSH_PERMISSION_STATUS.NOT_DETERMINED;
 }

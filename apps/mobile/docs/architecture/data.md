@@ -1,6 +1,6 @@
 # 데이터
 
-서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [migration-status](./migration-status.md)에 있다.
+서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
 ## Server API
 
@@ -109,7 +109,7 @@ export const NOTIFICATION_QUERY_KEYS = {
 
 ## 무효화
 
-1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다. 컴포넌트·훅·route는 helper(`invalidate{X}`, `set{X}InCache`)를 부른다.
+1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다(앱 조립 `bootstrap/**`과 공용 도구 `shared/query/**`는 예외, [guardrails](./guardrails.md)). 컴포넌트·훅·route는 helper(`invalidate{X}`, `set{X}InCache`)를 부른다.
 2. mutation 옵션이 캐시 효과를 모두 갖는다. `onSuccess`는 응답을 캐시에 쓰고 무효화는 `onSettled`에 둔다. 같은 무효화를 `onSuccess`·`onError`에 두 번 쓰지 않고, 방금 set한 키를 다시 invalidate하지 않는다.
 3. 다른 기능에 미치는 효과는 쿼리 옵션의 `meta.refreshOn*`(`refreshOnPremiumChange`)나 그 기능이 내보낸 helper로만 한다. 남의 `all`을 무효화하지 않는다. 바뀐 것만 무효화하고, 범위를 모를 때(반복 묶음, 카테고리 삭제, 언어 변경)만 넓게 쓴다.
 4. 당겨서 새로고침은 기능마다 `refresh{Feature}(queryClient)` 하나이고 활성 쿼리만 다시 받는다. 표시는 `useRefresh`가 당긴 동안만 한다.
@@ -179,11 +179,12 @@ const form = useForm({
 - 입력은 `Controller`·`useController`로 잇고 `field.ref`를 넘겨 검증 실패 칸에 포커스한다. 하위는 `useWatch`·`useFormState({ name })`로 자기 값만 구독한다. 렌더 중 `getValues()`는 React Compiler가 캐시해 갱신되지 않으므로 핸들러에서만 쓴다.
 - 폼은 제출하는 컴포넌트가 소유하고 자식에 props `form`(읽기만 하면 `control`)으로 넘긴다. `FormProvider`·`useFormContext`는 쓰지 않는다. 공용 입력 부품은 `value`·`onChange`를 받는 제어 컴포넌트다(`todo-schedule-chips.tsx`).
   - 예외는 할 일 댓글 세션 하나다(`TodoCommentFormProvider`·`useTodoCommentForm`). 가상 목록 깊은 곳의 댓글·답글 행 메뉴, 작성 바, 뒤로 가기 확인이 화면 하나의 작성기를 함께 읽고 바꿔, props로 내리면 목록 여러 층을 거치는 드릴링이 된다. 세션(`todo-comment-session.tsx`)이 폼을 소유하고 이 Context로만 나눈다.
-- 버튼은 `formState.isValid`·`isSubmitting`과 mutation `isPending`으로만 정한다. `safeParse`로 버튼 상태를 따로 계산하지 않는다. 단계 폼의 다음 버튼은 폼 전체가 아니라 그 단계 칸만 본다. `getFieldState(name, formState)`의 `isDirty && !invalid`로 정한다(`useFormState({ name })`로 구독). 단계 버튼이 바로 따르게 `mode: 'onChange'`로 검사하고, 오류 문구는 칸을 벗어난 뒤(`isTouched`)나 그 칸에 적은 뒤(`isDirty`)에만 보인다.
+- 버튼은 `formState.isValid`·`isSubmitting`·`isSubmitSuccessful`과 mutation `isPending`·`isSuccess`로만 정한다. `safeParse`로 버튼 상태를 따로 계산하지 않는다. 단계 폼의 다음 버튼은 폼 전체가 아니라 그 단계 칸만 본다. `getFieldState(name, formState)`의 `isDirty && !invalid`로 정한다(`useFormState({ name })`로 구독). 단계 버튼이 바로 따르게 `mode: 'onChange'`로 검사하고, 오류 문구는 칸을 벗어난 뒤(`isTouched`)나 그 칸에 적은 뒤(`isDirty`)에만 보인다.
+- 저장하면 닫히는 폼(시트·화면)은 닫히는 동안에도 값이 남아 `isSubmitting`이 꺼지면 버튼이 다시 켜진다. 그동안 버튼과 완료 키를 `isSubmitting || isSubmitSuccessful`로 막는다. `isSubmitSuccessful`이 실패에 켜지지 않게 실패는 `handleSubmit` 안에서 받지 않고 호출부 `.catch`에서 받는다(할 일·카테고리 추가). `mutate`로 보내는 폼은 mutation `isSuccess`로 막는다(계획 검토). 같은 프레임의 두 번째 탭은 `isSubmitting`이 다음 렌더에야 켜져 `useSingleTap`으로 막는다. 이름은 `handleSubmit` 결과가 `save{X}`(`saveTodo`·`saveCategory`), 그것을 감싼 `useSingleTap`이 `handleSavePress`다.
 - 서버 4xx 중 칸에 속한 오류는 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.
 - 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다. 공통 부품에 `mode`·`onSubmit` 분기를 넘기지 않는다.
 - 확인할 동작: 성공하면 닫힘·갱신·초안 삭제·이벤트 한 번, 4xx·연결 끊김이면 입력값·초안 유지와 안내 한 번, 두 번 눌러도 요청 한 번, 검증 실패나 바뀐 값 없음이면 요청 없음.
-- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
+- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). 칸 목록(`useFieldArray`)은 그 훅의 `replace`로 넣는다. RN의 RHF는 칸 구독을 `useEffect`로 걸어 먼저 도는 effect의 `setValue`를 첫 마운트에 놓친다(댓글 작성기). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
 - 초안 키는 `utils/{feature}-draft.ts`의 순수 함수가 `createDraftKey`로 만들고 사용자 id가 들어간다. 저장소는 암호화 MMKV이고 `DRAFT_TTL_MS`가 지난 초안과 원본보다 오래된 편집 초안은 버린다. 비밀번호·인증 코드는 초안으로 저장하지 않고, 긴 본문을 URL·Query 캐시에 넣지 않는다.
 
 ## 메모리와 수명

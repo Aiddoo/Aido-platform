@@ -44,8 +44,8 @@ interface SignInServicePorts {
   >;
   tokenStore: Pick<TokenStore, 'save' | 'clear'>;
   socialAuth: Pick<SocialAuthGateway, 'openOAuthSession' | 'signInWithApple'>;
-  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정한다 */
-  deviceType: SessionDeviceType;
+  /** 서버가 기기 종류별로 세션을 구분한다. 조립이 실행 플랫폼에서 정해 앱에는 WEB이 없다 */
+  deviceType: Exclude<SessionDeviceType, 'WEB'>;
   logger: Pick<AppLogger, 'warn'>;
 }
 

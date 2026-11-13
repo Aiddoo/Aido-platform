@@ -5,10 +5,10 @@ import type { FetchNextPageOptions } from '@tanstack/react-query';
 import { PressableFeedback, Spinner } from 'heroui-native';
 import type { Ref } from 'react';
 
-import { HStack } from '../h-stack';
-import { RefreshIcon } from '../icon';
-import { Text } from '../text';
-import { TintedRefreshControl } from '../tinted-refresh-control';
+import { HStack } from '../h-stack/h-stack';
+import { RefreshIcon } from '../icon/icons';
+import { Text } from '../text/text';
+import { TintedRefreshControl } from '../tinted-refresh-control/tinted-refresh-control';
 import { useFetchNextPage } from './use-fetch-next-page';
 
 const RETRY_ICON_SIZE = 16;

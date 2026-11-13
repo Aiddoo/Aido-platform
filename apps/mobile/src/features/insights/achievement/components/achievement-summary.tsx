@@ -1,6 +1,6 @@
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -31,9 +31,9 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
@@ -52,6 +52,7 @@ export function AchievementSummary() {
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(todayKey) }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const isFocused = useIsFocused();
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
@@ -60,19 +61,22 @@ export function AchievementSummary() {
   const { shareCapture, isSharing } = useShareViewCapture(viewShotRef);
   const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.getBadgeType(latest);
-  const latestCompletionRate = latest?.completionRate;
   const latestWeekKey = latest == null ? null : (`${latest.year}-W${latest.week}` as const);
 
-  useEffect(() => {
-    if (latestBadgeType == null || latestCompletionRate == null || latestWeekKey == null) {
-      return;
-    }
-    trackEvent('badge_summary_viewed', {
-      badge_type: latestBadgeType,
-      completion_rate: latestCompletionRate,
-      week_label: latestWeekKey,
-    });
-  }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekKey]);
+  // 탭 Stack에 남은 화면은 뒤 탭에서도 다시 조회한다. 보이는 동안 주마다 한 번 센다
+  useTrackView(
+    'badge_summary_viewed',
+    isFocused && latest != null && latestBadgeType != null && latestWeekKey != null
+      ? {
+          key: latestWeekKey,
+          params: {
+            badge_type: latestBadgeType,
+            completion_rate: latest.completionRate,
+            week_label: latestWeekKey,
+          },
+        }
+      : null,
+  );
 
   if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
     return <AchievementSummary.Empty />;

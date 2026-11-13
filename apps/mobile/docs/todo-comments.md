@@ -66,17 +66,16 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 
   <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={onClose} />}>
     <TodoCommentKeyboardGesture>
-      <QueryErrorBoundary
-        resetKeys={[todoId, sort, comment]}
-        fallback={TodoCommentThreadList.Error}
-      >
-        <Suspense fallback={<TodoCommentThreadList.Loading />}>
-          <TodoCommentThreadList />
-        </Suspense>
-      </QueryErrorBoundary>
-
       <QueryErrorBoundary resetKeys={[todoId]}>
-        <Suspense fallback={<TodoCommentComposerBar.Loading />}>
+        <Suspense fallback={<TodoCommentPane.Loading />}>
+          <QueryErrorBoundary
+            resetKeys={[todoId, sort, comment]}
+            resetScope="parent"
+            fallback={TodoCommentThreadList.Error}
+          >
+            <TodoCommentThreadList />
+          </QueryErrorBoundary>
+
           <TodoCommentComposerBar />
         </Suspense>
       </QueryErrorBoundary>
@@ -85,9 +84,11 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 </TodoCommentSession>
 ```
 
+- 본문·댓글·작성 바는 같은 상세 조회를 읽어 기다림 경계(`Suspense`)가 하나다. 경계 여럿이 함께 기다리다 한쪽만 다시 그려지면 React 19.3이 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다(개발 번들에서 토큰 만료 뒤 상세를 열 때 재현). fallback(`TodoCommentPane.Loading`)에는 경계도 Suspense 조회도 두지 않고, 댓글 목록 오류만 안쪽 `QueryErrorBoundary`가 받아 작성 바는 남긴다. 목록 머리가 본문(상세)을 그려 안쪽 경계는 다시 시도 범위를 칸과 함께 쓰고(`resetScope="parent"`), 상세 오류는 안쪽 fallback의 머리가 다시 던져 칸 경계 한 곳이 받는다. 범위가 갈리면 칸 전체 오류의 다시 시도가 상세를 다시 받지 않는다.
 - 화면은 `todoId`를 props로 넘기지 않는다. 블록 컴포넌트가 `const [todoId] = useTodoId()`로 읽고, 가상 목록의 댓글·답글 행은 route 훅을 부르지 않고 댓글 모델의 `todoId`를 읽는다(Oxlint `aido/no-route-id-props`가 검사).
 - 스크롤은 `TodoCommentThreadList`의 `FlashList` 하나다. `renderScrollComponent`로 `KeyboardChatScrollView`를 쓰고,
-  할 일 본문·정렬(`TodoCommentThreadList.Header`·`.SortBar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
+  할 일 본문·댓글 수와 정렬(`TodoCommentThreadList.Header`·`.Toolbar`)·더블탭 안내·이전 댓글 보기는 `ListHeaderComponent`다. 묶음 행만 가상화하고 답글은 그 행 안에 그린다.
+- 정렬을 바꾸면 새 정렬의 첫 페이지를 미리 받은 뒤 URL을 바꿔 목록이 fallback으로 빠지지 않는다. 목록 `key`에는 정렬을 넣지 않는다(다시 마운트하면 FlashList가 다시 재는 동안 행이 빈다). FlashList가 보던 첫 행 자리를 지키려 옮긴 스크롤은 같은 커밋에서 맨 위로 되돌린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, `TODO_0801`) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → `Schedule`(시간·반복·카테고리·날짜) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
 - 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
