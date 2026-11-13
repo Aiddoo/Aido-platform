@@ -13,6 +13,8 @@ export function createMemoFixture(overrides: Partial<MemoPrimitives> = {}): Memo
     sortOrder: 0,
     createdAt: MEMO_FIXTURE_NOW,
     updatedAt: MEMO_FIXTURE_NOW,
+    idempotencyKey: null,
+    requestHash: null,
     ...overrides,
   });
 }

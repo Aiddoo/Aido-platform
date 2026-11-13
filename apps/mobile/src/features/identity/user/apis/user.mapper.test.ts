@@ -2,6 +2,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '../__tests__/user.fixtures';
+import { currentUserResponseSchema } from '../schemas/user-response.schema';
 import { toUser } from './user.mapper';
 
 describe('toUser', () => {
@@ -82,15 +83,17 @@ describe('toUser', () => {
     // Then
     expect(result.premiumAccess.isTrial).toBe(expected);
   });
+});
 
-  it('providers 배열 매핑', () => {
+describe('currentUserResponseSchema', () => {
+  it('프리미엄 효력·권한이 빠진 응답은 받아들이지 않는다', () => {
     // Given
-    const dto = createCurrentUserDto({ providers: ['CREDENTIAL', 'GOOGLE'] });
+    const { isPremium: _isPremium, entitlements: _entitlements, ...dto } = createCurrentUserDto();
 
     // When
-    const result = toUser(dto);
+    const result = currentUserResponseSchema.safeParse(dto);
 
     // Then
-    expect(result.providers).toEqual(['CREDENTIAL', 'GOOGLE']);
+    expect(result.success).toBe(false);
   });
 });

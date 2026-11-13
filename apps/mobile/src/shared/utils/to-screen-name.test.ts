@@ -5,8 +5,8 @@ describe('toScreenName', () => {
     [['invite', '[inviteCode]'], '/invite/[inviteCode]'],
     [['(app)', 'users', '[userId]', 'report'], '/users/[userId]/report'],
     [
-      ['(app)', 'todo', '[todoId]', 'comments', '[commentId]'],
-      '/todo/[todoId]/comments/[commentId]',
+      ['(app)', 'todo', '[todoId]', 'comments', '[commentId]', 'report'],
+      '/todo/[todoId]/comments/[commentId]/report',
     ],
   ] as const)('동적 세그먼트 %p는 실제 값 대신 템플릿 %p로 남긴다', (segments, expected) => {
     // When

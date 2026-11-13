@@ -108,19 +108,19 @@ seed 언어당 약 5~8분(가입 API 분당 5회 제한 + AI job 대기 최대 5
 
 testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어와 무관해진다(앱 코드는 이 작업에서 고치지 않았다):
 
-| 제안 testID                                | 위치                                  | 흐름         |
-| ------------------------------------------ | ------------------------------------- | ------------ |
-| `todo-ai-feature-tooltip`                  | 할 일 추가 시트 `AI로 할 일 만들기`   | 13-todo      |
-| `todo-ai-parse`                            | 추가 시트 마이크 버튼(무료 한도 안내) | 미사용(수동) |
-| `memo-convert-to-todo`                     | 메모 상세 `할 일로 변환`              | 20-memo      |
-| `memo-ai-start`                            | AI 변환 확인 `시작하기`               | 20-memo      |
-| `memo-ai-review`                           | AI 분석 결과 화면                     | 20-memo      |
-| `friends-tab-received`                     | 친구 목록 받은 요청 탭                | 40-friends   |
-| `friend-search-input`, `friend-search-add` | 친구 찾기 입력·추가                   | 40-friends   |
-| `whats-new-close`                          | 새 소식 안내 닫기                     | settle       |
-| `report-detail`                            | 리포트 상세                           | 30-ai        |
-| `subscription-screen`                      | 구독 화면 각 pane                     | 70, 80       |
-| `store-review-later`                       | 스토어 리뷰 안내 `다음에`             | settle       |
+| 제안 testID               | 위치                                             | 흐름         |
+| ------------------------- | ------------------------------------------------ | ------------ |
+| `todo-ai-feature-tooltip` | 할 일 추가 시트 `AI로 할 일 만들기`              | 13-todo      |
+| `todo-ai-parse`           | 추가 시트 마이크 버튼(무료 한도 안내)            | 미사용(수동) |
+| `memo-convert-to-todo`    | 메모 상세 `할 일로 변환`                         | 20-memo      |
+| `memo-ai-start`           | AI 변환 확인 `시작하기`                          | 20-memo      |
+| `memo-ai-review`          | AI 분석 결과 화면                                | 20-memo      |
+| `friends-tab-received`    | 친구 목록 받은 요청 탭                           | 40-friends   |
+| `friend-search-add`       | 친구 찾기 추가(입력은 헤더 검색창 문구로 찾는다) | 40-friends   |
+| `whats-new-close`         | 새 소식 안내 닫기                                | settle       |
+| `report-detail`           | 리포트 상세                                      | 30-ai        |
+| `subscription-screen`     | 구독 화면 각 pane                                | 70, 80       |
+| `store-review-later`      | 스토어 리뷰 안내 `다음에`                        | settle       |
 
 ## 자동으로 찍지 않는 화면
 

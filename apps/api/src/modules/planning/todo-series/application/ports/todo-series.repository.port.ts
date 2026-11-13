@@ -43,6 +43,9 @@ export abstract class TodoSeriesRepositoryPort {
 
   abstract countActiveByUserId(userId: UserId): Promise<number>;
 
+  /** 다음 회차가 남은 규칙이 있는지. 휴면으로 건너뛴 규칙도 커서가 남아 있어 진행 중이다. */
+  abstract existsActiveByUserId(userId: UserId): Promise<boolean>;
+
   /**
    * 이 사용자의 규칙 시간대를 한 문장으로 바꾸고 바뀐 수를 돌려준다. 끝난 규칙도 바꾼다.
    * 규칙을 바꿔 다시 진행하면 그 시간대로 회차를 만들기 때문이다.

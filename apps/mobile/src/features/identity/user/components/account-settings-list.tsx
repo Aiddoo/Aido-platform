@@ -1,6 +1,6 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { KeyDuoIcon, NameDuoIcon, SettingsListGroup, Text } from '@src/shared/ui';
+import { KeyDuoIcon, NameDuoIcon, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -21,9 +21,9 @@ export function AccountSettingsList(props: SettingsSectionProps) {
         icon={<SettingsListGroup.Icon Icon={NameDuoIcon} />}
         label={t('titles.editName')}
         value={
-          <Text size="b3" shade={7} numberOfLines={1} className="max-w-40">
+          <SettingsListGroup.Value numberOfLines={1} className="max-w-40">
             {user.name}
-          </Text>
+          </SettingsListGroup.Value>
         }
         onPress={() => push('/settings/edit-name')}
       />

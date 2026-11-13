@@ -12,15 +12,17 @@ import {
   unreadCountResponseSchema,
   type MarkReadResponse,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
-import { toInstant } from '@src/shared/date/instant';
+import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
-import type { Notification, PendingNotificationResponse } from '../domains/notification.model';
+import { notificationSchema } from '../domains/notification.model';
+import type { PushNotificationResponse } from '../domains/push-notification-response.model';
+import { pushNotificationSchema } from '../domains/push-notification.model';
 import type { PushPermission } from '../domains/push-permission.model';
 import { pushRegistrationSchema } from '../domains/push-registration.model';
-import { pushNotificationPayloadSchema } from '../schemas/push-notification-payload.schema';
 
 function generateNotificationListResponseDto(): NotificationListResponse {
   return {
@@ -132,22 +134,19 @@ export function createMarkReadResponseDto(overrides?: Partial<MarkReadResponse>)
   return markReadResponseSchema.parse({ ...generateMarkReadResponseDto(), ...overrides });
 }
 
-export function createNotification(overrides?: Partial<Notification>): Notification {
-  return {
-    id: 1,
-    userId: 'user-1',
-    type: 'SYSTEM_NOTICE',
-    title: '공지',
-    body: '새 기능이 나왔어요',
-    isRead: false,
-    createdAt: toInstant('2026-07-14T00:00:00.000Z'),
-    readAt: null,
-    ...overrides,
-  };
-}
+export const createNotification = defineFixture(notificationSchema, {
+  id: 1,
+  type: 'SYSTEM_NOTICE',
+  title: '공지',
+  body: '새 기능이 나왔어요',
+  isRead: false,
+  target: { kind: 'NOTIFICATIONS' },
+  receivedCheer: null,
+  createdAt: toInstant('2026-07-14T00:00:00.000Z'),
+});
 
 export function createNotificationApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'NOTIFICATION_1001',
@@ -156,12 +155,15 @@ export function createNotificationApiError(
   );
 }
 
-export const INVALID_DTO = { invalid: 'data' };
-
-export const createPushNotificationPayload = defineFixture(pushNotificationPayloadSchema, {
+export const createPushNotification = defineFixture(pushNotificationSchema, {
   notificationId: 7,
   type: 'FOLLOW_NEW',
-  action: { type: 'DEEP_LINK' },
+  target: { kind: 'FRIEND_REQUESTS' },
+  marketingOptOutToken: null,
+  actionType: 'DEEP_LINK',
+  campaignKey: null,
+  variantId: null,
+  purpose: null,
 });
 
 export const createPushRegistration = defineFixture(pushRegistrationSchema, {
@@ -169,14 +171,14 @@ export const createPushRegistration = defineFixture(pushRegistrationSchema, {
   releaseRequestedAt: null,
 });
 
-export function createPendingNotificationResponse(
-  overrides: Partial<PendingNotificationResponse> = {},
-): PendingNotificationResponse {
+export function createPushNotificationResponse(
+  overrides: Partial<PushNotificationResponse> = {},
+): PushNotificationResponse {
   return {
     id: 'response-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
-    data: createPushNotificationPayload(),
-    receivedAt: 0,
+    notification: createPushNotification(),
+    receivedAt: fromEpochMs(0),
     isLaunchResponse: false,
     appState: 'background',
     activeSince: null,

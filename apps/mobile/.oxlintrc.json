@@ -18,7 +18,11 @@
     "eslint/curly": ["error", "all"],
     "eslint/no-void": "error",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "error"
+    "react/exhaustive-deps": "error",
+    // 루트 AGENTS 공통 규칙(중첩 삼항 금지, `#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다
+    "eslint/no-nested-ternary": "error",
+    "aido/no-member-accessibility": "error",
+    "typescript/parameter-properties": ["error", { "prefer": "class-property" }]
   },
   "overrides": [
     {
@@ -41,11 +45,12 @@
     {
       "files": ["**/*.test.{ts,tsx}", "src/testing/**", "jest.setup.ts"],
       "rules": {
-        "typescript/no-explicit-any": "off",
+        // 테스트도 운영 코드와 같은 타입 안전 규칙이다. 루트의 테스트 완화가 extends로 들어오므로 다시 적는다
+        "typescript/no-explicit-any": "error",
         "typescript/ban-ts-comment": [
           "error",
           {
-            "ts-expect-error": "allow-with-description",
+            "ts-expect-error": true,
             "ts-ignore": true,
             "ts-nocheck": true
           }
@@ -192,9 +197,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               }
             ]
           }
@@ -244,9 +249,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
@@ -257,6 +262,11 @@
                 "regex": "(?:^@src/|/)(?:core/errors/api-error|shared/errors)$",
                 "importNames": ["isApiError"],
                 "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+              },
+              {
+                "regex": "(?:^@src/|/)(?:core/errors/result|shared/errors)$",
+                "importNames": ["isCodedError"],
+                "message": "코드 판별은 domains/{feature}.error.ts의 이름 있는 판별 함수로만 하세요. 예상한 오류인지는 shared/errors의 classifyError로 봅니다."
               }
             ]
           }
@@ -306,9 +316,9 @@
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
               },
               {
-                "regex": "(?:^@src/|/)shared/hooks/use-sync-storage-string$",
-                "importNames": ["useSyncStorageString"],
-                "message": "useSyncStorageString으로 기기 저장 값을 직접 읽지 않습니다. schemas/{name}-storage.schema.ts에 defineStoredValue를 두고 useStoredValue로 구독하세요."
+                "regex": "(?:^@src/|/)shared/storage/use-stored-value$",
+                "importNames": ["useStoredValueIn"],
+                "message": "useStoredValueIn은 DI 위 설정 Provider만 저장소를 직접 넘겨 씁니다. 기기 값은 schemas/{name}-storage.schema.ts의 저장 값 정의를 useStoredValue로 구독하세요."
               },
               {
                 "regex": "(?:^@src/|/)(?:shared/di/shared-di-context|bootstrap/providers/di-context)$",
@@ -390,7 +400,7 @@
       }
     },
     {
-      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}", "src/shared/ui/**/__tests__/**"],
+      "files": ["src/shared/ui/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -469,6 +479,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -476,12 +491,26 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -506,6 +535,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -513,7 +547,7 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
@@ -521,8 +555,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           }
         ]
       }
@@ -547,6 +600,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -554,12 +612,26 @@
           {
             "object": "router",
             "property": "setParams",
-            "message": "router.setParams는 use-*-param(s).ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
+            "message": "router.setParams는 use-*-params.ts 훅과 공용 훅에서만 부릅니다. useRouteParams의 setParams를 쓰세요."
           },
           {
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
@@ -579,6 +651,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -587,12 +664,26 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           }
         ]
       }
     },
     {
-      "files": ["**/hooks/use-*-param.{ts,tsx}", "**/hooks/use-*-params.{ts,tsx}"],
+      "files": ["**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -611,6 +702,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -619,6 +715,20 @@
             "object": "Alert",
             "property": "alert",
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
+          },
+          {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
           },
           {
             "object": "z",
@@ -629,10 +739,7 @@
       }
     },
     {
-      "files": [
-        "src/features/**/hooks/use-*-param.{ts,tsx}",
-        "src/features/**/hooks/use-*-params.{ts,tsx}"
-      ],
+      "files": ["src/features/**/hooks/use-*-params.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -651,6 +758,11 @@
             "message": "fromAsync는 앱의 Hermes에 없어 호출하면 앱에서만 죽습니다. for await를 쓰세요."
           },
           {
+            "object": "Promise",
+            "property": "withResolvers",
+            "message": "앱의 Hermes에서 확인하지 않은 API라 테스트 도구에서만 씁니다. new Promise로 resolve를 받으세요."
+          },
+          {
             "object": "Platform",
             "property": "OS",
             "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
@@ -661,8 +773,27 @@
             "message": "Alert.alert 대신 useConfirmDialog를 씁니다."
           },
           {
+            "object": "Object",
+            "property": "assign",
+            "message": "Object.assign을 쓰지 않습니다. 네임스페이스 조각은 X.Part = function Part로 달고, 객체 합치기는 펼침({ ...a, ...b })으로 씁니다."
+          },
+          {
+            "object": "z",
+            "property": "nativeEnum",
+            "message": "Zod 4에서 z.nativeEnum은 옛 문법입니다. z.enum을 씁니다."
+          },
+          {
+            "property": "passthrough",
+            "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
             "property": "hasCode",
             "message": "서버 오류는 domains/{feature}.error.ts의 이름 있는 판별 함수로만 읽으세요. isApiError와 hasCode를 이 파일에서 직접 쓰지 않습니다."
+          },
+          {
+            "object": "Keyboard",
+            "property": "addListener",
+            "message": "키보드 위치는 react-native-keyboard-controller로 따라갑니다. Keyboard.addListener 타이밍으로 흉내 내지 않습니다(docs/architecture/ui.md)."
           },
           {
             "object": "z",
@@ -683,7 +814,7 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "src/**/generated/**", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/no-strict-nullish": "off"
       }
@@ -695,6 +826,30 @@
       }
     },
     {
+      // 간격 규격(docs/design.md#간격)
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.test.{ts,tsx}", "**/__tests__/**", "src/testing/**"],
+      "rules": {
+        "aido/spacing-scale": [
+          "error",
+          {
+            "allowed": [
+              0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 80, 96
+            ]
+          }
+        ],
+        "aido/no-arbitrary-spacing-class": "error",
+        "aido/one-spacing-notation": ["error", { "ignoreClassNameFrom": ["heroui-native"] }]
+      }
+    },
+    {
+      // Android 15 시스템 바 색 API(docs/build-and-release.md)
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "app.config.ts", "plugins/*.js"],
+      "rules": {
+        "aido/no-system-bar-color": "error"
+      }
+    },
+    {
       "files": ["src/**"],
       "rules": {
         "react/forbid-component-props": [
@@ -703,13 +858,13 @@
             "forbid": [
               {
                 "propName": "isChecked",
-                "disallowedFor": ["TodoCheckbox"],
-                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+                "disallowedFor": ["TodoRow.Checkbox"],
+                "message": "TodoRow.Checkbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
               },
               {
                 "propName": "onCheckedChange",
-                "disallowedFor": ["TodoCheckbox"],
-                "message": "TodoCheckbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
+                "disallowedFor": ["TodoRow.Checkbox"],
+                "message": "TodoRow.Checkbox는 HeroUI Checkbox의 isSelected/onSelectedChange 계약을 그대로 사용해야 합니다."
               }
             ]
           }
@@ -736,6 +891,14 @@
         "aido/query-key-location": "error",
         "aido/namespace-function-name": "error",
         "aido/no-destructured-search-params": "error",
+        "aido/no-class-method": "error",
+        "aido/no-object-method-shorthand": "error",
+        "aido/dto-alias": "error",
+        "aido/time-constant-unit": "error",
+        "aido/no-return-type-of-hook": "error",
+        "aido/query-data-alias": "error",
+        "aido/logger-event-constant": "error",
+        "aido/no-tracking-in-effect": "error",
         "react/forbid-elements": [
           "error",
           {
@@ -750,13 +913,13 @@
       }
     },
     {
-      "files": ["src/**/*.d.ts", "app/**/*.d.ts"],
+      "files": ["src/**/*.d.ts"],
       "rules": {
         "aido/function-declaration": "off"
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/**/domains/**"],
       "rules": {
         "aido/no-role-comparison": "off"
       }
@@ -769,11 +932,83 @@
         "src/testing/**"
       ],
       "rules": {
-        "aido/component-name": "error"
+        // 위치·틀만 말하는 이름. 옵션이 기본 목록을 대신하므로 기본 10개(Body~Wrappers)도 함께 적는다
+        "aido/component-name": [
+          "error",
+          {
+            "suffixes": [
+              "Body",
+              "Bodies",
+              "Frame",
+              "Frames",
+              "Section",
+              "Sections",
+              "Block",
+              "Blocks",
+              "Wrapper",
+              "Wrappers",
+              "Detail",
+              "Details",
+              "Content",
+              "Contents",
+              "Panel",
+              "Panels",
+              "Area",
+              "Areas",
+              "Info",
+              "Inner"
+            ],
+            "standaloneNames": ["Header", "Footer"]
+          }
+        ]
       }
     },
     {
-      "files": ["src/**/domains/**", "app/**/domains/**"],
+      "files": ["src/shared/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        // allowNames는 shared/ui 카탈로그가 정한 이름(heroui와 같은 TextArea, 칸 영역 PaneArea)이다
+        "aido/component-name": [
+          "error",
+          {
+            "suffixes": [
+              "Body",
+              "Bodies",
+              "Frame",
+              "Frames",
+              "Section",
+              "Sections",
+              "Block",
+              "Blocks",
+              "Wrapper",
+              "Wrappers",
+              "Detail",
+              "Details",
+              "Content",
+              "Contents",
+              "Panel",
+              "Panels",
+              "Area",
+              "Areas",
+              "Info",
+              "Inner"
+            ],
+            "standaloneNames": ["Header", "Footer"],
+            "allowNames": [
+              "ReadableContent",
+              "MenuContent",
+              "HintPopoverContent",
+              "TextArea",
+              "BottomSheetTextArea",
+              "PaneArea",
+              "MeasuredPaneArea"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/domains/**"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -795,7 +1030,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.ts", "app/**/queries/*.mutations.ts"],
+      "files": ["src/**/queries/*.mutations.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -811,7 +1046,7 @@
       }
     },
     {
-      "files": ["src/**/queries/*.mutations.{ts,tsx}", "app/**/queries/*.mutations.{ts,tsx}"],
+      "files": ["src/**/queries/*.mutations.{ts,tsx}"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -822,6 +1057,18 @@
       }
     },
     {
+      // 서버 오류의 상태·details·5xx 코드는 *.error.ts의 이름 있는 판별 함수로만 읽는다
+      "files": ["src/features/**", "app/**"],
+      "excludeFiles": [
+        "src/features/**/*.error.ts",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**"
+      ],
+      "rules": {
+        "aido/no-error-field-access": "error"
+      }
+    },
+    {
       "files": ["app/**"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
@@ -829,7 +1076,7 @@
         "src/testing/**"
       ],
       "rules": {
-        "aido/sheet-route-params": "error"
+        "aido/route-params-guard": "error"
       }
     },
     {
@@ -853,16 +1100,14 @@
       "files": [
         "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/**/__tests__/**",
-        "src/testing/**",
-        "app/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
-        "app/**/__tests__/**"
+        "src/testing/**"
       ],
       "rules": {
         "aido/no-jest-module-mock": "error"
       }
     },
     {
-      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}", "src/shared/infra/**/__tests__/**"],
+      "files": ["src/shared/infra/**/*.{spec,test}.{ts,tsx}"],
       "rules": {
         "aido/no-jest-module-mock": [
           "error",
@@ -873,14 +1118,28 @@
       }
     },
     {
-      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "src/shared/ui/index.ts",
+        "src/shared/{i18n,errors,analytics}/index.ts",
+        "src/shared/infra/{analytics,logger}/index.ts",
+        "src/bootstrap/providers/di-context.tsx",
+        "src/testing/**",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**"
+      ],
       "rules": {
         "aido/no-re-export": [
           "error",
           {
             "checkDefaultExport": true
           }
-        ],
+        ]
+      }
+    },
+    {
+      "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
+      "rules": {
         "aido/no-inline-query-options": "error",
         "aido/no-router-push": "error"
       }
@@ -889,6 +1148,20 @@
       "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
       "rules": {
         "aido/no-router-push": "off"
+      }
+    },
+    {
+      // 원시 setParams는 params 훅에서만 꺼낸다. 펼친 피드의 할 일 선택은 칸 크기와 함께 이름 있는 setter를 만든다
+      "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/hooks/use-*-params.{ts,tsx}",
+        "src/features/planning/todo/hooks/use-feed-selected-todo-id.ts",
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/route-setter-location": "error"
       }
     },
     {
@@ -901,11 +1174,13 @@
       "files": ["src/features/engagement/comment/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"],
       "excludeFiles": [
         "src/features/engagement/comment/queries/*-query-keys.test.ts",
+        "src/features/engagement/comment/queries/*-cache.test.ts",
         "src/features/engagement/comment/domains/**",
         "src/features/engagement/comment/apis/**",
         "src/features/engagement/comment/schemas/**",
         "src/features/engagement/comment/utils/**",
-        "src/features/engagement/comment/components/**"
+        "src/features/engagement/comment/components/**",
+        "src/features/engagement/comment/__tests__/**"
       ],
       "rules": {
         "aido/todo-comment-test-location": "error"
@@ -913,7 +1188,8 @@
     },
     {
       "files": [
-        "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
+        "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/__tests__/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
       ],
       "rules": {
         "aido/todo-comment-test-location": [
@@ -927,6 +1203,7 @@
     {
       "files": [
         "src/features/engagement/comment/queries/*-query-keys.test.ts",
+        "src/features/engagement/comment/queries/*-cache.test.ts",
         "src/features/engagement/comment/domains/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/features/engagement/comment/apis/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "src/features/engagement/comment/schemas/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
@@ -934,6 +1211,206 @@
       ],
       "rules": {
         "aido/todo-comment-test-purity": "error"
+      }
+    },
+    // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/query-client-location": "error",
+        "aido/storage-key-location": "error",
+        "aido/http-status-literal": "error",
+        "aido/app-state-location": "error",
+        "aido/back-handler-location": "error",
+        "aido/no-classname-concat": "error",
+        "aido/shared-value-accessor": "error",
+        "aido/menu-item-title-text": "error"
+      }
+    },
+    {
+      "files": ["src/**/queries/*-cache.ts", "src/bootstrap/**", "src/shared/query/**"],
+      "rules": {
+        "aido/query-client-location": "off"
+      }
+    },
+    {
+      // shared 모듈은 역할 폴더 없이 *.repository.ts가 저장소다(shared/draft)
+      "files": [
+        "src/**/schemas/*-storage.schema.ts",
+        "src/**/repositories/**",
+        "src/shared/**/*.repository.ts",
+        "src/shared/storage/**"
+      ],
+      "rules": {
+        "aido/storage-key-location": "off"
+      }
+    },
+    {
+      "files": ["src/shared/infra/http/**"],
+      "rules": {
+        "aido/http-status-literal": "off"
+      }
+    },
+    {
+      "files": ["src/shared/infra/**"],
+      "rules": {
+        "aido/app-state-location": "off"
+      }
+    },
+    {
+      "files": ["src/shared/hooks/use-android-back-handler.ts"],
+      "rules": {
+        "aido/back-handler-location": "off"
+      }
+    },
+    {
+      "files": [
+        "src/**/apis/**",
+        "src/**/services/**",
+        "src/**/repositories/**",
+        "src/**/stores/**",
+        "src/**/*.mapper.ts",
+        "src/**/*.model.ts",
+        "src/**/*-cache.ts"
+      ],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/track-location": "error"
+      }
+    },
+    {
+      "files": ["src/**/domains/*.model.ts", "src/**/*.mapper.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/no-clock-read": "error"
+      }
+    },
+    {
+      // 보기마다 한 번을 지키는 공용 장치 둘만 효과에서 보낸다
+      "files": [
+        "src/shared/analytics/use-track-view.ts",
+        "src/shared/hooks/use-screen-tracking.ts"
+      ],
+      "rules": {
+        "aido/no-tracking-in-effect": "off"
+      }
+    },
+    {
+      "files": ["src/**/*log-events.ts"],
+      "excludeFiles": ["**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", "**/__tests__/**"],
+      "rules": {
+        "aido/log-event-key": "error"
+      }
+    },
+    {
+      "files": ["src/**/constants/*.events.ts", "src/shared/analytics/event-map.ts"],
+      "rules": {
+        "aido/analytics-event-catalog": [
+          "error",
+          {
+            // GA 대시보드가 보는 기존 이름. 바꿀 때는 별칭 기간을 두고 여기서 지운다
+            "frozenNames": [
+              "ai_parse_used",
+              "ai_suggestion_acted",
+              "auth_login",
+              "auth_logout",
+              "auth_signup",
+              "auth_social_linked",
+              "auth_social_unlinked",
+              "badge_opened_from_notification",
+              "badge_share_attempted",
+              "category_delete_cancelled",
+              "category_reordered",
+              "content_reported",
+              "feature_action_success",
+              "feature_card_cta",
+              "feature_hub_impression",
+              "friend_removed",
+              "friend_reordered",
+              "friend_request_accepted",
+              "friend_request_cancelled",
+              "friend_request_rejected",
+              "friend_request_sent",
+              "invite_link_shared",
+              "invite_redeemed",
+              "memo_converted_to_todo",
+              "memo_converted_to_todos",
+              "nudge_replied",
+              "nudge_sent",
+              "nudge_thanks_sent",
+              "paywall_plan_selected",
+              "profile_edited",
+              "purchase_cancelled",
+              "remind_nudge_sent",
+              "session_expired",
+              "subscription_restored",
+              "subscription_started",
+              "todo_comment_liked",
+              "todo_comment_replies_expanded",
+              "todo_comment_reply_started",
+              "todo_comment_sorted",
+              "todo_edited",
+              "todo_item_added",
+              "todo_item_reordered",
+              "todo_reordered",
+              "todo_series_edited",
+              "todo_series_stopped",
+              "user_blocked",
+              "user_unblocked",
+              "voice_capture_finished",
+              "voice_capture_resumed",
+              "voice_capture_started",
+              "voice_note_key_point_played",
+              "voice_plan_applied",
+              "voice_plan_generated",
+              "voice_recognizer_stalled",
+              "weather_location_permission_result",
+              "weather_location_registered",
+              "weather_reschedule_applied",
+              "weather_reschedule_undone",
+              "whats_new_cta_pressed"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "jest/no-restricted-jest-methods": [
+          "error",
+          {
+            "useFakeTimers": "fake timer는 setupFakeTimersPerTest(config)로만 켭니다. 화면을 내리고 남은 타이머를 흘린 뒤 진짜 타이머로 되돌립니다.",
+            "useRealTimers": "진짜 타이머로 되돌리는 일은 setupFakeTimersPerTest의 afterEach가 합니다. 바로 부르면 화면을 내릴 때 생긴 타이머가 남습니다."
+          }
+        ],
+        "jest/no-restricted-matchers": [
+          "error",
+          {
+            "toMatchSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
+            "toMatchInlineSnapshot": "스냅숏을 쓰지 않습니다. 사용자 결과(문구·동작·캐시 상태)를 단언합니다.",
+            "toThrowErrorMatchingSnapshot": "스냅숏을 쓰지 않습니다. 오류 종류·코드를 단언합니다.",
+            "toThrowErrorMatchingInlineSnapshot": "스냅숏을 쓰지 않습니다. 오류 종류·코드를 단언합니다."
+          }
+        ],
+        "aido/test-spy-target": "error",
+        "aido/no-real-sleep": "error",
+        "aido/no-style-assertion": "error"
+      }
+    },
+    {
+      "files": ["src/testing/timers.ts"],
+      "rules": {
+        "jest/no-restricted-jest-methods": "off"
       }
     }
   ]

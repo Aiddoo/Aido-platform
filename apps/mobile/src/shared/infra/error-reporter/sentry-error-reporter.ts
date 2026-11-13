@@ -35,19 +35,19 @@ function toTags(context: ErrorReporterContext = {}): Record<string, string> {
 
 export function createSentryErrorReporter(): ErrorReporter {
   return {
-    captureException(error: Error, context?: ErrorReporterContext): void {
+    captureException: (error: Error, context?: ErrorReporterContext): void => {
       captureError(error, {
         level: severityToSentryLevel[context?.severity ?? 'error'],
         tags: toTags(context),
       });
     },
-    captureMessage(message: string, context?: ErrorReporterContext): void {
+    captureMessage: (message: string, context?: ErrorReporterContext): void => {
       Sentry.captureMessage(message, {
         level: severityToSentryLevel[context?.severity ?? 'info'],
         tags: toTags(context),
       });
     },
-    addBreadcrumb(breadcrumb: Breadcrumb): void {
+    addBreadcrumb: (breadcrumb: Breadcrumb): void => {
       const crumb: Sentry.Breadcrumb = {
         category: breadcrumb.category,
         message: breadcrumb.message,
@@ -56,7 +56,7 @@ export function createSentryErrorReporter(): ErrorReporter {
       };
       Sentry.addBreadcrumb(crumb);
     },
-    setUserId(userId: string | null): void {
+    setUserId: (userId: string | null): void => {
       Sentry.setUser(userId ? { id: userId } : null);
     },
   };

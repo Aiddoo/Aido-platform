@@ -1,6 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -25,8 +25,8 @@ function PlanType() {
   });
 
   return (
-    <Text size="b3" shade={7} testID="plan-type-value">
+    <SettingsListGroup.Value testID="plan-type-value">
       {t(toPlanTypeLabelKey(me.premiumAccess, entitlements))}
-    </Text>
+    </SettingsListGroup.Value>
   );
 }

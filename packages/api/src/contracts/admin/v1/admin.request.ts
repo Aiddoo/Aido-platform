@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { notificationActionSchema } from "../../../common/notification-value.js";
 import { BROADCAST_TARGET_FILTER } from "../../../vocabulary/admin.constants.js";
-import { notificationActionSchema } from "../../notification/v1/notification.payload.js";
 
 const MAX_GROWTH_QUERY_DAYS = 90;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;

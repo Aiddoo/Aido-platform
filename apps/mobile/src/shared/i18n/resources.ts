@@ -1,3 +1,5 @@
+import type { SupportedLocale } from '@aido/api/vocabulary';
+
 import enAchievement from './locales/en/achievement.json';
 import enAi from './locales/en/ai.json';
 import enAppIcon from './locales/en/app-icon.json';
@@ -105,6 +107,6 @@ export const resources = {
     voice: enVoice,
     voiceNote: enVoiceNote,
   },
-} as const;
+} as const satisfies Record<SupportedLocale, object>;
 
 export type Namespace = keyof (typeof resources)['ko'];

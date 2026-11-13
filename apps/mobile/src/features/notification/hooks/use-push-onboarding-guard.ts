@@ -1,34 +1,69 @@
+import { usePushOnboardingGuardStore } from '@src/bootstrap/providers/di-context';
+import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useNow } from '@src/shared/hooks/use-now';
+import { useStoredValue } from '@src/shared/storage/use-stored-value';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { createPushOnboardingGuardStore } from '../utils/push-onboarding-guard-store';
-import { useIsPushOnboardingDue } from './use-is-push-onboarding-due';
-
-const pushOnboardingGuard = createPushOnboardingGuardStore();
+import { PUSH_ASK_MOMENT } from '../constants/notification.constants';
+import { getOnboardingWindowEndsAt, PushPermissionPolicy } from '../domains/push-permission.model';
+import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
+import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
+import type { PushOnboardingGuardState } from '../stores/push-onboarding-guard.store';
 
 /** 앱 화면 묶음의 `Stack.Protected` guard. 판정은 여기 한 곳에서 하고, 그려진 뒤에야 피드가 화면을 열 수 있게 알린다 */
 export function usePushOnboardingGuard(): boolean {
-  const isDue = useIsPushOnboardingDue();
+  const guardStore = usePushOnboardingGuardStore();
+  const state = usePushOnboardingDueState();
 
   useEffect(() => {
-    pushOnboardingGuard.set(isDue);
-    return () => pushOnboardingGuard.set(null);
-  }, [isDue]);
+    guardStore.markRendered(state);
+    return () => guardStore.clear();
+  }, [guardStore, state]);
 
-  return isDue ?? false;
+  return state === 'open';
 }
 
-/** guard가 열린 채 그려졌을 때만 true다. 이 값으로 열어야 열자마자 guard에 막혀 되돌아가지 않는다 */
-export function useIsPushOnboardingGuardOpen(): boolean {
-  return useSyncExternalStore(
-    pushOnboardingGuard.subscribe,
-    () => pushOnboardingGuard.get() === true,
-  );
+/**
+ * 앱 화면 묶음이 그린 guard 값. 알림 화면은 `open`일 때 열어야 열자마자 guard에 막혀 되돌아가지 않고,
+ * 다른 자동 화면은 `closed`일 때 열어야 알림 화면과 겹치거나 앞서지 않는다
+ */
+export function usePushOnboardingGuardState(): PushOnboardingGuardState {
+  const guardStore = usePushOnboardingGuardStore();
+
+  return useSyncExternalStore(guardStore.subscribe, guardStore.getSnapshot);
 }
 
-/** 알림 화면을 열 차례가 아니라고 정해진 채 그려졌을 때만 true다. 다른 자동 화면은 이때 열어야 알림 화면과 겹치거나 앞서지 않는다 */
-export function useIsPushOnboardingGuardClosed(): boolean {
-  return useSyncExternalStore(
-    pushOnboardingGuard.subscribe,
-    () => pushOnboardingGuard.get() === false,
-  );
+/**
+ * 알면 화면을 열고, 답하면 닫는다. 내 정보나 OS 권한을 아직 모르면 `pending`이라 띄우지 않고 다른 자동 화면도 기다린다.
+ * 권한을 읽지 못하면 알림 화면도 띄울 수 없으므로 닫는다
+ */
+function usePushOnboardingDueState(): PushOnboardingGuardState {
+  const isAuthenticated = useAuthStatus() === 'authenticated';
+  const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
+  const { data: permission, isError: isPermissionUnreadable } = useQuery({
+    ...useGetPushPermissionQueryOptions(),
+    enabled: isAuthenticated,
+  });
+  const [deferredAt] = useStoredValue(pushPermissionDeferredAtStoredValue, me?.id);
+  // 앱 화면 묶음의 guard라 분마다 다시 그리지 않는다. 가입 창이 끝나는 순간에 한 번만 다시 읽는다
+  const now = useNow({
+    until: me == null ? null : getOnboardingWindowEndsAt(me.createdAt),
+  });
+
+  if (!isAuthenticated || me == null) {
+    return 'pending';
+  }
+  if (permission == null) {
+    return isPermissionUnreadable ? 'closed' : 'pending';
+  }
+
+  const askMoment = PushPermissionPolicy.getAskMoment(permission, {
+    surface: 'onboarding',
+    signedUpAt: me.createdAt,
+    prompt: { deferredAt },
+    now,
+  });
+  return askMoment === PUSH_ASK_MOMENT.ONBOARDING_SCREEN ? 'open' : 'closed';
 }

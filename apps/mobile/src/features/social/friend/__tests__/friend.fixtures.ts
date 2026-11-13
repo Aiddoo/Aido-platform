@@ -16,6 +16,7 @@ import {
   sentRequestsResponseSchema,
   type AcceptFriendRequestResponse,
 } from '@aido/api';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import {
@@ -225,7 +226,7 @@ export function createSearchUsersDto(
 }
 
 export function createFriendApiError(
-  overrides?: Partial<{ code: string; message: string; status: number }>,
+  overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
   return new ApiError(
     overrides?.code ?? 'FOLLOW_0901',
@@ -233,8 +234,6 @@ export function createFriendApiError(
     overrides?.status ?? 400,
   );
 }
-
-export const INVALID_DTO = { invalid: 'data' };
 
 export function createFriendUser(id: string, overrides?: Partial<FriendUser>): FriendUser {
   return friendUserSchema.parse({

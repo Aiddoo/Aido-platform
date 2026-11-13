@@ -4,12 +4,13 @@ import {
   formatYearAwareDateLabel,
   type DateFormatContext,
   type TimeFormat,
-} from '@src/shared/date/date-format';
-import { formatDaysOfWeek, toCatalogLanguage } from '@src/shared/date/date-labels';
+} from '@src/shared/date/format/date-format';
+import { formatDaysOfWeek } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import {
   Box,
   Button,
@@ -39,24 +40,11 @@ const SUGGESTION_LOADING_COUNT = 2;
 /** 소개의 고양이와 로딩 자리가 같은 크기라 함께 쓴다 */
 const INTRO_IMAGE_SIZE = 100;
 
-interface SuggestionsIntroProps {
-  title: string;
-  description: string;
-}
-
-function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
-  return (
-    <Box className="items-center px-5 pt-4">
-      <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
-      <Spacing size={8} />
-      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-        {title}
-      </H4>
-      <Text size="b4" shade={6} align="center">
-        {description}
-      </Text>
-    </Box>
-  );
+interface SuggestionItemProps {
+  suggestion: AiSuggestion;
+  onDismiss: () => void;
+  isDismissing?: boolean;
+  isLast?: boolean;
 }
 
 export function SuggestionsList() {
@@ -100,29 +88,6 @@ export function SuggestionsList() {
   );
 }
 
-function formatSchedule(
-  suggestion: AiSuggestion,
-  {
-    timeFormat,
-    context,
-    allDayLabel,
-  }: { timeFormat: TimeFormat; context: DateFormatContext; allDayLabel: string },
-): string {
-  const days = formatDaysOfWeek(suggestion.daysOfWeek, toCatalogLanguage(context));
-  const time =
-    suggestion.scheduledTime == null
-      ? allDayLabel
-      : formatHHmmTime(suggestion.scheduledTime, timeFormat, context);
-  return `${days} · ${time}`;
-}
-
-interface SuggestionItemProps {
-  suggestion: AiSuggestion;
-  onDismiss: () => void;
-  isDismissing?: boolean;
-  isLast?: boolean;
-}
-
 SuggestionsList.Item = function Item({
   suggestion,
   onDismiss,
@@ -134,6 +99,7 @@ SuggestionsList.Item = function Item({
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
+  // 확신도는 정수로 보인다. formatPercent(소수 한 자리)로 바꾸면 칩 글자 폭이 달라진다
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
   const handleOpenCategorySheet = () =>
@@ -144,8 +110,8 @@ SuggestionsList.Item = function Item({
 
   return (
     <Box className="py-2">
-      <VStack gap={8}>
-        <VStack gap={4}>
+      <VStack className="gap-2">
+        <VStack className="gap-1">
           <HStack justify="between" align="center">
             <Text size="b2" weight="semibold" shade={9}>
               {suggestion.title}
@@ -200,33 +166,6 @@ SuggestionsList.Item = function Item({
 
       {!isLast && <DashedDivider className="mt-5" />}
     </Box>
-  );
-};
-
-SuggestionsList.Empty = function Empty() {
-  const { t } = useTranslation('ai');
-  return (
-    <ScallopedContainer>
-      <SuggestionsIntro
-        title={t('suggestions.list.emptyNoHistory')}
-        description={t('suggestions.list.emptyNoHistoryDescription')}
-      />
-
-      <Spacing size={20} />
-
-      <Box className="px-4 pb-4">
-        <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-4 py-8">
-          <VStack gap={4} align="center">
-            <Text size="b3" weight="semibold" shade={8} align="center">
-              {t('suggestions.list.emptyNoPending')}
-            </Text>
-            <Text size="b4" shade={6} align="center">
-              {t('suggestions.list.emptyNoPendingDescription')}
-            </Text>
-          </VStack>
-        </Box>
-      </Box>
-    </ScallopedContainer>
   );
 };
 
@@ -295,8 +234,8 @@ SuggestionsList.Loading = function Loading() {
       <Box className="px-4 pb-4">
         {range(SUGGESTION_LOADING_COUNT).map((index) => (
           <Box key={index} className="py-2">
-            <VStack gap={8}>
-              <VStack gap={4}>
+            <VStack className="gap-2">
+              <VStack className="gap-1">
                 <HStack justify="between" align="center">
                   <TextSkeleton size="b2" className="w-32" />
                   <TextSkeleton size="e1" className="w-16" />
@@ -333,3 +272,66 @@ SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
     </ScallopedContainer>
   );
 };
+
+SuggestionsList.Empty = function Empty() {
+  const { t } = useTranslation('ai');
+  return (
+    <ScallopedContainer>
+      <SuggestionsIntro
+        title={t('suggestions.list.emptyNoHistory')}
+        description={t('suggestions.list.emptyNoHistoryDescription')}
+      />
+
+      <Spacing size={20} />
+
+      <Box className="px-4 pb-4">
+        <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-4 py-8">
+          <VStack gap={4} align="center">
+            <Text size="b3" weight="semibold" shade={8} align="center">
+              {t('suggestions.list.emptyNoPending')}
+            </Text>
+            <Text size="b4" shade={6} align="center">
+              {t('suggestions.list.emptyNoPendingDescription')}
+            </Text>
+          </VStack>
+        </Box>
+      </Box>
+    </ScallopedContainer>
+  );
+};
+
+interface SuggestionsIntroProps {
+  title: string;
+  description: string;
+}
+
+function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
+  return (
+    <Box className="items-center px-5 pt-4">
+      <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
+      <Spacing size={8} />
+      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+        {title}
+      </H4>
+      <Text size="b4" shade={6} align="center">
+        {description}
+      </Text>
+    </Box>
+  );
+}
+
+function formatSchedule(
+  suggestion: AiSuggestion,
+  {
+    timeFormat,
+    context,
+    allDayLabel,
+  }: { timeFormat: TimeFormat; context: DateFormatContext; allDayLabel: string },
+): string {
+  const days = formatDaysOfWeek(suggestion.daysOfWeek, toLanguageOfIntlLocale(context.locale));
+  const time =
+    suggestion.scheduledTime == null
+      ? allDayLabel
+      : formatHHmmTime(suggestion.scheduledTime, timeFormat, context);
+  return `${days} · ${time}`;
+}

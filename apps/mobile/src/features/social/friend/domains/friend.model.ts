@@ -1,20 +1,16 @@
-import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH } from '@aido/api/vocabulary';
+import { PREMIUM_FEATURES, USER_SEARCH_QUERY_LENGTH, USER_TAG_LENGTH } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 // 서버 경로 검증(userTagParamSchema)과 같은 규칙이다
 const userTagSchema = z
   .string()
-  .length(8)
+  .length(USER_TAG_LENGTH)
   .regex(/^[A-Z0-9]+$/u);
 
-const friendProfileSchema = z.object({
-  id: z.string(),
-  userTag: z.string(),
-  name: z.string().nullable(),
-  profileImage: z.string().nullable(),
-});
+const friendProfileSchema = userSummarySchema;
 
 export const friendUserSchema = friendProfileSchema.extend({
   followId: z.string(),
@@ -87,12 +83,11 @@ export function getRequestState(user: SearchedUser): RequestState {
   return 'none';
 }
 
-// 초대로 늘어난 자리는 서버 오류가 알려 주고, 없으면 내 정보, 그것도 없으면 카탈로그의 무료 한도다
+// 초대로 늘어난 자리는 서버 오류가 알려 주고, 없으면 내 정보, 그것도 없으면 카탈로그의 무료 한도다. 모델이 아닌 값만 받아 Policy 밖에 둔다
 export function getFriendLimit({ serverLimit, knownLimit }: FriendLimitInput) {
   return serverLimit ?? knownLimit ?? PREMIUM_FEATURES.FRIEND.free;
 }
 
 export const FriendPolicy = {
   getRequestState,
-  getFriendLimit,
 } as const;

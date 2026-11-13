@@ -2,6 +2,7 @@ import { NUDGE_REPLY_KINDS } from '@aido/api/vocabulary';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
+import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -36,11 +37,9 @@ const nudgeInteractionStatusSchema = z.enum([
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
 
-const nudgeThanksRecipientSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  profileImage: z.string().nullable(),
-});
+const nudgeThanksRecipientSchema = userSummarySchema
+  .pick({ id: true, profileImage: true })
+  .extend({ name: z.string() });
 export type NudgeThanksRecipient = z.infer<typeof nudgeThanksRecipientSchema>;
 
 const nudgeThanksCursorSchema = z.object({ cursor: z.number(), throughNudgeId: z.number() });

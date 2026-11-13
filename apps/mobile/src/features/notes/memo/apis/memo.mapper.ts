@@ -6,18 +6,21 @@ import {
   type MemoListResponse,
   type MemoResourceLimitResponse,
 } from '@aido/api';
-import type { AddTodoFormValues } from '@src/features/planning/composer/schemas/add-todo-form.schema';
-import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { toRepeat } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { toCreateTodoRequest } from '@src/features/planning/todo/apis/todo.mapper';
+import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
   type PlannedAction,
   type VoicePlan,
   voicePlanSchema,
 } from '@src/features/voice/domains/voice-plan.model';
-import { toDateKey, toInstant } from '@src/shared/date/instant';
+import { dateKeySchema } from '@src/shared/date/date-key';
+import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
-import type { Memo, MemoPage, MemoResourceLimit } from '../domains/memo.model';
-import type { MemoFormValues } from '../schemas/memo-form.schema';
+import type { MemoResourceLimit } from '../domains/memo-resource-limit.model';
+import type { Memo, MemoPage } from '../domains/memo.model';
+import { type MemoFormValues, memoFormSchema } from '../schemas/memo-form.schema';
 import type { ParseMemoPlanResponse } from '../schemas/memo-plan-response.schema';
 
 export function toMemo(dto: MemoDto): Memo {
@@ -39,28 +42,13 @@ export function toMemoResourceLimit(dto: MemoResourceLimitResponse): MemoResourc
   return pick(dto, ['currentCount', 'maxPerUser']);
 }
 
-export function toMemoRequest({ content }: MemoFormValues): CreateMemoInput {
-  return { content };
+// 편집기는 저장 직전 입력 칸 글자를 그대로 넘긴다. 폼 스키마가 앞뒤 공백을 지운다
+export function toMemoRequest(values: MemoFormValues): CreateMemoInput {
+  return memoFormSchema.parse(values);
 }
 
-export function toConvertMemoToTodosRequest(
-  values: AddTodoFormValues,
-  timeZone: string,
-): ConvertMemoToTodosInput {
-  return convertMemoToTodosSchema.parse({
-    todos: [
-      {
-        title: values.title,
-        categoryId: values.categoryId,
-        startDate: toDateKey(values.startDate, timeZone),
-        endDate: values.endDate == null ? undefined : toDateKey(values.endDate, timeZone),
-        scheduledTime: values.isAllDay ? undefined : (values.scheduledTime ?? undefined),
-        isAllDay: values.isAllDay,
-        visibility: values.visibility,
-        ...(values.repeat != null && { repeat: toRepeatDto(values.repeat) }),
-      },
-    ],
-  });
+export function toConvertMemoToTodosRequest(values: TodoFormValues): ConvertMemoToTodosInput {
+  return convertMemoToTodosSchema.parse({ todos: [toCreateTodoRequest(values)] });
 }
 
 export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): VoicePlan {
@@ -68,8 +56,8 @@ export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): Voi
     type: 'create-todo',
     actionId: `memo-todo-${index}`,
     title: todo.title,
-    startDate: todo.startDate,
-    endDate: todo.repeat != null ? null : todo.endDate,
+    startDate: dateKeySchema.parse(todo.startDate),
+    endDate: todo.repeat != null || todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
     scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
     repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
     visibility: null,

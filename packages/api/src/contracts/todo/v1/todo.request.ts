@@ -5,6 +5,7 @@ import {
   RECURRING_TODO_LIMITS,
   TODO_ITEM_LIMITS,
   TODO_LIMITS,
+  TODO_PAGE_SIZE,
 } from "../../../vocabulary/todo.constants.js";
 import { reorderPositionSchema } from "../../todo-category/v1/todo-category.common.js";
 import {
@@ -49,7 +50,7 @@ export const createTodoSchema = z
           title: z
             .string()
             .min(1, "제목을 입력해주세요")
-            .max(200, "제목은 200자 이하로 입력해주세요")
+            .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
             .describe("하위 항목 제목"),
         }),
       )
@@ -83,7 +84,7 @@ export const updateTodoSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(200, "제목은 200자 이하로 입력해주세요")
+      .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
       .optional()
       .describe("할 일 제목 (선택, 1-200자)"),
     categoryId: z
@@ -121,7 +122,7 @@ export const updateTodoSchema = z
           title: z
             .string()
             .min(1, "제목을 입력해주세요")
-            .max(200, "제목은 200자 이하로 입력해주세요")
+            .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
             .describe("하위 항목 제목"),
         }),
       )
@@ -160,8 +161,8 @@ export const getTodosQuerySchema = z.object({
     .number()
     .int()
     .min(1, "페이지 크기는 1 이상이어야 합니다")
-    .max(200, "페이지 크기는 200 이하여야 합니다")
-    .default(20)
+    .max(TODO_PAGE_SIZE.MAX, "페이지 크기는 200 이하여야 합니다")
+    .default(TODO_PAGE_SIZE.DEFAULT)
     .describe("페이지 크기 (1-200, 기본값: 20)"),
   completed: z
     .preprocess((val) => {
@@ -275,7 +276,7 @@ export const updateTodoTitleSchema = z.object({
   title: z
     .string()
     .min(1, "제목을 입력해주세요")
-    .max(200, "제목은 200자 이하로 입력해주세요")
+    .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
     .describe("할 일 제목 (1-200자)"),
 });
 
@@ -298,7 +299,7 @@ export const createRecurringTodoSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(200, "제목은 200자 이하로 입력해주세요")
+      .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
       .describe("할 일 제목 (1-200자, 예: 약먹기)"),
     categoryId: z
       .number()
@@ -369,7 +370,7 @@ export const createTodoItemSchema = z.object({
   title: z
     .string()
     .min(1, "제목을 입력해주세요")
-    .max(200, "제목은 200자 이하로 입력해주세요")
+    .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
     .describe("하위 항목 제목 (1-200자)"),
 });
 
@@ -380,7 +381,7 @@ export const updateTodoItemSchema = z
     title: z
       .string()
       .min(1, "제목을 입력해주세요")
-      .max(200, "제목은 200자 이하로 입력해주세요")
+      .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
       .optional()
       .describe("하위 항목 제목 (선택)"),
     completed: z.boolean().optional().describe("완료 상태 (선택)"),
