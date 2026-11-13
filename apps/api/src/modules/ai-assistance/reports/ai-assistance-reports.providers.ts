@@ -40,10 +40,14 @@ export const AI_ASSISTANCE_REPORTS_PROVIDERS = [
   provideUseCase(GetReportByIdUseCase, {
     aiReportRepository: AiReportRepositoryPort,
     entitlementReader: EntitlementReaderPort,
+    localePreferenceReader: UserLocalePreferenceReaderPort,
+    clock: ClockPort,
   }),
   provideUseCase(ListReportsUseCase, {
     aiReportRepository: AiReportRepositoryPort,
     entitlementReader: EntitlementReaderPort,
+    localePreferenceReader: UserLocalePreferenceReaderPort,
+    clock: ClockPort,
   }),
   provideUseCase(GetReportStatusUseCase, {
     aiReportRepository: AiReportRepositoryPort,

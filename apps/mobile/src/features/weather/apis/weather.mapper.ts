@@ -1,5 +1,7 @@
 import type { WeatherBriefing, WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
+import { isPlainObject, uniq } from 'es-toolkit';
 
 import type {
   RegisteredLocation,
@@ -47,6 +49,7 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     hourly: dto.hourly.map((hour) => ({ ...hour, startsAt: toInstant(hour.startsAt) })),
     daily: dto.daily.map((day) => ({
       ...day,
+      date: dateKeySchema.parse(day.date),
       sunrise: toNullableInstant(day.sunrise),
       sunset: toNullableInstant(day.sunset),
       moonrise: toNullableInstant(day.moonrise),
@@ -62,4 +65,29 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     fetchedAt: toInstant(dto.fetchedAt),
     briefing: dto.briefing == null ? null : toWeatherReportBriefing(dto.briefing),
   };
+}
+
+function collectFallbackPaths(raw: unknown, parsed: unknown, path: string): string[] {
+  if (Array.isArray(parsed)) {
+    const rawItems: unknown[] = Array.isArray(raw) ? raw : [];
+    return parsed.flatMap((item, index) =>
+      collectFallbackPaths(rawItems[index], item, `${path}[]`),
+    );
+  }
+  if (isPlainObject(parsed)) {
+    const rawFields = isPlainObject(raw) ? raw : {};
+    return Object.entries(parsed).flatMap(([key, value]) =>
+      collectFallbackPaths(rawFields[key], value, path === '' ? key : `${path}.${key}`),
+    );
+  }
+  // oxlint-disable-next-line aido/no-strict-nullish -- 받은 값이 없음(undefined)과 null을 가른다
+  return raw !== undefined && raw !== parsed ? [path] : [];
+}
+
+/**
+ * 계약의 .catch가 모르는 값을 대체값으로 바꾼 칸의 경로(`hourly[].condition`). 받은 값과 읽은 값이 다른
+ * 끝 칸이 대체된 칸이다. 값은 담지 않고 배열 위치는 []로 접는다
+ */
+export function getFallbackFieldPaths(raw: unknown, parsed: unknown): string[] {
+  return uniq(collectFallbackPaths(raw, parsed, ''));
 }

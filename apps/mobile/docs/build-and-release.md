@@ -88,6 +88,7 @@ pnpm update:production "메시지"
 
 - SDK 58 빌드는 EAS CLI 24.8.0 이상이다. `npm install -g eas-cli@24.8.0` 뒤 `eas --version`으로 PATH에서 실행되는 버전을 확인한다(Node 버전 관리 도구와 Homebrew의 전역 위치가 다르면 이전 CLI가 실행된다).
 - iOS 로컬 빌드 도구: `brew install fastlane cocoapods`, `xcode-select -p`·`fastlane --version`·`pod --version`으로 확인한다.
+- 로컬 빌드는 Node 24.22.2(`eas.json`의 `node`)로 돌린다. 저장소 기본 Node 26(`.nvmrc`)이 아니다. 빌드 셸에서 `nvm use 24.22.2` 뒤 `node --version`으로 확인한다.
 - 로컬 빌드는 `eas.json`의 Node/Fastlane/CocoaPods 도구 버전을 설치하지 않고 EAS Secret도 자동 제공하지 않는다. 필요한 값은 기존 `GOOGLE_SERVICES_JSON`·`GOOGLE_SERVICES_INFO_PLIST` 복원 경로로 공급한다([Expo 로컬 빌드](https://docs.expo.dev/build-reference/local-builds/)).
 - 실기기 Release 검증용 설치 파일(production API·Firebase·Sentry 설정, iOS는 등록된 기기용 Ad Hoc, Android는 APK)은 `eas build --local --platform <ios|android> --profile production-device`다. 스토어 제출 파일과 구분한다.
 
@@ -98,7 +99,7 @@ pnpm update:production "메시지"
 ```bash
 # 1. main을 독립 clone으로 받는다(작업 중인 checkout·worktree를 쓰지 않는다)
 gh repo clone Aiddoo/Aido-platform /tmp/aido-build -- --depth 1 --branch main
-cd /tmp/aido-build && pnpm install --frozen-lockfile
+cd /tmp/aido-build && nvm use 24.22.2 && pnpm install --frozen-lockfile
 # google-services.json, GoogleService-Info.plist를 apps/mobile에 둔다(git 제외 파일)
 
 # 2. 압축 단계만 먼저 확인한다(빌드 번호를 올리지 않는다)
@@ -106,17 +107,21 @@ cd apps/mobile
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false \
   eas build:inspect -p android -e production --stage archive --output /tmp/aido-archive --force
 
-# 3. 플랫폼마다 TMPDIR을 나눠 동시에 빌드한다
+# 3. 한 플랫폼씩 차례로 빌드한다. iOS가 끝난 뒤 Android를 시작한다(동시에 돌리지 않는다)
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-ios \
   eas build --local -p ios --profile production --non-interactive --output ~/Desktop/aido-<버전>.ipa < /dev/null
+
+# 4. iOS 빌드가 끝난 뒤
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-android \
   eas build --local -p android --profile production --non-interactive --output ~/Desktop/aido-<버전>.aab < /dev/null
 ```
 
+두 빌드를 함께 돌리면 기기 부하가 커지고 Metro 캐시가 부딪친다. `TMPDIR`을 나누는 것은 앞 실행이 남긴 Metro 캐시와 섞이지 않게 하려는 것이다.
+
 | 증상                                                                    | 원인                                                                              | 대책                                                      |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `Compressing project files` 뒤 오류 없이 종료(exit 0), 빌드 번호만 오름 | 전역 `core.fsmonitor=true`가 EAS 임시 복사본 `.git`에 소켓을 만들고 복사가 멈춘다 | 명령에만 `core.fsmonitor=false`를 준다(위 `GIT_CONFIG_*`) |
-| `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 동시에 쓴다                            | 플랫폼마다 `TMPDIR`을 나눈다                              |
+| `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 함께 쓴다                              | 한 플랫폼씩 차례로 빌드하고 플랫폼마다 `TMPDIR`을 나눈다  |
 
 ### SDK 58 빌드 주의
 
@@ -142,6 +147,21 @@ pnpm check:native-icons
 - 스토어 문구·스크린샷 순서·체크리스트의 준비본은 `store-metadata/{버전}/release.json`이고 변경해도 외부 스토어에 자동 게시되지 않는다. 한·영 등록 정보는 `store-metadata/listing/`에 있고 `pnpm store:check`로 검사한다(`store:export`, `store:art`, `store:screens`).
 - API URL이 프로덕션 서버인지, 버전 번호(`app.config.ts`), 앱 아이콘·스플래시를 제출 전에 확인한다.
 
+## Play Console: Android 15 edge-to-edge deprecated API 경고
+
+Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 색·컷아웃 API 호출을 찾아 경고한다. 호출 위치는 R8로 줄인 라이브러리 프레임으로 보이고 앱 코드가 아니다.
+
+| 출처                                                                                                                               | 호출                                                                                                                                                                                         | 하는 일                                                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React Native 0.88 `WindowUtil.kt`의 `Window.enableEdgeToEdge()`(시작 때 `ReactActivityDelegate`, 모달 창마다 `ReactModalHostView`) | `statusBarColor = TRANSPARENT`, `navigationBarColor`(API 29+ 투명, 그 아래 scrim 색), `layoutInDisplayCutoutMode`(API 30+ `ALWAYS`, 28~29 `SHORT_EDGES`), `setDecorFitsSystemWindows(false)` | Android 14 이하에서 바를 투명하게 하고 화면을 바 뒤까지 그린다                                                                                                                                                   |
+| react-native-keyboard-controller 1.22.7 `StatusBarManagerCompatModuleImpl`                                                         | `setColor`의 `window.statusBarColor`                                                                                                                                                         | 같은 이름(`StatusBarManager`)으로 RN 모듈을 대신한다. RN 0.88 JS는 색 메서드를 부르지 않고, `KeyboardProvider` 아래 edge-to-edge 빌드(`IS_EDGE_TO_EDGE_ENABLED`)는 색을 쓰기 전에 돌아가지만 바이트코드에 남는다 |
+
+- **Android 15에서는 효과가 없다.** [Android 15 동작 변경](https://developer.android.com/about/versions/15/behavior-changes-15#edge-to-edge): "`setStatusBarColor` and `R.attr#statusBarColor` are deprecated and have no effect on Android 15." 내비게이션 바 색은 "deprecated and don't affect gesture navigation"이고 3버튼 내비게이션에만 남는다. 컷아웃은 "`SHORT_EDGES`, `NEVER`, and `DEFAULT` are interpreted as `ALWAYS`"다. RN이 넣는 값(투명·`ALWAYS`)이 Android 15 기본과 같아 화면은 그대로이고, Android 14 이하는 이 호출로 edge-to-edge가 된다.
+- **앱 코드 호출은 0건이다.** `git grep -nE 'statusBarColor|statusBarBackgroundColor|navigationBarColor|statusBarTranslucent|navigationBarTranslucent|setBackgroundColorAsync|setBorderColorAsync|StatusBar\.set|androidStatusBar|androidNavigationBar|expo-navigation-bar|expo-status-bar' -- apps/mobile/src apps/mobile/app apps/mobile/app.config.ts apps/mobile/plugins apps/mobile/package.json`가 아무것도 찾지 않는다(1.15.2 [21/32]). RN 0.88 `StatusBar`에는 `backgroundColor`·`translucent`·`setBackgroundColor`·`setTranslucent`가 없고, react-native-screens 4.30은 화면 옵션 `statusBarColor`·`navigationBarColor` setter를 Android에서 빈 함수로 둔다.
+- **빌드 설정.** targetSdk는 Expo SDK 58 기본 36이고 prebuild 템플릿의 `android/gradle.properties`가 `edgeToEdgeEnabled=true`다. Expo는 이 값을 끄는 설정을 없앴다(`withEdgeToEdge`: Android 16은 edge-to-edge가 의무).
+- **앱에서 고칠 것은 없다.** 경고에 답할 때 이 절을 근거로 쓴다. 새 앱 코드가 같은 API를 부르지 않도록 `aido/no-system-bar-color`가 `src`·`app`·`app.config.ts`·`plugins`를 본다.
+- **RN·네이티브 라이브러리를 올린 뒤 다시 확인한다.** `apps/mobile`에서 `grep -rlE 'setStatusBarColor|setNavigationBarColor|statusBarColor *=|navigationBarColor *=|LAYOUT_IN_DISPLAY_CUTOUT_MODE_(SHORT_EDGES|DEFAULT)' node_modules/*/android/src node_modules/@*/*/android/src node_modules/react-native/ReactAndroid/src/main`이 지금은 위 두 파일과 react-native-screens `ScreenViewManager.kt`(빈 setter)만 찾는다. 결과가 바뀌면 이 표를 고친다.
+
 ## 배포 전 체크리스트
 
 - [ ] 서버: 프로덕션 DB·환경 변수(OAuth 키 포함)·HTTPS, `pnpm db:migrate`, `curl https://api.aido.kr/health`
@@ -157,11 +177,11 @@ pnpm check:native-icons
 
 ## 스크립트
 
-| 명령                                                                     | 설명                                                                                    |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `pnpm dev` · `dev:android` · `dev:ios`                                   | Metro(Android는 `adb reverse` 포함)                                                     |
-| `pnpm check`(루트)                                                       | 형식·이름·lint·경계·안 쓰는 코드·타입([가드레일](./architecture/structure.md#가드레일)) |
-| `pnpm check:ipa-linkage` · `check:native-icons` · `check:revenuecat-env` | 빌드 산출물·자산·RevenueCat 환경 검사                                                   |
-| `pnpm test:node`                                                         | 설정·스크립트 테스트(node:test, [testing](./testing.md#파일-위치와-이름))               |
+| 명령                                                                     | 설명                                                                            |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `pnpm dev` · `dev:android` · `dev:ios`                                   | Metro(Android는 `adb reverse` 포함)                                             |
+| `pnpm check`(루트)                                                       | 형식·이름·lint·경계·안 쓰는 코드·타입([가드레일](./architecture/guardrails.md)) |
+| `pnpm check:ipa-linkage` · `check:native-icons` · `check:revenuecat-env` | 빌드 산출물·자산·RevenueCat 환경 검사                                           |
+| `pnpm test:node`                                                         | 설정·스크립트 테스트(node:test, [testing](./testing.md#파일-위치와-이름))       |
 
 참고: [EAS Build](https://docs.expo.dev/build/introduction/) · [EAS Submit](https://docs.expo.dev/submit/introduction/) · [App Store Connect](https://appstoreconnect.apple.com/) · [Play Console](https://play.google.com/console)

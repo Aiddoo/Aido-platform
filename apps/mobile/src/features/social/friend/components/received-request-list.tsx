@@ -13,10 +13,11 @@ import {
   Text,
   TextSkeleton,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
 import type { FriendRequest } from '../domains/friend.model';
+import { refreshFriends } from '../queries/friend-cache';
 import {
   useAcceptRequestMutationOptions,
   useRejectRequestMutationOptions,
@@ -25,11 +26,17 @@ import { useGetReceivedRequestsInfiniteQueryOptions } from '../queries/friend.qu
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError, refetch } =
-    useSuspenseInfiniteQuery(useGetReceivedRequestsInfiniteQueryOptions());
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const {
+    data: receivedRequests,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetReceivedRequestsInfiniteQueryOptions());
+  const queryClient = useQueryClient();
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: requests, totalCount } = data;
+  const { items: requests, totalCount } = receivedRequests;
 
   return (
     <InfiniteList

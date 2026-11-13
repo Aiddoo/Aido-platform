@@ -1,32 +1,36 @@
 import { useHaptics, useVoiceApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
-import {
-  findErrorFeatureQuota,
-  isFreeOfChargeError,
-} from '@src/features/billing/subscription/domains/entitlement.error';
+import { parseErrorFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
+import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { setFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
+import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
+import { PLAN_IN_PROGRESS_RETRY } from '../constants/voice.constants';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model';
-import { getVoicePlanFailureCause } from '../domains/voice.error';
+import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
-import { planInProgressRetryOptions } from './plan-in-progress-retry';
-import { reflectFeatureQuota } from './voice-plan-cache';
+
+/** 응답을 놓친 뒤 다시 보냈는데 앞선 요청이 아직 처리 중이면 안내만 하고 끝내지 않고 결과가 나올 때까지 기다린다 */
+export const planInProgressRetryOptions = {
+  retry: (failureCount: number, error: unknown) =>
+    isPlanInProgressError(error) && failureCount < PLAN_IN_PROGRESS_RETRY.maxCount,
+  retryDelay: PLAN_IN_PROGRESS_RETRY.delayMs,
+} as const;
 
 export interface ApplyActionPlanVariables {
   source: VoicePlanSource;
@@ -54,6 +58,7 @@ export function useApplyActionPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
@@ -75,7 +80,6 @@ export function useApplyActionPlanMutationOptions({
       onSaved?.({ todoCount });
       haptics.notify('success');
       emitTodoCreated();
-      invalidateTodos(queryClient);
       if (hasMemo || sourceMemoId != null) {
         onMemoChanged();
       }
@@ -113,17 +117,20 @@ export function useApplyActionPlanMutationOptions({
       }
     },
     onError: (error) => {
-      haptics.notify('error');
       const cause = getVoicePlanFailureCause(error);
-      if (cause === 'rejected') {
-        invalidateTodoCategories(queryClient);
-      }
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: t(`voicePlan:failure.${cause}.description`),
       });
+    },
+    // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
+    // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
+    onSettled: () => {
+      invalidateTodos(queryClient);
     },
     meta: { errorFeedback: false },
   });
@@ -145,7 +152,7 @@ export function useCreateQuickPlanMutationOptions({
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const haptics = useHaptics();
-  const toast = useAppToast();
+  const showMutationError = useMutationErrorFeedback();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
@@ -177,17 +184,19 @@ export function useCreateQuickPlanMutationOptions({
         source: toAnalyticsSource(input.source),
         cause,
       });
-      haptics.notify('error');
       if (gate.promptIfBlockedError(error, { onSubscribe })) {
+        haptics.notify('error');
         return;
       }
 
-      const featureQuota = findErrorFeatureQuota(error);
+      const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
-        setFeatureQuota(queryClient, featureQuota);
+        reflectFeatureQuota(queryClient, featureQuota);
       }
       // 서버가 환불까지 끝냈다고 알린 오류에만 "차감되지 않아요"를 보여 준다
-      toast.error(t(`voicePlan:failure.${cause}.title`), {
+      showMutationError(error, {
+        feature: 'voice',
+        title: t(`voicePlan:failure.${cause}.title`),
         description: isFreeOfChargeError(error)
           ? `${t(`voicePlan:failure.${cause}.description`)} ${t('subscription:gate.notCharged')}`
           : t(`voicePlan:failure.${cause}.description`),
@@ -249,11 +258,11 @@ export function useCreateVoiceNoteDigestMutationOptions() {
         return;
       }
 
-      const featureQuota = findErrorFeatureQuota(error);
+      const featureQuota = parseErrorFeatureQuota(error);
       if (featureQuota != null) {
-        setFeatureQuota(queryClient, featureQuota);
+        reflectFeatureQuota(queryClient, featureQuota);
       }
-      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다
+      // 화면이 실패를 직접 보여 주므로 토스트를 띄우지 않는다. 한 오류는 한 곳에서만 보인다(보고는 정리 훅이 한다)
     },
     meta: { errorFeedback: false },
   });

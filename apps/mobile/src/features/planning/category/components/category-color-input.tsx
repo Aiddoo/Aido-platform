@@ -1,8 +1,8 @@
-import { WindowLayoutPolicy } from '@src/shared/domains/window-layout.model';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SheetChipRow } from '@src/shared/ui';
-import { getChipRevealScrollX } from '@src/shared/ui/bottom-sheet/get-chip-reveal-scroll-x';
+import { WindowLayoutPolicy } from '@src/shared/ui';
+import { getChipRevealScrollX } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
 import { type ComponentProps, type ComponentRef, useRef } from 'react';

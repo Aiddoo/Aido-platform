@@ -1,4 +1,7 @@
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
+import { getNowInstant } from '@src/shared/date/clock';
+import type { Instant } from '@src/shared/date/instant';
 import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
 import { Popover } from 'heroui-native';
@@ -7,7 +10,6 @@ import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
 import type { CoachmarkKind } from '../domains/coachmark.model';
 import { useIsCoachmarkSettled } from '../hooks/use-is-coachmark-settled';
-import { useMyAccountId } from '../hooks/use-my-account-id';
 import { usePendingCoachmark } from '../hooks/use-pending-coachmark';
 
 interface CoachmarkPopoverProps
@@ -61,19 +63,23 @@ export function CoachmarkPopover({
   const { trackEvent } = useTrack();
   const [isPending, complete] = usePendingCoachmark({ accountId, kind });
   const isFocused = useIsFocused();
-  const isSettled = useIsCoachmarkSettled(isFocused && (shouldAutoOpen || isForced), dismissKey);
+  const isSettled = useIsCoachmarkSettled({
+    isVisible: isFocused && (shouldAutoOpen || isForced),
+    restartKey: dismissKey,
+  });
   const isOpen = accountId != null && (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);
   /** 대상이 움직여 닫았다 다시 여는 것은 같은 노출이다. 사용자가 닫아야 끝난다 */
   const hasTrackedShownRef = useRef(false);
-  const openedAtRef = useRef(0);
+  const openedAtRef = useRef<Instant | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      openedAtRef.current = Date.now();
+      openedAtRef.current = getNowInstant();
     }
     if (isOpen && !hasTrackedShownRef.current) {
       hasTrackedShownRef.current = true;
+      // oxlint-disable-next-line aido/no-tracking-in-effect -- 노출은 사용자가 닫을 때(dismissed)까지 이어지는 짝이라 key로 나누지 않는다
       trackEvent('coachmark_shown', { kind });
     }
   }, [isOpen, kind, trackEvent]);
@@ -92,10 +98,11 @@ export function CoachmarkPopover({
 
   const closeForMovedTarget = useEffectEvent(() => {
     // 스쳐 지나간 자동 안내는 그대로 남긴다. 닫는 일은 위 기다림이 맡고, 멈추면 새 자리에서 다시 열린다
+    const openedAt = openedAtRef.current;
     if (
       isOpen &&
       (isForced ||
-        CoachmarkPolicy.isReadLongEnough({ openedAtMs: openedAtRef.current }, Date.now()))
+        (openedAt != null && CoachmarkPolicy.isReadLongEnough({ openedAt }, getNowInstant())))
     ) {
       handleOpenChange(false);
     }

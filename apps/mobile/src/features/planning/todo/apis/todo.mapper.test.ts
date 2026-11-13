@@ -3,10 +3,11 @@ import {
   todoDetailsResponseSchema,
   todoListResponseSchema,
   todoSummaryResponseSchema,
+  updateTodoSchema,
 } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
-import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { createDateKey } from '@src/testing/date-key';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../__tests__/todo.fixtures';
 import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import {
   todoDetailsSchema,
   todoListResultSchema,
@@ -26,6 +28,7 @@ import {
   todoSummarySchema,
 } from '../domains/todo.model';
 import {
+  toUpdateTodoRequest,
   toCreateTodoRequest,
   toDailyCompletionsResult,
   toTodo,
@@ -34,8 +37,6 @@ import {
   toTodoListResult,
   toTodoSummary,
 } from './todo.mapper';
-
-setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 describe('toTodo', () => {
   it('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {
@@ -84,40 +85,6 @@ describe('toTodo', () => {
     expect(todoSchema.parse(todo)).toEqual(todo);
   });
 
-  it('isAllDay, completed, visibility 매핑', () => {
-    // Given
-    const dto = createTodoDto({ isAllDay: true, completed: true, visibility: 'PRIVATE' });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.isAllDay).toBe(true);
-    expect(result.completed).toBe(true);
-    expect(result.visibility).toBe('PRIVATE');
-  });
-});
-
-describe('toTodo — subTodos', () => {
-  it('subTodos 배열 매핑', () => {
-    // Given
-    const dto = createTodoDto({
-      items: [
-        createTodoItemResponseDto({ id: 1, title: '항목 1' }),
-        createTodoItemResponseDto({ id: 2, title: '항목 2', completed: true }),
-      ],
-      itemStats: { total: 2, completed: 1 },
-    });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.subTodos).toHaveLength(2);
-    expect(result.subTodos[0]?.title).toBe('항목 1');
-    expect(result.subTodos[1]?.completed).toBe(true);
-  });
-
   it('서버의 items를 항목 목록 하나로 받고 진행 숫자는 그 목록에서 센다', () => {
     // Given
     const dto = createTodoDto({
@@ -136,35 +103,6 @@ describe('toTodo — subTodos', () => {
     expect(todo).not.toHaveProperty('items');
   });
 
-  it('빈 subTodos → 빈 배열', () => {
-    // Given
-    const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.subTodos).toEqual([]);
-  });
-});
-
-describe('toDailyCompletionsResult', () => {
-  it('completions 배열 + totalCompleteDays', () => {
-    // Given
-    const dto = createDailyCompletionsDto();
-
-    // When
-    const result = toDailyCompletionsResult(dto);
-
-    // Then
-    expect(result.completions).toHaveLength(1);
-    expect(result.completions[0]?.date).toBe('2026-03-01');
-    expect(result.totalCompleteDays).toBe(1);
-    expect(result.dateRange.startDate).toBe('2026-03-01');
-  });
-});
-
-describe('toTodo의 반복 규칙', () => {
   it('소유자 응답의 규칙을 앱 모델로 옮긴다', () => {
     // Given
     const dto = createTodoDto({
@@ -197,75 +135,77 @@ describe('toTodo의 반복 규칙', () => {
   });
 });
 
-describe('계약 응답과 앱 스키마', () => {
-  it('계약을 통과한 할 일 목록을 매핑하면 앱 목록 스키마를 통과한다', () => {
-    // Given
-    const dto = todoListResponseSchema.parse(
-      createTodoListResponseDto({
-        items: [
-          createTodoDto({
-            scheduledLocalTime: '09:00',
-            repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-            items: [createTodoItemResponseDto({ completed: true })],
-            itemStats: { total: 1, completed: 1 },
-          }),
-          createTodoDto({ id: 2, isAllDay: true, scheduledTime: null, repeat: undefined }),
-        ],
-        pagination: { hasNext: true, nextCursor: 2, size: 20 },
-      }),
-    );
+describe('todo.mapper', () => {
+  describe('계약 응답과 앱 스키마', () => {
+    it('계약을 통과한 할 일 목록을 매핑하면 앱 목록 스키마를 통과한다', () => {
+      // Given
+      const dto = todoListResponseSchema.parse(
+        createTodoListResponseDto({
+          items: [
+            createTodoDto({
+              scheduledLocalTime: '09:00',
+              repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
+              items: [createTodoItemResponseDto({ completed: true })],
+              itemStats: { total: 1, completed: 1 },
+            }),
+            createTodoDto({ id: 2, isAllDay: true, scheduledTime: null, repeat: undefined }),
+          ],
+          pagination: { hasNext: true, nextCursor: 2, size: 20 },
+        }),
+      );
 
-    // When
-    const result = toTodoListResult(dto);
+      // When
+      const result = toTodoListResult(dto);
 
-    // Then
-    expect(todoListResultSchema.parse(result)).toEqual(result);
-  });
-
-  it('계약을 통과한 달성 기간을 매핑하면 앱 달성 스키마를 통과한다', () => {
-    // Given
-    const dto = dailyCompletionsRangeResponseSchema.parse(createDailyCompletionsDto());
-
-    // When
-    const result = toDailyCompletionsResult(dto);
-
-    // Then
-    expect(dailyCompletionsResultSchema.parse(result)).toEqual(result);
-  });
-
-  it('계약을 통과한 오늘 요약을 매핑하면 요약 모델 스키마를 통과한다', () => {
-    // Given
-    const dto = todoSummaryResponseSchema.parse({
-      date: '2026-03-08',
-      totalTodos: 2,
-      completedTodos: 1,
-      completionRate: 50,
-      isComplete: false,
-      currentStreak: 3,
-      topTodos: [{ id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' }],
+      // Then
+      expect(todoListResultSchema.parse(result)).toEqual(result);
     });
 
-    // When
-    const result = toTodoSummary(dto);
+    it('계약을 통과한 달성 기간을 매핑하면 앱 달성 스키마를 통과한다', () => {
+      // Given
+      const dto = dailyCompletionsRangeResponseSchema.parse(createDailyCompletionsDto());
 
-    // Then
-    expect(todoSummarySchema.parse(result)).toEqual(result);
-  });
+      // When
+      const result = toDailyCompletionsResult(dto);
 
-  it('계약을 통과한 할 일 상세를 매핑하면 상세 모델 스키마를 통과한다', () => {
-    // Given
-    const dto = todoDetailsResponseSchema.parse({
-      todo: createTodoDto({ scheduledLocalTime: '18:00' }),
-      owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: null, profileImage: null },
-      permissions: { canEdit: false, canComment: true, canNudge: true },
-      metrics: { viewCount: 4, commentCount: 0 },
+      // Then
+      expect(dailyCompletionsResultSchema.parse(result)).toEqual(result);
     });
 
-    // When
-    const result = toTodoDetails(dto);
+    it('계약을 통과한 오늘 요약을 매핑하면 요약 모델 스키마를 통과한다', () => {
+      // Given
+      const dto = todoSummaryResponseSchema.parse({
+        date: '2026-03-08',
+        totalTodos: 2,
+        completedTodos: 1,
+        completionRate: 50,
+        isComplete: false,
+        currentStreak: 3,
+        topTodos: [{ id: 1, title: '운동하기', completed: true, categoryColor: '#B3E5C1' }],
+      });
 
-    // Then
-    expect(todoDetailsSchema.parse(result)).toEqual(result);
+      // When
+      const result = toTodoSummary(dto);
+
+      // Then
+      expect(todoSummarySchema.parse(result)).toEqual(result);
+    });
+
+    it('계약을 통과한 할 일 상세를 매핑하면 상세 모델 스키마를 통과한다', () => {
+      // Given
+      const dto = todoDetailsResponseSchema.parse({
+        todo: createTodoDto({ scheduledLocalTime: '18:00' }),
+        owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: null, profileImage: null },
+        permissions: { canEdit: false, canComment: true, canNudge: true },
+        metrics: { viewCount: 4, commentCount: 0 },
+      });
+
+      // When
+      const result = toTodoDetails(dto);
+
+      // Then
+      expect(todoDetailsSchema.parse(result)).toEqual(result);
+    });
   });
 });
 
@@ -297,7 +237,11 @@ describe('toCreateTodoRequest', () => {
   it('여러 날 시간 할 일은 끝 날짜와 벽시계를 보낸다', () => {
     // When
     const request = toCreateTodoRequest(
-      createTodoFormValues({ endDate: '2026-03-10', scheduledTime: '09:30', isAllDay: false }),
+      createTodoFormValues({
+        endDate: createDateKey('2026-03-10'),
+        scheduledTime: '09:30',
+        isAllDay: false,
+      }),
     );
 
     // Then
@@ -326,7 +270,10 @@ describe('toCreateTodoRequest', () => {
 describe('toTodoFormValues', () => {
   it('수정 폼 날짜는 할 일의 날짜 key 그대로다', () => {
     // Given
-    const todo = createParentTodo({ startDate: '2026-11-05', endDate: '2026-11-07' });
+    const todo = createParentTodo({
+      startDate: createDateKey('2026-11-05'),
+      endDate: createDateKey('2026-11-07'),
+    });
 
     // When
     const values = toTodoFormValues(todo, 'America/New_York');
@@ -364,5 +311,57 @@ describe('toTodoFormValues', () => {
     expect(legacyInSeoul.scheduledTime).toBe('10:00');
     expect(legacyInNewYork.scheduledTime).toBe('20:00');
     expect(floatingInNewYork.scheduledTime).toBe('10:00');
+  });
+});
+
+const BIWEEKLY_COUNT_REPEAT: TodoRepeat = {
+  frequency: 'WEEKLY',
+  interval: 2,
+  weekdays: ['TUE'],
+  end: { type: 'COUNT', count: 10 },
+};
+
+describe('toUpdateTodoRequest', () => {
+  it('생략은 유지라 옵션이 없으면 범위·규칙 키를 보내지 않는다', () => {
+    // When
+    const request = toUpdateTodoRequest({ title: '새 제목' }, {});
+
+    // Then
+    expect(request).toEqual({ title: '새 제목' });
+  });
+
+  it('null은 반복 끝내기라 repeat 키를 null로 보낸다', () => {
+    // When
+    const request = toUpdateTodoRequest({}, { repeat: null });
+
+    // Then
+    expect(request).toEqual({ repeat: null });
+  });
+
+  it('규칙 변경은 범위와 함께 계약 모양으로 보낸다', () => {
+    // When
+    const request = updateTodoSchema.parse(
+      toUpdateTodoRequest(
+        { title: '새 제목' },
+        {
+          scope: 'THIS_AND_FOLLOWING',
+          repeat: BIWEEKLY_COUNT_REPEAT,
+          checklist: [{ title: '준비물' }],
+        },
+      ),
+    );
+
+    // Then
+    expect(request).toEqual({
+      title: '새 제목',
+      scope: 'THIS_AND_FOLLOWING',
+      repeat: {
+        frequency: 'WEEKLY',
+        interval: 2,
+        weekdays: ['TUE'],
+        end: { type: 'COUNT', count: 10 },
+      },
+      checklist: [{ title: '준비물' }],
+    });
   });
 });

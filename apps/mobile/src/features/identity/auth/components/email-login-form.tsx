@@ -1,4 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -9,10 +11,11 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
-import { type ReactNode, useState } from 'react';
+import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
+import { isEmailNotVerifiedError } from '../domains/auth.error';
 import { useEmailLoginMutationOptions } from '../queries/auth.mutations';
 import { emailLoginFormSchema } from '../schemas/email-login-form.schema';
 import { PasswordInput } from './password-input';
@@ -25,7 +28,8 @@ interface EmailLoginFormProps {
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const push = useSingleTap(router.push);
+  const [viewportSize, handleViewportLayout] = useLayoutSize();
   const form = useForm({
     resolver: zodResolver(emailLoginFormSchema),
     defaultValues: { email: '', password: '' },
@@ -34,19 +38,26 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { isSubmitting } = useFormState({ control: form.control });
 
   const submitEmailLogin = form.handleSubmit(async (values) => {
-    await emailLogin.mutateAsync({ email: values.email, password: values.password }).catch(noop);
+    try {
+      await emailLogin.mutateAsync({ email: values.email, password: values.password });
+    } catch (error) {
+      // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다
+      if (isEmailNotVerifiedError(error)) {
+        push({ pathname: '/(auth)/verify-email', params: { email: values.email } });
+      }
+    }
   });
 
   return (
     <FormScrollView
       contentContainerStyle={{ paddingHorizontal: 16 }}
-      onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+      onLayout={handleViewportLayout}
       footer={
         <KeyboardAdaptiveButton
           testID="email-login-submit"
           color="primary"
           onPress={() => submitEmailLogin()}
-          isLoading={isSubmitting}
+          isLoading={isSubmitting || emailLogin.isPending}
         >
           {t('emailLogin.submit')}
         </KeyboardAdaptiveButton>
@@ -56,7 +67,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
       <StyledSafeAreaView
         edges={['left', 'right']}
         className="justify-center pb-10"
-        style={{ minHeight: viewportHeight }}
+        style={{ minHeight: viewportSize?.height ?? 0 }}
       >
         {children}
 
@@ -78,7 +89,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
               autoCorrect={false}
               returnKeyType="next"
               submitBehavior="submit"
-              isInvalid={!!error}
+              isInvalid={error != null}
               errorMessage={resolveValidationMessage(error, {
                 default: 'email.invalid',
                 byType: { too_big: 'email.tooLong' },
@@ -105,7 +116,7 @@ export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
               autoComplete="password"
               returnKeyType="done"
               submitBehavior="submit"
-              isInvalid={!!error}
+              isInvalid={error != null}
               errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
               onSubmitEditing={() => {
                 if (!isSubmitting) {

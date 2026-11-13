@@ -32,8 +32,8 @@ export function OfflineBanner() {
 
   return (
     <Animated.View
-      entering={FadeIn.duration(ANIMATION.duration.normal).reduceMotion(ReduceMotion.System)}
-      exiting={FadeOut.duration(ANIMATION.duration.fast).reduceMotion(ReduceMotion.System)}
+      entering={FadeIn.duration(ANIMATION.durationMs.normal).reduceMotion(ReduceMotion.System)}
+      exiting={FadeOut.duration(ANIMATION.durationMs.fast).reduceMotion(ReduceMotion.System)}
     >
       <StyledSafeAreaView edges={['top', 'left', 'right']} className="bg-gray-2">
         <HStack
@@ -49,7 +49,7 @@ export function OfflineBanner() {
             height={fontScaledSize(ICON_SIZE)}
             colorClassName="text-gray-8"
           />
-          <Text size="b4" weight="medium" className="text-gray-9 shrink">
+          <Text size="b4" weight="medium" className="shrink text-gray-9">
             {message}
           </Text>
         </HStack>

@@ -1,6 +1,7 @@
 import { aiReportResponseSchema, reportStatusResponseSchema } from '@aido/api';
 
-import { aiReportSchema, reportStatusSchema } from '../domains/report.model';
+import { reportStatusSchema } from '../domains/report-status.model';
+import { aiReportSchema } from '../domains/report.model';
 import { toAiReport, toReportStatus } from './report.mapper';
 
 const reportDto = aiReportResponseSchema.parse({

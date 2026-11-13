@@ -146,6 +146,53 @@ ls:
     .*.*.tsx: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
 
+  # domains/는 모델과 기능 오류만 둔다
+  apps/mobile/src/features/**/domains:
+    .model.ts: kebab-case
+    .model.test.ts: kebab-case
+    .error.ts: kebab-case
+    .error.test.ts: kebab-case
+    .flow.test.ts: kebab-case
+    .ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  # constants/는 일반 상수, 분석 이벤트, 로그 키, 라벨 키 표만 둔다
+  apps/mobile/src/features/**/constants:
+    .constants.ts: kebab-case
+    .constants.test.ts: kebab-case
+    .events.ts: kebab-case
+    .events.test.ts: kebab-case
+    .ts: regex:[a-z0-9-]+-(?:log-events|labels)
+    .test.ts: regex:[a-z0-9-]+-(?:log-events|labels)
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
+  # utils/는 표시 값(.view-model), 좌표(.geometry), 초안(-draft), 분석 값(-analytics)만 둔다.
+  # wait-for-settled-screen은 structure.md의 하나뿐인 예외(store-review)다
+  apps/mobile/src/features/**/utils:
+    .view-model.ts: kebab-case
+    .view-model.test.ts: kebab-case
+    .view-model.test.tsx: kebab-case
+    .geometry.ts: kebab-case
+    .geometry.test.ts: kebab-case
+    .ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
+    .test.ts: regex:(?:[a-z0-9-]+-(?:draft|analytics)|wait-for-settled-screen)
+    .tsx: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+
   # 모바일 역할 폴더의 파일은 그 역할의 접미사를 단다. 테스트는 원본 이름 뒤 .test, 여러 모듈 흐름은 .flow.test다.
   # 이름 있는 확장자 규칙이 와일드카드보다 먼저라 남은 다중 점 이름(`todo.service.ts`)은 `.*.ts`가 막는다
   apps/mobile/src/features/**/apis:
@@ -233,6 +280,11 @@ ls:
     .*.*.ts: regex:[^\s\S]
     .*.*.tsx: regex:[^\s\S]
 
+  # shared/ui의 공개 입구는 shared/ui/index.ts 하나다. 부품 폴더에는 barrel(index.ts)을 두지 않고 실제 파일을 import한다
+  apps/mobile/src/shared/ui/*:
+    .ts: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+    .tsx: regex:(?:.{0,4}|.{6,}|[^i]....|i[^n]...|in[^d]..|ind[^e].|inde[^x])
+
   # app/에는 route만 둔다. 화면 테스트는 src/features/{feature}/__tests__/{route}-screen.test.tsx다
   apps/mobile/app:
     .test.ts: regex:[^\s\S]
@@ -243,83 +295,3 @@ ls:
 ignore:
   # vitest가 spec 옆에 만드는 스냅숏 폴더
   - apps/api/src/modules/*/*/**/__snapshots__
-  # 모바일 역할 폴더 이름이 아직 맞지 않는 파일(baseline #1400).
-  # ls-lint는 남은 ignore를 알리지 않으므로 파일을 옮기거나 지우는 기능 PR이 그 줄을 함께 지운다
-  - apps/mobile/src/features/app-config/app-version/apis/app-version.service.ts
-  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.test.ts
-  - apps/mobile/src/features/app-config/feature-campaign/apis/feature-campaign.service.ts
-  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.test.ts
-  - apps/mobile/src/features/app-config/whats-new/apis/whats-new.repository.ts
-  - apps/mobile/src/features/assistant/suggestion/apis/suggestion.service.ts
-  - apps/mobile/src/features/billing/subscription/apis/entitlement.service.ts
-  - apps/mobile/src/features/billing/subscription/apis/purchases-session.test.ts
-  - apps/mobile/src/features/billing/subscription/apis/purchases-session.ts
-  - apps/mobile/src/features/billing/subscription/apis/subscription.service.test.ts
-  - apps/mobile/src/features/billing/subscription/apis/subscription.service.ts
-  - apps/mobile/src/features/device/activation/apis/activation-progress.repository.test.ts
-  - apps/mobile/src/features/device/activation/apis/activation-progress.repository.ts
-  - apps/mobile/src/features/device/activation/apis/activation.service.test.ts
-  - apps/mobile/src/features/device/activation/apis/activation.service.ts
-  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.test.ts
-  - apps/mobile/src/features/device/app-icon/apis/app-icon.service.ts
-  - apps/mobile/src/features/device/coachmark/apis/coachmark.repository.test.ts
-  - apps/mobile/src/features/device/coachmark/apis/coachmark.repository.ts
-  - apps/mobile/src/features/device/coachmark/apis/coachmark.service.test.ts
-  - apps/mobile/src/features/device/coachmark/apis/coachmark.service.ts
-  - apps/mobile/src/features/device/store-review/apis/store-review.repository.test.ts
-  - apps/mobile/src/features/device/store-review/apis/store-review.repository.ts
-  - apps/mobile/src/features/device/store-review/apis/store-review.service.test.ts
-  - apps/mobile/src/features/device/store-review/apis/store-review.service.ts
-  - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.test.ts
-  - apps/mobile/src/features/device/widget/apis/android-widget-snapshot.repository.ts
-  - apps/mobile/src/features/device/widget/apis/widget-navigation.repository.test.ts
-  - apps/mobile/src/features/device/widget/apis/widget-navigation.repository.ts
-  - apps/mobile/src/features/device/widget/apis/widget-sync.service.test.ts
-  - apps/mobile/src/features/device/widget/apis/widget-sync.service.ts
-  - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.test.ts
-  - apps/mobile/src/features/engagement/comment/apis/todo-comment.service.ts
-  - apps/mobile/src/features/identity/auth/apis/auth-session.store.test.ts
-  - apps/mobile/src/features/identity/auth/apis/auth-session.store.ts
-  - apps/mobile/src/features/identity/auth/apis/auth.service.social.test.ts
-  - apps/mobile/src/features/identity/auth/apis/auth.service.test.ts
-  - apps/mobile/src/features/identity/auth/apis/auth.service.ts
-  - apps/mobile/src/features/identity/auth/apis/log-out-device.service.test.ts
-  - apps/mobile/src/features/identity/auth/apis/log-out-device.service.ts
-  - apps/mobile/src/features/identity/auth/apis/pending-revocation.repository.ts
-  - apps/mobile/src/features/identity/auth/apis/session-cleanup.service.test.ts
-  - apps/mobile/src/features/identity/auth/apis/session-cleanup.service.ts
-  - apps/mobile/src/features/identity/auth/apis/session-query-cache.test.ts
-  - apps/mobile/src/features/identity/auth/apis/session-query-cache.ts
-  - apps/mobile/src/features/identity/auth/apis/session-revocation.service.test.ts
-  - apps/mobile/src/features/identity/auth/apis/session-revocation.service.ts
-  - apps/mobile/src/features/identity/auth/apis/user-device-data.service.test.ts
-  - apps/mobile/src/features/identity/auth/apis/user-device-data.service.ts
-  - apps/mobile/src/features/identity/auth/queries/auth-session-flow.test.tsx
-  - apps/mobile/src/features/identity/consent/apis/consent.service.test.ts
-  - apps/mobile/src/features/identity/consent/apis/consent.service.ts
-  - apps/mobile/src/features/identity/preference/apis/preference.service.test.ts
-  - apps/mobile/src/features/identity/preference/apis/preference.service.ts
-  - apps/mobile/src/features/identity/user/apis/user.service.test.ts
-  - apps/mobile/src/features/identity/user/apis/user.service.ts
-  - apps/mobile/src/features/insights/achievement/apis/achievement.service.ts
-  - apps/mobile/src/features/insights/report/apis/report.service.ts
-  - apps/mobile/src/features/social/friend/apis/friend.service.test.ts
-  - apps/mobile/src/features/social/friend/apis/friend.service.ts
-  - apps/mobile/src/features/social/invite/apis/invite-share.service.test.ts
-  - apps/mobile/src/features/social/invite/apis/invite-share.service.ts
-  - apps/mobile/src/features/social/invite/apis/invite.service.test.ts
-  - apps/mobile/src/features/social/invite/apis/invite.service.ts
-  - apps/mobile/src/features/social/invite/apis/pending-redemption.service.test.ts
-  - apps/mobile/src/features/social/invite/apis/pending-redemption.service.ts
-  - apps/mobile/src/features/social/moderation/apis/moderation.service.ts
-  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.interactions.test.ts
-  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.test.ts
-  - apps/mobile/src/features/social/nudge/apis/todo-nudge.service.ts
-  - apps/mobile/src/features/social/nudge/queries/nudge-interaction-analytics.test.tsx
-  - apps/mobile/src/features/support/inquiry/apis/inquiry.service.test.ts
-  - apps/mobile/src/features/support/inquiry/apis/inquiry.service.ts
-  - apps/mobile/src/features/voice/queries/plan-in-progress-retry.ts
-  - apps/mobile/src/features/weather/apis/weather-location.service.ts
-  - apps/mobile/src/features/weather/apis/weather.mapper.structural-sharing.test.ts
-  - apps/mobile/src/features/weather/apis/weather.service.test.ts
-  - apps/mobile/src/features/weather/apis/weather.service.ts

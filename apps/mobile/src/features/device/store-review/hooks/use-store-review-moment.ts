@@ -4,6 +4,7 @@ import {
   useStoreReviewService,
 } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
+import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ export function useStoreReviewMoment() {
   const logger = useLogger();
   const appLifecycle = useAppLifecycle();
   const storeReviewService = useStoreReviewService();
+  const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
   const pendingRequestRef = useRef<AbortController | null>(null);
 
@@ -69,6 +71,9 @@ export function useStoreReviewMoment() {
           }),
         );
         logger.debug(STORE_REVIEW_LOG_EVENT.REQUEST_SETTLED, { moment, outcome });
+        if (outcome === 'requested') {
+          trackEvent('store_review_requested', { moment });
+        }
       } catch (error) {
         logger.warn(STORE_REVIEW_LOG_EVENT.REQUEST_FAILED, {
           moment,
@@ -80,7 +85,7 @@ export function useStoreReviewMoment() {
         }
       }
     },
-    [appLifecycle, logger, navigation, queryClient, storeReviewService],
+    [appLifecycle, logger, navigation, queryClient, storeReviewService, trackEvent],
   );
 
   return { recordActiveDay, requestReviewAt };

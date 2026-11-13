@@ -10,6 +10,10 @@ import {
 import { vi } from "vitest";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import {
+  describeEmailSenderContract,
+  type EmailContractScenario,
+} from "#test/contracts/notification/email-sender.contract";
 import { createTestMailer, type TestMailer } from "#test/doubles/notification/test-mailer";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import {
@@ -25,10 +29,6 @@ import {
 
 import type { EmailDeliveryOutcome } from "../../application/ports/email-sender.port.js";
 import { EmailLogEvent } from "./email-provider.log-events.js";
-import {
-  describeEmailSenderContract,
-  type EmailContractScenario,
-} from "./email-sender-contract.adapter.js";
 import { NestMailEmailSenderAdapter } from "./nest-mail-email-sender.adapter.js";
 
 const success = resendResponseFixture("send.success.json");

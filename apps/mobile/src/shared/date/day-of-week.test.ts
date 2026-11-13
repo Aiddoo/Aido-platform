@@ -1,4 +1,5 @@
 import type { DayOfWeek } from '@aido/api/vocabulary';
+import { createDateKey } from '@src/testing/date-key';
 
 import { getDateKeyDayOfWeek, hasSameDaysOfWeek, sortDaysOfWeek } from './day-of-week';
 
@@ -81,7 +82,7 @@ describe('getDateKeyDayOfWeek', () => {
     { dateKey: '2027-01-01', expected: 'FRI' },
   ])('$dateKey는 $expected다', ({ dateKey, expected }) => {
     // When
-    const result = getDateKeyDayOfWeek(dateKey);
+    const result = getDateKeyDayOfWeek(createDateKey(dateKey));
 
     // Then
     expect(result).toBe(expected);

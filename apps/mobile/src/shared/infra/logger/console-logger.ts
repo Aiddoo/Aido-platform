@@ -1,4 +1,4 @@
-import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import type { AppLogger, DebugLogContext, LogContext, LogLevel } from '@src/core/ports/app-logger';
 
 const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 0,
@@ -11,12 +11,12 @@ interface ConsoleLoggerOptions {
   minLevel: LogLevel;
 }
 
-export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger {
+export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): AppLogger {
   const shouldLog = (level: LogLevel): boolean =>
     LOG_LEVEL_ORDER[level] >= LOG_LEVEL_ORDER[minLevel];
 
   return {
-    debug(message: string, context?: LogContext): void {
+    debug: (message: string, context?: DebugLogContext): void => {
       if (!shouldLog('debug')) {
         return;
       }
@@ -26,7 +26,7 @@ export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger 
       }
       console.debug(`[DEBUG] ${message}`);
     },
-    info(message: string, context?: LogContext): void {
+    info: (message: string, context?: LogContext): void => {
       if (!shouldLog('info')) {
         return;
       }
@@ -36,7 +36,7 @@ export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger 
       }
       console.info(`[INFO] ${message}`);
     },
-    warn(message: string, context?: LogContext): void {
+    warn: (message: string, context?: LogContext): void => {
       if (!shouldLog('warn')) {
         return;
       }
@@ -46,7 +46,7 @@ export function createConsoleLogger({ minLevel }: ConsoleLoggerOptions): Logger 
       }
       console.warn(`[WARN] ${message}`);
     },
-    error(message: string, error?: Error, context?: LogContext): void {
+    error: (message: string, error?: Error, context?: LogContext): void => {
       if (!shouldLog('error')) {
         return;
       }
