@@ -140,7 +140,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 | 할 일 리마인더(`todo-reminder.v1`) | 작업이 PostgreSQL에 남아 늦어질 뿐 유실 없음. 15분을 넘거나 할 일 시각이 지나면 사유와 함께 건너뜀                           |
 | 분 단위 sweep                      | 워터마크 따라잡기                                                                                                            |
 | 실행 중이던 작업                   | `stop_grace_period` 120초, graceful stop 90초(`JOB_SHUTDOWN_TIMEOUT_MS`), 넘으면 만료 뒤 재시도. 상태 fence로 중복 발송 없음 |
-| 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(15분) 뒤 다시 보낸다                                              |
+| 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(작업 만료 5분 + 공급자 전송 여유 10분) 뒤 다시 보낸다             |
 | 커밋 뒤 캐시 정리                  | best-effort. 중단되면 TTL까지 오래된 값(캐시만 허용)                                                                         |
 
 검증은 [reminder-sweep-catch-up](../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](deployment.md#job과-종료)에 있다.
