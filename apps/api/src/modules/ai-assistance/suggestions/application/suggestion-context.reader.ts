@@ -38,7 +38,7 @@ interface SuggestionContextBuilderDependencies {
     | "findUserStreakInfo"
     | "findRecentResponded"
   >;
-  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "execute">;
+  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "readForecasts">;
   readonly latestReportStats: Pick<LatestReportStatsReaderPort, "findLatestWeekly">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
@@ -196,7 +196,7 @@ export class SuggestionContextReader {
     }
 
     try {
-      const forecasts = await this.#dependencies.weatherForecastReader.execute({
+      const forecasts = await this.#dependencies.weatherForecastReader.readForecasts({
         grids: [grid],
         target,
       });

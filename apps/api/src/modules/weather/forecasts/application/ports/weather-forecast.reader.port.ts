@@ -13,5 +13,5 @@ export interface ReadWeatherForecastsQuery {
 
 /** 다른 Context에는 위치 조회 없는 격자 묶음 예보 조회 하나만 연다. 결과 키는 `gridX:gridY`다. */
 export abstract class WeatherForecastReaderPort {
-  abstract execute(query: ReadWeatherForecastsQuery): Promise<Map<string, WeatherForecast>>;
+  abstract readForecasts(query: ReadWeatherForecastsQuery): Promise<Map<string, WeatherForecast>>;
 }

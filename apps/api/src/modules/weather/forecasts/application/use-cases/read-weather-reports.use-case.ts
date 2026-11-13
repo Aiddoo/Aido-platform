@@ -11,7 +11,6 @@ import { ForecastLogEvent } from "../forecasts.log-events.js";
 import type {
   LocatedWeatherReport,
   ReadWeatherReportsQuery,
-  WeatherReportReaderPort,
 } from "../ports/weather-report.reader.port.js";
 import type { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
 
@@ -25,7 +24,7 @@ export interface ReadWeatherReportsDependencies {
 }
 
 /** 화면 조회와 날씨 알림이 같은 칸 캐시·폴백을 쓰도록 여러 위치의 리포트를 칸별로 한 번씩 읽는다. */
-export class ReadWeatherReportsUseCase implements WeatherReportReaderPort {
+export class ReadWeatherReportsUseCase {
   readonly #dependencies: ReadWeatherReportsDependencies;
 
   constructor(dependencies: ReadWeatherReportsDependencies) {

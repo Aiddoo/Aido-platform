@@ -27,6 +27,8 @@ import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adap
 import { KmaLifestyleIndexAdapter } from "./infrastructure/adapters/kma-lifestyle-index.adapter.js";
 import { KmaWeatherForecastAdapter } from "./infrastructure/adapters/kma-weather-forecast.adapter.js";
 import { PlanningScheduledTodoAdapter } from "./infrastructure/adapters/planning-scheduled-todo.adapter.js";
+import { WeatherForecastReaderAdapter } from "./infrastructure/adapters/weather-forecast-reader.adapter.js";
+import { WeatherReportReaderAdapter } from "./infrastructure/adapters/weather-report-reader.adapter.js";
 import { WeatherKitAttributionAdapter } from "./infrastructure/adapters/weatherkit-attribution.adapter.js";
 import { WeatherKitReportAdapter } from "./infrastructure/adapters/weatherkit-report.adapter.js";
 import { WeatherKitTokenAdapter } from "./infrastructure/adapters/weatherkit-token.adapter.js";
@@ -58,7 +60,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
     logger: loggerFor(ReadWeatherForecastsUseCase),
     clock: ClockPort,
   }),
-  { provide: WeatherForecastReaderPort, useExisting: ReadWeatherForecastsUseCase },
+  { provide: WeatherForecastReaderPort, useClass: WeatherForecastReaderAdapter },
   provideUseCase(ReadWeatherReportUseCase, {
     weatherReportProvider: WeatherReportProviderPort,
     weatherReportCache: WeatherReportCachePort,
@@ -69,7 +71,7 @@ export const WEATHER_FORECASTS_PROVIDERS = [
     timezoneResolver: TimezoneResolverPort,
     logger: loggerFor(ReadWeatherReportsUseCase),
   }),
-  { provide: WeatherReportReaderPort, useExisting: ReadWeatherReportsUseCase },
+  { provide: WeatherReportReaderPort, useClass: WeatherReportReaderAdapter },
   provideUseCase(GetWeatherForecastUseCase, {
     userLocationRepository: UserLocationRepositoryPort,
     readWeatherForecast: ReadWeatherForecastUseCase,

@@ -60,9 +60,9 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
     provide: ReminderWeatherReportReaderPort,
     inject: [WeatherReportReaderPort],
     useFactory: (
-      reader: Pick<WeatherReportReaderPort, "execute">,
+      reader: Pick<WeatherReportReaderPort, "readReports">,
     ): ReminderWeatherReportReaderPort => ({
-      readReports: (requests, now) => reader.execute({ requests, now }),
+      readReports: (requests, now) => reader.readReports({ requests, now }),
     }),
   },
   {

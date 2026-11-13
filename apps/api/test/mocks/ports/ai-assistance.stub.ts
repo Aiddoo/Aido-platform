@@ -82,7 +82,7 @@ export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
   forecasts = new Map<string, WeatherForecast>();
   failure: Error | null = null;
   calls = 0;
-  async execute() {
+  async readForecasts() {
     this.calls += 1;
     if (this.failure) {
       throw this.failure;

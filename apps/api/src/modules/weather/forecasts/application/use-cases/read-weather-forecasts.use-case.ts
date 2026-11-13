@@ -10,10 +10,7 @@ import type {
   WeatherForecastEntry,
 } from "../ports/weather-forecast-cache.port.js";
 import type { WeatherForecastProviderPort } from "../ports/weather-forecast-provider.port.js";
-import type {
-  ReadWeatherForecastsQuery,
-  WeatherForecastReaderPort,
-} from "../ports/weather-forecast.reader.port.js";
+import type { ReadWeatherForecastsQuery } from "../ports/weather-forecast.reader.port.js";
 import type { WeatherForecast } from "../read-models/weather-forecast.read-model.js";
 
 /** 정기 sweep의 cache miss 전체를 동시에 보내면 공급자 실패 코드가 몰려 발생해 동시 호출 수를 제한한다. */
@@ -40,7 +37,7 @@ function gridKey(grid: GridCoordinate): string {
  * 여러 격자의 예보를 한 번에 읽는다(캐시 묶음 읽기 → 미스만 공급자 → 묶음 저장). 실패한 격자는 latest로
  * 대신하고, 그것도 없으면 결과에서 뺀다. 공급자가 줄 수 없는 날짜면 빈 결과다.
  */
-export class ReadWeatherForecastsUseCase implements WeatherForecastReaderPort {
+export class ReadWeatherForecastsUseCase {
   readonly #dependencies: ReadWeatherForecastsDependencies;
 
   constructor(dependencies: ReadWeatherForecastsDependencies) {
