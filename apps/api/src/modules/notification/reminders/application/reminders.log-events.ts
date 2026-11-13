@@ -32,5 +32,7 @@ export const NotificationRemindersLogEvent = {
   WEEKLY_ACHIEVEMENT_SENT: "notification.reminders.weekly-achievement.sent",
   WEEKLY_REPORT_SENT: "notification.reminders.weekly-report.sent",
   TODO_REMINDER_LATE_SKIPPED: "notification.reminders.todo-reminder.late-skipped",
+  TODO_REMINDER_BATCH_PUBLISHED: "notification.reminders.todo-reminder.batch-published",
+  TODO_REMINDER_BATCH_PUBLISH_FAILED: "notification.reminders.todo-reminder.batch-publish-failed",
   WINBACK_SENT: "notification.reminders.winback.sent",
 } as const;

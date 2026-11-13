@@ -6,12 +6,18 @@ import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.p
 export class StubTodoReminderReader extends TodoReminderReaderPort {
   readonly todos = new Map<number, ActiveTodo>();
   failWith: Error | null = null;
+  readCount = 0;
 
-  async findActiveTodo(todo: TodoId): Promise<ActiveTodo | null> {
-    const todoId = todo.value;
+  async findActiveTodos(todoIds: readonly TodoId[]): Promise<ReadonlyMap<number, ActiveTodo>> {
+    this.readCount += 1;
     if (this.failWith != null) {
       throw this.failWith;
     }
-    return this.todos.get(todoId) ?? null;
+    return new Map(
+      todoIds.flatMap(({ value }) => {
+        const found = this.todos.get(value);
+        return found == null ? [] : [[value, found] as const];
+      }),
+    );
   }
 }

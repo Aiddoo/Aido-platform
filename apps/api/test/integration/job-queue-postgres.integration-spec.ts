@@ -213,6 +213,37 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     expect(handled.sort()).toEqual([20, 21, 22]);
   });
 
+  it("workBatch worker는 묶음을 한 번에 넘기고 handler가 돌려준 작업만 실패로 남긴다", async () => {
+    // Given
+    const queue = documentQueue("integration-queue-batch-failures", {
+      batchSize: 3,
+      burstWhenBatchFull: true,
+    });
+    const ids = await Promise.all(
+      [30, 31, 32].map((documentId) => jobQueue.enqueue(queue, { documentId, locale: "ko" })),
+    );
+    const batchSizes: number[] = [];
+
+    // When
+    await jobQueue.workBatch(queue, async (jobs) => {
+      batchSizes.push(jobs.length);
+      return new Map(
+        jobs.flatMap(({ id, data }) =>
+          data.documentId === 31 ? [[id, new Error("document 31 failed")] as const] : [],
+        ),
+      );
+    });
+
+    // Then
+    await vi.waitFor(async () => {
+      const states = await Promise.all(
+        ids.map(async (id) => (await boss.findJobs(queue.name, { id: id ?? undefined }))[0]?.state),
+      );
+      expect(states).toEqual(["completed", "failed", "completed"]);
+    }, WORKER_WAIT);
+    expect(batchSizes).toEqual([3]);
+  });
+
   it("스케줄은 정의의 missed 정책과 key로 등록한다", async () => {
     // Given
     const queue = defineQueue({

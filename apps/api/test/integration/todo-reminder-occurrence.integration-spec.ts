@@ -10,6 +10,8 @@ import { z } from "zod";
 
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
+import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
+import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
@@ -165,7 +167,17 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         logger: silentLogger,
       }),
       sendNotificationWithDeduplication: { execute: async () => null },
-      sendBatchNotification: { execute: async () => ({ count: 0 }) },
+      sendBatchNotification: new SendBatchNotificationUseCase({
+        persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
+          notificationRepository: new DrizzleNotificationRepository(txHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+          unitOfWork: uow,
+          afterCommitPublisher: { register: () => undefined },
+        }),
+        finalizeBatchNotificationUseCase: { execute: async () => ({ count: 0 }) },
+        unitOfWork: uow,
+        afterCommitTasks: { register: () => undefined },
+      }),
       todoTargetReader: new DrizzleNotificationTodoTargetReader(txHost),
     });
     const readerModule = await Test.createTestingModule({

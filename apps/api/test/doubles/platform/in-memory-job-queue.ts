@@ -2,6 +2,7 @@ import {
   JobQueuePort,
   type EnqueueManyJob,
   type EnqueueOptions,
+  type JobBatchFailures,
   type JobEnvelope,
   type JobQueueHealth,
   type QueueDefinition,
@@ -86,6 +87,20 @@ export class InMemoryJobQueue extends JobQueuePort {
       queue,
       handler: async (jobs) =>
         handler(jobs.map((job) => ({ ...job, data: queue.payloadSchema.parse(job.data) }))),
+    });
+  }
+
+  async workBatch<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
+  ): Promise<void> {
+    // drain은 작업을 하나씩 넘기므로 그 작업의 실패를 던져 work와 같이 보이게 한다
+    await this.work(queue, async (jobs) => {
+      const failures = await handler(jobs);
+      const [failure] = failures.values();
+      if (failures.size > 0) {
+        throw failure;
+      }
     });
   }
 

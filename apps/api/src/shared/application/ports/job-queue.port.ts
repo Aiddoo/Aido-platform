@@ -118,6 +118,9 @@ export interface JobQueueHealth {
   readonly queues: Readonly<Record<string, QueueHealth>>;
 }
 
+/** 묶음 handler가 실패로 끝낸 작업(id → 오류). 여기 없는 작업은 완료다 */
+export type JobBatchFailures = ReadonlyMap<string, unknown>;
+
 /** 큐 하나의 정의(`defineQueue`)로 등록·소비·스케줄을 한다. 등록은 활성 UoW 트랜잭션에 함께 쓴다. */
 export abstract class JobQueuePort {
   abstract start(): Promise<void>;
@@ -142,6 +145,14 @@ export abstract class JobQueuePort {
   abstract work<TPayload extends object>(
     queue: QueueDefinition<TPayload>,
     handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+  ): Promise<void>;
+  /**
+   * 묶음을 한 번에 넘겨 조회·발행을 묶게 하고, handler가 돌려준 작업만 실패로 재시도한다.
+   * handler가 던지면 묶음 전체가 실패한다. 작업마다 끝내야 하는 큐가 작업당 조회를 줄일 때 쓴다
+   */
+  abstract workBatch<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
   ): Promise<void>;
   /** 정의의 schedules를 key별로 upsert한다. */
   abstract registerSchedules(queue: QueueDefinition<object>): Promise<void>;

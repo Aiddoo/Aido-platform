@@ -2,6 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { and, count, eq, gte, inArray, lt, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { uniq } from "es-toolkit";
 import { z } from "zod";
 
 import {
@@ -578,8 +579,11 @@ export class DrizzleSchedulerReader
   // TodoReminderReaderPort — 지연 잡 처리용
   // ─────────────────────────────────────────────────────────────
 
-  async findActiveTodo(todoId: TodoId): Promise<ActiveTodo | null> {
-    const row = await this.#db.query.todo.findFirst({
+  async findActiveTodos(todoIds: readonly TodoId[]): Promise<ReadonlyMap<number, ActiveTodo>> {
+    if (todoIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.#db.query.todo.findMany({
       columns: {
         id: true,
         title: true,
@@ -588,13 +592,14 @@ export class DrizzleSchedulerReader
         scheduledLocalTime: true,
         scheduledTime: true,
       },
-      where: { id: todoId.value, completed: false },
+      where: { id: { in: uniq(todoIds.map((todoId) => todoId.value)) }, completed: false },
     });
-    if (row == null) {
-      return null;
-    }
-    const { scheduledTime, ...rest } = row;
-    return { ...rest, startDate: row.startDate.toString(), scheduledAt: scheduledTime };
+    return new Map(
+      rows.map(({ scheduledTime, ...rest }) => [
+        rest.id,
+        { ...rest, startDate: rest.startDate.toString(), scheduledAt: scheduledTime },
+      ]),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────

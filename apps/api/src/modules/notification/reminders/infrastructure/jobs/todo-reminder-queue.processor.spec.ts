@@ -1,6 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
+import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
+import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
+import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoReminderReader } from "#test/doubles/notification/stub-todo-reminder.reader";
@@ -40,6 +43,40 @@ const activeTodo = (overrides: Partial<ActiveTodo> = {}): ActiveTodo => ({
   scheduledLocalTime: "10:00",
   scheduledAt: NOW.add({ minutes: 60 }),
   ...overrides,
+});
+
+// 묶음 발행이 막히면 한 건씩 다시 보내는데, 정해 둔 할 일만 그때도 실패한다
+class BatchFailingPublisher extends RecordingNotificationPublisher {
+  readonly failingTodoIds = new Set<number>();
+
+  override async publishBatch(): Promise<{ count: number }> {
+    throw new Error("batch insert failed");
+  }
+
+  override async publish(data: CreateNotificationData): Promise<InboxNotification | null> {
+    if (data.todoId != null && this.failingTodoIds.has(data.todoId)) {
+      throw new Error(`todo ${data.todoId} failed`);
+    }
+    return super.publish(data);
+  }
+}
+
+// 이미 울린 회차는 유니크 인덱스가 막아 묶음 발행이 세지 않는다
+class AlreadyNotifiedPublisher extends RecordingNotificationPublisher {
+  override async publishBatch(items: CreateNotificationData[]): Promise<{ count: number }> {
+    await super.publishBatch(items);
+    return { count: 0 };
+  }
+}
+
+const envelope = (
+  id: string,
+  data: TodoReminderRuntimeJob,
+): JobEnvelope<TodoReminderRuntimeJob> => ({
+  id,
+  name: TODO_REMINDER_QUEUE.name,
+  data,
+  attempt: 1,
 });
 
 const makeJob = (data: Partial<ReminderJobData> = {}): TodoReminderRuntimeJob => ({
@@ -189,7 +226,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([
         {
-          mode: "publish",
+          mode: "publishBatch",
           data: expect.objectContaining({
             userId: USER_ID,
             type: "TODO_REMINDER",
@@ -329,20 +366,103 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       });
     });
 
-    it("이미 울린 회차면 건너뛴 것으로 남기고 완료로 세지 않는다", async () => {
-      // Given: 기록 발행기는 이미 울린 회차처럼 null을 돌려준다
-      const debug = vi.spyOn(Logger.prototype, "debug").mockImplementation(() => undefined);
+    it("이미 울린 회차는 묶음 발행이 세지 않은 수로 남긴다", async () => {
+      // Given
+      const alreadyNotified = new AlreadyNotifiedPublisher();
       const log = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
       // When
-      await processor.process(makeJob());
+      await new TodoReminderQueueProcessor(
+        reader,
+        seriesOwnerDormancy,
+        alreadyNotified,
+        localeReader,
+        jobQueue,
+        clock,
+        alert,
+      ).process(makeJob());
       // Then
-      expect(debug).toHaveBeenCalledWith(
-        expect.objectContaining({
-          event: NotificationProviderLogEvent.JOB_SKIPPED,
-          reason: "ALREADY_NOTIFIED",
-        }),
+      expect(log).toHaveBeenCalledExactlyOnceWith({
+        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
+        attempted: 1,
+        published: 0,
+      });
+    });
+  });
+
+  describe("묶음 처리", () => {
+    it("묶음의 리마인더는 할 일을 한 번 읽고 보낼 것만 한 번에 발행한다", async () => {
+      // Given
+      reader.todos.set(2, activeTodo({ id: 2 }));
+      const jobs = [
+        envelope("job-1", makeJob({ todoId: 1 })),
+        envelope("job-2", makeJob({ todoId: 2 })),
+        envelope("job-3", makeJob({ todoId: 3 })),
+      ];
+      // When
+      const failures = await processor.processBatch(jobs);
+      // Then
+      expect(failures.size).toBe(0);
+      expect(reader.readCount).toBe(1);
+      expect(publisher.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
+        ["publishBatch", 1],
+        ["publishBatch", 2],
+      ]);
+    });
+
+    it("같은 소유자의 반복 회차는 휴면을 한 번만 묻는다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      reader.todos.set(2, activeTodo({ id: 2, seriesId: "series-1" }));
+      // When
+      await processor.processBatch([
+        envelope("job-1", makeJob({ todoId: 1 })),
+        envelope("job-2", makeJob({ todoId: 2 })),
+      ]);
+      // Then
+      expect(seriesOwnerDormancy.askedUserIds).toEqual([USER_ID]);
+      expect(publisher.published).toHaveLength(2);
+    });
+
+    it("묶음 발행이 실패하면 한 건씩 다시 보내고 그래도 실패한 작업만 돌려준다", async () => {
+      // Given
+      reader.todos.set(2, activeTodo({ id: 2 }));
+      const failing = new BatchFailingPublisher();
+      failing.failingTodoIds.add(2);
+      vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const batchProcessor = new TodoReminderQueueProcessor(
+        reader,
+        seriesOwnerDormancy,
+        failing,
+        localeReader,
+        jobQueue,
+        clock,
+        alert,
       );
-      expect(log).not.toHaveBeenCalled();
+      // When
+      const failures = await batchProcessor.processBatch([
+        envelope("job-1", makeJob({ todoId: 1 })),
+        envelope("job-2", makeJob({ todoId: 2 })),
+      ]);
+      // Then
+      expect([...failures.keys()]).toEqual(["job-2"]);
+      expect(failing.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
+        ["publish", 1],
+      ]);
+    });
+
+    it("한 작업의 휴면 조회가 실패해도 같은 묶음의 다른 리마인더는 보낸다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      reader.todos.set(2, activeTodo({ id: 2 }));
+      vi.spyOn(seriesOwnerDormancy, "findDormantSince").mockRejectedValue(new Error("down"));
+      // When
+      const failures = await processor.processBatch([
+        envelope("job-1", makeJob({ todoId: 1 })),
+        envelope("job-2", makeJob({ todoId: 2 })),
+      ]);
+      // Then
+      expect([...failures.keys()]).toEqual(["job-1"]);
+      expect(publisher.published.map(({ data }) => data.todoId)).toEqual([2]);
     });
   });
 
