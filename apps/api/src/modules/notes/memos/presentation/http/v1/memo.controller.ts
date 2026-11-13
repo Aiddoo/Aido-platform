@@ -40,6 +40,7 @@ import {
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
+import { ChangeMemoPinnedUseCase } from "../../../application/use-cases/change-memo-pinned.use-case.js";
 import { ConvertMemoToTodoUseCase } from "../../../application/use-cases/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodosUseCase } from "../../../application/use-cases/convert-memo-to-todos.use-case.js";
 import { CreateMemoUseCase } from "../../../application/use-cases/create-memo.use-case.js";
@@ -48,15 +49,15 @@ import { GetMemoResourceLimitUseCase } from "../../../application/use-cases/get-
 import { GetMemoUseCase } from "../../../application/use-cases/get-memo.use-case.js";
 import { ListMemosUseCase } from "../../../application/use-cases/list-memos.use-case.js";
 import { ReorderMemoUseCase } from "../../../application/use-cases/reorder-memo.use-case.js";
-import { SetMemoPinnedUseCase } from "../../../application/use-cases/set-memo-pinned.use-case.js";
-import { UpdateMemoUseCase } from "../../../application/use-cases/update-memo.use-case.js";
+import { RewriteMemoUseCase } from "../../../application/use-cases/rewrite-memo.use-case.js";
 import {
   MEMO_RESPONSE_MESSAGES,
   toConvertMemoToTodoResponse,
   toConvertMemoToTodosResponse,
+  toMemoDetailResponse,
   toMemoListResponse,
   toMemoMutationResponse,
-  toMemoResponse,
+  toMemoResourceLimitResponse,
 } from "./memo-response.mapper.js";
 import {
   ConvertMemoToTodoDto,
@@ -84,8 +85,8 @@ export class MemoController {
   readonly #createMemo: CreateMemoUseCase;
   readonly #listMemos: ListMemosUseCase;
   readonly #getMemo: GetMemoUseCase;
-  readonly #updateMemo: UpdateMemoUseCase;
-  readonly #setMemoPinned: SetMemoPinnedUseCase;
+  readonly #rewriteMemo: RewriteMemoUseCase;
+  readonly #changeMemoPinned: ChangeMemoPinnedUseCase;
   readonly #reorderMemo: ReorderMemoUseCase;
   readonly #deleteMemo: DeleteMemoUseCase;
   readonly #convertMemoToTodo: ConvertMemoToTodoUseCase;
@@ -96,8 +97,8 @@ export class MemoController {
     createMemo: CreateMemoUseCase,
     listMemos: ListMemosUseCase,
     getMemo: GetMemoUseCase,
-    updateMemo: UpdateMemoUseCase,
-    setMemoPinned: SetMemoPinnedUseCase,
+    rewriteMemo: RewriteMemoUseCase,
+    changeMemoPinned: ChangeMemoPinnedUseCase,
     reorderMemo: ReorderMemoUseCase,
     deleteMemo: DeleteMemoUseCase,
     convertMemoToTodo: ConvertMemoToTodoUseCase,
@@ -107,8 +108,8 @@ export class MemoController {
     this.#createMemo = createMemo;
     this.#listMemos = listMemos;
     this.#getMemo = getMemo;
-    this.#updateMemo = updateMemo;
-    this.#setMemoPinned = setMemoPinned;
+    this.#rewriteMemo = rewriteMemo;
+    this.#changeMemoPinned = changeMemoPinned;
     this.#reorderMemo = reorderMemo;
     this.#deleteMemo = deleteMemo;
     this.#convertMemoToTodo = convertMemoToTodo;
@@ -130,7 +131,8 @@ export class MemoController {
   async getResourceLimit(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<MemoResourceLimitResponseDto> {
-    return this.#getMemoResourceLimit.execute({ userId: user.userId });
+    const limit = await this.#getMemoResourceLimit.execute({ userId: user.userId });
+    return toMemoResourceLimitResponse(limit);
   }
 
   @Post()
@@ -208,7 +210,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
   ): Promise<MemoDetailResponseDto> {
     const memo = await this.#getMemo.execute({ userId: user.userId, memoId: params.id });
-    return { memo: toMemoResponse(memo) };
+    return toMemoDetailResponse(memo);
   }
 
   @Patch(":id")
@@ -225,7 +227,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: UpdateMemoDto }) dto: UpdateMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    const memo = await this.#updateMemo.execute({
+    const memo = await this.#rewriteMemo.execute({
       userId: user.userId,
       memoId: params.id,
       content: dto.content,
@@ -247,7 +249,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ToggleMemoPinDto }) dto: ToggleMemoPinDto,
   ): Promise<MemoMutationResponseDto> {
-    const memo = await this.#setMemoPinned.execute({
+    const memo = await this.#changeMemoPinned.execute({
       userId: user.userId,
       memoId: params.id,
       isPinned: dto.isPinned,

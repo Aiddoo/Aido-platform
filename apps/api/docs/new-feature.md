@@ -87,14 +87,14 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 domain/memo.aggregate.ts                         changePinned(isPinned, now): boolean   # 같은 값이면 false
 application/memos.errors.ts                      memoNotFound(memoId)
 application/memos.lock-keys.ts                   MemoLockKeys.existingMemo(memoId, userId)   # 메모·순서 두 키
-application/use-cases/set-memo-pinned.use-case.ts
+application/use-cases/change-memo-pinned.use-case.ts
   unitOfWork.run → mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId))
   → findByIdAndUserId ?? throw memoNotFound → memo.changePinned(…) false면 저장 생략 → save
 presentation/http/v1/memo.dto.ts                 ToggleMemoPinDto = toggleMemoPinSchema.meta({ id })
 presentation/http/v1/memo-response.mapper.ts     응답 문구·toIsoString
-notes-memos.providers.ts                         provideUseCase(SetMemoPinnedUseCase, { … })
+notes-memos.providers.ts                         provideUseCase(ChangeMemoPinnedUseCase, { … })
 test/fixtures/notes/memo.fixture.ts · test/doubles/notes/in-memory-memo.repository.ts
-src/modules/notes/memos/application/use-cases/set-memo-pinned.use-case.spec.ts
+src/modules/notes/memos/application/use-cases/change-memo-pinned.use-case.spec.ts
 ```
 
-파일: [set-memo-pinned.use-case.ts](../src/modules/notes/memos/application/use-cases/set-memo-pinned.use-case.ts), [memo.aggregate.ts](../src/modules/notes/memos/domain/memo.aggregate.ts), [notes-memos.providers.ts](../src/modules/notes/memos/notes-memos.providers.ts), [memo-repository.contract.ts](../test/contracts/notes/memo-repository.contract.ts).
+파일: [change-memo-pinned.use-case.ts](../src/modules/notes/memos/application/use-cases/change-memo-pinned.use-case.ts), [memo.aggregate.ts](../src/modules/notes/memos/domain/memo.aggregate.ts), [notes-memos.providers.ts](../src/modules/notes/memos/notes-memos.providers.ts), [memo-repository.contract.ts](../test/contracts/notes/memo-repository.contract.ts).

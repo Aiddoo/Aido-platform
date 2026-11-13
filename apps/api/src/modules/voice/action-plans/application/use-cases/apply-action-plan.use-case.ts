@@ -4,7 +4,7 @@ import { fingerprintRequest } from "#api/modules/ai-assistance/generation/ai-ass
 import {
   MemoId,
   MemoLockKeys,
-  type PlanMemo,
+  type PlanMemoReadModel,
   type PlanMemoWriterPort,
 } from "#api/modules/notes/memos/notes-memos.public";
 import {
@@ -45,7 +45,7 @@ export interface ApplyActionPlanCommand {
 /** 저장했거나 앞서 저장한 계획의 결과. 그 뒤 사용자가 지운 할 일·메모는 빠진다 */
 export interface AppliedActionPlan {
   readonly todos: readonly TodoReadModel[];
-  readonly memo: PlanMemo | null;
+  readonly memo: PlanMemoReadModel | null;
 }
 
 interface ApplyActionPlanDependencies {

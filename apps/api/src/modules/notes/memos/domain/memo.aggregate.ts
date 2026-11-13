@@ -2,6 +2,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { MemoContent } from "./memo-content.vo.js";
+import { MemoCreationRequest } from "./memo-creation-request.vo.js";
 import { MemoId } from "./memo-id.vo.js";
 
 export interface MemoPrimitives {
@@ -16,12 +17,6 @@ export interface MemoPrimitives {
   readonly requestHash: string | null;
 }
 
-/** 앱이 저장 한 번마다 만든 키와 그 요청의 해시. 응답을 받지 못해 다시 보낸 저장을 알아본다 */
-export interface MemoCreationRequest {
-  readonly idempotencyKey: string;
-  readonly requestHash: string;
-}
-
 interface MemoProps {
   readonly userId: UserId;
   content: MemoContent;
@@ -29,8 +24,7 @@ interface MemoProps {
   sortOrder: number;
   readonly createdAt: Temporal.Instant;
   updatedAt: Temporal.Instant;
-  readonly idempotencyKey: string | null;
-  readonly requestHash: string | null;
+  readonly creationRequest: MemoCreationRequest | null;
 }
 
 interface CreateMemoParams {
@@ -52,8 +46,7 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: params.sortOrder,
       createdAt: params.now,
       updatedAt: params.now,
-      idempotencyKey: params.creationRequest?.idempotencyKey ?? null,
-      requestHash: params.creationRequest?.requestHash ?? null,
+      creationRequest: params.creationRequest,
     });
   }
 
@@ -65,8 +58,13 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: primitives.sortOrder,
       createdAt: primitives.createdAt,
       updatedAt: primitives.updatedAt,
-      idempotencyKey: primitives.idempotencyKey,
-      requestHash: primitives.requestHash,
+      creationRequest:
+        primitives.idempotencyKey == null || primitives.requestHash == null
+          ? null
+          : MemoCreationRequest.reconstitute({
+              idempotencyKey: primitives.idempotencyKey,
+              requestHash: primitives.requestHash,
+            }),
     });
   }
 
@@ -114,8 +112,8 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
   }
 
   /** 같은 Idempotency-Key로 다시 보낸 저장이 처음과 같은 내용인지 */
-  isSameCreationRequest(requestHash: string): boolean {
-    return this.props.requestHash === requestHash;
+  isSameCreationRequest(request: MemoCreationRequest): boolean {
+    return this.props.creationRequest?.equals(request) ?? false;
   }
 
   toTodoTitle(): string {
@@ -131,8 +129,8 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: this.props.sortOrder,
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
-      idempotencyKey: this.props.idempotencyKey,
-      requestHash: this.props.requestHash,
+      idempotencyKey: this.props.creationRequest?.idempotencyKey ?? null,
+      requestHash: this.props.creationRequest?.requestHash ?? null,
     };
   }
 }

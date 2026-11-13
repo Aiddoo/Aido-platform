@@ -10,6 +10,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { MemoRepositoryPort } from "./application/ports/memo.repository.port.js";
 import { PlanMemoWriterPort } from "./application/ports/plan-memo-writer.port.js";
+import { ChangeMemoPinnedUseCase } from "./application/use-cases/change-memo-pinned.use-case.js";
 import { ConvertMemoToTodoUseCase } from "./application/use-cases/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodosUseCase } from "./application/use-cases/convert-memo-to-todos.use-case.js";
 import { CreateMemoUseCase } from "./application/use-cases/create-memo.use-case.js";
@@ -18,8 +19,7 @@ import { GetMemoResourceLimitUseCase } from "./application/use-cases/get-memo-re
 import { GetMemoUseCase } from "./application/use-cases/get-memo.use-case.js";
 import { ListMemosUseCase } from "./application/use-cases/list-memos.use-case.js";
 import { ReorderMemoUseCase } from "./application/use-cases/reorder-memo.use-case.js";
-import { SetMemoPinnedUseCase } from "./application/use-cases/set-memo-pinned.use-case.js";
-import { UpdateMemoUseCase } from "./application/use-cases/update-memo.use-case.js";
+import { RewriteMemoUseCase } from "./application/use-cases/rewrite-memo.use-case.js";
 import { PlanMemoWriterAdapter } from "./infrastructure/adapters/plan-memo-writer.adapter.js";
 import { DrizzleMemoRepository } from "./infrastructure/persistence/drizzle-memo.repository.js";
 
@@ -33,19 +33,19 @@ export const NOTES_MEMOS_PROVIDERS = [
     clock: ClockPort,
     logger: loggerFor(CreateMemoUseCase),
   }),
-  provideUseCase(UpdateMemoUseCase, {
+  provideUseCase(RewriteMemoUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     memoRepository: MemoRepositoryPort,
     clock: ClockPort,
-    logger: loggerFor(UpdateMemoUseCase),
+    logger: loggerFor(RewriteMemoUseCase),
   }),
-  provideUseCase(SetMemoPinnedUseCase, {
+  provideUseCase(ChangeMemoPinnedUseCase, {
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     memoRepository: MemoRepositoryPort,
     clock: ClockPort,
-    logger: loggerFor(SetMemoPinnedUseCase),
+    logger: loggerFor(ChangeMemoPinnedUseCase),
   }),
   provideUseCase(ReorderMemoUseCase, {
     unitOfWork: UnitOfWorkPort,

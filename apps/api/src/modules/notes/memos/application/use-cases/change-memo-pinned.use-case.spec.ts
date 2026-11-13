@@ -14,15 +14,15 @@ import {
 } from "#test/fixtures/notes/memo.fixture";
 
 import {
-  type SetMemoPinnedDependencies,
-  SetMemoPinnedUseCase,
-} from "./set-memo-pinned.use-case.js";
+  type ChangeMemoPinnedDependencies,
+  ChangeMemoPinnedUseCase,
+} from "./change-memo-pinned.use-case.js";
 
 const USER_ID = UserId.reconstitute(MEMO_FIXTURE_USER_ID);
 const NOW = MEMO_FIXTURE_NOW.add({ seconds: 1 });
 
-function createSetMemoPinnedUseCase(overrides: Partial<SetMemoPinnedDependencies> = {}) {
-  return new SetMemoPinnedUseCase({
+function createChangeMemoPinnedUseCase(overrides: Partial<ChangeMemoPinnedDependencies> = {}) {
+  return new ChangeMemoPinnedUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     memoRepository: new InMemoryMemoRepository(),
@@ -32,12 +32,12 @@ function createSetMemoPinnedUseCase(overrides: Partial<SetMemoPinnedDependencies
   });
 }
 
-describe("SetMemoPinnedUseCase — 메모 고정", () => {
+describe("ChangeMemoPinnedUseCase — 메모 고정", () => {
   it.each([true, false])("고정 상태를 %s로 바꾸고 내용·순서는 둔다", async (isPinned) => {
     // Given
     const original = createMemoFixture({ isPinned: !isPinned, sortOrder: 4 });
     const memoRepository = new InMemoryMemoRepository([original]);
-    const useCase = createSetMemoPinnedUseCase({ memoRepository });
+    const useCase = createChangeMemoPinnedUseCase({ memoRepository });
 
     // When
     await useCase.execute({ userId: MEMO_FIXTURE_USER_ID, memoId: original.id.value, isPinned });
@@ -54,7 +54,7 @@ describe("SetMemoPinnedUseCase — 메모 고정", () => {
     // Given
     const original = createMemoFixture({ isPinned: true });
     const memoRepository = new InMemoryMemoRepository([original]);
-    const useCase = createSetMemoPinnedUseCase({ memoRepository });
+    const useCase = createChangeMemoPinnedUseCase({ memoRepository });
 
     // When
     const memo = await useCase.execute({
@@ -74,7 +74,7 @@ describe("SetMemoPinnedUseCase — 메모 고정", () => {
     // Given
     const foreign = createMemoFixture({ userId: MEMO_FIXTURE_OTHER_USER_ID });
     const memoRepository = new InMemoryMemoRepository([foreign]);
-    const useCase = createSetMemoPinnedUseCase({ memoRepository });
+    const useCase = createChangeMemoPinnedUseCase({ memoRepository });
 
     // When
     const result = useCase.execute({

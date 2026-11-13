@@ -1,7 +1,7 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import type { PlanMemo } from "#api/modules/notes/memos/notes-memos.public";
+import type { PlanMemoReadModel } from "#api/modules/notes/memos/notes-memos.public";
 import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
@@ -55,14 +55,14 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
   const createdMemos: { userId: string; content: string }[] = [];
   const deletedMemoIds: number[] = [];
   const acquiredLocks: string[][] = [];
-  const memo: PlanMemo = {
+  const memo: PlanMemoReadModel = {
     id: 7,
     userId: USER_ID,
     content: "온보딩 문구",
     isPinned: false,
     sortOrder: 0,
-    createdAt: "2027-01-04T00:00:00.000Z",
-    updatedAt: "2027-01-04T00:00:00.000Z",
+    createdAt: Temporal.Instant.from("2027-01-04T00:00:00Z"),
+    updatedAt: Temporal.Instant.from("2027-01-04T00:00:00Z"),
   };
   let nextTodoId = 100;
   const useCase = new ApplyActionPlanUseCase({

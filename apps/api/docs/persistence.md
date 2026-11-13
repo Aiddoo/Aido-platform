@@ -38,7 +38,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 `save(aggregate)`는 읽어 온 Aggregate의 바뀔 수 있는 칸을 모두 쓴다. 그래서 같은 Aggregate를 바꾸는 UseCase는 모두 하나의 공통 잠금을 UoW 안에서 읽기 전에 잡는다. 잡지 않으면 동시에 읽은 두 요청 중 나중 `save`가 앞 요청의 변경을 덮는다(lost update). 다른 행을 미는 집합 update(순서 밀기)도 같은 잠금 아래에서 한다.
 
-- 사례: 메모 수정(`UpdateMemoUseCase`)·고정(`SetMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
+- 사례: 메모 수정(`RewriteMemoUseCase`)·고정(`ChangeMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
 - 할 일 순서는 사이를 띄운 정수(간격 1024, [todo-sort-order.domain-service.ts](../src/modules/planning/shared/domain/todo-sort-order.domain-service.ts))다. 새 할 일·순서 바꾸기는 이웃 사이 값 한 행만 쓰고, 사이가 없을 때만 그 사용자 할 일을 지금 순서대로 다시 번호 매긴다. 둘 다 사용자 순서 잠금(`TodoLockKeys.sortOrder`) 아래에서 한다.
 - 예외: 한 칸만 조건부로 바꾸는 갱신(`readAt`을 `WHERE "readAt" IS NULL`일 때만 채우기)은 잠금 없이 저장소의 전용 메서드로 둔다. 조건이 경합을 막고 다른 칸을 덮지 않기 때문이다.
 

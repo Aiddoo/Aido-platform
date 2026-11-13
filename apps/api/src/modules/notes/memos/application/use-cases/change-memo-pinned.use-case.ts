@@ -4,7 +4,6 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { MemoContent } from "../../domain/memo-content.vo.js";
 import { MemoId } from "../../domain/memo-id.vo.js";
 import type { Memo } from "../../domain/memo.aggregate.js";
 import { memoNotFound } from "../memos.errors.js";
@@ -12,13 +11,13 @@ import { MemoLockKeys } from "../memos.lock-keys.js";
 import { MemoLogEvent } from "../memos.log-events.js";
 import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
 
-export interface UpdateMemoCommand {
+export interface ChangeMemoPinnedCommand {
   readonly userId: string;
   readonly memoId: number;
-  readonly content: string;
+  readonly isPinned: boolean;
 }
 
-export interface UpdateMemoDependencies {
+export interface ChangeMemoPinnedDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly memoRepository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "save">;
@@ -26,34 +25,37 @@ export interface UpdateMemoDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
-export class UpdateMemoUseCase {
-  readonly #dependencies: UpdateMemoDependencies;
+export class ChangeMemoPinnedUseCase {
+  readonly #dependencies: ChangeMemoPinnedDependencies;
 
-  constructor(dependencies: UpdateMemoDependencies) {
+  constructor(dependencies: ChangeMemoPinnedDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: UpdateMemoCommand): Promise<Memo> {
+  async execute(command: ChangeMemoPinnedCommand): Promise<Memo> {
     const { unitOfWork, mutationLock, memoRepository, clock, logger } = this.#dependencies;
     const userId = UserId.reconstitute(command.userId);
     const memoId = MemoId.reconstitute(command.memoId);
 
-    const { memo, isRewritten } = await unitOfWork.run(async () => {
+    const { memo, isChanged } = await unitOfWork.run(async () => {
       await mutationLock.acquire(MemoLockKeys.existingMemo(memoId, userId));
-      // 없는 메모를 내용 검증보다 먼저 거절한다(출시 앱이 받는 오류 우선순위)
       const found = await memoRepository.findByIdAndUserId(memoId, userId);
       if (found == null) {
         throw memoNotFound(memoId);
       }
-      const isChanged = found.rewrite(MemoContent.create(command.content), clock.now());
-      if (isChanged) {
+      const isPinChanged = found.changePinned(command.isPinned, clock.now());
+      if (isPinChanged) {
         await memoRepository.save(found);
       }
-      return { memo: found, isRewritten: isChanged };
+      return { memo: found, isChanged: isPinChanged };
     });
 
-    if (isRewritten) {
-      logger.log({ event: MemoLogEvent.UPDATED, memoId: command.memoId, userId: command.userId });
+    if (isChanged) {
+      logger.log({
+        event: MemoLogEvent.PIN_CHANGED,
+        memoId: command.memoId,
+        userId: command.userId,
+      });
     }
     return memo;
   }

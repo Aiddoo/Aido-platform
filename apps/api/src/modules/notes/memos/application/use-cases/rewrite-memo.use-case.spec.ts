@@ -14,13 +14,13 @@ import {
 } from "#test/fixtures/notes/memo.fixture";
 
 import { MemoLockKeys } from "../memos.lock-keys.js";
-import { type UpdateMemoDependencies, UpdateMemoUseCase } from "./update-memo.use-case.js";
+import { type RewriteMemoDependencies, RewriteMemoUseCase } from "./rewrite-memo.use-case.js";
 
 const USER_ID = UserId.reconstitute(MEMO_FIXTURE_USER_ID);
 const NOW = MEMO_FIXTURE_NOW.add({ seconds: 1 });
 
-function createUpdateMemoUseCase(overrides: Partial<UpdateMemoDependencies> = {}) {
-  return new UpdateMemoUseCase({
+function createRewriteMemoUseCase(overrides: Partial<RewriteMemoDependencies> = {}) {
+  return new RewriteMemoUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     memoRepository: new InMemoryMemoRepository(),
@@ -30,13 +30,13 @@ function createUpdateMemoUseCase(overrides: Partial<UpdateMemoDependencies> = {}
   });
 }
 
-describe("UpdateMemoUseCase — 메모 내용 수정", () => {
+describe("RewriteMemoUseCase — 메모 내용 수정", () => {
   it("메모 잠금 안에서 내용만 바꾸고 고정·순서·생성 시각은 두며 수정 시각을 옮긴다", async () => {
     // Given
     const original = createMemoFixture({ content: "수정 전", isPinned: true, sortOrder: 4 });
     const memoRepository = new InMemoryMemoRepository([original]);
     const mutationLock = new RecordingMutationLock();
-    const useCase = createUpdateMemoUseCase({ memoRepository, mutationLock });
+    const useCase = createRewriteMemoUseCase({ memoRepository, mutationLock });
 
     // When
     const memo = await useCase.execute({
@@ -61,7 +61,7 @@ describe("UpdateMemoUseCase — 메모 내용 수정", () => {
     const original = createMemoFixture({ content: "그대로" });
     const memoRepository = new InMemoryMemoRepository([original]);
     const logger = new SilentLogger();
-    const useCase = createUpdateMemoUseCase({ memoRepository, logger });
+    const useCase = createRewriteMemoUseCase({ memoRepository, logger });
 
     // When
     const memo = await useCase.execute({
@@ -82,7 +82,7 @@ describe("UpdateMemoUseCase — 메모 내용 수정", () => {
     // Given
     const foreign = createMemoFixture({ userId: MEMO_FIXTURE_OTHER_USER_ID, content: "남의 메모" });
     const memoRepository = new InMemoryMemoRepository([foreign]);
-    const useCase = createUpdateMemoUseCase({ memoRepository });
+    const useCase = createRewriteMemoUseCase({ memoRepository });
 
     // When
     const result = useCase.execute({
@@ -105,7 +105,7 @@ describe("UpdateMemoUseCase — 메모 내용 수정", () => {
     // Given
     const original = createMemoFixture({ content: "유지할 메모" });
     const memoRepository = new InMemoryMemoRepository([original]);
-    const useCase = createUpdateMemoUseCase({ memoRepository });
+    const useCase = createRewriteMemoUseCase({ memoRepository });
 
     // When
     const result = useCase.execute({

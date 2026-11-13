@@ -62,11 +62,15 @@ export function describeMemoRepositoryContract(
     it("Idempotency-Key로는 그 사용자가 그 키로 만든 메모만 찾는다", async () => {
       // Given
       const repository = await createRepository();
-      const memo = await saveMemo(repository, { idempotencyKey: "memo-create-1" });
+      const memo = await saveMemo(repository, {
+        idempotencyKey: "memo-create-1",
+        requestHash: "a".repeat(64),
+      });
       await saveMemo(repository, { idempotencyKey: null });
       await saveMemo(repository, {
         userId: MEMO_FIXTURE_OTHER_USER_ID,
         idempotencyKey: "memo-create-2",
+        requestHash: "b".repeat(64),
       });
 
       // When

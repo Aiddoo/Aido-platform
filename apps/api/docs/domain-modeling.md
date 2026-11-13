@@ -25,7 +25,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 상태 전이
 
-- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 사례: [Memo](../src/modules/notes/memos/domain/memo.aggregate.ts)의 `rewrite`·`changePinned`·`moveTo`와 [UpdateMemoUseCase](../src/modules/notes/memos/application/use-cases/update-memo.use-case.ts).
+- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 사례: [Memo](../src/modules/notes/memos/domain/memo.aggregate.ts)의 `rewrite`·`changePinned`·`moveTo`와 [RewriteMemoUseCase](../src/modules/notes/memos/application/use-cases/rewrite-memo.use-case.ts).
 - 같은 값 수정에서 저장을 건너뛰면 `updatedAt`이 유지된다. 앱이 "값이 같아도 `updatedAt`이 바뀐다"에 기대는 slice만 항상 저장하고 그 이유를 slice에 적는다. 메모는 앱 초안이 원본 시각이 더 새로울 때만 낡았다고 보므로(`apps/mobile/src/shared/draft/draft.model.ts`) 건너뛴다. 여러 행을 미는 집합 update(`shiftSortOrders`)는 옮긴 행의 `updatedAt`을 바꾼다.
 - 시각은 `now: Temporal.Instant` 인자로 받는다. 도메인 안에서 시계를 읽지 않는다.
 
@@ -92,6 +92,7 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
 | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | [`memo-id.vo.ts`](../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)                                                                           |
 | [`memo-content.vo.ts`](../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사                                                                |
+| [`memo-creation-request.vo.ts`](../src/modules/notes/memos/domain/memo-creation-request.vo.ts)                              | 값 둘(Idempotency-Key·요청 해시)을 묶는 객체 VO. `create`가 해시를 만들고 Aggregate는 `isSameCreationRequest`로 비교한다                 |
 | [`memo-ordering.domain-service.ts`](../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌                                                             |
 | [`application/memos.lock-keys.ts`](../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 voice 계획 저장과 같은 잠금), 있는 메모를 바꾸는 UseCase는 `existingMemo`로 두 키를 함께 잡는다 |
 | [`create-memo.use-case.ts`](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그                                                                       |
