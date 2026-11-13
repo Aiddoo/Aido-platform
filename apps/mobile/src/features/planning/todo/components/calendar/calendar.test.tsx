@@ -143,7 +143,8 @@ describe('Calendar', () => {
         await renderCalendar(viewMode);
         await layoutPager(firstWidth);
 
-        // When: 폭마다 옛 폭의 목록이 새 뷰포트에서 스크롤 끝을 보낸 뒤 새 폭으로 바뀐다
+        // When
+        // 폭마다 옛 폭의 목록이 새 뷰포트에서 스크롤 끝을 보낸 뒤 새 폭으로 바뀐다
         let previousWidth = firstWidth;
         for (const width of nextWidths) {
           await resizePagerAfterStaleScrollEnd({
@@ -154,7 +155,8 @@ describe('Calendar', () => {
           previousWidth = width;
         }
 
-        // Then: 고치기 전에는 쪽 × 옛 폭 ÷ 새 폭인 쪽(400 → 320이면 325쪽, 65주 뒤)을 골랐다
+        // Then
+        // 고치기 전에는 쪽 × 옛 폭 ÷ 새 폭인 쪽(400 → 320이면 325쪽, 65주 뒤)을 골랐다
         expect(router.setParams).not.toHaveBeenCalled();
         expect(screen.getByRole('button', { name: '2020년 3월 11일' })).toBeSelected();
       },
@@ -169,11 +171,13 @@ describe('Calendar', () => {
       ])(
         "$viewMode 보기에서 '오늘'로 넘기는 사이 폭이 바뀌어도 오늘이 있는 쪽을 보인다",
         async ({ viewMode, date }) => {
-          // Given: 오늘 쪽이 고른 쪽보다 두 쪽 앞이라 '오늘'은 넘기는 애니메이션으로 간다
+          // Given
+          // 오늘 쪽이 고른 쪽보다 두 쪽 앞이라 '오늘'은 넘기는 애니메이션으로 간다
           await renderCalendar(viewMode, { date });
           await layoutPager(FULL_SCREEN_PAGE_WIDTH_PT);
 
-          // When: 넘기기가 이미 좁아진 뷰포트에서 끝나 옛 폭 목록이 스크롤 끝을 보낸 뒤 새 폭으로 바뀐다
+          // When
+          // 넘기기가 이미 좁아진 뷰포트에서 끝나 옛 폭 목록이 스크롤 끝을 보낸 뒤 새 폭으로 바뀐다
           await fireEvent.press(screen.getByText('오늘'));
           await resizePagerAfterStaleScrollEnd({
             page: CALENDAR_CENTER_PAGE - 2,
@@ -181,13 +185,15 @@ describe('Calendar', () => {
             toWidth: WINDOWED_PAGE_WIDTH_PT,
           });
 
-          // Then: 고치기 전에는 258 × 400 ÷ 320 → 323쪽을 골랐다
+          // Then
+          // 고치기 전에는 258 × 400 ÷ 320 → 323쪽을 골랐다
           expect(screen.getByRole('button', { name: '2026년 11월 13일' })).toBeSelected();
         },
       );
 
       it("윈도우형으로 바꾸는 사이 옛 목록이 알린 쪽이 반영되지 않아도 '오늘'을 누르면 오늘이 있는 주를 보인다", async () => {
-        // Given: iPad QA처럼 오늘을 보던 400 폭 목록이 사이드바를 연 목록 폭(680) 뷰포트에서 스크롤 끝을 보내고,
+        // Given
+        // iPad QA처럼 오늘을 보던 400 폭 목록이 사이드바를 연 목록 폭(680) 뷰포트에서 스크롤 끝을 보내고,
         // 같은 순간 피드 링크가 날짜를 오늘로 다시 열어 고른 날짜는 그대로 오늘이다
         await renderCalendar('week', {});
         await layoutPager(FULL_SCREEN_PAGE_WIDTH_PT);
@@ -205,7 +211,8 @@ describe('Calendar', () => {
         // When
         await fireEvent.press(screen.getByText('오늘'));
 
-        // Then: 고치기 전에는 머리가 '11월 2주차'인 채 260 × 400 ÷ 680 → 153쪽(2024-10-20 주)이 남았다
+        // Then
+        // 고치기 전에는 머리가 '11월 2주차'인 채 260 × 400 ÷ 680 → 153쪽(2024-10-20 주)이 남았다
         expect(screen.getByRole('button', { name: '2026년 11월 13일' })).toBeSelected();
       });
     });
