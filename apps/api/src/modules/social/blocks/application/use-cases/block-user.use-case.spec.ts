@@ -7,6 +7,7 @@ import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { FakeFollowCache } from "#test/doubles/social/fake-follow-cache";
 import { InMemoryUserBlockRepository } from "#test/doubles/social/in-memory-user-block.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   createUserBlockFixture,
   USER_BLOCK_FIXTURE_BLOCKED_ID,
@@ -37,6 +38,8 @@ function createRepository(
 
 function createBlockUserUseCase(overrides: Partial<BlockUserDependencies> = {}) {
   return new BlockUserUseCase({
+    nudgeCountCache: new PassThroughCountCache(),
+    cheerCountCache: new PassThroughCountCache(),
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     userBlockRepository: createRepository(),
@@ -48,7 +51,7 @@ function createBlockUserUseCase(overrides: Partial<BlockUserDependencies> = {}) 
 }
 
 describe("BlockUserUseCase — 사용자 차단", () => {
-  it("친구를 차단하면 쌍·목록 잠금 안에서 저장하고 친구 관계와 두 사람의 친구 캐시를 지운다", async () => {
+  it("친구를 차단하면 쌍·목록 잠금 안에서 저장하고 친구 관계와 두 사람의 친구·콕·응원 수 캐시를 지운다", async () => {
     // Given
     const userBlockRepository = createRepository();
     userBlockRepository.seedFollow(USER_BLOCK_FIXTURE_BLOCKER_ID, USER_BLOCK_FIXTURE_BLOCKED_ID);
@@ -56,11 +59,14 @@ describe("BlockUserUseCase — 사용자 차단", () => {
     const friendshipCache = new FakeFollowCache();
     const mutationLock = new RecordingMutationLock();
     const logger = new SilentLogger();
+    const countCache = new PassThroughCountCache();
     const useCase = createBlockUserUseCase({
       userBlockRepository,
       friendshipCache,
       mutationLock,
       logger,
+      nudgeCountCache: countCache,
+      cheerCountCache: countCache,
     });
 
     // When
@@ -100,6 +106,12 @@ describe("BlockUserUseCase — 사용자 차단", () => {
         targetUserId: USER_BLOCK_FIXTURE_BLOCKED_ID,
         removedFriendshipCount: 2,
       },
+    ]);
+    expect(countCache.invalidatedUserIds).toEqual([
+      USER_BLOCK_FIXTURE_BLOCKER_ID,
+      USER_BLOCK_FIXTURE_BLOCKED_ID,
+      USER_BLOCK_FIXTURE_BLOCKER_ID,
+      USER_BLOCK_FIXTURE_BLOCKED_ID,
     ]);
   });
 

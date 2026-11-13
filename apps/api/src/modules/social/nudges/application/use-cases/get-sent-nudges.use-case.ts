@@ -4,6 +4,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeCountCachePort } from "../ports/nudge-count-cache.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { SentNudges } from "../read-models/nudge.read-model.js";
 
@@ -15,6 +16,7 @@ export interface GetSentNudgesQuery {
 
 export interface GetSentNudgesDependencies {
   readonly nudgeReader: Pick<NudgeReaderPort, "listSent" | "countSent">;
+  readonly countCache: Pick<NudgeCountCachePort, "wrapSentCount">;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
@@ -26,7 +28,7 @@ export class GetSentNudgesUseCase {
   }
 
   async execute(query: GetSentNudgesQuery): Promise<SentNudges> {
-    const { nudgeReader, logger } = this.#dependencies;
+    const { nudgeReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
     const [rows, totalCount] = await Promise.all([
@@ -35,7 +37,7 @@ export class GetSentNudgesUseCase {
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      nudgeReader.countSent(userId),
+      countCache.wrapSentCount(userId, () => nudgeReader.countSent(userId)),
     ]);
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });
     logger.debug({

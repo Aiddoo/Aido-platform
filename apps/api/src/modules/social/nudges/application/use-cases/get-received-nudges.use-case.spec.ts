@@ -1,5 +1,6 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -30,6 +31,7 @@ describe("GetReceivedNudgesUseCase — 받은 콕 목록", () => {
   it("size보다 많으면 마지막 콕 id를 다음 커서로 주고 전체·안 읽은 수를 함께 준다", async () => {
     // Given
     const useCase = new GetReceivedNudgesUseCase({
+      countCache: new PassThroughCountCache(),
       nudgeReader: await seedReceived(),
       logger: new SilentLogger(),
     });
@@ -55,6 +57,7 @@ describe("GetReceivedNudgesUseCase — 받은 콕 목록", () => {
   it("다른 사람이 받은 콕은 내 목록과 개수에 없다", async () => {
     // Given
     const useCase = new GetReceivedNudgesUseCase({
+      countCache: new PassThroughCountCache(),
       nudgeReader: await seedReceived(),
       logger: new SilentLogger(),
     });

@@ -4,6 +4,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeCountCachePort } from "../ports/nudge-count-cache.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
 import type { ReceivedNudges } from "../read-models/nudge.read-model.js";
 
@@ -18,6 +19,7 @@ export interface GetReceivedNudgesDependencies {
     NudgeReaderPort,
     "listReceived" | "countReceived" | "countUnreadReceived"
   >;
+  readonly countCache: Pick<NudgeCountCachePort, "wrapReceivedCounts">;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
 
@@ -29,17 +31,23 @@ export class GetReceivedNudgesUseCase {
   }
 
   async execute(query: GetReceivedNudgesQuery): Promise<ReceivedNudges> {
-    const { nudgeReader, logger } = this.#dependencies;
+    const { nudgeReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
-    const [rows, totalCount, unreadCount] = await Promise.all([
+    const [rows, counts] = await Promise.all([
       nudgeReader.listReceived({
         userId,
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
         limit: size + 1,
       }),
-      nudgeReader.countReceived(userId),
-      nudgeReader.countUnreadReceived(userId),
+      // 수는 쪽마다 같아서 짧게 담아 둔다. 트랜잭션 밖 독립 읽기다
+      countCache.wrapReceivedCounts(userId, async () => {
+        const [total, unread] = await Promise.all([
+          nudgeReader.countReceived(userId),
+          nudgeReader.countUnreadReceived(userId),
+        ]);
+        return { total, unread };
+      }),
     ]);
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });
     logger.debug({
@@ -47,6 +55,6 @@ export class GetReceivedNudgesUseCase {
       userId: query.userId,
       count: page.items.length,
     });
-    return { page, totalCount, unreadCount };
+    return { page, totalCount: counts.total, unreadCount: counts.unread };
   }
 }

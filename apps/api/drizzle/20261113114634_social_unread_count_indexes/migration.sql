@@ -1,0 +1,2 @@
+CREATE INDEX "Cheer_receiverId_unread_idx" ON "Cheer" ("receiverId") WHERE ("readAt" IS NULL);--> statement-breakpoint
+CREATE INDEX "Nudge_receiverId_unread_idx" ON "Nudge" ("receiverId") WHERE ("readAt" IS NULL);

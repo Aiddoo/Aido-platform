@@ -7,6 +7,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { nudgeNotFound } from "../nudges.errors.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeCountCachePort } from "../ports/nudge-count-cache.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
 
 export interface MarkNudgeReadCommand {
@@ -17,6 +18,7 @@ export interface MarkNudgeReadCommand {
 export interface MarkNudgeReadDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "lockInteractionTodo" | "save">;
+  readonly countCache: Pick<NudgeCountCachePort, "invalidate">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
@@ -55,6 +57,7 @@ export class MarkNudgeReadUseCase {
     });
 
     if (isMarked) {
+      await this.#dependencies.countCache.invalidate([userId]);
       logger.debug({ event: NudgeLogEvent.READ, userId: command.userId, nudgeId: command.nudgeId });
     }
   }

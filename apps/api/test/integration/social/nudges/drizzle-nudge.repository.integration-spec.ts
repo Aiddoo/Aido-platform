@@ -9,6 +9,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeNudgeRepositoryContract } from "#test/contracts/social/nudge-repository.contract";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
 import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -178,6 +179,7 @@ describe("DrizzleNudgeRepository (실제 PostgreSQL)", () => {
       clock,
     });
     const markRead = new MarkNudgeReadUseCase({
+      countCache: new PassThroughCountCache(),
       unitOfWork: uow,
       nudgeRepository: repository,
       clock,

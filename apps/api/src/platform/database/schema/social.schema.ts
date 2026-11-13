@@ -124,6 +124,10 @@ export const cheer = pgTable(
       table.receiverId.asc().nullsLast(),
       table.createdAt.asc().nullsLast(),
     ),
+    // 받은 응원 목록이 매 쪽 세는 안 읽음 수
+    index("Cheer_receiverId_unread_idx")
+      .using("btree", table.receiverId.asc().nullsLast())
+      .where(sql`("readAt" IS NULL)`),
   ],
 );
 
@@ -203,6 +207,10 @@ export const nudge = pgTable(
       table.thankedAt.asc().nullsLast(),
       table.id.asc().nullsLast(),
     ),
+    // 받은 콕 목록이 매 쪽 세는 안 읽음 수
+    index("Nudge_receiverId_unread_idx")
+      .using("btree", table.receiverId.asc().nullsLast())
+      .where(sql`("readAt" IS NULL)`),
   ],
 );
 

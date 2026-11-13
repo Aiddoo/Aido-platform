@@ -2,6 +2,7 @@ import { CheerId } from "#api/modules/social/cheers/domain/cheer-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CHEER_FIXTURE_NOW,
   CHEER_FIXTURE_OTHER_USER_ID,
@@ -21,7 +22,9 @@ describe("MarkManyCheersReadUseCase — 응원 여러 개 읽음", () => {
       createCheerFixture({ id: 2, readAt: CHEER_FIXTURE_NOW }),
       createCheerFixture({ id: 3, receiverId: CHEER_FIXTURE_OTHER_USER_ID }),
     ]);
+    const countCache = new PassThroughCountCache();
     const useCase = new MarkManyCheersReadUseCase({
+      countCache,
       cheerRepository,
       clock: new FixedClock(READ_AT),
       logger: new SilentLogger(),
@@ -41,5 +44,6 @@ describe("MarkManyCheersReadUseCase — 응원 여러 개 읽음", () => {
       readAts.push((await cheerRepository.findById(CheerId.reconstitute(id)))?.readAt ?? null);
     }
     expect(readAts).toEqual([READ_AT, CHEER_FIXTURE_NOW, null]);
+    expect(countCache.invalidatedUserIds).toEqual([CHEER_FIXTURE_RECEIVER_ID]);
   });
 });

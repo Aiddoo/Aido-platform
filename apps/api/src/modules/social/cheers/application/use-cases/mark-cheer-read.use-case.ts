@@ -5,6 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { CheerId } from "../../domain/cheer-id.vo.js";
 import { cheerNotFound } from "../cheers.errors.js";
 import { CheerLogEvent } from "../cheers.log-events.js";
+import type { CheerCountCachePort } from "../ports/cheer-count-cache.port.js";
 import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
 
 export interface MarkCheerReadCommand {
@@ -14,6 +15,7 @@ export interface MarkCheerReadCommand {
 
 export interface MarkCheerReadDependencies {
   readonly cheerRepository: Pick<CheerRepositoryPort, "findById" | "save">;
+  readonly countCache: Pick<CheerCountCachePort, "invalidate">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
 }
@@ -37,6 +39,7 @@ export class MarkCheerReadUseCase {
     }
 
     await cheerRepository.save(cheer);
+    await this.#dependencies.countCache.invalidate([cheer.receiverId]);
     logger.debug({ event: CheerLogEvent.READ, userId: command.userId, cheerId: command.cheerId });
   }
 }

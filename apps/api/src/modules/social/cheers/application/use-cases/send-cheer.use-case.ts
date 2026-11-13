@@ -17,6 +17,7 @@ import {
 } from "../cheers.errors.js";
 import { CheerLockKeys } from "../cheers.lock-keys.js";
 import { CheerLogEvent } from "../cheers.log-events.js";
+import type { CheerCountCachePort } from "../ports/cheer-count-cache.port.js";
 import type { CheerLimitReaderPort } from "../ports/cheer-limit.reader.port.js";
 import type { CheerNotifierPort } from "../ports/cheer-notifier.port.js";
 import type { CheerRepositoryPort } from "../ports/cheer.repository.port.js";
@@ -38,6 +39,7 @@ export interface SendCheerDependencies {
   readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
   readonly notifier: CheerNotifierPort;
+  readonly countCache: Pick<CheerCountCachePort, "invalidate">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -109,6 +111,7 @@ export class SendCheerUseCase {
       return { cheer: created, senderName: await followReader.getUserDisplayName(senderId) };
     });
 
+    await this.#dependencies.countCache.invalidate([senderId, receiverId]);
     logger.log({
       event: CheerLogEvent.SENT,
       cheerId: cheer.id.value,

@@ -6,6 +6,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   createNudgeFixture,
   NUDGE_FIXTURE_NOW,
@@ -35,6 +36,7 @@ describe("MarkNudgeReadUseCase — 콕 읽음", () => {
     // Given
     const nudgeRepository = new InMemoryNudgeRepository([createNudgeFixture()]);
     const useCase = new MarkNudgeReadUseCase({
+      countCache: new PassThroughCountCache(),
       unitOfWork: new ImmediateUnitOfWork(),
       nudgeRepository,
       clock: new FixedClock(READ_AT),
@@ -52,11 +54,13 @@ describe("MarkNudgeReadUseCase — 콕 읽음", () => {
     expect((await nudgeRepository.findById(NUDGE_ID))?.readAt).toBeNull();
   });
 
-  it("처음 읽은 시각을 저장하고 다시 읽으면 저장하지 않고 처음 시각을 둔다", async () => {
+  it("처음 읽은 시각을 저장하고 목록 수 캐시를 버리며, 다시 읽으면 저장도 캐시 정리도 하지 않는다", async () => {
     // Given
     const nudgeRepository = new CountingNudgeRepository([createNudgeFixture()]);
     const clock = new FixedClock(READ_AT);
+    const countCache = new PassThroughCountCache();
     const useCase = new MarkNudgeReadUseCase({
+      countCache,
       unitOfWork: new ImmediateUnitOfWork(),
       nudgeRepository,
       clock,
@@ -72,5 +76,6 @@ describe("MarkNudgeReadUseCase — 콕 읽음", () => {
     // Then
     expect((await nudgeRepository.findById(NUDGE_ID))?.readAt).toEqual(READ_AT);
     expect(nudgeRepository.saveCount).toBe(1);
+    expect(countCache.invalidatedUserIds).toEqual([NUDGE_FIXTURE_RECEIVER_ID]);
   });
 });

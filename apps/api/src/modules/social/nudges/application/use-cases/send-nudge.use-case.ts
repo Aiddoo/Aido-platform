@@ -20,6 +20,7 @@ import {
 } from "../nudges.errors.js";
 import { NudgeLockKeys } from "../nudges.lock-keys.js";
 import { NudgeLogEvent } from "../nudges.log-events.js";
+import type { NudgeCountCachePort } from "../ports/nudge-count-cache.port.js";
 import type { NudgeLimitReaderPort } from "../ports/nudge-limit.reader.port.js";
 import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import type { NudgeRepositoryPort } from "../ports/nudge.repository.port.js";
@@ -42,6 +43,7 @@ export interface SendNudgeDependencies {
   readonly limitReader: Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
   readonly followReader: Pick<FollowReaderPort, "isMutualFriend" | "getUserDisplayName">;
   readonly notifier: Pick<NudgeNotifierPort, "notifyNudgeSent">;
+  readonly countCache: Pick<NudgeCountCachePort, "invalidate">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -128,6 +130,7 @@ export class SendNudgeUseCase {
       };
     });
 
+    await this.#dependencies.countCache.invalidate([senderId, receiverId]);
     logger.log({
       event: NudgeLogEvent.SENT,
       nudgeId: nudge.id.value,
