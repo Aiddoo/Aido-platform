@@ -79,10 +79,8 @@ export class AcceptFriendRequestUseCase {
       throw friendRequestNotFound(requesterUserId);
     }
 
-    const [userMaxSortOrder, requesterMaxSortOrder] = await Promise.all([
-      followRepository.findMaxFriendSortOrder(userId),
-      followRepository.findMaxFriendSortOrder(requesterUserId),
-    ]);
+    const userMaxSortOrder = await followRepository.findMaxFriendSortOrder(userId);
+    const requesterMaxSortOrder = await followRepository.findMaxFriendSortOrder(requesterUserId);
     const now = clock.now();
     request.accept(nextFriendSortOrder(requesterMaxSortOrder), now);
     await followRepository.save(request);

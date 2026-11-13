@@ -73,18 +73,14 @@ export class EstablishFriendshipUseCase {
         FriendLockKeys.list(requesterId),
         FriendLockKeys.list(targetUserId),
       ]);
-      const [forward, reverse] = await Promise.all([
-        followRepository.findByFollowerAndFollowing(requesterId, targetUserId),
-        followRepository.findByFollowerAndFollowing(targetUserId, requesterId),
-      ]);
+      const forward = await followRepository.findByFollowerAndFollowing(requesterId, targetUserId);
+      const reverse = await followRepository.findByFollowerAndFollowing(targetUserId, requesterId);
       if (forward?.isAccepted() && reverse?.isAccepted()) {
         return REDEEM_OUTCOME.ALREADY_FRIENDS;
       }
 
-      const [isRequesterFull, isTargetFull] = await Promise.all([
-        this.#isAtFriendLimit(requesterId),
-        this.#isAtFriendLimit(targetUserId),
-      ]);
+      const isRequesterFull = await this.#isAtFriendLimit(requesterId);
+      const isTargetFull = await this.#isAtFriendLimit(targetUserId);
       if (isRequesterFull) {
         return "UNAVAILABLE";
       }
@@ -103,10 +99,8 @@ export class EstablishFriendshipUseCase {
 
   async #isAtFriendLimit(userId: UserId): Promise<boolean> {
     const { followRepository, limitReader } = this.#dependencies;
-    const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readLimitInTx(userId),
-      followRepository.countMutualFriends(userId),
-    ]);
+    const maxFriendCount = await limitReader.readLimitInTx(userId);
+    const friendCount = await followRepository.countMutualFriends(userId);
     return hasReachedFriendLimit({ maxFriendCount, friendCount });
   }
 
@@ -144,10 +138,8 @@ export class EstablishFriendshipUseCase {
     targetUserId: UserId,
   ): Promise<void> {
     const { followRepository, clock } = this.#dependencies;
-    const [requesterMaxSortOrder, targetMaxSortOrder] = await Promise.all([
-      followRepository.findMaxFriendSortOrder(requesterId),
-      followRepository.findMaxFriendSortOrder(targetUserId),
-    ]);
+    const requesterMaxSortOrder = await followRepository.findMaxFriendSortOrder(requesterId);
+    const targetMaxSortOrder = await followRepository.findMaxFriendSortOrder(targetUserId);
     const now = clock.now();
     await this.#accept(forward, requesterId, targetUserId, {
       sortOrder: nextFriendSortOrder(requesterMaxSortOrder),

@@ -4,6 +4,7 @@ import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { groupBy, uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
@@ -54,7 +55,10 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
           ),
           params.after == null
             ? undefined
-            : sql`(${subscription.expiresAt}, ${subscription.id}) > (${sql.param(params.after.expiresAt, subscription.expiresAt)}, ${params.after.subscriptionId})`,
+            : tupleGreaterThan(
+                [subscription.expiresAt, subscription.id],
+                [params.after.expiresAt, params.after.subscriptionId],
+              ),
         ),
       )
       .orderBy(asc(subscription.expiresAt), asc(subscription.id))

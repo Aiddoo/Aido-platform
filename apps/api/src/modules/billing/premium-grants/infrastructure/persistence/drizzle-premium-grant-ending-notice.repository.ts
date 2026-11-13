@@ -4,6 +4,7 @@ import { and, eq, gt, gte, inArray, isNull, lte, ne, notExists, or, sql } from "
 import { alias } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
 import type { FindDueBillingNoticesParams } from "../../application/ports/billing-notice.port.js";
@@ -75,7 +76,10 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
           ),
           params.after == null
             ? undefined
-            : sql`(${grantOf.endsAt}, ${grantOf.id}) > (${sql.param(params.after.endsAt, grantOf.endsAt)}, ${params.after.grantId})`,
+            : tupleGreaterThan(
+                [grantOf.endsAt, grantOf.id],
+                [params.after.endsAt, params.after.grantId],
+              ),
         ),
       )
       .orderBy(grantOf.endsAt, grantOf.id)

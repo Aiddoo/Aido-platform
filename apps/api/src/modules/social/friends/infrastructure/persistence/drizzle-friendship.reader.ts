@@ -1,8 +1,9 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
 import { follow } from "#api/platform/database/schema/social.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -91,7 +92,7 @@ export class DrizzleFriendshipReader implements FriendshipReaderPort {
         },
         ...(anchor != null && {
           RAW: (table) =>
-            sql`(${table.sortOrder}, ${table.id}) > (${anchor.sortOrder}, ${anchor.id})`,
+            tupleGreaterThan([table.sortOrder, table.id], [anchor.sortOrder, anchor.id]),
         }),
       },
       with: { following: USER_BRIEF_RELATION },
@@ -181,6 +182,6 @@ export class DrizzleFriendshipReader implements FriendshipReaderPort {
   }
 
   #isBeforeRequest(table: typeof follow, anchor: { id: string; createdAt: Temporal.Instant }) {
-    return sql`(${table.createdAt}, ${table.id}) < (${sql.param(anchor.createdAt, table.createdAt)}, ${anchor.id})`;
+    return tupleLessThan([table.createdAt, table.id], [anchor.createdAt, anchor.id]);
   }
 }

@@ -1,8 +1,9 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, isNull, sql } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleLessThan } from "#api/platform/database/keyset";
 import { user, userBlock } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -45,8 +46,7 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
         blockerId: blockerId.value,
         blocked: { deletedAt: { isNull: true } },
         ...(anchor != null && {
-          RAW: (block) =>
-            sql`(${block.createdAt}, ${block.id}) < (${sql.param(anchor.createdAt, block.createdAt)}, ${anchor.id})`,
+          RAW: (block) => tupleLessThan([block.createdAt, block.id], [anchor.createdAt, anchor.id]),
         }),
       },
       with: { blocked: USER_BRIEF_RELATION },
