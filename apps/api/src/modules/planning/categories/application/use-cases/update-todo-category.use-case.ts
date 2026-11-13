@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -15,6 +12,7 @@ import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.
 import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
+import { duplicateCategoryName, todoCategoryNotFound } from "../categories.errors.js";
 import { TodoCategoryLockKeys } from "../categories.lock-keys.js";
 import { TodoCategoryLogEvent } from "../categories.log-events.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -64,9 +62,7 @@ export class UpdateTodoCategoryUseCase {
       ]);
       const category = await this.#dependencies.repository.findByIdAndUserId(categoryId, userId);
       if (category == null) {
-        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-          categoryId: id,
-        });
+        throw todoCategoryNotFound(categoryId);
       }
 
       if (data.name != null && data.name !== category.name.value) {
@@ -76,9 +72,7 @@ export class UpdateTodoCategoryUseCase {
           categoryId,
         );
         if (duplicate) {
-          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-            name: data.name,
-          });
+          throw duplicateCategoryName(data.name);
         }
       }
 

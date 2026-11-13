@@ -1,8 +1,7 @@
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack } from '@src/shared/analytics';
-import { formatDateKeyRange } from '@src/shared/date/date-format';
-import { formatIsoWeekOfMonthLabel } from '@src/shared/date/date-labels';
+import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
@@ -79,7 +78,7 @@ export function WeeklyAchievementCertificate() {
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <Box className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 px-8 pb-1">
               <H4
                 weight="bold"
                 align="center"
@@ -102,13 +101,14 @@ export function WeeklyAchievementCertificate() {
             textBreakStrategy="highQuality"
           >
             {t('card.certificate', {
-              weekLabel: formatIsoWeekOfMonthLabel(
+              weekLabel: formatIsoWeekLabel(
                 achievement.dateRange.startDate,
+                todayKey,
                 dateFormatContext,
               ),
               total: achievement.totalTodos,
               completed: achievement.completedTodos,
-              rate: formatPercent(achievement.completionRate),
+              rate: formatPercent(achievement.completionRate, dateFormatContext.locale),
             })}
           </Text>
 
@@ -169,7 +169,7 @@ WeeklyAchievementCertificate.Loading = function Loading() {
 
         <VStack align="center" gap={4}>
           <TextSkeleton size="e1" className="w-10" />
-          <Box className="border-b border-transparent pb-1 px-8">
+          <Box className="border-b border-transparent px-8 pb-1">
             <TextSkeleton size="t3" className="w-32" />
           </Box>
         </VStack>

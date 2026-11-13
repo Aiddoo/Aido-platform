@@ -5,8 +5,9 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
-  renderUiHook,
-} from '@src/shared/__tests__';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreenHook } from '@src/testing/render';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -15,7 +16,7 @@ import {
   createFriendUser,
   createSentRequestsDto,
 } from '../__tests__/friend.fixtures';
-import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 import {
   useCancelRequestMutationOptions,
   useRemoveFriendMutationOptions,
@@ -29,12 +30,12 @@ describe('보낸 요청 취소', () => {
     const sentRequests = createSentRequestsDto();
     httpClient.get.mockResolvedValueOnce(ok(sentRequests));
     httpClient.delete.mockResolvedValue(ok({ message: '친구 요청을 철회했습니다.' }));
-    const { result } = await renderUiHook(
+    const { result } = await renderScreenHook(
       () => ({
         sent: useInfiniteQuery(useGetSentRequestsInfiniteQueryOptions()),
         cancel: useMutation(useCancelRequestMutationOptions()),
       }),
-      { di: { httpClient } },
+      { di: createTestDi({ ports: { httpClient } }) },
     );
     await waitFor(() => expect(result.current.sent.isSuccess).toBe(true));
     const refetch = createPendingResponse(ok({ ...sentRequests, requests: [], totalCount: 0 }));
@@ -66,7 +67,7 @@ describe('친구 끊기', () => {
     ];
     const queryClient = createTestQueryClient();
     queryClient.setQueryData(FRIEND_QUERY_KEYS.friends(), {
-      pages: [{ items: [first, second, third], totalCount: 3, hasMore: false }],
+      pages: [{ items: [first, second, third], nextCursor: null, totalCount: 3 }],
       pageParams: [undefined],
     });
     const rejection = createFriendApiError({ code: 'FOLLOW_0904', message: '끊지 못했어요' });
@@ -76,9 +77,8 @@ describe('친구 끊기', () => {
     httpClient.delete
       .mockReturnValueOnce(firstRemoval.response)
       .mockReturnValueOnce(secondRemoval.response);
-    const { result } = await renderUiHook(() => useMutation(useRemoveFriendMutationOptions()), {
-      queryClient,
-      di: { httpClient, haptics: createHapticsGatewayStub() },
+    const { result } = await renderScreenHook(() => useMutation(useRemoveFriendMutationOptions()), {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
     });
     const removals = await act(async () => [
       result.current.mutateAsync(first.id).catch((error: unknown) => error),
@@ -94,8 +94,8 @@ describe('친구 끊기', () => {
     await expect(removals[0]).resolves.toBe(rejection);
     expect(queryClient.getQueryData(FRIEND_QUERY_KEYS.friends())?.pages[0]).toEqual({
       items: [first, third],
+      nextCursor: null,
       totalCount: 2,
-      hasMore: false,
     });
     expect(queryClient.getQueryState(FRIEND_QUERY_KEYS.friends())?.isInvalidated).toBe(false);
     expect(await screen.findAllByText(rejection.message)).not.toHaveLength(0);

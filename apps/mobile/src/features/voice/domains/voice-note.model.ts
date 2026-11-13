@@ -1,19 +1,21 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
-import type { LocalFileEntry } from '@src/core/ports/local-file-system';
 import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
-import {
-  VOICE_NOTE_RETENTION_DAYS,
-  VOICE_RECORDING_ORPHAN_RETENTION_MS,
-} from '../constants/voice-note.constants';
-import { type PlanReviewDraft, planReviewDraftSchema } from '../schemas/plan-review-form.schema';
 import type { VoiceCaptureSeed } from './voice-capture.model';
-import { type PlannedMemo, type VoiceNoteDigestResult, VoicePlanPolicy } from './voice-plan.model';
+import {
+  type PlannedMemo,
+  type PlanReviewDraft,
+  planReviewDraftSchema,
+  type VoiceNoteDigestResult,
+  VoicePlanPolicy,
+} from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
+
+const VOICE_NOTE_RETENTION_DAYS = 30;
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
@@ -284,7 +286,8 @@ export function getMarkCount(note: VoiceNote): number {
   return note.sentences.filter(({ isBookmarked }) => isBookmarked).length;
 }
 
-export function findSentenceIndexAt(note: VoiceNote, positionMs: number): number {
+// findLastIndex처럼 첫 문장 앞이면 -1이다
+export function getSentenceIndexAt(note: VoiceNote, positionMs: number): number {
   return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
 }
 
@@ -301,6 +304,11 @@ export function getRecordingSizeBytes(
   sizes: Readonly<Record<string, number>>,
 ): number {
   return sumBy(note.recordings, ({ fileName }) => sizes[fileName] ?? 0);
+}
+
+// 요약을 받은 노트는 결과 화면, 아직이면 정리 화면이다
+export function isDigested(note: VoiceNote): boolean {
+  return note.digest != null;
 }
 
 export function hasText(note: VoiceNote): boolean {
@@ -360,18 +368,7 @@ export function isExpired(note: VoiceNote, now: Instant): boolean {
   return toEpochMs(now) - toEpochMs(note.createdAt) >= RETENTION_MS;
 }
 
-// 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다
-export function isRecordingFileExpired({ modifiedAt }: LocalFileEntry, now: Instant): boolean {
-  return (
-    modifiedAt == null ||
-    toEpochMs(now) - modifiedAt.getTime() >= VOICE_RECORDING_ORPHAN_RETENTION_MS
-  );
-}
-
 export const VoiceNotePolicy = {
-  createVoiceNote,
-  createDigestInput,
-  createDigestMemo,
   withSentences,
   withRecordings,
   withDigestRequest,
@@ -390,17 +387,13 @@ export const VoiceNotePolicy = {
   canPlayRecording,
   findKeyPointAt,
   toCaptureSeed,
-  findSentenceIndexAt,
+  getSentenceIndexAt,
   getPlanStatus,
   findTodoCount,
   getCharacterCount,
   getMarkCount,
   findDigestTitle,
+  isDigested,
   getRecordingSizeBytes,
   isExpired,
-} as const;
-
-/** 기기에 남은 녹음 파일 */
-export const VoiceRecordingFilePolicy = {
-  isRecordingFileExpired,
 } as const;

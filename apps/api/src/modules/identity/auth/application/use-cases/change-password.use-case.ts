@@ -1,16 +1,19 @@
-import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT, REVOKE_REASON } from "@aido/api/vocabulary";
 
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { SessionId } from "../../domain/session-id.vo.js";
+import {
+  invalidCredentials,
+  socialAccountPasswordUnchangeable,
+  userNotFound,
+} from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -59,7 +62,7 @@ export class ChangePasswordUseCase {
 
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+      throw userNotFound(input.userId);
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -70,7 +73,7 @@ export class ChangePasswordUseCase {
       "CREDENTIAL",
     );
     if (account == null || account.password == null || account.password === "") {
-      throw new ApplicationException(ErrorCode.USER_0613, { userId: input.userId });
+      throw socialAccountPasswordUnchangeable(input.userId);
     }
 
     const isValid = await this.#dependencies.passwordService.verify(
@@ -78,7 +81,7 @@ export class ChangePasswordUseCase {
       currentPassword,
     );
     if (!isValid) {
-      throw new ApplicationException(ErrorCode.USER_0602);
+      throw invalidCredentials();
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);

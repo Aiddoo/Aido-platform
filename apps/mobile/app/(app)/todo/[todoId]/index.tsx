@@ -1,52 +1,26 @@
-import { TodoCommentComposerBar } from '@src/features/engagement/comment/components/todo-comment-composer/todo-comment-composer-bar';
-import { TodoCommentKeyboardArea } from '@src/features/engagement/comment/components/todo-comment-keyboard-area';
-import { TodoCommentSession } from '@src/features/engagement/comment/components/todo-comment-session';
-import { TodoCommentThreadList } from '@src/features/engagement/comment/components/todo-comment-thread-list';
+import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
-import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
-import { useTodoCommentParams } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
-import { TodoAvailabilityGuard } from '@src/features/planning/todo/components/todo-availability-guard';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Suspense } from 'react';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
+import { StyledSafeAreaView } from '@src/shared/ui';
 
-export default function TodoDetailScreen() {
-  const params = todoParamsSchema.safeParse(useLocalSearchParams());
-  const [{ sort, comment }] = useTodoCommentParams();
-  const goBack = useSingleTap(router.back);
+export default function TodoDetailRoute() {
+  const route = useRouteParamsOrRedirect(todoParamsSchema, { fallbackHref: '/feed' });
 
-  if (!params.success) {
-    return <Redirect href="/feed" />;
+  if (route.redirect != null) {
+    return route.redirect;
   }
 
-  const { todoId } = params.data;
+  return <TodoDetailScreen />;
+}
+
+function TodoDetailScreen() {
+  const goBack = useGoBack({ fallbackHref: '/feed' });
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']} testID="todo-detail">
-      <TodoCommentSession>
-        <TodoCommentTitleBar.StackHeader />
-
-        <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={goBack} />}>
-          <TodoCommentKeyboardArea>
-            <QueryErrorBoundary
-              resetKeys={[todoId, sort, comment]}
-              fallback={TodoCommentThreadList.Error}
-            >
-              <Suspense fallback={<TodoCommentThreadList.Loading />}>
-                <TodoCommentThreadList />
-              </Suspense>
-            </QueryErrorBoundary>
-
-            <QueryErrorBoundary resetKeys={[todoId]}>
-              <Suspense fallback={<TodoCommentComposerBar.Loading />}>
-                <TodoCommentComposerBar />
-              </Suspense>
-            </QueryErrorBoundary>
-          </TodoCommentKeyboardArea>
-        </TodoAvailabilityGuard>
-      </TodoCommentSession>
+      <TodoCommentPane titleBar={<TodoCommentTitleBar.StackHeader />} onClose={goBack} />
     </StyledSafeAreaView>
   );
 }

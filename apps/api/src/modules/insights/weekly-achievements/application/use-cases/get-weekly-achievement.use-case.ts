@@ -1,8 +1,11 @@
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import { IsoWeek } from "../../domain/iso-week.vo.js";
-import type { WeeklyAchievement } from "../../domain/weekly-achievement.entity.js";
+import type { AchievementOwnerTimezoneReaderPort } from "../ports/achievement-owner-timezone.reader.port.js";
 import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+import type { WeeklyAchievementDetail } from "../read-models/weekly-achievement-detail.read-model.js";
 import { weeklyAchievementNotFound } from "../weekly-achievements.errors.js";
 
 export interface GetWeeklyAchievementQuery {
@@ -13,6 +16,8 @@ export interface GetWeeklyAchievementQuery {
 
 export interface GetWeeklyAchievementDependencies {
   readonly weeklyAchievementRepository: Pick<WeeklyAchievementRepositoryPort, "findByWeek">;
+  readonly ownerTimezoneReader: Pick<AchievementOwnerTimezoneReaderPort, "read">;
+  readonly clock: ClockPort;
 }
 
 export class GetWeeklyAchievementUseCase {
@@ -22,15 +27,17 @@ export class GetWeeklyAchievementUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetWeeklyAchievementQuery): Promise<WeeklyAchievement> {
+  async execute(query: GetWeeklyAchievementQuery): Promise<WeeklyAchievementDetail> {
+    const userId = UserId.reconstitute(query.userId);
     const isoWeek = IsoWeek.create(query.year, query.week);
     const achievement = await this.#dependencies.weeklyAchievementRepository.findByWeek({
-      userId: UserId.reconstitute(query.userId),
+      userId,
       isoWeek,
     });
     if (achievement == null) {
       throw weeklyAchievementNotFound(isoWeek);
     }
-    return achievement;
+    const timezone = await this.#dependencies.ownerTimezoneReader.read(userId);
+    return { achievement, localToday: localDateIn(this.#dependencies.clock.now(), timezone) };
   }
 }

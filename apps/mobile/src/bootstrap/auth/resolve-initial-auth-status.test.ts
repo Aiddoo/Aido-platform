@@ -1,5 +1,5 @@
-import { createMemoryTokenStore } from '@src/shared/__tests__';
 import { KeychainLockedError } from '@src/shared/errors';
+import { createMemoryTokenStore } from '@src/testing/core';
 
 import { resolveInitialAuthStatus } from './resolve-initial-auth-status';
 

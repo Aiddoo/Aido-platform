@@ -5,11 +5,35 @@ export type StepperContexts = Record<string, object>;
 
 export type StepName<Contexts extends StepperContexts> = keyof Contexts & string;
 
+/** 빈 context 단계는 `Record<string, never>`로 선언한다. 이 단계는 context를 생략할 수 있다 */
+type EmptyContext = Record<string, never>;
+
 /** 단계 이름과 그 단계의 context가 짝으로 묶인 판별 유니온. Name을 좁히면 그 단계만 남는다 */
 export type StepEntry<
   Contexts extends StepperContexts,
   Name extends StepName<Contexts> = StepName<Contexts>,
 > = { [Key in Name]: { step: Key; context: Contexts[Key] } }[Name];
+
+/** 받는 쪽 모양. context가 빈 단계는 context를 생략한다 */
+export type StepInput<
+  Contexts extends StepperContexts,
+  Name extends StepName<Contexts> = StepName<Contexts>,
+> = {
+  [Key in Name]: EmptyContext extends Contexts[Key]
+    ? { step: Key; context?: Contexts[Key] }
+    : { step: Key; context: Contexts[Key] };
+}[Name];
+
+/** 생략한 context는 빈 단계에서만 타입이 허락해 `{}`로 채워도 그 단계의 context다. 제네릭은 이 관계를 증명하지 못해 구현 시그니처를 넓힌다 */
+export function toStepEntry<Contexts extends StepperContexts>(
+  input: StepInput<Contexts>,
+): StepEntry<Contexts>;
+export function toStepEntry(input: { step: string; context?: object }): {
+  step: string;
+  context: object;
+} {
+  return { step: input.step, context: input.context ?? {} };
+}
 
 export interface StepperState<Contexts extends StepperContexts> {
   entries: readonly StepEntry<Contexts>[];
@@ -22,9 +46,9 @@ export type StepperAction<Contexts extends StepperContexts> =
   | { type: 'go'; delta: number };
 
 export function createStepperState<Contexts extends StepperContexts>(
-  initial: StepEntry<Contexts>,
+  initial: StepInput<Contexts>,
 ): StepperState<Contexts> {
-  return { entries: [initial], cursor: 0 };
+  return { entries: [toStepEntry(initial)], cursor: 0 };
 }
 
 export function getCurrentEntry<Contexts extends StepperContexts>(

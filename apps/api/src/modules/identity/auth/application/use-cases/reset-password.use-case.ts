@@ -1,13 +1,12 @@
-import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT, REVOKE_REASON } from "@aido/api/vocabulary";
 
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { invalidVerificationCode, socialAccountPasswordUnchangeable } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthAccountRepositoryPort } from "../ports/auth-account.repository.port.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
@@ -52,7 +51,7 @@ export class ResetPasswordUseCase {
     const { email, code, newPassword } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.VERIFY_0751);
+      throw invalidVerificationCode();
     }
     if (user.isDeleted) {
       throw accountDeleted(user.id.value);
@@ -63,7 +62,7 @@ export class ResetPasswordUseCase {
       "CREDENTIAL",
     );
     if (account == null) {
-      throw new ApplicationException(ErrorCode.USER_0613, { userId: user.id.value });
+      throw socialAccountPasswordUnchangeable(user.id.value);
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);

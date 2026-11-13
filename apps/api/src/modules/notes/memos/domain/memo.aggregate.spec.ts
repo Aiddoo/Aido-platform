@@ -14,6 +14,7 @@ function createMemo(): Memo {
     content: MemoContent.create("기존 내용"),
     sortOrder: 4,
     now: CREATED_AT,
+    creationRequest: null,
   });
 }
 
@@ -34,6 +35,8 @@ describe("Memo 상태 전이", () => {
       sortOrder: 4,
       createdAt: CREATED_AT,
       updatedAt: CREATED_AT,
+      idempotencyKey: null,
+      requestHash: null,
     });
   });
 

@@ -12,7 +12,7 @@ function toEntry(file: File): LocalFileEntry {
     name: file.name,
     uri: file.uri,
     sizeBytes: file.size,
-    modifiedAt: lastModified == null ? null : new Date(lastModified),
+    modifiedAtMs: lastModified ?? null,
   };
 }
 

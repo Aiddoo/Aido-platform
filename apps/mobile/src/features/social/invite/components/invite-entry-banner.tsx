@@ -1,21 +1,15 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { type User } from '@src/features/identity/user/domains/user.model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useGetTodoSummaryQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTodayKey } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { Button, Image, InlineAlert, Text } from '@src/shared/ui';
+import { Button, InlineAlert, Text, Mascot } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import { useIsInviteAvailable } from '../hooks/use-is-invite-available';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { allDoneBannerStoredValue } from '../schemas/all-done-banner-storage.schema';
-
-function selectUserId(user: User) {
-  return user.id;
-}
 
 /** 오늘 할 일을 다 끝낸 순간에 친구 초대를 권한다. 하루에 한 번 닫을 수 있다 */
 export function InviteEntryBanner({
@@ -26,11 +20,7 @@ export function InviteEntryBanner({
   const todayKey = useTodayKey();
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useIsInviteAvailable();
-  const { data: userId } = useQuery({
-    ...useGetMeQueryOptions(),
-    throwOnError: false,
-    select: selectUserId,
-  });
+  const userId = useMyAccountId();
   const { data: summary } = useQuery({
     ...useGetTodoSummaryQueryOptions({ date: todayKey, userId }),
     enabled: userId != null,
@@ -50,21 +40,13 @@ export function InviteEntryBanner({
   return (
     <InlineAlert
       className={className}
-      image={
-        <Image
-          source={catHiImage}
-          accessibilityIgnoresInvertColors
-          className="size-[72px]"
-          contentFit="contain"
-        />
-      }
+      image={<Mascot name="catHi" size={72} />}
       title={
-        <>
-          {t('entry.allDoneTitlePrefix')}{' '}
-          <Text size="b3" weight="bold" className="text-main">
-            {t('entry.allDoneTitleHighlight')}
-          </Text>
-        </>
+        <Trans
+          t={t}
+          i18nKey="entry.allDoneTitle"
+          components={{ highlight: <Text size="b3" weight="bold" className="text-main" /> }}
+        />
       }
       description={t('entry.allDoneDescription')}
       action={

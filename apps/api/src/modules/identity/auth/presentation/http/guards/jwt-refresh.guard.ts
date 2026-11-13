@@ -1,5 +1,4 @@
 import { userRoleSchema } from "@aido/api/contracts/auth";
-import { ErrorCode } from "@aido/api/errors";
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -7,8 +6,8 @@ import type { Request } from "express";
 import { z } from "zod";
 
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import { ApplicationException } from "#api/shared/application/application.exception";
 
+import { invalidRefreshToken } from "../../../application/auth.errors.js";
 import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
 import type { RefreshTokenUser } from "../decorators/authenticated-user.dto.js";
 import { readBearerToken } from "../v1/auth-request.mapper.js";
@@ -36,7 +35,7 @@ export class JwtRefreshGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const user = await this.#authenticate(request.headers.authorization);
     if (user == null) {
-      throw new ApplicationException(ErrorCode.AUTH_0104);
+      throw invalidRefreshToken();
     }
     request.user = user;
     return true;

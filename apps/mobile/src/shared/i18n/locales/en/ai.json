@@ -6,7 +6,6 @@
   "report": {
     "typeWeekly": "Weekly",
     "typeMonthly": "Monthly",
-    "weeklyPeriodLabel": "Week {{period}}, {{year}}",
     "sampleBadge": "Sample",
     "card": {
       "completionRate": "Completion",

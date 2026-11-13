@@ -1,6 +1,6 @@
 import { useLogger, usePendingRedemptionService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useEffect } from 'react';
 

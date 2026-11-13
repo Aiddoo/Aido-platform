@@ -8,36 +8,38 @@ import {
 } from './number-format';
 
 describe('formatPercent', () => {
-  it('정수면 소수점 없이 반환한다', () => {
+  it.each([
+    { value: 83, ko: '83%', en: '83%' },
+    { value: 0, ko: '0%', en: '0%' },
+    { value: 100, ko: '100%', en: '100%' },
+    { value: 8.99, ko: '9%', en: '9%' },
+    { value: 83.456, ko: '83.5%', en: '83.5%' },
+    { value: 83.44, ko: '83.4%', en: '83.4%' },
+    { value: 83.45, ko: '83.5%', en: '83.5%' },
+    { value: 83.01, ko: '83%', en: '83%' },
+    { value: 7.999, ko: '8%', en: '8%' },
+  ])('$value는 소수 첫째 자리까지 반올림해 %를 붙인다', ({ value, ko, en }) => {
     // When
-    const results = [formatPercent(83), formatPercent(0), formatPercent(100)];
+    const results = [formatPercent(value, 'ko-KR'), formatPercent(value, 'en-US')];
 
     // Then
-    expect(results).toEqual(['83', '0', '100']);
+    expect(results).toEqual([ko, en]);
   });
 
-  it('소수점 첫째 자리까지 반올림한다', () => {
+  it.each([
+    { value: 2.5, expected: '+2.5%' },
+    { value: -2.5, expected: '-2.5%' },
+    { value: 0, expected: '0%' },
+    { value: -0.04, expected: '0%' },
+  ])('변화량 $value는 0이 아닐 때만 부호를 붙인다', ({ value, expected }) => {
     // When
-    const results = [formatPercent(8.99), formatPercent(83.456), formatPercent(83.44)];
+    const results = [
+      formatPercent(value, 'ko-KR', { signDisplay: 'exceptZero' }),
+      formatPercent(value, 'en-US', { signDisplay: 'exceptZero' }),
+    ];
 
     // Then
-    expect(results).toEqual(['9', '83.5', '83.4']);
-  });
-
-  it('소수점 첫째 자리가 0이 아닌 경우 표시한다', () => {
-    // When
-    const results = [formatPercent(7.3), formatPercent(99.9)];
-
-    // Then
-    expect(results).toEqual(['7.3', '99.9']);
-  });
-
-  it('반올림 결과가 정수면 소수점을 생략한다', () => {
-    // When
-    const results = [formatPercent(83.01), formatPercent(7.999)];
-
-    // Then
-    expect(results).toEqual(['83', '8']);
+    expect(results).toEqual([expected, expected]);
   });
 });
 

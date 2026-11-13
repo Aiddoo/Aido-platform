@@ -1,7 +1,8 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission } from '@src/core/ports/speech-recognizer';
-import { createLoggerStub, createSpeechRecognizerStub, renderUi } from '@src/shared/__tests__';
 import { Button, OverlayProvider } from '@src/shared/ui';
+import { createAppLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
@@ -23,21 +24,16 @@ function PermissionProbe({ onResult }: { onResult: (isGranted: boolean) => void 
 async function renderBlocked(missing: MissingSpeechPermission) {
   const speechRecognizer = createSpeechRecognizerStub();
   speechRecognizer.getPermission.mockResolvedValue({
-    isGranted: false,
+    status: 'denied',
     canAskAgain: false,
     missing,
   });
   const onResult = jest.fn();
-  await renderUi(
+  await renderScreen(
     <OverlayProvider>
       <PermissionProbe onResult={onResult} />
     </OverlayProvider>,
-    {
-      di: {
-        speechRecognizer,
-        logger: createLoggerStub(),
-      },
-    },
+    { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
   );
 
   return { speechRecognizer, onResult };

@@ -2,28 +2,16 @@ import { z } from "zod";
 
 import { dateSchema } from "../../../common/datetime.js";
 import {
-  NOTIFICATION_ACTION_TYPE,
-  NOTIFICATION_PURPOSES,
-} from "../../../vocabulary/notification.constants.js";
+  notificationActionSchema,
+  notificationContextSchema,
+  notificationTypeSchema,
+} from "../../../common/notification-value.js";
+import { NOTIFICATION_PURPOSES } from "../../../vocabulary/notification.constants.js";
 import { todoCommentIdSchema } from "../../todo-comment/v1/todo-comment.request.js";
-import { notificationTypeSchema } from "./notification.common.js";
 import {
   notificationActivityKindSchema,
   notificationNavigationSchema,
 } from "./notification.navigation.js";
-
-export const notificationActionTypeSchema = z.enum(NOTIFICATION_ACTION_TYPE);
-
-/**
- * 배포된 알림 목록 DTO에 그대로 박혀 있는 모양이라 필드를 늘리지 않는다.
- * 새 이동 재료는 푸시 navigation에 싣는다.
- */
-export const notificationContextSchema = z.object({
-  todoId: z.number().optional(),
-  friendId: z.string().optional(),
-  nudgeId: z.number().optional(),
-  cheerId: z.number().optional(),
-});
 
 export type NotificationContext = z.infer<typeof notificationContextSchema>;
 
@@ -71,16 +59,6 @@ export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.pa
 });
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
-
-export const notificationActionSchema = z.object({
-  type: notificationActionTypeSchema,
-  url: z
-    .string()
-    .optional()
-    .describe(
-      "BROWSER·WEBVIEW는 열 http(s) 주소. DEEP_LINK는 선택이며, 공지(SYSTEM_NOTICE·ADMIN_*)는 앱 경로(/feed, /achievements, /weather, /friends, /friends/invite, /settings/subscription, /settings/notifications) 중 하나를 싣는다. 그 밖의 타입은 type·context로 이동한다.",
-    ),
-});
 
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
 

@@ -9,13 +9,17 @@
         "src/features/**/constants/*.events.ts",
         "plugins/*.js",
         "scripts/*.mjs",
+        // jest 설정이 문자열 경로로만 가리키는 SDK 대체
+        "src/testing/mocks/*",
       ],
       "project": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
+      // TanStack Register 모듈 보강 파일이다. 보강과 컴파일 검사용 타입(AppQueryMetaGuard 등)은 import하는 곳 없이 쓰인다
       "ignore": ["src/shared/constants/query-meta.ts"],
       "ignoreDependencies": [
         // 코드는 import하지 않지만 share의 podspec이 RNCKakaoSocial·RNCKakaoUser를 요구해 빠지면 pod install이 실패한다 (docs/build-and-release.md 카카오 절)
         "@react-native-kakao/social",
         "@react-native-kakao/user",
+        // expo-router 네이티브 Stack 헤더가 옵션 peer로 읽는다(iOS 26 유리 효과)
         "expo-glass-effect",
         "babel-plugin-react-compiler",
         "babel-jest",

@@ -1,4 +1,6 @@
-import { type Instant, toEpochMs, toHHmm } from '@src/shared/date/instant';
+import type { DateKey } from '@src/shared/date/date-key';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { toHHmm } from '@src/shared/date/zoned';
 import { keyBy } from 'es-toolkit';
 
 import {
@@ -18,15 +20,15 @@ export interface ScheduleChange {
 }
 
 interface TodoScheduleSnapshot {
-  startDate: string;
-  endDate: string | null;
+  startDate: DateKey;
+  endDate: DateKey | null;
   localTime: string | null;
   isAllDay: boolean;
 }
 
 interface TodoScheduleInput {
-  startDate: string;
-  endDate: string | null;
+  startDate: DateKey;
+  endDate: DateKey | null;
   scheduledTime: string | null;
   isAllDay: boolean;
 }

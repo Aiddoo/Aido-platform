@@ -21,7 +21,7 @@ export type Consent = z.infer<typeof consentSchema>;
 
 const updateMarketingConsentResultSchema = z.object({
   marketingAgreedAt: instantSchema.nullable(),
-  /** 이번 요청으로 철회를 처리한 서버 시각. 동의했거나 구 서버면 null */
+  /** 이번 요청으로 철회를 처리한 서버 시각. 동의했으면 null */
   marketingWithdrawnAt: instantSchema.nullable(),
 });
 export type UpdateMarketingConsentResult = z.infer<typeof updateMarketingConsentResultSchema>;
@@ -62,7 +62,7 @@ export interface ConsentResult {
   at: Instant;
 }
 
-/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다. 구 서버라 둘 다 없으면 null이다 */
+/** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다 */
 export function getConsentResult({
   agreedAt,
   withdrawnAt,

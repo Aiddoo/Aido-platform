@@ -6,7 +6,7 @@ import {
   type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import { toDateKey } from '@src/shared/date/instant';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -28,7 +28,7 @@ import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/rea
 import { groupBy, noop, range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { AccessibilityActionEvent } from 'react-native';
 import {
   NestedReorderableList,
@@ -37,11 +37,9 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoPolicy } from '../../domains/sub-todo.model';
-import { type SubTodo } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
-import { type Todo } from '../../domains/todo.model';
-import { useFeedDate } from '../../hooks/use-feed-params';
+import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
+import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
+import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
   useReorderSubTodosMutationOptions,
@@ -52,17 +50,9 @@ import {
   useToggleTodoMutationOptions,
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
-import { formatTodoTime } from '../../utils/format-todo-time';
-import { SubTodoList } from '../sub-todo-list/sub-todo-list';
-import {
-  TODO_ROW_ACCESSIBILITY_ACTION,
-  TodoCheckbox,
-  TodoLabel,
-  TodoProgress,
-  TodoRow,
-  TodoScheduleLine,
-  TodoTitleLine,
-} from '../todo-row';
+import { formatTodoTime } from '../../utils/todo-time.view-model';
+import { SubTodoList } from '../sub-todo-list';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
 
 interface TodoListProps {
   /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
@@ -70,29 +60,29 @@ interface TodoListProps {
 }
 
 export function TodoList({ isReminderOff = false }: TodoListProps) {
-  const { timeZone } = useDateFormatContext();
-  const [selectedDate] = useFeedDate();
-  const date = toDateKey(selectedDate, timeZone);
+  const [date] = useFeedDateKey();
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
-  const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
+
+  const { categoryGroups, dataUpdatedAt } = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodosByDateQueryOptions({ date }),
       useGetPreferenceQueryOptions(),
     ],
+    combine: ([categories, todosByDate]) => ({
+      categoryGroups: groupTodosByCategory(todosByDate.data.todos, categories.data.categories),
+      dataUpdatedAt: todosByDate.dataUpdatedAt,
+    }),
   });
-  const categoryGroups = useMemo(
-    () => groupTodosByCategory(todosByDate.todos, categoriesResult.categories),
-    [todosByDate.todos, categoriesResult.categories],
-  );
+
   const canReorderTodos = categoryGroups.some((group) => TodoPolicy.canReorderTodos(group.todos));
 
   return (
     <Box gap={16}>
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
-          <CategoryHeader category={group.category} date={date} />
+          <CategoryAddPill category={group.category} date={date} />
 
           <TodoReorderableList
             items={group.todos}
@@ -132,12 +122,12 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-interface CategoryHeaderProps {
+interface CategoryAddPillProps {
   category: TodoCategoryWithCount;
-  date: string;
+  date: DateKey;
 }
 
-function CategoryHeader({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
@@ -164,7 +154,7 @@ interface TodoReorderableListProps {
   items: Todo[];
   updatedAt: number;
   /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
-  date: string;
+  date: DateKey;
   isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }
@@ -185,7 +175,7 @@ function TodoReorderableList({
     isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedId,
+        todoId: movedId,
         input: { targetTodoId: targetId, position },
       });
     },
@@ -213,7 +203,7 @@ function TodoReorderableList({
 interface TodoListItemProps {
   todo: Todo;
   updatedAt: number;
-  date: string;
+  date: DateKey;
   isReminderOff: boolean;
   onOpenDetail: (todoId: number) => void;
 }
@@ -225,21 +215,39 @@ TodoList.Item = function Item({
   isReminderOff,
   onOpenDetail,
 }: TodoListItemProps) {
+  const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
+  const dateFormatContext = useDateFormatContext();
+
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+
+  // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const selectTodo = useSingleTap(onOpenDetail);
-
-  const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
-  // 접거나 펴기 전에는 서브투두 유무를 따른다. 처음 값으로만 두면 나중에 생긴 서브투두가 접힌 채 남는다
-  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const subTodoReorderableList = useReorderableList({
+    items: todo.subTodos,
+    updatedAt,
+    isPending: reorderSubTodos.isPending,
+    getItemId: (subTodo) => subTodo.id,
+    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
+    onReorder: ({ items: reorderedSubTodos }) => {
+      reorderSubTodos.mutate({
+        todoId: todo.id,
+        subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
+        date,
+      });
+    },
+  });
+
   const isExpanded = userExpanded ?? SubTodoPolicy.hasSubTodos(todo.subTodos);
   const subTodoStats = SubTodoPolicy.getSubTodoStats(todo.subTodos);
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dateFormatContext = useDateFormatContext();
   const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isOptimistic = TodoPolicy.isOptimisticTodo(todo);
 
@@ -258,21 +266,6 @@ TodoList.Item = function Item({
       pathname: '/todo/[todoId]/sub-todos/[subTodoId]/actions',
       params: { todoId: todo.id, subTodoId: subTodo.id, date },
     });
-
-  const subTodoReorderableList = useReorderableList({
-    items: todo.subTodos,
-    updatedAt,
-    isPending: reorderSubTodos.isPending,
-    getItemId: (subTodo) => subTodo.id,
-    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
-    onReorder: ({ items: reorderedSubTodos }) => {
-      reorderSubTodos.mutate({
-        todoId: todo.id,
-        subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
-        date,
-      });
-    },
-  });
 
   const handleCompletedToggle = () =>
     toggleTodo.mutate({
@@ -305,7 +298,7 @@ TodoList.Item = function Item({
       }
       onAccessibilityAction={handleAccessibilityAction}
       left={
-        <TodoCheckbox
+        <TodoRow.Checkbox
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
@@ -314,18 +307,18 @@ TodoList.Item = function Item({
         />
       }
       top={
-        <TodoTitleLine
+        <TodoRow.TitleLine
           label={
-            <TodoLabel isCompleted={todo.completed} className="flex-1">
+            <TodoRow.Label isCompleted={todo.completed} className="flex-1">
               {todo.title}
-            </TodoLabel>
+            </TodoRow.Label>
           }
           isPrivate={isPrivateVisibility(todo.visibility)}
         />
       }
       middle={
         formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
-          <TodoScheduleLine
+          <TodoRow.ScheduleLine
             todo={todo}
             timeLabel={formattedTime}
             isReminderOff={isReminderOff && !todo.completed}
@@ -334,7 +327,7 @@ TodoList.Item = function Item({
       }
       bottom={
         SubTodoPolicy.hasSubTodos(todo.subTodos) ? (
-          <TodoProgress value={subTodoStats.completed} total={subTodoStats.total} />
+          <TodoRow.Progress value={subTodoStats.completed} total={subTodoStats.total} />
         ) : undefined
       }
       right={
@@ -355,8 +348,14 @@ TodoList.Item = function Item({
           />
           <IconButton
             accessibilityLabel={t('actions.more')}
-            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <MoreIcon
+                width={fontScaledSize(20)}
+                height={fontScaledSize(20)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-5 min-h-0 min-w-0"
             hitSlop={8}
             onPress={isOptimistic ? undefined : handleActionsPress}
             testID={`todo-more-${todo.id}`}

@@ -54,4 +54,8 @@ export const AI_SUGGESTION_LIMITS = {
 
 export const AI_REPORT_TYPES = ["WEEKLY", "MONTHLY"] as const;
 
+/** 추천에 대한 사용자 응답. 앱 분석 이벤트도 같은 값을 쓴다. */
+export const SUGGESTION_ACTIONS = ["accept", "dismiss"] as const;
+export type SuggestionActionKind = (typeof SUGGESTION_ACTIONS)[number];
+
 export const AI_SUGGESTION_STATUSES = ["PENDING", "ACCEPTED", "DISMISSED"] as const;

@@ -1,18 +1,19 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
-import { USER_QUERY_KEYS } from '@src/features/identity/user/constants/user-query-keys';
+import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createHapticsGatewayStub,
   createMemoryObservableSyncStorage,
   createTestQueryClient,
-  renderUi,
-} from '@src/shared/__tests__';
-import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+  createTestDi,
+} from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { screen } from '@testing-library/react-native';
 import { Suspense } from 'react';
 
 import { createInvite } from '../__tests__/invite.fixtures';
-import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
+import { INVITE_QUERY_KEYS } from '../queries/invite-query-keys';
 import { pawPrintCelebrationStoredValue } from '../schemas/paw-print-celebration-storage.schema';
 import { InvitePawPrintBoard } from './invite-paw-print-board';
 
@@ -34,18 +35,11 @@ async function renderBoard({
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: USER_ID }));
   queryClient.setQueryData(INVITE_QUERY_KEYS.me(), createInvite({ qualifiedCount }));
 
-  await renderUi(
+  await renderScreen(
     <Suspense fallback={null}>
       <InvitePawPrintBoard />
     </Suspense>,
-    {
-      queryClient,
-      withLocalDate: true,
-      di: {
-        syncStorage,
-        haptics,
-      },
-    },
+    { di: createTestDi({ ports: { syncStorage, haptics, queryClient } }), withLocalDate: true },
   );
   await screen.findAllByRole('image');
 

@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 
+import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
+
 const USER_TAG_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const USER_TAG_LENGTH = 8;
 
 export function generateUserTag(): string {
   const bytes = randomBytes(USER_TAG_LENGTH);

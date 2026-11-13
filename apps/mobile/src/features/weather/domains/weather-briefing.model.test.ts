@@ -3,6 +3,7 @@ import {
   createSubTodo,
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 import { range } from 'es-toolkit';
 
 import {
@@ -301,7 +302,15 @@ describe('getWeatherBriefing', () => {
       daily:
         today == null
           ? []
-          : [today, { ...today, date: '2026-11-03', temperatureMin: 3, temperatureMax: 16 }],
+          : [
+              today,
+              {
+                ...today,
+                date: createDateKey('2026-11-03'),
+                temperatureMin: 3,
+                temperatureMax: 16,
+              },
+            ],
     });
     const nightClock = { now: toInstant('2026-11-02T13:04:00.000Z'), timeZone: 'Asia/Seoul' };
 
@@ -319,7 +328,7 @@ describe('getWeatherBriefing', () => {
 });
 
 describe('toBriefingTodo', () => {
-  const SEOUL = { date: '2026-11-02', timeZone: 'Asia/Seoul' };
+  const SEOUL = { date: createDateKey('2026-11-02'), timeZone: 'Asia/Seoul' };
   const BASE = {
     id: 1,
     title: '산책',
@@ -364,7 +373,7 @@ describe('toBriefingTodo', () => {
     // When
     const seoul = WeatherBriefingPolicy.toBriefingTodo(input, SEOUL);
     const losAngeles = WeatherBriefingPolicy.toBriefingTodo(input, {
-      date: '2026-11-02',
+      date: createDateKey('2026-11-02'),
       timeZone: 'America/Los_Angeles',
     });
 
@@ -381,7 +390,7 @@ describe('toBriefingTodo', () => {
 
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, {
-      date: '2026-11-01',
+      date: createDateKey('2026-11-01'),
       timeZone: 'America/Los_Angeles',
     });
 

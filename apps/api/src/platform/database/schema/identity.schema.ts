@@ -1,3 +1,4 @@
+import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -45,13 +46,10 @@ export const user = pgTable(
     status: userStatus().default("PENDING_VERIFY").notNull(),
     subscriptionExpiresAt: instant(),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
-    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
-    twoFactorEnabled: boolean().default(false).notNull(),
-    // 1.15.2에서 DROP: 코드 참조 없음(롤백 호환 때문에 1.15.1은 유지)
-    twoFactorSecret: varchar({ length: 255 }),
+    // DB에는 twoFactorEnabled·twoFactorSecret이 남아 있다(1.15.1 이미지가 SELECT). 1.16.0에서 지운다(compatibility.md)
     // User를 바꾸는 저장소가 ClockPort 값으로 insert·update마다 명시한다
     updatedAt: instant().notNull(),
-    userTag: varchar({ length: 8 }).notNull(),
+    userTag: varchar({ length: USER_TAG_LENGTH }).notNull(),
     lastSeenAppVersion: varchar({ length: 30 }),
     lastSeenAppVersionAt: instant(),
   },

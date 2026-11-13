@@ -1,8 +1,11 @@
-import type { UpdateMarketingConsentResponse } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
 
 import { type Consent, consentSchema } from '../domains/consent.model';
-import { type ConsentEnvelope, consentEnvelopeSchema } from '../schemas/consent-response.schema';
+import {
+  type ConsentEnvelope,
+  consentEnvelopeSchema,
+  type UpdateMarketingConsentEnvelope,
+} from '../schemas/consent-response.schema';
 
 function generateConsentDto(): ConsentEnvelope {
   return {
@@ -38,15 +41,16 @@ export function createConsent(overrides?: Partial<Consent>): Consent {
   return consentSchema.parse({ ...generateConsent(), ...overrides });
 }
 
-function generateUpdateMarketingConsentDto(): UpdateMarketingConsentResponse {
+function generateUpdateMarketingConsentDto(): UpdateMarketingConsentEnvelope {
   return {
     marketingAgreedAt: '2026-02-01T00:00:00.000Z',
+    marketingWithdrawnAt: null,
   };
 }
 
 export function createUpdateMarketingConsentDto(
-  overrides?: Partial<UpdateMarketingConsentResponse>,
-): UpdateMarketingConsentResponse {
+  overrides?: Partial<UpdateMarketingConsentEnvelope>,
+): UpdateMarketingConsentEnvelope {
   return {
     ...generateUpdateMarketingConsentDto(),
     ...overrides,
