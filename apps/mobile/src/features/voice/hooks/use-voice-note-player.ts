@@ -1,12 +1,12 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type {
   AudioPartPlaylist,
   AudioPartPlaylistStatus,
 } from '@src/core/ports/audio-part-playlist';
-import type { Logger } from '@src/core/ports/logger';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAudioPartPlaylist } from '@src/shared/infra/audio/use-audio-part-playlist';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
@@ -14,7 +14,7 @@ import {
   findPartSeek,
   getVoiceNotePlayback,
   type VoiceNotePlayback,
-} from '../utils/voice-note-playback';
+} from '../utils/voice-note-playback.view-model';
 
 interface VoiceNotePlayerPart {
   uri: string;
@@ -43,7 +43,7 @@ interface PendingStart {
 
 interface CreatePlayerInput extends UseVoiceNotePlayerOptions {
   playlist: AudioPartPlaylist;
-  logger: Pick<Logger, 'warn'>;
+  logger: Pick<AppLogger, 'warn'>;
 }
 
 function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePlayerInput) {
@@ -178,11 +178,4 @@ export function useVoiceNotePlayer({
   }, [logger, playlist]);
 
   return player;
-}
-
-export function useVoiceNotePlayback<TSelected>(
-  player: VoiceNotePlayer,
-  select: (playback: VoiceNotePlayback) => TSelected,
-): TSelected {
-  return useSyncExternalStore(player.subscribe, () => select(player.getPlayback()));
 }

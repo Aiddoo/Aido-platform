@@ -1,13 +1,15 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { tDynamic } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { getRecognizerStartOptions } from '../utils/speech-context';
+import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
+import { getRecognizerStartOptions } from '../domains/speech-context.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
@@ -27,6 +29,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();
+  const reportUnexpectedError = useReportUnexpectedError('voice');
   const { speechLocale } = useLocaleContext();
   const [isListening, setIsListening] = useState(false);
   const isMountedRef = useRef(false);
@@ -108,17 +111,15 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
       }
       isSessionOwnerRef.current = true;
       speechRecognizer.start(
-        getRecognizerStartOptions({
-          locale,
-          mode: 'dictation',
-          hintWords: [],
-          isOnDevice: false,
-          recordingDirectory: null,
-        }),
+        getRecognizerStartOptions(
+          { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
+          COMMON_SPEECH_HINTS[locale],
+        ),
       );
-    } catch {
+    } catch (error) {
       isStartingRef.current = false;
       isSessionOwnerRef.current = false;
+      reportUnexpectedError(error);
       toast.error(getSpeechErrorMessage('unknown'));
     }
   };

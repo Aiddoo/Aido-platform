@@ -4,6 +4,7 @@ import {
   NOTIFICATION_CATEGORY,
   WEATHER_RESCHEDULE_REASONS,
 } from '@aido/api/vocabulary';
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
@@ -16,7 +17,7 @@ export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORY);
 const todoTargetShape = {
   todoId: z.int().positive(),
   ownerId: z.string().nullable(),
-  dateKey: z.iso.date().nullable(),
+  dateKey: dateKeySchema.nullable(),
 };
 
 /** 알림을 누르면 열 곳. 서버 navigation 종류와 1:1이고 칸은 앱이 쓰는 것만 둔다 */

@@ -5,6 +5,7 @@ import {
   createErrorReporterStub,
   createHttpClientStub,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -30,11 +31,13 @@ describe('초대 코드 입력 화면', () => {
     onlineManager.setOnline(false);
     const user = userEvent.setup();
     await renderScreen(<InviteCodeEntryRoute />, {
-      di: {
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient,
+        },
+      }),
     });
     await user.paste(await screen.findByLabelText('초대 코드'), CODE);
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
@@ -56,12 +59,14 @@ describe('초대 코드 입력 화면', () => {
     const queryClient = createTestQueryClient();
     const user = userEvent.setup();
     await renderScreen(<InviteCodeEntryRoute />, {
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      },
-      queryClient,
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient,
+        },
+      }),
     });
     await user.paste(await screen.findByLabelText('초대 코드'), ' k7m-2qx ');
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
@@ -85,12 +90,14 @@ describe('초대 코드 입력 화면', () => {
     httpClient.get.mockReturnValue(new Promise(noop));
     const user = userEvent.setup();
     await renderScreen(<InviteCodeEntryRoute />, {
-      di: {
-        httpClient,
-        analytics: createAnalyticsStub(),
-        errorReporter: createErrorReporterStub(),
-      },
-      queryClient: createTestQueryClient(),
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient: createTestQueryClient(),
+        },
+      }),
     });
     await user.paste(await screen.findByLabelText('초대 코드'), CODE);
     expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
@@ -107,8 +114,13 @@ describe('초대 코드 입력 화면', () => {
     // Given
     const user = userEvent.setup();
     await renderScreen(<InviteCodeEntryRoute />, {
-      di: { analytics: createAnalyticsStub(), errorReporter: createErrorReporterStub() },
-      queryClient: createTestQueryClient(),
+      di: createTestDi({
+        ports: {
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient: createTestQueryClient(),
+        },
+      }),
     });
     const input = await screen.findByLabelText('초대 코드');
     await user.paste(input, 'BCDFGH');
@@ -119,5 +131,34 @@ describe('초대 코드 입력 화면', () => {
 
     // Then
     expect(input).toHaveDisplayValue(CODE);
+  });
+
+  it('헷갈리는 글자를 넣으면 제출 전에 바로 알리고 고칠 때까지 확인을 끈다', async () => {
+    // Given
+    const user = userEvent.setup();
+    await renderScreen(<InviteCodeEntryRoute />, {
+      di: createTestDi({
+        ports: {
+          analytics: createAnalyticsStub(),
+          errorReporter: createErrorReporterStub(),
+          queryClient: createTestQueryClient(),
+        },
+      }),
+    });
+    const input = await screen.findByLabelText('초대 코드');
+
+    // When
+    await user.paste(input, 'K7M2Q0');
+
+    // Then
+    expect(await screen.findByText(/‘0’ 글자는 초대 코드에 없어요/u)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: '확인' })).toBeDisabled();
+
+    // When
+    await fireEvent.changeText(input, 'K7M2QX');
+
+    // Then
+    await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
+    expect(screen.queryByText(/글자는 초대 코드에 없어요/u)).toBeNull();
   });
 });

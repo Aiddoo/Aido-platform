@@ -1,11 +1,9 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { todoNotFound } from "../todos.errors.js";
 
 export interface GetTodoByIdInput {
   readonly id: number;
@@ -30,7 +28,7 @@ export class GetTodoUseCase {
     );
 
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.id });
+      throw todoNotFound(input.id);
     }
 
     return todo;

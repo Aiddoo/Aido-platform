@@ -63,7 +63,7 @@ export interface BriefingView {
 }
 
 /** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 시각은 할 일과 같은 기기 시간대다. */
-export interface BriefingViewDeps {
+export interface BriefingViewPorts {
   hourly: readonly HourlyForecastEntry[];
   now: Instant;
   formatClock: (date: Instant) => string;
@@ -72,7 +72,7 @@ export interface BriefingViewDeps {
   formatChance: (percent: number) => string;
 }
 
-export function toBriefingView(briefing: BriefingResult, deps: BriefingViewDeps): BriefingView {
+export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts): BriefingView {
   const { hourly, now, formatClock, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourRange): BriefingCopy => ({
     key: 'briefing.range',

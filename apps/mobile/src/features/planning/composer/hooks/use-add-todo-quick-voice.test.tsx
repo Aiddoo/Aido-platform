@@ -1,8 +1,9 @@
+import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
-import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
+import '@src/shared/i18n/init';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
@@ -12,25 +13,24 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider, Text } from '@src/shared/ui';
+import { Text } from '@src/shared/ui';
 import {
   createAnalyticsStub,
-  createErrorReporterStub,
-  createHapticsGatewayStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
   createTestQueryClient,
+  createTestDi,
 } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { useForm, useWatch } from 'react-hook-form';
+import { useController, useForm, useFormState, useWatch } from 'react-hook-form';
 import { Pressable, TextInput } from 'react-native';
 
 import { useAddTodoQuickVoice } from './use-add-todo-quick-voice';
@@ -64,13 +64,24 @@ const WORKOUT_ACTION = {
   duplicateOfTodoId: null,
 };
 
-/** 실패 상태로 그릴 때마다 입력 칸에 있던 글자 */
-const titlesRenderedAsFailed: string[] = [];
-
-function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
+function QuickVoiceProbe({
+  onExit,
+  titlesRenderedAsFailed,
+}: {
+  onExit: () => void;
+  /** 실패 상태로 그릴 때마다 입력 칸에 있던 글자 */
+  titlesRenderedAsFailed: string[];
+}) {
   const form = useForm<TodoFormValues>({
-    defaultValues: { title: '', startDate: '2026-11-05', repeat: null },
+    defaultValues: { title: '', startDate: createDateKey('2026-11-05'), repeat: null },
   });
+  // 시트의 제목 칸처럼 공백만이면 보낼 수 없다. 입력 칸은 다시 마운트되지 않는다
+  useController({
+    control: form.control,
+    name: 'title',
+    rules: { validate: (value) => value.trim().length > 0 },
+  });
+  const { isValid } = useFormState({ control: form.control });
   const quickVoice = useAddTodoQuickVoice({ form, onExit });
   const title = useWatch({ control: form.control, name: 'title' });
   const { state } = quickVoice;
@@ -83,7 +94,9 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() => quickVoice.begin({ locale: 'ko-KR', hintWords: [] })}
+        onPress={() =>
+          quickVoice.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
+        }
       />
       <Pressable
         accessibilityRole="button"
@@ -122,6 +135,7 @@ function QuickVoiceProbe({ onExit }: { onExit: () => void }) {
       <Text testID="status">{state.status}</Text>
       <Text testID="consent-required">{String(quickVoice.isConsentRequired)}</Text>
       <Text testID="title">{title}</Text>
+      <Text testID="is-valid">{String(isValid)}</Text>
       <TextInput
         accessibilityLabel="title-input"
         onChangeText={(text) => form.setValue('title', text, { shouldDirty: true })}
@@ -143,7 +157,7 @@ async function renderQuickVoice({
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const voiceNoteStorage = createVoiceNoteStorageFake();
+  const voice = createVoiceNoteStorageFake();
   const onExit = jest.fn();
   const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient();
@@ -165,43 +179,35 @@ async function renderQuickVoice({
     );
   }
 
-  const { rerender } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <QuickVoiceProbe onExit={onExit} />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    {
+  const di = createTestDi({
+    ports: {
       queryClient,
-      di: {
-        httpClient,
-        ...voiceNoteStorage.di,
-        syncStorage,
-        speechRecognizer,
-        analytics,
-        errorReporter: createErrorReporterStub(),
-        haptics: createHapticsGatewayStub(),
-        storage: createMemoryStorage(),
-      },
+      httpClient,
+      ...voice.ports,
+      syncStorage,
+      speechRecognizer,
+      analytics,
+      storage: createMemoryKeyValueStorage(),
     },
+  });
+  const titlesRenderedAsFailed: string[] = [];
+  const { rerender } = await renderScreen(
+    <QuickVoiceProbe onExit={onExit} titlesRenderedAsFailed={titlesRenderedAsFailed} />,
+    { di, withLocalDate: true, withOverlay: true },
   );
 
   /** 시트만 닫는다. 안내는 앱 위 오버레이에 있어 그대로 남는다 */
-  const closeSheet = () =>
-    rerender(
-      <LocalDateProvider>
-        <OverlayProvider>{null}</OverlayProvider>
-      </LocalDateProvider>,
-    );
+  const closeSheet = () => rerender(<></>);
 
   return {
     httpClient,
     speechRecognizer,
-    voiceNoteStorage,
+    di,
     onExit,
     analytics,
     queryClient,
     closeSheet,
+    titlesRenderedAsFailed,
   };
 }
 
@@ -221,6 +227,10 @@ const getIdempotencyKey = (
 ) => httpClient.post.mock.calls[callIndex]?.[2]?.headers?.['Idempotency-Key'];
 
 describe('useAddTodoQuickVoice', () => {
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
   // 동의를 미룬 뒤 뜨는 토스트 타이머가 테스트 밖에 남지 않게 한다
   setupFakeTimersPerTest({ advanceTimers: true });
 
@@ -243,7 +253,9 @@ describe('useAddTodoQuickVoice', () => {
     // Given
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
-    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1301', '실패', 503)));
+    httpClient.post.mockResolvedValueOnce(
+      err(new ApiError(ErrorCode.AI_1301, '실패', HttpStatus.SERVICE_UNAVAILABLE)),
+    );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
@@ -261,7 +273,9 @@ describe('useAddTodoQuickVoice', () => {
     // Given
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
-    httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1318', '다른 내용', 422)));
+    httpClient.post.mockResolvedValueOnce(
+      err(new ApiError(ErrorCode.AI_1318, '다른 내용', HttpStatus.UNPROCESSABLE_ENTITY)),
+    );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
@@ -344,17 +358,13 @@ describe('useAddTodoQuickVoice', () => {
       // Given
       const user = userEvent.setup();
       const { httpClient, speechRecognizer, closeSheet } = await renderQuickVoice();
-      let failConsentRead: (error: Error) => void = jest.fn();
-      httpClient.get.mockReturnValue(
-        new Promise((_resolve, reject) => {
-          failConsentRead = reject;
-        }),
-      );
+      const consentRead = Promise.withResolvers<never>();
+      httpClient.get.mockReturnValue(consentRead.promise);
       await user.press(screen.getByRole('button', { name: 'start' }));
       await act(async () => closeSheet());
 
       // When
-      await act(async () => failConsentRead(new Error('offline')));
+      await act(async () => consentRead.reject(new Error('offline')));
 
       // Then
       expect(speechRecognizer.getPermission).not.toHaveBeenCalled();
@@ -373,18 +383,14 @@ describe('useAddTodoQuickVoice', () => {
       await act(async () => speechRecognizer.emit({ type: 'error', code: 'service-not-allowed' }));
       analytics.trackEvent.mockClear();
       speechRecognizer.start.mockClear();
-      let grant: (snapshot: { isGranted: true; canAskAgain: boolean }) => void = jest.fn();
-      speechRecognizer.getPermission.mockReturnValue(
-        new Promise((resolve) => {
-          grant = resolve;
-        }),
-      );
+      const permission = Promise.withResolvers<{ status: 'granted'; canAskAgain: boolean }>();
+      speechRecognizer.getPermission.mockReturnValue(permission.promise);
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.getPermission).toHaveBeenCalled());
       await act(async () => closeSheet());
 
       // When
-      await act(async () => grant({ isGranted: true, canAskAgain: true }));
+      await act(async () => permission.resolve({ status: 'granted', canAskAgain: true }));
 
       // Then
       expect(speechRecognizer.start).not.toHaveBeenCalled();
@@ -459,7 +465,9 @@ describe('useAddTodoQuickVoice', () => {
           aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
         },
       });
-      httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+      httpClient.post.mockResolvedValueOnce(
+        err(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+      );
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
       await act(async () => speechRecognizer.emit({ type: 'start' }));
@@ -477,7 +485,9 @@ describe('useAddTodoQuickVoice', () => {
       await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
       expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
-      httpClient.post.mockResolvedValueOnce(err(new ApiError('AI_1311', '동의 필요', 403)));
+      httpClient.post.mockResolvedValueOnce(
+        err(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+      );
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
       httpClient.patch.mockResolvedValue(
         ok({
@@ -509,7 +519,6 @@ describe('useAddTodoQuickVoice', () => {
 
     // Then
     await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
-    onlineManager.setOnline(true);
   });
 
   it('오프라인이어도 멈추지 않고 실패로 넘어가 글자를 입력 칸에 남긴다', async () => {
@@ -524,13 +533,11 @@ describe('useAddTodoQuickVoice', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
-    onlineManager.setOnline(true);
   });
 
   it('정리에 실패하면 입력 칸이 빈 채로 그려지는 순간 없이 글자를 넣는다', async () => {
     // Given
-    titlesRenderedAsFailed.length = 0;
-    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    const { httpClient, speechRecognizer, titlesRenderedAsFailed } = await renderQuickVoice();
     httpClient.post.mockRejectedValue(new NetworkError());
 
     // When
@@ -557,6 +564,33 @@ describe('useAddTodoQuickVoice', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
     expect(screen.getByTestId('title')).toHaveTextContent('말한 내용');
     expect(httpClient.post.mock.calls[0]?.[2]?.signal?.aborted).toBe(true);
+  });
+
+  it.each<{ path: string; leavePlanning: () => Promise<void> }>([
+    { path: '정리가 실패하면', leavePlanning: async () => {} },
+    {
+      path: '정리를 기다리다 그만두면',
+      leavePlanning: async () => {
+        await userEvent.press(screen.getByRole('button', { name: 'cancel-planning' }));
+      },
+    },
+  ])('$path 옮긴 글자로 폼이 바로 보낼 수 있는 상태가 된다', async ({ path, leavePlanning }) => {
+    // Given
+    const { httpClient, speechRecognizer } = await renderQuickVoice();
+    if (path === '정리가 실패하면') {
+      httpClient.post.mockRejectedValue(new NetworkError());
+    } else {
+      httpClient.post.mockReturnValue(new Promise(() => undefined));
+    }
+    await speak(speechRecognizer);
+    await waitFor(() => expect(screen.getByTestId('status')).not.toHaveTextContent('listening'));
+
+    // When
+    await leavePlanning();
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent('말한 내용'));
+    expect(screen.getByTestId('is-valid')).toHaveTextContent('true');
   });
 
   it('권한 오류로 실패한 뒤 마이크를 다시 누르면 글자를 유지한 채 새로 듣는다', async () => {
@@ -641,8 +675,7 @@ describe('useAddTodoQuickVoice', () => {
     it('말로 메모하기를 고르면 들은 글자를 초안에 저장하고 시트를 닫은 뒤 이어 듣기로 간다', async () => {
       // Given
       const user = userEvent.setup();
-      const { httpClient, speechRecognizer, voiceNoteStorage, onExit, analytics } =
-        await renderQuickVoice();
+      const { httpClient, speechRecognizer, di, onExit, analytics } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       // 동의 상태를 읽지 못하면 묻지 않고 넘어간다
       httpClient.get.mockRejectedValue(new Error('offline'));
@@ -652,7 +685,7 @@ describe('useAddTodoQuickVoice', () => {
 
       // Then
       await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
-      const [note] = voiceNoteStorage.drafts.findAll(ACCOUNT_ID);
+      const [note] = di.voiceNoteDraftRepository.findAll(ACCOUNT_ID);
       expect(note?.sentences.map(({ text }) => text)).toEqual(['길게 말한 내용.']);
       expect(onExit).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith({
@@ -669,10 +702,10 @@ describe('useAddTodoQuickVoice', () => {
     it('마이크 권한을 거절하면 시트에 그대로 남아 글자를 잃지 않는다', async () => {
       // Given
       const user = userEvent.setup();
-      const { httpClient, speechRecognizer, voiceNoteStorage, onExit } = await renderQuickVoice();
+      const { httpClient, speechRecognizer, di, onExit } = await renderQuickVoice();
       await listenUntilLimit(speechRecognizer);
       httpClient.get.mockRejectedValue(new Error('offline'));
-      const denied = { isGranted: false, canAskAgain: true, missing: 'microphone' } as const;
+      const denied = { status: 'denied', canAskAgain: true, missing: 'microphone' } as const;
       speechRecognizer.getPermission.mockResolvedValue(denied);
       speechRecognizer.requestPermission.mockResolvedValue(denied);
 
@@ -683,7 +716,7 @@ describe('useAddTodoQuickVoice', () => {
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('paused');
       expect(onExit).not.toHaveBeenCalled();
-      expect(voiceNoteStorage.drafts.findAll(ACCOUNT_ID)).toEqual([]);
+      expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
     });
   });
 });

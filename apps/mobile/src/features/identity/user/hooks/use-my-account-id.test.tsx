@@ -1,4 +1,4 @@
-import { createHttpClientStub, createTestQueryClient } from '@src/testing/core';
+import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 
 import { createUser } from '../__tests__/user.fixtures';
@@ -12,8 +12,7 @@ async function renderAccountId(options: Parameters<typeof useMyAccountId>[0]) {
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: 'account-a' }));
   const httpClient = createHttpClientStub();
   const hook = await renderScreenHook(() => useMyAccountId(options), {
-    queryClient,
-    di: { httpClient },
+    di: createTestDi({ ports: { httpClient, queryClient } }),
   });
   return { ...hook, httpClient };
 }

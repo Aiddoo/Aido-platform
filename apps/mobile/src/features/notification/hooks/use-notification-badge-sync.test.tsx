@@ -1,13 +1,11 @@
-import { StaticDIProvider } from '@src/bootstrap/providers/di-context';
 import {
   createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestDi,
-  createTestQueryClient,
 } from '@src/testing/core';
-import { focusManager, QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react-native';
-import type { PropsWithChildren } from 'react';
+import { renderScreenHook } from '@src/testing/render';
+import { focusManager } from '@tanstack/react-query';
+import { act, waitFor } from '@testing-library/react-native';
 
 import { NOTIFICATION_QUERY_KEYS } from '../queries/notification-query-keys';
 import { useNotificationBadgeSync } from './use-notification-badge-sync';
@@ -20,14 +18,10 @@ async function setup() {
     value: { unreadCount: server.unreadCount },
   }));
   const gateway = createPushNotificationGatewayStub();
-  const container = createTestDi({ httpClient, pushNotification: gateway });
-  const queryClient = createTestQueryClient();
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <StaticDIProvider container={container}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </StaticDIProvider>
+  const { queryClient } = await renderScreenHook(
+    () => useNotificationBadgeSync({ authStatus: 'authenticated' }),
+    { di: createTestDi({ ports: { httpClient, pushNotification: gateway } }) },
   );
-  await renderHook(() => useNotificationBadgeSync({ authStatus: 'authenticated' }), { wrapper });
   await waitFor(() => expect(gateway.setBadgeCount).toHaveBeenLastCalledWith(3));
   return { server, gateway, queryClient };
 }

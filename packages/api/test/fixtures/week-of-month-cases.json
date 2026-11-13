@@ -1,0 +1,188 @@
+{
+  "weekOfMonth": [
+    {
+      "name": "보통 주의 목요일은 수요일 11일이 속한 11월 2주차",
+      "system": "SUNDAY_START",
+      "date": "2026-11-12",
+      "expectedMiddleDate": "2026-11-11",
+      "expectedWeekOfMonth": 2
+    },
+    {
+      "name": "달의 첫날이 일요일이면 그 주가 1주차",
+      "system": "SUNDAY_START",
+      "date": "2026-11-01",
+      "expectedMiddleDate": "2026-11-04",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "토요일 말일은 수요일 28일이 속한 4주차",
+      "system": "SUNDAY_START",
+      "date": "2026-10-31",
+      "expectedMiddleDate": "2026-10-28",
+      "expectedWeekOfMonth": 4
+    },
+    {
+      "name": "11월 29일에 시작해 달이 걸치는 주는 수요일 12월 2일의 달인 12월 1주차",
+      "system": "SUNDAY_START",
+      "date": "2026-12-03",
+      "expectedMiddleDate": "2026-12-02",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "수요일 말일은 그 달 5주차",
+      "system": "SUNDAY_START",
+      "date": "2026-09-30",
+      "expectedMiddleDate": "2026-09-30",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "10월 3일(토)의 주는 수요일이 9월 30일이라 9월 5주차",
+      "system": "SUNDAY_START",
+      "date": "2026-10-03",
+      "expectedMiddleDate": "2026-09-30",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "1월 1일(금)의 주는 수요일이 12월 30일이라 지난해 12월 5주차",
+      "system": "SUNDAY_START",
+      "date": "2027-01-01",
+      "expectedMiddleDate": "2026-12-30",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "12월 29일(일)의 주는 수요일이 1월 1일이라 다음 해 1월 1주차",
+      "system": "SUNDAY_START",
+      "date": "2024-12-29",
+      "expectedMiddleDate": "2025-01-01",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "12월 31일(수)은 그 달 5주차",
+      "system": "SUNDAY_START",
+      "date": "2025-12-31",
+      "expectedMiddleDate": "2025-12-31",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "윤일 2028-02-29(화)의 주는 수요일이 3월 1일이라 3월 1주차",
+      "system": "SUNDAY_START",
+      "date": "2028-02-29",
+      "expectedMiddleDate": "2028-03-01",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "윤일 2024-02-29(목)의 주는 수요일이 2월 28일이라 2월 4주차",
+      "system": "SUNDAY_START",
+      "date": "2024-02-29",
+      "expectedMiddleDate": "2024-02-28",
+      "expectedWeekOfMonth": 4
+    },
+    {
+      "name": "보통 주의 목요일 11월 12일은 11월 2주차",
+      "system": "ISO",
+      "date": "2026-11-12",
+      "expectedMiddleDate": "2026-11-12",
+      "expectedWeekOfMonth": 2
+    },
+    {
+      "name": "일요일 11월 1일은 목요일이 10월 29일인 주라 10월 5주차",
+      "system": "ISO",
+      "date": "2026-11-01",
+      "expectedMiddleDate": "2026-10-29",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "목요일 12월 3일은 12월 1주차",
+      "system": "ISO",
+      "date": "2026-12-03",
+      "expectedMiddleDate": "2026-12-03",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "53주가 있는 해 2026의 마지막 주(목요일 12월 31일)는 12월 5주차",
+      "system": "ISO",
+      "date": "2026-12-31",
+      "expectedMiddleDate": "2026-12-31",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "1월 1일(금)은 2026-W53이라 지난해 12월 5주차",
+      "system": "ISO",
+      "date": "2027-01-01",
+      "expectedMiddleDate": "2026-12-31",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "2027-W01의 월요일은 목요일 1월 7일의 1월 1주차",
+      "system": "ISO",
+      "date": "2027-01-04",
+      "expectedMiddleDate": "2027-01-07",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "12월 29일(월)의 주는 목요일이 1월 1일이라 다음 해 1월 1주차",
+      "system": "ISO",
+      "date": "2025-12-29",
+      "expectedMiddleDate": "2026-01-01",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "윤일 2028-02-29(화)의 주는 목요일이 3월 2일이라 3월 1주차",
+      "system": "ISO",
+      "date": "2028-02-29",
+      "expectedMiddleDate": "2028-03-02",
+      "expectedWeekOfMonth": 1
+    },
+    {
+      "name": "윤일 2024-02-29(목)은 2월 5주차",
+      "system": "ISO",
+      "date": "2024-02-29",
+      "expectedMiddleDate": "2024-02-29",
+      "expectedWeekOfMonth": 5
+    },
+    {
+      "name": "53주가 있는 해 2032의 12월 31일(금)은 목요일 12월 30일의 12월 5주차",
+      "system": "ISO",
+      "date": "2032-12-31",
+      "expectedMiddleDate": "2032-12-30",
+      "expectedWeekOfMonth": 5
+    }
+  ],
+  "isoWeekLabel": [
+    {
+      "name": "올해 주는 연도 없이 쓴다",
+      "date": "2026-11-09",
+      "today": "2026-11-12",
+      "ko": "11월 2주차",
+      "en": "Week 2 of Nov"
+    },
+    {
+      "name": "지난해 주는 주차 달의 연도를 붙인다",
+      "date": "2025-12-01",
+      "today": "2026-11-12",
+      "ko": "2025년 12월 1주차",
+      "en": "Week 1 of Dec 2025"
+    },
+    {
+      "name": "새해 첫 월요일에 본 지난해 마지막 주(2026-W53, 목요일 12월 31일)는 지난해다",
+      "date": "2026-12-28",
+      "today": "2027-01-04",
+      "ko": "2026년 12월 5주차",
+      "en": "Week 5 of Dec 2026"
+    },
+    {
+      "name": "월요일이 지난해여도 목요일이 올해 1월이면 올해 주다",
+      "date": "2025-12-29",
+      "today": "2026-01-05",
+      "ko": "1월 1주차",
+      "en": "Week 1 of Jan"
+    },
+    {
+      "name": "다음 해 주도 연도를 붙인다",
+      "date": "2027-03-01",
+      "today": "2026-11-12",
+      "ko": "2027년 3월 1주차",
+      "en": "Week 1 of Mar 2027"
+    }
+  ]
+}

@@ -16,9 +16,10 @@ export const TODO_NUDGE_QUERY_KEYS = {
     queryOptions<boolean>({
       queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'availability'],
     }).queryKey,
+  interactionLists: () => [...TODO_NUDGE_QUERY_KEYS.interactions(), 'list'] as const,
   interactionList: ({ direction }: { direction: NudgeDirection }) =>
     queryOptions<InfiniteData<NudgeInteractionPage, number | undefined>>({
-      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'list', { direction }],
+      queryKey: [...TODO_NUDGE_QUERY_KEYS.interactionLists(), { direction }],
     }).queryKey,
   interaction: ({ nudgeId }: { nudgeId: number }) =>
     queryOptions<NudgeInteraction>({

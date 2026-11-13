@@ -1,23 +1,13 @@
-import {
-  useExternalLink,
-  useHaptics,
-  useLogger,
-  usePushRegistrationService,
-} from '@src/bootstrap/providers/di-context';
-import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
+import { useExternalLink, usePushRegistrationService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
-import { getErrorMessage } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import type { PushPermissionPromptSource } from '../constants/notification.events';
 import { setCachedPushPermission } from './push-permission-cache';
 
-interface PushPermissionActionVariables {
-  /** 권한을 묻거나 설정을 연 UI. 결과를 추적할 때만 쓴다 */
-  source: PushPermissionPromptSource;
+interface RequestPushPermissionVariables {
+  /** 권한을 물은 UI. 앱 알림을 켠 뒤 이미 허용한 기기를 다시 읽는 길은 비워 두고 추적하지 않는다 */
+  source?: PushPermissionPromptSource;
 }
 
 interface OpenPushSettingsVariables {
@@ -53,51 +43,21 @@ export function useRequestPushPermissionMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
-    mutationFn: (_variables: PushPermissionActionVariables) =>
+    mutationFn: (_variables: RequestPushPermissionVariables) =>
       pushRegistrationService.requestPermission(),
     // 권한 창은 기기 안에서 뜨므로 오프라인에서도 멈추지 않는다
     networkMode: 'always',
     onSuccess: (permission, { source }) => {
       setCachedPushPermission(queryClient, permission);
-      trackEvent('push_permission_requested', { source, status: permission.status });
+      if (source != null) {
+        trackEvent('push_permission_requested', { source, status: permission.status });
+      }
     },
     meta: {
       errorFeedback: {
         feature: 'notification',
         fallbackKey: 'notification:permission.toasts.requestFailed',
       },
-    },
-  });
-}
-
-// 권한 창이 닫힐 때까지 pending이라 토글을 두 번 누를 수 없다
-export function useUpdatePushEnabledAndAskPermissionMutationOptions() {
-  const updatePreferenceOptions = useUpdatePreferenceMutationOptions();
-  const pushRegistrationService = usePushRegistrationService();
-  const logger = useLogger();
-  const queryClient = useQueryClient();
-  const haptics = useHaptics();
-  const toast = useAppToast();
-
-  return mutationOptions({
-    ...updatePreferenceOptions,
-    onSuccess: async (data, variables, onMutateResult, context) => {
-      await updatePreferenceOptions.onSuccess?.(data, variables, onMutateResult, context);
-      if (variables.pushEnabled !== true) {
-        return;
-      }
-      await pushRegistrationService.requestPermission().then(
-        (permission) => {
-          setCachedPushPermission(queryClient, permission);
-        },
-        (error: unknown) => {
-          logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_REQUEST_FAILED, {
-            error: getErrorMessage(error),
-          });
-          haptics.notify('error');
-          toast.error(t('notification:permission.toasts.requestFailed'));
-        },
-      );
     },
   });
 }

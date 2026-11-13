@@ -1,4 +1,5 @@
-import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options';
+import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
+import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options.view-model';
 import {
   Box,
   getPaneEdgeInsets,
@@ -12,11 +13,7 @@ import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { I18nManager } from 'react-native';
 import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
-import {
-  SafeAreaInsetsContext,
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * 마이 탭 Stack. 넓은 화면도 네이티브 헤더를 전체 폭으로 둔다. iPadOS 세로에서 떠 있는 탭 바가 헤더 가운데에 놓여, 오른쪽 칸에서 시작하는 헤더는 뒤로 가기가 탭 바 밑에 가려진다.
@@ -25,22 +22,23 @@ import {
 export function MyPageStack({ menu, children }: { menu: ReactNode; children?: ReactNode }) {
   const isCompact = usePaneSizeClass() === 'compact';
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
+  const detailRootStore = useMyPageDetailRootStore();
 
-  // 화면 안 칸들이 탭 안 영역 기준 inset을 받게 Stack 바깥에서 한 번 잰다
+  // 화면 안 칸들은 바깥 `PaneArea`가 잰 탭 안 영역 inset을 받는다
   return (
-    <SafeAreaProvider>
-      <Stack
-        screenOptions={(input) => ({
-          ...screenOptions,
-          ...(!isCompact && getMyPageDetailOptions(input)),
-        })}
-        screenLayout={({ children: screen }) => (
-          <MyPageScreenLayout menu={menu}>{screen}</MyPageScreenLayout>
-        )}
-      >
-        {children}
-      </Stack>
-    </SafeAreaProvider>
+    <Stack
+      // 제목은 화면이 스스로 정한다(`Stack.Screen options`). 정하지 않은 화면은 route 이름 대신 빈 제목이다
+      screenOptions={(input) => ({
+        ...screenOptions,
+        title: '',
+        ...(!isCompact && getMyPageDetailOptions(input, detailRootStore.getRequestedPathname())),
+      })}
+      screenLayout={({ children: screen }) => (
+        <MyPageScreenLayout menu={menu}>{screen}</MyPageScreenLayout>
+      )}
+    >
+      {children}
+    </Stack>
   );
 }
 

@@ -1,6 +1,6 @@
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 
-import { addDaysToDateKey, diffDateKeysInDays } from './date-key';
+import { addDaysToDateKey, type DateKey, diffDateKeysInDays, isDateKey } from './date-key';
 import { getFormatter, getPartValue, PARTS_LOCALE } from './format/intl-formatter';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { toNativeDate } from './native-date';
@@ -55,7 +55,7 @@ export function toZonedInstant({
   time,
   timeZone,
 }: {
-  date: string;
+  date: DateKey;
   time: string;
   timeZone: string;
 }): Instant {
@@ -69,16 +69,14 @@ export function toZonedInstant({
   return fromEpochMs(matches.length > 0 ? Math.min(...matches) : wallClockAsUtc - offsetBefore);
 }
 
-export function toDateKey(value: ZonedInput, timeZone: string): string {
-  const epochMs = getEpochMs(value);
-  if (!Number.isFinite(epochMs)) {
-    return '';
+/** 잘못된 `Date`(NaN)는 날짜가 없어 던진다. `Instant`는 늘 유효하다 */
+export function toDateKey(value: ZonedInput, timeZone: string): DateKey {
+  const parts = formatParts(getEpochMs(value), timeZone, DATE_KEY_OPTIONS);
+  const dateKey = `${getPartValue(parts, 'year')}-${getPartValue(parts, 'month')}-${getPartValue(parts, 'day')}`;
+  if (!isDateKey(dateKey)) {
+    throw new RangeError(`${timeZone}에서 날짜 key로 읽을 수 없는 순간이다`);
   }
-  const parts = formatParts(epochMs, timeZone, DATE_KEY_OPTIONS);
-  const year = getPartValue(parts, 'year');
-  const month = getPartValue(parts, 'month');
-  const day = getPartValue(parts, 'day');
-  return year && month && day ? `${year}-${month}-${day}` : '';
+  return dateKey;
 }
 
 export function getZonedHour(value: ZonedInput, timeZone: string): number {
@@ -121,7 +119,7 @@ export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZon
 }
 
 /** 그 날짜가 시작하는 순간. 자정이 없거나 두 번 오는 날도 그 날의 첫 순간이다 */
-export function getStartOfDateKey(dateKey: string, timeZone: string): Instant {
+export function getStartOfDateKey(dateKey: DateKey, timeZone: string): Instant {
   return toZonedInstant({ date: dateKey, time: '00:00', timeZone });
 }
 

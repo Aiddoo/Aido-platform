@@ -1,5 +1,6 @@
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
+import type { DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 
@@ -12,7 +13,7 @@ interface FriendTodoNudgeActionProps {
   todo: Todo;
   /** 목록이 한 번 읽은 친구와 보는 날짜를 넘긴다. 행마다 route를 읽지 않는다 */
   friend: FriendUser;
-  selectedDateKey: string;
+  selectedDateKey: DateKey;
 }
 
 /** 친구 할 일 줄의 콕 버튼. 오늘의 끝나지 않은 할 일에만 보인다 */

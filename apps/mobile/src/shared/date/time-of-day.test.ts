@@ -1,4 +1,4 @@
-import { isTimeOfDayInRange, isValidHHmm, toTimeOfDay } from './time-of-day';
+import { isTimeOfDayInRange, isValidHHmm, timeOfDayToHHmm, toTimeOfDay } from './time-of-day';
 
 const MORNING = { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } };
 
@@ -31,6 +31,19 @@ describe('toTimeOfDay', () => {
     // Then
     expect(result).toEqual(expected);
   });
+});
+
+describe('timeOfDayToHHmm', () => {
+  it.each(['00:05', '09:00', '18:30', '23:59'])(
+    "'%s'로 나눈 시와 분을 같은 HH:mm으로 되돌린다",
+    (time) => {
+      // When
+      const result = timeOfDayToHHmm(toTimeOfDay(time));
+
+      // Then
+      expect(result).toBe(time);
+    },
+  );
 });
 
 describe('isTimeOfDayInRange', () => {

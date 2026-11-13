@@ -1,15 +1,12 @@
 import { toInstant } from '@src/shared/date/instant';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
-import { createMemorySyncStorage } from '@src/testing/core';
+import { createMemorySyncStorage, createWidgetBridgeStub } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetBridge } from '../bridge/widget-bridge';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import { WidgetSyncService } from './widget-sync.service';
-
-function createWidgetBridgeStub(): jest.Mocked<WidgetBridge> {
-  return { writeSnapshot: jest.fn().mockResolvedValue(undefined) };
-}
 
 const context: WidgetSnapshotContext = {
   t: (key) => key,
@@ -19,7 +16,7 @@ const context: WidgetSnapshotContext = {
 };
 
 const summary: WidgetSummaryInput = {
-  date: '2026-07-12',
+  date: createDateKey('2026-07-12'),
   totalTodos: 3,
   completedTodos: 1,
   completionRate: 33,
@@ -77,7 +74,7 @@ describe('WidgetSyncService', () => {
     const { service } = createService(bridge);
 
     // When
-    await service.syncLoggedOut('2026-07-12', context);
+    await service.syncLoggedOut(createDateKey('2026-07-12'), context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
@@ -95,7 +92,7 @@ describe('WidgetSyncService', () => {
     const { service } = createService(bridge);
 
     // When
-    const result = service.syncLoggedOut('2026-07-12', context);
+    const result = service.syncLoggedOut(createDateKey('2026-07-12'), context);
 
     // Then
     await expect(result).resolves.toEqual({ status: 'failed', error: expect.any(Error) });
@@ -103,26 +100,20 @@ describe('WidgetSyncService', () => {
 
   it('완료되지 않은 이전 쓰기 이후 로그아웃 스냅샷이 최종 상태가 된다', async () => {
     // Given
-    let finishWrite = () => {};
-    let announceWrite = () => {};
-    const firstWrite = new Promise<void>((resolve) => {
-      finishWrite = resolve;
-    });
-    const writeStarted = new Promise<void>((resolve) => {
-      announceWrite = resolve;
-    });
+    const firstWrite = Promise.withResolvers<void>();
+    const writeStarted = Promise.withResolvers<void>();
     const bridge = createWidgetBridgeStub();
     bridge.writeSnapshot.mockImplementationOnce(async () => {
-      announceWrite();
-      await firstWrite;
+      writeStarted.resolve();
+      await firstWrite.promise;
     });
     const { service } = createService(bridge);
 
     // When
     const summaryWrite = service.syncSummary({ today: summary }, context, USER_ID);
-    await writeStarted;
+    await writeStarted.promise;
     const logoutWrite = service.syncLoggedOut(summary.date, context);
-    finishWrite();
+    firstWrite.resolve();
     await Promise.all([summaryWrite, logoutWrite]);
 
     // Then
