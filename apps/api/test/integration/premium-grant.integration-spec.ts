@@ -360,11 +360,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const receiverId = await createUser("PGRANT0T");
     await client
       .update(userTable)
-      .set({ revenueCatUserId: giverAppUserId })
+      .set({ storeAppUserId: giverAppUserId })
       .where(eq(userTable.id, userId));
     await client
       .update(userTable)
-      .set({ revenueCatUserId: receiverAppUserId })
+      .set({ storeAppUserId: receiverAppUserId })
       .where(eq(userTable.id, receiverId));
     await givenStoreSubscription();
 
@@ -389,7 +389,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(
       await client.query.subscription.findMany({
         columns: { userId: true },
-        where: { revenueCatId: TRANSACTION_ID },
+        where: { storeSubscriptionId: TRANSACTION_ID },
       }),
     ).toEqual([{ userId: receiverId }]);
     expect(await entitlement.canInTx(UserId.reconstitute(receiverId), "AI_REPORT")).toBe(true);

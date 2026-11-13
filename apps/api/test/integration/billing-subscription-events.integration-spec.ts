@@ -92,7 +92,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     const user = UserFixture.create({
       id: createEntityId(),
       email: "billing-owner@example.com",
-      revenueCatUserId: "billing-owner-alias",
+      storeAppUserId: "billing-owner-alias",
       userTag: "BILLBF01",
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: instantFromDate(previousExpiry),
@@ -223,7 +223,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     // Then
     const stored = await client.query.subscription.findFirst({
       columns: { environment: true },
-      where: { revenueCatId: sandboxTransactionId },
+      where: { storeSubscriptionId: sandboxTransactionId },
     });
     const receipt = await client.query.subscriptionEventReceipt.findFirst({
       columns: { environment: true },
@@ -610,7 +610,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     await client
       .update(subscriptionTable)
       .set({ expiresAt: instantFromDate(distantExpiry) })
-      .where(eq(subscriptionTable.revenueCatId, transactionId));
+      .where(eq(subscriptionTable.storeSubscriptionId, transactionId));
     await givenOtherSubscription({
       storeSubscriptionId: StoreSubscriptionId.create("refunded-other"),
       status: "EXPIRED",

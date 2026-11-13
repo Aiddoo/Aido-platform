@@ -34,7 +34,7 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
     storeSubscriptionId: StoreSubscriptionId,
   ): Promise<Subscription | null> {
     const row = await this.#db.query.subscription.findFirst({
-      where: { revenueCatId: storeSubscriptionId.value },
+      where: { storeSubscriptionId: storeSubscriptionId.value },
     });
     return row == null ? null : toSubscription(row);
   }
@@ -69,7 +69,7 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepositoryPort {
       .set({ userId: userId.value, updatedAt: now })
       .where(
         and(
-          eq(subscription.revenueCatId, storeSubscriptionId.value),
+          eq(subscription.storeSubscriptionId, storeSubscriptionId.value),
           ne(subscription.userId, userId.value),
         ),
       )

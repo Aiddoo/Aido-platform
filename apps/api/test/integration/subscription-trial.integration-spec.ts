@@ -138,7 +138,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   async function storedTrial(userId: string) {
     const row = await client.query.subscription.findFirst({
       columns: { periodType: true, status: true, expiresAt: true, trialEndingNotifiedAt: true },
-      where: { revenueCatId: chainOf(userId) },
+      where: { storeSubscriptionId: chainOf(userId) },
     });
     return row == null
       ? row

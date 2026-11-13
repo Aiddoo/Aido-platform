@@ -110,7 +110,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
 
   async function storeRowsOf() {
     const rows = await client.query.subscription.findMany({
-      columns: { revenueCatId: true, productId: true, status: true, expiresAt: true },
+      columns: { storeSubscriptionId: true, productId: true, status: true, expiresAt: true },
       where: { userId },
       orderBy: { id: "asc" },
     });
@@ -159,7 +159,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
         });
         expect(await storeRowsOf()).toEqual([
           {
-            revenueCatId: CHAIN,
+            storeSubscriptionId: CHAIN,
             productId: "premium_monthly",
             status: "ACTIVE",
             expiresAt: NEXT_EXPIRY,

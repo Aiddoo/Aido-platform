@@ -128,7 +128,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     await jobs.drain(STORE_SUBSCRIPTION_RECONCILE_QUEUE);
     const afterFirstRun = await client.query.subscription.findFirst({
       columns: { status: true, expiresAt: true, updatedAt: true },
-      where: { revenueCatId: CHAIN },
+      where: { storeSubscriptionId: CHAIN },
     });
     await jobs.enqueue(STORE_SUBSCRIPTION_RECONCILE_QUEUE, {
       name: "reconcile-store-subscriptions",
@@ -149,7 +149,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
     expect(
       await client.query.subscription.findFirst({
         columns: { status: true, expiresAt: true, updatedAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     ).toEqual(afterFirstRun);
     expect(await premiumAccess.getPremiumAccess(UserId.reconstitute(user.id))).toMatchObject({

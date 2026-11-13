@@ -31,7 +31,7 @@ export const UserFixture = {
       emailVerifiedAt: overrides.emailVerifiedAt === undefined ? now : overrides.emailVerifiedAt,
       subscriptionStatus: overrides.subscriptionStatus ?? "FREE",
       subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
-      revenueCatUserId: overrides.revenueCatUserId ?? null,
+      storeAppUserId: overrides.storeAppUserId ?? null,
       aiUsageCount: overrides.aiUsageCount ?? 0,
       aiUsageResetAt: overrides.aiUsageResetAt ?? now,
       createdAt: overrides.createdAt ?? now,

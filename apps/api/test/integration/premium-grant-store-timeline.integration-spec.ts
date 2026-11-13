@@ -422,7 +422,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
           environment: true,
           productId: true,
         },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     ).toEqual({
       userId,

@@ -114,7 +114,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
       }),
       chain: await client.query.subscription.findFirst({
         columns: { gracePeriodEndsAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     };
     await receiver.receive({ body: billingIssue });
@@ -130,7 +130,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
     expect(
       await client.query.subscription.findFirst({
         columns: { gracePeriodEndsAt: true },
-        where: { revenueCatId: CHAIN },
+        where: { storeSubscriptionId: CHAIN },
       }),
     ).toEqual({ gracePeriodEndsAt: Temporal.Instant.fromEpochMilliseconds(graceEndsAt.getTime()) });
     expect(notifier.billingIssueUserIds).toEqual([user.id]);

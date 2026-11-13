@@ -26,7 +26,7 @@ describe("DrizzleSubscriptionRepository (실제 PostgreSQL)", () => {
         id: SUBSCRIPTION_FIXTURE_USER_ID,
         email: "owner@example.com",
         userTag: "BILLOWN1",
-        revenueCatUserId: "owner-alias",
+        storeAppUserId: "owner-alias",
       }),
       UserFixture.create({
         id: SUBSCRIPTION_FIXTURE_OTHER_USER_ID,

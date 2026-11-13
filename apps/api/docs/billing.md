@@ -30,7 +30,7 @@ TS 판단(Billing `isStoreEntitlementValid`, Access `resolvePaidAccessDeadline`)
 
 ## TRANSFER
 
-RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_from`·`transferred_to`만 온다. 전용 스키마(`revenueCatTransferWebhookPayloadSchema`)로 받고, 다른 이벤트는 기존 스키마로 그대로 엄격하게 검증한다. `transferred_to` 중 우리 사용자로 매핑되는 첫 값(User.id 또는 `revenueCatUserId`)이 받은 사용자다. 넘겨준 사용자의 행을 옮긴 뒤 두 사용자를 id 순으로 잠가 함께 다시 계산하고 캐시를 비운다. 형식이 틀린 웹훅은 `billing.subscription.webhook.invalid`(`eventType`·`issueCount`)로 남는다.
+RevenueCat `TRANSFER`에는 `app_user_id`·`product_id`가 없고 `transferred_from`·`transferred_to`만 온다. 전용 스키마(`revenueCatTransferWebhookPayloadSchema`)로 받고, 다른 이벤트는 기존 스키마로 그대로 엄격하게 검증한다. `transferred_to` 중 우리 사용자로 매핑되는 첫 값(User.id 또는 `User.storeAppUserId`, DB 칼럼 `revenueCatUserId`)이 받은 사용자다. 넘겨준 사용자의 행을 옮긴 뒤 두 사용자를 id 순으로 잠가 함께 다시 계산하고 캐시를 비운다. 형식이 틀린 웹훅은 `billing.subscription.webhook.invalid`(`eventType`·`issueCount`)로 남는다.
 
 ## 행이 없는 체인의 갱신
 
@@ -88,7 +88,7 @@ API는 REST v2 [구독 검색](https://www.revenuecat.com/docs/api-v2/subscripti
 
 ## 공급자 경계
 
-RevenueCat이 보내는 모양은 `subscriptions/infrastructure/adapters/revenuecat`에만 있다(`*.wire.ts`·번역기·서명 가드·상태 조회 어댑터·수신기). 웹훅 원문은 `translateRevenueCatWebhook`이 검증해 공급자를 모르는 `StoreSubscriptionEvent`(kind: `STARTED`·`RENEWED`·`CANCELLED`·`REFUNDED`·`UNCANCELLED`·`EXPIRED`·`BILLING_ISSUE`·`PRODUCT_CHANGE_SCHEDULED`·`EXTENDED`·`TRANSFERRED`·`IGNORED`)로 바꾸고, `ApplyStoreSubscriptionEventUseCase`가 구독 행과 프리미엄에 반영한다. 환불(`CANCELLATION` + `CUSTOMER_SUPPORT`)·`RC_BILLING`→`WEB_BILLING`·빠진 시각(0)·원 거래 ID 대체 같은 공급자 규칙은 번역기 한 곳이다. 같은 폴더에 서명 Guard와 상태 대조 REST 어댑터가 있다. 웹훅 경로·응답·DB 칼럼 `revenueCatId`·`@aido/api`의 웹훅 스키마는 운영 계약이라 그대로 둔다.
+RevenueCat이 보내는 모양은 `subscriptions/infrastructure/adapters/revenuecat`에만 있다(`*.wire.ts`·번역기·서명 가드·상태 조회 어댑터·수신기). 웹훅 원문은 `translateRevenueCatWebhook`이 검증해 공급자를 모르는 `StoreSubscriptionEvent`(kind: `STARTED`·`RENEWED`·`CANCELLED`·`REFUNDED`·`UNCANCELLED`·`EXPIRED`·`BILLING_ISSUE`·`PRODUCT_CHANGE_SCHEDULED`·`EXTENDED`·`TRANSFERRED`·`IGNORED`)로 바꾸고, `ApplyStoreSubscriptionEventUseCase`가 구독 행과 프리미엄에 반영한다. 환불(`CANCELLATION` + `CUSTOMER_SUPPORT`)·`RC_BILLING`→`WEB_BILLING`·빠진 시각(0)·원 거래 ID 대체 같은 공급자 규칙은 번역기 한 곳이다. 같은 폴더에 서명 Guard와 상태 대조 REST 어댑터가 있다. 웹훅 경로·응답·DB 칼럼 `revenueCatId`·`revenueCatUserId`·`@aido/api`의 웹훅 스키마는 운영 계약이라 그대로 두고 Drizzle 코드 이름만 공급자 중립(`storeSubscriptionId`·`storeAppUserId`)으로 쓴다.
 
 두 번째 공급자(예: 토스 웹 정기결제)를 붙일 때는 그 공급자의 번역기·컨트롤러가 같은 `StoreSubscriptionEvent`를 만들면 도메인·`/me`·알림은 그대로다. `SUBSCRIPTION_PROVIDERS`에 값을 더하고, 행마다 공급자를 저장해야 하면 그때 칼럼을 추가한다. 스토어가 갱신을 대신해 주지 않는 정기결제는 결제를 우리가 일으키므로 `RecurringPaymentGateway` 포트(빌링키 결제·취소)와 자체 갱신 스케줄러가 필요하고, 결제 결과를 같은 이벤트(`RENEWED`·`BILLING_ISSUE`·`EXPIRED`)로 넣는다. 공급자가 둘이 되어 고르는 규칙이 생기기 전에는 레지스트리·전략을 만들지 않는다.
 

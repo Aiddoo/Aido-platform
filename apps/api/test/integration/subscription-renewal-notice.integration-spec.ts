@@ -135,7 +135,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
   async function storedChain(userId: string) {
     const row = await client.query.subscription.findFirst({
       columns: { productId: true, nextProductId: true, expiresAt: true },
-      where: { revenueCatId: `chain-${userId}` },
+      where: { storeSubscriptionId: `chain-${userId}` },
     });
     return row == null ? row : { ...row, expiresAt: toDateOrNull(row.expiresAt) };
   }

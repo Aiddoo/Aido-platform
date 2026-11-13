@@ -108,7 +108,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       gracePeriodEndsAt: Date | null = null,
     ) => ({
       userId,
-      revenueCatId: `store-${userId}`,
+      storeSubscriptionId: `store-${userId}`,
       productId: "premium_monthly",
       status,
       startedAt: instantFromDate(at(-30 * 24 * HOUR_MS)),

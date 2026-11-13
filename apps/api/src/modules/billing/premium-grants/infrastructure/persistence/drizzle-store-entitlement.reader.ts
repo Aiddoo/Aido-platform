@@ -20,7 +20,7 @@ export class DrizzleStoreEntitlementReader extends StoreEntitlementReaderPort {
   async listByUserId(userId: UserId): Promise<StoreSubscriptionEntitlement[]> {
     const rows = await this.#txHost.tx.query.subscription.findMany({
       columns: {
-        revenueCatId: true,
+        storeSubscriptionId: true,
         productId: true,
         startedAt: true,
         status: true,
@@ -30,9 +30,8 @@ export class DrizzleStoreEntitlementReader extends StoreEntitlementReaderPort {
       },
       where: { userId: userId.value, deletedAt: { isNull: true } },
     });
-    return rows.map(({ revenueCatId, periodType, ...row }) => ({
+    return rows.map(({ periodType, ...row }) => ({
       ...row,
-      storeSubscriptionId: revenueCatId,
       periodType: toStorePeriodType(periodType),
     }));
   }

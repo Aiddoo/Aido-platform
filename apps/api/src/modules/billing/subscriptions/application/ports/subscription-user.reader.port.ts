@@ -6,6 +6,6 @@ export interface SubscriptionUser {
 }
 
 export abstract class SubscriptionUserReaderPort {
-  /** RevenueCat appUserId는 User.id이거나 별칭(revenueCatUserId)이다. 없으면 null이다. */
+  /** 스토어 이벤트의 appUserId는 User.id이거나 별칭(storeAppUserId)이다. 없으면 null이다. */
   abstract findByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
 }

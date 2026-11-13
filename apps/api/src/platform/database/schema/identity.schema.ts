@@ -41,9 +41,10 @@ export const user = pgTable(
     id: text().primaryKey().$defaultFn(createEntityId),
     lastActiveAt: instant(),
     lastLoginAt: instant(),
-    revenueCatUserId: varchar({ length: 255 }),
     role: userRole().default("USER").notNull(),
     status: userStatus().default("PENDING_VERIFY").notNull(),
+    /** 결제 공급자 앱 사용자 별칭. 공급자 중립 이름이고 칼럼은 운영 데이터 호환을 위해 기존 이름을 유지한다. */
+    storeAppUserId: varchar("revenueCatUserId", { length: 255 }),
     subscriptionExpiresAt: instant(),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
     // DB에는 twoFactorEnabled·twoFactorSecret이 남아 있다(1.15.1 이미지가 SELECT). 1.16.0에서 지운다(compatibility.md)
@@ -74,7 +75,7 @@ export const user = pgTable(
     index("User_status_idx").using("btree", table.status.asc().nullsLast()),
     index("User_subscriptionStatus_idx").using("btree", table.subscriptionStatus.asc().nullsLast()),
     unique("User_email_key").on(table.email),
-    unique("User_revenueCatUserId_key").on(table.revenueCatUserId),
+    unique("User_revenueCatUserId_key").on(table.storeAppUserId),
     unique("User_userTag_key").on(table.userTag),
   ],
 );

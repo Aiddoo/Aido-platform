@@ -35,7 +35,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
     const rows = await this.#db
       .select({
         subscriptionId: subscription.id,
-        storeSubscriptionId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.storeSubscriptionId,
         userId: subscription.userId,
         expiresAt: subscription.expiresAt,
       })
@@ -84,7 +84,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
     const rows = await this.#db
       .select({
         userId: subscription.userId,
-        storeSubscriptionId: subscription.revenueCatId,
+        storeSubscriptionId: subscription.storeSubscriptionId,
         productId: subscription.productId,
         startedAt: subscription.startedAt,
         status: subscription.status,
