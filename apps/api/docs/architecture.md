@@ -69,7 +69,7 @@ apps/api/src/
 | engagement    | `comments`                                                                  |
 | social        | `friends`, `blocks`, `cheers`, `nudges`, `invites`, `reports` (+ `shared/`) |
 | notification  | `inbox`, `push`, `email`, `reminders`, `retention`                          |
-| insights      | `daily-completions`, `weekly-achievements`                                  |
+| insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                    |
 | weather       | `forecasts`, `locations` (+ `shared/`)                                      |
 | ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`) |
 | voice         | `voice-notes`, `action-plans`                                               |

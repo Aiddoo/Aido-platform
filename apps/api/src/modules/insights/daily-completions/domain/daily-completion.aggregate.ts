@@ -1,8 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { TodoCompletionCount } from "../../shared/domain/todo-completion-count.vo.js";
 import { DailyCompletionId } from "./daily-completion-id.vo.js";
-import { invalidCompletedTodos, invalidTotalTodos } from "./daily-completions.errors.js";
 
 export interface DailyCompletionPrimitives {
   readonly userId: string;
@@ -15,8 +15,7 @@ export interface DailyCompletionPrimitives {
 interface DailyCompletionProps {
   readonly userId: UserId;
   readonly date: Temporal.PlainDate;
-  readonly totalTodos: number;
-  readonly completedTodos: number;
+  readonly todoCount: TodoCompletionCount;
   readonly categoryColors: readonly string[];
 }
 
@@ -31,24 +30,20 @@ interface CreateDailyCompletionParams {
 /** 한 사용자의 하루 할 일 완료 현황. 할 일이 있는 날만 만든다. */
 export class DailyCompletion extends AggregateRoot<DailyCompletionId, DailyCompletionProps> {
   static create(params: CreateDailyCompletionParams): DailyCompletion {
-    const { totalTodos, completedTodos } = params;
-    if (!Number.isSafeInteger(totalTodos) || totalTodos < 0) {
-      throw invalidTotalTodos(totalTodos);
-    }
-    if (
-      !Number.isSafeInteger(completedTodos) ||
-      completedTodos < 0 ||
-      completedTodos > totalTodos
-    ) {
-      throw invalidCompletedTodos(completedTodos, totalTodos);
-    }
-    return DailyCompletion.#build(params);
+    return DailyCompletion.#build({
+      userId: params.userId,
+      date: params.date,
+      todoCount: TodoCompletionCount.create(params.totalTodos, params.completedTodos),
+      categoryColors: params.categoryColors,
+    });
   }
 
   static reconstitute(primitives: DailyCompletionPrimitives): DailyCompletion {
     return DailyCompletion.#build({
-      ...primitives,
       userId: UserId.reconstitute(primitives.userId),
+      date: primitives.date,
+      todoCount: TodoCompletionCount.reconstitute(primitives.totalTodos, primitives.completedTodos),
+      categoryColors: primitives.categoryColors,
     });
   }
 
@@ -64,33 +59,32 @@ export class DailyCompletion extends AggregateRoot<DailyCompletionId, DailyCompl
   }
 
   get totalTodos(): number {
-    return this.props.totalTodos;
+    return this.props.todoCount.total;
   }
 
   get completedTodos(): number {
-    return this.props.completedTodos;
+    return this.props.todoCount.completed;
   }
 
   get categoryColors(): readonly string[] {
     return this.props.categoryColors;
   }
 
-  /** 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기) */
-  isComplete(): boolean {
-    return this.props.totalTodos > 0 && this.props.totalTodos === this.props.completedTodos;
+  get completionRate(): number {
+    return this.props.todoCount.rate;
   }
 
-  get completionRate(): number {
-    const { totalTodos, completedTodos } = this.props;
-    return totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
+  /** 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기) */
+  isComplete(): boolean {
+    return this.props.todoCount.isAllCompleted();
   }
 
   toPrimitives(): DailyCompletionPrimitives {
     return {
       userId: this.props.userId.value,
       date: this.props.date,
-      totalTodos: this.props.totalTodos,
-      completedTodos: this.props.completedTodos,
+      totalTodos: this.props.todoCount.total,
+      completedTodos: this.props.todoCount.completed,
       categoryColors: [...this.props.categoryColors],
     };
   }
