@@ -119,7 +119,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 - `minutesToSweep`(`shared/application/minutes-to-sweep.ts`)은 처음이면 지금 분만, 시계가 거꾸로 가면 지금 분만, 이미 지금 분을 끝냈으면 빈 목록을 준다.
 - `SweepTimezoneRemindersUseCase`가 분마다 처리 뒤 커서를 옮기고, 15분을 넘은 분은 `late-over-15m` 사유와 건너뛴 분 수를 남긴다. `todo-reminder.v1` 작업도 의도한 발송 시각(할 일 시각 - 단계 리드)보다 15분 넘게 늦으면 같은 사유로, 할 일 시각이 됐으면 `todo-started`로 건너뛴다. 마지막 발송 시각은 min(발송 시각 + 15분, 할 일 시각)이라 10분 단계는 10분까지만 늦을 수 있다(`reminderLateSkipReason`).
 
-**같은 분에 몰리는 리마인더**: `batchSize` 없이 15초 폴링이면 프로세스 전체가 분당 4건만 꺼내 같은 분의 60번째쯤부터 늦음 한도에 걸린다. `todo-reminder.v1`은 worker 하나(`localConcurrency: 1`, 앱 풀 연결 하나)가 20건씩 꺼내고 묶음이 차면 쉬지 않고 다음을 꺼낸다. 묶음마다 할 일·언어를 한 번씩 읽고 리마인더를 `publishBatch` 한 번(한 트랜잭션, 유니크 인덱스 + `onConflictDoNothing`)으로 발행한다. 늦음·휴면 판단은 작업마다 하고, 묶음 발행이 실패하면 한 건씩 다시 보내 막은 작업만 실패로 돌려준다. 로컬 PG에서 작업마다 읽고 발행하던 때 200건 1.7초·2,000건 9.9~19.3초가 묶은 뒤 200건 0.2초·2,000건 1.3~1.7초였다(호스트 부하에 따라). 운영 시간은 재지 않았다.
+**같은 분에 몰리는 리마인더**: `batchSize` 없이 15초 폴링이면 프로세스 전체가 분당 4건만 꺼내 같은 분의 60번째쯤부터 늦음 한도에 걸린다. `todo-reminder.v1`은 worker 하나(`localConcurrency: 1`, 앱 풀 연결 하나)가 20건씩 꺼내고 묶음이 차면 쉬지 않고 다음을 꺼낸다. 묶음마다 할 일·언어를 한 번씩 읽고 리마인더를 `publishBatch` 한 번(한 트랜잭션, 유니크 인덱스 + `onConflictDoNothing`)으로 넣는다. 발송은 `deliveryMode: "SINGLE"`로 단건 경로를 그대로 타 설정 행이 없는 사용자도 단건 publish처럼 기본 설정으로 받는다. 늦음·휴면 판단은 작업마다 하고, 묶음 발행이 실패하면 한 건씩 다시 보내 막은 작업만 실패로 돌려준다. 로컬 PG에서 작업마다 읽고 발행하던 때 200건 1.7초·2,000건 9.9~19.3초가 묶은 뒤 200건 0.2초·2,000건 1.3~1.7초였다(호스트 부하에 따라). 운영 시간은 재지 않았다.
 
 **상태 기준 조회**(`retention-stage-sweep`): 단계 후보를 시각 구간이 아니라 `SCHEDULED` 상태와 "결정할 때가 됐는가"(`isRetentionStageDue`와 같은 SQL)로 고르므로 워터마크 커서가 필요 없다. 한 실행은 생성 순서 위치로 이어 읽어(200건씩 최대 10묶음) 실패한 단계에 막히지 않는다. 중복은 `SCHEDULED → OUTBOXED`·`SKIPPED` 조건부 전이가 막는다.
 

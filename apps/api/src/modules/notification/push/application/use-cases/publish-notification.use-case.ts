@@ -5,6 +5,7 @@ import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { InboxNotification } from "../../../inbox/application/read-models/inbox-notification.read-model.js";
 import type { NotificationTodoTargetReaderPort } from "../ports/notification-todo-target.reader.port.js";
+import type { BatchNotificationOptions } from "./persist-batch-notification.use-case.js";
 import type { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
 import type { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
 import type { SendNotificationUseCase } from "./send-notification.use-case.js";
@@ -39,8 +40,14 @@ export class PublishNotificationUseCase {
     return this.#dependencies.sendNotificationWithDeduplication.execute(withTarget ?? data);
   }
 
-  async publishBatch(items: CreateNotificationData[]): Promise<{ count: number }> {
-    return this.#dependencies.sendBatchNotification.execute(await this.#withTodoTargets(items));
+  async publishBatch(
+    items: CreateNotificationData[],
+    options: BatchNotificationOptions = {},
+  ): Promise<{ count: number }> {
+    return this.#dependencies.sendBatchNotification.execute(
+      await this.#withTodoTargets(items),
+      options,
+    );
   }
 
   async #withTodoTargets(items: CreateNotificationData[]): Promise<CreateNotificationData[]> {

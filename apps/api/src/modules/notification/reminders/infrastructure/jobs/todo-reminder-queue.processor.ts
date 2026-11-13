@@ -241,8 +241,10 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return;
     }
     try {
+      // 알림만 함께 넣고 발송은 단건 경로로 둬 설정 행이 없는 사용자도 단건 publish처럼 기본 설정으로 받는다
       const { count } = await this.#notificationPublisher.publishBatch(
         drafts.map((draft) => draft.notification),
+        { deliveryMode: "SINGLE" },
       );
       this.#logger.log({
         event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,

@@ -239,6 +239,13 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       ]);
     });
 
+    it("묶음 발행은 알림만 함께 넣고 발송은 단건 경로(설정이 없으면 기본 설정)로 둔다", async () => {
+      // When
+      await processor.process(makeJob());
+      // Then
+      expect(publisher.batchOptions).toEqual([{ deliveryMode: "SINGLE" }]);
+    });
+
     it("10min 단계 알림을 발송한다", async () => {
       // Given
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 10 }) }));

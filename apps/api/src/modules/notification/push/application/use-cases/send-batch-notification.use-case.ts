@@ -3,7 +3,10 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
-import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
+import type {
+  BatchNotificationOptions,
+  PersistBatchNotificationUseCase,
+} from "./persist-batch-notification.use-case.js";
 
 interface SendBatchNotificationDependencies {
   readonly persistBatchNotificationUseCase: Pick<PersistBatchNotificationUseCase, "execute">;
@@ -19,9 +22,15 @@ export class SendBatchNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(dataList: CreateNotificationData[]): Promise<{ count: number }> {
+  async execute(
+    dataList: CreateNotificationData[],
+    options: BatchNotificationOptions = {},
+  ): Promise<{ count: number }> {
     return this.#dependencies.unitOfWork.run(async () => {
-      const persisted = await this.#dependencies.persistBatchNotificationUseCase.execute(dataList);
+      const persisted = await this.#dependencies.persistBatchNotificationUseCase.execute(
+        dataList,
+        options,
+      );
       if (persisted.count > 0) {
         this.#dependencies.afterCommitTasks.register(async () => {
           await this.#dependencies.finalizeBatchNotificationUseCase.execute(persisted);
