@@ -10,20 +10,61 @@
 
 ## notes (기준 구현)
 
-| 용어           | 코드                       | 뜻                                                           |
-| -------------- | -------------------------- | ------------------------------------------------------------ |
-| 메모           | `Memo`(Aggregate)          | 사용자가 할 일로 바꾸기 전에 적어 두는 글                    |
-| 메모 내용      | `MemoContent`(VO)          | 1자 이상 `MEMO_LIMITS.MAX_CONTENT_LENGTH`자 이하의 글        |
-| 고정           | `isPinned`, `changePinned` | 목록 맨 위에 두는 표시                                       |
-| 순서           | `sortOrder`, `moveTo`      | 고정 안에서·밖에서 사용자가 정한 위치                        |
-| 다시 쓰기      | `rewrite`                  | 메모 내용을 바꾸는 행동                                      |
-| 할 일로 바꾸기 | `ConvertMemoToTodoUseCase` | 메모 내용으로 할 일을 만들고 같은 트랜잭션에서 메모를 지운다 |
+| 용어                | 코드                                                  | 뜻                                                                                                                          |
+| ------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 메모                | `Memo`(Aggregate)                                     | 사용자가 할 일로 바꾸기 전에 적어 두는 글                                                                                   |
+| 메모 내용           | `MemoContent`(VO)                                     | 1자 이상 `MEMO_LIMITS.MAX_CONTENT_LENGTH`자 이하의 글. 할 일 제목은 그 앞 `TODO_LIMITS.TITLE_MAX_LENGTH`자다(`toTodoTitle`) |
+| 메모 한도           | `MEMO_LIMITS.MAX_PER_USER`, `memoLimitReached`        | 사용자당 메모 수 상한. 넘으면 내용 검증보다 먼저 `MEMO_2003`                                                                |
+| 만들기              | `Memo.create`, `CreateMemoUseCase`                    | 그 사용자 마지막 순서 다음에 고정하지 않은 메모를 만든다                                                                    |
+| 생성 요청           | `MemoCreationRequest`(VO), `isSameCreationRequest`    | 앱이 저장 한 번마다 보내는 Idempotency-Key와 글의 해시. 같은 키면 처음 메모를 돌려주고 글이 다르면 `MEMO_2004`              |
+| 다시 쓰기           | `rewrite`, `RewriteMemoUseCase`                       | 메모 내용을 바꾸는 행동(API는 "메모 수정")                                                                                  |
+| 고정                | `isPinned`, `changePinned`, `ChangeMemoPinnedUseCase` | 목록 맨 위에 두는 표시                                                                                                      |
+| 순서                | `sortOrder`, `moveTo`, `ReorderMemoUseCase`           | 고정 안에서·밖에서 사용자가 정한 위치. 기준 메모 앞·뒤나 맨 앞·뒤로 옮기고 사이 메모를 한 칸씩 민다                         |
+| 메모 잠금           | `MemoLockKeys.existingMemo`                           | 있는 메모를 바꾸는 요청이 함께 잡는 메모·순서 두 키                                                                         |
+| 할 일로 바꾸기      | `ConvertMemoToTodoUseCase`                            | 메모 내용으로 할 일 하나를 만들고 같은 트랜잭션에서 메모를 지운다                                                           |
+| 여러 할 일로 바꾸기 | `ConvertMemoToTodosUseCase`                           | 할 일을 차례로 만들고 모두 되면 메모를 지운다. 중간에 실패하면 앞 할 일과 메모가 남는다                                     |
+| 계획 메모           | `PlanMemoWriterPort`, `PlanMemoReadModel`             | voice 계획 적용이 손으로 만든 메모와 같은 한도로 키 없이 만들고 지우는 메모                                                 |
 
-| 상태       | 행동                  | 다음       | 같은 값으로 다시       |
-| ---------- | --------------------- | ---------- | ---------------------- |
-| 고정 안 함 | `changePinned(true)`  | 고정       | —                      |
-| 고정       | `changePinned(false)` | 고정 안 함 | `false`(저장하지 않음) |
-| 아무 순서  | `moveTo(sortOrder)`   | 새 순서    | 같은 순서면 `false`    |
+| 상태       | 행동                               | 다음                      | 같은 값으로 다시                 |
+| ---------- | ---------------------------------- | ------------------------- | -------------------------------- |
+| 없음       | `Memo.create`                      | 고정 안 함, 마지막 순서+1 | 같은 Idempotency-Key면 처음 메모 |
+| 고정 안 함 | `changePinned(true)`               | 고정                      | `false`(저장하지 않음)           |
+| 고정       | `changePinned(false)`              | 고정 안 함                | `false`(저장하지 않음)           |
+| 아무 내용  | `rewrite(content)`                 | 새 내용                   | 같은 내용이면 `false`            |
+| 아무 순서  | `moveTo(sortOrder)`                | 새 순서                   | 같은 순서면 `false`              |
+| 있음       | `DeleteMemoUseCase`·할 일로 바꾸기 | 없음                      | 없거나 남의 메모면 `MEMO_2001`   |
+
+`true`인 행동만 `updatedAt`을 옮기고 저장한다. 순서 바꾸기로 밀린 메모도 `updatedAt`이 바뀐다.
+
+## voice
+
+녹음·짧은 말을 실행 계획으로 정리하고 사용자가 확인한 행동만 저장한다. 서버는 녹음도 전사 글자도 저장하지 않는다.
+
+| 용어        | 코드                                                             | 뜻                                                                                                                        |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 전사        | `VoiceTranscript`(VO), `TranscriptSegment`                       | 기기가 글자로 바꾼 녹음 한 건과 문장(`startMs`·`isBookmarked`). 요청을 처리하는 동안만 있다                               |
+| 글자 수     | `characterCount`, `exceeds`                                      | 프롬프트에서 길어지는 글자를 늘어난 길이로 센 수. 전체 글자와 문장 합 중 긴 쪽                                            |
+| 한 번 상한  | `featureQuota.perUse`, `voiceNoteTooLong`                        | 등급별 녹음 한 번 글자 상한. 넘으면 차감 전에 `AI_1312`. 녹음 길이(초)는 `exceedsDuration`이 경보만 올린다                |
+| 녹음 정리   | `DigestVoiceNoteUseCase`                                         | 긴 전사 → 제목·요약·핵심 내용(`keyPoints`)·실행 계획. 돌려줄 내용이 전혀 없을 때만 환불(`EMPTY`)                          |
+| 빠른 계획   | `CreateQuickPlanUseCase`                                         | 짧은 말·글(`QUICK_PLAN_SOURCES`) → 실행 계획. 할 일이 없으면 환불(`NO_ACTION`)                                            |
+| 실행 계획   | `ActionPlanReadModel`                                            | 사용자에게 보여 줄 할 일·메모 행동(key `todo-<n>`·`memo-0`, `duplicateOfTodoId`, `omittedTodoCount`). 저장하지 않는다     |
+| 계획 문맥   | `PlanningContextReaderPort`, `PlanningContextReadModel`          | AI에 주는 카테고리 id·이름과 사용자 시간대 오늘부터의 다가오는 할 일                                                      |
+| 차감 실행   | `ChargedPlanRunnerPort`                                          | 사용량을 Idempotency-Key로 예약하고 결과에 따라 확정·환불한다. 같은 키는 한 번만 차감하고 처리 중이면 `AI_1314`           |
+| 결과 재생   | `PlanResultReplay`                                               | 응답을 받지 못한 재요청에 돌려줄 결과. 프로세스 메모리에 10분만 두고, 없으면 추가 차감 없이 다시 만든다                   |
+| 확인한 계획 | `ActionPlan`(VO), `PlannedTodo`·`PlannedMemo`                    | 사용자가 확인해 적용 API로 보낸 행동. 메모 제목은 내용 첫 줄이 된다(`memoContent`)                                        |
+| 계획 적용   | `ApplyActionPlanUseCase`                                         | 확인한 행동을 손으로 만든 것과 같은 경로로 한 UoW에서 저장한다. 차감하지 않고 내 카테고리가 아니면 `AI_1315`              |
+| 출처        | `ActionPlanSource`                                               | 계획이 나온 곳(`QUICK_VOICE`·`QUICK_TEXT`·`VOICE_NOTE`·`MEMO`). `MEMO`면 적용에 성공할 때 원본 메모를 지운다              |
+| 적용 기록   | `PlanApplication`(Aggregate), `isSameRequest`                    | 적용 한 번의 멱등 기록. 요청 해시(`fingerprintRequest`)와 만든 할 일·메모 id만 두고 만든 뒤 바뀌지 않는다                 |
+| 기록 정리   | `PurgePlanApplicationsUseCase`, `planApplicationRetentionCutoff` | `PLAN_APPLICATION_RETENTION_DAYS`(7일)가 지난 적용 기록을 매일 03:20(Asia/Seoul) 한 문장으로 지운다(`purgeCreatedBefore`) |
+
+적용 기록은 바뀌지 않으므로 전이 표는 수명주기다.
+
+| 상태   | 행동                                                | 다음   | 같은 키로 다시                                                               |
+| ------ | --------------------------------------------------- | ------ | ---------------------------------------------------------------------------- |
+| 없음   | `ApplyActionPlanUseCase` → `PlanApplication.create` | 적용됨 | 같은 계획이면 만들지 않고 처음 결과(그 뒤 지운 할 일·메모는 뺀다)를 돌려준다 |
+| 적용됨 | 다른 계획으로 적용                                  | 적용됨 | `AI_1318`(`planRequestMismatch`)                                             |
+| 적용됨 | 잠금을 지나 겹친 같은 키 `save`                     | 적용됨 | `AI_1314`(`planApplicationInProgress`), 늦은 UoW는 되돌린다                  |
+| 적용됨 | `purgeCreatedBefore`(7일 지남)                      | 없음   | 같은 키가 새 적용이 된다                                                     |
 
 ## support
 
