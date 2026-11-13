@@ -1,9 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { invalidCredentials } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
 import type { ExchangeCodeResult, RequestDevice } from "../read-models/auth-result.read-model.js";
@@ -77,6 +76,6 @@ export class ExchangeOAuthCodeUseCase {
       event: AuthLogEvent.OAUTH_EXCHANGE_REJECTED,
       mode: "login",
     });
-    return new ApplicationException(ErrorCode.USER_0602);
+    return invalidCredentials();
   }
 }

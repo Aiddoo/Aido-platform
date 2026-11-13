@@ -1,6 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { createCheerMessageReportTarget } from '@src/features/social/moderation/domains/user-report.model';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
@@ -10,47 +9,74 @@ import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
+  Box,
   InfiniteList,
   NotificationIllustration,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
+  Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery, useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { range } from 'es-toolkit';
+import { type Href, router } from 'expo-router';
 import { Separator } from 'heroui-native';
+import { Fragment } from 'react';
+import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NotificationPolicy } from '../domains/notification.model';
 import type { Notification } from '../domains/notification.model';
-import { useNotificationCategory } from '../hooks/use-notification-category';
-import { useNotificationNavigation } from '../hooks/use-notification-navigation';
-import { invalidateNotifications } from '../queries/notification-cache';
+import {
+  useOpenNotificationDestination,
+  useResolveNotificationDestination,
+} from '../hooks/use-notification-destination';
+import { useNotificationCategory } from '../hooks/use-notification-params';
+import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
-import { toDateSectionedListItems } from '../utils/date-section';
 import {
+  findRootStackDetailHref,
   type NotificationDestination,
-  toNotificationDestination,
-} from '../utils/notification-destination';
+} from '../utils/notification-destination.view-model';
+import type { DateSectionKey } from '../utils/notification-section.view-model';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
 const NOTIFICATION_PAGE_SIZE = 10;
+const LOADING_ROW_COUNT = 5;
+
+interface NotificationItemProps {
+  notification: Notification;
+  /** 길게 눌러 미리보기·메뉴를 열 목적지. 없으면 탭으로만 연다 */
+  href: Href | null;
+  onOpen: (notification: Notification) => void;
+}
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(
-      useGetNotificationsInfiniteQueryOptions({ category, limit: NOTIFICATION_PAGE_SIZE }),
-    );
   const { currentLocalDateKey, currentTimeZone } = useLocalDate();
-  const listItems = toDateSectionedListItems(data, currentLocalDateKey, currentTimeZone);
+  const {
+    data: listItems,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(
+    useGetNotificationsInfiniteQueryOptions({
+      category,
+      limit: NOTIFICATION_PAGE_SIZE,
+      todayDateKey: currentLocalDateKey,
+      timeZone: currentTimeZone,
+    }),
+  );
   const queryClient = useQueryClient();
-  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateNotifications(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshNotifications(queryClient));
   const openNotification = useOpenNotification();
+  const findNotificationHref = useFindNotificationHref();
 
   return (
     <InfiniteList
@@ -64,10 +90,14 @@ export function NotificationList() {
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <NotificationListRow.SectionHeader section={section} />
+            <NotificationList.SectionHeader section={section} />
           ))
           .with({ type: 'item' }, ({ entry }) => (
-            <NotificationList.Item notification={entry} onOpen={openNotification} />
+            <NotificationList.Item
+              notification={entry}
+              href={findNotificationHref(entry)}
+              onOpen={openNotification}
+            />
           ))
           .exhaustive()
       }
@@ -80,12 +110,82 @@ export function NotificationList() {
       }
       ListEmptyComponent={<NotificationList.Empty />}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+      // 화면이 아래 safe area를 빼지 않아 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 행은 유리 밑으로 스크롤된다
+      contentInsetAdjustmentBehavior="automatic"
+      // 빈 안내만 칸을 채운다. 행이 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
+      contentContainerStyle={{ flexGrow: listItems.length === 0 ? 1 : 0, paddingBottom: 24 }}
     />
   );
 }
 
-NotificationList.Loading = NotificationListRow.Loading;
+NotificationList.Item = function Item({ notification, href, onOpen }: NotificationItemProps) {
+  const { t } = useTranslation(['notification', 'moderation']);
+  const reportCheer = useReportCheer(notification);
+  const handlePress = useSingleTap(() => onOpen(notification));
+
+  return (
+    <NotificationListRow.Link href={href}>
+      <NotificationListRow
+        label={t(`categories.${getNotificationLabelKey(notification.type)}`)}
+        title={notification.title}
+        body={notification.body}
+        createdAt={notification.createdAt}
+        isUnread={NotificationPolicy.isUnread(notification)}
+        testID={`notification-item-${notification.type}`}
+        onPress={handlePress}
+        // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 신고한다. 응원은 피드 탭으로 가 미리보기가 탭에
+        // params를 남기고 Android에는 Link.Menu가 없어, 상세 route 없는 댓글 행처럼 Link.Menu 대신 길게 누르기다
+        onLongPress={reportCheer}
+        accessibilityActions={
+          reportCheer == null
+            ? undefined
+            : [{ name: 'report', label: t('moderation:menu.reportCheer') }]
+        }
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'report') {
+            reportCheer?.();
+          }
+        }}
+      />
+    </NotificationListRow.Link>
+  );
+};
+
+NotificationList.SectionHeader = function SectionHeader({ section }: { section: DateSectionKey }) {
+  const { t } = useTranslation('common');
+  const labelKeys = {
+    today: 'relativeDay.today',
+    yesterday: 'relativeDay.yesterday',
+    thisWeek: 'dateSections.thisWeek',
+    thisMonth: 'dateSections.thisMonth',
+    earlier: 'dateSections.earlier',
+  } as const satisfies Record<DateSectionKey, string>;
+
+  return (
+    <Box className="bg-white px-4 py-2">
+      <Text size="b3" shade={5} weight="semibold">
+        {t(labelKeys[section])}
+      </Text>
+    </Box>
+  );
+};
+
+/** 받은 뒤와 같은 자리에 날짜 머리 한 줄과 행을 그린다. 머리·행 여백은 SectionHeader·행과 같다 */
+NotificationList.Loading = function Loading() {
+  return (
+    <ScrollView className="flex-1">
+      <Box className="px-4 py-2">
+        <TextSkeleton size="b3" className="w-32" />
+      </Box>
+      {range(LOADING_ROW_COUNT).map((index) => (
+        <Fragment key={index}>
+          {index > 0 && <Separator className="mx-4" />}
+          <NotificationListRow.Loading />
+        </Fragment>
+      ))}
+    </ScrollView>
+  );
+};
 
 NotificationList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
@@ -107,67 +207,14 @@ NotificationList.Empty = function Empty() {
   );
 };
 
-interface NotificationItemProps {
-  notification: Notification;
-  onOpen: (notification: Notification) => void;
-}
-
-NotificationList.Item = function Item({ notification, onOpen }: NotificationItemProps) {
-  const { t } = useTranslation(['notification', 'moderation']);
-  const push = useSingleTap(router.push);
-  const { receivedCheer } = notification;
-  const handlePress = useSingleTap(() => onOpen(notification));
-
-  // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 메시지를 신고한다
-  const handleReportCheer =
-    receivedCheer == null
-      ? undefined
-      : () => {
-          const target = createCheerMessageReportTarget(receivedCheer);
-          push({
-            pathname: '/users/[userId]/report',
-            params: {
-              userId: target.targetUserId,
-              name: receivedCheer.senderName ?? t('moderation:fallbackName'),
-              targetType: target.targetType,
-              targetId: target.targetId,
-            },
-          });
-        };
-
-  return (
-    <NotificationListRow
-      label={t(`categories.${getNotificationLabelKey(notification.type)}`)}
-      title={notification.title}
-      body={notification.body}
-      createdAt={notification.createdAt}
-      isUnread={NotificationPolicy.isUnread(notification)}
-      testID={`notification-item-${notification.type}`}
-      onPress={handlePress}
-      onLongPress={handleReportCheer}
-      accessibilityActions={
-        handleReportCheer == null
-          ? undefined
-          : [{ name: 'report', label: t('moderation:menu.reportCheer') }]
-      }
-      onAccessibilityAction={(event) => {
-        if (event.nativeEvent.actionName === 'report') {
-          handleReportCheer?.();
-        }
-      }}
-    />
-  );
-};
-
 // 목록이 한 번 부르고 행에 넘겨 행마다 게이트·mutation을 만들지 않는다
 function useOpenNotification() {
   const { t } = useTranslation('notification');
-  const navigateToDestination = useNotificationNavigation();
-  const windowSizeClass = useWindowSizeClass();
+  const resolveInboxDestination = useResolveInboxDestination();
+  const openDestination = useOpenNotificationDestination({ openRoute: router.navigate });
   const logger = useLogger();
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
   const { trackEvent } = useTrack();
-  const queryClient = useQueryClient();
   const gate = useEntitlementGate('AI_REPORT', { surface: 'notification_center' });
 
   return (notification: Notification) => {
@@ -182,22 +229,65 @@ function useOpenNotification() {
       return;
     }
 
-    // 목록은 알림함 화면에만 있어, 알림함을 여는 알림은 같은 화면을 다시 열지 않고 머문다
-    const destination: NotificationDestination =
-      notification.target.kind === 'NOTIFICATIONS'
-        ? { kind: 'none' }
-        : toNotificationDestination(notification.target, {
-            windowSizeClass,
-            viewerId: getCachedMe(queryClient)?.id,
-          });
+    const destination = resolveInboxDestination(notification);
     trackEvent('notification_center_opened', {
       type: notification.type,
       destination: destination.kind,
     });
-    navigateToDestination(destination).catch((error) =>
+    openDestination(destination).catch((error) =>
       logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, {
         error: getErrorMessage(error),
       }),
     );
+  };
+}
+
+/** 좁은 화면에서 읽은 알림이 같은 루트 Stack의 상세로 갈 때만 길게 눌러 미리본다. 미리보기 이동은 행 onPress를 거치지 않아 읽음과 AI 프리미엄 안내를 건너뛴다 */
+function useFindNotificationHref() {
+  const windowSizeClass = useWindowSizeClass();
+  const resolveInboxDestination = useResolveInboxDestination();
+
+  return (notification: Notification): Href | null => {
+    const isTapOnly =
+      windowSizeClass !== 'compact' ||
+      NotificationPolicy.isUnread(notification) ||
+      NotificationPolicy.isAiFeature(notification);
+    if (isTapOnly) {
+      return null;
+    }
+    return findRootStackDetailHref(resolveInboxDestination(notification));
+  };
+}
+
+// 목록은 알림함 화면에만 있어, 알림함을 여는 알림은 같은 화면을 다시 열지 않고 머문다
+function useResolveInboxDestination() {
+  const resolveDestination = useResolveNotificationDestination();
+
+  return (notification: Notification): NotificationDestination =>
+    notification.target.kind === 'NOTIFICATIONS'
+      ? { kind: 'none' }
+      : resolveDestination(notification.target);
+}
+
+/** 받은 응원이면 그 메시지를 신고하는 화면을 연다. 응원이 아니면 행에 길게 누르기를 달지 않는다 */
+function useReportCheer({ receivedCheer }: Notification) {
+  const { t } = useTranslation('moderation');
+  const push = useSingleTap(router.push);
+
+  if (receivedCheer == null) {
+    return undefined;
+  }
+
+  return () => {
+    const target = createCheerMessageReportTarget(receivedCheer);
+    push({
+      pathname: '/users/[userId]/report',
+      params: {
+        userId: target.targetUserId,
+        name: receivedCheer.senderName ?? t('fallbackName'),
+        targetType: target.targetType,
+        targetId: target.targetId,
+      },
+    });
   };
 }

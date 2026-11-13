@@ -1,14 +1,13 @@
-import { ErrorCode } from "@aido/api/errors";
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { judgeVerificationAttempt } from "../../domain/auth-verification.domain-service.js";
 import type { VerificationType } from "../../domain/auth.constants.js";
+import { invalidVerificationCode, verificationAttemptsExceeded } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthVerificationRepositoryPort } from "../ports/auth-verification.repository.port.js";
 import type { VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
@@ -56,14 +55,8 @@ export class ConsumeVerificationCodeUseCase {
         });
       }
       throw match(judgement.reason)
-        .with("exhausted", () => new ApplicationException(ErrorCode.VERIFY_0754))
-        .with(
-          "missing",
-          "used",
-          "expired",
-          "mismatch",
-          () => new ApplicationException(ErrorCode.VERIFY_0751),
-        )
+        .with("exhausted", () => verificationAttemptsExceeded())
+        .with("missing", "used", "expired", "mismatch", () => invalidVerificationCode())
         .exhaustive();
     }
 
@@ -76,7 +69,7 @@ export class ConsumeVerificationCodeUseCase {
       at: now,
     });
     if (!consumed) {
-      throw new ApplicationException(ErrorCode.VERIFY_0751);
+      throw invalidVerificationCode();
     }
 
     logger.log({

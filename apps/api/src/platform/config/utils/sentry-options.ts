@@ -139,9 +139,30 @@ function httpTraceRate(attributes: Readonly<Record<string, unknown>>, defaultRat
 }
 
 const FILTERED_QUERY_VALUE = /token=[^&]+/gi;
+// DrizzleQueryError는 바인딩 값(이메일 등)을 `params:` 뒤에 싣고, cause로 이은 linked exception으로 나간다
+const QUERY_PARAMS = /\nparams: [\s\S]*$/;
+// 끝 칸이 글자로 시작해야 해 `query-core@5.105.3` 같은 패키지 버전은 남긴다
+const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z][\w-]*/gi;
 
-/** 보내기 직전 마지막 정리. 수집 설정이 바뀌어도 인증 헤더·IP·본문·쿠키가 나가지 않게 한 번 더 지운다. */
+function scrubText(value: string): string {
+  return value.replace(QUERY_PARAMS, "\nparams: [FILTERED]").replace(EMAIL, "[FILTERED]");
+}
+
+/** 보내기 직전 마지막 정리. 수집 설정이 바뀌어도 인증 헤더·IP·본문·쿠키·DB 바인딩 값·이메일이 나가지 않게 한 번 더 지운다. */
 export function scrubErrorEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+  for (const exception of event.exception?.values ?? []) {
+    if (exception.value != null) {
+      exception.value = scrubText(exception.value);
+    }
+  }
+  if (event.message != null) {
+    event.message = scrubText(event.message);
+  }
+  for (const breadcrumb of event.breadcrumbs ?? []) {
+    if (breadcrumb.message != null) {
+      breadcrumb.message = scrubText(breadcrumb.message);
+    }
+  }
   if (event.request != null) {
     const { headers } = event.request;
     if (headers != null) {

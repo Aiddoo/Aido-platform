@@ -1,8 +1,6 @@
-import {
-  useNotificationApi,
-  usePushRegistrationService,
-} from '@src/bootstrap/providers/di-context';
+import { useNotificationApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import type { DateKey } from '@src/shared/date/date-key';
 import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
@@ -10,14 +8,23 @@ import { uniqBy } from 'es-toolkit';
 
 import type { NotificationPage } from '../domains/notification.model';
 import type { NotificationListQueryKey } from '../schemas/notification-list-query-key.schema';
+import { toDateSectionedListItems } from '../utils/notification-section.view-model';
 import { NOTIFICATION_QUERY_KEYS } from './notification-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;
 
+interface NotificationsInfiniteQueryInput extends NotificationListQueryKey {
+  /** 날짜 섹션을 나누는 기준. 키에 넣지 않아 날짜가 바뀌어도 다시 받지 않고 select만 다시 돈다 */
+  todayDateKey: DateKey;
+  timeZone: string;
+}
+
 export function useGetNotificationsInfiniteQueryOptions({
   category,
   limit,
-}: NotificationListQueryKey) {
+  todayDateKey,
+  timeZone,
+}: NotificationsInfiniteQueryInput) {
   const notificationApi = useNotificationApi();
 
   return infiniteQueryOptions({
@@ -32,26 +39,13 @@ export function useGetNotificationsInfiniteQueryOptions({
 
     getNextPageParam: getNextCursor,
 
-    select: selectNotifications,
+    select: (infinitePages) =>
+      toDateSectionedListItems(selectNotifications(infinitePages), todayDateKey, timeZone),
   });
 }
 
 function selectNotifications(infinitePages: InfiniteData<NotificationPage, number | undefined>) {
   return uniqBy(selectPageItems(infinitePages), (notification) => notification.id);
-}
-
-export function useGetPushPermissionQueryOptions() {
-  const pushRegistrationService = usePushRegistrationService();
-
-  return queryOptions({
-    queryKey: NOTIFICATION_QUERY_KEYS.permission(),
-    queryFn: () => pushRegistrationService.getPermission(),
-    // 기기 안에서만 처리해 연결 상태와 무관하다
-    networkMode: 'always',
-
-    // 설정 앱에서 바꾸고 돌아올 수 있어 화면을 열거나 앱으로 돌아올 때마다 다시 본다
-    staleTime: 0,
-  });
 }
 
 export function useGetUnreadCountQueryOptions() {

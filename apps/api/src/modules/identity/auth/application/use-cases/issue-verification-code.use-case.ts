@@ -1,14 +1,14 @@
-import { ErrorCode } from "@aido/api/errors";
-import { VERIFICATION_CODE } from "@aido/api/vocabulary";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AuthVerification } from "../../domain/auth-verification.aggregate.js";
-import { resendCooldownStartsAt } from "../../domain/auth-verification.domain-service.js";
+import {
+  resendCooldownRemainingSeconds,
+  resendCooldownStartsAt,
+} from "../../domain/auth-verification.domain-service.js";
 import type { VerificationType } from "../../domain/auth.constants.js";
+import { verificationResendCooldown } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthVerificationRepositoryPort } from "../ports/auth-verification.repository.port.js";
 import type { VerificationCodeSecurityPort } from "../ports/verification-code-security.port.js";
@@ -26,7 +26,7 @@ export interface IssuedVerificationCode {
 interface IssueVerificationCodeDependencies {
   readonly verificationRepository: Pick<
     AuthVerificationRepositoryPort,
-    "countRecentByUserIdAndType" | "invalidateAllByUserIdAndType" | "nextId" | "save"
+    "findLatestIssuedAtByUserIdAndType" | "invalidateAllByUserIdAndType" | "nextId" | "save"
   >;
   readonly verificationCodeSecurity: Pick<VerificationCodeSecurityPort, "generate">;
   readonly clock: ClockPort;
@@ -47,15 +47,13 @@ export class IssueVerificationCodeUseCase {
     const userId = UserId.reconstitute(command.userId);
     const now = clock.now();
 
-    const recentCount = await verificationRepository.countRecentByUserIdAndType(
+    const lastIssuedAt = await verificationRepository.findLatestIssuedAtByUserIdAndType(
       userId,
       type,
       resendCooldownStartsAt(now),
     );
-    if (recentCount > 0) {
-      throw new ApplicationException(ErrorCode.VERIFY_0753, {
-        remainingSeconds: VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
-      });
+    if (lastIssuedAt != null) {
+      throw verificationResendCooldown(resendCooldownRemainingSeconds(lastIssuedAt, now));
     }
 
     await verificationRepository.invalidateAllByUserIdAndType(userId, type, now);

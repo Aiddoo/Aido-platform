@@ -2,7 +2,7 @@ import type { PurchaseStatus, PurchasesGateway } from '@src/core/ports/purchases
 
 import { mockMethod } from '../mock-method';
 
-const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [] };
+const NO_SUBSCRIPTION: PurchaseStatus = { activeEntitlements: [], managementUrl: null };
 
 export interface PurchasesGatewayStub extends jest.Mocked<PurchasesGateway> {
   /** 스토어가 고객 정보를 바꾼 것처럼 구독자에게 알린다 */
@@ -23,13 +23,13 @@ export function createPurchasesGatewayStub(): PurchasesGatewayStub {
       return 'configured';
     }),
     logIn: mockMethod<PurchasesGateway['logIn']>(async () => {}),
-    logOut: jest.fn(async () => {}),
+    logOut: mockMethod<PurchasesGateway['logOut']>(async () => {}),
     setAttributes: mockMethod<PurchasesGateway['setAttributes']>(async () => {}),
     setAnalyticsId: mockMethod<PurchasesGateway['setAnalyticsId']>(async () => {}),
-    getOffering: jest.fn(async () => null),
+    getOffering: mockMethod<PurchasesGateway['getOffering']>(async () => null),
     purchase: mockMethod<PurchasesGateway['purchase']>(async () => ({ type: 'package-not-found' })),
-    restore: jest.fn(async () => NO_SUBSCRIPTION),
-    getStatus: jest.fn(async () => NO_SUBSCRIPTION),
+    restore: mockMethod<PurchasesGateway['restore']>(async () => NO_SUBSCRIPTION),
+    getStatus: mockMethod<PurchasesGateway['getStatus']>(async () => NO_SUBSCRIPTION),
     subscribe: mockMethod<PurchasesGateway['subscribe']>((listener) => {
       listeners.add(listener);
       return () => {

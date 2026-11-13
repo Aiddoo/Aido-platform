@@ -2,6 +2,8 @@ import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 import type { AiProviderId } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import { ApplicationException } from "#api/shared/application/application.exception";
+
 export const AI_FAILURE_KINDS = [
   "QUOTA_EXHAUSTED",
   "AUTH",
@@ -168,4 +170,12 @@ export class AiGenerationError extends Error {
   get errorCode(): ErrorCodeType {
     return resolveAiFailureRule(this.kind).errorCode;
   }
+}
+
+/**
+ * 생성이 끝내 실패해 사용자에게 줄 코드다. 호출부가 예약을 환불하므로 앱이 "횟수는 차감되지 않았어요"를
+ * 보여 줄 수 있고(환불에 실패하면 호출부가 charged를 뗀다), 원래 실패는 cause로 예외 보고에 남는다.
+ */
+export function generationFailed(errorCode: ErrorCodeType, cause: unknown): ApplicationException {
+  return new ApplicationException(errorCode, { charged: false }, { cause });
 }

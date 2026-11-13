@@ -1,4 +1,5 @@
 import { toInstant } from '@src/shared/date/instant';
+import { createDateKey } from '@src/testing/date-key';
 
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
@@ -23,7 +24,7 @@ export function createWidgetSummary(
   overrides: Partial<WidgetSummaryInput> = {},
 ): WidgetSummaryInput {
   return {
-    date: '2026-07-12',
+    date: createDateKey('2026-07-12'),
     totalTodos: 5,
     completedTodos: 3,
     completionRate: 60,
@@ -42,7 +43,7 @@ export function createWidgetDaySnapshot(
 ): WidgetDaySnapshot {
   return {
     state: 'data',
-    date: '2026-07-12',
+    date: createDateKey('2026-07-12'),
     totalTodos: 5,
     completedTodos: 3,
     completionRate: 60,
@@ -80,6 +81,9 @@ export function createWidgetSnapshot(
     days:
       tomorrowOverrides == null
         ? [today]
-        : [today, createWidgetDaySnapshot({ date: '2026-07-13', ...tomorrowOverrides })],
+        : [
+            today,
+            createWidgetDaySnapshot({ date: createDateKey('2026-07-13'), ...tomorrowOverrides }),
+          ],
   };
 }

@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
-import { createAnalyticsStub, createHttpClientStub } from '@src/testing/core';
+import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { waitFor } from '@testing-library/react-native';
 
@@ -18,10 +18,7 @@ async function renderFriendLimitInvite(isEnabled: boolean) {
     return null;
   }
   await renderScreen(<Capture />, {
-    di: {
-      analytics,
-      httpClient: publicHttpClient,
-    },
+    di: createTestDi({ ports: { analytics, httpClient: publicHttpClient } }),
   });
 
   return {

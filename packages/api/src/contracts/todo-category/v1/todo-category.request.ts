@@ -6,6 +6,7 @@ import { reorderPositionSchema } from "./todo-category.common.js";
 export const createTodoCategorySchema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, "카테고리명을 입력해주세요")
     .max(50, "카테고리명은 50자 이하로 입력해주세요")
     .describe("카테고리 이름 (1-50자, 예: 중요한 일)"),
@@ -21,6 +22,7 @@ export const updateTodoCategorySchema = z
   .object({
     name: z
       .string()
+      .trim()
       .min(1, "카테고리명을 입력해주세요")
       .max(50, "카테고리명은 50자 이하로 입력해주세요")
       .optional()

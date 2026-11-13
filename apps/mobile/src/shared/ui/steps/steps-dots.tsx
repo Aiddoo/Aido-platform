@@ -2,6 +2,7 @@ import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion
 import { range } from 'es-toolkit';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  clamp,
   interpolateColor,
   type SharedValue,
   useAnimatedStyle,
@@ -62,7 +63,7 @@ function StepsDot({
   const animatedStyle = useAnimatedStyle(() => {
     if (progress != null) {
       // 막대 끝이 이 점에 닿는 동안 색이 넘어간다
-      const reach = Math.min(Math.max(progress.get() - dotIndex + 1, 0), 1);
+      const reach = clamp(progress.get() - dotIndex + 1, 0, 1);
       return { backgroundColor: interpolateColor(reach, [0, 1], [upcomingColor, passedColor]) };
     }
     const color = index >= dotIndex ? passedColor : upcomingColor;
@@ -82,7 +83,7 @@ export function StepsDots({ index, count, progress, tone = 'default' }: StepsDot
 
   const barStyle = useAnimatedStyle(() => {
     if (progress != null) {
-      return { width: getBarWidth(Math.min(Math.max(progress.get(), 0), count - 1)) };
+      return { width: getBarWidth(clamp(progress.get(), 0, count - 1)) };
     }
     return { width: springTo(getBarWidth(index), isReducedMotion) };
   });

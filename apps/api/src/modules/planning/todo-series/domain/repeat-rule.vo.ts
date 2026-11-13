@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import {
   DAY_OF_WEEK_ORDER,
   TODO_REPEAT_INTERVALS,
@@ -10,10 +9,10 @@ import {
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
+import { invalidRepeatRule } from "./todo-series.errors.js";
 
 export type RepeatEnd =
   | { readonly type: "NEVER" }
@@ -44,7 +43,7 @@ const NEXT_OCCURRENCE_SEARCH_DAYS = 62;
 
 function assertRule(condition: boolean, field: string): void {
   if (!condition) {
-    throw new DomainException(ErrorCode.TODO_0845, { field });
+    throw invalidRepeatRule(field);
   }
 }
 

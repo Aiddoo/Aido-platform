@@ -1,10 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { Entity } from "#api/shared/domain/model/entity";
 
 import { DailyCompletionId } from "./daily-completion-id.vo.js";
+import { invalidCompletedTodos, invalidTotalTodos } from "./daily-completions.errors.js";
 
 export interface DailyCompletionPrimitives {
   readonly userId: string;
@@ -35,18 +33,14 @@ export class DailyCompletion extends Entity<DailyCompletionId, DailyCompletionPr
   static create(params: CreateDailyCompletionParams): DailyCompletion {
     const { totalTodos, completedTodos } = params;
     if (!Number.isSafeInteger(totalTodos) || totalTodos < 0) {
-      throw new DomainException(ErrorCode.SYS_0002, { field: "totalTodos", value: totalTodos });
+      throw invalidTotalTodos(totalTodos);
     }
     if (
       !Number.isSafeInteger(completedTodos) ||
       completedTodos < 0 ||
       completedTodos > totalTodos
     ) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        field: "completedTodos",
-        completedTodos,
-        totalTodos,
-      });
+      throw invalidCompletedTodos(completedTodos, totalTodos);
     }
     return DailyCompletion.#build(params);
   }

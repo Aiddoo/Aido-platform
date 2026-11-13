@@ -23,23 +23,51 @@ interface TrialEndingNotice {
   planType: PlanType | null;
 }
 
-export type SubscriptionReceiptRow =
-  | { type: 'account' }
-  /** 지금 구독(체험이면 체험 뒤)의 요금제. 모르면 null이고 "구독"으로 보인다 */
-  | { type: 'plan'; planType: PlanType | null }
-  | { type: 'rewardRecord'; endsAt: Instant }
+/** 서버가 준 보상 일수 중 구독 뒤로 쌓인 것. 끝나는 날은 자동 갱신 중이면 밀려서 모른다 */
+interface BankedReward {
+  days: number;
+  endsAt: Instant | null;
+}
+
+type PaidBilling =
   | { type: 'nextBillingDate'; date: Instant }
-  | { type: 'trialEndsOn'; date: Instant }
-  /** 금액은 서버가 모르므로 화면이 스토어 요금제에서 붙인다 */
-  | { type: 'firstBillingDate'; date: Instant }
   /** 결제 예정 시각이 지났는데 스토어 갱신이 아직 서버에 반영되지 않았다(최대 유예 3시간) */
   | { type: 'renewalPending' }
-  | { type: 'subscriptionEndsOn'; date: Instant }
-  | { type: 'autoRenewal'; willRenew: boolean }
-  | { type: 'rewardPeriod'; endsAt: Instant }
-  | { type: 'bankedReward'; days: number; endsAt: Instant | null }
-  | { type: 'overallPeriod'; endsAt: Instant }
-  | { type: 'daysLeft'; days: number; endingNotice: PremiumEndingNotice | null };
+  | { type: 'subscriptionEndsOn'; date: Instant };
+
+type TrialBilling =
+  | { type: 'renewalPending' }
+  /** 금액은 서버가 모르므로 화면이 스토어 요금제에서 붙인다 */
+  | { type: 'firstBillingDate'; date: Instant };
+
+interface AdminReceiptDetails {
+  rewardRecordEndsAt: Instant | null;
+  bankedDays: number | null;
+}
+
+interface PaidReceiptDetails {
+  /** 지금 구독의 요금제. 모르면 null이고 "구독"으로 보인다 */
+  planType: PlanType | null;
+  billing: PaidBilling;
+  willRenew: boolean;
+  banked: BankedReward | null;
+}
+
+interface TrialReceiptDetails {
+  /** 체험 뒤 이어질 요금제. 모르면 null이고 "구독"으로 보인다 */
+  planType: PlanType | null;
+  trialEndsOn: Instant;
+  billing: TrialBilling | null;
+  willRenew: boolean;
+  banked: BankedReward | null;
+}
+
+interface RewardReceiptDetails {
+  periodEndsAt: Instant;
+  /** 쌓아 둔 보상이 있으면 이어서 받을 일수와 전체 이용 기간 끝 */
+  chained: { bankedDays: number; overallEndsAt: Instant } | null;
+  daysLeft: { days: number; endingNotice: PremiumEndingNotice | null };
+}
 
 /** 영수증 아래 한 줄. "그다음엔 어떻게 되나"가 행만으로 드러나지 않을 때만 붙인다 */
 type SubscriptionReceiptFootnote =
@@ -53,24 +81,31 @@ type SubscriptionReceiptFootnote =
 type SubscriptionReceiptAction = 'subscribe' | 'manage';
 
 interface SubscriptionReceiptContents {
-  rows: SubscriptionReceiptRow[];
   footnote: SubscriptionReceiptFootnote | null;
   primaryAction: SubscriptionReceiptAction | null;
 }
 
 /** 영수증 출처는 관리자, 스토어 구독(결제·무료 체험), 초대 보상 기간이다. 관리자는 기간이 끝나도 모든 기능을 쓰므로 끝남 안내가 없다 */
 export type SubscriptionReceiptViewModel =
-  | (SubscriptionReceiptContents & { variant: 'admin'; endingNotice: null })
+  | (SubscriptionReceiptContents & {
+      variant: 'admin';
+      details: AdminReceiptDetails;
+      endingNotice: null;
+    })
   | (SubscriptionReceiptContents & {
       variant: 'paid';
+      /** 기간이 없으면 null이고 영수증은 줄 없이 머리만 보인다 */
+      details: PaidReceiptDetails | null;
       endingNotice: PremiumEndingNotice | AnnualRenewingNotice | null;
     })
   | (SubscriptionReceiptContents & {
       variant: 'reward';
+      details: RewardReceiptDetails | null;
       endingNotice: PremiumEndingNotice | null;
     })
   | (SubscriptionReceiptContents & {
       variant: 'trial';
+      details: TrialReceiptDetails | null;
       endingNotice: TrialEndingNotice | null;
     });
 
@@ -90,32 +125,25 @@ function toEndingNotice(
   return PremiumAccessPolicy.getDaysLeft(access, now, timeZone) === 0 ? 'today' : 'tomorrow';
 }
 
-function toBankedRows(access: PremiumAccess, endsAt: Instant | null): SubscriptionReceiptRow[] {
-  return PremiumAccessPolicy.hasBankedDays(access)
-    ? [{ type: 'bankedReward', days: access.bankedDays, endsAt }]
-    : [];
+function toBankedReward(access: PremiumAccess, endsAt: Instant | null): BankedReward | null {
+  return PremiumAccessPolicy.hasBankedDays(access) ? { days: access.bankedDays, endsAt } : null;
 }
 
 function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
-  const rewardRecordRows: SubscriptionReceiptRow[] =
-    PremiumAccessPolicy.isGrantOnly(access) && access.endsAt != null
-      ? [{ type: 'rewardRecord', endsAt: access.endsAt }]
-      : [];
-
   return {
     variant: 'admin',
-    rows: [{ type: 'account' }, ...rewardRecordRows, ...toBankedRows(access, null)],
+    details: {
+      rewardRecordEndsAt:
+        PremiumAccessPolicy.isGrantOnly(access) && access.endsAt != null ? access.endsAt : null,
+      bankedDays: PremiumAccessPolicy.hasBankedDays(access) ? access.bankedDays : null,
+    },
     footnote: null,
     primaryAction: null,
     endingNotice: null,
   };
 }
 
-function toBillingRow(
-  access: PremiumAccess,
-  periodEndsAt: Instant,
-  now: Instant,
-): SubscriptionReceiptRow {
+function toPaidBilling(access: PremiumAccess, periodEndsAt: Instant, now: Instant): PaidBilling {
   if (!access.willRenew) {
     return { type: 'subscriptionEndsOn', date: periodEndsAt };
   }
@@ -124,19 +152,19 @@ function toBillingRow(
     : { type: 'nextBillingDate', date: periodEndsAt };
 }
 
-function toPaidRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow[] {
+// 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
+function toPaidDetails(access: PremiumAccess, now: Instant): PaidReceiptDetails | null {
   const { periodEndsAt } = access;
   if (periodEndsAt == null) {
-    return [];
+    return null;
   }
 
-  // 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
-  return [
-    { type: 'plan', planType: access.planType },
-    toBillingRow(access, periodEndsAt, now),
-    { type: 'autoRenewal', willRenew: access.willRenew },
-    ...toBankedRows(access, access.willRenew ? null : access.endsAt),
-  ];
+  return {
+    planType: access.planType,
+    billing: toPaidBilling(access, periodEndsAt, now),
+    willRenew: access.willRenew,
+    banked: toBankedReward(access, access.willRenew ? null : access.endsAt),
+  };
 }
 
 function toBankedRewardFootnote(access: PremiumAccess): SubscriptionReceiptFootnote {
@@ -177,39 +205,39 @@ function toPaidReceipt(
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'paid',
-    rows: toPaidRows(access, now),
+    details: toPaidDetails(access, now),
     footnote: toPaidFootnote(access),
     primaryAction: 'manage',
     endingNotice: toPaidEndingNotice(access, { now, timeZone }),
   };
 }
 
-function toTrialBillingRow(
+function toTrialBilling(
   access: PremiumAccess,
   periodEndsAt: Instant,
   now: Instant,
-): SubscriptionReceiptRow[] {
+): TrialBilling | null {
   if (!access.willRenew) {
-    return [];
+    return null;
   }
   return PremiumAccessPolicy.isRenewalPending(access, now)
-    ? [{ type: 'renewalPending' }]
-    : [{ type: 'firstBillingDate', date: periodEndsAt }];
+    ? { type: 'renewalPending' }
+    : { type: 'firstBillingDate', date: periodEndsAt };
 }
 
-function toTrialRows(access: PremiumAccess, now: Instant): SubscriptionReceiptRow[] {
+function toTrialDetails(access: PremiumAccess, now: Instant): TrialReceiptDetails | null {
   const { periodEndsAt } = access;
   if (periodEndsAt == null) {
-    return [];
+    return null;
   }
 
-  return [
-    { type: 'plan', planType: access.planType },
-    { type: 'trialEndsOn', date: periodEndsAt },
-    ...toTrialBillingRow(access, periodEndsAt, now),
-    { type: 'autoRenewal', willRenew: access.willRenew },
-    ...toBankedRows(access, access.willRenew ? null : access.endsAt),
-  ];
+  return {
+    planType: access.planType,
+    trialEndsOn: periodEndsAt,
+    billing: toTrialBilling(access, periodEndsAt, now),
+    willRenew: access.willRenew,
+    banked: toBankedReward(access, access.willRenew ? null : access.endsAt),
+  };
 }
 
 /** 체험 중엔 "언제까지 해지하면 결제되지 않나"가 가장 궁금해 보상 안내보다 먼저 보인다(보상 일수는 행에 있다) */
@@ -240,36 +268,30 @@ function toTrialReceipt(
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'trial',
-    rows: toTrialRows(access, now),
+    details: toTrialDetails(access, now),
     footnote: toTrialFootnote(access),
     primaryAction: 'manage',
     endingNotice: toTrialEndingNotice(access, { now, timeZone }),
   };
 }
 
-function toRewardRows(
+function toRewardDetails(
   access: PremiumAccess,
   { now, timeZone }: SubscriptionReceiptContext,
-): SubscriptionReceiptRow[] {
+): RewardReceiptDetails | null {
   const { endsAt, periodEndsAt } = access;
   const daysLeft = PremiumAccessPolicy.getDaysLeft(access, now, timeZone);
   if (endsAt == null || periodEndsAt == null || daysLeft == null) {
-    return [];
+    return null;
   }
 
-  const chainedRows: SubscriptionReceiptRow[] = PremiumAccessPolicy.hasBankedDays(access)
-    ? [...toBankedRows(access, null), { type: 'overallPeriod', endsAt }]
-    : [];
-
-  return [
-    { type: 'rewardPeriod', endsAt: periodEndsAt },
-    ...chainedRows,
-    {
-      type: 'daysLeft',
-      days: daysLeft,
-      endingNotice: toEndingNotice(access, { now, timeZone }),
-    },
-  ];
+  return {
+    periodEndsAt,
+    chained: PremiumAccessPolicy.hasBankedDays(access)
+      ? { bankedDays: access.bankedDays, overallEndsAt: endsAt }
+      : null,
+    daysLeft: { days: daysLeft, endingNotice: toEndingNotice(access, { now, timeZone }) },
+  };
 }
 
 function toRewardReceipt(
@@ -278,7 +300,7 @@ function toRewardReceipt(
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'reward',
-    rows: toRewardRows(access, context),
+    details: toRewardDetails(access, context),
     footnote: access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt },
     primaryAction: context.isStoreConfigured ? 'subscribe' : null,
     endingNotice: toEndingNotice(access, context),

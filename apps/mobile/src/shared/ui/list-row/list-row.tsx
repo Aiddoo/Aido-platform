@@ -1,4 +1,3 @@
-import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
 import { PressableFeedback } from 'heroui-native';
@@ -6,8 +5,8 @@ import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
 import type { VariantProps } from 'tailwind-variants';
 
-import { Box } from '../box';
-import { ListRowImage } from './list-row-image';
+import { Box } from '../box/box';
+import { HStack } from '../h-stack/h-stack';
 import { ListRowTexts } from './list-row-texts';
 
 const listRowVariants = tv({
@@ -114,5 +113,5 @@ export function ListRow({
   );
 }
 
+// `.Loading`을 단 부속은 함수 선언이어야 TS가 그 속성을 안다
 ListRow.Texts = ListRowTexts;
-ListRow.Image = ListRowImage;

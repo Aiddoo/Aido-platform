@@ -1,3 +1,3 @@
 export const WHATS_NEW_LOG_EVENT = {
-  ANALYTICS_RECORD_FAILED: 'feature-discovery.analytics-record.failed',
+  ANALYTICS_RECORD_FAILED: 'whats-new.analytics-record.failed',
 } as const;

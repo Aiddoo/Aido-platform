@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 export const expoIncomingLinkGateway: IncomingLinkGateway = {
   getInitialUrl: () => Linking.getInitialURL(),
   subscribe: (listener) => {
-    const subscription = Linking.addEventListener('url', listener);
+    const subscription = Linking.addEventListener('url', ({ url }) => listener(url));
     return () => subscription.remove();
   },
 };

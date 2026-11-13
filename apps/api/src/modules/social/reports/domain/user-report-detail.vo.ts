@@ -1,8 +1,8 @@
-import { ErrorCode } from "@aido/api/errors";
 import { USER_REPORT_LIMITS } from "@aido/api/vocabulary";
 
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { ValueObject } from "#api/shared/domain/model/value-object";
+
+import { reportDetailTooLong } from "./reports.errors.js";
 
 // 신고자가 덧붙인 설명. 공백만 있으면 설명이 없는 것(null)으로 본다
 export class UserReportDetail extends ValueObject<string | null> {
@@ -12,9 +12,7 @@ export class UserReportDetail extends ValueObject<string | null> {
       return new UserReportDetail(null);
     }
     if (trimmed.length > USER_REPORT_LIMITS.MAX_DETAIL_LENGTH) {
-      throw new DomainException(ErrorCode.SYS_0002, {
-        maxLength: USER_REPORT_LIMITS.MAX_DETAIL_LENGTH,
-      });
+      throw reportDetailTooLong();
     }
     return new UserReportDetail(trimmed);
   }

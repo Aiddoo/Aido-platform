@@ -8,7 +8,11 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.domain-service.js";
-import { nudgeInteractionClosed, nudgeInteractionNotFound } from "../nudges.errors.js";
+import {
+  nudgeInteractionClosed,
+  nudgeInteractionDisabled,
+  nudgeInteractionNotFound,
+} from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeNotifierPort } from "../ports/nudge-notifier.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";
@@ -49,7 +53,7 @@ export class ReplyToNudgeUseCase {
       clock,
     } = this.#dependencies;
     if (!interactionConfig.isEnabled) {
-      throw nudgeInteractionNotFound();
+      throw nudgeInteractionDisabled();
     }
     const userId = UserId.reconstitute(command.userId);
     const nudgeId = NudgeId.reconstitute(command.nudgeId);

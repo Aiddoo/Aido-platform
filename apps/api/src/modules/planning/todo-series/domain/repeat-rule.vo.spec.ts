@@ -33,6 +33,32 @@ const SHARED_OCCURRENCE_CASES = z
     ),
   );
 
+/** 앱 반복 미리보기의 마지막 회차(findLastRepeatOccurrenceDateKey)도 같은 표를 읽는다. 간격으로 건너뛰는 걷기를 함께 지킨다. */
+const SHARED_LAST_OCCURRENCE_CASES = z
+  .array(
+    z.object({
+      name: z.string(),
+      startDate: z.iso.date(),
+      repeat: todoRepeatSchema,
+      expectedCount: z.int().positive(),
+      expectedLast: z.iso.date(),
+    }),
+  )
+  .parse(
+    JSON.parse(
+      readFileSync(
+        new URL(
+          "../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ),
+  );
+
+/** 표의 어떤 규칙보다 늦은 날. 끝(횟수·날짜)이 회차를 자른다. */
+const FAR_THROUGH = "2100-12-31";
+
 describe("RepeatRule — 반복 규칙", () => {
   it.each(SHARED_OCCURRENCE_CASES)(
     "앱과 같은 회차 표: $name",
@@ -43,6 +69,21 @@ describe("RepeatRule — 반복 규칙", () => {
       const occurrences = rule.occurrencesBetween(startDate, startDate, through);
       // Then
       expect(occurrences).toEqual(expected);
+    },
+  );
+
+  it.each(SHARED_LAST_OCCURRENCE_CASES)(
+    "앱과 같은 마지막 회차 표: $name",
+    ({ startDate, repeat, expectedCount, expectedLast }) => {
+      // Given
+      const rule = RepeatRule.create(repeat);
+      // When
+      const occurrences = rule.occurrencesBetween(startDate, startDate, FAR_THROUGH);
+      // Then
+      expect({ count: occurrences.length, last: occurrences.at(-1) }).toEqual({
+        count: expectedCount,
+        last: expectedLast,
+      });
     },
   );
 
