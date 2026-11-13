@@ -64,7 +64,7 @@ read -rs t && printf '%s\n' "$t" > ~/apps/deploy-state/ghcr-read-token; unset t
 
 migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴더와 DB guard만 가진다. 규칙은 [영속성](persistence.md#마이그레이션)을 따른다.
 
-`migrate.mjs`는 API·pg-boss URL을 먼저 검증한 뒤 pg-boss migration, Drizzle migration 순서로 실행한다. 원격 DB는 의도한 배포의 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하며, DDL lock_timeout은 5초다.
+`migrate.mjs`는 API·pg-boss URL을 먼저 검증한 뒤 pg-boss migration, Drizzle migration 순서로 실행한다. 원격 DB는 의도한 배포의 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하며, DDL lock_timeout은 5초다. Drizzle은 미적용 마이그레이션을 한 트랜잭션에서 돌려 하나라도 실패하면 모두 되돌아가고 이전 API가 그대로 돈다. migrate 동안에도 이전 API가 트래픽을 받는다.
 
 | DB 상태                       | 처리                                                                                          |
 | ----------------------------- | --------------------------------------------------------------------------------------------- |

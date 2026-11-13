@@ -1,4 +1,8 @@
-import { createScreenOrientationGatewayStub, stubWindowDimensions } from '@src/testing/core';
+import {
+  createScreenOrientationGatewayStub,
+  stubWindowDimensions,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { DEVICE_WINDOW } from '@src/testing/window-layout.fixtures';
 
@@ -10,12 +14,12 @@ describe('useOrientationLock (Android)', () => {
     const screenOrientation = createScreenOrientationGatewayStub();
     stubWindowDimensions(DEVICE_WINDOW.phone.width, DEVICE_WINDOW.phone.height);
     const { rerender } = await renderScreenHook(() => useOrientationLock(), {
-      di: { screenOrientation },
+      di: createTestDi({ ports: { screenOrientation } }),
     });
 
     // When
     stubWindowDimensions(DEVICE_WINDOW.phone.width, DEVICE_WINDOW.phone.height - 48);
-    await rerender({});
+    await rerender(undefined);
 
     // Then
     expect(screenOrientation.lockPortrait).toHaveBeenCalledTimes(1);
@@ -28,12 +32,12 @@ describe('useOrientationLock (Android)', () => {
     const { width, height } = DEVICE_WINDOW.phoneSplitScreenHalf;
     stubWindowDimensions(width, height);
     const { rerender } = await renderScreenHook(() => useOrientationLock(), {
-      di: { screenOrientation },
+      di: createTestDi({ ports: { screenOrientation } }),
     });
 
     // When
-    await rerender({});
-    await rerender({});
+    await rerender(undefined);
+    await rerender(undefined);
 
     // Then
     expect(screenOrientation.lockPortrait).toHaveBeenCalledTimes(1);
@@ -44,14 +48,14 @@ describe('useOrientationLock (Android)', () => {
     const screenOrientation = createScreenOrientationGatewayStub();
     stubWindowDimensions(DEVICE_WINDOW.foldedOuter.width, DEVICE_WINDOW.foldedOuter.height);
     const { rerender } = await renderScreenHook(() => useOrientationLock(), {
-      di: { screenOrientation },
+      di: createTestDi({ ports: { screenOrientation } }),
     });
 
     // When
     stubWindowDimensions(DEVICE_WINDOW.unfoldedInner.width, DEVICE_WINDOW.unfoldedInner.height);
-    await rerender({});
+    await rerender(undefined);
     stubWindowDimensions(DEVICE_WINDOW.foldedOuter.width, DEVICE_WINDOW.foldedOuter.height);
-    await rerender({});
+    await rerender(undefined);
 
     // Then
     expect(screenOrientation.lockPortrait).toHaveBeenCalledTimes(2);

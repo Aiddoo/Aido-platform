@@ -561,27 +561,39 @@ describe('getDismissAction', () => {
 });
 
 describe('shouldOfferVoiceNote', () => {
-  it('90초를 다 써서 멈췄으면 말로 메모하기를 제안한다', () => {
+  const LIMIT_SECONDS = 90;
+  const causes = ['limit', 'user', 'interrupted', 'app-background'] as const;
+
+  it.each(
+    causes.flatMap((cause) => [
+      { cause, elapsedMs: 89_999, expected: false },
+      { cause, elapsedMs: 90_000, expected: true },
+      { cause, elapsedMs: 120_000, expected: true },
+    ]),
+  )(
+    '$cause로 $elapsedMs ms에 멈추면 남은 시간이 없을 때만 말로 메모하기를 제안한다($expected)',
+    ({ cause, elapsedMs, expected }) => {
+      // Given
+      const paused = createCaptureState({ status: 'paused', cause, elapsedMs });
+
+      // When
+      const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, LIMIT_SECONDS);
+
+      // Then
+      expect(offers).toBe(expected);
+    },
+  );
+
+  it('듣는 중에는 시간을 다 써도 제안하지 않는다', () => {
     // Given
-    const paused = createCaptureState({ status: 'paused', cause: 'limit', elapsedMs: 90_000 });
-
-    // When
-    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, 90);
-
-    // Then
-    expect(offers).toBe(true);
-  });
-
-  it('앱 이탈로 잠깐 멈춘 것은 제안하지 않는다', () => {
-    // Given
-    const paused = createCaptureState({
-      status: 'paused',
-      cause: 'app-background',
-      elapsedMs: 30_000,
+    const listening = createCaptureState({
+      status: 'listening',
+      listeningSince: NOW,
+      elapsedMs: 90_000,
     });
 
     // When
-    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(paused, 90);
+    const offers = VoiceCapturePolicy.shouldOfferVoiceNote(listening, LIMIT_SECONDS);
 
     // Then
     expect(offers).toBe(false);

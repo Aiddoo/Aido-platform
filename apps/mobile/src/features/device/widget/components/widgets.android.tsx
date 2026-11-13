@@ -25,7 +25,7 @@ import {
   getAndroidWidgetDesignSize,
   getAndroidWidgetSlotSize,
 } from '../utils/android-widget-slot.geometry';
-import { isHexColor } from '../utils/is-hex-color';
+import { isHexColor } from '../utils/widget-color.view-model';
 
 // SvgWidget needs inline SVG; Metro otherwise transforms ic_paw.svg into a React component.
 const PAW_PATH =

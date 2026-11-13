@@ -11,9 +11,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
 import { useWeatherScene } from '../hooks/use-weather-scene';
-import { refetchWeather } from '../queries/weather-cache';
-import { ScrimLayer } from './weather-scene/scrim-layer';
-import { SkyGradientLayer } from './weather-scene/sky-gradient-layer';
+import { refreshWeather } from '../queries/weather-cache';
+import { ScrimLayer } from './weather-scene-canvas/scrim-layer';
+import { SkyGradientLayer } from './weather-scene-canvas/sky-gradient-layer';
 
 /** 마지막 카드 아래 여백. 안전 영역과 `bottomInset`에 더한다. */
 const SCREEN_BOTTOM_PADDING = 24;
@@ -39,7 +39,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
   const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const [isRefreshing, refresh] = useRefresh(() => refetchWeather(queryClient));
+  const [isRefreshing, refresh] = useRefresh(() => refreshWeather(queryClient));
   const refreshTint = useResolvedColor('text-on-sky');
 
   return (
@@ -86,7 +86,6 @@ WeatherScrollView.Status = function Status({ children }: PropsWithChildren) {
 interface TopFadeProps {
   /** 끝까지 불투명하게 덮을 높이(상태 표시줄) */
   solidHeight: number;
-  /** 페이드 전체 높이 */
   height: number;
 }
 

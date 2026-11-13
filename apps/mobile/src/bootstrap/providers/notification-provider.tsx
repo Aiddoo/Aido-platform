@@ -27,7 +27,6 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const { currentTimeZone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
-  useForegroundPushPresentation();
   useForegroundPushSync({ authStatus: status, invalidateByType });
   useEffect(
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
@@ -42,5 +41,17 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   useTimezoneChangeNotice({ accountId, reportCount });
   useNotificationBadgeSync({ authStatus: status });
 
-  return children;
+  return (
+    <>
+      <ForegroundPushPresentation />
+      {children}
+    </>
+  );
+}
+
+/** 지금 경로와 params를 읽어 URL이 바뀔 때마다 다시 그려지므로 Provider와 나눈 null 자식이다 */
+function ForegroundPushPresentation() {
+  useForegroundPushPresentation();
+
+  return null;
 }

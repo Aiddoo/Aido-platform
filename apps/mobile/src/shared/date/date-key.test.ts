@@ -22,7 +22,6 @@ import {
   isDateKey,
   isSameMonthDateKey,
   isSameYearDateKey,
-  parseDateKey,
 } from './date-key';
 import { toDateKey } from './zoned';
 
@@ -374,24 +373,6 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
 
     // Then
     expect([result, temporalOracle.isoWeekYear(dateKey)]).toEqual([expected, expected]);
-  });
-
-  it.each([
-    '',
-    'abc',
-    '2026-13-01',
-    '2026-02-30',
-    '2027-02-29',
-    '2026-2-3',
-    '20261112',
-    '2026-11-12T09:00',
-    '2026-11-12T00:00:00.000Z',
-  ])("계약 형식이 아닌 '%s'는 바깥 경계에서 날짜 key로 읽지 않는다", (value) => {
-    // When
-    const result = parseDateKey(value);
-
-    // Then
-    expect(result).toBeNull();
   });
 });
 

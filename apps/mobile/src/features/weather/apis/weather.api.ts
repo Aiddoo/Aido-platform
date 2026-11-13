@@ -5,8 +5,8 @@ import {
 } from '@aido/api';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { Logger } from '@src/core/ports/logger';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -18,9 +18,9 @@ import { getFallbackFieldPaths, toRegisteredLocation, toWeatherReport } from './
 
 export class WeatherApi {
   readonly #httpClient: HttpClient;
-  readonly #logger: Logger;
+  readonly #logger: AppLogger;
 
-  constructor(httpClient: HttpClient, logger: Logger) {
+  constructor(httpClient: HttpClient, logger: AppLogger) {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }
@@ -74,7 +74,7 @@ export class WeatherApi {
   #logFallbackFields = (raw: unknown, dto: unknown) => {
     const fields = getFallbackFieldPaths(raw, dto);
     if (fields.length > 0) {
-      this.#logger.warn(WEATHER_LOG_EVENT.REPORT_ENUM_FALLBACK, { fields });
+      this.#logger.warn(WEATHER_LOG_EVENT.REPORT_ENUM_FALLBACK, { fields: fields.join(',') });
     }
   };
 }

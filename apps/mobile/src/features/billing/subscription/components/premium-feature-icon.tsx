@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import {
   AiFilledIcon,
   AppSquareIcon,
@@ -48,11 +49,13 @@ interface PremiumFeatureIconProps {
 
 /** 프리미엄 안내 시트와 페이월이 같은 기능을 같은 그림으로 보여 준다 */
 export function PremiumFeatureIcon({ feature, size }: PremiumFeatureIconProps) {
+  const fontScaledSize = useFontScaledSize();
   const Icon = FEATURE_ICONS[feature];
+  const iconSize = fontScaledSize(ICON_SIZES[size]);
 
   return (
     <Box className={premiumFeatureIcon({ size })}>
-      <Icon width={ICON_SIZES[size]} height={ICON_SIZES[size]} colorClassName="text-main" />
+      <Icon width={iconSize} height={iconSize} colorClassName="text-main" />
     </Box>
   );
 }

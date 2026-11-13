@@ -6,8 +6,8 @@
 
 ```
 icon-count-button/
-├── icon-count-button.tsx   # 컴포넌트 + 여백 상수
-└── index.ts
+├── icon-count-button.md
+└── icon-count-button.tsx   # 컴포넌트 + 여백 상수
 ```
 
 ## 기본 사용법

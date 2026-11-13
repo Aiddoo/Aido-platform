@@ -59,7 +59,7 @@ function isUseQueryClientCall(node) {
   return node?.type === 'CallExpression' && getCalleeName(node.callee) === 'useQueryClient';
 }
 
-// queryClient의 메서드는 cache helper·mutation·query 옵션과 앱 조립만 부른다. 화면·훅은 queryClient를
+// queryClient의 메서드는 cache helper와 앱 조립만 부른다. 화면·훅은 queryClient를
 // helper(invalidate{X}·set{X}InCache·refresh{Feature})에 넘기기만 한다. queryClient라는 이름과
 // useQueryClient()·QueryClient 타입으로 받은 이름을 본다
 const queryClientLocation = {
@@ -70,7 +70,7 @@ const queryClientLocation = {
     function report(node, method) {
       context.report({
         node,
-        message: `queryClient.${method}: queryClient는 queries/*-cache.ts의 helper, *.mutations.ts·*.queries.ts, bootstrap만 만집니다. 화면·훅은 helper(invalidate{X}·set{X}InCache·refresh{Feature})에 넘기세요.`,
+        message: `queryClient.${method}: queryClient는 queries/*-cache.ts의 helper와 bootstrap만 만집니다. 화면·훅은 helper(invalidate{X}·set{X}InCache·refresh{Feature})에 넘기세요.`,
       });
     }
     return {

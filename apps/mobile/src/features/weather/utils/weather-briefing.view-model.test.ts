@@ -9,7 +9,7 @@ import {
 } from '../__tests__/weather-report.fixtures';
 import { type BriefingTodo, getWeatherBriefing } from '../domains/weather-briefing.model';
 import type { WeatherReport } from '../domains/weather-report.model';
-import { type BriefingViewDeps, toBriefingView } from './weather-briefing.view-model';
+import { type BriefingViewPorts, toBriefingView } from './weather-briefing.view-model';
 
 /** 서울 15:26. 16~17시(07:00Z~09:00Z) 비, 나머지는 맑다. */
 const NOW = toInstant('2026-11-02T06:26:00.000Z');
@@ -30,7 +30,7 @@ const rainyReport = createWeatherReport({
   }),
 });
 
-const DEPS: BriefingViewDeps = {
+const DEPS: BriefingViewPorts = {
   hourly: rainyReport.hourly,
   now: NOW,
   formatClock: (date) => `clock:${date}`,

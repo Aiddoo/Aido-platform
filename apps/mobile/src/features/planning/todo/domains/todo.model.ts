@@ -1,5 +1,9 @@
-import { entityIdSchema } from '@aido/api/common';
-import { TODAY_SUMMARY_TOP_TODOS_MAX, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { entityIdSchema, timeOfDaySchema } from '@aido/api/common';
+import {
+  TODAY_SUMMARY_TOP_TODOS_MAX,
+  TODO_EDIT_SCOPES,
+  TODO_VISIBILITIES,
+} from '@aido/api/vocabulary';
 import { todoCategorySchema } from '@src/features/planning/category/domains/todo-category.model';
 import {
   addDaysToDateKey,
@@ -13,7 +17,7 @@ import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
 import { type SubTodo, subTodoSchema } from './sub-todo.model';
-import { TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
+import { type TodoEditScope, TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
 
 export const todoSchema = z.object({
   id: z.int(),
@@ -27,7 +31,7 @@ export const todoSchema = z.object({
   endDate: dateKeySchema.nullable(),
   category: todoCategorySchema.pick({ id: true, name: true, color: true }),
   /** 사용자가 고른 벽시계(HH:mm). 어디서든 이 시각이라 표시와 수정 기본값은 이 값만 쓴다. 종일은 null */
-  localTime: z.iso.time({ precision: -1 }).nullable(),
+  localTime: timeOfDaySchema.nullable(),
   /** 서버가 벽시계 칸을 비워 둔 시간 행의 시각을 표시 때 시간대로 계산하려고 순간을 함께 둔다. 시간 없는 할 일은 null */
   scheduledAt: instantSchema.nullable(),
   /** 단일 할 일이나 규칙이 없는 옛 묶음, 친구 할 일은 null */
@@ -89,10 +93,8 @@ export const todoDetailsSchema = z.object({
 });
 export type TodoDetails = z.infer<typeof todoDetailsSchema>;
 
-// 공개 범위 규칙은 할 일·폼·음성 계획이 함께 써서 공개 범위 값만 받는다. 정하지 않은(null, 생략) 공개 범위는 서버 기본값인 공개로 본다
-export function getVisibility(
-  visibility: Todo['visibility'] | null | undefined,
-): Todo['visibility'] {
+// 공개 범위 규칙은 할 일·폼·음성 계획이 함께 써서 공개 범위 값만 받는다. 정하지 않은(null) 공개 범위는 서버 기본값인 공개로 본다
+export function getVisibility(visibility: Todo['visibility'] | null): Todo['visibility'] {
   return visibility ?? 'PUBLIC';
 }
 
@@ -136,6 +138,24 @@ export function isRecurringTodo(todo: Todo): boolean {
   return isRecurring(todo.recurrenceGroupId);
 }
 
+// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
+export function hasRepeatRule(todo: Todo): boolean {
+  return todo.recurrenceGroupId != null && todo.repeat != null;
+}
+
+// 규칙 없는 묶음의 회차는 서버가 반복 전환을 받지 않는다(TODO_0845)
+export function canChangeRepeat(todo: Todo): boolean {
+  return todo.recurrenceGroupId == null || hasRepeatRule(todo);
+}
+
+// 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
+export function getDeleteScopes(todo: Todo): readonly TodoEditScope[] {
+  if (todo.recurrenceGroupId == null) {
+    return [];
+  }
+  return hasRepeatRule(todo) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
+}
+
 export function isMultiDayTodo(todo: Todo): boolean {
   return todo.endDate != null && todo.endDate !== todo.startDate;
 }
@@ -154,11 +174,18 @@ export function getShiftedEndDate(
 const todoScheduleSchema = z.object({
   startDate: dateKeySchema,
   endDate: dateKeySchema.nullable(),
-  scheduledTime: z.iso.time({ precision: -1 }).nullable(),
+  scheduledTime: timeOfDaySchema.nullable(),
   isAllDay: z.boolean(),
   repeat: todoRepeatSchema.nullable(),
 });
 export type TodoSchedule = z.infer<typeof todoScheduleSchema>;
+
+/** 할 일 고치기에서 바꿀 수 있는 칸. 작성·수정 폼 값과 같은 모양이다 */
+export type TodoEditableFields = Omit<TodoSchedule, 'repeat'> &
+  Pick<Todo, 'title' | 'visibility'> & { categoryId: number };
+
+/** 고친 칸만 담는다. 없는 칸은 서버가 그대로 두고 null은 비운다 */
+export type TodoFieldChanges = Partial<TodoEditableFields>;
 
 // 종일이면 남아 있는 시각을 버린다. 시각과 종일을 따로 가진 폼·시트가 보낼 시각이다
 export function getScheduledTime(
@@ -201,8 +228,20 @@ export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number):
   );
 }
 
+/** 할 일이 걸친 날짜. 여러 날 할 일만 시작일과 끝날이 다르다 */
+export interface TodoDateSpan {
+  startDate: DateKey;
+  endDate: DateKey;
+}
+
+// 하루짜리는 끝날이 비어 있다. 작성 폼 값처럼 날짜만 가진 곳도 같은 규칙으로 읽는다
+export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): TodoDateSpan {
+  return { startDate: todo.startDate, endDate: todo.endDate ?? todo.startDate };
+}
+
 export function isTodoOnDate(todo: Todo, date: DateKey): boolean {
-  return todo.startDate <= date && date <= (todo.endDate ?? todo.startDate);
+  const { startDate, endDate } = getTodoDateSpan(todo);
+  return startDate <= date && date <= endDate;
 }
 
 // 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null
@@ -261,6 +300,9 @@ export const TodoPolicy = {
   getOptimisticListDate,
   isTodoOnDate,
   isRecurringTodo,
+  hasRepeatRule,
+  canChangeRepeat,
+  getDeleteScopes,
   isMultiDayTodo,
   getTodayToggleDates,
   isOptimisticTodo,

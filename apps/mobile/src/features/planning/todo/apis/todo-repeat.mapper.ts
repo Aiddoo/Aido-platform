@@ -1,8 +1,12 @@
 import type { TodoRepeat as TodoRepeatDto, TodoRepeatEnd as TodoRepeatEndDto } from '@aido/api';
-import { dateKeySchema } from '@src/shared/date/date-key';
+import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
+import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
+import { getDateKeyDayOfWeek } from '@src/shared/date/day-of-week';
 import { match } from 'ts-pattern';
 
+import { TODO_REPEAT_DEFAULT_COUNT } from '../constants/todo-repeat.constants';
 import type { TodoRepeat, TodoRepeatEnd } from '../domains/todo-repeat.model';
+import type { TodoRepeatFormValues } from '../schemas/todo-repeat-form.schema';
 
 function toRepeatEnd(end: TodoRepeatEndDto): TodoRepeatEnd {
   return match(end)
@@ -55,5 +59,44 @@ export function toRepeatDto(repeat: TodoRepeat): TodoRepeatDto {
       monthDay,
       end: toRepeatEndDto(end),
     }))
+    .exhaustive();
+}
+
+export function toTodoRepeatFormValues(
+  startDate: DateKey,
+  repeat: TodoRepeat | null,
+): TodoRepeatFormValues {
+  const startWeekday = [getDateKeyDayOfWeek(startDate)];
+  const base = {
+    startDate,
+    weekdays: startWeekday,
+    interval: 1 as const,
+    isMonthly: false,
+    monthDay: null,
+    endType: 'UNTIL' as const,
+    untilDate: null,
+    count: TODO_REPEAT_DEFAULT_COUNT,
+  };
+
+  if (repeat == null) {
+    return base;
+  }
+
+  const withEnd = {
+    ...base,
+    endType: repeat.end.type,
+    untilDate: repeat.end.type === 'UNTIL' ? repeat.end.date : null,
+    count: repeat.end.type === 'COUNT' ? repeat.end.count : base.count,
+  };
+
+  return match(repeat)
+    .returnType<TodoRepeatFormValues>()
+    .with({ frequency: 'DAILY' }, () => ({ ...withEnd, weekdays: [...DAYS_OF_WEEK] }))
+    .with({ frequency: 'WEEKLY' }, ({ weekdays, interval }) => ({
+      ...withEnd,
+      weekdays: [...weekdays],
+      interval,
+    }))
+    .with({ frequency: 'MONTHLY' }, ({ monthDay }) => ({ ...withEnd, isMonthly: true, monthDay }))
     .exhaustive();
 }

@@ -38,7 +38,7 @@ export class StoreReviewService {
   readonly #gateway: AppStoreReviewGateway;
   readonly #now: () => Instant;
   readonly #inFlightAccounts = new Set<string>();
-  /** 서비스는 앱 프로세스마다 하나라 한 번 요청한 실행 안에서는 다시 묻지 않는다 */
+  /** 서비스는 DIProvider 마운트마다 하나다. 같은 마운트 안에서 한 번 요청했으면 다시 묻지 않는다(루트 "다시 시도"는 새로 센다) */
   #hasRequestedThisSession = false;
 
   constructor(

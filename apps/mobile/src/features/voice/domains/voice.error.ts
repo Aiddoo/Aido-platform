@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { isApiError, isConnectivityError, isInfraError } from '@src/shared/errors';
+import { isApiError, isConnectivityError, ServerError } from '@src/shared/errors';
 
 export type VoicePlanFailureCause =
   | 'network'
@@ -29,12 +29,21 @@ export function isPlanInProgressError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.AI_1314);
 }
 
+/** AI 업체가 모두 응답하지 못했다(503). 5xx라 ApiError가 아니라 서버 코드를 실은 ServerError로 온다 */
+function isAiUnavailableServerError(error: unknown) {
+  return error instanceof ServerError && error.serverCode === ErrorCode.AI_1301;
+}
+
 export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause {
   if (isConnectivityError(error)) {
     return 'network';
   }
+  if (isAiUnavailableServerError(error)) {
+    return 'ai-unavailable';
+  }
+  // 그 밖의 5xx(DB 과부하 등)와 계약과 다른 응답은 AI 탓으로 단정하지 않는다
   if (!isApiError(error)) {
-    return isInfraError(error) ? 'ai-unavailable' : 'unknown';
+    return 'unknown';
   }
   if (error.hasCode(ErrorCode.AI_1311)) {
     return 'consent-required';
@@ -60,11 +69,7 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
   if (error.hasCode(ErrorCode.MEMO_2003)) {
     return 'memo-limit';
   }
-  if (
-    error.hasCode(ErrorCode.AI_1301) ||
-    error.hasCode(ErrorCode.AI_1302) ||
-    error.hasCode(ErrorCode.AI_1310)
-  ) {
+  if (error.hasCode(ErrorCode.AI_1302) || error.hasCode(ErrorCode.AI_1310)) {
     return 'ai-unavailable';
   }
   return 'unknown';

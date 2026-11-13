@@ -99,25 +99,6 @@
       }
     }
   },
-  "v1_14_0": {
-    "release": {
-      "title": "Collect paw prints with friends",
-      "description": "Invite a friend and you can both get Premium"
-    },
-    "friendInvite": {
-      "title": "Collect paw prints with friends",
-      "description": "When a friend completes to-dos on {{activeDays}} days, you get a paw print and you can both get Premium",
-      "action": "Start inviting"
-    },
-    "demo": {
-      "steps": {
-        "invite": "Invite",
-        "join": "Friend joins",
-        "pawPrint": "Paw print",
-        "reward": "Premium"
-      }
-    }
-  },
   "list": {
     "title": "What's new",
     "newBadge": "New",

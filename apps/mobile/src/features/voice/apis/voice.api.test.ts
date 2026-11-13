@@ -1,4 +1,5 @@
-import { createHttpClientStub, createLoggerStub } from '@src/testing/core';
+import { ParseError } from '@src/shared/errors/infra-error';
+import { createHttpClientStub } from '@src/testing/core';
 
 import { VoiceApi } from './voice.api';
 
@@ -10,13 +11,11 @@ const quickPlanDto = {
 
 describe('VoiceApi', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
-  let logger: ReturnType<typeof createLoggerStub>;
   let api: VoiceApi;
 
   beforeEach(() => {
     httpClient = createHttpClientStub();
-    logger = createLoggerStub();
-    api = new VoiceApi(httpClient, logger);
+    api = new VoiceApi(httpClient);
   });
 
   it('빠른 계획은 Idempotency-Key 헤더와 함께 보내고 한도가 없어도 결과를 돌려준다', async () => {
@@ -35,7 +34,7 @@ describe('VoiceApi', () => {
     expect(result).toMatchObject({ ok: true, value: { featureQuota: null, isCharged: false } });
   });
 
-  it('응답이 계약과 다르면 내용 없이 매핑 실패를 남기고 ParseError를 던진다', async () => {
+  it('응답이 계약과 다르면 ParseError를 던진다', async () => {
     // Given
     httpClient.post.mockResolvedValue({ ok: true, value: { plan: 1 } });
 
@@ -43,11 +42,7 @@ describe('VoiceApi', () => {
     const result = api.createQuickPlan({ text: '장보기', source: 'quick-text' }, 'key-1');
 
     // Then
+    await expect(result).rejects.toThrow(ParseError);
     await expect(result).rejects.toThrow('Invalid createQuickPlan response');
-    expect(logger.error).toHaveBeenCalledWith(
-      'voice.plan.mapping-failed',
-      undefined,
-      expect.any(Object),
-    );
   });
 });

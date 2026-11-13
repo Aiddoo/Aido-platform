@@ -16,13 +16,3 @@ import { ReadableContent } from '@src/shared/ui';
 ## Props
 
 `Box`와 같다(`flex`, `px`, `gap`, `className`, `style` 등). `style`은 최대 폭 뒤에 합쳐진다.
-
-## 파일 구조
-
-```
-readable-content/
-├── readable-content.tsx
-├── readable-content.types.ts
-├── index.ts
-└── readable-content.md
-```

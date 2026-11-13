@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { InviteCodePolicy } from '../domains/invite-code.model';
+import { normalizeInviteCodeInput, normalizePastedInviteCode } from '../domains/invite-code.model';
 
 /** InputOTP가 늘 넘기는 numeric inputMode를 비워 영문 자판을 띄우고 oneTimeCode 제안을 끈다. 붙여 넣은 글자는 네이티브 maxLength가 아니라 onChangeText가 자른다 */
 const CODE_TEXT_INPUT_PROPS: TextInputProps = {
@@ -28,7 +28,7 @@ const CODE_TEXT_INPUT_PROPS: TextInputProps = {
 
 const SHAKE_OFFSET = 6;
 const SHAKE_TIMING = {
-  duration: ANIMATION.duration.fast / 2,
+  duration: ANIMATION.durationMs.fast / 2,
   easing: Easing.bezier(0.77, 0, 0.175, 1),
   reduceMotion: ReduceMotion.System,
 };
@@ -91,8 +91,8 @@ export function InviteCodeInput({
       <InputOTP
         maxLength={INVITE_CODE.LENGTH}
         value={value}
-        onChange={(text) => onChange(InviteCodePolicy.normalizeInviteCodeInput(text))}
-        pasteTransformer={(pasted) => InviteCodePolicy.normalizePastedInviteCode(value, pasted)}
+        onChange={(text) => onChange(normalizeInviteCodeInput(text))}
+        pasteTransformer={(pasted) => normalizePastedInviteCode(value, pasted)}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         isInvalid={isInvalid}
         textInputProps={{ ...CODE_TEXT_INPUT_PROPS, testID, ...textInputProps }}

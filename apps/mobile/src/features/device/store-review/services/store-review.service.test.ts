@@ -1,7 +1,6 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createAppStoreReviewGatewayStub, createMemorySyncStorage } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
-import { noop } from 'es-toolkit';
 
 import { StoreReviewPolicy } from '../domains/store-review.model';
 import { createStoreReviewRepository } from '../repositories/store-review.repository';
@@ -110,23 +109,18 @@ describe('StoreReviewService', () => {
     // Given
     const { becomeEngaged, gateway, service } = createFixture();
     becomeEngaged();
-    let settle: (isReady: boolean) => void = noop;
-    let markWaiting: () => void = noop;
-    const waiting = new Promise<void>((resolve) => {
-      markWaiting = resolve;
-    });
+    const waiting = Promise.withResolvers<void>();
+    const ready = Promise.withResolvers<boolean>();
     const waitUntilPresentable: WaitUntilPresentable = () => {
-      markWaiting();
-      return new Promise((resolve) => {
-        settle = resolve;
-      });
+      waiting.resolve();
+      return ready.promise;
     };
 
     // When
     const first = service.requestReviewAt(ALL_DONE, waitUntilPresentable);
     const second = await service.requestReviewAt(ALL_DONE, waitUntilPresentable);
-    await waiting;
-    settle(false);
+    await waiting.promise;
+    ready.resolve(false);
 
     // Then
     expect(second).toBe('in_flight');

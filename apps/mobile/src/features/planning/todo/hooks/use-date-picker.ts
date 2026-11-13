@@ -3,7 +3,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useMemo, useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-import { getPickerMonthWeeks } from '../utils/calendar-month.view-model';
+import { type CalendarDayCell, getPickerMonthWeeks } from '../utils/calendar-month.view-model';
 
 interface DatePickerState {
   selectedDateKey: DateKey;
@@ -30,12 +30,23 @@ function datePickerReducer(state: DatePickerState, action: DatePickerAction): Da
     .exhaustive();
 }
 
+/** 날짜 피커의 고른 날·보이는 달과 동작. 반복 시트가 폼 달력에 통째로 넘긴다 */
+export interface DatePicker {
+  selectedDateKey: DateKey;
+  /** 보이는 달의 1일 */
+  displayMonthKey: DateKey;
+  weeks: CalendarDayCell[][];
+  selectDate: (dateKey: DateKey) => void;
+  goToPrevMonth: () => void;
+  goToNextMonth: () => void;
+}
+
 interface UseDatePickerOptions {
   /** 처음 선택된 날짜이자 처음 보이는 달 */
   initialDateKey: DateKey;
 }
 
-export function useDatePicker({ initialDateKey }: UseDatePickerOptions) {
+export function useDatePicker({ initialDateKey }: UseDatePickerOptions): DatePicker {
   const { locale, timeZone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
     selectedDateKey: initialDateKey,
@@ -56,5 +67,3 @@ export function useDatePicker({ initialDateKey }: UseDatePickerOptions) {
     goToNextMonth: () => dispatch({ type: 'nextMonth' }),
   };
 }
-
-export type DatePicker = ReturnType<typeof useDatePicker>;
