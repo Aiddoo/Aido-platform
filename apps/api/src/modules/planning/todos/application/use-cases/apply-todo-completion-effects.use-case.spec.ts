@@ -53,10 +53,10 @@ function setUp(options: {
     getUserDisplayName: async () => "홍길동",
   };
   const notification: TodoNotificationPort = {
-    enqueueFriendCompleted: (payload) => {
+    enqueueFriendCompleted: async (payload) => {
       friendCompleted.push(payload);
     },
-    enqueueMilestoneReached: (payload) => {
+    enqueueMilestoneReached: async (payload) => {
       milestones.push(payload);
     },
   };

@@ -117,7 +117,7 @@ export class ApplyTodoCompletionEffectsUseCase {
       if (friendIds.length === 0) {
         return;
       }
-      this.#dependencies.todoNotification.enqueueFriendCompleted({
+      await this.#dependencies.todoNotification.enqueueFriendCompleted({
         friendId: userId,
         friendName: userName,
         notifyUserIds: friendIds,
@@ -148,7 +148,7 @@ export class ApplyTodoCompletionEffectsUseCase {
       if (milestone == null) {
         return;
       }
-      this.#dependencies.todoNotification.enqueueMilestoneReached({ userId, milestone });
+      await this.#dependencies.todoNotification.enqueueMilestoneReached({ userId, milestone });
     } catch (error) {
       this.#dependencies.logger.error({
         event: TodoLogEvent.MILESTONE_CHECK_FAILED,

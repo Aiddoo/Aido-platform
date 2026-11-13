@@ -6,7 +6,7 @@ import {
 export class RecordingCheerNotifier extends CheerNotifierPort {
   readonly sent: CheerSentNotification[] = [];
 
-  notifyCheerSent(notification: CheerSentNotification): void {
+  async notifyCheerSent(notification: CheerSentNotification): Promise<void> {
     this.sent.push(notification);
   }
 }

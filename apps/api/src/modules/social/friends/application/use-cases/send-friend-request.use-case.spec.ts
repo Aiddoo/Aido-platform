@@ -54,7 +54,6 @@ function setup(friendships: readonly Friendship[] = []) {
     checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
       followRepository,
       notifier,
-      logger,
     }),
     clock: new FixedClock(NOW),
     logger,

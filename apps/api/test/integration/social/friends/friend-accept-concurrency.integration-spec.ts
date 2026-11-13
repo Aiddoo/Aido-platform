@@ -67,11 +67,11 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       invalidateFriendCount: async () => {},
     };
     const notifier: FollowNotifierPort = {
-      notifyFollowNew() {},
-      notifyFollowMutual() {
+      async notifyFollowNew() {},
+      async notifyFollowMutual() {
         mutualNotifications++;
       },
-      notifyFirstFriendMilestone() {
+      async notifyFirstFriendMilestone() {
         milestoneNotifications++;
       },
     };
@@ -87,7 +87,6 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
         followRepository,
         notifier,
-        logger,
       }),
       clock: new DateClock(),
       logger,

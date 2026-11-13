@@ -55,7 +55,6 @@ export const SOCIAL_FRIENDS_PROVIDERS = [
   provideUseCase(CheckFirstFriendMilestoneUseCase, {
     followRepository: FollowRepositoryPort,
     notifier: FollowNotifierPort,
-    logger: loggerFor(CheckFirstFriendMilestoneUseCase),
   }),
   provideUseCase(SendFriendRequestUseCase, {
     unitOfWork: UnitOfWorkPort,

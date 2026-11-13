@@ -84,23 +84,19 @@ export class SendFriendRequestUseCase {
       // 한도를 대상 확인보다 먼저 본다(출시 앱이 받는 오류 우선순위)
       await this.#assertBelowFriendLimit(userId);
       await this.#assertRequestable(userId, targetUserId);
-      return this.#request(userId, targetUserId);
+      const requested = await this.#request(userId, targetUserId);
+      await this.#notify(userId, targetUserId, requested.isAutoAccepted);
+      return requested;
     });
 
-    if (result.isAutoAccepted) {
-      await this.#afterAutoAccepted(userId, targetUserId);
-    } else {
-      await this.#afterRequested(userId, targetUserId);
-    }
+    await this.#afterCommit(userId, targetUserId, result.isAutoAccepted);
     return result;
   }
 
   async #assertBelowFriendLimit(userId: UserId): Promise<void> {
     const { followRepository, limitReader } = this.#dependencies;
-    const [maxFriendCount, friendCount] = await Promise.all([
-      limitReader.readLimitInTx(userId),
-      followRepository.countMutualFriends(userId),
-    ]);
+    const maxFriendCount = await limitReader.readLimitInTx(userId);
+    const friendCount = await followRepository.countMutualFriends(userId);
     if (hasReachedFriendLimit({ maxFriendCount, friendCount })) {
       throw friendLimitReached({
         friendCount,
@@ -152,10 +148,8 @@ export class SendFriendRequestUseCase {
       return { friendship, isAutoAccepted: false };
     }
 
-    const [userMaxSortOrder, targetMaxSortOrder] = await Promise.all([
-      followRepository.findMaxFriendSortOrder(userId),
-      followRepository.findMaxFriendSortOrder(targetUserId),
-    ]);
+    const userMaxSortOrder = await followRepository.findMaxFriendSortOrder(userId);
+    const targetMaxSortOrder = await followRepository.findMaxFriendSortOrder(targetUserId);
     reverse.accept(nextFriendSortOrder(targetMaxSortOrder), now);
     await followRepository.save(reverse);
     friendship.accept(nextFriendSortOrder(userMaxSortOrder), now);
@@ -163,34 +157,35 @@ export class SendFriendRequestUseCase {
     return { friendship, isAutoAccepted: true };
   }
 
-  async #afterRequested(userId: UserId, targetUserId: UserId): Promise<void> {
-    const { profileReader, notifier, logger } = this.#dependencies;
-    logger.log({
-      event: FriendLogEvent.REQUEST_SENT,
-      userId: userId.value,
-      targetUserId: targetUserId.value,
-    });
-    notifier.notifyFollowNew({
-      followerId: userId.value,
-      followingId: targetUserId.value,
-      followerName: (await profileReader.findDisplayName(userId)) ?? userId.value,
-    });
-  }
-
-  async #afterAutoAccepted(userId: UserId, targetUserId: UserId): Promise<void> {
-    const { profileReader, cache, notifier, checkFirstFriendMilestone, logger } =
-      this.#dependencies;
-    logger.log({
-      event: FriendLogEvent.REQUEST_AUTO_ACCEPTED,
-      userId: userId.value,
-      targetUserId: targetUserId.value,
-    });
-    notifier.notifyFollowMutual({
+  // 알림 작업은 친구 관계 변경과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
+  async #notify(userId: UserId, targetUserId: UserId, isAutoAccepted: boolean): Promise<void> {
+    const { profileReader, notifier, checkFirstFriendMilestone } = this.#dependencies;
+    const userName = (await profileReader.findDisplayName(userId)) ?? userId.value;
+    if (!isAutoAccepted) {
+      await notifier.notifyFollowNew({
+        followerId: userId.value,
+        followingId: targetUserId.value,
+        followerName: userName,
+      });
+      return;
+    }
+    await notifier.notifyFollowMutual({
       userId: targetUserId.value,
       friendId: userId.value,
-      friendName: (await profileReader.findDisplayName(userId)) ?? userId.value,
+      friendName: userName,
     });
     await checkFirstFriendMilestone.execute({ userIds: [userId.value, targetUserId.value] });
-    await invalidateFriendshipCaches(cache, userId, targetUserId);
+  }
+
+  async #afterCommit(userId: UserId, targetUserId: UserId, isAutoAccepted: boolean): Promise<void> {
+    const { cache, logger } = this.#dependencies;
+    logger.log({
+      event: isAutoAccepted ? FriendLogEvent.REQUEST_AUTO_ACCEPTED : FriendLogEvent.REQUEST_SENT,
+      userId: userId.value,
+      targetUserId: targetUserId.value,
+    });
+    if (isAutoAccepted) {
+      await invalidateFriendshipCaches(cache, userId, targetUserId);
+    }
   }
 }

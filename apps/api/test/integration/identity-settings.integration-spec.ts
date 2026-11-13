@@ -251,7 +251,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .where(eq(userPreference.userId, userId));
     await givenCompletedTodos();
     const notifier = context.module.get<StreakMilestoneNotifierPort>(StreakMilestoneNotifierPort);
-    const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockImplementation(() => {});
+    const notification = vi.spyOn(notifier, "notifyStreak3Reached").mockResolvedValue();
     const lock = await holdRowLock((transaction) =>
       transaction
         .select({ id: userPreference.id })

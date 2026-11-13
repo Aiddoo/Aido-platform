@@ -59,7 +59,9 @@ export class AcceptFriendRequestUseCase {
         FriendLockKeys.list(userId),
         FriendLockKeys.list(requesterUserId),
       ]);
-      return this.#accept(userId, requesterUserId);
+      const accepted = await this.#accept(userId, requesterUserId);
+      await this.#notifyRequester(userId, requesterUserId);
+      return accepted;
     });
 
     logger.log({
@@ -68,7 +70,6 @@ export class AcceptFriendRequestUseCase {
       requesterUserId: requesterUserId.value,
     });
     await invalidateFriendshipCaches(cache, userId, requesterUserId);
-    await this.#notifyRequester(userId, requesterUserId);
     return friend;
   }
 
@@ -106,7 +107,7 @@ export class AcceptFriendRequestUseCase {
 
   async #notifyRequester(userId: UserId, requesterUserId: UserId): Promise<void> {
     const { profileReader, notifier, checkFirstFriendMilestone } = this.#dependencies;
-    notifier.notifyFollowMutual({
+    await notifier.notifyFollowMutual({
       userId: requesterUserId.value,
       friendId: userId.value,
       friendName: (await profileReader.findDisplayName(userId)) ?? userId.value,

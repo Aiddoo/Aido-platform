@@ -10,15 +10,15 @@ export class RecordingFollowNotifier extends FollowNotifierPort {
   readonly mutual: FollowMutualNotification[] = [];
   readonly milestones: FirstFriendMilestoneNotification[] = [];
 
-  notifyFollowNew(payload: FollowNewNotification): void {
+  async notifyFollowNew(payload: FollowNewNotification): Promise<void> {
     this.newRequests.push({ ...payload });
   }
 
-  notifyFollowMutual(payload: FollowMutualNotification): void {
+  async notifyFollowMutual(payload: FollowMutualNotification): Promise<void> {
     this.mutual.push({ ...payload });
   }
 
-  notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void {
+  async notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): Promise<void> {
     this.milestones.push({ ...payload });
   }
 }

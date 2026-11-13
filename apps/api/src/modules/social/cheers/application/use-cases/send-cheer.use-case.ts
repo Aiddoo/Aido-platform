@@ -77,7 +77,7 @@ export class SendCheerUseCase {
     const requestedAt = clock.now();
     const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const { cheer, senderName } = await unitOfWork.run(async () => {
+    const cheer = await unitOfWork.run(async () => {
       await mutationLock.acquire([
         CheerLockKeys.dailyQuota(senderId),
         CheerLockKeys.cooldown(senderId, receiverId),
@@ -108,7 +108,14 @@ export class SendCheerUseCase {
         now: requestedAt,
       });
       await cheerRepository.save(created);
-      return { cheer: created, senderName: await followReader.getUserDisplayName(senderId) };
+      await notifier.notifyCheerSent({
+        cheerId: created.id.value,
+        senderId: senderId.value,
+        receiverId: receiverId.value,
+        senderName: await followReader.getUserDisplayName(senderId),
+        message: message?.value,
+      });
+      return created;
     });
 
     await this.#dependencies.countCache.invalidate([senderId, receiverId]);
@@ -117,13 +124,6 @@ export class SendCheerUseCase {
       cheerId: cheer.id.value,
       senderId: senderId.value,
       receiverId: receiverId.value,
-    });
-    notifier.notifyCheerSent({
-      cheerId: cheer.id.value,
-      senderId: senderId.value,
-      receiverId: receiverId.value,
-      senderName,
-      message: message?.value,
     });
     return cheer;
   }

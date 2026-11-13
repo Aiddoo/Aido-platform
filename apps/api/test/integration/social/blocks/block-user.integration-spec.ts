@@ -92,9 +92,9 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       invalidateFriendCount: async () => {},
     };
     const notifier: FollowNotifierPort = {
-      notifyFollowNew() {},
-      notifyFollowMutual() {},
-      notifyFirstFriendMilestone() {},
+      async notifyFollowNew() {},
+      async notifyFollowMutual() {},
+      async notifyFirstFriendMilestone() {},
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
     const followRepository = new DrizzleFollowRepository(txHost);
@@ -107,7 +107,6 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     const checkFirstFriendMilestone = new CheckFirstFriendMilestoneUseCase({
       followRepository,
       notifier,
-      logger,
     });
     blockUser = new BlockUserUseCase({
       nudgeCountCache: new PassThroughCountCache(),

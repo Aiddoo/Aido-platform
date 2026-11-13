@@ -1,5 +1,3 @@
-import { Logger } from "@nestjs/common";
-
 import type { EnqueueOptions, QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -54,10 +52,9 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     const service = new NotificationQueueAdapter(jobQueue, clock);
 
     // When
-    service.enqueueNudgeSent(nudge);
-    service.enqueueNudgeSent(nudge);
-    service.enqueueNudgeSent({ ...nudge, nudgeId: 8 });
-    await service.onModuleDestroy();
+    await service.enqueueNudgeSent(nudge);
+    await service.enqueueNudgeSent(nudge);
+    await service.enqueueNudgeSent({ ...nudge, nudgeId: 8 });
 
     // Then
     expect(
@@ -78,13 +75,12 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     const service = new NotificationQueueAdapter(jobQueue, clock);
 
     // When: UTC 15:30은 서울 다음 날 00:30이다
-    service.enqueueFriendCompleted({
+    await service.enqueueFriendCompleted({
       friendId: "f",
       friendName: "F",
       notifyUserIds: ["u"],
       timezone: "Asia/Seoul",
     });
-    await service.onModuleDestroy();
 
     // Then
     expect(jobQueue.jobsIn(NOTIFICATION_QUEUE)[0]?.options.idempotencyKey).toBe(
@@ -92,49 +88,22 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     );
   });
 
-  it("일시적인 저장 실패는 다시 시도해 등록한다", async () => {
+  it("저장에 실패하면 호출자에게 던져 호출자의 트랜잭션과 함께 되돌린다", async () => {
     // Given
-    vi.useFakeTimers({ toFake: ["setTimeout"] });
-    const jobQueue = new FlakyJobQueue(2);
+    const jobQueue = new FlakyJobQueue(1);
     const service = new NotificationQueueAdapter(jobQueue, clock);
 
     // When
-    service.enqueueCheerSent({
+    const result = service.enqueueCheerSent({
       cheerId: 3,
       senderId: "s",
       receiverId: "r",
       senderName: "응원한 사람",
     });
-    await vi.runAllTimersAsync();
-    await service.onModuleDestroy();
 
     // Then
-    expect(
-      jobQueue.jobsIn(NOTIFICATION_QUEUE).map(({ options }) => options.idempotencyKey),
-    ).toEqual(["cheer-3"]);
-  });
-
-  it("재시도까지 실패하면 호출자에게 던지지 않고 작업 이름과 오류 종류만 기록한다", async () => {
-    // Given
-    vi.useFakeTimers({ toFake: ["setTimeout"] });
-    const privateMessage = "private-token-and-body";
-    const error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
-    const jobQueue = new FlakyJobQueue(Number.POSITIVE_INFINITY, new Error(privateMessage));
-    const service = new NotificationQueueAdapter(jobQueue, clock);
-
-    // When
-    service.enqueueNudgeSent(nudge);
-    await vi.runAllTimersAsync();
-    await service.onModuleDestroy();
-
-    // Then
+    await expect(result).rejects.toThrow("connection reset");
     expect(jobQueue.jobs).toHaveLength(0);
-    expect(error).toHaveBeenCalledWith({
-      event: "notification.enqueue_failed",
-      jobName: NotificationJobName.NUDGE_SENT,
-      errorType: "Error",
-    });
-    expect(JSON.stringify(error.mock.calls)).not.toContain(privateMessage);
   });
 
   it("결제 문제 알림은 호출자의 트랜잭션에 기록하고 실패를 호출자에게 던진다", async () => {

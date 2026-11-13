@@ -67,7 +67,6 @@ function setup(
     checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
       followRepository,
       notifier,
-      logger,
     }),
     clock: new FixedClock(NOW),
     logger,
@@ -152,7 +151,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     },
   );
 
-  it("UoW가 끝나기 전에는 친구 캐시와 알림을 건드리지 않는다", async () => {
+  it("알림 작업은 수락과 같은 트랜잭션에 넣고 친구 캐시는 커밋 뒤에 비운다", async () => {
     // Given
     const unitOfWork = new GatedUnitOfWork();
     const { useCase, cache, notifier } = setup(
@@ -169,7 +168,7 @@ describe("AcceptFriendRequestUseCase — 친구 요청 수락", () => {
     await execution;
 
     // Then
-    expect(beforeCommit).toEqual({ friendCount: 0, mutual: [] });
+    expect(beforeCommit).toEqual({ friendCount: 0, mutual: [expect.anything()] });
     expect(cache.friendCounts.has(ME)).toBe(false);
     expect(notifier.mutual).toHaveLength(1);
   });

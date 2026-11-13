@@ -53,7 +53,6 @@ function setup(friendships: readonly Friendship[] = []) {
     checkFirstFriendMilestone: new CheckFirstFriendMilestoneUseCase({
       followRepository,
       notifier,
-      logger,
     }),
     clock: new FixedClock(NOW),
     logger,
@@ -113,7 +112,7 @@ describe("EstablishFriendshipUseCase — 초대로 바로 친구 맺기", () => 
     expect(afterCommit.tasks).toEqual([]);
   });
 
-  it("상대 자리가 꽉 차면 친구 요청만 보내고 커밋 뒤 요청 알림을 보낸다", async () => {
+  it("상대 자리가 꽉 차면 친구 요청만 보내고 요청 알림 작업을 같은 트랜잭션에 넣는다", async () => {
     // Given
     const { useCase, followRepository, limitReader, afterCommit, notifier } = setup();
     limitReader.setMaxFriendCount(INVITER, 0);
@@ -133,10 +132,10 @@ describe("EstablishFriendshipUseCase — 초대로 바로 친구 맺기", () => 
       status: "PENDING",
       createdAt: NOW,
     });
-    expect(notifiedBeforeCommit).toEqual([]);
-    expect(notifier.newRequests).toEqual([
+    expect(notifiedBeforeCommit).toEqual([
       { followerId: INVITEE, followingId: INVITER, followerName: "초대받은 사람" },
     ]);
+    expect(notifier.newRequests).toEqual(notifiedBeforeCommit);
   });
 
   it("상대 자리가 꽉 찼는데 이미 보낸 요청이 있으면 새로 만들거나 알리지 않는다", async () => {
@@ -159,7 +158,7 @@ describe("EstablishFriendshipUseCase — 초대로 바로 친구 맺기", () => 
     expect(afterCommit.tasks).toEqual([]);
   });
 
-  it("상대의 대기 요청을 수락하고 내 방향을 만들어 각자 목록 맨 뒤에 두며 커밋 뒤 캐시를 비우고 상대에게 알린다", async () => {
+  it("상대의 대기 요청을 수락하고 내 방향을 만들어 각자 목록 맨 뒤에 두며 알림 작업은 같은 트랜잭션에, 캐시 정리는 커밋 뒤에 한다", async () => {
     // Given
     const { useCase, followRepository, afterCommit, cache, notifier, mutationLock } = setup([
       createFriendshipFixture({ followerId: INVITER, followingId: INVITEE }),
@@ -188,7 +187,7 @@ describe("EstablishFriendshipUseCase — 초대로 바로 친구 맺기", () => 
       sortOrder: 4,
       updatedAt: NOW,
     });
-    expect(notifiedBeforeCommit).toEqual([]);
+    expect(notifiedBeforeCommit).toHaveLength(1);
     expect(cache.friendCounts.has(INVITER)).toBe(false);
     expect(notifier.mutual).toEqual([
       { userId: INVITER, friendId: INVITEE, friendName: "초대받은 사람" },

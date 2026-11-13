@@ -17,15 +17,18 @@ export class FollowNotifierAdapter implements FollowNotifierPort {
     this.#queue = queue;
   }
 
-  notifyFollowNew(payload: FollowNewNotification): void {
-    this.#queue.enqueueFollowNew(payload);
+  notifyFollowNew(payload: FollowNewNotification): Promise<void> {
+    return this.#queue.enqueueFollowNew(payload);
   }
 
-  notifyFollowMutual(payload: FollowMutualNotification): void {
-    this.#queue.enqueueFollowMutual(payload);
+  notifyFollowMutual(payload: FollowMutualNotification): Promise<void> {
+    return this.#queue.enqueueFollowMutual(payload);
   }
 
-  notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void {
-    this.#queue.enqueueMilestoneReached({ userId: payload.userId, milestone: "FIRST_FRIEND" });
+  notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): Promise<void> {
+    return this.#queue.enqueueMilestoneReached({
+      userId: payload.userId,
+      milestone: "FIRST_FRIEND",
+    });
   }
 }

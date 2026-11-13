@@ -86,7 +86,7 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 | `notification.marketing-consent-reconfirm.v1` | `reconfirm-marketing-consents`(매시 정각 `missed: skip`, 현지 야간 사용자는 다음 낮 실행으로)                          | 예약 key `hourly-marketing-consent-reconfirm-scheduler`                                                                                                                                  | 2회 재시도. 멱등은 `marketingReconfirmedAt` 조건부 UPDATE         |
 | `todo-reminder.v1`, `timezone-reminder.v1`    | 리마인더(`todo-reminder.v1`은 20건 묶음을 이어 꺼내고 작업마다 끝냄), `send-series-paused-notice`                      | `reminder_<todoId>_<단계>`(`60min`·`10min`), `series-paused_<userId>_<마지막 활동일>`                                                                                                    | 큐 정의의 재시도                                                  |
 
-key builder는 `notification-job-keys.constants.ts`와 각 큐 모듈의 순수 함수다. 다른 Context는 커밋 뒤 `NotificationQueueAdapter`(`notification-delivery-jobs.public.ts`)로 이벤트를 넘기며 결과를 기다리지 않는다. 일시적인 저장 실패는 200ms 간격으로 3번 다시 시도하고, 그래도 실패하면 작업 이름과 오류 종류만 error로 남긴다.
+key builder는 `notification-job-keys.constants.ts`와 각 큐 모듈의 순수 함수다. 다른 Context는 상태를 바꾼 트랜잭션 안에서 `NotificationQueueAdapter`(`notification-delivery-jobs.public.ts`)로 이벤트를 넘기고 기다린다. 작업 행이 그 변경과 함께 커밋되므로(트랜잭셔널 아웃박스) 커밋 직후 프로세스가 멈춰도 알림을 잃지 않고, 저장 실패는 호출자의 트랜잭션을 되돌린다. 사례: 팔로우·친구 성립·응원·넛지·첫 친구 마일스톤.
 
 DB 연결: 앱 풀(`DATABASE_POOL_MAX` 기본 10)과 pg-boss 풀(`max: 3`)은 따로다. 각 작업은 짧은 transaction(claim·finalize·outbox 쓰기) 동안만 연결을 잡고 Expo 호출과 commit 뒤 enqueue 중에는 잡지 않는다. fan-out 한 페이지는 알림·dispatch·outbox 500건씩을 한 transaction에 쓴다. worker 동시성을 늘릴 때는 풀 크기를 함께 본다.
 

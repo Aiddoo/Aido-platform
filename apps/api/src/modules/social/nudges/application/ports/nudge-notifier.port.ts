@@ -24,7 +24,7 @@ export type NudgeInteractionNotification = NudgeInteractionNotificationBase &
 
 export abstract class NudgeNotifierPort {
   // 콕·리마인드 알림은 커밋 뒤 작업 큐에 넣고 기다리지 않는다
-  abstract notifyNudgeSent(notification: NudgeSentNotification): void;
+  abstract notifyNudgeSent(notification: NudgeSentNotification): Promise<void>;
   // 답장·감사 알림은 호출한 트랜잭션 안에서 저장해 상태 변경과 함께 커밋·롤백된다
   abstract recordInteraction(notification: NudgeInteractionNotification): Promise<void>;
   abstract recordInteractions(

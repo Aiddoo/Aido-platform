@@ -16,7 +16,7 @@ export class CheerNotifierAdapter extends CheerNotifierPort {
     this.#queue = queue;
   }
 
-  notifyCheerSent(notification: CheerSentNotification): void {
-    this.#queue.enqueueCheerSent(notification);
+  notifyCheerSent(notification: CheerSentNotification): Promise<void> {
+    return this.#queue.enqueueCheerSent(notification);
   }
 }

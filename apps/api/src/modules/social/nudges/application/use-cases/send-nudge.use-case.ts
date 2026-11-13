@@ -83,7 +83,7 @@ export class SendNudgeUseCase {
     const requestedAt = clock.now();
     const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
 
-    const { nudge, todoTitle, senderName } = await unitOfWork.run(async () => {
+    const nudge = await unitOfWork.run(async () => {
       await mutationLock.acquire([
         NudgeLockKeys.dailyQuota(senderId),
         NudgeLockKeys.cooldown(senderId, todoId),
@@ -123,11 +123,16 @@ export class SendNudgeUseCase {
         now: requestedAt,
       });
       await nudgeRepository.save(created);
-      return {
-        nudge: created,
-        todoTitle: target.title,
+      await notifier.notifyNudgeSent({
+        nudgeId: created.id.value,
+        senderId: senderId.value,
+        receiverId: receiverId.value,
         senderName: await followReader.getUserDisplayName(senderId),
-      };
+        todoId,
+        todoTitle: target.title,
+        message: message?.value,
+      });
+      return created;
     });
 
     await this.#dependencies.countCache.invalidate([senderId, receiverId]);
@@ -137,15 +142,6 @@ export class SendNudgeUseCase {
       todoId,
       senderId: senderId.value,
       receiverId: receiverId.value,
-    });
-    notifier.notifyNudgeSent({
-      nudgeId: nudge.id.value,
-      senderId: senderId.value,
-      receiverId: receiverId.value,
-      senderName,
-      todoId,
-      todoTitle,
-      message: message?.value,
     });
     return nudge;
   }

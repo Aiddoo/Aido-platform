@@ -21,11 +21,11 @@ export class TodoNotificationAdapter implements TodoNotificationPort {
     this.#notificationQueueService = notificationQueueService;
   }
 
-  enqueueFriendCompleted(payload: FriendCompletedPayload): void {
-    this.#notificationQueueService.enqueueFriendCompleted(payload);
+  enqueueFriendCompleted(payload: FriendCompletedPayload): Promise<void> {
+    return this.#notificationQueueService.enqueueFriendCompleted(payload);
   }
 
-  enqueueMilestoneReached(payload: MilestoneReachedPayload): void {
-    this.#notificationQueueService.enqueueMilestoneReached(payload);
+  enqueueMilestoneReached(payload: MilestoneReachedPayload): Promise<void> {
+    return this.#notificationQueueService.enqueueMilestoneReached(payload);
   }
 }

@@ -64,7 +64,7 @@ export class SendRemindNudgeUseCase {
     const requestedAt = clock.now();
     const today = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone }).localDate;
 
-    const { reminder, senderName } = await unitOfWork.run(async () => {
+    const reminder = await unitOfWork.run(async () => {
       await mutationLock.acquire([NudgeLockKeys.remindCooldown(senderId, receiverId)]);
 
       if ((await nudgeRepository.countTodosOn(receiverId, today)) > 0) {
@@ -88,10 +88,14 @@ export class SendRemindNudgeUseCase {
         now: requestedAt,
       });
       await nudgeRepository.saveReminder(created);
-      return {
-        reminder: created,
+      await notifier.notifyNudgeSent({
+        nudgeId: created.id.value,
+        senderId: senderId.value,
+        receiverId: receiverId.value,
         senderName: await followReader.getUserDisplayName(senderId),
-      };
+        message: message?.value,
+      });
+      return created;
     });
 
     logger.log({
@@ -99,13 +103,6 @@ export class SendRemindNudgeUseCase {
       nudgeId: reminder.id.value,
       senderId: senderId.value,
       receiverId: receiverId.value,
-    });
-    notifier.notifyNudgeSent({
-      nudgeId: reminder.id.value,
-      senderId: senderId.value,
-      receiverId: receiverId.value,
-      senderName,
-      message: message?.value,
     });
     return reminder;
   }

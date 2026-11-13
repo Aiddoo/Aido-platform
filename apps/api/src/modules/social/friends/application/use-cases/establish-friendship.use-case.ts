@@ -90,9 +90,8 @@ export class EstablishFriendshipUseCase {
       }
 
       await this.#connect(forward, reverse, requesterId, targetUserId);
-      afterCommit.register(() =>
-        this.#afterConnected(requesterId, targetUserId, command.shouldNotifyFriends),
-      );
+      await this.#notifyConnected(requesterId, targetUserId, command.shouldNotifyFriends);
+      afterCommit.register(() => this.#afterConnected(requesterId, targetUserId));
       return INVITE_FRIENDSHIP.FRIENDS;
     });
   }
@@ -109,7 +108,7 @@ export class EstablishFriendshipUseCase {
     requesterId: UserId,
     targetUserId: UserId,
   ): Promise<void> {
-    const { followRepository, afterCommit, profileReader, notifier, clock } = this.#dependencies;
+    const { followRepository, profileReader, notifier, clock } = this.#dependencies;
     if (forward != null) {
       return;
     }
@@ -122,12 +121,10 @@ export class EstablishFriendshipUseCase {
         now: clock.now(),
       }),
     );
-    afterCommit.register(async () => {
-      notifier.notifyFollowNew({
-        followerId: requesterId.value,
-        followingId: targetUserId.value,
-        followerName: (await profileReader.findDisplayName(requesterId)) ?? requesterId.value,
-      });
+    await notifier.notifyFollowNew({
+      followerId: requesterId.value,
+      followingId: targetUserId.value,
+      followerName: (await profileReader.findDisplayName(requesterId)) ?? requesterId.value,
     });
   }
 
@@ -174,21 +171,15 @@ export class EstablishFriendshipUseCase {
     await followRepository.save(friendship);
   }
 
-  async #afterConnected(
+  // 알림 작업은 친구 관계 변경과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
+  async #notifyConnected(
     requesterId: UserId,
     targetUserId: UserId,
     shouldNotifyFriends: boolean,
   ): Promise<void> {
-    const { profileReader, cache, notifier, checkFirstFriendMilestone, logger } =
-      this.#dependencies;
-    logger.log({
-      event: FriendLogEvent.FRIENDSHIP_ESTABLISHED,
-      userId: requesterId.value,
-      targetUserId: targetUserId.value,
-    });
-    await invalidateFriendshipCaches(cache, requesterId, targetUserId);
+    const { profileReader, notifier, checkFirstFriendMilestone } = this.#dependencies;
     if (shouldNotifyFriends) {
-      notifier.notifyFollowMutual({
+      await notifier.notifyFollowMutual({
         userId: targetUserId.value,
         friendId: requesterId.value,
         friendName: (await profileReader.findDisplayName(requesterId)) ?? requesterId.value,
@@ -197,5 +188,15 @@ export class EstablishFriendshipUseCase {
     await checkFirstFriendMilestone.execute({
       userIds: [requesterId.value, targetUserId.value],
     });
+  }
+
+  async #afterConnected(requesterId: UserId, targetUserId: UserId): Promise<void> {
+    const { cache, logger } = this.#dependencies;
+    logger.log({
+      event: FriendLogEvent.FRIENDSHIP_ESTABLISHED,
+      userId: requesterId.value,
+      targetUserId: targetUserId.value,
+    });
+    await invalidateFriendshipCaches(cache, requesterId, targetUserId);
   }
 }

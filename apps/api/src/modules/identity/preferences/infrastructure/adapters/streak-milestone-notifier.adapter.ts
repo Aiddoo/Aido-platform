@@ -19,8 +19,8 @@ export class StreakMilestoneNotifierAdapter implements StreakMilestoneNotifierPo
     this.#notificationQueueService = notificationQueueService;
   }
 
-  notifyStreak3Reached(userId: UserId): void {
-    this.#notificationQueueService.enqueueMilestoneReached({
+  notifyStreak3Reached(userId: UserId): Promise<void> {
+    return this.#notificationQueueService.enqueueMilestoneReached({
       userId: userId.value,
       milestone: "STREAK_3",
     });

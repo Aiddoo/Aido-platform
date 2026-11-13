@@ -1,4 +1,3 @@
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryFollowRepository } from "#test/doubles/social/in-memory-follow.repository";
 import { RecordingFollowNotifier } from "#test/doubles/social/recording-follow-notifier";
 import {
@@ -8,7 +7,6 @@ import {
   FRIENDSHIP_FIXTURE_USER_ID,
 } from "#test/fixtures/social/friendship.fixture";
 
-import { FriendLogEvent } from "../friends.log-events.js";
 import { CheckFirstFriendMilestoneUseCase } from "./check-first-friend-milestone.use-case.js";
 
 describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
@@ -28,7 +26,6 @@ describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
     const useCase = new CheckFirstFriendMilestoneUseCase({
       followRepository,
       notifier,
-      logger: new SilentLogger(),
     });
 
     // When
@@ -40,10 +37,9 @@ describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
     expect(notifier.milestones).toEqual([{ userId: FRIENDSHIP_FIXTURE_USER_ID }]);
   });
 
-  it("친구 수를 세지 못해도 오류 종류만 남기고 친구 맺기 흐름을 막지 않는다", async () => {
+  it("친구 수를 세지 못하면 오류를 던져 친구 관계 저장과 함께 되돌린다", async () => {
     // Given
     const notifier = new RecordingFollowNotifier();
-    const logger = new SilentLogger();
     const useCase = new CheckFirstFriendMilestoneUseCase({
       followRepository: {
         countMutualFriends: async () => {
@@ -51,20 +47,13 @@ describe("CheckFirstFriendMilestoneUseCase — 첫 친구 마일스톤", () => {
         },
       },
       notifier,
-      logger,
     });
 
     // When
-    await useCase.execute({ userIds: [FRIENDSHIP_FIXTURE_USER_ID] });
+    const result = useCase.execute({ userIds: [FRIENDSHIP_FIXTURE_USER_ID] });
 
     // Then
+    await expect(result).rejects.toThrow(TypeError);
     expect(notifier.milestones).toEqual([]);
-    expect(logger.messages).toEqual([
-      {
-        event: FriendLogEvent.MILESTONE_CHECK_FAILED,
-        userId: FRIENDSHIP_FIXTURE_USER_ID,
-        errorType: "TypeError",
-      },
-    ]);
   });
 });

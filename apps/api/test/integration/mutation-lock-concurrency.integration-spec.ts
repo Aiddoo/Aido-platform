@@ -547,12 +547,12 @@ function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend" | "ge
 }
 
 function createCheerNotifier(): CheerNotifierPort {
-  return { notifyCheerSent: () => undefined };
+  return { notifyCheerSent: async () => undefined };
 }
 
 function createNudgeNotifier(): NudgeNotifierPort {
   return {
-    notifyNudgeSent: () => undefined,
+    notifyNudgeSent: async () => undefined,
     recordInteraction: async () => undefined,
     recordInteractions: async () => undefined,
   };
