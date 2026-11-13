@@ -44,6 +44,7 @@ pre-push:
         - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,.nvmrc}'
         - 'patches/**'
         - 'apps/api/docs/alerts.md'
+        - 'apps/api/.env.{example,test}'
       run: pnpm turbo run typecheck test test:node build --concurrency=2
     - name: integration-contract
       glob: *code-files

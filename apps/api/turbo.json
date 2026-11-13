@@ -36,6 +36,8 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
+        ".env.example",
+        ".env.test",
         "docs/alerts.md",
         "$TURBO_ROOT$/apps/*/package.json",
         "$TURBO_ROOT$/packages/*/package.json",
@@ -52,7 +54,8 @@
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
-        "vitest.config.ts"
+        "vitest.config.ts",
+        ".env.test"
       ]
     },
     "test:contract": {
@@ -65,7 +68,8 @@
         "tsconfig*.json",
         "nest-cli.json",
         ".swcrc",
-        "vitest.config.ts"
+        "vitest.config.ts",
+        ".env.test"
       ]
     },
     "test:cov": {
@@ -79,6 +83,8 @@
         "nest-cli.json",
         ".swcrc",
         "vitest.config.ts",
+        ".env.example",
+        ".env.test",
         "docs/alerts.md"
       ]
     }

@@ -4,7 +4,7 @@
 
 ## 로컬 실행
 
-`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만, `pnpm docker:dev:up`은 같은 DB에 migrate → API까지 띄운다(profile `api`). 둘 다 `apps/api/.env.development`를 읽는다.
+`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만, `pnpm docker:dev:up`은 같은 DB에 migrate → API까지 띄운다(profile `api`). migrate·API 컨테이너는 `apps/api/.env.development`를 읽고 DB 주소만 compose 네트워크의 `db`로 덮는다. 포트(`DB_PORT`·`API_HOST_PORT`)는 셸 env로 바꾼다.
 
 ```sh
 cp apps/api/.env.example apps/api/.env.development
@@ -13,7 +13,7 @@ pnpm docker:dev:up
 pnpm docker:dev:logs
 ```
 
-개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 `apps/api/.env`를 읽는다. 운영 이미지를 로컬에서 시험하려면 운영 값이 아닌 시험용 `apps/api/.env`로 `docker:prod:build`/`docker:prod:up`을 사용한다. production compose는 원격 migration 허용을 명시하므로 실제 운영 연결을 로컬 시험에 재사용하지 않는다.
+개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 서버에서 `scripts/deploy.sh`만 실행한다. production compose는 원격 migration을 허용하므로 로컬에서 띄우지 않는다(로컬 `apps/api/.env`는 운영 값 사본이다).
 
 ## 동일 SHA의 배포 흐름
 
@@ -129,5 +129,16 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
 운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 루트 `.env.docker.prod`는 이 파일을 가리키는 링크로, env 경로를 옮기기 전 커밋을 다시 배포할 때만 쓴다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
 
 env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
+
+```sh
+cd ~/apps/Aido-platform
+flock -n ~/apps/deploy-state/deploy.lock python3 scripts/ops/update-app-version-env.py \
+  --ios <iOS 공개 버전> --android <Android 공개 버전> --enabled true --published \
+  --backup-dir ~/apps/deploy-state/backups apps/api/.env
+flock -n ~/apps/deploy-state/deploy.lock docker compose --env-file apps/api/.env -f docker-compose.prod.yml \
+  up -d --no-deps --no-build --pull never --force-recreate api
+```
+
+script는 링크를 거부하므로 옛 경로 `.env.docker.prod`가 아니라 `apps/api/.env`를 넘긴다. `docker compose config`로 확인할 때는 값이 찍히지 않게 `--quiet`를 붙인다.
 
 PR·stack 규칙은 [Git](../../../docs/conventions/git.md)에 있다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

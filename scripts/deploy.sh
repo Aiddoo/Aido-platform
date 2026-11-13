@@ -39,7 +39,6 @@ DEPLOY_MODE=pull                                       # pull | build(--build) |
 export BUILDKIT_PROGRESS=plain
 
 # --env-file: compose 변수 보간(${PORT:-8080} 등)은 서비스 env_file이 아닌 이 플래그/호스트 env만 읽음
-#             — 루트 package.json의 docker:prod:* 스크립트와 동일 형태로 통일
 compose() { docker compose --env-file apps/api/.env -f "$COMPOSE_FILE" "$@"; }
 log()  { printf '\n[deploy] %s\n' "$*"; }
 fail() { printf '\n[deploy][ERROR] %s\n' "$*" >&2; exit 1; }

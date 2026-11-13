@@ -1,6 +1,9 @@
 # 로컬 개발. env는 API와 같은 apps/api/.env.development를 읽는다
 # DB만: pnpm docker:up (API는 pnpm dev) · DB → migrate → API 모두: pnpm docker:dev:up
 # Redis는 CACHE_TYPE=redis를 시험할 때만: docker compose --profile redis up -d
+# 서버의 운영 compose(같은 폴더)와 프로젝트가 섞이지 않게 이름을 따로 둔다
+name: aido-dev
+
 services:
   db:
     image: postgres:16.15-alpine
@@ -51,6 +54,8 @@ services:
       - apps/api/.env.development
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/aido
+      # .env.development의 REDIS_URL은 호스트 기준이라 컨테이너에서는 memory로 고정한다
+      CACHE_TYPE: memory
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/drizzle:/app/apps/api/drizzle
@@ -79,3 +84,5 @@ services:
 
 volumes:
   dev_postgres_data:
+    # 프로젝트 이름을 바꾸기 전에 만든 로컬 DB 볼륨을 그대로 쓴다
+    name: aido-platform_dev_postgres_data
