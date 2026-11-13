@@ -88,7 +88,12 @@ expect(screen.getByRole('textbox', { name: '문의 내용' })).toHaveDisplayValu
 
 ## Fixture
 
-`defineFixture(schema, defaults)`가 기본값을 스키마로 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다. 필드가 늘면 한 곳만 고친다. Mapper의 DTO는 계약 스키마로 검증해 만든다(`memoListResponseSchema.parse({ … })`). 서버 계약이 바뀌면 테스트가 먼저 깨지게 하기 위해서다.
+`defineFixture(schema, defaults)`가 기본값을 스키마로 한 번 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다. 필드가 늘면 한 곳만 고친다. 호출마다 기본값을 깊은 복사한 뒤 넘긴 칸만 얕게 덮어쓰고, 덮어쓴 칸은 타입만 확인한다.
+
+- 앱 모델 fixture는 `domains/*.model.ts`의 모델 스키마로 만든다. 스키마가 모듈 안에만 있으면 export한다.
+- Mapper·HTTP stub에 넣는 DTO는 `@aido/api` 계약 스키마(계약에서 유도한 `schemas/*-response.schema.ts` 포함)로 만든다. 서버 계약이 바뀌면 테스트가 먼저 깨지게 하기 위해서다. 모델과 DTO 기본값이 같으면 상수 하나를 둘이 나눠 쓴다(`consent.fixtures.ts`).
+- 기본값이 인자에서 나오는 fixture(`createFriendUser(id)`, `createWidgetSnapshot(today, tomorrow)`)는 `defineFixture` 결과를 감싸는 얇은 함수다. 상태마다 필수 칸이 다른 유니온(`createCaptureState`)처럼 덮어쓴 값까지 검증해야 하면 호출마다 `schema.parse`한다.
+- 스키마가 없는 포트 값·interface(`LocalFileEntry`, `PushNotificationResponse`)와 `ApiError`는 손으로 만든다.
 
 ```ts
 // features/notes/memo/__tests__/memo.fixtures.ts
@@ -100,6 +105,9 @@ export const createMemo = defineFixture(memoSchema, {
   updatedAt: '2026-11-06T00:00:00.000Z',
 });
 // 사용: createMemo({ content: ' 장보기 \n우유\n계란' })
+
+// features/assistant/suggestion/__tests__/suggestion.fixtures.ts
+export const createSuggestionDto = defineFixture(recurringSuggestionSchema, { … });
 ```
 
 ## Jest 설정
