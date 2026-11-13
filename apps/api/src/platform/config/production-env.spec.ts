@@ -6,6 +6,7 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import type { z } from "zod";
 
+import { createPostgresPoolConfig } from "../database/postgres-pool.js";
 import { PG_BOSS_CLIENT, type PgBossClient, pgBossClientProvider } from "../jobs/pg-boss-client.js";
 import type { NamespaceConfig } from "./define-config.js";
 import { envSchema, validateEnv } from "./schemas/env.schema.js";
@@ -158,8 +159,16 @@ describe("운영 env 예시로 시작하는 설정", () => {
     for (const namespace of namespaces) {
       expect(booted.get(namespace.KEY)).toEqual(namespace.parse(env));
     }
+    const appPool = createPostgresPoolConfig(env.DATABASE_URL ?? "");
     expect(constructedPgBossOptions).toEqual([
-      expect.objectContaining({ connectionString: env.DATABASE_URL, schema: env.JOB_SCHEMA }),
+      expect.objectContaining({
+        connectionString: appPool.connectionString,
+        ssl: appPool.ssl,
+        options: appPool.options,
+        application_name: "aido-pg-boss",
+        max: 3,
+        schema: env.JOB_SCHEMA,
+      }),
     ]);
     await boss.stop();
   });

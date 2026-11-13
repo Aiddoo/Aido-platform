@@ -75,16 +75,16 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 풀 설정
 
-[postgres-pool.ts](../src/platform/database/postgres-pool.ts)가 세션 옵션을 고정하고 값은 env([설정](configuration.md))다.
+[postgres-pool.ts](../src/platform/database/postgres-pool.ts)가 세션 옵션을 고정하고 값은 env([설정](configuration.md))다. pg-boss 풀도 같은 `createPostgresPoolConfig`로 만들어 크기·연결 이름만 다르다.
 
 | 설정                                  | 값                                                                                                                                           |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application_name`                    | `aido-api`                                                                                                                                   |
+| `application_name`                    | `aido-api`(pg-boss 풀은 `aido-pg-boss`)                                                                                                      |
 | `statement_timeout`·`lock_timeout`    | 15s · 5s (배치는 `unitOfWork.run(work, { statementTimeoutMs })`가 그 트랜잭션에만 `set_config(…, true)`로 늘린다)                            |
 | `idle_in_transaction_session_timeout` | 60s                                                                                                                                          |
 | 연결 대기                             | `DATABASE_POOL_CONNECTION_TIMEOUT_MS` 5s, 넘으면 503으로 빨리 실패                                                                           |
 | `query_timeout`(클라이언트)           | 20s. 서버 `statement_timeout`보다 길어 평소에는 서버가 먼저 취소하고, DB가 답하지 않을 때만 끊는다                                           |
-| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다                                            |
+| 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss 3(세션 옵션·TLS·유휴·연결·쿼리 상한은 앱 풀과 같다). 메모리 때문에 늘리지 않는다                         |
 | TLS                                   | URL에 `sslmode`(운영 `require`)가 있으면 TLS로 연결하고 인증서를 검증한다(이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). 규칙은 [보안](security.md) |
 
 ## DB 오류 번역

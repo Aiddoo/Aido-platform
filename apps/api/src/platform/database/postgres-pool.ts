@@ -8,6 +8,7 @@ import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { classifyDatabaseError, databaseSqlState } from "./database-error.util.js";
 
 export interface PostgresPoolOptions {
+  readonly applicationName?: string;
   readonly max?: number;
   readonly idleTimeoutMs?: number;
   readonly connectionTimeoutMs?: number;
@@ -38,7 +39,7 @@ export function createPostgresPoolConfig(
   const usesTls = sslMode != null && sslMode !== "disable";
   return {
     connectionString: url.toString(),
-    application_name: "aido-api",
+    application_name: options.applicationName ?? "aido-api",
     options: SESSION_OPTIONS,
     ...(usesTls && { ssl: { rejectUnauthorized: options.allowUnverifiedTls !== true } }),
     ...(options.max != null && { max: options.max }),
