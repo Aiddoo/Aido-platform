@@ -5,6 +5,7 @@ import { useVoiceNotes } from '@src/features/voice/hooks/use-voice-notes';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -30,12 +31,14 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
+  useMutation,
   usePrefetchQuery,
   useQueryClient,
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { noop, range } from 'es-toolkit';
+import { Link } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import {
   type ComponentProps,
@@ -61,10 +64,13 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 import type { Memo } from '../domains/memo.model';
 import { useSelectedMemoId } from '../hooks/use-memo-params';
+import { useOpenMemoDeleteDialog } from '../hooks/use-open-memo-delete-dialog';
 import { refreshMemos } from '../queries/memo-cache';
+import { useSetMemoPinnedMutationOptions } from '../queries/memo.mutations';
 import { useGetMemosInfiniteQueryOptions } from '../queries/memo.queries';
 import {
   getEnteringMemoIds,
@@ -89,17 +95,18 @@ const MORE_BUTTON_TOP_GAP = 20 - CARD_GAP;
 const SCROLL_PROGRESS_BOTTOM_OFFSET = 16;
 const ENTERING_OFFSET_Y = 8;
 const ENTERING_TIMING = {
-  duration: ANIMATION.duration.normal,
+  duration: ANIMATION.durationMs.normal,
   easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.System,
 };
 /** 만들기·고정·삭제로 순서가 바뀔 때만 카드가 새 자리로 미끄러진다(원래 카드마다 걸던 LinearTransition 자리) */
 const MEMO_REORDER_LAYOUT_ANIMATION = {
-  duration: ANIMATION.duration.slow,
+  duration: ANIMATION.durationMs.slow,
   update: { type: LayoutAnimation.Types.easeOut },
 } satisfies LayoutAnimationConfig;
 const TITLE_LINE_COUNT_WITH_BODY = 2;
 const TITLE_LINE_COUNT_ALONE = 4;
+const BODY_LINE_COUNT = 3;
 
 interface MemoListProps {
   /** 목록 위에 함께 스크롤되는 머리말(말로 남긴 메모 초안) */
@@ -139,6 +146,7 @@ export function MemoList({ header }: MemoListProps) {
 
   const columnCount = getMemoColumnCount(paneSizeClass, memos.length);
   const isSavedTitleShown = voiceNotes.length > 0 && memos.length > 0;
+  const isEmptyShown = voiceNotes.length === 0 && memos.length === 0;
 
   // FlashList는 스크롤을 JS에서 받아 칸을 재사용한다. 같은 이벤트로 진행 비율만 UI 스레드 값에 쓴다
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -156,13 +164,14 @@ export function MemoList({ header }: MemoListProps) {
           optimizeItemArrangement={false}
           numColumns={columnCount}
           keyExtractor={(memo) => String(memo.id)}
-          extraData={{ selectedMemoId, columnCount, enteringMemoIds }}
+          extraData={{ selectedMemoId, columnCount, enteringMemoIds, paneSizeClass }}
           renderItem={({ item }) => (
             <MemoList.Cell>
               <MemoList.Item
                 memo={item}
                 isSelected={selectedMemoId === item.id}
                 isEntering={enteringMemoIds.has(item.id)}
+                isLinked={paneSizeClass === 'compact'}
                 onSelect={setSelectedMemoId}
                 onEntered={markEntered}
               />
@@ -172,7 +181,7 @@ export function MemoList({ header }: MemoListProps) {
             <MemoList.Header isSavedTitleShown={isSavedTitleShown}>{header}</MemoList.Header>
           }
           ListHeaderComponentStyle={EDGE_ITEM_STYLE}
-          ListEmptyComponent={voiceNotes.length > 0 ? null : <MemoList.Empty />}
+          ListEmptyComponent={isEmptyShown ? <MemoList.Empty /> : null}
           ListEmptyComponentStyle={[EDGE_ITEM_STYLE, { flex: 1 }]}
           ListFooterComponent={
             hasNextPage ? (
@@ -187,8 +196,11 @@ export function MemoList({ header }: MemoListProps) {
             ) : null
           }
           ListFooterComponentStyle={EDGE_ITEM_STYLE}
+          // 아래 safe area를 빼지 않은 칸이라 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 카드는 유리 밑으로 스크롤된다
+          contentInsetAdjustmentBehavior="automatic"
+          // 빈 안내만 칸을 채운다. 카드가 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
           contentContainerStyle={{
-            flexGrow: 1,
+            flexGrow: isEmptyShown ? 1 : 0,
             paddingHorizontal: HORIZONTAL_PADDING - CELL_INSET,
             paddingBottom: LIST_BOTTOM_PADDING,
           }}
@@ -232,7 +244,7 @@ MemoList.Header = function Header({
   );
 };
 
-/** masonry 칸 하나. 카드 사이 간격을 칸 패딩으로 나눠 가진다 */
+// 카드 사이 간격을 칸 패딩으로 나눠 가진다
 MemoList.Cell = function Cell({ children }: PropsWithChildren) {
   return <Box className="px-1.5 pb-3">{children}</Box>;
 };
@@ -242,6 +254,8 @@ interface MemoListItemProps {
   isSelected: boolean;
   /** 지난 그림 뒤에 새로 생긴 메모. 한 번만 짧게 나타난다 */
   isEntering: boolean;
+  /** 접힌 화면에서만 Link다. 펼친 화면은 같은 화면의 칸을 바꿔 미리볼 상세 화면이 없다 */
+  isLinked: boolean;
   onSelect: (memoId: number) => void;
   onEntered: (memoId: number) => void;
 }
@@ -250,10 +264,14 @@ MemoList.Item = function Item({
   memo,
   isSelected,
   isEntering,
+  isLinked,
   onSelect,
   onEntered,
 }: MemoListItemProps) {
+  const { t } = useTranslation(['memo', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const selectMemo = useSingleTap(onSelect);
+  const cardActions = useMemoCardActions(memo);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const isReduceMotionEnabled = useIsReduceMotionEnabled();
@@ -288,41 +306,126 @@ MemoList.Item = function Item({
 
   return (
     <Animated.View style={appearanceStyle}>
-      <PressableFeedback
-        onPress={() => selectMemo(memo.id)}
-        className="rounded-2xl"
-        testID={`memo-item-${memo.id}`}
+      <MemoList.ItemLink
+        memo={memo}
+        isLinked={isLinked}
+        actions={cardActions}
+        onOpen={() => selectMemo(memo.id)}
       >
-        <VStack
-          gap={8}
-          className={cn(
-            'rounded-2xl border bg-gray-1 p-4',
-            isSelected ? 'border-main' : 'border-transparent',
-          )}
+        <PressableFeedback
+          onPress={() => selectMemo(memo.id)}
+          // 고정·삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 카드에서 바로 한다
+          accessibilityActions={[
+            {
+              name: 'togglePin',
+              label: t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin'),
+            },
+            { name: 'delete', label: t('common:actions.delete') },
+          ]}
+          onAccessibilityAction={(event) =>
+            match(event.nativeEvent.actionName)
+              .with('togglePin', () => cardActions.togglePin())
+              .with('delete', () => cardActions.openDeleteDialog())
+              .otherwise(noop)
+          }
+          className="rounded-2xl"
+          testID={`memo-item-${memo.id}`}
         >
-          <HStack align="start" gap={8}>
-            <Text
-              className="flex-1"
-              size="b3"
-              weight="semibold"
-              numberOfLines={body.length > 0 ? TITLE_LINE_COUNT_WITH_BODY : TITLE_LINE_COUNT_ALONE}
-              lineBreakStrategyIOS="hangul-word"
-            >
-              {title}
+          <VStack
+            gap={8}
+            className={cn(
+              'rounded-2xl border bg-gray-1 p-4',
+              isSelected ? 'border-main' : 'border-transparent',
+            )}
+          >
+            <HStack align="start" gap={8}>
+              <Text
+                className="flex-1"
+                size="b3"
+                weight="semibold"
+                numberOfLines={
+                  body.length > 0 ? TITLE_LINE_COUNT_WITH_BODY : TITLE_LINE_COUNT_ALONE
+                }
+                lineBreakStrategyIOS="hangul-word"
+              >
+                {title}
+              </Text>
+              {memo.isPinned && (
+                <PinFilledIcon
+                  width={fontScaledSize(14)}
+                  height={fontScaledSize(14)}
+                  colorClassName="text-main"
+                />
+              )}
+            </HStack>
+            {body.length > 0 && (
+              <Text
+                size="b4"
+                shade={6}
+                numberOfLines={BODY_LINE_COUNT}
+                lineBreakStrategyIOS="hangul-word"
+              >
+                {body}
+              </Text>
+            )}
+            <Text size="e1" shade={5}>
+              {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
             </Text>
-            {memo.isPinned && <PinFilledIcon width={14} height={14} colorClassName="text-main" />}
-          </HStack>
-          {body.length > 0 && (
-            <Text size="b4" shade={6} numberOfLines={3} lineBreakStrategyIOS="hangul-word">
-              {body}
-            </Text>
-          )}
-          <Text size="e1" shade={5}>
-            {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
-          </Text>
-        </VStack>
-      </PressableFeedback>
+          </VStack>
+        </PressableFeedback>
+      </MemoList.ItemLink>
     </Animated.View>
+  );
+};
+
+interface MemoListItemLinkProps extends PropsWithChildren {
+  memo: Memo;
+  isLinked: boolean;
+  actions: MemoCardActions;
+  onOpen: () => void;
+}
+
+/**
+ * 카드를 길게 눌러 메모를 미리보고 열기·고정·삭제를 고른다(iOS). 탭은 카드의 고르기가 맡아 Link의 이동은 막고,
+ * 미리보기를 눌러 가는 이동만 Link가 맡는다
+ */
+MemoList.ItemLink = function ItemLink({
+  memo,
+  isLinked,
+  actions,
+  onOpen,
+  children,
+}: MemoListItemLinkProps) {
+  const { t } = useTranslation(['memo', 'common']);
+
+  if (!isLinked) {
+    return children;
+  }
+
+  return (
+    <Link
+      href={{ pathname: '/memo/[memoId]', params: { memoId: memo.id } }}
+      asChild
+      onPress={(event) => event.preventDefault()}
+    >
+      <Link.Trigger>{children}</Link.Trigger>
+      <Link.Preview />
+      <Link.Menu>
+        <Link.MenuAction icon="doc.text" onPress={onOpen}>
+          {t('memo:list.open')}
+        </Link.MenuAction>
+        <Link.MenuAction
+          icon={memo.isPinned ? 'pin.slash' : 'pin'}
+          disabled={actions.isPinPending}
+          onPress={actions.togglePin}
+        >
+          {t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+        </Link.MenuAction>
+        <Link.MenuAction icon="trash" destructive onPress={actions.openDeleteDialog}>
+          {t('common:actions.delete')}
+        </Link.MenuAction>
+      </Link.Menu>
+    </Link>
   );
 };
 
@@ -394,7 +497,8 @@ MemoList.Error = function ErrorFallback({
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   const { t: tVoiceNote } = useTranslation('voiceNote');
-  const startVoiceNote = useStartVoiceNote();
+  // 연타가 시작 탭 이벤트와 동의·권한 확인을 두 번 내지 않게 한다
+  const startVoiceNote = useSingleTap(useStartVoiceNote());
 
   return (
     <HStack flex={1} justify="center" align="center">
@@ -412,11 +516,29 @@ MemoList.Empty = function Empty() {
   );
 };
 
-/**
- * 화면에 그릴 메모 목록. 순서가 같거나 끝에 붙기만 하면 그 그림에 바로 쓰고, 순서가 바뀌면(만들기·고정·삭제)
- * FlashList 권장 방식대로 재사용을 멈추고 LayoutAnimation을 건 뒤 다음 그림에 바꿔 카드가 새 자리로 미끄러진다.
- * 탭 전환·다시 마운트·칸 수나 폭 변경·다음 쪽은 순서 변경이 아니라 움직이지 않는다
- */
+type MemoCardActions = {
+  isPinPending: boolean;
+  togglePin: () => void;
+  openDeleteDialog: () => void;
+};
+
+/** 카드에서 바로 하는 고정·삭제. iOS 길게 누르기 메뉴와 스크린리더 동작이 같은 것을 부른다 */
+function useMemoCardActions(memo: Memo): MemoCardActions {
+  const setPinned = useMutation(useSetMemoPinnedMutationOptions({ memoId: memo.id }));
+  const openDeleteDialog = useOpenMemoDeleteDialog({ memoId: memo.id });
+
+  return {
+    isPinPending: setPinned.isPending,
+    togglePin: () => {
+      if (!setPinned.isPending) {
+        setPinned.mutate({ isPinned: !memo.isPinned });
+      }
+    },
+    openDeleteDialog: () => openDeleteDialog(),
+  };
+}
+
+/** 순서가 바뀔 때(만들기·고정·삭제)만 FlashList 권장대로 재사용을 멈추고 LayoutAnimation을 걸어 카드가 미끄러진다. 탭 전환·다시 마운트·칸 수 변경·다음 쪽은 움직이지 않는다 */
 function useDisplayedMemos(
   memos: readonly Memo[],
   listRef: RefObject<FlashListRef<Memo> | null>,

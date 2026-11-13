@@ -1,3 +1,4 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { z } from 'zod';
 
 import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
@@ -16,7 +17,7 @@ interface WidgetDaySelection {
 }
 
 /** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
-function getDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySelection {
+function getDay(snapshot: WidgetSnapshot, todayLocalDate: DateKey): WidgetDaySelection {
   const [firstDay] = snapshot.days;
   if (isLoggedOut(snapshot)) {
     return { day: firstDay, renderState: 'loggedOut' };
@@ -32,7 +33,7 @@ function getDay(snapshot: WidgetSnapshot, todayLocalDate: string): WidgetDaySele
 /** 소유자를 모르는 개인 목록은 추측해 보여주지 않고 stale로 표시한다. */
 function getDayForOwner(
   snapshot: WidgetSnapshot,
-  todayLocalDate: string,
+  todayLocalDate: DateKey,
   ownerId: string | null,
 ): WidgetDaySelection {
   if (ownerId == null && !isLoggedOut(snapshot)) {

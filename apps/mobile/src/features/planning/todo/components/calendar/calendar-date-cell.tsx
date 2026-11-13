@@ -1,16 +1,17 @@
+import type { DateKey } from '@src/shared/date/date-key';
 import { Box, FishIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { memo } from 'react';
 
 import type { DailyCompletionSummary } from '../../domains/daily-completion.model';
-import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day';
+import { type CalendarDayType, DAY_TYPE_TONE } from '../../utils/calendar-day.view-model';
 
 export const CALENDAR_DATE_CELL_HEIGHT = 56;
 const MAX_CATEGORY_INDICATOR_COUNT = 3;
 
 interface CalendarDateCellProps {
-  dateKey: string;
+  dateKey: DateKey;
   dayNumber: string;
   /** 읽어 줄 날짜. 쪽마다 한 번 만들어 칸이 다시 그려질 때 Intl을 부르지 않는다 */
   label: string;
@@ -19,7 +20,7 @@ interface CalendarDateCellProps {
   isTodayHighlighted: boolean;
   isOutsideMonth: boolean;
   completion: DailyCompletionSummary | undefined;
-  onSelect: (dateKey: string) => void;
+  onSelect: (dateKey: DateKey) => void;
 }
 
 /** 칸이 많아 pager가 route를 한 번 읽고 파생 값만 넘긴다. 날짜를 바꾸면 선택이 바뀐 칸만 다시 그린다 */
@@ -66,14 +67,14 @@ interface CompletionIndicatorProps {
 }
 
 function CompletionIndicator({ completion }: CompletionIndicatorProps) {
-  if (!completion) {
+  if (completion == null) {
     return null;
   }
   if (completion.isComplete) {
     return <FishIcon width={16} height={12} colorClassName="text-fish" />;
   }
   if (completion.totalTodos > 0) {
-    return <CategoryIndicator colors={completion.categoryColors ?? []} />;
+    return <CategoryIndicator colors={completion.categoryColors} />;
   }
 
   return null;
@@ -89,8 +90,8 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   if (colors.length <= 1) {
     return (
       <Box
-        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
-        style={firstColor ? { backgroundColor: firstColor } : undefined}
+        className={cn('size-1.5 rounded-2xl', firstColor == null && 'bg-gray-5')}
+        style={firstColor == null ? undefined : { backgroundColor: firstColor }}
       />
     );
   }

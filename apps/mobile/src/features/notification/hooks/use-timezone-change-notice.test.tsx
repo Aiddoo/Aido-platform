@@ -2,13 +2,17 @@ import {
   createTodoDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { getZoneOffsetMs } from '@src/shared/date/zoned';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createMemoryObservableSyncStorage,
+  createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen } from '@testing-library/react-native';
 import { getCalendars } from 'expo-localization';
 
@@ -20,8 +24,13 @@ const USER_ID = 'user-1';
 const NOW = new Date('2026-11-05T12:00:00.000Z');
 const NOTICE_TITLE = '할 일 알림 시간을 지금 시간대에 맞췄어요';
 
-// 이 프로세스 시간대에서 크게 멀어진 곳에서 왔다. 오프셋은 기기 시계에서 읽어 시간대 이름과 따로 논다
-const FAR_AWAY = { timeZone: 'Asia/Seoul', offsetMinutes: -NOW.getTimezoneOffset() + 13 * 60 };
+// 앱은 오프셋을 기기 시간대 이름으로 계산한다. 프로세스 시간대(CI는 UTC)에 기대면 환경마다 결과가 갈린다
+function getOffsetMinutesAt(timeZone: string) {
+  return getZoneOffsetMs(NOW.getTime(), timeZone) / MINUTE_MS;
+}
+
+// 기기 시간대(America/New_York)와 14시간 떨어진 곳에서 왔다
+const FAR_AWAY = { timeZone: 'Asia/Seoul', offsetMinutes: getOffsetMinutesAt('Asia/Seoul') };
 
 const upcomingTimedTodo = createTodoDto({
   completed: false,
@@ -56,7 +65,7 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
   });
   const getTodos = httpClient.get;
   const syncStorage = createMemoryObservableSyncStorage();
-  const di = { analytics, httpClient, syncStorage };
+  const di = createTestDi({ ports: { analytics, httpClient, syncStorage } });
   const recordedTimezone = {
     find: () => readStoredValue(syncStorage, deviceTimezoneStoredValue)?.deviceTimezone,
     save: (deviceTimezone: DeviceTimezone) =>
@@ -66,7 +75,10 @@ function setup(todos: ReturnType<typeof createTodoDto>[]) {
 }
 
 async function report(di: ReturnType<typeof setup>['di'], accountId: string | null = USER_ID) {
-  const rendered = await renderScreen(<Probe accountId={accountId} reportCount={1} />, { di });
+  const rendered = await renderScreen(<Probe accountId={accountId} reportCount={1} />, {
+    di,
+    withLocalDate: true,
+  });
   await act(() => jest.advanceTimersByTimeAsync(0));
   return {
     rerender: async (props: ProbeProps) => {
@@ -77,15 +89,13 @@ async function report(di: ReturnType<typeof setup>['di'], accountId: string | nu
 }
 
 describe('useTimezoneChangeNotice', () => {
+  setupFakeTimersPerTest({ now: NOW });
+
   beforeEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useFakeTimers({ now: NOW });
     setDeviceTimeZone('America/New_York');
   });
 
   afterEach(() => {
-    // oxlint-disable-next-line jest/no-restricted-jest-methods -- 1.15.2 전환 #1400
-    jest.useRealTimers();
     setDeviceTimeZone('UTC');
   });
 
@@ -114,9 +124,9 @@ describe('useTimezoneChangeNotice', () => {
 
     // Then
     expect(screen.getAllByText(NOTICE_TITLE).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('오전 10시 할 일은 여기서도 오전 10시예요').length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getAllByText('오전\u00A010:00 할 일은 여기서도 오전\u00A010:00예요').length,
+    ).toBeGreaterThan(0);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).toHaveBeenCalledWith('device_timezone_changed', {
       offset_bucket: '8h_plus',
@@ -163,8 +173,10 @@ describe('useTimezoneChangeNotice', () => {
     // Given
     setDeviceTimeZone('Asia/Tokyo');
     const { di, recordedTimezone, getTodos, analytics } = setup([upcomingTimedTodo]);
-    const offsetMinutes = -NOW.getTimezoneOffset();
-    recordedTimezone.save({ timeZone: 'Asia/Seoul', offsetMinutes });
+    recordedTimezone.save({
+      timeZone: 'Asia/Seoul',
+      offsetMinutes: getOffsetMinutesAt('Asia/Tokyo'),
+    });
 
     // When
     await report(di);

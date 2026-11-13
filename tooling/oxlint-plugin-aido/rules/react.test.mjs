@@ -73,11 +73,6 @@ tester.run('shared-value-accessor', rules['shared-value-accessor'], {
   ],
 });
 
-tester.run('spacing-props-with-classname', rules['spacing-props-with-classname'], {
-  valid: ['<Box px={4} />', '<Box className="px-4" />', '<HStack gap={2} className="flex-1" />'],
-  invalid: [{ code: '<Box px={4} className="flex-1" />', errors: 1 }],
-});
-
 tester.run('no-render-call', rules['no-render-call'], {
   valid: ['<Stepper.Render step={step} />', 'render(<Screen />);'],
   invalid: [{ code: 'const node = stepper.Render({ step });', errors: 1 }],

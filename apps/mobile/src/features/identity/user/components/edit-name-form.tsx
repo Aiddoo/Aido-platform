@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FormStepLayout, Input, KeyboardAdaptiveButton } from '@src/shared/ui';
@@ -24,7 +25,9 @@ export function EditNameForm({ title }: EditNameFormProps) {
 
   const form = useForm({
     resolver: zodResolver(updateNameFormSchema),
-    defaultValues: { name: user.name },
+    // 다른 기기에서 바뀐 이름이 다시 받아지면 따라가되, 고치는 중인 글자는 덮지 않는다
+    values: { name: user.name },
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
     mode: 'onChange',
   });
   const { isSubmitting, isValid, isDirty } = useFormState({ control: form.control });

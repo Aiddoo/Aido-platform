@@ -3,7 +3,7 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { z } from 'zod';
 
-const activationProgressSchema = z.object({
+export const activationProgressSchema = z.object({
   todoCreatedAt: instantSchema.nullable(),
   activatedAt: instantSchema.nullable(),
 });
@@ -69,10 +69,27 @@ function getDaysSinceSignup(user: ActivationUser, now: Instant): number {
   return calculateElapsedDays(toEpochMs(user.createdAt), toEpochMs(now));
 }
 
+/** 처음 만든 순간만 남긴다 */
+function withTodoCreated(progress: ActivationProgress, at: Instant): ActivationProgress {
+  return progress.todoCreatedAt == null ? { ...progress, todoCreatedAt: at } : progress;
+}
+
+/** 이 기기에서 할 일을 만든 뒤 처음 끝낸 순간이 활성화다. 계정마다 한 번만 센다 */
+function canActivate(progress: ActivationProgress): boolean {
+  return progress.todoCreatedAt != null && progress.activatedAt == null;
+}
+
+function withActivated(progress: ActivationProgress, at: Instant): ActivationProgress {
+  return { ...progress, activatedAt: at };
+}
+
 export const ActivationPolicy = {
   isInChecklistWindow,
   getChecklistSteps,
   getDaysSinceSignup,
   shouldOfferChecklist,
   hasFinishedRequiredSteps,
+  withTodoCreated,
+  canActivate,
+  withActivated,
 } as const;

@@ -296,7 +296,7 @@ describe('expoSpeechRecognizer', () => {
         const permission = await expoSpeechRecognizer.getPermission('dictation', 'ko-KR');
 
         // Then
-        expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing });
+        expect(permission).toEqual({ status: 'denied', canAskAgain: false, missing });
       },
     );
 
@@ -310,7 +310,7 @@ describe('expoSpeechRecognizer', () => {
       const permission = await expoSpeechRecognizer.getPermission('note', 'ko-KR');
 
       // Then
-      expect(permission).toEqual({ isGranted: false, canAskAgain: false, missing: 'microphone' });
+      expect(permission).toEqual({ status: 'denied', canAskAgain: false, missing: 'microphone' });
       expect(nativeModule.getSpeechRecognizerPermissionsAsync).not.toHaveBeenCalled();
     });
   });

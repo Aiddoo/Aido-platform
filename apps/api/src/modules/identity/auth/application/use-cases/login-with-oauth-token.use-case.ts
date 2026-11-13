@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
@@ -16,13 +15,13 @@ import {
 import { generateRandomName } from "#api/modules/identity/auth/domain/random-name.domain-service";
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import { oauthAccountNotLinked, unsupportedOAuthProvider, userNotFound } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type {
   AuthAccountRecord,
@@ -87,10 +86,7 @@ export class LoginWithOAuthTokenUseCase {
   async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginResult> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
-      throw new ApplicationException(ErrorCode.SOCIAL_0204, {
-        provider: input.provider,
-        reason: `Unsupported provider: ${input.provider}`,
-      });
+      throw unsupportedOAuthProvider(input.provider);
     }
     let profile: VerifiedProfile;
     let options: SocialLoginOptions;
@@ -195,7 +191,7 @@ export class LoginWithOAuthTokenUseCase {
   ): Promise<SocialLoginResult> {
     const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw userNotFound(userId);
     }
 
     const restorationAt = this.#dependencies.clock.now();
@@ -316,7 +312,7 @@ export class LoginWithOAuthTokenUseCase {
     // 복구와 발급 사이에 역할이 바뀌었을 수 있어 최신 행의 역할로 토큰을 만든다
     const latest = await this.#dependencies.userRepository.findById(user.id);
     if (latest == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw userNotFound(userId);
     }
     const result = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.restoreAccount.execute({
@@ -375,7 +371,7 @@ export class LoginWithOAuthTokenUseCase {
     const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
 
     if (user == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      throw userNotFound(userId);
     }
 
     return this.#dependencies.unitOfWork.run(async () => {
@@ -483,10 +479,6 @@ export class LoginWithOAuthTokenUseCase {
       },
     });
 
-    throw new ApplicationException(ErrorCode.SOCIAL_0206, {
-      provider,
-      providerAccountId,
-      email: existingUser.email,
-    });
+    throw oauthAccountNotLinked(provider, providerAccountId, existingUser.email);
   }
 }

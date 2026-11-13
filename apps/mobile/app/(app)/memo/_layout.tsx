@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 
 export default function MemoLayout() {
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
-  const backToolbar = useStackBackToolbar();
+  const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
   const { t } = useTranslation('memo');
 
   return (

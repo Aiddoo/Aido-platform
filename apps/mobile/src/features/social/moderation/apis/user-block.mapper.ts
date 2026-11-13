@@ -4,7 +4,7 @@ import { pick } from 'es-toolkit';
 
 import type { BlockedUser, BlockedUserPage } from '../domains/user-block.model';
 
-export function toBlockedUser(dto: BlockedUserDto): BlockedUser {
+function toBlockedUser(dto: BlockedUserDto): BlockedUser {
   return {
     ...pick(dto, ['id', 'userTag', 'name', 'profileImage']),
     blockedAt: toInstant(dto.blockedAt),

@@ -30,9 +30,8 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
-import { WIDGET_LARGE_MAX_ROWS } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { createRegisteredWidgetProps } from '../utils/widget-initial-props';
+import { createRegisteredWidgetProps } from '../utils/widget-initial-props.view-model';
 
 // Widget layouts execute in isolation; helpers and palette must stay inside this function.
 function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment) {
@@ -462,10 +461,10 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
   );
 }
 
-export const aidoTodayListWidget = createWidget<WidgetProps>(
+const aidoTodayListWidget = createWidget<WidgetProps>(
   'AidoTodayList',
   AidoTodayListLayout,
   createRegisteredWidgetProps(),
 );
 
-export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget, maxRows: WIDGET_LARGE_MAX_ROWS }];
+export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget }];

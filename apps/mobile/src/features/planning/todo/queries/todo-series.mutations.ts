@@ -1,17 +1,14 @@
-import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
+import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import {
-  findTodoSeriesFailure,
-  getTodoSeriesLimit,
-  isTodoSeriesFailure,
-  shouldRefreshTodos,
-} from '../domains/todo-series.error';
-import { invalidateTodos } from './todo-cache';
+import { isTodoSeriesFailure } from '../domains/todo-series.error';
+import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
+import { settleTodoSeriesWrite } from './todo-cache';
+import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 
 interface StopTodoSeriesVariables {
   todoId: number;
@@ -21,32 +18,27 @@ export function useStopTodoSeriesMutationOptions() {
   const todoApi = useTodoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
   const toast = useAppToast();
-  const haptics = useHaptics();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 반복 끝내기가 끝나지 않는다. 바로 실패해 안내한다
     networkMode: 'always',
+    // 넓게 다시 받을 때 진행 중인 체크의 낙관적 값을 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
     mutationFn: async ({ todoId }: StopTodoSeriesVariables) =>
       unwrap(await todoApi.stopTodoSeries(todoId)),
     onSuccess: () => {
-      invalidateTodos(queryClient);
       toast.success(t('todo:toast.seriesStopped'));
       trackEvent('todo_series_stopped');
     },
     onError: (error) => {
-      const seriesFailure = findTodoSeriesFailure(error);
-      if (seriesFailure != null) {
-        haptics.notify('error');
-        if (shouldRefreshTodos(seriesFailure)) {
-          invalidateTodos(queryClient);
-        }
-        toast.error(
-          t(`todo:toast.series.${seriesFailure}.title`, {
-            limit: getTodoSeriesLimit(error),
-          }),
-          { description: t(`todo:toast.series.${seriesFailure}.description`) },
-        );
+      showTodoSeriesFailure(error);
+    },
+    // 끝낸 반복의 남은 회차가 어느 날짜에서 빠졌는지 몰라 넓게 맞춘다
+    onSettled: (_data, error) => {
+      if (error == null) {
+        settleTodoSeriesWrite(queryClient);
       }
     },
     meta: {

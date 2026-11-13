@@ -1,9 +1,11 @@
+import { AppError } from '@src/core/errors/app-error';
+
 /** 일시적 잠김만 이 타입으로 승격한다. 영구 오류는 원본 그대로 전파해야 관측·폴백할 수 있고, "값 없음"(null)과 구분해야 잠긴 키체인이 로그아웃이 되지 않는다 */
-export class KeychainLockedError extends Error {
+export class KeychainLockedError extends AppError {
   override readonly name = 'KeychainLockedError';
 
-  constructor(override readonly cause: unknown) {
-    super('Keychain is temporarily unavailable (device locked).');
+  constructor(cause: unknown) {
+    super('Keychain is temporarily unavailable (device locked).', { cause });
   }
 }
 

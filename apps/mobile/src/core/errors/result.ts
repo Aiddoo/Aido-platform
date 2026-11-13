@@ -3,7 +3,6 @@
 export interface CodedError {
   readonly code: string;
   readonly message: string;
-  readonly details?: Record<string, unknown>;
 }
 
 export type Result<T, E extends CodedError = CodedError> =
@@ -25,10 +24,6 @@ export function unwrap<T, E extends CodedError>(result: Result<T, E>): T {
   throw result.error;
 }
 
-/**
- * 코드를 가진 오류(서버 ApiError, 도메인 BusinessError)인지 확인한다.
- * 코드를 함께 넘기면 그 코드인 오류만 걸러낸다.
- */
 export function isCodedError(error: unknown): error is CodedError;
 export function isCodedError<TCode extends string>(
   error: unknown,
