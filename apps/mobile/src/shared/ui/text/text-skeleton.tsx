@@ -3,7 +3,7 @@ import { cn } from '@src/shared/utils/cn';
 import { Skeleton } from 'heroui-native';
 import { useResolveClassNames } from 'uniwind';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 import type { TextSize } from './text.types';
 import { TEXT_SIZE_CLASSES } from './text.variants';
 

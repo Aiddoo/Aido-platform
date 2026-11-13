@@ -4,6 +4,7 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { getErrorMessage } from '@src/shared/errors';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -17,7 +18,7 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { useAppToast } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { CloseButton } from 'heroui-native';
@@ -84,7 +85,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
   const { height: viewportHeight } = useWindowDimensions();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
-  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'items' });
   const isSubmitting = useIsTodoCommentSubmitting();
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
@@ -143,6 +144,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
       <TodoCommentDraftAutosave
         userId={user.id}
         mode={mode}
+        restoreItems={replace}
         key={createTodoCommentDraftKey({ userId: user.id, todoId, mode }).id}
       />
       <VStack gap={6}>
@@ -266,14 +268,17 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 function TodoCommentDraftAutosave({
   userId,
   mode,
+  restoreItems,
 }: {
   userId: string;
   mode: TodoCommentComposerMode;
+  /** 입력칸 목록을 가진 `useFieldArray`의 `replace` */
+  restoreItems: (items: TodoCommentFormValues['items']) => void;
 }) {
   const [todoId] = useTodoId();
   const { t } = useTranslation('todoComment');
   const toast = useAppToast();
-  const { subscribe, setValue } = useTodoCommentForm();
+  const { subscribe } = useTodoCommentForm();
   const draftKey = createTodoCommentDraftKey({ userId, todoId, mode });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(draftKey, {
     sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(mode),
@@ -287,11 +292,12 @@ function TodoCommentDraftAutosave({
       .exhaustive(),
   );
 
+  // RN의 RHF는 칸 구독을 이 effect보다 늦게 걸어 첫 마운트의 setValue를 놓친다. replace는 칸 목록을 직접 바꾼다
   useEffect(() => {
     if (restoredDraft != null) {
-      setValue('items', restoredDraft.items);
+      restoreItems(restoredDraft.items);
     }
-  }, [restoredDraft, setValue]);
+  }, [restoredDraft, restoreItems]);
 
   useFormDraftAutosave(subscribe, {
     initialValues,
@@ -316,6 +322,7 @@ function TargetBanner({
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const logger = useLogger();
   const { reset } = useTodoCommentForm();
 
@@ -356,7 +363,11 @@ function TargetBanner({
           );
         }}
       >
-        <CloseIcon width={CLOSE_ICON_SIZE} height={CLOSE_ICON_SIZE} colorClassName="text-gray-6" />
+        <CloseIcon
+          width={fontScaledSize(CLOSE_ICON_SIZE)}
+          height={fontScaledSize(CLOSE_ICON_SIZE)}
+          colorClassName="text-gray-6"
+        />
       </CloseButton>
     </HStack>
   );
@@ -409,7 +420,7 @@ function CommentField({
             .with({ type: 'reply' }, () => t('input.replyPlaceholder'))
             .otherwise(() => t('input.placeholder'))}
           accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
-          className="min-h-11 max-h-28"
+          className="max-h-28 min-h-11"
         />
       )}
     />
@@ -454,7 +465,7 @@ function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPres
   return (
     <TextButton
       size="small"
-      className="min-h-11 min-w-11 max-w-full self-start"
+      className="min-h-11 max-w-full min-w-11 self-start"
       isDisabled={!isValid || isSubmitting}
       onPress={onPress}
       accessibilityLabel={t('form.addToChain')}
@@ -478,6 +489,7 @@ function SubmitButton({
   onSubmit: () => Promise<void>;
 }) {
   const { t } = useTranslation('todoComment');
+  const fontScaledSize = useFontScaledSize();
   const { control } = useTodoCommentForm();
   const hasContent = useWatch({
     control,
@@ -501,8 +513,8 @@ function SubmitButton({
       accessibilityLabel={mode.type === 'edit' ? t('actions.save') : t('form.post')}
     >
       <SendIcon
-        width={SEND_ICON_SIZE}
-        height={SEND_ICON_SIZE}
+        width={fontScaledSize(SEND_ICON_SIZE)}
+        height={fontScaledSize(SEND_ICON_SIZE)}
         colorClassName="text-white dark:text-gray-9"
       />
     </Button>

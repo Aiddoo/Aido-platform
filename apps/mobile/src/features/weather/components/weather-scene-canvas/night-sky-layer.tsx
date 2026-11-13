@@ -131,8 +131,11 @@ NightSkyLayer.Stars = function Stars({
         builder.addCircle(star.x, star.y, star.radius * HALO_RADIUS_RATIO);
       }
     }
-    return builder.detach();
+    const path = builder.detach();
+    builder.dispose();
+    return path;
   }, [field]);
+  // prop 경로는 Canvas가 커밋 때 복사해 기록하므로 정리 함수에서 바로 놓는다(shared value 경로와 다르다)
   useEffect(() => () => halos.dispose(), [halos]);
 
   const { dot } = PARTICLE_SPRITES;

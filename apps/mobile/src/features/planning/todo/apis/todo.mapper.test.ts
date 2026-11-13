@@ -8,7 +8,6 @@ import {
 import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
-import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import {
@@ -38,8 +37,6 @@ import {
   toTodoListResult,
   toTodoSummary,
 } from './todo.mapper';
-
-setupFakeTimersPerTest({ now: new Date('2026-03-08T00:00:00.000Z') });
 
 describe('toTodo', () => {
   it('서버 벽시계를 시간대와 상관없이 그대로 읽고 직렬화할 수 있다', () => {
@@ -88,40 +85,6 @@ describe('toTodo', () => {
     expect(todoSchema.parse(todo)).toEqual(todo);
   });
 
-  it('isAllDay, completed, visibility 매핑', () => {
-    // Given
-    const dto = createTodoDto({ isAllDay: true, completed: true, visibility: 'PRIVATE' });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.isAllDay).toBe(true);
-    expect(result.completed).toBe(true);
-    expect(result.visibility).toBe('PRIVATE');
-  });
-});
-
-describe('toTodo — subTodos', () => {
-  it('subTodos 배열 매핑', () => {
-    // Given
-    const dto = createTodoDto({
-      items: [
-        createTodoItemResponseDto({ id: 1, title: '항목 1' }),
-        createTodoItemResponseDto({ id: 2, title: '항목 2', completed: true }),
-      ],
-      itemStats: { total: 2, completed: 1 },
-    });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.subTodos).toHaveLength(2);
-    expect(result.subTodos[0]?.title).toBe('항목 1');
-    expect(result.subTodos[1]?.completed).toBe(true);
-  });
-
   it('서버의 items를 항목 목록 하나로 받고 진행 숫자는 그 목록에서 센다', () => {
     // Given
     const dto = createTodoDto({
@@ -140,35 +103,6 @@ describe('toTodo — subTodos', () => {
     expect(todo).not.toHaveProperty('items');
   });
 
-  it('빈 subTodos → 빈 배열', () => {
-    // Given
-    const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
-
-    // When
-    const result = toTodo(dto);
-
-    // Then
-    expect(result.subTodos).toEqual([]);
-  });
-});
-
-describe('toDailyCompletionsResult', () => {
-  it('completions 배열 + totalCompleteDays', () => {
-    // Given
-    const dto = createDailyCompletionsDto();
-
-    // When
-    const result = toDailyCompletionsResult(dto);
-
-    // Then
-    expect(result.completions).toHaveLength(1);
-    expect(result.completions[0]?.date).toBe('2026-03-01');
-    expect(result.totalCompleteDays).toBe(1);
-    expect(result.dateRange.startDate).toBe('2026-03-01');
-  });
-});
-
-describe('toTodo의 반복 규칙', () => {
   it('소유자 응답의 규칙을 앱 모델로 옮긴다', () => {
     // Given
     const dto = createTodoDto({

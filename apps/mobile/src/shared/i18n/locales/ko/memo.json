@@ -41,7 +41,8 @@
     "deleteRetry": "잠시 후 다시 삭제해보세요",
     "limitReached": "메모는 {{max}}개까지 쓸 수 있어요",
     "limitReachedDescription": "안 쓰는 메모를 지우면 새로 쓸 수 있어요",
-    "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용은 삭제했어요"
+    "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용은 삭제했어요",
+    "unavailable": "이미 없는 메모예요"
   },
   "aiReview": {
     "draftLost": "나눈 내용을 불러오지 못했어요. 메모에서 다시 나눠주세요",

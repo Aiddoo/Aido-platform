@@ -8,7 +8,6 @@ import {
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
 } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -46,7 +45,7 @@ export function getRepeatPresetDays(preset: RepeatPreset): readonly DayOfWeek[] 
 const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
 // 수정에는 전체 범위가 없다. 첫 회차에서 이후를 고르면 전체를 고친 것과 같다
-export const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
+const todoUpdateScopeSchema = z.enum(TODO_UPDATE_SCOPES);
 export type TodoUpdateScope = z.infer<typeof todoUpdateScopeSchema>;
 
 // 할 일·음성 계획 폼이 이 규칙을 그대로 쓰므로 폼 입력도 날짜 key다
@@ -207,7 +206,7 @@ function* walkWeeklyDateKeys({
   for (
     let monday = getMondayOfDateKey(startDate);
     monday <= upper;
-    monday = addDaysToDateKey(monday, interval * DAYS_PER_WEEK)
+    monday = addDaysToDateKey(monday, interval * DAYS_OF_WEEK.length)
   ) {
     for (const offset of offsets) {
       const date = addDaysToDateKey(monday, offset);

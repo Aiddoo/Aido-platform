@@ -13,10 +13,10 @@ import {
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
 
-import { DailyCompletionPolicy } from '../domains/daily-completion.model';
 import {
-  type DailyCompletionSummary,
+  DailyCompletionPolicy,
   type DailyCompletionsResult,
+  type DailyCompletionSummary,
 } from '../domains/daily-completion.model';
 import {
   getScheduledTime,

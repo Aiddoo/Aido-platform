@@ -1,6 +1,6 @@
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { LiveTranscript } from '@src/features/voice/components/live-transcript';
-import { PlanReview } from '@src/features/voice/components/plan-review';
+import { PlanReview } from '@src/features/voice/components/plan-review/plan-review';
 import { VoiceVisual } from '@src/features/voice/components/voice-visual';
 import {
   createVoiceTranscript,

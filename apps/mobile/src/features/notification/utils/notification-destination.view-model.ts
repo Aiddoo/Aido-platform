@@ -1,7 +1,7 @@
-import type { WeatherEntry } from '@src/features/weather/schemas/weather-entry-params.schema';
+import { toWeatherHref } from '@src/features/weather/utils/weather-link.view-model';
 import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link.view-model';
 import type { DateKey } from '@src/shared/date/date-key';
-import type { WindowSizeClass } from '@src/shared/ui/adaptive-pane/window-layout';
+import type { WindowSizeClass } from '@src/shared/ui';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 
@@ -18,14 +18,14 @@ export const NOTIFICATION_INBOX_DESTINATION: NotificationDestination = {
   href: '/notifications',
 };
 
-/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 경로 조각과 쿼리를 합친 것(`useGlobalSearchParams`)이다 */
+/** 지금 보고 있는 화면. 경로는 그룹 없이(`usePathname`), 값은 그 화면 route의 경로 조각과 쿼리(`useFocusedRouteParams`)다 */
 export interface CurrentRoute {
   pathname: string;
-  params: Partial<Record<string, string | string[]>>;
+  params: Readonly<Record<string, unknown>>;
 }
 
-/** 같은 화면 안에서 날짜·진입 경로·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
-const VIEW_POSITION_PARAMS: ReadonlySet<string> = new Set(['date', 'entry', 'comment']);
+/** 같은 화면 안에서 날짜·진입 경로·연 시각·댓글 위치만 바꾸는 값이라 다른 화면으로 보지 않는다 */
+const VIEW_POSITION_PARAMS: ReadonlySet<string> = new Set(['date', 'entry', 'openedAt', 'comment']);
 const DYNAMIC_SEGMENT = /\[(?:\.\.\.)?([^\]]+)\]/g;
 
 function toParamText(value: unknown): string | undefined {
@@ -67,7 +67,7 @@ export function isViewingNotificationDestination(
 }
 
 /**
- * 알림함과 같은 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
+ * 탭 위 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
  * 미리보기가 그 navigator에 화면을 미리 넣어 탭에 params가 남을 수 있다. 없으면 null이다
  */
 export function findRootStackDetailHref(destination: NotificationDestination): Href | null {
@@ -85,12 +85,14 @@ interface NotificationDestinationContext {
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
   viewerId?: string;
+  /** 알림을 연 시각(epoch ms). Stack에 남은 날씨 화면을 다시 올려도 열 때마다 센다(`toWeatherHref`) */
+  openedAt: number;
 }
 
 /** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
 export function toNotificationDestination(
   target: NotificationTarget,
-  { windowSizeClass, viewerId }: NotificationDestinationContext,
+  { windowSizeClass, viewerId, openedAt }: NotificationDestinationContext,
 ): NotificationDestination {
   return (
     match(target)
@@ -140,10 +142,7 @@ export function toNotificationDestination(
       }))
       .with({ kind: 'WEATHER' }, () => ({
         kind: 'route',
-        href: {
-          pathname: '/weather',
-          params: { entry: 'notification' satisfies WeatherEntry },
-        },
+        href: toWeatherHref({ entry: 'notification', openedAt }),
       }))
       .with({ kind: 'WEATHER_RESCHEDULE' }, ({ todoIds, reason }) => ({
         kind: 'route',

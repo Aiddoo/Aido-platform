@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { PortalTargetContext } from '../bottom-sheet/portal-target';
+import { ToastLayerClosingContext } from '../toast/toast-layer';
 import { OverlayStateContext } from './overlay-state-context';
 
 export interface OverlayController {
@@ -71,10 +72,13 @@ export function OverlayProvider({
       <OverlayStateContext value={state}>
         <PortalTargetContext value={portalTarget}>
           {children}
-          {[...overlays.entries()].map(([id, { element, version }]) => (
-            <Fragment key={`${id}-${version}`}>{element}</Fragment>
-          ))}
-          <PortalHost name={hostName} />
+          {/* overlay와 Portal로 그린 시트는 route 시트가 아니라, 닫혀도 route의 토스트 면을 닫지 않는다 */}
+          <ToastLayerClosingContext value={null}>
+            {[...overlays.entries()].map(([id, { element, version }]) => (
+              <Fragment key={`${id}-${version}`}>{element}</Fragment>
+            ))}
+            <PortalHost name={hostName} />
+          </ToastLayerClosingContext>
         </PortalTargetContext>
       </OverlayStateContext>
     </OverlayContext>

@@ -1,5 +1,6 @@
 import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -190,6 +191,7 @@ function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
 
 function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
   const { t } = useTranslation('subscription');
+  const fontScaledSize = useFontScaledSize();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { free, premium } = toPlanFeatureComparison(entitlements, feature);
   const formatPlanValue = useFormatPlanValue();
@@ -204,7 +206,11 @@ function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
           {formatPlanValue(free)}
         </Text>
       </VStack>
-      <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+      <ArrowRightIcon
+        width={fontScaledSize(16)}
+        height={fontScaledSize(16)}
+        colorClassName="text-gray-5"
+      />
       <VStack flex={1} gap={2} align="center">
         <Text size="e1" shade={6}>
           {t('upsell.premium')}

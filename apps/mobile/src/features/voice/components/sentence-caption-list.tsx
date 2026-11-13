@@ -1,4 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FlagIcon, HStack, Text, WordWrapText } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -20,13 +21,14 @@ function CaptionSeparator() {
   return <Box className="h-2" />;
 }
 
-interface SentenceCaptionListProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+interface SentenceCaptionListProps {
   sentences: readonly VoiceNoteSentence[];
   interimText?: string;
   isLive?: boolean;
   activeSentenceIndex?: number;
   onPressSentence?: (sentence: VoiceNoteSentence) => void;
   contentBottomInset?: number;
+  className?: string;
 }
 
 export function SentenceCaptionList({
@@ -36,7 +38,7 @@ export function SentenceCaptionList({
   activeSentenceIndex,
   onPressSentence,
   contentBottomInset = 0,
-  ...boxProps
+  className,
 }: SentenceCaptionListProps) {
   const { t } = useTranslation('voiceNote');
   const items: CaptionItem[] = [
@@ -51,7 +53,7 @@ export function SentenceCaptionList({
   );
 
   return (
-    <Box {...boxProps}>
+    <Box className={className}>
       {hasLowConfidenceWords && (
         <Text
           size="e1"
@@ -128,6 +130,7 @@ SentenceCaptionList.Card = function Card({
   ...pressableProps
 }: SentenceCardProps) {
   const { t } = useTranslation('voiceNote');
+  const fontScaledSize = useFontScaledSize();
   const time = formatMediaTime(sentence.startMs);
 
   return (
@@ -148,7 +151,7 @@ SentenceCaptionList.Card = function Card({
         <Text size="e1" shade={6} className="tabular-nums">
           {time}
         </Text>
-        <WordWrapText size="b3" className="shrink flex-1">
+        <WordWrapText size="b3" className="flex-1">
           {toCaptionTextParts(sentence.text, sentence.lowConfidenceWords).map(
             ({ text, isLowConfidence }) => ({
               text,
@@ -160,8 +163,8 @@ SentenceCaptionList.Card = function Card({
         {sentence.isBookmarked && (
           <FlagIcon
             colorClassName="text-main"
-            width={14}
-            height={14}
+            width={fontScaledSize(14)}
+            height={fontScaledSize(14)}
             accessibilityLabel={t('captions.marked')}
           />
         )}

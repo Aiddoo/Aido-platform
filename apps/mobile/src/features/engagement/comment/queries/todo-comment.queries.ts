@@ -62,9 +62,9 @@ export function useGetTodoCommentThreadsInfiniteQueryOptions({
     getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     staleTime:
       sort === TODO_COMMENT_SORT.POPULAR
-        ? TODO_COMMENT_QUERY_TIMING.popularStaleTime
-        : TODO_COMMENT_QUERY_TIMING.latestStaleTime,
-    gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
+        ? TODO_COMMENT_QUERY_TIMING.popularStaleTimeMs
+        : TODO_COMMENT_QUERY_TIMING.latestStaleTimeMs,
+    gcTime: TODO_COMMENT_QUERY_TIMING.gcTimeMs,
     select: selectTodoCommentThreads,
     meta: { refreshOnBlockChange: true },
   });
@@ -93,8 +93,8 @@ export function useGetTodoCommentRepliesInfiniteQueryOptions({
     getNextPageParam: (lastPage) => getNextTodoCommentPageParam(lastPage.pagination),
     getPreviousPageParam: (firstPage) => getPreviousTodoCommentPageParam(firstPage.pagination),
     enabled: isEnabled,
-    staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTime,
-    gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
+    staleTime: TODO_COMMENT_QUERY_TIMING.latestStaleTimeMs,
+    gcTime: TODO_COMMENT_QUERY_TIMING.gcTimeMs,
     select: selectTodoCommentReplies,
     meta: { refreshOnBlockChange: true },
   });

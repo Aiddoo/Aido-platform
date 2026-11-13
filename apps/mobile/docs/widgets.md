@@ -103,13 +103,14 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
   → background/cold: Expo Linking으로 일반 feed만 깨움 / active: command 소비만
   → auth + me Query + (app) route 준비
   → useWidgetAppEntry
-  → Expo Router.navigate(withAnchor) → command 조건부 삭제
+  → openEntryHref(OS 링크처럼 연다) → command 조건부 삭제
 ```
 
 종료된 process와 recents task가 함께 남은 Android에서 Expo의 startup `onNewIntent` 처리 전에 URI가 유실되는 경우가 재현됐다. launchMode 변경이나 OTA 비활성화로 회피하지 않고, 공식 custom action과 기존 저장소 포트로 정확한 목적지를 먼저 저장한 뒤 앱 준비 후 소비한다.
 
-- domain model은 허용 scheme/feed date/action/todo id만 해석한다. Router Href 변환은 presentation mapper다.
+- domain model은 허용 scheme/feed date/action/todo id만 해석한다. Href·분석 값·이미 보이는지는 `findWidgetEntry`의 `match` 한 줄이 목적지마다 정한다. 새 목적지는 스키마 항목 하나와 그 한 줄이다([앱 밖에서 들어오는 길](./architecture/state-and-routing.md#앱-밖에서-들어오는-길)).
 - command는 5분 TTL, 미래 timestamp 거부, 현재 `me.id`와 소유자 일치 검사를 통과해야 한다. 로그아웃·계정 불일치·만료·손상 명령은 개인 화면 이동 없이 제거한다.
+- 저장한 command의 만든 시각은 출시한 앱과 같은 에포크 ms 숫자다. 저장 스키마(`widgetNavigationCommandStorageSchema`)의 codec이 읽을 때 `Instant`로, 쓸 때 숫자로 바꾼다(repository는 apis를 import하지 않는다). 정책과 HeadlessJS 시계(`getNowInstant`)는 `Instant`로 잰다.
 - 정확한 목적지와 생성 action은 native wake URI에 넣지 않는다. 이전 계정의 위젯이어도 현재 계정 가드를 통과하기 전에 개인 화면으로 자동 이동하지 않는다.
 - 최신 명령만 소비한다. 이전 frame의 cleanup·조건부 삭제로 연속 탭의 최신 요청을 지우지 않는다. 현재 pathname/search가 목적지와 같으면 다시 이동하지 않는다.
 - 할 일은 `/todo/[todoId]`, 날짜는 feed, 만들기는 피드의 `action=add-todo` params(`useFeedAction`)로 앱의 할 일 추가 입력(`/todo/new`의 `TodoCreateBottomSheet`)을 그대로 연다.
@@ -120,7 +121,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 테스트는 모델·mapper·저장 값·sync·entry hook·handler·renderer·timeline에서 손상 JSON, 이전 v1, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 본다([테스트](./testing.md)).
 
 ```sh
-pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx
+pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx src/bootstrap/navigation/auth-gate-layout.widget-entry.flow.test.tsx
 pnpm lint && pnpm format:check && pnpm typecheck
 ```
 

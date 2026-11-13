@@ -83,7 +83,7 @@ export function CalendarTitleBar() {
             ref={todayRef}
             onPress={() => setSelectedDateKey(todayKey)}
             hitSlop={8}
-            className="px-2 py-0.5 bg-gray-2 rounded-full"
+            className="rounded-full bg-gray-2 px-2 py-0.5"
           >
             <Text size="e1" weight="medium" shade={7}>
               {t('relativeDay.today')}
@@ -207,7 +207,7 @@ function CalendarTitleSamples({ ref }: { ref: Ref<ComponentRef<typeof Box>> }) {
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className="absolute left-0 top-0 opacity-0"
+      className="absolute top-0 left-0 opacity-0"
     >
       {titles.map((title) => (
         // 헤더보다 길면 줄바꿈 대신 헤더 폭으로 잘려 잰 폭이 짧아지지 않는다

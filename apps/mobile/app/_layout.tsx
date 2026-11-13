@@ -61,7 +61,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       </View>
       <Text
         allowFontScaling={false}
-        className="text-b3 font-semibold text-gray-9 text-center"
+        className="text-center font-semibold text-b3 text-gray-9"
         lineBreakStrategyIOS="hangul-word"
         textBreakStrategy="highQuality"
       >
@@ -69,7 +69,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       </Text>
       <Text
         allowFontScaling={false}
-        className="mt-1 text-b4 text-gray-6 text-center"
+        className="mt-1 text-center text-b4 text-gray-6"
         lineBreakStrategyIOS="hangul-word"
         textBreakStrategy="highQuality"
       >
@@ -82,7 +82,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       >
         <Text
           allowFontScaling={false}
-          className="text-b4 font-semibold text-white dark:text-gray-9"
+          className="font-semibold text-b4 text-white dark:text-gray-9"
         >
           {t('actions.retry')}
         </Text>
@@ -92,7 +92,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         className="mt-2 h-10 items-center justify-center rounded-xl bg-gray-9/5 px-4 dark:bg-gray-9/20"
         onPress={restartApp}
       >
-        <Text allowFontScaling={false} className="text-b4 font-semibold text-gray-9">
+        <Text allowFontScaling={false} className="font-semibold text-b4 text-gray-9">
           {t('errorBoundary.restart')}
         </Text>
       </Pressable>

@@ -109,4 +109,29 @@ describe('useIsMyPageMenuItemSelected', () => {
     expect(fontSizeRender).toHaveBeenLastCalledWith(true);
     expect(languageRender).not.toHaveBeenCalled();
   });
+
+  it('넓은 화면 상세 칸에서 더 들어가도 고른 메뉴의 선택이 남고 어느 행도 다시 그리지 않는다', async () => {
+    // Given
+    stubWindowDimensions(1000);
+    mockedUsePathname.mockReturnValue('/friends');
+    const friendsRender = jest.fn();
+    const themeRender = jest.fn();
+    const rows = (
+      <>
+        <SelectionRow pathname="/friends" onRender={friendsRender} />
+        <SelectionRow pathname="/settings/theme" onRender={themeRender} />
+      </>
+    );
+    const { rerender } = await render(<Wrapper>{rows}</Wrapper>);
+    expect(friendsRender).toHaveBeenLastCalledWith(true);
+    jest.clearAllMocks();
+
+    // When
+    mockedUsePathname.mockReturnValue('/friends/search');
+    await act(async () => rerender(<Wrapper>{rows}</Wrapper>));
+
+    // Then
+    expect(friendsRender).not.toHaveBeenCalled();
+    expect(themeRender).not.toHaveBeenCalled();
+  });
 });

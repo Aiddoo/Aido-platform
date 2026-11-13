@@ -1,6 +1,7 @@
 import type { PlanQuotaFeatureKey } from '@aido/api/vocabulary';
 import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -204,10 +205,15 @@ function QuotaSkeleton() {
 
 function QuotaHeader({ action }: QuotaProps) {
   const { t } = useTranslation('subscription');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <HStack gap={6} align="center">
-      <AiFilledIcon width={16} height={16} colorClassName="text-main" />
+      <AiFilledIcon
+        width={fontScaledSize(16)}
+        height={fontScaledSize(16)}
+        colorClassName="text-main"
+      />
       <Text size="b4" weight="semibold" shade={7} className="flex-1">
         {t('quota.summaryTitle')}
       </Text>

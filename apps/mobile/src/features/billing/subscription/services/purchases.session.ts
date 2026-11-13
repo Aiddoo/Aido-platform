@@ -100,19 +100,18 @@ export class PurchasesSession {
 
   /**
    * 결제·복원은 그때의 SDK 사용자에게 귀속된다. 로그인·로그아웃이 끝나길 기다려 SDK에 로그인한 계정을 돌려준다.
-   * 마지막으로 요청한 계정의 로그인이 실패·시간 초과였으면 null이고, 다음에 다시 결제할 수 있게 그 계정으로 다시 로그인해 둔다
+   * 마지막으로 요청한 계정의 로그인이 실패·시간 초과였으면 그 계정으로 다시 로그인해 SDK 제한 안에서 기다린 뒤 한 번 더 보고,
+   * 그래도 아니면 앞 계정·익명에 귀속되지 않게 null이다
    */
   waitForSignedInUser = async (): Promise<string | null> => {
     await this.#settle();
     const requestedUserId = this.#requestedUserId;
-    if (requestedUserId == null) {
-      return null;
+    if (requestedUserId != null && this.#signedInUserId !== requestedUserId) {
+      // 잠깐 나빴던 망이 돌아온 경우가 많아 다시 로그인이 붙으면 첫 탭에 결제를 잇는다
+      await this.logIn(requestedUserId);
+      await this.#settle();
     }
-    if (this.#signedInUserId !== requestedUserId) {
-      this.logIn(requestedUserId);
-      return null;
-    }
-    return requestedUserId;
+    return this.#signedInUserId === this.#requestedUserId ? this.#signedInUserId : null;
   };
 
   /** 기다리는 사이 들어온 요청까지 끝날 때까지 기다린다 */
@@ -141,10 +140,13 @@ export class PurchasesSession {
     return this.#configured;
   };
 
-  // 바뀐 사용자에게도 다시 설정한다
+  // 바뀐 사용자에게도 다시 설정한다. 결제가 로그인 큐를 기다리므로 멈춰도 정해 둔 시간 뒤 경고만 남기고 넘어간다
   #syncSubscriberAttributes = async (): Promise<void> => {
     try {
-      await this.#purchases.setAttributes({ ...this.#subscriberAttributes });
+      await withTimeout(
+        () => this.#purchases.setAttributes({ ...this.#subscriberAttributes }),
+        PURCHASES_SDK_CALL_TIMEOUT_MS,
+      );
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_SUBSCRIBER_ATTRIBUTES_SYNC_FAILED, {
         error: getErrorMessage(error),
@@ -153,14 +155,17 @@ export class PurchasesSession {
   };
 
   // 결제 공급자의 분석 연동이 구독 이벤트를 분석 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
+  // 기기 값이라 시간 초과 뒤 늦게 붙어도 다른 계정에 틀린 값이 되지 않는다
   #syncAnalyticsId = async (): Promise<void> => {
     try {
-      const analyticsId = await this.#analytics.getAnalyticsId();
-      if (!analyticsId) {
-        return;
-      }
+      await withTimeout(async () => {
+        const analyticsId = await this.#analytics.getAnalyticsId();
+        if (!analyticsId) {
+          return;
+        }
 
-      await this.#purchases.setAnalyticsId(analyticsId);
+        await this.#purchases.setAnalyticsId(analyticsId);
+      }, PURCHASES_SDK_CALL_TIMEOUT_MS);
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.PURCHASES_ANALYTICS_ID_SYNC_FAILED, {
         error: getErrorMessage(error),

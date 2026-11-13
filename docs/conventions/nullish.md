@@ -114,7 +114,7 @@ endDate: todo.endDate == null ? null : formatDateOnly(todo.endDate),
 | 계약이 `.optional()`로 더한 응답 칸 | mapper가 `null`로 바꾼다                           | DTO 경계에서만 `.optional()`         |
 | 요청의 선택 입력                    | 생략(`undefined`)                                  | `.optional()`                        |
 | PATCH                               | 생략 = 그대로, `null` = 지우기                     | `.nullable().optional()` + 이유 주석 |
-| props·함수 옵션                     | `?:`(`undefined`). `\| null`은 쓰지 않는다         |                                      |
+| props·함수의 선택 옵션              | `?:`(`undefined`). `\| null`을 겹치지 않는다       |                                      |
 | 값이 없을 수 있는 필수 입력         | `null`                                             | `T \| null`(`?:`와 겹쳐 쓰지 않는다) |
 | TanStack `data`를 받는 Policy 인자  | `undefined`(조회 전)                               | `T \| undefined`                     |
 | TanStack·RN 콜백, `getCached*`      | `undefined`(라이브러리 계약)                       |                                      |

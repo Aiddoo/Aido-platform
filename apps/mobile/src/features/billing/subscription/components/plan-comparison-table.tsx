@@ -189,7 +189,7 @@ function Group({
 
   return (
     <>
-      <HStack align="center" gap={6} className="px-4 pb-1 pt-4">
+      <HStack align="center" gap={6} className="px-4 pt-4 pb-1">
         <Icon width={fontScaledSize(16)} height={fontScaledSize(16)} colorClassName="text-gray-6" />
         <Text size="e1" weight="semibold" shade={7} accessibilityRole="header">
           {label}
