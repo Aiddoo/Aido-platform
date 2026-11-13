@@ -203,5 +203,8 @@ describe("사용자 검색 E2E", () => {
     for (const id of secondIds) {
       expect(firstIds).not.toContain(id);
     }
+    // 다음 쪽은 첫 쪽에서 센 총수를 커서로 받아 같은 값을 준다
+    expect(first.body.data.totalCount).toBe(3);
+    expect(second.body.data.totalCount).toBe(3);
   });
 });

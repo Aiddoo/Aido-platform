@@ -15,6 +15,7 @@ export interface RecordedFriendSearch {
 // 검색 순위 SQL은 integration이 지키고, 여기서는 정해 둔 결과를 주며 받은 조건을 남긴다
 export class StubFriendSearchReader extends FriendSearchReaderPort {
   readonly searches: RecordedFriendSearch[] = [];
+  countCalls = 0;
   readonly #results: readonly UserSearchResultReadModel[];
   readonly #totalCount: number;
 
@@ -41,6 +42,7 @@ export class StubFriendSearchReader extends FriendSearchReaderPort {
   }
 
   async countUsers(): Promise<number> {
+    this.countCalls += 1;
     return this.#totalCount;
   }
 }

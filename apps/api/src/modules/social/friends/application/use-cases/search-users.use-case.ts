@@ -37,17 +37,27 @@ export class SearchUsersUseCase {
     // 검색어를 커서보다 먼저 검사한다(출시 앱이 받는 오류 우선순위)
     const term = UserSearchTerm.create(query.query);
     const size = clampPageSize(query.size);
-    const after = query.cursor == null ? null : decodeUserSearchCursor(query.cursor);
+    const cursor = query.cursor == null ? null : decodeUserSearchCursor(query.cursor);
     const viewerId = UserId.reconstitute(query.viewerId);
 
+    // 다음 쪽은 첫 쪽에서 센 총수를 커서에서 받아 다시 세지 않는다. 총수 없는 옛 커서만 다시 센다
     const [results, totalCount] = await Promise.all([
-      searchReader.searchUsers({ viewerId, term, after, limit: size + 1 }),
-      searchReader.countUsers({ viewerId, term }),
+      searchReader.searchUsers({
+        viewerId,
+        term,
+        after: cursor?.position ?? null,
+        limit: size + 1,
+      }),
+      cursor?.totalCount ?? searchReader.countUsers({ viewerId, term }),
     ]);
     const page = toCursorPage({
       rows: results,
       size,
-      toCursor: (result) => encodeUserSearchCursor({ rank: result.rank, id: result.user.id }),
+      toCursor: (result) =>
+        encodeUserSearchCursor({
+          position: { rank: result.rank, id: result.user.id },
+          totalCount,
+        }),
     });
 
     logger.debug({

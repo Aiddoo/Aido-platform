@@ -64,9 +64,46 @@ describe("SearchUsersUseCase — 사용자 검색", () => {
     expect(first.page.items.map((item) => item.user.id)).toEqual(["first", "second"]);
     expect(first.page.pagination).toMatchObject({
       hasNext: true,
-      nextCursor: encodeUserSearchCursor({ rank: 2, id: "second" }),
+      nextCursor: encodeUserSearchCursor({ position: { rank: 2, id: "second" }, totalCount: 3 }),
     });
     expect(searchReader.searches[1]?.after).toEqual({ rank: 2, id: "second" });
+  });
+
+  it("다음 쪽은 커서에 실은 총수를 그대로 주고 다시 세지 않으며, 총수 없는 옛 커서는 다시 센다", async () => {
+    // Given
+    const { useCase, searchReader } = setup(
+      [searchResult("first", 0), searchResult("second", 2)],
+      9,
+    );
+    const position = { rank: 0, id: "first" };
+
+    // When
+    const withTotal = await useCase.execute({
+      viewerId: VIEWER,
+      query: "존",
+      size: 1,
+      cursor: encodeUserSearchCursor({ position, totalCount: 7 }),
+    });
+    const countsBeforeLegacy = searchReader.countCalls;
+    const legacy = await useCase.execute({
+      viewerId: VIEWER,
+      query: "존",
+      size: 1,
+      cursor: encodeUserSearchCursor({ position, totalCount: null }),
+    });
+
+    // Then
+    expect({ total: withTotal.totalCount, counts: countsBeforeLegacy }).toEqual({
+      total: 7,
+      counts: 0,
+    });
+    expect({ total: legacy.totalCount, counts: searchReader.countCalls }).toEqual({
+      total: 9,
+      counts: 1,
+    });
+    expect(legacy.page.pagination.nextCursor).toBe(
+      encodeUserSearchCursor({ position: { rank: 0, id: "first" }, totalCount: 9 }),
+    );
   });
 
   it.each([
