@@ -73,6 +73,7 @@ import {
   SendFriendRequestResponseDto,
   SentRequestsResponseDto,
   UserTagParamDto,
+  FollowIdParamDto,
 } from "./follow.dto.js";
 
 /**
@@ -266,11 +267,6 @@ export class FollowController {
     required: false,
     description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
   })
-  @ApiParam({
-    name: "followId",
-    description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
-    example: "clz7x5p8k0010qz0z8z8z8z8z",
-  })
   @ApiDoc({
     summary: "친구 순서 변경",
     operationId: "reorderFriend",
@@ -285,13 +281,13 @@ export class FollowController {
   @ApiNotFoundError(ErrorCode.FOLLOW_0910)
   async reorderFriend(
     @CurrentUser() user: CurrentUserPayload,
-    @Param("followId") followId: string,
+    @Param({ schema: FollowIdParamDto }) params: FollowIdParamDto,
     @Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
     @AppVersion() appVersion?: string,
   ): Promise<ReorderFriendResponseDto> {
     const friend = await this.#reorderFriendUseCase.execute({
       userId: user.userId,
-      friendshipId: followId,
+      friendshipId: params.followId,
       targetFriendshipId: dto.targetFollowId,
       position: dto.position,
     });

@@ -3,6 +3,7 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
+import { DEFAULT_OAUTH_REDIRECT_URI } from "../../domain/auth.constants.js";
 import { invalidCredentials, unsupportedOAuthProvider } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
@@ -60,7 +61,7 @@ export class CompleteOAuthAuthorizationUseCase {
       throw invalidCredentials();
     }
     const redirectUri =
-      authorization.redirectUri === "" ? "aido://auth/callback" : authorization.redirectUri;
+      authorization.redirectUri === "" ? DEFAULT_OAUTH_REDIRECT_URI : authorization.redirectUri;
     const exchanged = await strategy.exchangeCode(code, state);
     if (exchanged == null) {
       throw invalidCredentials();

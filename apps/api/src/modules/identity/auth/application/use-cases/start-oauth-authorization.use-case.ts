@@ -4,7 +4,11 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { OAUTH_STATE_EXPIRY_MINUTES, type OAuthMode } from "../../domain/auth.constants.js";
+import {
+  DEFAULT_OAUTH_REDIRECT_URI,
+  OAUTH_STATE_EXPIRY_MINUTES,
+  type OAuthMode,
+} from "../../domain/auth.constants.js";
 import { invalidCredentials, unsupportedOAuthProvider } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthRuntimeConfigPort } from "../ports/auth-collaboration.port.js";
@@ -62,9 +66,8 @@ export class StartOAuthAuthorizationUseCase {
   }
 
   #resolveRedirectUri(redirectUri?: string): string {
-    const defaultRedirectUri = "aido://auth/callback";
     if (redirectUri == null || redirectUri === "") {
-      return defaultRedirectUri;
+      return DEFAULT_OAUTH_REDIRECT_URI;
     }
     const patterns = [
       /^aido:\/\/auth(\/.*)?$/,
@@ -84,6 +87,6 @@ export class StartOAuthAuthorizationUseCase {
       return redirectUri;
     }
     this.#dependencies.logger.warn({ event: AuthLogEvent.OAUTH_REDIRECT_REJECTED });
-    return defaultRedirectUri;
+    return DEFAULT_OAUTH_REDIRECT_URI;
   }
 }

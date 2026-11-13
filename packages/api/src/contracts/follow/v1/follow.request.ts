@@ -89,3 +89,11 @@ export const reorderFriendSchema = z.object({
 });
 
 export type ReorderFriendInput = z.infer<typeof reorderFriendSchema>;
+
+export const followIdParamSchema = z.object({
+  followId: entityIdSchemaWithMessage("유효하지 않은 Follow ID입니다").describe(
+    "순서를 변경할 친구의 팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)",
+  ),
+});
+
+export type FollowIdParam = z.infer<typeof followIdParamSchema>;

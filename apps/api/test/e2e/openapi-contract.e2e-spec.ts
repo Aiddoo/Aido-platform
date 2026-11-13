@@ -78,21 +78,6 @@ function contractFingerprint(value: unknown): string {
     .digest("hex");
 }
 
-/**
- * Zod schema 없이 원시 query 값을 받는 엔드포인트. 입력 검증 실패 400(SYS_0002)이 나가지 않는다.
- * 배포된 브라우저 OAuth 흐름(start → 공급자 → web-callback)은 공급자가 붙이는 query를 그대로 받아
- * 오류를 앱 딥링크로 돌려보내므로 400 응답으로 바꾸지 않는다.
- * 새 엔드포인트는 `@Param/@Query/@Body({ schema })`로 검증하고 이 목록에 더하지 않는다.
- */
-const RAW_INPUT_OPERATIONS = [
-  "GET /v1/auth/google/start",
-  "GET /v1/auth/google/web-callback",
-  "GET /v1/auth/kakao/start",
-  "GET /v1/auth/kakao/web-callback",
-  "GET /v1/auth/naver/start",
-  "GET /v1/auth/naver/web-callback",
-];
-
 const errorResponseCodeSchema = z.object({
   content: z.object({
     "application/json": z.object({
@@ -300,7 +285,7 @@ describe("OpenAPI 계약 (e2e)", () => {
           requestBody != null ||
           parameters.some((parameter) => parameter.in === "path" || parameter.in === "query");
         const operationName = `${method.toUpperCase()} ${route}`;
-        if (!hasInput || RAW_INPUT_OPERATIONS.includes(operationName)) {
+        if (!hasInput) {
           return [];
         }
         const badRequest = errorResponseCodeSchema.safeParse(responses["400"]);

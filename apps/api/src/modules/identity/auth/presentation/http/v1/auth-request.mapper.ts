@@ -28,22 +28,24 @@ export function toRequestMetadata(
   };
 }
 
-/**
- * OAuth 콜백 에러를 URLSearchParams로 변환
- * 에러 코드가 있는 예외(ApplicationException/DomainException)면 코드를 포함
- */
+// 코드 없는 실패에 앱 딥링크로 보내 온 값이다. 출시 앱이 받으므로 바꾸지 않는다
+const OAUTH_UNCODED_FAILURE = {
+  error: "authentication_failed",
+  description: "인증 처리 중 오류가 발생했습니다.",
+} as const;
+
+/** OAuth 웹 콜백 실패를 앱 딥링크 query로 바꾼다. 코드가 있는 예외는 그 코드와 문구를 싣는다 */
 export function buildOAuthErrorParams(error: unknown, state: string): URLSearchParams {
-  let errorCode = "authentication_failed";
-  let errorMessage = "인증 처리 중 오류가 발생했습니다.";
-
   if (error instanceof ErrorCodedException) {
-    errorCode = error.errorCode;
-    errorMessage = error.message;
+    return new URLSearchParams({
+      error: error.errorCode,
+      error_description: error.message,
+      state,
+    });
   }
-
   return new URLSearchParams({
-    error: errorCode,
-    error_description: errorMessage,
+    error: OAUTH_UNCODED_FAILURE.error,
+    error_description: OAUTH_UNCODED_FAILURE.description,
     state,
   });
 }

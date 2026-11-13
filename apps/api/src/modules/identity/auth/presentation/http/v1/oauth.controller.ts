@@ -15,7 +15,7 @@ import {
   Query,
   Res,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Response } from "express";
 
@@ -27,7 +27,7 @@ import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/appl
 import { LinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account.use-case";
 import { LoginWithMobileOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-mobile-oauth-token.use-case";
 import { StartOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/start-oauth-authorization.use-case";
-import type { OAuthMode } from "#api/modules/identity/auth/domain/auth.constants";
+import { DEFAULT_OAUTH_REDIRECT_URI } from "#api/modules/identity/auth/domain/auth.constants";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { Public } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
 import {
@@ -48,6 +48,7 @@ import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guar
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import { invalidCredentials } from "../../../application/auth.errors.js";
 import { buildOAuthErrorParams, toRequestMetadata } from "./auth-request.mapper.js";
 import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
@@ -59,7 +60,13 @@ import {
   LinkSocialAccountDto,
   MessageResponseDto,
   NaverMobileCallbackDto,
+  OAuthStartQueryDto,
+  OAuthWebCallbackQueryDto,
 } from "./auth.dto.js";
+
+type WebOAuthProvider = Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">;
+
+const OAUTH_STATE_BYTES = 16;
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
@@ -92,23 +99,57 @@ export class OAuthController {
     this.#exchangeOAuthCodeUseCase = exchangeOAuthCodeUseCase;
   }
 
-  async #resolveOAuthErrorRedirectUri(state: string, defaultRedirectUri: string): Promise<string> {
+  #authorizationUrl(provider: WebOAuthProvider, query: OAuthStartQueryDto): Promise<string> {
+    return this.#startOAuthAuthorizationUseCase.execute({
+      provider,
+      // 빈 state도 보내지 않은 것으로 보고 새로 만든다
+      state: query.state || randomBytes(OAUTH_STATE_BYTES).toString("hex"),
+      clientRedirectUri: query.redirect_uri,
+      mode: query.mode,
+      initiatingUserId: query.user_hint,
+    });
+  }
+
+  /** 성공과 실패 모두 앱 딥링크로 돌려보낸다. 브라우저에 오류 응답을 띄우지 않는다 */
+  async #webCallbackRedirectUrl(
+    provider: WebOAuthProvider,
+    { code, state = "" }: OAuthWebCallbackQueryDto,
+    source: RequestSource,
+  ): Promise<string> {
+    try {
+      // 공급자 화면에서 취소하면 code 없이 온다. 교환을 묻지 않고 교환 실패와 같은 코드로 돌려보낸다
+      if (code == null) {
+        throw invalidCredentials();
+      }
+      const result = await this.#completeOAuthAuthorizationUseCase.execute({
+        provider,
+        code,
+        state,
+        metadata: toRequestMetadata(source),
+      });
+      const params = new URLSearchParams({ code: result.exchangeCode, state });
+      return `${result.redirectUri}?${params.toString()}`;
+    } catch (error) {
+      this.#logCallbackFailed(provider, error);
+      const redirectUri = await this.#resolveOAuthErrorRedirectUri(state);
+      return `${redirectUri}?${buildOAuthErrorParams(error, state).toString()}`;
+    }
+  }
+
+  async #resolveOAuthErrorRedirectUri(state: string): Promise<string> {
     try {
       const redirectUri = await this.#getOAuthRedirectUriQuery.execute({ state });
-      return redirectUri || defaultRedirectUri;
+      return redirectUri || DEFAULT_OAUTH_REDIRECT_URI;
     } catch (error) {
       this.#logger.warn({
         event: AuthLogEvent.OAUTH_ERROR_REDIRECT_FAILED,
         errorType: toErrorType(error),
       });
-      return defaultRedirectUri;
+      return DEFAULT_OAUTH_REDIRECT_URI;
     }
   }
 
-  #logCallbackFailed(
-    provider: Exclude<(typeof OAUTH_PROVIDERS)[number], "APPLE">,
-    error: unknown,
-  ): void {
+  #logCallbackFailed(provider: WebOAuthProvider, error: unknown): void {
     if (error instanceof ErrorCodedException) {
       this.#logger.warn({
         event: AuthLogEvent.OAUTH_CALLBACK_FAILED,
@@ -306,42 +347,12 @@ export class OAuthController {
 
   @Get("google/start")
   @Public()
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-    example: "a1b2c3d4e5f6",
-  })
-  @ApiQuery({
-    name: "redirect_uri",
-    required: false,
-    description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
-    example: "aido://auth/callback",
-  })
-  @ApiQuery({
-    name: "mode",
-    required: false,
-    description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
-    enum: ["login", "link"],
-    example: "link",
-  })
-  @ApiQuery({
-    name: "user_hint",
-    required: false,
-    description: "계정 연동 시 사용자 이메일 힌트",
-  })
   @ApiDoc({
     summary: "Google OAuth 시작 (웹 브라우저)",
     operationId: "googleOAuthStart",
     description: `\`expo-web-browser\`로 브라우저를 열어 구글 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /google/start\` → 구글 로그인 → \`GET /google/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
-
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
@@ -350,37 +361,14 @@ export class OAuthController {
 - \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
   })
   async googleOAuthStart(
-    @Query("state") state: string | undefined,
-    @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: OAuthMode | undefined,
-    @Query("user_hint") userHint: string | undefined,
+    @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.#startOAuthAuthorizationUseCase.execute({
-      provider: "GOOGLE",
-      state: effectiveState,
-      clientRedirectUri: redirectUri,
-      mode,
-      initiatingUserId: userHint,
-    });
-    res.redirect(authUrl);
+    res.redirect(await this.#authorizationUrl("GOOGLE", query));
   }
 
   @Get("google/web-callback")
   @Public()
-  @ApiQuery({
-    name: "code",
-    required: true,
-    description: "구글 Authorization Code (인증 완료 후 발급)",
-    example: "4/0AbcDefGhiJkl",
-  })
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-    example: "550e8400-e29b-41d4-a716-446655440000",
-  })
   @ApiDoc({
     summary: "Google OAuth 콜백 (웹 브라우저)",
     operationId: "googleOAuthCallback",
@@ -388,48 +376,16 @@ export class OAuthController {
 
 🔄 **플로우**: \`GET /google/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 구글 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
   })
   async googleOAuthCallback(
-    @Query("code") code: string,
-    @Query("state") state: string,
+    @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
-    const defaultRedirectUri = "aido://auth/callback";
-
-    try {
-      const metadata = toRequestMetadata(source);
-
-      const result = await this.#completeOAuthAuthorizationUseCase.execute({
-        provider: "GOOGLE",
-        code,
-        state,
-        metadata,
-      });
-
-      const redirectUri = result.redirectUri || defaultRedirectUri;
-      const params = new URLSearchParams({
-        code: result.exchangeCode,
-        state,
-      });
-
-      res.redirect(`${redirectUri}?${params.toString()}`);
-    } catch (error) {
-      this.#logCallbackFailed("GOOGLE", error);
-      const params = buildOAuthErrorParams(error, state);
-      const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
-
-      res.redirect(`${errorRedirectUri}?${params.toString()}`);
-    }
+    res.redirect(await this.#webCallbackRedirectUrl("GOOGLE", query, source));
   }
 
   @Post("kakao/callback")
@@ -505,42 +461,12 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
   @Get("kakao/start")
   @Public()
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-    example: "a1b2c3d4e5f6",
-  })
-  @ApiQuery({
-    name: "redirect_uri",
-    required: false,
-    description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
-    example: "aido://auth/callback",
-  })
-  @ApiQuery({
-    name: "mode",
-    required: false,
-    description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
-    enum: ["login", "link"],
-    example: "link",
-  })
-  @ApiQuery({
-    name: "user_hint",
-    required: false,
-    description: "계정 연동 시 사용자 이메일 힌트",
-  })
   @ApiDoc({
     summary: "Kakao OAuth 시작 (웹 브라우저)",
     operationId: "kakaoOAuthStart",
     description: `\`expo-web-browser\`로 브라우저를 열어 카카오 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /kakao/start\` → 카카오 로그인 → \`GET /kakao/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
-
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
@@ -549,35 +475,14 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 - \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
   })
   async kakaoOAuthStart(
-    @Query("state") state: string | undefined,
-    @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: OAuthMode | undefined,
-    @Query("user_hint") userHint: string | undefined,
+    @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.#startOAuthAuthorizationUseCase.execute({
-      provider: "KAKAO",
-      state: effectiveState,
-      clientRedirectUri: redirectUri,
-      mode,
-      initiatingUserId: userHint,
-    });
-    res.redirect(authUrl);
+    res.redirect(await this.#authorizationUrl("KAKAO", query));
   }
 
   @Get("kakao/web-callback")
   @Public()
-  @ApiQuery({
-    name: "code",
-    required: true,
-    description: "카카오 authorization code",
-  })
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-  })
   @ApiDoc({
     summary: "Kakao OAuth 콜백 (웹 브라우저)",
     operationId: "kakaoOAuthCallback",
@@ -585,48 +490,16 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /kakao/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 카카오 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
   })
   async kakaoOAuthCallback(
-    @Query("code") code: string,
-    @Query("state") state: string,
+    @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
-    const defaultRedirectUri = "aido://auth/callback";
-
-    try {
-      const metadata = toRequestMetadata(source);
-
-      const result = await this.#completeOAuthAuthorizationUseCase.execute({
-        provider: "KAKAO",
-        code,
-        state,
-        metadata,
-      });
-
-      const redirectUri = result.redirectUri || defaultRedirectUri;
-      const params = new URLSearchParams({
-        code: result.exchangeCode,
-        state,
-      });
-
-      res.redirect(`${redirectUri}?${params.toString()}`);
-    } catch (error) {
-      this.#logCallbackFailed("KAKAO", error);
-      const params = buildOAuthErrorParams(error, state);
-      const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
-
-      res.redirect(`${errorRedirectUri}?${params.toString()}`);
-    }
+    res.redirect(await this.#webCallbackRedirectUrl("KAKAO", query, source));
   }
 
   @Post("naver/callback")
@@ -696,42 +569,12 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
   @Get("naver/start")
   @Public()
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-    example: "a1b2c3d4e5f6",
-  })
-  @ApiQuery({
-    name: "redirect_uri",
-    required: false,
-    description: "인증 완료 후 리다이렉트될 URI (기본: aido://auth/callback)",
-    example: "aido://auth/callback",
-  })
-  @ApiQuery({
-    name: "mode",
-    required: false,
-    description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login",
-    enum: ["login", "link"],
-    example: "link",
-  })
-  @ApiQuery({
-    name: "user_hint",
-    required: false,
-    description: "계정 연동 시 사용자 이메일 힌트",
-  })
   @ApiDoc({
     summary: "Naver OAuth 시작 (웹 브라우저)",
     operationId: "naverOAuthStart",
     description: `\`expo-web-browser\`로 브라우저를 열어 네이버 로그인 페이지로 리다이렉트합니다.
 
 🔄 **플로우**: \`GET /naver/start\` → 네이버 로그인 → \`GET /naver/web-callback\` → \`{redirect_uri}?code=xxx&state=xxx\`
-
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`state\` | ✅ | CSRF 방지용 랜덤 문자열 |
-| \`redirect_uri\` | ❌ | 콜백 URI (기본: \`aido://auth/callback\`) |
 
 ✅ **허용 URI**: \`aido://auth/callback\`, \`https://aido.kr/*\`, \`http://localhost:*/*\`
 
@@ -740,37 +583,14 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 - \`link\`: 소셜 계정 연동 → \`POST /auth/link-with-code\` 로 연동 완료`,
   })
   async naverOAuthStart(
-    @Query("state") state: string | undefined,
-    @Query("redirect_uri") redirectUri: string | undefined,
-    @Query("mode") mode: OAuthMode | undefined,
-    @Query("user_hint") userHint: string | undefined,
+    @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.#startOAuthAuthorizationUseCase.execute({
-      provider: "NAVER",
-      state: effectiveState,
-      clientRedirectUri: redirectUri,
-      mode,
-      initiatingUserId: userHint,
-    });
-    res.redirect(authUrl);
+    res.redirect(await this.#authorizationUrl("NAVER", query));
   }
 
   @Get("naver/web-callback")
   @Public()
-  @ApiQuery({
-    name: "code",
-    required: true,
-    description: "네이버 Authorization Code (인증 완료 후 발급)",
-    example: "AbCdEfGh",
-  })
-  @ApiQuery({
-    name: "state",
-    required: true,
-    description: "CSRF 방지용 상태 값",
-    example: "550e8400-e29b-41d4-a716-446655440000",
-  })
   @ApiDoc({
     summary: "Naver OAuth 콜백 (웹 브라우저)",
     operationId: "naverOAuthCallback",
@@ -778,48 +598,16 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
 🔄 **플로우**: \`GET /naver/web-callback\` → 교환 코드 발급 → \`{redirect_uri}?code=xxx&state=xxx\` → \`POST /auth/exchange\`
 
-📝 **쿼리 파라미터**
-| 파라미터 | 필수 | 설명 |
-|----------|:----:|------|
-| \`code\` | ✅ | 네이버 authorization code |
-| \`state\` | ✅ | CSRF 검증용 state |
-
 ⚠️ **에러 시**: \`{redirect_uri}?error=authentication_failed&error_description=...&state=xxx\`
 
 💡 **참고**: 콜백 URL의 \`code\`는 일회용 교환 코드입니다. \`POST /auth/exchange\`로 토큰을 획득하세요.`,
   })
   async naverOAuthCallback(
-    @Query("code") code: string,
-    @Query("state") state: string,
+    @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
-    const defaultRedirectUri = "aido://auth/callback";
-
-    try {
-      const metadata = toRequestMetadata(source);
-
-      const result = await this.#completeOAuthAuthorizationUseCase.execute({
-        provider: "NAVER",
-        code,
-        state,
-        metadata,
-      });
-
-      const redirectUri = result.redirectUri || defaultRedirectUri;
-      const params = new URLSearchParams({
-        code: result.exchangeCode,
-        state,
-      });
-
-      res.redirect(`${redirectUri}?${params.toString()}`);
-    } catch (error) {
-      this.#logCallbackFailed("NAVER", error);
-      const params = buildOAuthErrorParams(error, state);
-      const errorRedirectUri = await this.#resolveOAuthErrorRedirectUri(state, defaultRedirectUri);
-
-      res.redirect(`${errorRedirectUri}?${params.toString()}`);
-    }
+    res.redirect(await this.#webCallbackRedirectUrl("NAVER", query, source));
   }
 
   @Post("link")
