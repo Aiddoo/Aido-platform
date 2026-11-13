@@ -16,6 +16,7 @@ const SLICE_FILES: ReadonlyArray<readonly [string, string]> = [
   ['domain/{{aggregate}}.aggregate.ts', 'domain/aggregate.ts.hbs'],
   ['domain/{{aggregate}}-id.vo.ts', 'domain/id.vo.ts.hbs'],
   ['domain/{{aggregate}}-name.vo.ts', 'domain/name.vo.ts.hbs'],
+  ['domain/{{slice}}.errors.ts', 'domain/errors.ts.hbs'],
   ['application/ports/{{aggregate}}.repository.port.ts', 'application/repository.port.ts.hbs'],
   [
     'application/ports/{{aggregate}}.repository.port.spec.ts',
@@ -126,6 +127,38 @@ function appendSliceToContextModule(
   return `${contextModulePath}에 ${sliceModule}을 더했다`;
 }
 
+const IMPORT_BLOCK = /^import \{([^}]+)\} from "([^"]+)";$/gm;
+
+function importedNames(list: string): string[] {
+  return list
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name !== '');
+}
+
+// Context schema 파일이 이미 있으면 새 테이블을 끝에 더하고 빠진 named import를 합친다. 없으면 add 액션이 만든다.
+function appendTableToContextSchema(schemaPath: string, rendered: string): string {
+  let next = readFileSync(schemaPath, 'utf8');
+  for (const [, names, from] of rendered.matchAll(IMPORT_BLOCK)) {
+    const existing = [...next.matchAll(IMPORT_BLOCK)].find((match) => match[2] === from);
+    if (existing?.index == null) {
+      const lastImport = [...next.matchAll(IMPORT_BLOCK)].at(-1);
+      if (lastImport?.index == null) {
+        throw new Error(`${schemaPath}에서 import 위치를 찾지 못했다`);
+      }
+      const end = lastImport.index + lastImport[0].length;
+      next = `${next.slice(0, end)}\nimport { ${importedNames(names).join(', ')} } from "${from}";${next.slice(end)}`;
+      continue;
+    }
+    const merged = [...new Set([...importedNames(existing[1]), ...importedNames(names)])];
+    const replacement = `import { ${merged.join(', ')} } from "${from}";`;
+    next = `${next.slice(0, existing.index)}${replacement}${next.slice(existing.index + existing[0].length)}`;
+  }
+  const table = rendered.replace(IMPORT_BLOCK, '').trim();
+  writeFileSync(schemaPath, `${next.trimEnd()}\n\n${table}\n`);
+  return `${schemaPath}에 테이블을 더했다`;
+}
+
 export default function generator(plop: PlopTypes.NodePlopAPI): void {
   plop.setGenerator('api-slice', {
     description: '규칙대로 서버 slice(도메인·UseCase·저장소·HTTP·테스트)와 계약 뼈대를 만든다',
@@ -161,6 +194,38 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 
       const context = String(answers?.context);
       const slice = String(answers?.slice);
+      const schemaPath = join(
+        plop.getDestBasePath(),
+        `apps/api/src/platform/database/schema/${context}.schema.ts`,
+      );
+      const schemaActions: PlopTypes.ActionType[] = existsSync(schemaPath)
+        ? [
+            () =>
+              appendTableToContextSchema(
+                schemaPath,
+                plop.renderString(
+                  readFileSync(
+                    join(plop.getPlopfilePath(), TEMPLATE_ROOT, 'schema.ts.hbs'),
+                    'utf8',
+                  ),
+                  { ...answers, ...data },
+                ),
+              ),
+          ]
+        : [
+            {
+              type: 'add',
+              path: 'apps/api/src/platform/database/schema/{{context}}.schema.ts',
+              templateFile: `${TEMPLATE_ROOT}/schema.ts.hbs`,
+              data,
+              abortOnFail: true,
+            },
+            {
+              type: 'append',
+              path: 'apps/api/src/platform/database/schema/tables.schema.ts',
+              template: 'export * from "./{{context}}.schema.js";',
+            },
+          ];
       const contextModulePath = join(
         plop.getDestBasePath(),
         `apps/api/src/modules/${context}/${context}.module.ts`,
@@ -181,19 +246,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         ...contextModuleActions,
         ...addFiles('apps/api/test', TEST_FILES, data),
         ...addFiles('packages/api/src', CONTRACT_FILES, data),
-        {
-          type: 'add',
-          path: 'apps/api/src/platform/database/schema/{{context}}.schema.ts',
-          templateFile: `${TEMPLATE_ROOT}/schema.ts.hbs`,
-          data,
-          skipIfExists: true,
-        },
-        {
-          type: 'append',
-          path: 'apps/api/src/platform/database/schema/tables.schema.ts',
-          template: 'export * from "./{{context}}.schema.js";',
-          unique: true,
-        },
+        ...schemaActions,
         {
           type: 'modify',
           path: 'packages/api/src/index.ts',

@@ -48,6 +48,10 @@ pre-push:
     - name: integration-contract
       glob: *code-files
       run: pnpm turbo run test:integration test:contract --filter=@aido/server --concurrency=1
+    # 생성 결과는 커밋된 HEAD를 임시 worktree에 만들어 본다(약 1분). 템플릿을 바꾼 push만 돈다.
+    - name: generator-smoke
+      glob: 'turbo/generators/**'
+      run: pnpm test:generator
 
 commit-msg:
   jobs:

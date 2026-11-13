@@ -14,15 +14,17 @@
 pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종류(serial|cuid)
 ```
 
-| 생성 위치                                                   | 내용                                                                                                                                                                                   |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api/src/modules/<context>/<slice>/`                   | Aggregate·id VO·이름 VO, Repository Port, Create·List UseCase, Drizzle 저장소·행 매퍼, v1 Controller·DTO·응답 매퍼, `*.module.ts`·`*.providers.ts`·`*.public.ts`, lock-keys·log-events |
-| `apps/api/test/`                                            | fixture, InMemory 저장소, 저장소 계약 suite, Drizzle integration spec                                                                                                                  |
-| `packages/api/src/contracts/<aggregate>/v1/`, `vocabulary/` | 요청·응답 Zod schema와 공유 상수                                                                                                                                                       |
-| `apps/api/src/platform/database/schema/<context>.schema.ts` | 테이블(없을 때만). `tables.schema.ts`에 한 줄 더한다                                                                                                                                   |
-| `<context>.module.ts`                                       | slice Module을 imports·exports에 더한다                                                                                                                                                |
+| 생성 위치                                                   | 내용                                                                                                                                                                                                                    |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/modules/<context>/<slice>/`                   | Aggregate·id VO·이름 VO·도메인 오류(`<slice>.errors.ts`), Repository Port, Create·List UseCase, Drizzle 저장소·행 매퍼, v1 Controller·DTO·응답 매퍼, `*.module.ts`·`*.providers.ts`·`*.public.ts`, lock-keys·log-events |
+| `apps/api/test/`                                            | fixture, InMemory 저장소, 저장소 계약 suite, Drizzle integration spec                                                                                                                                                   |
+| `packages/api/src/contracts/<aggregate>/v1/`, `vocabulary/` | 요청·응답 Zod schema와 공유 상수                                                                                                                                                                                        |
+| `apps/api/src/platform/database/schema/<context>.schema.ts` | 테이블. 파일이 있으면 끝에 더하고 import를 합치며, 없으면 만들고 `tables.schema.ts`에 한 줄 더한다                                                                                                                      |
+| `<context>.module.ts`                                       | slice Module을 imports·exports에 더한다                                                                                                                                                                                 |
 
 생성기가 출력하는 마무리(`db:generate`, AppModule은 Context Module만, `@aido/api` build → `pnpm check`)를 따른다. 쓰지 않는 생성 파일은 지운다. 빈 폴더를 남기지 않는다.
+
+생성 응답은 표준 모양(`{ <aggregate> }`, 목록은 `cursorPageSchema`, 문자열 ID는 `entityIdSchema`)이고 `message`를 넣지 않는다. 템플릿이나 템플릿이 import하는 공용 코드를 바꾸면 `pnpm test:generator`가 임시 worktree에 serial·cuid slice를 만들어 lint·이름·typecheck·경계·단위 테스트를 돈다(생성기를 바꾼 push는 pre-push가 돌린다).
 
 ## 2. 도메인을 채운다
 

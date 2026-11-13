@@ -41,7 +41,8 @@
     "test:contract": "turbo run test:contract --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
     "typecheck": "turbo run typecheck",
-    "version-packages": "changeset version && node scripts/release/sync-versions.mjs"
+    "version-packages": "changeset version && node scripts/release/sync-versions.mjs",
+    "test:generator": "node turbo/generators/smoke.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
