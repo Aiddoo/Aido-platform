@@ -192,56 +192,52 @@ export class DrizzleUserRepository
     activity: Parameters<AuthUserActivityWriterPort["updateLastActiveAt"]>[0],
   ): Promise<void> {
     const { timezone, appVersion, seenAt } = activity;
-    const id = activity.userId.value;
-    const localDate = localDateIn(seenAt, timezone);
-
-    await this.#db.execute(sql`
-      WITH updated_user AS (
-        UPDATE "User" AS app_user
-        SET
-          "lastActiveAt" = GREATEST(
-            COALESCE(app_user."lastActiveAt", ${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)),
-            ${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)
-          ),
-          "lastSeenAppVersion" = COALESCE(${appVersion ?? null}::VARCHAR(30), app_user."lastSeenAppVersion"),
-          "lastSeenAppVersionAt" = CASE
-            WHEN ${appVersion ?? null}::VARCHAR(30) IS NULL THEN app_user."lastSeenAppVersionAt"
-            ELSE ${sql.param(seenAt, user.lastSeenAppVersionAt)}::timestamp(3)
-          END,
-          "updatedAt" = GREATEST(app_user."updatedAt", ${sql.param(seenAt, user.updatedAt)}::timestamp(3))
-        WHERE app_user."id" = ${id}
-        RETURNING app_user."id"
+    const seen = sql`${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)`;
+    // 늦게 커밋된 과거 요청이 최신 시각을 되돌리지 않게 GREATEST로 쓴다(NULL은 건너뛴다). 버전이 없으면 기록을 지우지 않는다
+    const updatedUser = this.#db.$with("updated_user").as(
+      this.#db
+        .update(user)
+        .set({
+          lastActiveAt: sql`GREATEST(${user.lastActiveAt}, ${seen})`,
+          updatedAt: sql`GREATEST(${user.updatedAt}, ${seen})`,
+          ...(appVersion != null && {
+            lastSeenAppVersion: appVersion,
+            lastSeenAppVersionAt: seenAt,
+          }),
+        })
+        .where(eq(user.id, activity.userId.value))
+        .returning({ id: user.id }),
+    );
+    // 요청마다 도는 fire-and-forget 갱신이라 트랜잭션 없이 한 문장(데이터 변경 CTE)에서 사용자와 활동일을 함께 쓴다
+    await this.#db
+      .with(updatedUser)
+      .insert(userActivityDay)
+      .select(
+        this.#db
+          .select({
+            userId: updatedUser.id,
+            localDate:
+              sql`${sql.param(localDateIn(seenAt, timezone), userActivityDay.localDate)}::date`.as(
+                "localDate",
+              ),
+            timezone: sql`${timezone}::varchar(50)`.as("timezone"),
+            firstSeenAt: seen.as("firstSeenAt"),
+            lastSeenAt: seen.as("lastSeenAt"),
+          })
+          .from(updatedUser),
       )
-      INSERT INTO "UserActivityDay" (
-        "userId",
-        "localDate",
-        "timezone",
-        "firstSeenAt",
-        "lastSeenAt"
-      )
-      SELECT
-        updated_user."id",
-        ${sql.param(localDate, userActivityDay.localDate)}::DATE,
-        ${timezone},
-        ${sql.param(seenAt, userActivityDay.firstSeenAt)}::timestamp(3),
-        ${sql.param(seenAt, userActivityDay.lastSeenAt)}::timestamp(3)
-      FROM updated_user
-      ON CONFLICT ("userId", "localDate")
-      DO UPDATE SET
-        "timezone" = CASE
-          WHEN EXCLUDED."lastSeenAt" >= "UserActivityDay"."lastSeenAt"
-            THEN EXCLUDED."timezone"
-          ELSE "UserActivityDay"."timezone"
-        END,
-        "firstSeenAt" = LEAST(
-          "UserActivityDay"."firstSeenAt",
-          EXCLUDED."firstSeenAt"
-        ),
-        "lastSeenAt" = GREATEST(
-          "UserActivityDay"."lastSeenAt",
-          EXCLUDED."lastSeenAt"
-        )
-    `);
+      .onConflictDoUpdate({
+        target: [userActivityDay.userId, userActivityDay.localDate],
+        set: {
+          timezone: sql`CASE
+            WHEN excluded.${sql.identifier(userActivityDay.lastSeenAt.name)} >= ${userActivityDay.lastSeenAt}
+              THEN excluded.${sql.identifier(userActivityDay.timezone.name)}
+            ELSE ${userActivityDay.timezone}
+          END`,
+          firstSeenAt: sql`LEAST(${userActivityDay.firstSeenAt}, excluded.${sql.identifier(userActivityDay.firstSeenAt.name)})`,
+          lastSeenAt: sql`GREATEST(${userActivityDay.lastSeenAt}, excluded.${sql.identifier(userActivityDay.lastSeenAt.name)})`,
+        },
+      });
   }
 
   async createProfile(
