@@ -44,7 +44,6 @@ export const voiceNoteDigestSchema = z.object({
   summary: z.string(),
   keyPoints: z.array(voiceNoteKeyPointSchema),
 });
-export type VoiceNoteDigest = z.infer<typeof voiceNoteDigestSchema>;
 
 // 멈췄다 이어 들으면 인식기가 파일을 새로 써서 조각마다 노트 시계의 시작을 든다
 const voiceNoteRecordingSchema = z.object({

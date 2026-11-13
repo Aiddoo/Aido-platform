@@ -42,7 +42,7 @@ export const paneAreaSchema = z.object({
   foldX: z.number().nullable(),
 });
 
-export type PaneAreaSize = z.infer<typeof paneAreaSchema>;
+type PaneAreaSize = z.infer<typeof paneAreaSchema>;
 
 export type PaneAreaMetrics = Omit<PaneAreaSize, 'foldX'>;
 
