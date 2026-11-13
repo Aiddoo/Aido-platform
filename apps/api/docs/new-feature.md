@@ -75,7 +75,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 - 규칙을 새로 만들었으면 그 주제 문서 한 곳에 쓰고 링크한다. 기능 문서가 필요하면 `apps/api/docs/<feature>.md`(200줄 이하)를 만들고 [서버 문서 안내](README.md)에 한 줄 더한다.
 - `pnpm check` → 변경한 범위의 unit·integration → 계약이 바뀌면 `test:contract`·관련 E2E 순서로 확인하고, 실행한 명령과 결과를 PR에 적는다.
 - 서버·계약을 바꾸면 `pnpm changeset`을 함께 올린다. 커밋은 한국어 Conventional Commits다([Git](../../../docs/conventions/git.md)).
-- 릴리스 묶음은 stack PR이다. 각 PR은 `stack:<release>` 라벨을 달고 혼자 빌드·테스트를 통과해야 한다. 맨 위 tip 하나만 `ci:stack-tip`을 달아 CI가 누적 diff를 한 번 검증하고, 머지는 위에서부터 한다.
+- 릴리스 묶음은 stack PR이다. 각 PR은 `stack:<release>` 라벨을 달고 혼자 빌드·테스트를 통과해야 한다. CI·머지 방법은 [Git](../../../docs/conventions/git.md#stack)이다.
 
 ## 예시: 메모 고정
 

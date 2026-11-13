@@ -83,7 +83,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 - 요청·응답 계약은 `@aido/api`, 앱 모델은 앱이 소유한다. 오류는 `@aido/api/errors`의 `ErrorCode`를 쓰고 문자열을 하드코딩하지 않는다.
 - 서버 Controller에서 `@Headers("x-…")`를 쓰지 않는다. `RequestClient`(`@CurrentRequestClient()`·`@AppVersion()`)로 읽는다.
 - 출시 앱이 보는 외부 계약(HTTP·푸시 payload·딥링크·기기 저장 key·DB·큐 이름)은 추가만 한다.
-- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `Co-Authored-By` 트레일러 없음, `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack 라벨·tip CI·머지 순서는 [Git](docs/conventions/git.md)이다.
+- 커밋·PR은 한국어 Conventional Commits(`refactor(server): …`), 본문 줄 100자 이하(commitlint), `Co-Authored-By` 트레일러 없음, `--no-verify` 금지. PR에는 실제 검증과 측정한 숫자만 쓴다. stack·CI 범위·머지 방법은 [Git](docs/conventions/git.md#stack)이다.
 
 ## 검증
 

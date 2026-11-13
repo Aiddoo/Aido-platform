@@ -4,7 +4,7 @@
 
 - Conventional Commits(`pnpm commit` 권장), 설명은 한국어다. 본문 줄은 100자 이하다(commitlint). type은 [commitlint](../../commitlint.config.ts)의 `feat`·`fix`·`docs`·`refactor`·`perf`·`test`·`ci`·`chore`다. scope는 `server`·`mobile`·`api`(공유 계약)를 쓰고, 저장소 전체면 생략한다.
 - 제목은 사용자나 코드가 무엇이 달라지는지를 문장으로 쓴다(`fix(mobile): 자정이 지나도 위젯이 앱을 열기 전에 새 날짜를 표시한다`). 본문에는 문제·원인·변경과 실제 실행한 검증을 쓴다. 커밋에 `Co-Authored-By` 트레일러를 넣지 않는다.
-- Git 훅은 [lefthook](../../lefthook.yml)이 관리하고 `pnpm install`의 `prepare`가 설치한다. 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올린다. tip CI가 같은 캐시를 재사용하고 놓친 작업만 실제로 돈다.
+- Git 훅은 [lefthook](../../lefthook.yml)이 관리하고 `pnpm install`의 `prepare`가 설치한다. 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올린다. CI가 같은 캐시를 재사용하고 놓친 작업만 실제로 돈다.
   - pre-commit: staged 파일에 `oxlint --fix`·`oxfmt --write`를 적용해 다시 stage하고, CI 정책 테스트(`scripts/ci/*.mjs` 변경 시), 문서 검사(`pnpm docs:check`, 커밋마다)와 파일 이름 검사(`apps/api/src`·`packages/api/src`·모바일 `features/`·`app/` 변경 시 `ls-lint`)를 실행한다. 코드 관례는 `oxlint`의 `aido/*` 규칙이 staged 파일에서 본다.
   - pre-push: 코드가 바뀐 push만 `turbo run typecheck test test:node build`, 서버 통합·배포 앱 계약 테스트(`test:integration`·`test:contract`)를 실행한다. 동시 실행 수를 2(통합·계약은 1)로 묶어 맥북 부하를 줄인다. 문서만 바뀐 push와 merge·rebase는 건너뛴다. 입력이 같으면 캐시를 쓰고 결과가 원격 캐시에 올라간다. 통합·계약 테스트는 로컬 Docker(Testcontainers)가 필요하다. 전체 E2E는 `pnpm test:e2e`로 직접 실행하고 PR 본문에 기록한다. CI에서는 돌리지 않는다.
   - commit-msg: commitlint.
@@ -23,11 +23,11 @@
 
 ## Stack
 
-- 의존하는 PR은 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 위 tip 하나만 `ci:stack-tip`을 달고, 그 tip이 누적 diff를 검증한다([CI](../../apps/api/docs/ci.md#실행-범위), [stack-policy](../../scripts/ci/stack-policy.mjs)). 중간 PR에 `ci:stack-tip`을 달지 않는다.
-- 공유 브랜치의 이력을 바꾸는 rebase·force push는 그 stack의 담당 범위에서만 한다.
-- 위에서부터 합친다. tip을 부모 브랜치에 합치고 차례로 내려가 맨 아래 PR만 마지막에 `main`에 합친다. `main` push가 한 번이라 운영 배포도 한 번이다(`deploy.yml`은 main CI 성공마다 배포한다). 브랜치는 모두 합친 뒤에 지운다. 아래부터 `--delete-branch`로 합치면 GitHub가 다음 PR을 `main`으로 바꾸지 않고 닫는다.
-- 부모 브랜치로 합치는 PR의 `Closes #N`은 GitHub가 처리하지 않는다(기본 브랜치를 향한 PR만 처리한다). 이 저장소의 merge commit 메시지는 PR 제목뿐이라 키워드가 `main`에 닿지도 않는다. 1.15.1에서 이슈 64개가 열린 채 남은 이유다. 그래서 부모에 합칠 때 merge commit 본문에 그 PR의 키워드를 넣는다: `gh pr merge <n> --merge --body "Closes #<issue>"`. 맨 아래 PR이 `main`에 합쳐지면 commit의 키워드로 이슈가 닫힌다([GitHub 문서](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)).
-- 다 합친 뒤 `gh issue list --state open`으로 stack 이슈가 모두 닫혔는지 확인한다. 남은 이슈는 PR 머지 커밋이 `main`에 있는지(`git merge-base --is-ancestor`) 확인하고 PR 링크와 함께 닫는다.
+- 의존하는 PR은 [`gh stack`](https://github.com/github/gh-stack)으로 쌓고(`gh stack add`·`gh stack submit --auto`) 같은 `stack:<release>` 라벨(예: `stack:1.13.0`)을 단다. 맨 아래 PR만 `main`을 향하고 나머지는 바로 아래 브랜치를 향한다.
+- CI는 `main`을 향한 PR과 `main` push에서만 돈다([CI](../../apps/api/docs/ci.md#실행-범위)). 위층의 누적 tree는 tip을 push할 때 pre-push가 검증하고, 합친 뒤 `main` CI가 이미지 발행 전에 다시 검증한다. 각 PR은 혼자 빌드·테스트를 통과하도록 나눈다.
+- 아래 층을 고치면 그 브랜치에서 커밋하고 `gh stack rebase --upstack`으로 위층을 다시 쌓는다. 공유 브랜치의 이력을 바꾸는 rebase·force push는 그 stack의 담당 범위에서만 한다.
+- 합칠 때는 `gh stack merge --yes`로 stack 전체를 한 번에 `main`에 합친다. `main` push가 한 번이라 운영 배포도 한 번이다(`deploy.yml`은 main CI 성공마다 배포한다).
+- 다 합친 뒤 `gh issue list --state open`으로 stack 이슈가 모두 닫혔는지 확인한다. 남은 이슈는 PR 머지 커밋이 `main`에 있는지(`git merge-base --is-ancestor`) 확인하고 PR 링크와 함께 닫는다. 부모 브랜치를 향한 PR의 `Closes #N`은 GitHub가 처리하지 않는다([GitHub 문서](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)).
 
 ## 버전
 

@@ -1,4 +1,4 @@
-# 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올리고, tip CI가 그 캐시를 재사용한다(docs/conventions/git.md#커밋).
+# 테스트는 이 훅에서 turbo로 실행해 결과를 팀 원격 캐시에 올리고, CI가 그 캐시를 재사용한다(docs/conventions/git.md#커밋).
 # https://lefthook.dev/configuration/
 
 glob_matcher: doublestar
