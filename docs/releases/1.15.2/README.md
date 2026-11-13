@@ -711,6 +711,8 @@ ALTER TABLE "Subscription" DROP COLUMN "dataRetentionUntil";
 - **스토어별 출시 노트 검사**: `store:check`는 두 스토어의 출시 노트를 같은 글로 비교해 App Store에 넣은 19줄을 저장소 파일에 둘 수 없다. 스토어마다 다른 출시 노트를 허용할지 정한다([스토어 업데이트 내용](store-listing.md))
 - **Jest 시간대 고정**: 로컬 Jest는 프로세스 시간대(서울)를 따라 CI(UTC)와 결과가 다를 수 있다. tip CI에서 시간대 테스트 하나가 UTC에서만 실패했다([tip CI](#tip-ci)). Jest의 `TZ`를 CI와 같게 고정할지 정한다
 - **Firebase preview 앱 등록**: 개발·preview 빌드가 운영 Firebase 앱 설정을 쓰지 않게 preview 앱을 따로 등록한다
+- **1.15.2(160) 앱 멈춤 `AIDO-MOBILE-PRODUCTION-1B`**: 메인 스레드가 `RuntimeScheduler_Modern::schedule`에서 막혀 watchdog이 앱을 끝냈다. 1.15.3 OTA 후보에서 화면 경계를 하나로 묶어 봤지만 내 초대 화면이 1.15.2보다 나빠져(두 조회 9초 지연, 같은 부하에서 JS 스레드 바쁨 0~1% → 100%, 그중 약 7할이 `ShadowTree::commit`) 빼고 냈다. 원인 화면을 프로파일로 1.15.2와 나란히 비교해 찾는다
+- **겹치는 인덱스**: `Notification_userId_type_idx` 등 5개는 운영에서 모두 쓰이고(2026-11-13 `idx_scan` 4~19,496) 합쳐 약 2.2MB라 지우지 않는다
 
 ### 1.15.2에서 바꾸지 않기로 한 것
 
