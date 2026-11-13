@@ -1,7 +1,6 @@
 import { GRANTABLE_FEATURE_KEYS, type GrantableFeature } from "@aido/api/vocabulary";
 
 import { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
-import { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
 import type {
   FeatureGrant,
   FeatureGrantPrimitives,
@@ -16,18 +15,16 @@ export class InMemoryFeatureGrantRepository extends FeatureGrantRepositoryPort {
     return [...this.#grants.values()];
   }
 
-  async nextId(): Promise<FeatureGrantId> {
-    this.#sequence += 1;
-    return FeatureGrantId.reconstitute(`generated-grant-${this.#sequence}`);
+  async existsBySourceKey(sourceKey: string): Promise<boolean> {
+    return this.all.some((stored) => stored.sourceKey === sourceKey);
   }
 
-  async saveIfAbsent(grant: FeatureGrant): Promise<boolean> {
+  async save(grant: FeatureGrant): Promise<void> {
     const primitives = grant.toPrimitives();
-    if (this.all.some((stored) => stored.sourceKey === primitives.sourceKey)) {
-      return false;
+    if (await this.existsBySourceKey(primitives.sourceKey)) {
+      return;
     }
     this.#grants.set(primitives.id, primitives);
-    return true;
   }
 
   /** 사용자의 기능별 자리 합계. Drizzle reader처럼 1 이상인 지급만 더하고 받은 것이 없는 기능은 뺀다 */

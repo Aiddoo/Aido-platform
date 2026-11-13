@@ -28,11 +28,10 @@ import { GetResolvedAccessUseCase } from "../../application/use-cases/get-resolv
 
 // 다른 Context에 여는 문. 판단은 도메인 서비스가 하고 다른 Context가 아직 쓰는 Date는 이 경계에서 바꾼다
 @Injectable()
-export class EntitlementReaderAdapter extends EntitlementReaderPort {
+export class EntitlementReaderAdapter implements EntitlementReaderPort {
   readonly #getResolvedAccess: Pick<GetResolvedAccessUseCase, "execute">;
 
   constructor(getResolvedAccess: GetResolvedAccessUseCase) {
-    super();
     this.#getResolvedAccess = getResolvedAccess;
   }
 

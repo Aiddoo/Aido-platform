@@ -11,7 +11,7 @@ import { user } from "#api/platform/database/schema/identity.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { QuotaWindow } from "../../../shared/domain/quota-window.vo.js";
-import { QuotaUsageRepositoryPort } from "../../application/ports/quota-usage.repository.port.js";
+import type { QuotaUsageRepositoryPort } from "../../application/ports/quota-usage.repository.port.js";
 
 interface AiPlanCounter {
   readonly count: number;
@@ -23,11 +23,10 @@ interface AiPlanCounter {
  * 센다. 더하고 빼는 연산은 Application이 잡은 사용자 행 잠금 안에서 실행된다.
  */
 @Injectable()
-export class DrizzleQuotaUsageRepository extends QuotaUsageRepositoryPort {
+export class DrizzleQuotaUsageRepository implements QuotaUsageRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    super();
     this.#txHost = txHost;
   }
 

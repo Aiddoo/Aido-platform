@@ -12,6 +12,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { QuotaAllowance } from "../../domain/quota-allowance.vo.js";
+import { QuotaChargeId } from "../../domain/quota-charge-id.vo.js";
 import { QuotaCharge } from "../../domain/quota-charge.aggregate.js";
 import { QUOTA_CHARGE_AMOUNT } from "../../domain/quotas.constants.js";
 import type { QuotaChargeRepositoryPort } from "../ports/quota-charge.repository.port.js";
@@ -29,7 +30,7 @@ export interface ReserveQuotaDependencies {
   readonly accessStateReader: Pick<AccessStateReaderPort, "findAccessState">;
   readonly quotaChargeRepository: Pick<
     QuotaChargeRepositoryPort,
-    "nextId" | "findByIdempotencyKey" | "save" | "saveIfUnchanged"
+    "findByIdempotencyKey" | "save" | "saveIfUnchanged"
   >;
   readonly quotaUsageRepository: QuotaUsageRepositoryPort;
   readonly clock: ClockPort;
@@ -81,7 +82,7 @@ export class ReserveQuotaUseCase {
       if (existing == null) {
         await this.#addUsage(decision);
         const charge = QuotaCharge.create({
-          id: await quotaChargeRepository.nextId(),
+          id: QuotaChargeId.generate(),
           userId,
           meter: decision.allowance.meter,
           idempotencyKey: command.idempotencyKey,

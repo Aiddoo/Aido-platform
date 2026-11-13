@@ -35,7 +35,7 @@ async function saveCharge(
   overrides: Partial<QuotaChargePrimitives> = {},
 ): Promise<QuotaCharge> {
   const charge = createQuotaChargeFixture({
-    id: (await repository.nextId()).value,
+    id: QuotaChargeId.generate().value,
     idempotencyKey: null,
     ...overrides,
   });
@@ -47,10 +47,9 @@ export function describeQuotaChargeRepositoryContract(
   createRepository: () => Promise<QuotaChargeRepositoryPort>,
 ): void {
   describe("차감 원장 저장소 계약", () => {
-    it("nextId는 부를 때마다 다른 id를 주고 저장한 차감을 그대로 읽는다", async () => {
+    it("저장한 차감을 그대로 읽고 없는 id는 null이다", async () => {
       // Given
       const repository = await createRepository();
-      const ids = [await repository.nextId(), await repository.nextId()];
       const charge = await saveCharge(repository, { requestHash: "hash-a" });
 
       // When
@@ -58,7 +57,6 @@ export function describeQuotaChargeRepositoryContract(
       const missing = await repository.findById(QuotaChargeId.reconstitute("missing"));
 
       // Then
-      expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
       expect(comparable(found)).toEqual(comparable(charge));
       expect(missing).toBeNull();
     });

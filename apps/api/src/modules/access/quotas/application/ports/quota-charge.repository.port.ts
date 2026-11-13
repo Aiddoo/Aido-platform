@@ -6,7 +6,6 @@ import type { QuotaChargeId } from "../../domain/quota-charge-id.vo.js";
 import type { QuotaCharge, QuotaChargeVersion } from "../../domain/quota-charge.aggregate.js";
 
 export abstract class QuotaChargeRepositoryPort {
-  abstract nextId(): Promise<QuotaChargeId>;
   abstract findById(chargeId: QuotaChargeId): Promise<QuotaCharge | null>;
   abstract findByIdempotencyKey(params: {
     readonly userId: UserId;

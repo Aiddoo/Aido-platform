@@ -1,3 +1,4 @@
+import { QuotaChargeId } from "#api/modules/access/quotas/domain/quota-charge-id.vo";
 import { DrizzleQuotaChargeRepository } from "#api/modules/access/quotas/infrastructure/persistence/drizzle-quota-charge.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describeQuotaChargeRepositoryContract } from "#test/contracts/access/quota-charge-repository.contract";
@@ -45,7 +46,7 @@ describe("DrizzleQuotaChargeRepository (실제 PostgreSQL)", () => {
     const repository = createRepository();
     const createdAt = Temporal.Instant.from("2027-01-08T12:00:00.123Z");
     const charge = createQuotaChargeFixture({
-      id: (await repository.nextId()).value,
+      id: QuotaChargeId.generate().value,
       createdAt,
       updatedAt: createdAt.add({ milliseconds: 1 }),
     });

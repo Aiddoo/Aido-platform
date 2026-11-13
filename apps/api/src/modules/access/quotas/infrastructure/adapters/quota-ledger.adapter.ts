@@ -21,7 +21,7 @@ import type { QuotaRefundReason } from "../../domain/quotas.constants.js";
 
 // 다른 Context에 여는 문. 명령은 UseCase에 그대로 넘기고 읽은 시각은 계약 문자열로 바꾼다
 @Injectable()
-export class QuotaLedgerAdapter extends QuotaLedgerPort {
+export class QuotaLedgerAdapter implements QuotaLedgerPort {
   readonly #reserveQuota: Pick<ReserveQuotaUseCase, "execute">;
   readonly #reopenQuotaReservation: Pick<ReopenQuotaReservationUseCase, "execute">;
   readonly #commitQuotaReservation: Pick<CommitQuotaReservationUseCase, "execute">;
@@ -35,7 +35,6 @@ export class QuotaLedgerAdapter extends QuotaLedgerPort {
     refundQuotaReservation: RefundQuotaReservationUseCase,
     getMeteredFeatureQuota: GetMeteredFeatureQuotaUseCase,
   ) {
-    super();
     this.#reserveQuota = reserveQuota;
     this.#reopenQuotaReservation = reopenQuotaReservation;
     this.#commitQuotaReservation = commitQuotaReservation;

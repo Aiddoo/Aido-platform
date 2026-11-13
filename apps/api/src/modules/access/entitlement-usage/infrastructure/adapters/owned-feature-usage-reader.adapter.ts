@@ -23,7 +23,7 @@ function toQuotaUsageReading(usage: DailySendUsage): QuotaUsageReading {
 
 // social·planning 포트가 Date를 돌려줘 이 경계에서 Temporal로 바꾼다
 @Injectable()
-export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort {
+export class OwnedFeatureUsageReaderAdapter implements OwnedFeatureUsageReaderPort {
   readonly #cheerUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly #nudgeUsageReader: Pick<DailySendUsageReaderPort, "readDailyUsage">;
   readonly #friendCountReader: Pick<FriendCountReaderPort, "countCurrentFriends">;
@@ -35,7 +35,6 @@ export class OwnedFeatureUsageReaderAdapter extends OwnedFeatureUsageReaderPort 
     @Inject(FriendCountReaderPort) friendCountReader: FriendCountReaderPort,
     @Inject(TodoCategoryCountReaderPort) categoryCountReader: TodoCategoryCountReaderPort,
   ) {
-    super();
     this.#cheerUsageReader = cheerUsageReader;
     this.#nudgeUsageReader = nudgeUsageReader;
     this.#friendCountReader = friendCountReader;
