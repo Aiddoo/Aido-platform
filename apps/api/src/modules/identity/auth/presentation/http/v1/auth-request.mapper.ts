@@ -1,29 +1,26 @@
-import type { Request } from "express";
-
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import type { RequestClient } from "#api/platform/http/request-client/request-client";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import type { RequestSource } from "../decorators/request-source.decorator.js";
 import { resolveRequestDevice } from "./request-device.mapper.js";
 
 /**
- * 요청에서 감사·관리자 알림용 메타데이터를 만든다. 구 앱은 기기 이름·타입을 본문으로 보내므로
+ * 감사·관리자 알림용 메타데이터를 만든다. 구 앱은 기기 이름·타입을 본문으로 보내므로
  * 기기 정보는 본문 값이 RequestClient의 헤더 값보다 우선한다.
  */
-export function extractMetadata(
-  req: Pick<Request, "ip" | "headers">,
-  client: RequestClient,
+export function toRequestMetadata(
+  source: RequestSource,
   body?: { deviceName?: string; deviceType?: string },
 ): RequestMetadata {
-  const userAgent = req.headers["user-agent"];
+  const { client } = source;
 
   return {
-    ip: req.ip || undefined,
-    userAgent,
+    ip: source.ip,
+    userAgent: source.userAgent,
     device: resolveRequestDevice({
       client,
-      userAgent,
-      acceptLanguage: req.headers["accept-language"],
+      userAgent: source.userAgent,
+      acceptLanguage: source.acceptLanguage,
       deviceName: body?.deviceName,
       deviceType: body?.deviceType,
     }),

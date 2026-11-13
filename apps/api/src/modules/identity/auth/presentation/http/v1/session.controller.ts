@@ -1,14 +1,15 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nestjs/common";
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { Request } from "express";
 
-import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { ListActiveSessionsUseCase } from "#api/modules/identity/auth/application/use-cases/list-active-sessions.use-case";
 import { RevokeSessionUseCase } from "#api/modules/identity/auth/application/use-cases/revoke-session.use-case";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { type RequestClient } from "#api/platform/http/request-client/request-client";
-import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";
+import {
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiNotFoundError,
@@ -17,7 +18,7 @@ import {
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
-import { extractMetadata } from "./auth-request.mapper.js";
+import { toRequestMetadata } from "./auth-request.mapper.js";
 import { RevokeSessionDto } from "./auth.dto.js";
 import { MessageResponseDto, SessionListDto } from "./auth.dto.js";
 
@@ -119,10 +120,9 @@ export class SessionController {
   async revokeSession(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: RevokeSessionDto }) params: RevokeSessionDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     const result = await this.#revokeSessionUseCase.execute({
       userId: user.userId,
       sessionId: params.sessionId,

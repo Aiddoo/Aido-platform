@@ -1,22 +1,15 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
-import {
-  Header,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Req,
-} from "@nestjs/common";
+import { Header, Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import type { Request } from "express";
 
-import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
-import { extractMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
+import {
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
+import { toRequestMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { AUTH_THROTTLE } from "#api/modules/identity/auth/presentation/http/v1/auth-throttle.constants";
 import {
@@ -27,11 +20,7 @@ import {
   UpdateProfileResponseDto,
 } from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
-import { type RequestClient } from "#api/platform/http/request-client/request-client";
-import {
-  AppVersion,
-  CurrentRequestClient,
-} from "#api/platform/http/request-client/request-client.decorator";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorResponse,
@@ -182,10 +171,9 @@ export class UserAccountController {
   async deleteAccount(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     return this.#deleteAccountUseCase.execute({
       userId: user.userId,
       password: dto.password,

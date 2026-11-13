@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import {
@@ -12,14 +13,12 @@ import {
   Logger,
   Post,
   Query,
-  Req,
   Res,
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import type { Request, Response } from "express";
+import type { Response } from "express";
 
-import { type CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { CompleteOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/complete-oauth-authorization.use-case";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
@@ -31,12 +30,12 @@ import { StartOAuthAuthorizationUseCase } from "#api/modules/identity/auth/appli
 import type { OAuthMode } from "#api/modules/identity/auth/domain/auth.constants";
 import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
 import { Public } from "#api/modules/identity/auth/presentation/http/decorators/public.decorator";
-import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
-import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import {
-  AppVersion,
-  CurrentRequestClient,
-} from "#api/platform/http/request-client/request-client.decorator";
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
+import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
   ApiErrorCodesResponse,
@@ -49,7 +48,7 @@ import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guar
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
-import { buildOAuthErrorParams, extractMetadata } from "./auth-request.mapper.js";
+import { buildOAuthErrorParams, toRequestMetadata } from "./auth-request.mapper.js";
 import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   AppleMobileCallbackDto,
@@ -169,14 +168,12 @@ export class OAuthController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async exchangeCode(
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
-
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ): Promise<AuthTokensDto> {
     const result = await this.#exchangeOAuthCodeUseCase.execute({
       code: dto.code,
-      device: extractMetadata(req, client).device,
+      device: toRequestMetadata(source).device,
     });
     return AuthMapper.toExchangeCodeResponse(result, appVersion);
   }
@@ -233,16 +230,14 @@ export class OAuthController {
   @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
   async appleCallback(
     @Body({ schema: AppleMobileCallbackDto }) dto: AppleMobileCallbackDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
-
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#loginWithMobileOAuthTokenUseCase.execute({
       provider: "APPLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, client, dto),
+      metadata: toRequestMetadata(source, dto),
       nonce: dto.nonce,
     });
 
@@ -296,16 +291,14 @@ export class OAuthController {
   @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
   async googleCallback(
     @Body({ schema: GoogleMobileCallbackDto }) dto: GoogleMobileCallbackDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
-
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#loginWithMobileOAuthTokenUseCase.execute({
       provider: "GOOGLE",
       token: dto.idToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, client, dto),
+      metadata: toRequestMetadata(source, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -408,14 +401,13 @@ export class OAuthController {
   async googleOAuthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req, client);
+      const metadata = toRequestMetadata(source);
 
       const result = await this.#completeOAuthAuthorizationUseCase.execute({
         provider: "GOOGLE",
@@ -498,16 +490,14 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
   async kakaoCallback(
     @Body({ schema: KakaoMobileCallbackDto }) dto: KakaoMobileCallbackDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
-
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#loginWithMobileOAuthTokenUseCase.execute({
       provider: "KAKAO",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, client, dto),
+      metadata: toRequestMetadata(source, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -608,14 +598,13 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async kakaoOAuthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req, client);
+      const metadata = toRequestMetadata(source);
 
       const result = await this.#completeOAuthAuthorizationUseCase.execute({
         provider: "KAKAO",
@@ -692,16 +681,14 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiErrorResponse({ errorCode: ErrorCode.SOCIAL_0202 })
   async naverCallback(
     @Body({ schema: NaverMobileCallbackDto }) dto: NaverMobileCallbackDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
-
+    @CurrentRequestSource() source: RequestSource,
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#loginWithMobileOAuthTokenUseCase.execute({
       provider: "NAVER",
       token: dto.accessToken,
       userName: dto.userName,
-      metadata: extractMetadata(req, client, dto),
+      metadata: toRequestMetadata(source, dto),
     });
 
     return AuthMapper.toSocialAuthTokensResponse(result, appVersion);
@@ -804,14 +791,13 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async naverOAuthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
     @Res() res: Response,
   ): Promise<void> {
     const defaultRedirectUri = "aido://auth/callback";
 
     try {
-      const metadata = extractMetadata(req, client);
+      const metadata = toRequestMetadata(source);
 
       const result = await this.#completeOAuthAuthorizationUseCase.execute({
         provider: "NAVER",
@@ -900,10 +886,9 @@ provider에 따라 필수 토큰이 다릅니다:
   async linkSocialAccount(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: LinkSocialAccountDto }) dto: LinkSocialAccountDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     return this.#linkOAuthAccountUseCase.execute({ ...dto, userId: user.userId, metadata });
   }
 
@@ -964,10 +949,9 @@ provider에 따라 필수 토큰이 다릅니다:
   async linkWithExchangeCode(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ExchangeCodeDto }) dto: ExchangeCodeDto,
-    @Req() req: Request,
-    @CurrentRequestClient() client: RequestClient,
+    @CurrentRequestSource() source: RequestSource,
   ) {
-    const metadata = extractMetadata(req, client);
+    const metadata = toRequestMetadata(source);
     return this.#linkOAuthAccountWithCodeUseCase.execute({
       userId: user.userId,
       code: dto.code,

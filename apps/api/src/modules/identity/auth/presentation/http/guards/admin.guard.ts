@@ -1,7 +1,6 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
-
-import type { CurrentUserPayload } from "#api/../../../packages/api/dist/contracts/auth/v1/auth.response.d";
 
 import { adminRequired, invalidAccessToken } from "../../../application/auth.errors.js";
 
