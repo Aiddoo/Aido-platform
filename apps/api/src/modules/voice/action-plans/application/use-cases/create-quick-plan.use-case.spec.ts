@@ -62,8 +62,10 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute, used } = setup();
     aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: memoActionDraft() });
+
     // When
     const response = await execute();
+
     // Then
     const parsed = quickPlanResponseSchema.parse(response);
     expect(parsed.charged).toBe(true);
@@ -76,8 +78,10 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute } = setup();
     aiGenerator.setRawResponse({ todos: [todoActionDraft({ title: "치과예약" })], memo: null });
+
     // When
     const { plan } = await execute();
+
     // Then
     expect(plan.actions[0]).toMatchObject({ duplicateOfTodoId: 41 });
   });
@@ -89,8 +93,10 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute, used } = setup();
     aiGenerator.setRawResponse({ todos: [], memo });
+
     // When
     const response = await execute();
+
     // Then
     expect(response.charged).toBe(false);
     expect(response.plan.actions).toHaveLength(actionCount);
@@ -107,8 +113,10 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setInvalidResponse(createAiGenerationError(kind));
+
     // When
     const failure = execute();
+
     // Then
     await expect(failure).rejects.toMatchObject({ errorCode, details: { charged: false } });
     expect(await used()).toBe(0);
@@ -122,8 +130,10 @@ describe("CreateQuickPlanUseCase", () => {
     const { aiGenerator, execute, quota } = setup();
     aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
     quota.refund = async () => false;
+
     // When
     const failure = execute();
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1301,
@@ -136,8 +146,10 @@ describe("CreateQuickPlanUseCase", () => {
     const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     const controller = new AbortController();
     aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+
     // When
     const failure = execute({ signal: controller.signal });
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1301,
@@ -155,8 +167,10 @@ describe("CreateQuickPlanUseCase", () => {
     const { aiGenerator, execute, quota } = setup();
     aiGenerator.setRawResponse({ todos: [], memo: null });
     quota.refund = async () => false;
+
     // When
     const response = await execute();
+
     // Then
     expect(response.charged).toBe(true);
   });
@@ -168,8 +182,10 @@ describe("CreateQuickPlanUseCase", () => {
     quota.read = async () => {
       throw new Error("db down");
     };
+
     // When
     const response = await execute();
+
     // Then
     expect(response.charged).toBe(true);
     expect(response.featureQuota).toBeNull();
@@ -189,8 +205,10 @@ describe("CreateQuickPlanUseCase", () => {
       const { aiGenerator, execute, used } = setup();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       const first = await execute();
+
       // When
       const second = await execute();
+
       // Then
       expect(second.plan).toEqual(first.plan);
       expect(second.charged).toBe(true);
@@ -205,8 +223,10 @@ describe("CreateQuickPlanUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
       // When
       const second = await execute();
+
       // Then
       expect(second.charged).toBe(true);
       expect(aiGenerator.getCallCount()).toBe(2);
@@ -223,8 +243,10 @@ describe("CreateQuickPlanUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setRawResponse({ todos: [], memo: memoActionDraft() });
+
       // When
       const second = await execute();
+
       // Then
       expect(second.charged).toBe(false);
       expect(await used()).toBe(0);
@@ -236,8 +258,10 @@ describe("CreateQuickPlanUseCase", () => {
       aiGenerator.setRawResponse({ todos: [], memo: memoActionDraft() });
       const first = await execute();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
       // When
       const second = await execute();
+
       // Then
       expect(first.charged).toBe(false);
       expect(second.charged).toBe(true);
@@ -247,11 +271,13 @@ describe("CreateQuickPlanUseCase", () => {
     it("같은 키가 계속 할 일 0개면 매번 환불되어 차감이 쌓이지 않는다", async () => {
       // Given
       const { aiGenerator, execute, used } = setup();
+
       // When
       for (const _attempt of [1, 2, 3]) {
         aiGenerator.setRawResponse({ todos: [], memo: null });
         expect((await execute()).charged).toBe(false);
       }
+
       // Then
       expect(await used()).toBe(0);
     });
@@ -265,8 +291,10 @@ describe("CreateQuickPlanUseCase", () => {
       if (ledgerUser != null) {
         ledgerUser.aiUsageCount = FREE_LIMIT;
       }
+
       // When
       const second = execute();
+
       // Then
       await expect(second).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1303,
@@ -282,8 +310,10 @@ describe("CreateQuickPlanUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
+
       // When
       const failure = execute();
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1301,
@@ -297,8 +327,10 @@ describe("CreateQuickPlanUseCase", () => {
       const { aiGenerator, execute, used } = setup();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       await execute();
+
       // When
       const failure = execute({ text: "다른 내용" });
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1318,
@@ -314,9 +346,11 @@ describe("CreateQuickPlanUseCase", () => {
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
       aiGenerator.setDelay(300);
       const first = execute();
+
       // When
       await vi.waitFor(() => expect(aiGenerator.getCallCount()).toBe(1));
       const second = execute();
+
       // Then
       await expect(second).rejects.toMatchObject({ errorCode: ErrorCode.AI_1314 });
       await first;
@@ -331,8 +365,10 @@ describe("CreateQuickPlanUseCase", () => {
       await execute().catch(() => null);
       aiGenerator.clear();
       aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
       // When
       const response = await execute();
+
       // Then
       expect(response.charged).toBe(true);
       expect(await used()).toBe(1);
@@ -385,8 +421,10 @@ describe("CreateQuickPlanUseCase", () => {
         // Given
         const { aiGenerator, execute, used } = setup({ ...input, aiUsageCount: usedBefore });
         aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+
         // When
         const outcome = execute();
+
         // Then
         if (blocked) {
           await expect(outcome).rejects.toMatchObject({
@@ -407,8 +445,10 @@ describe("CreateQuickPlanUseCase", () => {
     // Given
     const { aiGenerator, execute, logger } = setup();
     aiGenerator.setRawResponse({ todos: [todoActionDraft({ title: "비밀 제목" })], memo: null });
+
     // When
     await execute({ text: "비밀 내용" });
+
     // Then
     expect(JSON.stringify(logger.messages)).not.toContain("비밀");
     expect(logger.messages).toContainEqual(

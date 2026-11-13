@@ -26,8 +26,10 @@ describe("ActionPlan", () => {
   it("내 카테고리가 아닌 id를 겹치지 않게 모아 거절한다", () => {
     // Given
     const plan = ActionPlan.create([todo("a", 1), todo("b", 9), todo("c", 9), todo("d", 8)]);
+
     // When
     const rejected = () => plan.assertCategoriesOwned(new Set([1]));
+
     // Then
     expect(rejected).toThrow(
       expect.objectContaining({
@@ -40,8 +42,10 @@ describe("ActionPlan", () => {
   it("모든 카테고리가 내 것이면 통과한다", () => {
     // Given
     const plan = ActionPlan.create([todo("a", 1), todo("b", 2)]);
+
     // When
     const accepted = () => plan.assertCategoriesOwned(new Set([1, 2]));
+
     // Then
     expect(accepted).not.toThrow();
   });
@@ -53,8 +57,10 @@ describe("ActionPlan", () => {
   ])("메모 제목 '$title'은 첫 줄에 한 번만 둔다", ({ title, content, expected }) => {
     // Given
     const plan = ActionPlan.create([memo(title, content)]);
+
     // When
     const composed = plan.memoContent;
+
     // Then
     expect(composed).toBe(expected);
   });
@@ -62,8 +68,10 @@ describe("ActionPlan", () => {
   it("제목을 붙여 길어진 메모는 메모 상한에 맞춘다", () => {
     // Given
     const plan = ActionPlan.create([memo("제목", "가".repeat(MEMO_LIMITS.MAX_CONTENT_LENGTH))]);
+
     // When
     const composed = plan.memoContent;
+
     // Then
     expect(composed?.length).toBeLessThanOrEqual(MEMO_LIMITS.MAX_CONTENT_LENGTH);
   });
@@ -71,8 +79,10 @@ describe("ActionPlan", () => {
   it("메모가 없으면 메모 내용도 없다", () => {
     // Given
     const plan = ActionPlan.create([todo("a", 1)]);
+
     // When
     const composed = plan.memoContent;
+
     // Then
     expect(composed).toBeNull();
   });

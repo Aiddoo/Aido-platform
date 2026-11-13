@@ -113,8 +113,10 @@ describe("DigestVoiceNoteUseCase", () => {
         ],
       }),
     );
+
     // When
     const response = await execute();
+
     // Then
     const parsed = voiceNoteDigestResponseSchema.parse(response);
     expect(parsed.keyPoints).toEqual([
@@ -130,8 +132,10 @@ describe("DigestVoiceNoteUseCase", () => {
     // Given
     const { aiGenerator, execute } = setup();
     aiGenerator.setRawResponse(digestDraft());
+
     // When
     await execute();
+
     // Then
     expect(aiGenerator.getLastPrompt()).not.toContain("4200");
   });
@@ -145,8 +149,10 @@ describe("DigestVoiceNoteUseCase", () => {
       // Given
       const { aiGenerator, execute, used, quotaChargeRepository } = setup();
       aiGenerator.setRawResponse(digestDraft(draft));
+
       // When
       const response = await execute();
+
       // Then
       expect(response.charged).toBe(true);
       expect(response.featureQuota).toMatchObject({ used: 1 });
@@ -162,8 +168,10 @@ describe("DigestVoiceNoteUseCase", () => {
       aiGenerator.setRawResponse(
         digestDraft({ summary: "", keyPoints: [], todos: [], memo: memoActionDraft() }),
       );
+
       // When
       const response = await execute();
+
       // Then
       expect(response.charged).toBe(true);
       expect(await used()).toBe(1);
@@ -174,8 +182,10 @@ describe("DigestVoiceNoteUseCase", () => {
       const { aiGenerator, execute, used } = setup();
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
       const first = await execute();
+
       // When
       const second = await execute();
+
       // Then
       expect(second.summary).toBe(first.summary);
       expect(second.plan).toEqual(first.plan);
@@ -192,8 +202,10 @@ describe("DigestVoiceNoteUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+
       // When
       const second = await execute();
+
       // Then
       expect(second.charged).toBe(true);
       expect(aiGenerator.getCallCount()).toBe(2);
@@ -210,8 +222,10 @@ describe("DigestVoiceNoteUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+
       // When
       const second = await execute();
+
       // Then
       expect(second.charged).toBe(true);
       expect(await used()).toBe(1);
@@ -224,8 +238,10 @@ describe("DigestVoiceNoteUseCase", () => {
       await execute();
       replay.results.clear();
       aiGenerator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
+
       // When
       const failure = execute();
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.AI_1301,
@@ -242,8 +258,10 @@ describe("DigestVoiceNoteUseCase", () => {
       // Given
       const { aiGenerator, execute, used } = setup(input);
       aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+
       // When
       const response = await execute();
+
       // Then
       expect(response.charged).toBe(true);
       expect(response.featureQuota).toMatchObject({ limit, used: 1 });
@@ -260,8 +278,10 @@ describe("DigestVoiceNoteUseCase", () => {
       details: { charged: false },
     });
     aiGenerator.setRawResponse(digestDraft({ todos: [] }));
+
     // When
     const second = await execute();
+
     // Then
     expect(second.charged).toBe(true);
     expect(await used()).toBe(1);
@@ -273,6 +293,7 @@ describe("DigestVoiceNoteUseCase", () => {
   it("같은 키가 계속 빈 결과면 매번 환불되어 차감이 쌓이지 않는다", async () => {
     // Given
     const { aiGenerator, execute, used } = setup();
+
     // When
     for (const _attempt of [1, 2, 3]) {
       aiGenerator.setRawResponse(
@@ -283,6 +304,7 @@ describe("DigestVoiceNoteUseCase", () => {
         details: { charged: false },
       });
     }
+
     // Then
     expect(await used()).toBe(0);
   });
@@ -291,8 +313,10 @@ describe("DigestVoiceNoteUseCase", () => {
     // Given
     const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
+
     // When
     const failure = execute();
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1302,
@@ -309,8 +333,10 @@ describe("DigestVoiceNoteUseCase", () => {
     const { aiGenerator, execute, quota } = setup();
     aiGenerator.setRawResponse(digestDraft({ title: " ", summary: "", keyPoints: [], todos: [] }));
     quota.refund = async () => false;
+
     // When
     const failure = execute();
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1302,
@@ -322,8 +348,10 @@ describe("DigestVoiceNoteUseCase", () => {
     // Given
     const { aiGenerator, execute, used, quotaChargeRepository } = setup();
     aiGenerator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
+
     // When
     const failure = execute();
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1301,
@@ -345,8 +373,10 @@ describe("DigestVoiceNoteUseCase", () => {
     const { aiGenerator, execute, used } = setup();
     aiGenerator.setRawResponse(digestDraft());
     const first = await execute();
+
     // When
     const second = await execute();
+
     // Then
     expect(second.keyPoints).toEqual(first.keyPoints);
     expect(aiGenerator.getCallCount()).toBe(1);
@@ -358,8 +388,10 @@ describe("DigestVoiceNoteUseCase", () => {
     const { aiGenerator, execute } = setup();
     aiGenerator.setRawResponse(digestDraft());
     await execute();
+
     // When
     const failure = execute({ segments: [] });
+
     // Then
     await expect(failure).rejects.toMatchObject({ errorCode: ErrorCode.AI_1318 });
   });
@@ -373,9 +405,11 @@ describe("DigestVoiceNoteUseCase", () => {
       // Given
       const { aiGenerator, execute, used } = setup(input);
       aiGenerator.setRawResponse(digestDraft());
+
       // When
       const accepted = await execute({ text: "가".repeat(limit), segments: [] });
       const rejected = execute({ text: "가".repeat(limit + 1), segments: [] });
+
       // Then
       expect(accepted.charged).toBe(true);
       await expect(rejected).rejects.toMatchObject({
@@ -395,8 +429,10 @@ describe("DigestVoiceNoteUseCase", () => {
       // Given
       const { aiGenerator, execute, used } = setup(PREMIUM);
       const text = "<".repeat(Math.ceil(maxCharacters.premium / 6) + 1);
+
       // When
       const rejected = execute({ text, segments: [] });
+
       // Then
       await expect(rejected).rejects.toMatchObject({ errorCode: ErrorCode.AI_1312 });
       expect(aiGenerator.getCallCount()).toBe(0);
@@ -430,8 +466,10 @@ describe("DigestVoiceNoteUseCase", () => {
         used: count,
       });
       aiGenerator.setRawResponse(digestDraft());
+
       // When
       const outcome = execute();
+
       // Then
       if (blocked) {
         await expect(outcome).rejects.toMatchObject({
@@ -451,8 +489,10 @@ describe("DigestVoiceNoteUseCase", () => {
     aiGenerator.setRawResponse(
       digestDraft({ summary: "비밀 요약", todos: [todoActionDraft({ title: "비밀 제목" })] }),
     );
+
     // When
     await execute({ text: "비밀 전사" });
+
     // Then
     expect(JSON.stringify(logger.messages)).not.toContain("비밀");
     expect(logger.messages).toContainEqual(

@@ -368,20 +368,22 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const own = await seedMemo();
     const foreign = await seedMemo(1, otherUserId);
 
-    // When & Then: 거부 처리기를 만들 때 바로 걸어 먼저 끝난 거부가 처리되지 않은 채 남지 않게 한다
-    await expect(
-      context.module
-        .get(RewriteMemoUseCase)
-        .execute({ userId, memoId: foreign.id, content: "덮어쓰기" }),
-    ).rejects.toMatchObject({
+    // When
+    const rewriteFailure = await context.module
+      .get(RewriteMemoUseCase)
+      .execute({ userId, memoId: foreign.id, content: "덮어쓰기" })
+      .catch((error: unknown) => error);
+    const reorderFailure = await context.module
+      .get(ReorderMemoUseCase)
+      .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" })
+      .catch((error: unknown) => error);
+
+    // Then
+    expect(rewriteFailure).toMatchObject({
       errorCode: ErrorCode.MEMO_2001,
       details: { memoId: foreign.id },
     });
-    await expect(
-      context.module
-        .get(ReorderMemoUseCase)
-        .execute({ userId, memoId: own.id, targetMemoId: foreign.id, position: "after" }),
-    ).rejects.toMatchObject({
+    expect(reorderFailure).toMatchObject({
       errorCode: ErrorCode.MEMO_2002,
       details: { targetMemoId: foreign.id },
     });

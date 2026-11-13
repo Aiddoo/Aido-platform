@@ -158,8 +158,10 @@ describe("ApplyActionPlanUseCase", () => {
   it("잠금 → 멱등 확인 → 카테고리 확인 → 생성 → 기록 순서로 한 UoW에서 저장한다", async () => {
     // Given
     const { order, execute } = setup();
+
     // When
     await execute([todoAction(), memoAction]);
+
     // Then
     expect(order).toEqual(["lock", "findByKey", "categories", "stage", "memo", "insert"]);
   });
@@ -173,8 +175,10 @@ describe("ApplyActionPlanUseCase", () => {
       visibility: "PRIVATE",
       items: [{ title: "슬라이드" }],
     });
+
     // When
     const result = await execute([scheduled, todoAction({ key: "todo-1" })]);
+
     // Then
     expect(stagedInputs[0]).toMatchObject({
       userId: UserId.reconstitute(USER_ID),
@@ -201,8 +205,10 @@ describe("ApplyActionPlanUseCase", () => {
   it("메모 제목은 메모 첫 줄이 된다", async () => {
     // Given
     const { createdMemos, execute } = setup();
+
     // When
     const result = await execute([memoAction]);
+
     // Then
     expect(createdMemos).toEqual([{ userId: USER_ID, content: "아이디어\n온보딩 문구" }]);
     expect(result.memo).toMatchObject({ id: 7 });
@@ -212,8 +218,10 @@ describe("ApplyActionPlanUseCase", () => {
   it("내 카테고리가 아니면 아무것도 만들지 않고 AI_1315다", async () => {
     // Given
     const { order, execute } = setup([2]);
+
     // When
     const failure = execute([todoAction()]);
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1315,
@@ -227,8 +235,10 @@ describe("ApplyActionPlanUseCase", () => {
     // Given
     const { stagedInputs, createdMemos, execute } = setup();
     const first = await execute([todoAction(), memoAction]);
+
     // When
     const second = await execute([todoAction(), memoAction]);
+
     // Then
     expect(second.todos.map((todo) => todo.id)).toEqual(first.todos.map((todo) => todo.id));
     expect(second.memo).toMatchObject({ id: 7 });
@@ -240,8 +250,10 @@ describe("ApplyActionPlanUseCase", () => {
     // Given
     const { stagedInputs, execute } = setup();
     await execute([todoAction()]);
+
     // When
     const failure = execute([todoAction({ title: "고친 제목" })]);
+
     // Then
     await expect(failure).rejects.toMatchObject({
       errorCode: ErrorCode.AI_1318,
@@ -253,21 +265,25 @@ describe("ApplyActionPlanUseCase", () => {
   it("멱등 기록에는 사용자 글자 없이 id와 해시만 남긴다", async () => {
     // Given
     const { repository, execute } = setup();
+
     // When
     await execute([todoAction({ title: "비밀 제목" })]);
+
     // Then
-    const [record] = repository.saved.map((application) => application.toPrimitives());
-    expect(JSON.stringify(record)).not.toContain("비밀");
-    expect(record?.requestHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(record?.todoIds).toHaveLength(1);
+    const [saved] = repository.saved.map((application) => application.toPrimitives());
+    expect(JSON.stringify(saved)).not.toContain("비밀");
+    expect(saved?.requestHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(saved?.todoIds).toHaveLength(1);
   });
 
   describe("메모에서 만든 계획", () => {
     it("메모 잠금을 잡고 할 일을 만든 뒤 원본 메모를 지운다", async () => {
       // Given
       const { order, acquiredLocks, deletedMemoIds, executeFromMemo } = setup();
+
       // When
       await executeFromMemo(7, [todoAction()]);
+
       // Then
       expect(acquiredLocks[0]).toContain("mutation:v1:memo:7");
       expect(order).toEqual(["lock", "findByKey", "categories", "stage", "deleteMemo", "insert"]);
@@ -277,8 +293,10 @@ describe("ApplyActionPlanUseCase", () => {
     it("없거나 남의 메모면 만들기 전에 MEMO_2001이다", async () => {
       // Given
       const { order, executeFromMemo } = setup();
+
       // When
       const failure = executeFromMemo(MISSING_MEMO_ID, [todoAction()]);
+
       // Then
       await expect(failure).rejects.toMatchObject({
         errorCode: ErrorCode.MEMO_2001,
@@ -292,8 +310,10 @@ describe("ApplyActionPlanUseCase", () => {
       // Given
       const { deletedMemoIds, stagedInputs, executeFromMemo } = setup();
       const first = await executeFromMemo(7, [todoAction()]);
+
       // When
       const second = await executeFromMemo(7, [todoAction()]);
+
       // Then
       expect(second.todos.map((todo) => todo.id)).toEqual(first.todos.map((todo) => todo.id));
       expect(deletedMemoIds).toEqual([7]);
@@ -310,8 +330,10 @@ describe("ApplyActionPlanUseCase", () => {
       weekdays: ["MON"],
       end: { type: "COUNT", count: 3 },
     };
+
     // When
     const result = await execute([todoAction({ repeat })]);
+
     // Then
     expect(stagedInputs[0]).toMatchObject({ repeat });
     expect(result.todos).toHaveLength(1);
