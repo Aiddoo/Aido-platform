@@ -5,6 +5,7 @@ import { err, ok } from '@src/core/errors/result';
 import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
@@ -77,5 +78,68 @@ describe('MemoConvertBottomSheet', () => {
     expect(onClose).not.toHaveBeenCalled();
     expect(onConverted).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue('장보기')).toBeTruthy();
+  });
+
+  describe('저장 버튼 연타', () => {
+    setupFakeTimersPerTest();
+
+    it('저장을 같은 프레임에 두 번 눌러도 할 일은 한 번만 만든다', async () => {
+      // Given
+      const { httpClient } = await renderSheet();
+      httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
+      const save = await screen.findByLabelText('저장하기');
+
+      // When
+      await act(async () => {
+        fireEvent.press(save);
+        fireEvent.press(save);
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('옮겨서 시트가 내려가는 동안 저장을 다시 눌러도 할 일은 한 번만 만든다', async () => {
+      // Given
+      const { httpClient } = await renderSheet();
+      httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
+      const save = await screen.findByLabelText('저장하기');
+      await fireEvent.press(save);
+      // 연타 가드(600ms)가 지난 뒤다. 시트는 닫힘 애니메이션이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(save);
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('실패한 뒤에는 같은 제목으로 다시 보낼 수 있다', async () => {
+      // Given
+      const { httpClient } = await renderSheet();
+      httpClient.post
+        .mockResolvedValueOnce(
+          err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        )
+        .mockResolvedValueOnce(ok({ message: 'converted', todos: [] }));
+      const save = await screen.findByLabelText('저장하기');
+      await fireEvent.press(save);
+      // 연타 가드(600ms)가 지난 뒤의 두 번째 저장이다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // When
+      await fireEvent.press(save);
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(2);
+      expect(httpClient.post.mock.calls[1]?.[1]).toMatchObject({
+        todos: [expect.objectContaining({ title: '장보기' })],
+      });
+    });
   });
 });
