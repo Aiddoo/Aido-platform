@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 import { TODO_COMMENT_LIMITS } from "../../../vocabulary/todo-comment.constants.js";
 import {
   todoCommentAuthorSchema,
@@ -13,7 +14,7 @@ export const todoCommentV2AuthorSchema = todoCommentAuthorSchema
   .extend({
     userTag: z
       .string()
-      .length(8)
+      .length(USER_TAG_LENGTH)
       .nullable()
       .describe("댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용)"),
   })

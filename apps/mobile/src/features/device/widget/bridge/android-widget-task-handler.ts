@@ -1,7 +1,9 @@
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import type { Instant } from '@src/shared/date/instant';
+import { toError } from '@src/shared/errors';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import type { WidgetHeadlessFailureRepository } from '../apis/widget-headless-failure.repository';
-import type { WidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import {
   ANDROID_WIDGET_DEFINITIONS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
@@ -10,15 +12,18 @@ import {
   parseWidgetNavigationUri,
   WidgetNavigationPolicy,
 } from '../domains/widget-navigation.model';
+import type { WidgetNavigationRepository } from '../repositories/widget-navigation.repository';
+import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
 import type { renderStoredAndroidWidget } from './android-widgets.bridge';
 
-type WidgetTaskDependencies = {
+type WidgetTaskPorts = {
   navigationRepository: WidgetNavigationRepository;
   openApp: (uri: string) => Promise<unknown>;
   isAppActive: () => boolean;
-  now: () => number;
+  now: () => Instant;
   createCommandId: () => string;
-  failureRepository: Pick<WidgetHeadlessFailureRepository, 'save'>;
+  /** 앱 없이 깨어난 실패를 남겨 다음 앱 시작 때 보고한다 */
+  failureStorage: SyncStorage;
   renderStoredWidget: typeof renderStoredAndroidWidget;
 };
 
@@ -28,9 +33,9 @@ export function createAndroidWidgetTaskHandler({
   isAppActive,
   now,
   createCommandId,
-  failureRepository,
+  failureStorage,
   renderStoredWidget,
-}: WidgetTaskDependencies) {
+}: WidgetTaskPorts) {
   return async (task: WidgetTaskHandlerProps): Promise<void> => {
     if (!ANDROID_WIDGET_DEFINITIONS.some(({ name }) => name === task.widgetInfo.widgetName)) {
       return;
@@ -78,11 +83,12 @@ export function createAndroidWidgetTaskHandler({
 
       task.renderWidget(renderStoredWidget(task.widgetInfo));
     } catch (error) {
-      try {
-        failureRepository.save({ method: 'handleWidgetTask', error });
-      } catch {
-        return;
-      }
+      const { name, message } = toError(error);
+      writeStoredValue(failureStorage, widgetHeadlessFailureStoredValue, {
+        method: 'handleWidgetTask',
+        name,
+        message,
+      });
     }
   };
 }

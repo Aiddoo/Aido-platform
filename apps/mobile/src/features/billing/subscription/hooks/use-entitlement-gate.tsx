@@ -1,41 +1,42 @@
-import { useUpsellDismissalRepository } from '@src/bootstrap/providers/di-context';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
-import { getNowInstant } from '@src/shared/date/instant';
+import { getNowInstant } from '@src/shared/date/clock';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { useOverlay } from '@src/shared/ui';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
+import { useOpenSheet } from '@src/shared/ui';
+import { useAppToast } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 import { type ComponentProps, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
-import { PremiumUpsellBottomSheet } from '../components/premium-upsell-bottom-sheet';
+import { parseLimitedFeature } from '../apis/entitlement.mapper';
+import { PremiumUpsell } from '../components/premium-upsell';
 import type { EntitlementGateSurface, LimitReachedTrigger } from '../constants/subscription.events';
-import { findLimitedFeature } from '../domains/entitlement.error';
 import { type EntitlementFeature } from '../domains/entitlement.model';
-import { EntitlementPolicy, LimitedFeaturePolicy } from '../domains/entitlement.model';
-import { type UpsellPresentation } from '../domains/upsell.model';
-import { UpsellPolicy } from '../domains/upsell.model';
-import { getCachedEntitlements, setFeatureQuota } from '../queries/entitlement-cache';
+import { EntitlementPolicy, getBlockedDecision } from '../domains/entitlement.model';
+import { getCachedEntitlements, reflectFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
+import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
+import { getUpsellPresentation, type UpsellPresentation } from '../utils/upsell.view-model';
 import { useFormatRefillSentence } from './use-format-refill-sentence';
 
 type BlockedDecision = 'limit-reached' | 'locked';
 
-/** 시트에서 고른 것. null은 답 없이 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않는다 */
-type UpsellChoice = 'subscribe' | 'alternative' | 'dismiss' | null;
+type UpsellChoice = 'subscribe' | 'alternative' | 'dismiss';
 
 export type EntitlementGatePromptOptions = Partial<
-  Pick<
-    ComponentProps<typeof PremiumUpsellBottomSheet>,
-    'title' | 'description' | 'alternativeAction'
-  >
+  Pick<ComponentProps<typeof PremiumUpsell>, 'title' | 'description'> &
+    Pick<ComponentProps<typeof PremiumUpsell.Actions>, 'alternativeAction'>
 > & {
   /** 프리미엄 보기를 고르면 페이월로 가기 전에 불린다(아래 시트를 닫는 등) */
   onSubscribe?: () => void;
+  /** 안내를 마치면 한 번 불린다. 시트는 답을 고른 바로 뒤(페이월·대안으로 가기 전), 토스트는 띄운 바로 뒤다(안내만 보이고 떠나는 시트 route) */
+  onFinish?: () => void;
 };
 
 const GATE_TITLE_KEYS = {
@@ -55,11 +56,11 @@ export function useEntitlementGate(
   feature: EntitlementFeature,
   { surface }: { surface: EntitlementGateSurface },
 ) {
-  const overlay = useOverlay();
+  const openSheet = useOpenSheet();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const upsellDismissalRepository = useUpsellDismissalRepository();
+  const upsellDismissalStorage = useStoredValueStorage(upsellDismissalStoredValue);
   const todayKey = useTodayKey();
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const { t } = useTranslation('subscription');
@@ -70,7 +71,13 @@ export function useEntitlementGate(
       target: EntitlementFeature,
       decision: BlockedDecision,
       trigger: LimitReachedTrigger,
-      { onSubscribe, title, description, alternativeAction }: EntitlementGatePromptOptions = {},
+      {
+        onSubscribe,
+        onFinish,
+        title,
+        description,
+        alternativeAction,
+      }: EntitlementGatePromptOptions = {},
     ) => {
       const latest = getCachedEntitlements(queryClient) ?? snapshot;
       const promptTitle = title ?? t(GATE_TITLE_KEYS[target]);
@@ -84,13 +91,14 @@ export function useEntitlementGate(
       // 프리미엄·관리자가 공정 사용 한도에 닿으면 구독을 권하지 않고 언제 다시 쓸 수 있는지만 알린다
       if (!EntitlementPolicy.shouldOfferPremium(latest)) {
         toast.warning(promptTitle, { description: refill ?? undefined });
+        onFinish?.();
         return;
       }
 
       const userId = getCachedMe(queryClient)?.id;
       const dismissedOn =
-        userId == null ? null : upsellDismissalRepository.findDismissedOn(userId, target);
-      const presentation = UpsellPolicy.getPromptSurface(dismissedOn, todayKey, {
+        readStoredValue(upsellDismissalStorage, upsellDismissalStoredValue, userId)[target] ?? null;
+      const presentation = getUpsellPresentation(dismissedOn, todayKey, {
         hasAlternativeAction: alternativeAction != null,
       });
 
@@ -114,76 +122,90 @@ export function useEntitlementGate(
           description: refill ?? undefined,
           action: { label: t('upsell.viewPremium'), onPress: () => goToPaywall('toast') },
         });
+        onFinish?.();
         return;
       }
 
-      // 버튼을 여러 번 눌러도 답은 처음 고른 하나로 끝나 이동·기록이 한 번만 일어난다
-      overlay
-        .openAsync<UpsellChoice>(
-          ({ isOpen, close, unmount }) => (
-            <PremiumUpsellBottomSheet
-              feature={target}
-              title={promptTitle}
-              description={description}
+      // 버튼을 여러 번 눌러도 답은 처음 고른 하나로 끝나 이동·기록이 한 번만 일어난다. undefined는 답 없이
+      // 사라졌을 때(부른 화면이 떠남)라 닫은 것으로 남기지 않고 onFinish도 부르지 않는다
+      openSheet<UpsellChoice>(
+        () => <PremiumUpsell feature={target} title={promptTitle} description={description} />,
+        {
+          footer: (close) => (
+            <PremiumUpsell.Actions
               alternativeAction={
                 alternativeAction == null
                   ? undefined
                   : { label: alternativeAction.label, onPress: () => close('alternative') }
               }
-              isOpen={isOpen}
-              onOpenChange={(nextOpen) => {
-                if (!nextOpen) {
-                  close('dismiss');
-                }
-              }}
-              onExit={unmount}
               onSubscribe={() => close('subscribe')}
+              onLater={() => close('dismiss')}
             />
           ),
-          { dismissedValue: null },
-        )
-        .then((choice) =>
-          match(choice)
-            .with('subscribe', () => goToPaywall('sheet'))
-            .with('alternative', () => alternativeAction?.onPress())
-            .with('dismiss', () => {
-              trackEvent('premium_upsell_dismissed', { feature: analyticsFeature, surface });
-              if (userId != null) {
-                upsellDismissalRepository.dismiss(userId, target, todayKey);
-              }
-            })
-            .with(null, () => undefined)
-            .exhaustive(),
-        );
+          dismissValue: 'dismiss',
+        },
+      ).then((choice) => {
+        if (choice != null) {
+          onFinish?.();
+        }
+        match(choice)
+          .with('subscribe', () => goToPaywall('sheet'))
+          .with('alternative', () => alternativeAction?.onPress())
+          .with('dismiss', () => {
+            trackEvent('premium_upsell_dismissed', { feature: analyticsFeature, surface });
+            const dismissals = readStoredValue(
+              upsellDismissalStorage,
+              upsellDismissalStoredValue,
+              userId,
+            );
+            writeStoredValue(
+              upsellDismissalStorage,
+              upsellDismissalStoredValue,
+              { ...dismissals, [target]: todayKey },
+              userId,
+            );
+          })
+          .with(undefined, noop)
+          .exhaustive();
+      });
+    };
+
+    const findBlockedDecision = (): BlockedDecision | null => {
+      if (snapshot == null) {
+        return null;
+      }
+      return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
+        .with('allow', () => null)
+        .with('limit-reached', 'locked', (decision) => decision)
+        .exhaustive();
     };
 
     return {
+      /** 안내 없이 지금 막혔는지만 본다. 막힌 채 열린 화면이 내용을 그리지 않을 때 쓴다. 스냅샷을 아직 모르면 false다 */
+      isBlocked: (): boolean => findBlockedDecision() != null,
       /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
       promptIfBlocked: (options?: EntitlementGatePromptOptions): boolean => {
-        if (snapshot == null) {
+        const decision = findBlockedDecision();
+        if (decision == null) {
           return false;
         }
-        return match(EntitlementPolicy.getAccessDecision(snapshot, feature, getNowInstant()))
-          .with('allow', () => false)
-          .with('limit-reached', 'locked', (decision) => {
-            open(feature, decision, 'precheck', options);
-            return true;
-          })
-          .exhaustive();
+        open(feature, decision, 'precheck', options);
+        return true;
       },
       promptLimit: (options?: EntitlementGatePromptOptions) => {
         open(feature, 'limit-reached', 'precheck', options);
       },
       /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
       promptIfBlockedError: (error: unknown, options?: EntitlementGatePromptOptions): boolean => {
-        const limited = findLimitedFeature(error);
+        const limited = parseLimitedFeature(error);
         if (limited == null) {
           return false;
         }
+        // 한도를 싣지 않은 거절에 스냅샷을 다시 받으면 열리는 시트의 사용량이 잠깐 비어 보여 그대로 둔다
         if (limited.featureQuota != null) {
-          setFeatureQuota(queryClient, limited.featureQuota);
+          reflectFeatureQuota(queryClient, limited.featureQuota);
         }
-        open(limited.feature, LimitedFeaturePolicy.getBlockedDecision(limited), 'server', options);
+        open(limited.feature, getBlockedDecision(limited), 'server', options);
         return true;
       },
     };
@@ -191,11 +213,11 @@ export function useEntitlementGate(
     feature,
     surface,
     snapshot,
-    overlay,
+    openSheet,
     toast,
     trackEvent,
     queryClient,
-    upsellDismissalRepository,
+    upsellDismissalStorage,
     todayKey,
     t,
     formatRefillSentence,

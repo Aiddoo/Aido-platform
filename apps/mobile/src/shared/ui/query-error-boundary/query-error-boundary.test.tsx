@@ -1,6 +1,8 @@
+import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createErrorReporterStub, renderUi } from '@src/shared/__tests__';
-import { ApiError, ServerError } from '@src/shared/errors';
+import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
+import { createErrorReporterStub, createTestDi } from '@src/testing/core';
+import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
@@ -9,8 +11,6 @@ import { Pressable, Text } from 'react-native';
 import { OverlayProvider } from '../overlay/overlay-provider';
 import { useOverlay } from '../overlay/use-overlay';
 import { QueryErrorBoundary } from './query-error-boundary';
-
-const createMockErrorReporter = (): jest.Mocked<ErrorReporter> => createErrorReporterStub();
 
 const Thrower = ({ error }: { error: Error }) => {
   throw error;
@@ -50,27 +50,23 @@ describe('QueryErrorBoundary 관측', () => {
   let errorReporter: jest.Mocked<ErrorReporter>;
 
   beforeEach(() => {
-    errorReporter = createMockErrorReporter();
+    errorReporter = createErrorReporterStub();
     // React가 잡힌 렌더 에러를 console.error로 중복 출력하는 것 억제
     jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   const renderWithBoundary = (error: Error) =>
-    renderUi(
+    renderScreen(
       <QueryErrorBoundary>
         <Thrower error={error} />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
     // Given
     // 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
-    const error = new ApiError('AUTH_0101', '인증 정보가 올바르지 않아요', 401);
+    const error = new ApiError(ErrorCode.AUTH_0101, '인증 정보가 올바르지 않아요', 401);
 
     // When
     await renderWithBoundary(error);
@@ -86,7 +82,7 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('fallback이 안내하는 404 상태(위치 미등록)는 예외 이슈 없이 breadcrumb만 남긴다', async () => {
     // Given
-    const error = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+    const error = new ApiError(ErrorCode.WEATHER_1902, '위치 정보가 등록되지 않았어요', 404);
 
     // When
     await renderWithBoundary(error);
@@ -98,43 +94,90 @@ describe('QueryErrorBoundary 관측', () => {
     );
   });
 
-  it('진짜 장애(재시도 소진 후)는 기존대로 에러 이벤트로 리포트한다', async () => {
+  it.each([
+    ['기능 꺼짐 403(INVITE_2105)', new ApiError(ErrorCode.INVITE_2105, '꺼짐', 403)],
+    ['끊긴 친구의 할 일 403(FOLLOW_0906)', new ApiError(ErrorCode.FOLLOW_0906, '볼 수 없음', 403)],
+    ['권한 없음 403', new ApiError(ErrorCode.AUTH_0108, '권한 없음', 403)],
+  ])('%s는 다시 해도 같은 상태라 이슈 없이 breadcrumb만 남긴다', async (_case, error) => {
+    // When
+    await renderWithBoundary(error);
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'query_boundary_expected_state',
+        data: { code: error.code, statusCode: 403 },
+      }),
+    );
+  });
+
+  it('연결 오류는 이슈 없이 network breadcrumb만 남긴다', async () => {
+    // When
+    await renderWithBoundary(new NetworkError());
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'network', message: 'query_boundary_connectivity' }),
+    );
+  });
+
+  it('진짜 장애(재시도 소진 후)는 실패한 요청을 태그로 붙여 에러 이벤트로 리포트한다', async () => {
     // Given
-    const error = new ServerError(503);
+    const error = new ServerError(503, {
+      serverCode: ErrorCode.SYS_0005,
+      details: null,
+      requestId: 'req-1',
+      request: { method: 'GET', endpoint: '/v1/todos' },
+    });
 
     // When
     await renderWithBoundary(error);
 
     // Then
-    expect(errorReporter.captureException).toHaveBeenCalledWith(
-      error,
-      expect.objectContaining({ feature: 'error_boundary' }),
-    );
+    expect(errorReporter.captureException).toHaveBeenCalledWith(error, {
+      feature: 'error_boundary',
+      statusCode: 503,
+      serverErrorCode: ErrorCode.SYS_0005,
+      method: 'GET',
+      endpoint: '/v1/todos',
+    });
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('기본 fallback은 다시 시도와 문의하기를 함께 주고, 문의하기는 문의 화면으로 간다', async () => {
+  it('기본 fallback의 문의하기는 진단 코드·서버 코드·요청 ID를 담은 초안으로 문의 화면을 연다', async () => {
     // Given
-    const screen = await renderWithBoundary(new ServerError(503));
+    const screen = await renderWithBoundary(
+      new ServerError(503, {
+        serverCode: ErrorCode.SYS_0005,
+        details: null,
+        requestId: 'req-1',
+        request: null,
+      }),
+    );
 
     // When
     fireEvent.press(screen.getByTestId('query-error-inquiry'));
 
     // Then
     expect(screen.getByText('다시 시도')).toBeTruthy();
-    expect(jest.mocked(router.push)).toHaveBeenCalledWith({
+    expect(jest.mocked(router.navigate)).toHaveBeenCalledWith({
       pathname: '/settings/inquiry',
-      params: { category: 'BUG_REPORT' },
+      params: {
+        category: 'BUG_REPORT',
+        content: expect.stringMatching(/진단 코드: \S+ \/ 오류 코드: SYS_0005 \/ 요청 ID: req-1/),
+      },
     });
   });
 
   it('날짜 query key가 바뀌면 이전 날짜의 error fallback을 해제한다', async () => {
     // Given
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary resetKeys={['2026-07-14']}>
         <MaybeThrower shouldThrow />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
     expect(screen.queryByTestId('healthy-content')).toBeNull();
 
@@ -152,11 +195,11 @@ describe('QueryErrorBoundary 관측', () => {
   it('화면의 useErrorBoundary에 context를 제공하고 제출 오류를 기존 fallback에서 처리한다', async () => {
     // Given
     const error = new ServerError(503);
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary fallback={() => <Text testID="submit-fallback">Retry</Text>}>
         <AsyncErrorScreen error={error} />
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
     // When
@@ -173,13 +216,13 @@ describe('QueryErrorBoundary 관측', () => {
   it('OverlayProvider가 별도로 마운트한 overlay에도 오류 context를 전달한다', async () => {
     // Given
     const error = new ServerError(503);
-    const screen = await renderUi(
+    const screen = await renderScreen(
       <QueryErrorBoundary fallback={() => <Text testID="overlay-fallback">Retry</Text>}>
         <OverlayProvider>
           <OverlayErrorScreen error={error} />
         </OverlayProvider>
       </QueryErrorBoundary>,
-      { di: { errorReporter } },
+      { di: createTestDi({ ports: { errorReporter } }) },
     );
 
     await fireEvent.press(screen.getByTestId('open-error-overlay'));

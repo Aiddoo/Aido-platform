@@ -1,5 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { formatClockTime } from '@src/shared/date/date-format';
+import { formatClockTime } from '@src/shared/date/format/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,7 +16,10 @@ import { match } from 'ts-pattern';
 import type { AttributionInfo } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
-import { type AttributionBackground, toAttributionMark } from '../utils/to-attribution-mark';
+import {
+  type AttributionBackground,
+  toAttributionMark,
+} from '../utils/weather-attribution.view-model';
 
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;
@@ -46,16 +49,16 @@ interface WeatherAttributionProps {
 export function WeatherAttribution({ background }: WeatherAttributionProps) {
   const { t } = useTranslation('weather');
   const openUrl = useOpenInAppBrowser();
-  const [{ data }, { data: preference }] = useSuspenseQueries({
+  const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.attribution },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = useLocationDateFormat(data.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();
-  const localTime = useFormatLocalTime(data.location.timezone, now);
-  const { attribution } = data;
+  const localTime = useFormatLocalTime(weather.location.timezone, now);
+  const { attribution } = weather;
   const tone = attributionTone({ background });
 
   return (
@@ -68,7 +71,7 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
       <Text size="e1" align="center" className={cn('tabular-nums', tone.meta())}>
         {t('attribution.updatedAt', {
           source: attribution.serviceName,
-          time: localTime(formatClockTime(data.fetchedAt, preference.timeFormat, dateFormat)),
+          time: localTime(formatClockTime(weather.fetchedAt, preference.timeFormat, dateFormat)),
         })}
       </Text>
       <PressableFeedback
@@ -122,7 +125,7 @@ WeatherAttribution.Mark = function Mark({
       ) : (
         <Image
           source={{ uri }}
-          style={{ height: LOGO_HEIGHT, width: LOGO_HEIGHT * aspectRatio }}
+          style={{ height: LOGO_HEIGHT, aspectRatio }}
           contentFit="contain"
           accessibilityLabel={attribution.serviceName}
           accessibilityIgnoresInvertColors

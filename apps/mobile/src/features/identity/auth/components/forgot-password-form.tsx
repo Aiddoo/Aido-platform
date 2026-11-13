@@ -1,21 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTrack } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Input, KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import {
   Controller,
   useController,
   useForm,
   type UseFormReturn,
   useFormState,
-  useWatch,
 } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { findVerificationCodeFieldError } from '../domains/auth.error';
 import {
   useForgotPasswordMutationOptions,
   useResetPasswordMutationOptions,
@@ -32,6 +34,7 @@ type ForgotPasswordStepContexts = {
   email: Record<string, never>;
   verificationCode: { email: string };
   newPassword: Record<string, never>;
+  newPasswordConfirm: Record<string, never>;
 };
 
 interface ForgotPasswordFormProps {
@@ -51,35 +54,66 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     },
     mode: 'onChange',
   });
+  const { trackEvent } = useTrack();
   const stepper = useStepper<ForgotPasswordStepContexts>({
     id: 'forgot-password',
-    initial: { step: 'email', context: {} },
+    initial: { step: 'email' },
+    onStepChange: ({ step }) => trackEvent('auth_password_reset_step_viewed', { step }),
   });
-  const reportUnexpectedError = useReportUnexpectedError('auth');
+  const { t } = useTranslation('auth');
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());
-  const { t } = useTranslation('auth');
-  const newPassword = useController({ control: form.control, name: 'newPassword' });
+  const newPassword = useController({
+    control: form.control,
+    name: 'newPassword',
+    // 새 비밀번호를 고치면 이미 적은 확인 칸의 일치 여부도 다시 본다
+    rules: { deps: 'newPasswordConfirm' },
+  });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
-  const { isSubmitting } = useFormState({ control: form.control });
+  const { isSubmitting, errors } = useFormState({ control: form.control });
+  const replace = useSingleTap(router.replace);
 
   const requestCode = async () => {
     try {
       const email = form.getValues('email');
       await forgotPassword.mutateAsync({ email });
       stepper.history.push('verificationCode', { email });
-    } catch (error) {
-      reportUnexpectedError(error);
+    } catch {
+      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
     }
   };
 
+  // 코드는 마지막에 서버가 확인한다. 틀렸거나 만료됐으면 새 비밀번호를 둔 채 코드 단계로 돌아가 다시 받게 한다
   const submitNewPassword = form.handleSubmit(async (input) => {
     try {
       await resetPassword.mutateAsync(input);
+      replace('/(auth)/email-login');
     } catch (error) {
-      reportUnexpectedError(error);
+      // 문구는 mutation의 meta.errorFeedback이 카탈로그로 보인다
+      const fieldError = findVerificationCodeFieldError(error);
+      const codeStepIndex = stepper.historySteps.findIndex(
+        (entry) => entry.step === 'verificationCode',
+      );
+      if (fieldError != null && 0 <= codeStepIndex) {
+        form.setError('code', fieldError);
+        stepper.history.go(codeStepIndex - stepper.index);
+      }
     }
   });
+
+  const renderNewPassword = ({ step }: { step: 'newPassword' | 'newPasswordConfirm' }) => (
+    <NewPasswordStep
+      title={stepTitles.newPassword}
+      step={step}
+      newPassword={newPassword}
+      newPasswordConfirm={newPasswordConfirm}
+      isSubmitting={isSubmitting || resetPassword.isPending}
+      onNextStep={() => stepper.history.push('newPasswordConfirm')}
+      onSubmit={submitNewPassword}
+      nextLabel={t('forgotPassword.next')}
+      submitLabel={t('forgotPassword.submit')}
+    />
+  );
 
   return (
     <stepper.Render
@@ -94,28 +128,20 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
       verificationCode={({ context: { email }, history }) => (
         <EmailVerificationCodeStep
           email={email}
+          isRejected={errors.code != null}
           isResending={forgotPassword.isPending}
           onComplete={async (code) => {
             form.setValue('code', code, { shouldValidate: true });
-            history.push('newPassword', {});
+            history.push('newPassword');
           }}
           onResend={async () => {
             await forgotPassword.mutateAsync({ email });
-            return {};
+            return { retryAfterSeconds: null };
           }}
         />
       )}
-      newPassword={() => (
-        <NewPasswordStep
-          title={stepTitles.newPassword}
-          newPassword={newPassword}
-          newPasswordConfirm={newPasswordConfirm}
-          isSubmitting={isSubmitting}
-          onSubmit={submitNewPassword}
-          nextLabel={t('forgotPassword.next')}
-          submitLabel={t('forgotPassword.submit')}
-        />
-      )}
+      newPassword={renderNewPassword}
+      newPasswordConfirm={renderNewPassword}
     />
   );
 }
@@ -130,9 +156,9 @@ interface EmailStepProps {
 function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
-  const { errors } = useFormState({ control, name: 'email' });
-  const email = useWatch({ control, name: 'email' });
-  const isValid = email.length > 0 && !errors.email;
+  const formState = useFormState({ control, name: 'email' });
+  const email = form.getFieldState('email', formState);
+  const isValid = email.isDirty && !email.invalid;
 
   return (
     <Box className="flex-1">
@@ -144,7 +170,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
           </KeyboardAdaptiveButton>
         }
       >
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.durationMs.normal)}>
           <VStack gap={8}>
             <Controller
               control={control}
@@ -165,7 +191,7 @@ function EmailStep({ title, form, onSubmit, isSubmitting }: EmailStepProps) {
                     autoFocus
                     returnKeyType="done"
                     submitBehavior="submit"
-                    isInvalid={!!error}
+                    isInvalid={error != null}
                     errorMessage={resolveValidationMessage(error, {
                       default: 'email.invalid',
                       byType: { too_big: 'email.tooLong' },

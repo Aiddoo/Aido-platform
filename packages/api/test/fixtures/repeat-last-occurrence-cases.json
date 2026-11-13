@@ -1,0 +1,120 @@
+[
+  {
+    "name": "매일 365번, 한 해를 넘는다",
+    "startDate": "2026-11-12",
+    "repeat": { "frequency": "DAILY", "end": { "type": "COUNT", "count": 365 } },
+    "expectedCount": 365,
+    "expectedLast": "2027-11-11"
+  },
+  {
+    "name": "매주 월·목 365번, 시작일 목요일이 첫 회차",
+    "startDate": "2026-11-12",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 1,
+      "weekdays": ["THU", "MON"],
+      "end": { "type": "COUNT", "count": 365 }
+    },
+    "expectedCount": 365,
+    "expectedLast": "2030-05-09"
+  },
+  {
+    "name": "매주 월 365번, 시작일 요일이 고른 요일에 없다",
+    "startDate": "2026-11-12",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 1,
+      "weekdays": ["MON"],
+      "end": { "type": "COUNT", "count": 365 }
+    },
+    "expectedCount": 365,
+    "expectedLast": "2033-11-07"
+  },
+  {
+    "name": "격주 월 365번, 시작 주 월요일은 시작일 앞이라 2주 뒤부터",
+    "startDate": "2026-11-12",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 2,
+      "weekdays": ["MON"],
+      "end": { "type": "COUNT", "count": 365 }
+    },
+    "expectedCount": 365,
+    "expectedLast": "2040-11-05"
+  },
+  {
+    "name": "격주 토·일 10번, 일요일 시작은 앞 월요일의 주가 기준",
+    "startDate": "2026-11-15",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 2,
+      "weekdays": ["SAT", "SUN"],
+      "end": { "type": "COUNT", "count": 10 }
+    },
+    "expectedCount": 10,
+    "expectedLast": "2027-01-23"
+  },
+  {
+    "name": "매월 31일 365번, 30일인 달에 시작해 말일로 맞춘다",
+    "startDate": "2026-11-12",
+    "repeat": { "frequency": "MONTHLY", "monthDay": 31, "end": { "type": "COUNT", "count": 365 } },
+    "expectedCount": 365,
+    "expectedLast": "2057-03-31"
+  },
+  {
+    "name": "매월 29일 30번, 윤년과 평년 2월을 지난다",
+    "startDate": "2027-01-29",
+    "repeat": { "frequency": "MONTHLY", "monthDay": 29, "end": { "type": "COUNT", "count": 30 } },
+    "expectedCount": 30,
+    "expectedLast": "2029-06-29"
+  },
+  {
+    "name": "매주 화 날짜까지, 마지막은 종료일 앞 화요일",
+    "startDate": "2026-11-12",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 1,
+      "weekdays": ["TUE"],
+      "end": { "type": "UNTIL", "date": "2027-12-31" }
+    },
+    "expectedCount": 59,
+    "expectedLast": "2027-12-28"
+  },
+  {
+    "name": "격주 수·금 날짜까지",
+    "startDate": "2026-11-11",
+    "repeat": {
+      "frequency": "WEEKLY",
+      "interval": 2,
+      "weekdays": ["WED", "FRI"],
+      "end": { "type": "UNTIL", "date": "2027-06-30" }
+    },
+    "expectedCount": 34,
+    "expectedLast": "2027-06-25"
+  },
+  {
+    "name": "매일 날짜까지, 연말과 평년 2월을 넘는다",
+    "startDate": "2026-12-30",
+    "repeat": { "frequency": "DAILY", "end": { "type": "UNTIL", "date": "2027-03-01" } },
+    "expectedCount": 62,
+    "expectedLast": "2027-03-01"
+  },
+  {
+    "name": "매월 15일 날짜까지, 시작일이 그달 회차 뒤라 다음 달부터",
+    "startDate": "2026-11-20",
+    "repeat": {
+      "frequency": "MONTHLY",
+      "monthDay": 15,
+      "end": { "type": "UNTIL", "date": "2027-06-14" }
+    },
+    "expectedCount": 6,
+    "expectedLast": "2027-05-15"
+  },
+  {
+    "name": "매월 31일 14번, 31일에 시작해 짧은 달은 말일이고 윤년 2월 29일에 끝난다",
+    "startDate": "2027-01-31",
+    "repeat": { "frequency": "MONTHLY", "monthDay": 31, "end": { "type": "COUNT", "count": 14 } },
+    "expectedCount": 14,
+    "expectedLast": "2028-02-29"
+  }
+]

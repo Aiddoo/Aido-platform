@@ -69,6 +69,11 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       (series) => series.userId.equals(userId) && series.isActive,
     ).length;
   }
+  async existsActiveByUserId(userId: UserId): Promise<boolean> {
+    return [...this.store.values()].some(
+      (series) => series.userId.equals(userId) && series.isActive,
+    );
+  }
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     return [...this.store.values()]
       .filter((series) => {

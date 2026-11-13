@@ -2,8 +2,8 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import type { ComponentProps, ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { StyledSafeAreaView } from '../styled-safe-area-view';
-import { H3 } from '../text';
+import { StyledSafeAreaView } from '../styled-safe-area-view/styled-safe-area-view';
+import { H3 } from '../text/typography';
 import { FormScrollView } from './form-scroll-view';
 
 export interface FormStepLayoutProps extends Omit<
@@ -36,7 +36,7 @@ export function FormStepLayout({
       <StyledSafeAreaView edges={['left', 'right']}>
         <Animated.View
           key={title}
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
+          entering={FadeIn.duration(ANIMATION.durationMs.slow)}
           style={{ marginBottom: 24 }}
         >
           <H3>{title}</H3>

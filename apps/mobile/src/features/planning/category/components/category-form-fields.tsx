@@ -20,8 +20,9 @@ export function CategoryFormFields({ control, onSubmit }: CategoryFormFieldsProp
       <Controller
         control={control}
         name="name"
-        render={({ field: { value, onChange }, fieldState: { error } }) => (
+        render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
           <BottomSheetInput
+            ref={ref}
             autoFocus
             label={t('category.nameLabel')}
             placeholder={t('category.namePlaceholder')}

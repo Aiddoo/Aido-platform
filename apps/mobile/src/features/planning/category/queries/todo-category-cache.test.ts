@@ -22,19 +22,14 @@ describe('withCategoryDeleted', () => {
     expect(next.categories).toEqual([{ ...PERSONAL, todoCount: 16 }]);
   });
 
-  it.each([
-    {
-      title: '함께 지웠으면 다른 카테고리 개수는 그대로다',
-      deletionResult: {
-        todoHandling: 'delete',
-        todoCount: 12,
-        seriesCount: 1,
-        moveToCategoryId: null,
-      },
-    },
-    { title: '결과가 없는 옛 서버면 지운 카테고리만 뺀다', deletionResult: null },
-  ] as const)('$title', ({ deletionResult }) => {
+  it('함께 지웠으면 다른 카테고리 개수는 그대로다', () => {
     // Given
+    const deletionResult = {
+      todoHandling: 'delete',
+      todoCount: 12,
+      seriesCount: 1,
+      moveToCategoryId: null,
+    } as const;
     const result = { categories: [PERSONAL, WORKOUT] };
 
     // When

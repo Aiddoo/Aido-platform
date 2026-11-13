@@ -2,12 +2,9 @@ import type {
   DeleteTodoCommentResponse,
   GetTodoCommentRepliesQuery,
   GetTodoCommentThreadsQuery,
-  TodoComment as TodoCommentV1DTO,
-  TodoCommentChainResponse,
   TodoCommentLikeResponse,
-  TodoCommentMutationResponse,
   TodoCommentRepliesResponse,
-  TodoCommentThread as TodoCommentThreadDTO,
+  TodoCommentThread as TodoCommentThreadDto,
   TodoCommentThreadsResponse,
   TodoCommentV2,
 } from '@aido/api';
@@ -24,7 +21,12 @@ import type {
   TodoCommentThread,
   TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
-import type { TodoCommentPageParam } from '../utils/todo-comment-cache-pages';
+import type { TodoCommentPageParam } from '../queries/todo-comment-pages-cache';
+import type {
+  WrittenTodoCommentChainResponse,
+  WrittenTodoCommentMutationResponse,
+  WrittenTodoCommentResponse,
+} from '../schemas/todo-comment-response.schema';
 
 function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
@@ -48,7 +50,7 @@ function toTodoComment(dto: TodoCommentV2): TodoComment {
 }
 
 /** 쓰기 응답은 v1 모양이다. v1의 parentId는 묶음 머리라 v2의 threadCommentId와 같다 */
-export function toWrittenTodoComment(todoId: number, dto: TodoCommentV1DTO): TodoComment {
+export function toWrittenTodoComment(todoId: number, dto: WrittenTodoCommentResponse): TodoComment {
   return {
     id: dto.id,
     todoId,
@@ -59,19 +61,15 @@ export function toWrittenTodoComment(todoId: number, dto: TodoCommentV1DTO): Tod
     likeCount: dto.likeCount,
     replyCount: dto.replyCount,
     isDeleted: dto.isDeleted,
-    isAuthorBlocked: dto.isAuthorBlocked ?? false,
+    isAuthorBlocked: dto.isAuthorBlocked,
     isEdited: dto.isEdited,
-    viewer: {
-      ...dto.viewer,
-      canReport: dto.viewer.canReport ?? false,
-      canBlock: dto.viewer.canBlock ?? false,
-    },
+    viewer: dto.viewer,
     createdAt: toInstant(dto.createdAt),
     editedAt: toNullableInstant(dto.editedAt),
   };
 }
 
-function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
+function toTodoCommentThread(dto: TodoCommentThreadDto): TodoCommentThread {
   return {
     comment: toTodoComment(dto.comment),
     previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),
@@ -93,12 +91,15 @@ export function toTodoCommentReplyPage(dto: TodoCommentRepliesResponse): TodoCom
 
 export function toTodoCommentChain(
   todoId: number,
-  dto: TodoCommentChainResponse,
+  dto: WrittenTodoCommentChainResponse,
 ): TodoCommentChain {
   return { comments: dto.comments.map((comment) => toWrittenTodoComment(todoId, comment)) };
 }
 
-export function toMutatedComment(todoId: number, dto: TodoCommentMutationResponse): TodoComment {
+export function toMutatedComment(
+  todoId: number,
+  dto: WrittenTodoCommentMutationResponse,
+): TodoComment {
   return toWrittenTodoComment(todoId, dto.comment);
 }
 

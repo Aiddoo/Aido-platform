@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
   Button,
-  INQUIRY_SHEET_EXIT,
   KeyboardBottomSheet,
   QueryErrorBoundary,
   QueryErrorFallback,
@@ -14,11 +13,12 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
-import type { TodoCategory } from '../domains/todo-category.model';
+import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
+import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
@@ -35,13 +35,13 @@ export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
   return (
     <QueryErrorBoundary fallback={CategoryEditBottomSheet.Error}>
       <Suspense fallback={null}>
-        <CategoryEditBottomSheet.Contents {...props} />
+        <CategoryEditBottomSheet.Form {...props} />
       </Suspense>
     </QueryErrorBoundary>
   );
 }
 
-CategoryEditBottomSheet.Contents = function Contents(props: CategoryEditBottomSheetProps) {
+CategoryEditBottomSheet.Form = function Form(props: CategoryEditBottomSheetProps) {
   const sheet = useSheetRoute('/settings/category-settings');
   const [categoryId] = useTodoCategoryId();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -75,7 +75,10 @@ CategoryEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFall
 
   return (
     <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+      <QueryErrorFallback
+        reset={reset}
+        onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
+      />
     </BottomSheet>
   );
 };
@@ -90,12 +93,14 @@ interface CategoryEditFormProps extends Omit<
 
 function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps) {
   const { t } = useTranslation('common');
-  const reportUnexpectedError = useReportUnexpectedError('todo');
   const updateCategory = useMutation(useUpdateTodoCategoryMutationOptions());
 
+  // 다시 받은 카테고리로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남는다
   const form = useForm({
     resolver: zodResolver(todoCategoryFormSchema),
-    defaultValues: { name: category.name, color: category.color },
+    values: toTodoCategoryFormValues(category),
+    resetOptions: SERVER_VALUES_RESET_OPTIONS,
+    mode: 'onChange',
   });
   const { isSubmitting } = useFormState({ control: form.control });
 
@@ -107,11 +112,9 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
       return;
     }
 
-    try {
-      await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
-    } catch (error) {
-      reportUnexpectedError(error);
-    }
+    await updateCategory
+      .mutateAsync({ id: category.id, input: values }, { onSuccess: onClose })
+      .catch(noop);
   });
   const handleSubmit = useSingleTap(() => submitCategory());
 

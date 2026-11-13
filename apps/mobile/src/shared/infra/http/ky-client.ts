@@ -4,7 +4,7 @@ import { err, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { isNil, mapValues, omitBy } from 'es-toolkit';
-import { HTTPError, type KyInstance, type Options } from 'ky';
+import { HTTPError, type KyInstance, type Options, type ResponsePromise } from 'ky';
 
 import { readJsonBody, toApiError, toTransportError } from './ky-error';
 
@@ -16,55 +16,45 @@ export class KyHttpClient implements HttpClient {
     this.#client = client;
   }
 
-  async get(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
-    return this.#request(() => this.#client.get(url, this.#buildOptions(config)));
-  }
+  get = async (url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.get(url, this.#buildOptions(config)));
 
-  async post(
+  post = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.post(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.post(url, { ...this.#buildOptions(config), json: data }));
 
-  async put(
+  put = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.put(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.put(url, { ...this.#buildOptions(config), json: data }));
 
-  async patch(
+  patch = async (
     url: string,
     data?: unknown,
     config?: RequestConfig,
-  ): Promise<Result<unknown, ApiError>> {
-    return this.#request(() =>
-      this.#client.patch(url, { ...this.#buildOptions(config), json: data }),
-    );
-  }
+  ): Promise<Result<unknown, ApiError>> =>
+    this.#request(() => this.#client.patch(url, { ...this.#buildOptions(config), json: data }));
 
-  async delete(url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> {
+  delete = async (url: string, config?: RequestConfig): Promise<Result<unknown, ApiError>> => {
     const { body, ...restConfig } = config ?? {};
     return this.#request(() =>
       this.#client.delete(url, {
         ...this.#buildOptions(restConfig),
-        // nullish-strict: null도 보낼 수 있는 JSON 본문이다
+        // oxlint-disable-next-line aido/no-strict-nullish -- null도 보낼 수 있는 JSON 본문이다
         ...(body !== undefined ? { json: body } : {}),
       }),
     );
-  }
+  };
 
-  async #request(request: () => Promise<Response>): Promise<Result<unknown, ApiError>> {
+  // ky의 `.json()` 단축 메서드만 요청 timeout을 본문 읽기에도 건다. 받은 Response의 `json()`은 헤더 뒤 본문이 멈추면 조회가 끝나지 않는다
+  #request = async (request: () => ResponsePromise): Promise<Result<unknown, ApiError>> => {
     try {
-      const response = await request();
-      const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => response.json()));
+      const parsed = successEnvelopeSchema.safeParse(await readJsonBody(() => request().json()));
       if (!parsed.success) {
         throw new ParseError(`[KyHttpClient] Invalid success envelope: ${parsed.error.message}`);
       }
@@ -81,9 +71,9 @@ export class KyHttpClient implements HttpClient {
 
       throw error;
     }
-  }
+  };
 
-  #buildOptions(config?: RequestConfig): Options {
+  #buildOptions = (config?: RequestConfig): Options => {
     if (!config) {
       return {};
     }
@@ -107,5 +97,5 @@ export class KyHttpClient implements HttpClient {
     }
 
     return options;
-  }
+  };
 }

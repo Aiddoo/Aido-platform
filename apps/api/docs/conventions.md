@@ -27,7 +27,7 @@
 | 로그·경보·오류  | `memos.log-events.ts`·`forecasts.alerts.ts`·`memos.errors.ts`        | `MemoLogEvent`·`ForecastAlerts`·`memoNotFound()`    | 로그 상수는 이벤트 이름 상수와 겹치지 않게                                                |
 
 - 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
-- 허용하는 역할 접미사는 [check-conventions.mjs](../scripts/check-conventions.mjs)의 `ROLE_SUFFIXES` 하나이고 `.ls-lint.yml`과 같아야 한다(검사가 비교한다). `.policy`는 `<vendor>-outbound.policy.ts`에만 쓴다.
+- 허용하는 역할 접미사는 루트 [`.ls-lint.yml`](../../../.ls-lint.yml)의 `apps/api/src/modules/*` 목록 하나다. 목록에 없는 다중 점 접미사(`memo.record.ts`)와 접미사 없는 `.ts`는 ls-lint가 막는다. `.policy`는 `<vendor>-outbound.policy.ts`에만 쓴다.
 - 구현은 기술 접두사(`DrizzleMemoRepository`, `InMemoryMemoRepository`)로 짓고 `Impl`을 쓰지 않는다.
 - `Manager`·전달 전용 Facade·`TodoService` 같은 만능 이름으로 역할을 감추지 않는다. 행동 하나가 UseCase 하나다.
 - 라이브러리와 겹치는 이름(`HttpService`·`CacheService`·`Logger`)을 새로 만들지 않는다(`CacheStorePort`, `requestVendorJson`).
@@ -57,7 +57,7 @@
 - 비공개 필드·메서드·getter는 모두 `#`이다. TS `private`·`public` 키워드와 생성자 파라미터 프로퍼티(`constructor(private readonly x)`)를 쓰지 않는다.
 - Nest가 주입하는 의존성도 `readonly #x` 필드에 생성자에서 대입한다. DI는 생성자 파라미터 타입만 본다.
 - `protected`는 `shared/domain/model` 베이스 클래스의 확장점(`props`, `raise`)과 그 `override` 재정의에만 허용한다.
-- 강제(src·test·scripts 전체): TS `erasableSyntaxOnly: true`(파라미터 프로퍼티·TS `enum` 컴파일 오류), oxlint `typescript/parameter-properties`(`prefer: "class-property"`), `private`·`public`·`protected` 키워드 검사(`check:conventions`). 정적 비공개 멤버는 Nest 데코레이터 클래스에 쓸 수 없어 모듈 함수·상수로 뺀다.
+- 강제(src·test·scripts 전체): TS `erasableSyntaxOnly: true`(파라미터 프로퍼티·TS `enum` 컴파일 오류), oxlint `typescript/parameter-properties`(`prefer: "class-property"`), `private`·`public`·`protected` 키워드 검사(Oxlint `aido/no-member-accessibility`). 정적 비공개 멤버는 Nest 데코레이터 클래스에 쓸 수 없어 모듈 함수·상수로 뺀다.
 
 ## 없음의 모양
 
@@ -94,7 +94,7 @@
 | HTTP 요청·응답                         | `@aido/api` 계약 Zod                     | `z.infer`                                                         |
 | DB 행                                  | Drizzle 테이블                           | `$inferSelect`/`$inferInsert`                                     |
 
-- `pgEnum`은 튜플로만 선언한다. 리터럴 배열 `pgEnum`은 `check:conventions`가 막는다. 튜플로 바꿀 때 값 목록·순서가 지금 DB와 같아야 하고 `db:generate`가 빈 diff여야 한다. 계약 튜플과 순서만 다르면(`AccountProvider`) 소유 slice에 DB 순서 튜플을 두고 `satisfies`로 같은 값만 담게 한다.
+- `pgEnum`은 튜플로만 선언한다. 리터럴 배열 `pgEnum`은 Oxlint `aido/no-pg-enum-literal`이 막는다. 튜플로 바꿀 때 값 목록·순서가 지금 DB와 같아야 하고 `db:generate`가 빈 diff여야 한다. 계약 튜플과 순서만 다르면(`AccountProvider`) 소유 slice에 DB 순서 튜플을 두고 `satisfies`로 같은 값만 담게 한다.
 - vocabulary에는 Zod를 넣지 않는다. 도메인 모델은 계약·DB 타입과 독립이고 변환은 매퍼 한 곳이다.
 
 ## 서버에서 지키는 코드 규칙

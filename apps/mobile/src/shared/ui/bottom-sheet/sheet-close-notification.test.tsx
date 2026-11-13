@@ -1,10 +1,7 @@
-import { renderUi } from '@src/shared/__tests__';
-import {
-  getLastGorhomSheetProps,
-  gorhomForceClose,
-} from '@src/shared/__tests__/mocks/gorhom-bottom-sheet';
 import { t } from '@src/shared/i18n';
 import { Text } from '@src/shared/ui';
+import { getLastGorhomSheetProps, gorhomForceClose } from '@src/testing/mocks/gorhom-bottom-sheet';
+import { renderScreen } from '@src/testing/render';
 import { act, render, screen } from '@testing-library/react-native';
 import { BackHandler, Keyboard } from 'react-native';
 import { createGestureController } from 'react-native-gesture-handler/jest-utils';
@@ -23,7 +20,7 @@ describe('BottomSheet 닫힘 알림', () => {
         <Text>내용</Text>
       </BottomSheet>
     );
-    const { rerender } = await renderUi(sheet(true));
+    const { rerender } = await renderScreen(sheet(true));
 
     // When
     await rerender(sheet(false));
@@ -39,7 +36,7 @@ describe('BottomSheet 닫힘 알림', () => {
     const onOpenChange = jest.fn();
 
     // When
-    await renderUi(
+    await renderScreen(
       <BottomSheet isOpen={false} onOpenChange={onOpenChange}>
         <Text>내용</Text>
       </BottomSheet>,
@@ -54,7 +51,7 @@ describe('KeyboardBottomSheet 닫힘 알림', () => {
   it('열리는 도중에 닫혀 gorhom이 onClose만 불러도 닫혔다고 알려 route가 투명하게 남지 않는다', async () => {
     // Given
     const onOpenChange = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -70,7 +67,7 @@ describe('KeyboardBottomSheet 닫힘 알림', () => {
   it('다 열린 뒤 닫혀 onChange와 onClose가 함께 와도 한 번만 알린다', async () => {
     // Given
     const onOpenChange = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -91,7 +88,7 @@ describe('KeyboardBottomSheet 닫힘 알림', () => {
 describe('KeyboardBottomSheet 시트 면', () => {
   it('gorhom이 pointerEvents none을 넘겨도 면이 터치를 받아 Android에서 뒤 backdrop까지 내려가지 않는다', async () => {
     // Given
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={jest.fn()}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -113,7 +110,7 @@ describe('KeyboardBottomSheet 시트 면', () => {
     const previousRequest = jest.fn();
     const nextRequest = jest.fn();
     const onOpenChange = jest.fn();
-    const view = await renderUi(
+    const view = await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={onOpenChange} onDismissRequest={previousRequest}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -151,14 +148,16 @@ describe('KeyboardBottomSheet 바깥 탭', () => {
       throw new Error('시트 index를 받지 않았어요');
     }
     await act(async () => animatedIndex.set(index));
-    await renderUi(<Backdrop animatedIndex={animatedIndex} animatedPosition={makeMutable(0)} />);
+    await renderScreen(
+      <Backdrop animatedIndex={animatedIndex} animatedPosition={makeMutable(0)} />,
+    );
   }
 
   it('열린 시트 바깥을 누르면 키보드를 내리고 시트를 닫는다', async () => {
     // Given
     const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
     const onOpenChange = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={onOpenChange}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -184,7 +183,7 @@ describe('KeyboardBottomSheet 바깥 탭', () => {
     const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
     const previousRequest = jest.fn();
     const nextRequest = jest.fn();
-    const view = await renderUi(
+    const view = await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={previousRequest}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -214,7 +213,7 @@ describe('KeyboardBottomSheet 바깥 탭', () => {
   it('끌기로 넘어가 탭이 실패하면 시트를 닫지 않는다', async () => {
     // Given
     const onDismissRequest = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={onDismissRequest}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,
@@ -236,7 +235,7 @@ describe('KeyboardBottomSheet 바깥 탭', () => {
     // Given
     const dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
     const onDismissRequest = jest.fn();
-    await renderUi(
+    await renderScreen(
       <KeyboardBottomSheet isOpen onOpenChange={jest.fn()} onDismissRequest={onDismissRequest}>
         <Text>내용</Text>
       </KeyboardBottomSheet>,

@@ -1,8 +1,7 @@
-export class LocationUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'LocationUnavailableError';
-  }
+import { AppError } from '@src/core/errors/app-error';
+
+export class LocationUnavailableError extends AppError {
+  override readonly name = 'LocationUnavailableError';
 }
 
 export interface LocationCoordinates {

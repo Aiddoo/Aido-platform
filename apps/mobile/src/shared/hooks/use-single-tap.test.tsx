@@ -1,4 +1,4 @@
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { renderHook } from '@testing-library/react-native';
 
 import { useSingleTap } from './use-single-tap';
@@ -6,27 +6,17 @@ import { useSingleTap } from './use-single-tap';
 /** 가드 간격(600ms)보다 확실히 긴 시간 */
 const AFTER_GUARD_MS = 700;
 
-/** 가드 간격보다 짧고 렌더가 건 타이머는 끝나는 시간 */
+/** 마운트가 건 React 타이머가 끝나는 시간 */
 const RENDER_SETTLE_MS = 10;
 
-/**
- * 시간은 렌더가 끝난 뒤에만 조작한다 — 렌더 도중 Date.now를 고정하면
- * React 스케줄러까지 멈춰 훅 결과가 준비되지 않는다.
- */
-function freezeTimeAt(now: number) {
-  jest.spyOn(Date, 'now').mockReturnValue(now);
-}
-
 describe('useSingleTap', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
+  setupFakeTimersPerTest();
 
   it('짧은 간격의 연타는 한 번만 실행한다', async () => {
     // Given
     const onTap = jest.fn();
     const { result } = await renderHook(() => useSingleTap(onTap));
-    freezeTimeAt(1_000);
+    jest.setSystemTime(1_000);
 
     // When
     // 같은 프레임에 세 번 들어온 탭
@@ -44,9 +34,9 @@ describe('useSingleTap', () => {
     const { result } = await renderHook(() => useSingleTap(onTap));
 
     // When
-    freezeTimeAt(1_000);
+    jest.setSystemTime(1_000);
     result.current();
-    freezeTimeAt(1_000 + AFTER_GUARD_MS);
+    jest.setSystemTime(1_000 + AFTER_GUARD_MS);
     result.current();
 
     // Then
@@ -80,7 +70,7 @@ describe('useSingleTap', () => {
       dismiss: useSingleTap(dismiss),
       navigate: useSingleTap(navigate),
     }));
-    freezeTimeAt(1_000);
+    jest.setSystemTime(1_000);
 
     // When
     result.current.dismiss();
@@ -92,8 +82,6 @@ describe('useSingleTap', () => {
   });
 
   describe('언마운트', () => {
-    setupFakeTimersPerTest();
-
     it('화면이 내려가면 남은 가드 타이머를 지운다', async () => {
       // Given
       const { result, unmount } = await renderHook(() => useSingleTap(jest.fn()));

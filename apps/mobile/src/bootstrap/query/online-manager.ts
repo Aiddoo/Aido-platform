@@ -4,7 +4,7 @@ import type { NetworkStatusGateway } from '@src/core/ports/network-status-gatewa
 import { track } from '@src/shared/analytics/track';
 import { onlineManager } from '@tanstack/react-query';
 
-interface OnlineManagerDeps {
+interface OnlineManagerPorts {
   networkStatus: NetworkStatusGateway;
   errorReporter: Pick<ErrorReporter, 'addBreadcrumb'>;
   analytics: Analytics;
@@ -15,7 +15,7 @@ export function connectOnlineManager({
   networkStatus,
   errorReporter,
   analytics,
-}: OnlineManagerDeps) {
+}: OnlineManagerPorts) {
   onlineManager.setEventListener((setOnline) => networkStatus.subscribe(setOnline));
 
   // onlineManager는 값이 바뀔 때만 알리므로 전환마다 breadcrumb가 한 번씩 남는다.

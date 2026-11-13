@@ -1,8 +1,6 @@
-import { ErrorCode } from "@aido/api/errors";
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -18,6 +16,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort, type TodoUpdatePatch } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
+import { todoNotFound, todoNotRepeating } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
@@ -83,7 +82,7 @@ export class UpdateTodoUseCase {
       UserId.reconstitute(userId),
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
     return response;
   }
@@ -107,11 +106,11 @@ export class UpdateTodoUseCase {
 
     const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      throw todoNotFound(id);
     }
 
     if (input.scope != null && todo.seriesId == null) {
-      throw new ApplicationException(ErrorCode.TODO_0844, { todoId: id, scope: input.scope });
+      throw todoNotRepeating(id, input.scope);
     }
 
     const wasCompleted = todo.completed;
@@ -147,8 +146,8 @@ export class UpdateTodoUseCase {
 /** 요청이 보낸 칸만 쓴다. 벽시계·순간·종일은 함께 맞춰지므로 한쪽만 보내도 모두 저장한다. */
 function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean): TodoUpdatePatch {
   const { schedule } = todo;
-  // nullish-strict: scheduledTime null은 시간 지우기다
   const touchesTime =
+    // oxlint-disable-next-line aido/no-strict-nullish -- scheduledTime null은 시간 지우기다
     data.scheduledTime !== undefined || data.isAllDay != null || data.startDate != null;
   return {
     ...(data.title == null ? {} : { title: todo.title.value }),
@@ -156,7 +155,7 @@ function toUpdatePatch(data: UpdateTodoData, todo: Todo, wasCompleted: boolean):
       ? {}
       : { categoryId: TodoCategoryId.reconstitute(todo.categoryId) }),
     ...(data.startDate == null ? {} : { startDate: schedule.startDate }),
-    // nullish-strict: endDate null은 종료일 지우기다
+    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null은 종료일 지우기다
     ...(data.endDate === undefined ? {} : { endDate: schedule.endDate }),
     ...(touchesTime
       ? {

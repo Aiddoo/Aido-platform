@@ -16,6 +16,7 @@ import {
   todoIdParamSchema,
   todoItemIdParamSchema,
   todoListResponseSchema,
+  todoOverviewResponseSchema,
   todoResourceLimitQuerySchema,
   todoResourceLimitResponseSchema,
   todoSchema,
@@ -146,3 +147,7 @@ export const TodoSummaryResponseDto = todoSummaryResponseSchema.meta({
   id: "TodoSummaryResponseDto",
 });
 export type TodoSummaryResponseDto = z.infer<typeof TodoSummaryResponseDto>;
+export const TodoOverviewResponseDto = todoOverviewResponseSchema.meta({
+  id: "TodoOverviewResponseDto",
+});
+export type TodoOverviewResponseDto = z.infer<typeof TodoOverviewResponseDto>;

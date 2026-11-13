@@ -1,13 +1,13 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
-import { useTranslation } from '@src/shared/i18n';
+import { Trans, useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { H2, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Chip } from 'heroui-native';
+import { Chip, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
@@ -17,8 +17,13 @@ import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { hasBenefitSlide } from '../utils/benefit-slides.view-model';
 import { getPlanBenefitAmounts } from '../utils/plan-benefit.view-model';
-import { findSubscriptionStore, type RenewalNoticeStore } from '../utils/subscription-store';
+import {
+  findSubscriptionStore,
+  type RenewalNoticeStore,
+} from '../utils/subscription-store.view-model';
 import { PremiumFeatureIcon } from './premium-feature-icon';
+
+type BlockedFeatureProps = Pick<ComponentProps<typeof VStack>, 'className'>;
 
 const BLOCKED_LABEL_KEYS = {
   AI_PARSE: 'paywall.blockedLimit',
@@ -33,16 +38,110 @@ const BLOCKED_LABEL_KEYS = {
   APP_ICON: 'paywall.blockedLocked',
 } as const satisfies Record<EntitlementFeature, string>;
 
-/** 혜택 장에 없는 기능에서 막혀 들어왔을 때 그 기능을 요금제보다 먼저 보여 준다. 혜택 장에 있으면 넘기기가 그 장부터 보여 준다 */
-function BlockedFeature({ className }: Pick<ComponentProps<typeof VStack>, 'className'>) {
-  const [{ feature }] = useSubscriptionParams();
+const RENEWAL_NOTICE_KEYS = {
+  appStore: 'paywall.renewalNotice.appStore',
+  googlePlay: 'paywall.renewalNotice.googlePlay',
+} as const satisfies Record<RenewalNoticeStore, string>;
 
-  if (feature == null || hasBenefitSlide(BENEFIT_SLIDES, feature)) {
+export function Paywall() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <VStack gap={4} align="center">
+      <H2>{t('paywall.title')}</H2>
+
+      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+        {t('paywall.subtitle')}
+      </Text>
+    </VStack>
+  );
+}
+
+/** 혜택 장에 없는 기능에서 막혀 들어왔을 때 그 기능을 요금제보다 먼저 보여 준다. 혜택 장에 있으면 넘기기가 그 장부터 보여 준다 */
+function PaywallBlockedFeature({ className }: BlockedFeatureProps) {
+  const feature = useBlockedFeature();
+
+  if (feature == null) {
     return null;
   }
 
   return <BlockedFeatureCard feature={feature} className={className} />;
 }
+
+/** 막힌 기능은 라우트 값으로 먼저 알아, 권한을 받는 동안에도 카드 자리를 잡아 둔다 */
+PaywallBlockedFeature.Loading = function Loading({ className }: BlockedFeatureProps) {
+  const feature = useBlockedFeature();
+
+  if (feature == null) {
+    return null;
+  }
+
+  return (
+    <VStack gap={12} className={cn('rounded-2xl bg-main/10 p-4', className)}>
+      <TextSkeleton size="e1" className="w-16 self-start" />
+
+      <HStack gap={12} className="items-center">
+        <Skeleton className="size-10 rounded-xl" />
+
+        <VStack gap={2} className="flex-1">
+          <TextSkeleton size="b3" className="w-40" />
+          <TextSkeleton size="b4" className="w-52" />
+        </VStack>
+      </HStack>
+    </VStack>
+  );
+};
+
+// `.Loading`을 단 부속은 함수 선언이어야 TS가 그 속성을 안다
+Paywall.BlockedFeature = PaywallBlockedFeature;
+
+Paywall.RenewalNotice = function RenewalNotice() {
+  const { t } = useTranslation('subscription');
+  const store = findSubscriptionStore(process.env.EXPO_OS);
+
+  if (store == null) {
+    return null;
+  }
+
+  return (
+    <Text size="e2" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+      {t(RENEWAL_NOTICE_KEYS[store])}
+    </Text>
+  );
+};
+
+Paywall.Terms = function Terms() {
+  const { t } = useTranslation('subscription');
+  const openUrl = useOpenInAppBrowser();
+  const { resolvedLanguage } = useLanguage();
+
+  return (
+    <Text size="e2" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+      <Trans
+        t={t}
+        i18nKey="paywall.terms"
+        components={{
+          terms: (
+            <Text
+              size="e2"
+              shade={5}
+              underline
+              onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
+            />
+          ),
+          privacy: (
+            <Text
+              size="e2"
+              shade={5}
+              underline
+              onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
+            />
+          ),
+        }}
+      />
+    </Text>
+  );
+};
 
 function BlockedFeatureCard({
   feature,
@@ -80,54 +179,10 @@ function BlockedFeatureCard({
   );
 }
 
-const RENEWAL_NOTICE_KEYS = {
-  appStore: 'paywall.renewalNotice.appStore',
-  googlePlay: 'paywall.renewalNotice.googlePlay',
-} as const satisfies Record<RenewalNoticeStore, string>;
+function useBlockedFeature() {
+  const [{ feature }] = useSubscriptionParams();
 
-function RenewalNotice() {
-  const { t } = useTranslation('subscription');
-  const store = findSubscriptionStore(process.env.EXPO_OS);
-
-  if (store == null) {
-    return null;
-  }
-
-  return (
-    <Text size="e2" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-      {t(RENEWAL_NOTICE_KEYS[store])}
-    </Text>
-  );
-}
-
-function Terms() {
-  const { t } = useTranslation('subscription');
-  const openUrl = useOpenInAppBrowser();
-  const { resolvedLanguage } = useLanguage();
-
-  return (
-    <Text size="e2" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
-      {t('paywall.termsPrefix')}
-      <Text
-        size="e2"
-        shade={5}
-        underline
-        onPress={() => openUrl(getLegalUrl('terms', resolvedLanguage))}
-      >
-        {t('paywall.termsLink')}
-      </Text>
-      {t('paywall.termsAnd')}
-      <Text
-        size="e2"
-        shade={5}
-        underline
-        onPress={() => openUrl(getLegalUrl('privacy', resolvedLanguage))}
-      >
-        {t('paywall.privacyLink')}
-      </Text>
-      {t('paywall.termsSuffix')}
-    </Text>
-  );
+  return feature == null || hasBenefitSlide(BENEFIT_SLIDES, feature) ? null : feature;
 }
 
 /** 기능 하나의 혜택 제목·설명. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 온다 */
@@ -196,5 +251,3 @@ function useFormatBenefit() {
       }))
       .exhaustive();
 }
-
-export const Paywall = { BlockedFeature, RenewalNotice, Terms } as const;

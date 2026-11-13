@@ -1,6 +1,6 @@
 {
   "name": "@aido/server",
-  "version": "1.15.1",
+  "version": "1.15.2",
   "private": true,
   "description": "Aido API Server",
   "license": "MIT",
@@ -19,7 +19,6 @@
   "scripts": {
     "ai:eval": "tsx --tsconfig tsconfig.json scripts/ai-eval/run.ts",
     "build": "nest build",
-    "check:conventions": "node scripts/check-conventions.mjs",
     "clean": "rm -rf dist coverage *.tsbuildinfo",
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
@@ -93,8 +92,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@aido/test-config": "workspace:*",
     "@aido/typescript-config": "workspace:*",
-    "@aido/vitest-config": "workspace:*",
     "@nestjs/cli": "catalog:nest12",
     "@nestjs/schematics": "catalog:nest12",
     "@nestjs/testing": "catalog:nest12",

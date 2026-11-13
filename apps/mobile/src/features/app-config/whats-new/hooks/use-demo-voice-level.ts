@@ -1,3 +1,4 @@
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useEffect } from 'react';
 import {
   cancelAnimation,
@@ -18,13 +19,15 @@ const DEMO_LEVEL_SETTLE_MS = 300;
 
 /**
  * 마이크 없이 실제 음성 시각화 부품에 넣을 0..1 음량. UI 스레드 애니메이션이라 JS가 다시 그리지 않고,
- * 말이 끝나거나 장면이 사라지면 멈춘다
+ * 말이 끝나거나 장면이 사라지거나 화면이 가려지면 멈춘다
  */
-export function useDemoVoiceLevel(isSpeaking: boolean): SharedValue<number> {
+export function useDemoVoiceLevel({ isSpeaking }: { isSpeaking: boolean }): SharedValue<number> {
+  const isAnimating = useIsAnimationActive();
   const level = useSharedValue(0);
+  const isMoving = isSpeaking && isAnimating;
 
   useEffect(() => {
-    if (!isSpeaking) {
+    if (!isMoving) {
       level.set(
         withTiming(0, { duration: DEMO_LEVEL_SETTLE_MS, reduceMotion: ReduceMotion.System }),
       );
@@ -40,7 +43,7 @@ export function useDemoVoiceLevel(isSpeaking: boolean): SharedValue<number> {
       withRepeat(withSequence(...DEMO_WAVEFORM_LEVELS.map((value) => withTiming(value, step))), -1),
     );
     return () => cancelAnimation(level);
-  }, [isSpeaking, level]);
+  }, [isMoving, level]);
 
   return level;
 }

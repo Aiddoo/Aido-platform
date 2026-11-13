@@ -12,6 +12,14 @@ export interface MemoPrimitives {
   readonly sortOrder: number;
   readonly createdAt: Temporal.Instant;
   readonly updatedAt: Temporal.Instant;
+  readonly idempotencyKey: string | null;
+  readonly requestHash: string | null;
+}
+
+/** 앱이 저장 한 번마다 만든 키와 그 요청의 해시. 응답을 받지 못해 다시 보낸 저장을 알아본다 */
+export interface MemoCreationRequest {
+  readonly idempotencyKey: string;
+  readonly requestHash: string;
 }
 
 interface MemoProps {
@@ -21,6 +29,8 @@ interface MemoProps {
   sortOrder: number;
   readonly createdAt: Temporal.Instant;
   updatedAt: Temporal.Instant;
+  readonly idempotencyKey: string | null;
+  readonly requestHash: string | null;
 }
 
 interface CreateMemoParams {
@@ -29,6 +39,8 @@ interface CreateMemoParams {
   readonly content: MemoContent;
   readonly sortOrder: number;
   readonly now: Temporal.Instant;
+  /** 키 없이 만든 저장(출시 앱·음성 계획)은 null이다 */
+  readonly creationRequest: MemoCreationRequest | null;
 }
 
 export class Memo extends AggregateRoot<MemoId, MemoProps> {
@@ -40,6 +52,8 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: params.sortOrder,
       createdAt: params.now,
       updatedAt: params.now,
+      idempotencyKey: params.creationRequest?.idempotencyKey ?? null,
+      requestHash: params.creationRequest?.requestHash ?? null,
     });
   }
 
@@ -51,6 +65,8 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: primitives.sortOrder,
       createdAt: primitives.createdAt,
       updatedAt: primitives.updatedAt,
+      idempotencyKey: primitives.idempotencyKey,
+      requestHash: primitives.requestHash,
     });
   }
 
@@ -97,6 +113,11 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
     return true;
   }
 
+  /** 같은 Idempotency-Key로 다시 보낸 저장이 처음과 같은 내용인지 */
+  isSameCreationRequest(requestHash: string): boolean {
+    return this.props.requestHash === requestHash;
+  }
+
   toTodoTitle(): string {
     return this.props.content.toTodoTitle();
   }
@@ -110,6 +131,8 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
       sortOrder: this.props.sortOrder,
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
+      idempotencyKey: this.props.idempotencyKey,
+      requestHash: this.props.requestHash,
     };
   }
 }

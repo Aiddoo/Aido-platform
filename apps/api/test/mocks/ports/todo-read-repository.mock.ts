@@ -16,6 +16,8 @@ export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
     findPublicTodosByUserId: vi.fn(),
     countCategoryUsage: vi.fn(),
     countCompletedByUser: vi.fn(),
+    existsByUserId: vi.fn(),
+    existsCompletedByUserId: vi.fn(),
     getTodayTodoStats: vi.fn(),
     findTodayTopTodos: vi.fn(),
   };

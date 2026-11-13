@@ -22,7 +22,7 @@ Oxlint `eslint/eqeqeq: ["error", "always", { "null": "ignore" }]`가 root `.oxli
 
 ## 2. `=== null` / `=== undefined`는 뜻이 다를 때만
 
-둘을 구분해야 할 때만 엄격하게 비교하고, 그 줄 바로 위에 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`를 남긴다. 표시가 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 oxlint 규칙 `aido/no-strict-nullish`가 위 경로에서 거부한다. 끄는 범위는 다음 줄이므로 PATCH 필드마다 따로 남긴다. 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
+둘을 구분해야 할 때만 엄격하게 비교하고, 비교가 있는 줄 바로 위에 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`를 남긴다. 지시문이 없는 `=== null`·`!== null`·`=== undefined`·`!== undefined`는 Oxlint `aido/no-strict-nullish`가 위 경로에서 거부한다. 지시문은 다음 줄 하나에만 걸리므로 비교가 여러 줄에 있으면 줄마다 남기고, 비교가 없는 지시문은 Oxlint가 실패시킨다(`reportUnusedDisableDirectives`). 테스트 디렉터리(`apps/api/test`)와 스크립트는 검사하지 않는다.
 
 - PATCH 입력: 생략(`undefined`) = 바꾸지 않음, `null` = 비우기
 - `Map.get`·배열 조회의 미존재(`undefined`)와 저장된 `null` 구분
@@ -33,6 +33,7 @@ Oxlint `eslint/eqeqeq: ["error", "always", { "null": "ignore" }]`가 root `.oxli
 // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 유지, null은 비우기다
 if (input.memo === undefined) {
   // 미제공: 기존 값 유지
+  // oxlint-disable-next-line aido/no-strict-nullish -- 생략은 유지, null은 비우기다
 } else if (input.memo === null) {
   todo.clearMemo();
 } else {
@@ -113,7 +114,9 @@ endDate: todo.endDate == null ? null : formatDateOnly(todo.endDate),
 | 계약이 `.optional()`로 더한 응답 칸 | mapper가 `null`로 바꾼다                           | DTO 경계에서만 `.optional()`         |
 | 요청의 선택 입력                    | 생략(`undefined`)                                  | `.optional()`                        |
 | PATCH                               | 생략 = 그대로, `null` = 지우기                     | `.nullable().optional()` + 이유 주석 |
-| props·함수 옵션                     | `?:`(`undefined`). `\| null`은 쓰지 않는다         |                                      |
+| props·함수의 선택 옵션              | `?:`(`undefined`). `\| null`을 겹치지 않는다       |                                      |
+| 값이 없을 수 있는 필수 입력         | `null`                                             | `T \| null`(`?:`와 겹쳐 쓰지 않는다) |
+| TanStack `data`를 받는 Policy 인자  | `undefined`(조회 전)                               | `T \| undefined`                     |
 | TanStack·RN 콜백, `getCached*`      | `undefined`(라이브러리 계약)                       |                                      |
 | 포트                                | 포트마다 하나로 정하고 문서화한다(`null` 권장)     |                                      |
 | 세 갈래 결과                        | 판별 유니온. `null` 대 `undefined`로 가르지 않는다 | `{ status: 'cancelled' } \| …`       |

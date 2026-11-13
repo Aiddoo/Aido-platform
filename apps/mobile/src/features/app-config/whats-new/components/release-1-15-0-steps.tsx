@@ -1,4 +1,3 @@
-import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
@@ -9,7 +8,7 @@ import {
   Button,
   HStack,
   IconCircle,
-  Image,
+  LabelChip,
   MicIcon,
   QueryErrorBoundary,
   ReportDuoIcon,
@@ -20,9 +19,10 @@ import {
   VoiceDuoIcon,
   VStack,
   WordWrapText,
+  Mascot,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Chip, PressableFeedback } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import {
@@ -32,9 +32,9 @@ import {
   useFlingGesture,
 } from 'react-native-gesture-handler';
 
-import { DEMO_PLANNED_TODOS } from '../constants/release-1-15-0.constants';
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases';
-import { WhatsNewPolicy } from '../domains/whats-new.model';
+import { DEMO_PLANNED_TODOS, RELEASE_1_15_0_STEPS } from '../constants/release-1-15-0.constants';
+import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
+import { getLatestRelease } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { VoiceNoteRecordDemo, VoiceNoteResultDemo } from './voice-note-demo';
@@ -55,16 +55,6 @@ const FINISH_CAT_SIZE = 140;
 const FEATURE_ICON_CIRCLE_SIZE = 40;
 const FEATURE_ICON_SIZE = 22;
 
-const RELEASE_1_15_0_STEPS = [
-  'intro',
-  'voiceTodoCapture',
-  'voiceTodoReview',
-  'voiceTodoList',
-  'voiceNoteRecord',
-  'voiceNoteResult',
-  'freeQuota',
-  'finish',
-] as const;
 type Release1150Step = (typeof RELEASE_1_15_0_STEPS)[number];
 type Release1150StepMap = Record<Release1150Step, object>;
 
@@ -123,7 +113,7 @@ export function Release1150Steps() {
   return (
     <>
       <WhatsNewStep.Header
-        isNew={WhatsNewPolicy.getLatestRelease(RELEASES).id === RELEASE_1_15_0.id}
+        isNew={getLatestRelease(RELEASES).id === RELEASE_1_15_0.id}
         version={RELEASE_1_15_0.version}
         onClose={flow.close}
       />
@@ -131,7 +121,8 @@ export function Release1150Steps() {
       <Spacing size={8} />
 
       <GestureDetector gesture={fling}>
-        <View style={{ flex: 1 }}>
+        {/* GestureDetector는 네이티브 View 자식 하나에 제스처를 붙인다 */}
+        <View className="flex-1">
           <stepper.Render
             intro={() => (
               <WhatsNewStep
@@ -270,12 +261,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
 
   return (
     <Box flex={1} className="justify-center overflow-hidden rounded-3xl bg-highlight p-3">
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="absolute -bottom-6 -right-2.5 size-[132px]"
-        contentFit="contain"
-      />
+      <Mascot name="catHi" size={132} className="absolute -right-2.5 -bottom-6" />
       <VStack gap={8}>
         <FeatureCard
           Icon={VoiceDuoIcon}
@@ -349,22 +335,13 @@ function FeatureCard({
         />
         <VStack flex={1} gap={4}>
           {badge != null && (
-            <Chip
-              size="sm"
-              variant="soft"
+            <LabelChip
               color="accent"
+              label={badge}
+              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
               pointerEvents="none"
               className="self-start"
-            >
-              <Text
-                size="e1"
-                weight="semibold"
-                numberOfLines={1}
-                className="text-accent-soft-foreground"
-              >
-                {badge}
-              </Text>
-            </Chip>
+            />
           )}
           <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
             {title}
@@ -373,7 +350,11 @@ function FeatureCard({
             {description}
           </WordWrapText>
         </VStack>
-        <ArrowRightIcon width={16} height={16} colorClassName="text-gray-5" />
+        <ArrowRightIcon
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
+          colorClassName="text-gray-5"
+        />
       </HStack>
     </PressableFeedback>
   );
@@ -381,6 +362,7 @@ function FeatureCard({
 
 function FinishMedia() {
   const { t } = useTranslation('whatsNew');
+  const fontScaledSize = useFontScaledSize();
 
   return (
     <Box
@@ -392,16 +374,18 @@ function FinishMedia() {
       {/* 그림 높이가 무대를 늘리지 않고 남은 자리에 맞춰 고양이가 줄어든다 */}
       <VStack align="center" justify="center" gap={8} className="absolute inset-0 p-3">
         <HStack gap={6} align="center" className="rounded-2xl bg-white px-4 py-3">
-          <MicIcon width={18} height={18} colorClassName="text-main" />
+          <MicIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-main"
+          />
           <Text size="b3" weight="semibold">
             {t('v1_15_0.finish.bubble')}
           </Text>
         </HStack>
-        <Image
-          source={catHiImage}
-          accessibilityIgnoresInvertColors
+        <Mascot
+          name="catHi"
           style={{ height: FINISH_CAT_SIZE, aspectRatio: 1, flexShrink: 1, minHeight: 0 }}
-          contentFit="contain"
         />
       </VStack>
     </Box>

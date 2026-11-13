@@ -84,6 +84,10 @@
       ],
       "env": ["TZ"]
     },
+    "test:node": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": []
+    },
     "test:cov": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["coverage/**"],
@@ -93,6 +97,11 @@
     },
     "lint": {
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxlintrc.json"],
+      "outputs": []
+    },
+    "lint:deps": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },
     "lint:fix": {

@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
+import { TODO_LIMITS } from "../../../vocabulary/todo.constants.js";
 
 export const nudgeSchema = z
   .object({
@@ -32,7 +34,10 @@ export type Nudge = z.infer<typeof nudgeSchema>;
 export const nudgeSenderSchema = z
   .object({
     id: entityIdSchema.describe("사용자 ID"),
-    userTag: z.string().length(8).describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
+    userTag: z
+      .string()
+      .length(USER_TAG_LENGTH)
+      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
     name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
     profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
   })
@@ -50,7 +55,7 @@ export type NudgeSender = z.infer<typeof nudgeSenderSchema>;
 export const nudgeTodoSchema = z
   .object({
     id: z.number().int().positive().describe("할 일 ID (양의 정수)"),
-    title: z.string().max(200).describe("할 일 제목 (최대 200자)"),
+    title: z.string().max(TODO_LIMITS.TITLE_MAX_LENGTH).describe("할 일 제목 (최대 200자)"),
     completed: z.boolean().describe("완료 여부"),
   })
   .meta({

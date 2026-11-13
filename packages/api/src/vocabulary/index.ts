@@ -1,5 +1,6 @@
 export * from "./admin.constants.js";
 export * from "./ai.constants.js";
+export * from "./app-version.constants.js";
 export * from "./auth.constants.js";
 export * from "./cheer.constants.js";
 export * from "./entity-id.constants.js";

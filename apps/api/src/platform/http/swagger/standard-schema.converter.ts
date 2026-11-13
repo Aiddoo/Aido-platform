@@ -41,7 +41,7 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
       converted.exclusiveMaximum = true;
     }
   }
-  // nullish-strict: JSON Schema const는 null도 값이다
+  // oxlint-disable-next-line aido/no-strict-nullish -- JSON Schema const는 null도 값이다
   if (converted.const !== undefined) {
     converted.enum = [converted.const];
     delete converted.const;

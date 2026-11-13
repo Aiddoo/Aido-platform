@@ -1,20 +1,13 @@
-import { useHaptics, useUserService } from '@src/bootstrap/providers/di-context';
+import { useUserApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
-import { getUserFacingMessage } from '@src/shared/errors';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
-import { USER_MUTATION_KEYS } from '../constants/user-mutation-keys';
-import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 import { type UpdateProfileResult } from '../domains/user.model';
-import { type ProfileChange } from '../schemas/update-profile-request.schema';
-
-/** 지금 끝나는 프로필 저장이 마지막이면 true. 앞 응답이 뒤에 바꾼 값을 덮지 않게 마지막만 캐시를 맞춘다 */
-function isLastProfileWrite(queryClient: QueryClient) {
-  return queryClient.isMutating({ mutationKey: USER_MUTATION_KEYS.updateProfile() }) === 1;
-}
+import { PROFILE_FIELDS, type ProfileChange } from '../schemas/update-profile-request.schema';
+import { cancelMe, getCachedMe, invalidateMe, updateMeInCache } from './user-cache';
+import { USER_MUTATION_KEYS } from './user-mutation-keys';
 
 /** 다른 필드는 진행 중인 저장보다 오래됐을 수 있고 통째로 덮으면 그 저장을 지워 바꾼 필드만 덮는다 */
 function writeChangedProfileFields(
@@ -22,23 +15,16 @@ function writeChangedProfileFields(
   input: ProfileChange,
   source: UpdateProfileResult,
 ) {
-  queryClient.setQueryData(USER_QUERY_KEYS.me(), (old) => {
-    if (old == null) {
-      return old;
-    }
-    return {
-      ...old,
-      ...(input.name != null && { name: source.name }),
-      // nullish-strict: profileImage null은 사진 지우기다
-      ...(input.profileImage !== undefined && { profileImage: source.profileImage }),
-    };
-  });
+  updateMeInCache(queryClient, (me) => ({
+    ...me,
+    ...(input.name != null && { name: source.name }),
+    // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null은 사진 지우기다
+    ...(input.profileImage !== undefined && { profileImage: source.profileImage }),
+  }));
 }
 
 export function useUpdateProfileMutationOptions() {
-  const haptics = useHaptics();
-  const toast = useAppToast();
-  const userService = useUserService();
+  const userApi = useUserApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
 
@@ -47,47 +33,39 @@ export function useUpdateProfileMutationOptions() {
     networkMode: 'always',
     mutationKey: USER_MUTATION_KEYS.updateProfile(),
     mutationFn: async (input: ProfileChange) => {
-      const result = await userService.updateProfile(input);
+      const result = await userApi.updateProfile(input);
       return unwrap(result);
     },
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.me() });
-
-      const previousData = queryClient.getQueryData(USER_QUERY_KEYS.me());
-
-      queryClient.setQueryData(USER_QUERY_KEYS.me(), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          ...(input.name != null && { name: input.name }),
-          // nullish-strict: profileImage null은 사진 지우기다
-          ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
-        };
-      });
-
+      await cancelMe(queryClient);
+      const previousData = getCachedMe(queryClient);
+      updateMeInCache(queryClient, (me) => ({
+        ...me,
+        ...(input.name != null && { name: input.name }),
+        // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null은 사진 지우기다
+        ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
+      }));
       return { previousData };
     },
     onSuccess: (data, input) => {
-      trackEvent('profile_edited', { field: Object.keys(input).join(',') });
-      if (isLastProfileWrite(queryClient)) {
+      for (const field of PROFILE_FIELDS.filter((name) => name in input)) {
+        trackEvent('profile_edited', { field });
+      }
+      if (isLastMutation(queryClient, USER_MUTATION_KEYS.updateProfile())) {
         writeChangedProfileFields(queryClient, input, data);
       }
     },
-    onError: (error, input, context) => {
-      haptics.notify('error');
-      toast.error(getUserFacingMessage(error), { fallback: t('user:profile.updateFailed') });
-
+    onError: (_error, input, context) => {
       if (context?.previousData != null) {
         writeChangedProfileFields(queryClient, input, context.previousData);
       }
     },
     onSettled: (_data, error) => {
       // 실패가 섞이면 되돌린 값이 서버와 다를 수 있다. 마지막 저장이 끝날 때 서버 값으로 맞춘다
-      if (error != null && isLastProfileWrite(queryClient)) {
-        queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
+      if (error != null && isLastMutation(queryClient, USER_MUTATION_KEYS.updateProfile())) {
+        invalidateMe(queryClient);
       }
     },
+    meta: { errorFeedback: { feature: 'user', fallbackKey: 'user:profile.updateFailed' } },
   });
 }

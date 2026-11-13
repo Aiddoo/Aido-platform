@@ -9,7 +9,7 @@ import type { AuthUserRepositoryPort } from "../../../auth/application/ports/aut
 export interface UpdateProfileCommand {
   readonly userId: string;
   readonly name?: string;
-  // nullish-strict: PATCH라 undefined는 그대로 두고 null은 지운다
+  // PATCH라 undefined는 그대로 두고 null은 지운다
   readonly profileImage?: string | null;
 }
 

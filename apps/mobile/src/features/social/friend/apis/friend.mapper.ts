@@ -8,13 +8,15 @@ import type {
   SendFriendRequestResponse,
 } from '@aido/api';
 import { toInstant } from '@src/shared/date/instant';
-import type { Page } from '@src/shared/types/page.types';
 import { pick } from 'es-toolkit';
 
 import type {
   FriendRequest,
+  FriendRequestPage,
   FriendUser,
+  FriendUserPage,
   SearchedUser,
+  SearchedUserPage,
   SendFriendRequestResult,
 } from '../domains/friend.model';
 
@@ -36,29 +38,31 @@ function toSearchedUser(dto: SearchUser): SearchedUser {
   return pick(dto, ['id', 'userTag', 'name', 'profileImage', 'isFriend', 'requestPending']);
 }
 
-export function toFriendsPage(dto: FriendsListResponse): Page<FriendUser> {
+// 친구·요청 목록은 마지막 항목의 id가 다음 커서다
+export function toFriendsPage(dto: FriendsListResponse): FriendUserPage {
+  const items = dto.friends.map(toFriendUser);
   return {
-    items: dto.friends.map(toFriendUser),
+    items,
+    nextCursor: dto.hasMore ? (items.at(-1)?.followId ?? null) : null,
     totalCount: dto.totalCount,
-    hasMore: dto.hasMore,
   };
 }
 
 // 받은 요청과 보낸 요청은 응답 모양이 같다
-export function toFriendRequestsPage(dto: ReceivedRequestsResponse): Page<FriendRequest> {
+export function toFriendRequestsPage(dto: ReceivedRequestsResponse): FriendRequestPage {
+  const items = dto.requests.map(toFriendRequest);
   return {
-    items: dto.requests.map(toFriendRequest),
+    items,
+    nextCursor: dto.hasMore ? (items.at(-1)?.id ?? null) : null,
     totalCount: dto.totalCount,
-    hasMore: dto.hasMore,
   };
 }
 
-export function toSearchedUsersPage(dto: SearchUsersResponse): Page<SearchedUser> {
+// 검색은 관련도 순이라 id로 이을 수 없어 서버가 준 커서를 쓴다
+export function toSearchedUsersPage(dto: SearchUsersResponse): SearchedUserPage {
   return {
     items: dto.items.map(toSearchedUser),
-    totalCount: dto.totalCount,
-    hasMore: dto.hasMore,
-    nextCursor: dto.nextCursor,
+    nextCursor: dto.hasMore ? dto.nextCursor : null,
   };
 }
 

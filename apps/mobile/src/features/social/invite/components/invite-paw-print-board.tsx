@@ -1,12 +1,15 @@
 import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
-import { useHaptics, usePawPrintCelebrationRepository } from '@src/bootstrap/providers/di-context';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import {
   Box,
   Button,
@@ -24,10 +27,10 @@ import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router, useIsFocused } from 'expo-router';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, useEffect, useId, useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet } from 'react-native';
+import { useEffect, useId, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   ReduceMotion,
@@ -45,6 +48,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { type Invite, InvitePolicy } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
+import { pawPrintCelebrationStoredValue } from '../schemas/paw-print-celebration-storage.schema';
 import {
   calculatePawPrintBoardWidth,
   calculatePawPrintGrid,
@@ -71,7 +75,7 @@ const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.
  * 지금 판(12칸)만 보여 줘서 발자국이 늘어도 높이가 바뀌지 않는다.
  */
-export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
+export function InvitePawPrintBoard() {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
@@ -80,16 +84,12 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
   const celebratedCount = useCelebrateNewPawPrints(me.id, myInvite);
   const estimatedWidth = useEstimatedBoardWidth();
   // 창 폭으로 어림한 폭은 첫 그림에만 쓰고, 그 뒤로는 판이 실제로 받은 폭으로 격자를 다시 만든다
-  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
-  const grid = calculatePawPrintGrid(measuredWidth ?? estimatedWidth);
+  const [boardSize, handleBoardLayout] = useLayoutSize();
+  const grid = calculatePawPrintGrid(boardSize?.width ?? estimatedWidth);
   const board = createPawPrintBoard(myInvite, { columns: grid.columns, celebratedCount });
 
-  const handleBoardLayout = (event: LayoutChangeEvent) => {
-    setMeasuredWidth(event.nativeEvent.layout.width);
-  };
-
   return (
-    <VStack className={cn('gap-4', className)} {...props}>
+    <VStack gap={16}>
       <Text size="b4" weight="semibold" tone="brand" className="tabular-nums">
         {t('pawPrintBoard.header', {
           boardNumber: board.boardNumber,
@@ -256,13 +256,14 @@ InvitePawPrintBoard.Connector = function Connector({
   const patternId = useId();
   const { color } = useResolveClassNames(fishBoneVariants({ isFilled }));
   const isHorizontal = orientation === 'horizontal';
+  const horizontalStyle = length == null ? styles.fill : { width: length };
 
   return (
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className={isHorizontal ? 'h-3' : 'h-[22px] w-3'}
-      style={isHorizontal ? (length == null ? styles.fill : { width: length }) : undefined}
+      className={cn(isHorizontal ? 'h-3' : 'h-[22px] w-3')}
+      style={isHorizontal ? horizontalStyle : undefined}
     >
       <Svg width="100%" height="100%">
         <Defs>
@@ -306,6 +307,7 @@ InvitePawPrintBoard.Loading = function Loading() {
         <TextSkeleton size="b3" className="w-full" />
         <TextSkeleton size="b3" className="w-40" />
       </VStack>
+      {/* oxlint-disable-next-line aido/spacing-scale -- 불러온 판의 세로 연결선 높이(h-[22px])와 줄 간격을 맞춘다 */}
       <VStack align="center" gap={22}>
         {range(PAW_PRINT_BOARD_SIZE / grid.columns).map((rowIndex) => (
           <HStack key={rowIndex} style={{ width: grid.rowWidth, gap: grid.connectorLength }}>
@@ -342,10 +344,11 @@ InvitePawPrintBoard.Unavailable = function Unavailable() {
 function useCelebrateNewPawPrints(userId: string, invite: Invite) {
   const { qualifiedCount } = invite;
   const haptics = useHaptics();
-  const pawPrintCelebrationRepository = usePawPrintCelebrationRepository();
   const { requestReviewAt } = useStoreReviewMoment();
+  const storage = useStoredValueStorage(pawPrintCelebrationStoredValue);
+  // 축하하는 동안 방금 저장한 수로 바뀌지 않게 화면에 들어올 때 한 번만 읽는다
   const [celebratedCount] = useState(() =>
-    pawPrintCelebrationRepository.getCelebratedCount(userId),
+    readStoredValue(storage, pawPrintCelebrationStoredValue, userId),
   );
   const hasNewPawPrint = InvitePolicy.hasNewPawPrints(invite, celebratedCount);
 
@@ -354,21 +357,14 @@ function useCelebrateNewPawPrints(userId: string, invite: Invite) {
       return;
     }
 
-    pawPrintCelebrationRepository.saveCelebratedCount(userId, qualifiedCount);
+    // 줄어든 경우(보상 회수 등)에도 그 수로 맞춰 다음 발자국에서 다시 축하한다
+    writeStoredValue(storage, pawPrintCelebrationStoredValue, qualifiedCount, userId);
     if (hasNewPawPrint) {
       haptics.notify('success');
       // 찍히는 애니메이션이 끝날 때까지는 서비스가 기다리고, 화면을 떠나면 훅이 취소한다
       requestReviewAt('paw_print_celebration');
     }
-  }, [
-    celebratedCount,
-    haptics,
-    hasNewPawPrint,
-    pawPrintCelebrationRepository,
-    qualifiedCount,
-    requestReviewAt,
-    userId,
-  ]);
+  }, [celebratedCount, haptics, hasNewPawPrint, qualifiedCount, requestReviewAt, storage, userId]);
 
   return celebratedCount;
 }
@@ -407,14 +403,13 @@ function StaticPawPrint({ state, isNext = false }: { state: PawPrintState; isNex
   );
 }
 
-/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다. 화면이 가려지면 UI 스레드에서 돌지 않게 멈춘다 */
+/** 기다리는 발자국은 가끔 살짝 흔들려 곧 찍힐 것을 알린다. 화면이 가려지거나 앱이 뒤로 가면 UI 스레드에서 돌지 않게 멈춘다 */
 function WaitingPawPrint() {
-  const isReducedMotion = useIsReduceMotionEnabled();
-  const isFocused = useIsFocused();
+  const isAnimating = useIsAnimationActive();
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    if (isReducedMotion || !isFocused) {
+    if (!isAnimating) {
       rotation.set(0);
       return;
     }
@@ -433,7 +428,7 @@ function WaitingPawPrint() {
     );
 
     return () => cancelAnimation(rotation);
-  }, [isFocused, isReducedMotion, rotation]);
+  }, [isAnimating, rotation]);
 
   const wiggleStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.get()}deg` }],

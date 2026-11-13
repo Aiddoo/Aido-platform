@@ -1,27 +1,23 @@
 import type {
-  PurchaseStatus,
   PurchaseOffering,
   PurchasePackage,
   PurchasePackageType,
   PurchasePeriodUnit,
 } from '@src/core/ports/purchases-gateway';
+import { type PlanType, toPlanType } from '@src/shared/domains/plan-type.model';
 import { match } from 'ts-pattern';
 
-import { type CustomerInfo, customerInfoSchema } from '../domains/customer-info.model';
 import {
   type FreeTrial,
-  type PlanType,
   type SubscriptionOffering,
   type SubscriptionPlan,
 } from '../domains/subscription.model';
 
-function toPlanType(packageType: PurchasePackageType): PlanType | null {
+function toStorePlanType(packageType: PurchasePackageType): PlanType | null {
   return match(packageType)
     .returnType<PlanType | null>()
-    .with('MONTHLY', () => 'monthly')
-    .with('ANNUAL', () => 'annual')
     .with('OTHER', () => null)
-    .exhaustive();
+    .otherwise(toPlanType);
 }
 
 function toFreeTrialPeriodUnit(periodUnit: PurchasePeriodUnit): FreeTrial['periodUnit'] {
@@ -45,7 +41,7 @@ function toFreeTrial(freeTrial: PurchasePackage['product']['freeTrial']): FreeTr
 }
 
 function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | null {
-  const planType = toPlanType(storePackage.packageType);
+  const planType = toStorePlanType(storePackage.packageType);
 
   if (planType == null) {
     return null;
@@ -68,8 +64,4 @@ export function toSubscriptionOffering(offering: PurchaseOffering): Subscription
     identifier: offering.identifier,
     plans: offering.packages.flatMap((storePackage) => toSubscriptionPlan(storePackage) ?? []),
   };
-}
-
-export function toCustomerInfo(dto: PurchaseStatus): CustomerInfo {
-  return customerInfoSchema.parse(dto);
 }

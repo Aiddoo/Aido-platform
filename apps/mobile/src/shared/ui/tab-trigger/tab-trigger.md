@@ -19,4 +19,4 @@
 
 Props는 `Tabs.Trigger`와 같습니다. `children`은 글자이고 `className`은 받지 않습니다. 한 줄로 줄이려면 `numberOfLines`를 줍니다. 안쪽 글자가 아니라 바깥 라벨에 걸려야 말줄임이 되어 부품이 라벨에 넘깁니다.
 
-`check:conventions`가 `Tabs.Label` 안의 날글자를 막습니다(`tabs-label`). heroui 라벨은 앱 글꼴과 글꼴 크기 설정을 따르지 않습니다.
+Oxlint `aido/tabs-label-text`가 `Tabs.Label` 안의 날글자를 막습니다. heroui 라벨은 앱 글꼴과 글꼴 크기 설정을 따르지 않습니다.

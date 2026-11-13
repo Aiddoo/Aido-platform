@@ -1,19 +1,5 @@
-// Expo installs `fetch` as an enumerable lazy getter. Jest 29 enumerates globals
-// after disposing the test environment, which can evaluate that getter too late and
-// fail while loading ExpoModulesCoreJSLogger. Restore the original Node fetch eagerly
-// for tests; individual HTTP tests can still replace it with their own mock.
-const isFetch = (value: unknown): value is typeof fetch => typeof value === 'function';
-
-const originalFetch: unknown =
-  Object.getOwnPropertyDescriptor(globalThis, 'originalfetch')?.value ??
-  Object.getOwnPropertyDescriptor(globalThis, 'originalFetch')?.value;
-
-if (isFetch(originalFetch)) {
-  globalThis.fetch = originalFetch;
-}
-
 // jest는 Node에서 돌아 앱의 Hermes에 없는 메서드도 그냥 통과한다. 앱에서 실측한 빈칸을 Node에서도 비운다.
-// 같은 목록을 scripts/check-mobile-conventions.mjs의 HERMES_MISSING_METHODS가 소스에서도 막는다.
+// 같은 목록을 .oxlintrc.json의 no-restricted-properties가 소스에서도 막는다.
 Reflect.deleteProperty(Array.prototype, 'toSorted');
 Reflect.deleteProperty(Array, 'fromAsync');
 
@@ -55,16 +41,14 @@ jest.mock('expo-crypto', () => {
 });
 // 공식 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
 // 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽어 감싼 모듈을 쓴다.
-jest.mock('@gorhom/bottom-sheet', () =>
-  require('./src/shared/__tests__/mocks/gorhom-bottom-sheet'),
-);
+jest.mock('@gorhom/bottom-sheet', () => require('./src/testing/mocks/gorhom-bottom-sheet'));
 jest.mock('react-native-keyboard-controller', () =>
-  require('./src/shared/__tests__/mocks/react-native-keyboard-controller'),
+  require('./src/testing/mocks/react-native-keyboard-controller'),
 );
 jest.mock('react-native-reserved-regions', () =>
-  require('./src/shared/__tests__/mocks/react-native-reserved-regions'),
+  require('./src/testing/mocks/react-native-reserved-regions'),
 );
-jest.mock('expo-router', () => require('./src/shared/__tests__/mocks/expo-router'));
+jest.mock('expo-router', () => require('./src/testing/mocks/expo-router'));
 // 네이티브 이벤트 스트림을 읽는 훅이라 Jest에서는 값이 오지 않는다. 링크로 들어오는 흐름은 테스트가 값을 정한다.
 jest.mock('expo-linking', () => ({
   ...jest.requireActual('expo-linking'),
@@ -80,6 +64,19 @@ jest.mock(
   () => require('react-native-safe-area-context/jest/mock').default,
 );
 require('react-native-gesture-handler/jestSetup');
+// Android 날짜·시간 피커는 import할 때 네이티브 모듈을 찾는다. `@src/shared/ui` 입구가 time-picker를 함께 읽어
+// 그 입구를 쓰는 Android 테스트(renderScreen의 HeroUIProvider 포함)가 모듈 등록 없이 죽지 않게 빈 모듈을 둔다
+if (process.env.EXPO_OS === 'android') {
+  const { NativeModules } = require('react-native');
+  for (const name of [
+    'RNCDatePicker',
+    'RNCTimePicker',
+    'RNCMaterialDatePicker',
+    'RNCMaterialTimePicker',
+  ]) {
+    NativeModules[name] = { open: jest.fn(), dismiss: jest.fn() };
+  }
+}
 
 // Expo's window alias is not a DOM environment; initialize the official web test runtime without it.
 const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -96,8 +93,10 @@ jest.mock('react-native-svg', () => {
 
 // 화면을 먼저 정리(unmount)한 뒤 테스트 QueryClient를 비운다.
 // 순서가 반대면 unmount 때 쿼리별 gcTime으로 정리 타이머가 다시 걸려 Jest 종료를 붙잡는다.
-const { cleanup } = require('@testing-library/react-native');
-const { clearTestQueryClients } = require('./src/shared/__tests__/query-client');
+const { cleanup, configure } = require('@testing-library/react-native');
+// 기본 1초는 변환 캐시가 비었거나 기기가 바쁠 때 첫 렌더를 기다리다 실패한다
+configure({ asyncUtilTimeout: 3000 });
+const { clearTestQueryClients } = require('./src/testing/query-client');
 afterEach(async () => {
   await cleanup();
   clearTestQueryClients();
@@ -121,7 +120,7 @@ timeoutManager.setTimeoutProvider({
   clearInterval: (timer: ReturnType<typeof setInterval>) => clearInterval(timer),
 });
 
-const { resetExpoRouterMock } = require('./src/shared/__tests__/mocks/expo-router');
+const { resetExpoRouterMock } = require('./src/testing/mocks/expo-router');
 beforeEach(() => {
   resetExpoRouterMock();
 });

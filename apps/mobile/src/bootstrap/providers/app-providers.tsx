@@ -1,3 +1,4 @@
+import { openSupportMail } from '@src/bootstrap/navigation/open-support-mail';
 import { AuthBootProvider } from '@src/bootstrap/providers/auth-boot-provider';
 import type { AppContainerPorts } from '@src/bootstrap/providers/create-app-container';
 import type { CompositionRoot } from '@src/bootstrap/providers/create-composition-root';
@@ -8,6 +9,8 @@ import { NotificationProvider } from '@src/bootstrap/providers/notification-prov
 import { OnlineManagerProvider } from '@src/bootstrap/providers/online-manager-provider';
 import { PurchasesProvider } from '@src/bootstrap/providers/purchases-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
+import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
+import { QueryErrorReport } from '@src/bootstrap/query/query-error-report';
 import { toError } from '@src/shared/errors';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
@@ -15,7 +18,6 @@ import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { ThemeProvider } from '@src/shared/providers/theme-provider';
 import {
   OfflineBanner,
-  openSupportMail,
   OverlayProvider,
   QueryErrorBoundary,
   QueryErrorFallback,
@@ -104,6 +106,8 @@ export function AppProviders({ children, root }: AppProvidersProps) {
                   appLifecycle={ports.appLifecycle}
                 >
                   <DIProvider ports={ports}>
+                    <MutationErrorFeedback />
+                    <QueryErrorReport />
                     <OnlineManagerProvider>
                       <LocalDateProvider>
                         <AuthBootProvider>

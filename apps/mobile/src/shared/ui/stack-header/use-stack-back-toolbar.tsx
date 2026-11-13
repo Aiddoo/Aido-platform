@@ -1,6 +1,6 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useTranslation } from '@src/shared/i18n';
-import { type Href, Stack, router } from 'expo-router';
+import { type Href, Stack } from 'expo-router';
 import type { ComponentProps } from 'react';
 
 import { STACK_BACK_ICON } from './stack-back-icon';
@@ -22,15 +22,7 @@ export function useStackBackToolbar({
   accessibilityLabel,
 }: UseStackBackToolbarOptions = {}) {
   const { t } = useTranslation('common');
-  const goBack = useSingleTap(() => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    if (fallbackHref != null) {
-      router.replace(fallbackHref);
-    }
-  });
+  const goBack = useGoBack({ fallbackHref });
 
   return (
     <Stack.Toolbar placement="left" buttonContainerColor={buttonContainerColor}>

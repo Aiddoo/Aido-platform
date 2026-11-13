@@ -1,11 +1,12 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/constants/todo-query-keys';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
 import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
-import { createMemorySyncStorage, createTestQueryClient } from '@src/shared/__tests__';
-import { setupFakeTimersPerTest } from '@src/shared/__tests__/setup-fake-timers-per-test';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import type { QueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
@@ -89,6 +90,27 @@ describe('createQueryCacheStorage', () => {
     // Then
     expect(storage.getItem(QUERY_CACHE_STORAGE_KEY)).toBeNull();
   });
+
+  it.each([
+    ['비우면', (storage: ReturnType<typeof createQueryCacheStorage>) => storage.clear()],
+    [
+      '주인이 바뀌면',
+      (storage: ReturnType<typeof createQueryCacheStorage>) => storage.setOwner('user-2'),
+    ],
+  ])('%s 이전 주인이 남긴 다른 키까지 인스턴스를 통째로 비운다', (_case, act) => {
+    // Given
+    const backing = createMemorySyncStorage();
+    const storage = createQueryCacheStorage(backing);
+    storage.setOwner('user-1');
+    storage.setItem(QUERY_CACHE_STORAGE_KEY, '내 캐시');
+    backing.set('aido.query-cache.legacy:user-1', '옛 키로 남은 캐시');
+
+    // When
+    act(storage);
+
+    // Then
+    expect(backing.keys().filter((key) => key.includes('user-1'))).toEqual([]);
+  });
 });
 
 describe('removePlaintextQueryCache', () => {
@@ -171,22 +193,22 @@ describe('createQueryPersistOptions', () => {
     expect(restored).toEqual({ savedAt: '2026-11-02T00:00:00.000Z' });
   });
 
-  it('옛 캐시 스키마 버전(4)이 저장한 $date 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
+  it('옛 캐시 스키마 버전(5)이 옛 쿼리 키로 저장한 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
     // Given
-    const legacyBuster = '4:1.14.0:ko';
+    const legacyBuster = '5:1.14.0:ko';
     const currentBuster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
 
     // When
     const restored = await saveAndRestore(legacyBuster, currentBuster);
 
     // Then
-    expect(currentBuster.startsWith('5:')).toBe(true);
+    expect(currentBuster.startsWith('6:')).toBe(true);
     expect(restored).toBeUndefined();
   });
 
   it('실제 저장·복원을 거친 달력 요약과 목록에도 체크 결과를 날짜 순서대로 반영한다', async () => {
     // Given
-    const date = '2026-11-05';
+    const date = createDateKey('2026-11-05');
     const listKey = TODO_QUERY_KEYS.listByDate({ date });
     const rangeKey = TODO_QUERY_KEYS.completionsByRange({
       startDate: '2026-11-01',
@@ -210,7 +232,7 @@ describe('createQueryPersistOptions', () => {
     source.setQueryData<DailyCompletionsResult>(rangeKey, {
       completions: [
         {
-          date: '2026-11-07',
+          date: createDateKey('2026-11-07'),
           totalTodos: 1,
           completedTodos: 0,
           isComplete: false,
@@ -219,7 +241,7 @@ describe('createQueryPersistOptions', () => {
         },
       ],
       totalCompleteDays: 0,
-      dateRange: { startDate: '2026-11-01', endDate: '2026-11-07' },
+      dateRange: { startDate: createDateKey('2026-11-01'), endDate: createDateKey('2026-11-07') },
     });
     await persistQueryClientSave({ queryClient: source, ...options });
     await jest.runAllTimersAsync();

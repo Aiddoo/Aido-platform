@@ -1,42 +1,39 @@
 import { timeOfDaySchema } from '@aido/api/common';
-import type { SupportedLocale } from '@aido/api/vocabulary';
-import dayjs from 'dayjs';
 
-import type { TimeFormat } from './date-format';
+const MINUTES_PER_HOUR = 60;
+
+/** 시간대와 무관한 하루 중 시각 (0-23시, 0-59분). 서버 `HH:mm`은 `toTimeOfDay`로 읽는다 */
+export interface TimeOfDay {
+  hour: number;
+  minute: number;
+}
 
 export function isValidHHmm(time: string): boolean {
   return timeOfDaySchema.safeParse(time).success;
 }
 
-export function getHour(time: string): number {
-  return Number(time.split(':')[0]);
+/** 검증한 `HH:mm`을 시와 분으로 나눈다 */
+export function toTimeOfDay(time: string): TimeOfDay {
+  const [hour, minute] = time.split(':');
+  return { hour: Number(hour), minute: Number(minute) };
 }
 
-export function getMinute(time: string): number {
-  return Number(time.split(':')[1]);
+/** `toTimeOfDay`의 반대. 서버로 보내는 `HH:mm` */
+export function timeOfDayToHHmm({ hour, minute }: TimeOfDay): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-function withTime(date: Date, hour: number, minute: number): Date {
-  return dayjs(date).hour(hour).minute(minute).second(0).millisecond(0).toDate();
+function toMinutesOfDay({ hour, minute }: TimeOfDay): number {
+  return hour * MINUTES_PER_HOUR + minute;
 }
 
-/** 시간 문자열이 없거나 유효하지 않으면 fallbackTime을 쓴다(fallbackTime은 항상 유효한 상수라고 가정) */
-export function getDateWithTime(date: Date, time: string | undefined, fallbackTime: string): Date {
-  const safe = time != null && isValidHHmm(time) ? time : fallbackTime;
-  return withTime(date, getHour(safe), getMinute(safe));
-}
-
-export function getTodayAt(hour: number, minute: number): Date {
-  return withTime(new Date(), hour, minute);
-}
-
-/** 24시간제는 en_GB로 강제해 오전/오후 없는 스피너를 쓴다 */
-export function getPickerLocale(
-  resolvedLanguage: SupportedLocale,
-  timeFormat: TimeFormat = 'TWELVE_HOUR',
-): string {
-  if (timeFormat !== 'TWELVE_HOUR') {
-    return 'en_GB';
-  }
-  return resolvedLanguage === 'en' ? 'en_US' : 'ko';
+/** 시와 분이 `minimumTime` 이상 `maximumTime` 이하인지. 둘 다 그날 안의 시각이다 */
+export function isTimeOfDayInRange(
+  time: TimeOfDay,
+  { minimumTime, maximumTime }: { minimumTime: TimeOfDay; maximumTime: TimeOfDay },
+): boolean {
+  return (
+    toMinutesOfDay(minimumTime) <= toMinutesOfDay(time) &&
+    toMinutesOfDay(time) <= toMinutesOfDay(maximumTime)
+  );
 }
