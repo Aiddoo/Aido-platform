@@ -8,8 +8,8 @@ import {
   createHttpClientStub,
   createMemoryObservableSyncStorage,
   createTestDi,
+  createTestQueryClient,
 } from '@src/testing/core';
-import { createTestQueryClient } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';

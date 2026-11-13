@@ -7,7 +7,7 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { NetworkError } from '@src/shared/errors';
 import { Button, Text } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui/overlay/overlay-provider';
+import { OverlayProvider } from '@src/shared/ui';
 import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';

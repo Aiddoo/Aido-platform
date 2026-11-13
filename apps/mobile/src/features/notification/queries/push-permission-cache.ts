@@ -3,7 +3,7 @@ import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstac
 import type { PushPermission } from '../domains/push-permission.model';
 import { PUSH_PERMISSION_QUERY_KEYS } from './push-permission-query-keys';
 
-/** 기기 알림 권한 조회 옵션. 조회 함수가 DI 서비스를 써서 `useGetPushPermissionQueryOptions`가 만든다 */
+/** 조회 함수가 DI 서비스를 써서 `useGetPushPermissionQueryOptions`가 만든다 */
 type PushPermissionQueryOptions = EnsureQueryDataOptions<
   PushPermission,
   DefaultError,

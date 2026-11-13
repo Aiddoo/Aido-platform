@@ -7,7 +7,7 @@ import { stubWindowDimensions } from '@src/testing/window-dimensions';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import NotificationsScreen from '../../../../app/(app)/notifications/index';
+import NotificationsScreen from '../../../../app/(app)/(tabs)/(me,memos,todos)/notifications/index';
 import { createNotificationInboxResponseDto } from './notification.fixtures';
 
 const COMPACT_WIDTH = 390;

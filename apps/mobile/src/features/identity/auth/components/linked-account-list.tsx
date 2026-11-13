@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AppleIcon,
@@ -31,11 +32,13 @@ import { useGetLinkedAccountsQueryOptions } from '../queries/auth.queries';
 import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 
 export function LinkedAccountList() {
+  const fontScaledSize = useFontScaledSize();
+
   return (
     <SettingsListGroup>
       <ProviderRow
         provider="KAKAO"
-        icon={<KakaoIcon width={18} height={18} />}
+        icon={<KakaoIcon width={fontScaledSize(18)} height={fontScaledSize(18)} />}
         iconClassName="bg-yellow-300"
       />
 
@@ -43,7 +46,7 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="GOOGLE"
-        icon={<GoogleIcon width={18} height={18} />}
+        icon={<GoogleIcon width={fontScaledSize(18)} height={fontScaledSize(18)} />}
         iconClassName="bg-white border border-gray-2"
       />
 
@@ -53,7 +56,13 @@ export function LinkedAccountList() {
 
           <ProviderRow
             provider="APPLE"
-            icon={<AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />}
+            icon={
+              <AppleIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-white dark:text-black"
+              />
+            }
             iconClassName="bg-apple-button dark:bg-apple-button-dark"
           />
         </>
@@ -63,7 +72,13 @@ export function LinkedAccountList() {
 
       <ProviderRow
         provider="NAVER"
-        icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
+        icon={
+          <NaverIcon
+            width={fontScaledSize(18)}
+            height={fontScaledSize(18)}
+            colorClassName="text-white"
+          />
+        }
         iconClassName="bg-success"
       />
     </SettingsListGroup>

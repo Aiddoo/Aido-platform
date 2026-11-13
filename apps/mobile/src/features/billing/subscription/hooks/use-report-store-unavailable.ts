@@ -4,10 +4,8 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { match } from 'ts-pattern';
 
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
-import {
-  type StoreUnavailable,
-  toStoreUnavailableReport,
-} from '../utils/offerings-availability.view-model';
+import type { StoreUnavailable } from '../domains/subscription-failure.model';
+import { toStoreUnavailableReport } from '../utils/store-unavailable-report.view-model';
 
 // 다시 시도·재진입마다 같은 설정 문제를 쌓지 않게 앱 실행마다 코드별로 한 번만 남긴다(보고자별로 센다)
 const reportedStoreUnavailableCodes = new WeakMap<ErrorReporter, Set<string>>();

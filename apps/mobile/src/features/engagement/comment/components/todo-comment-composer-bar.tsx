@@ -41,7 +41,7 @@ export function TodoCommentComposerBar() {
   const { composerRef, extraContentPadding } = useTodoCommentReveal();
   const keyboardProgress = useSharedValue(0);
   const baselineHeightRef = useRef(0);
-  const closedBottomPadding = (insets.bottom || DEFAULT_BOTTOM_INSET) + CLOSED_EXTRA_PADDING;
+  const closedBottomPadding = getClosedBottomPadding(insets.bottom);
 
   useKeyboardHandler(
     {
@@ -125,7 +125,12 @@ TodoCommentComposerBar.Loading = function Loading() {
   return (
     <Box className="bg-white px-3 pt-2">
       <Skeleton className="h-14 w-full rounded-3xl" />
-      <Box style={{ height: (insets.bottom || DEFAULT_BOTTOM_INSET) + CLOSED_EXTRA_PADDING }} />
+      <Box style={{ height: getClosedBottomPadding(insets.bottom) }} />
     </Box>
   );
 };
+
+/** 홈 인디케이터가 없는 기기(아래 inset 0)도 작성 바가 화면 끝에 붙지 않게 기본 여백을 둔다 */
+function getClosedBottomPadding(bottomInset: number): number {
+  return (bottomInset === 0 ? DEFAULT_BOTTOM_INSET : bottomInset) + CLOSED_EXTRA_PADDING;
+}

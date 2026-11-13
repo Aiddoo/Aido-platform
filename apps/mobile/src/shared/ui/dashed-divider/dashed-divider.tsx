@@ -1,6 +1,6 @@
 import { cn } from '@src/shared/utils/cn';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
 export function DashedDivider({ className }: { className?: string }) {
   return (

@@ -1,7 +1,7 @@
 import { collectImportedNames } from '../ast.mjs';
 
 const RE_EXPORT_MESSAGE =
-  '다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다. 재수출은 정해진 공개 진입 파일(서버 *.public.ts·Drizzle schema 묶음)에서만 한다.';
+  '다시 내보내지 않는다. 쓰는 곳이 정의 파일을 import한다. 재수출은 정해진 공개 진입 파일(서버 *.public.ts·Drizzle schema 묶음, 앱 shared 공개 면)에서만 한다.';
 
 function getLocalName(specifier) {
   const { local } = specifier;

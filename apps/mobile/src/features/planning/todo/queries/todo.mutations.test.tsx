@@ -1,3 +1,7 @@
+/**
+ * @jest-environment <rootDir>/jest.time-zone-environment.cjs
+ * @time-zone Asia/Seoul
+ */
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok } from '@src/core/errors/result';
@@ -6,7 +10,6 @@ import { createUser } from '@src/features/identity/user/__tests__/user.fixtures'
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import '@src/shared/i18n/init';
 import type { DateKey } from '@src/shared/date/date-key';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import {
   createAppStoreReviewGatewayStub,
   createHttpClientStub,
@@ -15,7 +18,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -31,7 +34,6 @@ import {
 
 const TODAY = createDateKey('2026-10-27');
 const YESTERDAY = createDateKey('2026-10-26');
-const DEVICE_CALENDAR = { timeZone: 'Asia/Seoul' };
 const ACCOUNT_ID = 'account-1';
 /** 리뷰 요청은 이 두 날에 오늘이 더해져 3일을 채워야 열린다 */
 const PAST_ACTIVE_DAYS = [createDateKey('2026-10-24'), createDateKey('2026-10-25')];
@@ -46,41 +48,25 @@ async function renderToggle() {
   const appStoreReview = createAppStoreReviewGatewayStub();
   const storeReviewRepository = createStoreReviewRepository(syncStorage);
   storeReviewRepository.update(ACCOUNT_ID, (state) => ({ ...state, activeDays: PAST_ACTIVE_DAYS }));
-  const current: { value: ReturnType<typeof useToggle> | null } = { value: null };
-
-  function useToggle() {
-    return useMutation(useToggleTodoMutationOptions());
-  }
-
-  function Probe() {
-    current.value = useToggle();
-    return null;
-  }
-
-  const { queryClient } = await renderScreen(
-    <LocalDateProvider useDeviceCalendar={() => DEVICE_CALENDAR}>
-      <Probe />
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, syncStorage, appStoreReview } }) },
+  const { result, queryClient } = await renderScreenHook(
+    () => useMutation(useToggleTodoMutationOptions()),
+    {
+      di: createTestDi({ ports: { httpClient, syncStorage, appStoreReview } }),
+      withLocalDate: true,
+    },
   );
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
   const toggle = async (todoId: number, completed: boolean, date: DateKey) => {
-    if (current.value == null) {
-      throw new Error('Probe가 렌더되지 않았다');
-    }
-    const toggled = current.value;
     await act(async () => {
-      await toggled.mutateAsync({ todoId, body: { completed }, date }).catch(() => undefined);
+      await result.current
+        .mutateAsync({ todoId, body: { completed }, date })
+        .catch(() => undefined);
     });
   };
   const startToggle = async (todoId: number, completed: boolean, date: DateKey) => {
-    if (current.value == null) {
-      throw new Error('Probe가 렌더되지 않았다');
-    }
-    const toggled = current.value;
     await act(async () => {
-      toggled.mutate({ todoId, body: { completed }, date });
+      result.current.mutate({ todoId, body: { completed }, date });
     });
   };
   const givenList = (date: DateKey, todos: Todo[]) =>
@@ -287,20 +273,15 @@ describe('useUpdateTodoScheduleMutationOptions', () => {
           }),
         ),
       );
-      const current: { value: ReturnType<typeof useUpdateSchedule> | null } = { value: null };
-      function useUpdateSchedule() {
-        return useMutation(useUpdateTodoScheduleMutationOptions());
-      }
-      function Probe() {
-        current.value = useUpdateSchedule();
-        return null;
-      }
-      await renderScreen(<Probe />, { di: createTestDi({ ports: { httpClient } }) });
+      const { result } = await renderScreenHook(
+        () => useMutation(useUpdateTodoScheduleMutationOptions()),
+        { di: createTestDi({ ports: { httpClient } }) },
+      );
 
       // When
       await act(async () => {
-        await current.value
-          ?.mutateAsync({
+        await result.current
+          .mutateAsync({
             todoId: 1,
             input: { startDate: TODAY },
             scope: 'THIS_AND_FOLLOWING',

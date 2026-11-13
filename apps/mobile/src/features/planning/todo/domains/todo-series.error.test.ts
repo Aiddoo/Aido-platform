@@ -1,5 +1,4 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import type { ErrorCodeType } from '@aido/api/errors';
+import { ErrorCode, type ErrorCodeType, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 
 import {

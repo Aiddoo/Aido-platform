@@ -67,10 +67,39 @@ describe('SessionCleanupService', () => {
   });
 
   it.each([
-    ['결과를 모르는 탈퇴', () => undefined, true],
+    ['응답을 기다리는 탈퇴', () => undefined, true],
     [
-      '서버가 거절한 탈퇴',
+      '응답 없이 끝난 탈퇴',
+      (service: SessionCleanupService) => service.afterAccountDeletionUnanswered(),
+      true,
+    ],
+    [
+      '서버가 거절했거나 보내지 못한 탈퇴',
       (service: SessionCleanupService) => service.afterAccountDeletionRejected(),
+      false,
+    ],
+    [
+      '응답 없이 끝난 뒤 인증 요청이 성공한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterAccountDeletionUnanswered();
+        service.afterSessionConfirmed();
+      },
+      false,
+    ],
+    [
+      '응답을 기다리는 동안에만 인증 요청이 성공한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterSessionConfirmed();
+        service.afterAccountDeletionUnanswered();
+      },
+      true,
+    ],
+    [
+      '응답 없이 끝난 뒤 다시 로그인한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterAccountDeletionUnanswered();
+        service.beforeSignIn();
+      },
       false,
     ],
   ])('%s 뒤 세션이 만료되면 초안을 지우는지가 갈린다', (_name, settle, removesDrafts) => {

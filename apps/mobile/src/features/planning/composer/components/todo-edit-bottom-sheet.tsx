@@ -5,7 +5,6 @@ import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-sco
 import {
   getTodoEditScopeDecision,
   type TodoUpdateScope,
-  todoUpdateScopeSchema,
 } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
@@ -42,7 +41,6 @@ import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations
 import { TodoComposerChips } from './todo-composer-chips';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
-/** 고칠 범위를 정한 결과. 범위 없이 고치는 할 일, 범위를 고른 반복 회차, 범위 고르기에서 뒤로 간 취소 셋이다 */
 type EditScopeChoice =
   | { kind: 'unscoped' }
   | { kind: 'scoped'; scope: TodoUpdateScope }
@@ -88,7 +86,7 @@ TodoEditBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallback
         button={
           <QueryErrorActions
             onRetry={reset}
-            onInquiry={(href) => sheet.close({ type: 'replace', href })}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
           />
         }
       />
@@ -134,7 +132,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
         action="edit"
         date={date}
         scopes={isFollowingOnly ? ['THIS_AND_FOLLOWING'] : TODO_UPDATE_SCOPES}
-        onChange={(selected) => close(todoUpdateScopeSchema.parse(selected))}
+        onChange={(selected) => close(selected)}
         onBack={() => close()}
       />
     ));

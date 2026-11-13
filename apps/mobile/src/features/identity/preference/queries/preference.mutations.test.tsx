@@ -8,7 +8,7 @@ import {
   createTestQueryClient,
   createTestDi,
 } from '@src/testing/core';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -27,22 +27,18 @@ async function renderUpdate(httpClient = createHttpClientStub()) {
     PREFERENCE_QUERY_KEYS.current(),
     createPreference({ pushEnabled: true, nightPushEnabled: false }),
   );
-  let mutateAsync: ReturnType<typeof useUpdate> | undefined;
-  function useUpdate() {
-    return useMutation(useUpdatePreferenceMutationOptions()).mutateAsync;
-  }
-  function Capture() {
-    mutateAsync = useUpdate();
-    return null;
-  }
-  await renderScreen(<Capture />, {
-    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
-  });
+  const { result } = await renderScreenHook(
+    () => useMutation(useUpdatePreferenceMutationOptions()),
+    {
+      di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub(), queryClient } }),
+    },
+  );
   const cached = () => queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
 
   return {
     cached,
-    update: (change: Parameters<NonNullable<typeof mutateAsync>>[0]) => mutateAsync?.(change),
+    update: (change: Parameters<typeof result.current.mutateAsync>[0]) =>
+      result.current.mutateAsync(change),
   };
 }
 

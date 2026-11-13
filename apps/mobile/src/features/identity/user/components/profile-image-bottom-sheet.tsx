@@ -73,7 +73,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
         </Text>
         <VStack align="center">
           <UserAvatar
-            className="w-24 h-24 rounded-full"
+            className="h-24 w-24 rounded-full"
             alt={t('profile.imageSheet.selectedAlt')}
             profileImage={selectedIcon}
           />

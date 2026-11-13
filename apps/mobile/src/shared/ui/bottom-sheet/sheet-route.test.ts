@@ -1,7 +1,12 @@
 import { exitSheetRoute, type SheetRouteNavigator } from './sheet-route';
 
 function createNavigator(canGoBack: boolean): jest.Mocked<SheetRouteNavigator> {
-  return { canGoBack: jest.fn(() => canGoBack), back: jest.fn(), replace: jest.fn() };
+  return {
+    canGoBack: jest.fn(() => canGoBack),
+    back: jest.fn(),
+    replace: jest.fn(),
+    dismissTo: jest.fn(),
+  };
 }
 
 describe('exitSheetRoute', () => {
@@ -42,18 +47,16 @@ describe('exitSheetRoute', () => {
     expect(navigator.replace).toHaveBeenCalledWith(next);
   });
 
-  it('완료 후 다른 화면으로 가야 하면 시트를 닫은 뒤 아래 화면을 바꾼다', () => {
+  it('탭 화면으로 떠나면 시트를 바꾸지 않고 탭 묶음 안에서 연다', () => {
     // Given
     const navigator = createNavigator(true);
 
     // When
-    exitSheetRoute(navigator, { type: 'back-then-replace', href: '/feed' }, '/suggestions');
+    exitSheetRoute(navigator, { type: 'dismiss-to', href: '/settings/inquiry' }, '/feed');
 
     // Then
-    expect(navigator.back).toHaveBeenCalledTimes(1);
-    expect(navigator.replace).toHaveBeenCalledWith('/feed');
-    expect(navigator.back.mock.invocationCallOrder[0]).toBeLessThan(
-      navigator.replace.mock.invocationCallOrder[0] ?? 0,
-    );
+    expect(navigator.dismissTo).toHaveBeenCalledWith('/settings/inquiry');
+    expect(navigator.replace).not.toHaveBeenCalled();
+    expect(navigator.back).not.toHaveBeenCalled();
   });
 });

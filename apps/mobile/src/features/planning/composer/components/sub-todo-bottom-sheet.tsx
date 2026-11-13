@@ -24,7 +24,6 @@ interface SubTodoBottomSheetProps extends Omit<
   children: (close: () => void) => ReactNode;
 }
 
-/** 하위 항목 추가·수정 시트의 route와 경계. 폼과 제출은 각 시트가 갖는다 */
 export function SubTodoBottomSheet({ children, ...props }: SubTodoBottomSheetProps) {
   return (
     <RouteKeyboardBottomSheet

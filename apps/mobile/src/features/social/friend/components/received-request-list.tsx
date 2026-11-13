@@ -26,12 +26,17 @@ import { useGetReceivedRequestsInfiniteQueryOptions } from '../queries/friend.qu
 
 export function ReceivedRequestList() {
   const { t } = useTranslation('friend');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(useGetReceivedRequestsInfiniteQueryOptions());
+  const {
+    data: receivedRequests,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useSuspenseInfiniteQuery(useGetReceivedRequestsInfiniteQueryOptions());
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshFriends(queryClient));
 
-  const { items: requests, totalCount } = data;
+  const { items: requests, totalCount } = receivedRequests;
 
   return (
     <InfiniteList

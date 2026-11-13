@@ -11,10 +11,6 @@ function givenWindow(width: number, params: Record<string, string> = {}) {
 }
 
 describe('useSelectedMemoId', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('URL의 memoId를 숫자로 읽는다', async () => {
     // Given
     givenWindow(700, { memoId: '12' });
