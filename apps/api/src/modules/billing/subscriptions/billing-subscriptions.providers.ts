@@ -1,10 +1,10 @@
 import type { Provider } from "@nestjs/common";
 
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { BillingUserLockPort } from "../premium-grants/application/ports/billing-user-lock.port.js";
 import { PremiumAccessCachePort } from "../premium-grants/application/ports/premium-access-cache.port.js";
 import { ProjectPremiumAccessUseCase } from "../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import { SweepBillingNoticesUseCase } from "../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
@@ -71,7 +71,7 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
     subscriptionRepository: SubscriptionRepositoryPort,
     subscriptionUserReader: SubscriptionUserReaderPort,
     receiptRepository: SubscriptionEventReceiptRepositoryPort,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     cache: PremiumAccessCachePort,
     notifier: SubscriptionEventNotifierPort,
@@ -84,7 +84,7 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
   provideUseCase(ReconcileStoreSubscriptionsUseCase, {
     subscriptionRepository: SubscriptionRepositoryPort,
     statusReader: StoreSubscriptionStatusReaderPort,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
     cache: PremiumAccessCachePort,

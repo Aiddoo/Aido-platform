@@ -1,3 +1,4 @@
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -5,7 +6,6 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 
 import { planNewGrantStart } from "../../../shared/premium-access.domain-service.js";
 import { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
-import type { BillingUserLockPort } from "../ports/billing-user-lock.port.js";
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import type { GrantPremiumInput, GrantPremiumResult } from "../ports/premium-granter.port.js";
@@ -19,7 +19,7 @@ export interface GrantPremiumDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "nextId" | "saveIfAbsent">;
   readonly loadPremiumEntitlements: Pick<LoadPremiumEntitlementsUseCase, "execute">;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
-  readonly userLock: BillingUserLockPort;
+  readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly cache: PremiumAccessCachePort;

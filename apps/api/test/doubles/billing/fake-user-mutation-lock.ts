@@ -1,8 +1,8 @@
-import { BillingUserLockPort } from "#api/modules/billing/premium-grants/application/ports/billing-user-lock.port";
+import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 사용자 행 잠금을 흉내 낸다. 모르는 사용자는 false를 돌려주고 잠근 순서를 남긴다
-export class FakeBillingUserLock extends BillingUserLockPort {
+export class FakeUserMutationLock extends UserMutationLockPort {
   readonly lockedUserIds: string[] = [];
   readonly #knownUserIds: ReadonlySet<string>;
 

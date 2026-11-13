@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { sortBy, uniq, uniqBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
+import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -11,7 +12,6 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { BillingUserLockPort } from "../../../premium-grants/application/ports/billing-user-lock.port.js";
 import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
 import type { UserSubscriptionProjection } from "../../../premium-grants/application/ports/user-subscription-projection.repository.port.js";
 import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
@@ -66,7 +66,7 @@ export interface ApplyStoreSubscriptionEventDependencies {
   readonly subscriptionRepository: SubscriptionRepositoryPort;
   readonly subscriptionUserReader: Pick<SubscriptionUserReaderPort, "findByAppUserId">;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
-  readonly userLock: BillingUserLockPort;
+  readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: PremiumAccessCachePort;
   readonly notifier: SubscriptionEventNotifierPort;

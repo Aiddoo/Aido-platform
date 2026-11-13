@@ -4,7 +4,6 @@ import { AccessEntitlementsModule } from "#api/modules/access/entitlements/acces
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 
-import { BillingUserLockPort } from "./application/ports/billing-user-lock.port.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
 import { PremiumAccessReaderPort } from "./application/ports/premium-access.reader.port.js";
 import { PremiumGranterPort } from "./application/ports/premium-granter.port.js";
@@ -24,7 +23,6 @@ import { BILLING_PREMIUM_GRANTS_PROVIDERS } from "./billing-premium-grants.provi
     SweepPremiumGrantsUseCase,
     NotifyEndingPremiumGrantsUseCase,
     SweepBillingNoticesUseCase,
-    BillingUserLockPort,
     PremiumAccessCachePort,
   ],
 })

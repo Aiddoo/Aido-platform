@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
@@ -53,7 +53,7 @@ function setup(
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),
-    userLock: new FakeBillingUserLock(knownUserIds),
+    userLock: new FakeUserMutationLock(knownUserIds),
     unitOfWork: new ImmediateUnitOfWork(),
     afterCommit,
     cache,

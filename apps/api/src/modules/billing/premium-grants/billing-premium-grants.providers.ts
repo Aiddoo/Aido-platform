@@ -6,7 +6,6 @@ import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { BillingUserLockPort } from "./application/ports/billing-user-lock.port.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
 import { PremiumAccessReaderPort } from "./application/ports/premium-access.reader.port.js";
 import { PremiumGrantEndingNoticeRepositoryPort } from "./application/ports/premium-grant-ending-notice.repository.port.js";
@@ -48,8 +47,6 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   { provide: PremiumAccessCachePort, useClass: PremiumAccessCacheAdapter },
   { provide: PremiumGrantNotifierPort, useClass: PremiumGrantNotifierAdapter },
   { provide: QuietHoursReaderPort, useClass: QuietHoursReaderAdapter },
-  // 사용자 행 잠금은 identity가 소유한다
-  { provide: BillingUserLockPort, useExisting: UserMutationLockPort },
   { provide: PremiumGranterPort, useClass: PremiumGranterAdapter },
   { provide: PremiumAccessReaderPort, useClass: PremiumAccessReaderAdapter },
   provideUseCase(LoadPremiumEntitlementsUseCase, {
@@ -70,7 +67,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
     premiumGrantRepository: PremiumGrantRepositoryPort,
     loadPremiumEntitlements: LoadPremiumEntitlementsUseCase,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     afterCommit: AfterCommitTaskRegistryPort,
     cache: PremiumAccessCachePort,
@@ -81,7 +78,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
     premiumGrantRepository: PremiumGrantRepositoryPort,
     userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     cache: PremiumAccessCachePort,
     logger: loggerFor(SweepPremiumGrantsUseCase),
@@ -89,7 +86,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   provideUseCase(RevokePremiumGrantUseCase, {
     premiumGrantRepository: PremiumGrantRepositoryPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
-    userLock: BillingUserLockPort,
+    userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,
     cache: PremiumAccessCachePort,
     logger: loggerFor(RevokePremiumGrantUseCase),

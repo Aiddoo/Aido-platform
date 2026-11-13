@@ -1,4 +1,4 @@
-import { FakeBillingUserLock } from "#test/doubles/billing/fake-billing-user-lock";
+import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
@@ -43,7 +43,7 @@ function setup(grants: PremiumGrant[]) {
       premiumGrantRepository,
       userSubscriptionProjection: projection,
     }),
-    userLock: new FakeBillingUserLock([SUBSCRIPTION_FIXTURE_USER_ID]),
+    userLock: new FakeUserMutationLock([SUBSCRIPTION_FIXTURE_USER_ID]),
     unitOfWork: new ImmediateUnitOfWork(),
     cache,
     logger: new SilentLogger(),
