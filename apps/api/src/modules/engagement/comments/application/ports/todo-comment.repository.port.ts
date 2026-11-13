@@ -14,4 +14,6 @@ export abstract class TodoCommentRepositoryPort {
   ): Promise<TodoComment[]>;
   /** 새 글이 같은 작성자의 다른 글과 멱등 키가 겹치면 TodoCommentIdempotencyRace를 던진다 */
   abstract save(comment: TodoComment): Promise<void>;
+  /** 새 글 여러 개를 한 번에 넣는다. 앞 글에 답하는 글이 같이 들어가도 된다. 멱등 키 겹침은 save와 같다 */
+  abstract insertMany(comments: readonly TodoComment[]): Promise<void>;
 }

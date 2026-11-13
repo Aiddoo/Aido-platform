@@ -46,6 +46,17 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
     );
   }
 
+  async insertMany(comments: readonly TodoComment[]): Promise<void> {
+    // 한 문장처럼 하나라도 겹치면 아무것도 넣지 않는다
+    const staged = new InMemoryTodoCommentRepository(this.list());
+    for (const comment of comments) {
+      await staged.save(comment);
+    }
+    for (const comment of comments) {
+      this.#comments.set(comment.id.value, copyOf(comment));
+    }
+  }
+
   async save(comment: TodoComment): Promise<void> {
     const isNew = !this.#comments.has(comment.id.value);
     const isDuplicateRequest = [...this.#comments.values()].some(

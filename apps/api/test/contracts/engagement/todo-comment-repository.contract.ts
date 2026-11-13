@@ -114,6 +114,48 @@ export function describeTodoCommentRepositoryContract(
       expect(none).toEqual([]);
     });
 
+    it("앞 글에 답하는 글을 한 번에 넣으면 모두 찾고, 멱등 키가 겹치면 하나도 넣지 않는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const head = createTodoCommentFixture({
+        id: (await repository.nextId()).value,
+        authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+        replyCount: 1,
+      });
+      const reply = createTodoCommentFixture({
+        id: (await repository.nextId()).value,
+        authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+        parentId: head.id.value,
+        replyToCommentId: head.id.value,
+        createdAt: TODO_COMMENT_FIXTURE_NOW.add({ milliseconds: 1 }),
+      });
+      const todoId = TodoId.reconstitute(TODO_COMMENT_FIXTURE_TODO_ID);
+
+      const fresh = createTodoCommentFixture({
+        id: (await repository.nextId()).value,
+        authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      });
+      const replayed = createTodoCommentFixture({
+        id: (await repository.nextId()).value,
+        authorId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+        clientRequestId: head.clientRequestId,
+      });
+
+      // When
+      await repository.insertMany([head, reply]);
+      const duplicating = await repository.insertMany([fresh, replayed]).then(
+        () => null,
+        (error: unknown) => error,
+      );
+
+      // Then
+      expect((await repository.findByIdAndTodoId(reply.id, todoId))?.toPrimitives()).toEqual(
+        reply.toPrimitives(),
+      );
+      expect(duplicating).toBeInstanceOf(TodoCommentIdempotencyRace);
+      expect(await repository.findByIdAndTodoId(fresh.id, todoId)).toBeNull();
+    });
+
     it("같은 작성자가 같은 멱등 키로 새 글을 저장하면 경합 오류를 낸다", async () => {
       // Given
       const repository = await createRepository();

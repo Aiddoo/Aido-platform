@@ -62,10 +62,20 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
     return rows.map(toTodoComment);
   }
 
+  async insertMany(comments: readonly TodoComment[]): Promise<void> {
+    if (comments.length === 0) {
+      return;
+    }
+    // 부모를 가리키는 FK는 문장 끝에 확인하므로 앞 글에 답하는 글을 한 INSERT에 같이 넣을 수 있다
+    await this.#translateIdempotencyRace(() =>
+      this.#db.insert(todoCommentTable).values(comments.map(toTodoCommentRow)),
+    );
+  }
+
   async save(comment: TodoComment): Promise<void> {
     const row = toTodoCommentRow(comment);
-    try {
-      await this.#db
+    await this.#translateIdempotencyRace(() =>
+      this.#db
         .insert(todoCommentTable)
         .values(row)
         .onConflictDoUpdate({
@@ -78,7 +88,13 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
             editedAt: row.editedAt,
             updatedAt: row.updatedAt,
           },
-        });
+        }),
+    );
+  }
+
+  async #translateIdempotencyRace(write: () => Promise<unknown>): Promise<void> {
+    try {
+      await write();
     } catch (error) {
       // 같은 작성자의 멱등 키 유니크 위반은 동시에 같은 요청을 쓴 경합이다. 호출자가 먼저 쓴 글을 다시 읽는다
       if (
