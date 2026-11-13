@@ -80,6 +80,51 @@ describe('MemoConvertBottomSheet', () => {
     expect(screen.getByDisplayValue('장보기')).toBeTruthy();
   });
 
+  describe('다른 메모로 다시 쓰기', () => {
+    setupFakeTimersPerTest();
+
+    it('메모 하나를 옮긴 뒤 같은 시트가 다른 메모를 받으면 그 메모 글로 새로 시작해 한 번 보낸다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok({ categories: [] }));
+      httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
+      const sheetFor = (memo: { id: number; content: string }) => (
+        <MemoConvertBottomSheet
+          memo={memo}
+          selectedDate={createDateKey('2026-11-07')}
+          categoryId={1}
+          isOpen
+          onOpenChange={jest.fn()}
+          onClose={jest.fn()}
+          onConverted={jest.fn()}
+        />
+      );
+      const { rerender } = await renderScreen(sheetFor(MEMO), {
+        di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+      await fireEvent.press(await screen.findByLabelText('저장하기'));
+      // 연타 가드(600ms)가 지난 뒤다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // When
+      await rerender(sheetFor({ id: 6, content: '빨래하기' }));
+      await fireEvent.press(await screen.findByLabelText('저장하기'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(screen.getByDisplayValue('빨래하기')).toBeTruthy();
+      expect(httpClient.post.mock.calls.map(([url]) => url)).toEqual([
+        'v1/memos/5/convert-to-todos',
+        'v1/memos/6/convert-to-todos',
+      ]);
+      expect(httpClient.post.mock.calls[1]?.[1]).toMatchObject({
+        todos: [expect.objectContaining({ title: '빨래하기' })],
+      });
+    });
+  });
+
   describe('저장 버튼 연타', () => {
     setupFakeTimersPerTest();
 

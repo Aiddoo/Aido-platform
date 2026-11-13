@@ -32,13 +32,25 @@ interface MemoConvertBottomSheetProps extends Pick<
 /** 메모를 할 일 하나로 옮긴다. 제목은 메모 내용으로 채워 두고, 입력칸과 칩은 할 일 작성과 같다 */
 export function MemoConvertBottomSheet({
   memo,
-  selectedDate,
-  categoryId,
   isOpen,
   onOpenChange,
+  ...formProps
+}: MemoConvertBottomSheetProps) {
+  // 폼과 저장 잠금은 메모마다 새로 시작한다. 같은 시트가 다른 메모를 받아도 앞 메모의 제목과 저장 완료가 남지 않는다
+  return (
+    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <MemoConvertBottomSheet.Form key={memo.id} memo={memo} {...formProps} />
+    </KeyboardBottomSheet>
+  );
+}
+
+MemoConvertBottomSheet.Form = function Form({
+  memo,
+  selectedDate,
+  categoryId,
   onClose,
   onConverted,
-}: MemoConvertBottomSheetProps) {
+}: Omit<MemoConvertBottomSheetProps, 'isOpen' | 'onOpenChange'>) {
   const { t } = useTranslation('todo');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const form = useForm({
@@ -92,39 +104,37 @@ export function MemoConvertBottomSheet({
   };
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={12} testID="memo-convert-sheet">
-        <Controller
-          control={form.control}
-          name="title"
-          render={({ field: { value, onChange, ref } }) => (
-            <BottomSheetInput
-              ref={ref}
-              autoFocus
-              placeholder={t('add.placeholder')}
-              value={value}
-              onChange={onChange}
-              maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
-              size="medium"
-              renderErrorMessage={false}
-              returnKeyType="done"
-              onSubmitEditing={handleTitleSubmit}
-            />
-          )}
-        />
-
-        <TodoComposerChips form={form} />
-
-        <Separator thickness={1} className="bg-gray-2" />
-
-        <HStack align="center" justify="end">
-          <TodoComposerSubmitButton
-            isDisabled={isSubmitDisabled}
-            isSubmitting={isSubmitLocked}
-            onPress={() => handleSavePress()}
+    <VStack gap={12} testID="memo-convert-sheet">
+      <Controller
+        control={form.control}
+        name="title"
+        render={({ field: { value, onChange, ref } }) => (
+          <BottomSheetInput
+            ref={ref}
+            autoFocus
+            placeholder={t('add.placeholder')}
+            value={value}
+            onChange={onChange}
+            maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+            size="medium"
+            renderErrorMessage={false}
+            returnKeyType="done"
+            onSubmitEditing={handleTitleSubmit}
           />
-        </HStack>
-      </VStack>
-    </KeyboardBottomSheet>
+        )}
+      />
+
+      <TodoComposerChips form={form} />
+
+      <Separator thickness={1} className="bg-gray-2" />
+
+      <HStack align="center" justify="end">
+        <TodoComposerSubmitButton
+          isDisabled={isSubmitDisabled}
+          isSubmitting={isSubmitLocked}
+          onPress={() => handleSavePress()}
+        />
+      </HStack>
+    </VStack>
   );
-}
+};
