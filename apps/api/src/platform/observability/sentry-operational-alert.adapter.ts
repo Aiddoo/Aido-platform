@@ -25,6 +25,8 @@ export class SentryOperationalAlertAdapter implements OperationalAlertPort {
     try {
       Sentry.withScope((scope) => {
         scope.setFingerprint([alertIssueKey(alert)]);
+        // 이슈 부제는 transaction이다. 비우면 경보를 올린 요청·작업 이름이 보여 경보 key로 둔다
+        scope.setTransactionName(alert.key);
         scope.setTags(alert.tags ?? {});
         // 호출부 태그가 고정 태그를 덮지 못하게 뒤에 쓴다
         scope.setTags({

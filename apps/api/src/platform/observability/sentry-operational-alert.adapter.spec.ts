@@ -16,6 +16,7 @@ vi.mock("@sentry/nestjs", () => sentry);
 
 const scope = {
   setFingerprint: vi.fn(),
+  setTransactionName: vi.fn(),
   setTags: vi.fn(),
   setExtras: vi.fn(),
   setExtra: vi.fn(),
@@ -53,6 +54,7 @@ describe("SentryOperationalAlertAdapter", () => {
 
     // Then
     expect(scope.setFingerprint).toHaveBeenCalledWith(["vendor.billing.failed"]);
+    expect(scope.setTransactionName).toHaveBeenCalledWith("vendor.billing.failed");
     expect(scope.setTags).toHaveBeenLastCalledWith({
       alert_key: "vendor.billing.failed",
       alert_context: "vendor",

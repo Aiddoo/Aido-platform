@@ -42,7 +42,7 @@
 | 5xx·미분류 예외 | `ExceptionReporterPort`(`GlobalExceptionFilter`가 호출)                             | 4xx는 보내지 않는다                  |
 
 - Sentry import는 `platform/observability/sentry-*`, `instrument.ts`, `platform/config/utils/sentry-options.ts`, `app.module`의 `SentryModule.forRoot()`(SDK 설정 모듈)에만 둔다. 업무 코드는 포트만 부른다.
-- 경보 Sentry 이벤트: fingerprint = key(원인을 나누는 `subject`가 있으면 `key:subject`), 제목 = summary, 고정 태그 `alert_key`·`alert_context`·`severity`(·`alert_subject`), extra `runbook`. 호출부 태그는 고정 태그를 덮지 못한다.
+- 경보 Sentry 이벤트: fingerprint = key(원인을 나누는 `subject`가 있으면 `key:subject`), 제목 = summary, 부제(transaction) = key, 고정 태그 `alert_key`·`alert_context`·`severity`(·`alert_subject`), extra `runbook`. 호출부 태그는 고정 태그를 덮지 못한다.
 - 5xx: 코드로 분류해 던진 실패(`SYS_0005`·`AI_1301`·`WEATHER_1901`·502 계열)는 `http-5xx.<코드>` 한 이슈로, 분류되지 않은 `SYS_0001`은 스택으로 모은다. 같은 경로·코드·예외는 한 시간에 10건(`EXCEPTION_REPORT_THRESHOLD`·`EXCEPTION_REPORT_WINDOW_MS`)까지만 보낸다.
 - 업무 거부(계약에서 4xx로 정한 `ApplicationException`·`DomainException`)는 HTTP·웹훅·`@OnEvent`·작업 어느 경로에서도 Sentry 오류가 아니다(`isBusinessRejection`). 경보의 원인이면 예외 대신 경보 문장과 `errorCode` extra로, @sentry/nestjs가 handler에서 자동 수집한 것은 `beforeSendError`가 버린다. 사람이 봐야 하면 이름 있는 경보를 올린다.
 - `ignoreErrors`는 쓰지 않는다. 걸러낼 알려진 소음이 아직 없고, 4xx는 필터가 애초에 보내지 않는다. 소음이 생기면 이유 한 줄과 함께 `sentry-options`에 더한다.
