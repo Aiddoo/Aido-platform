@@ -107,6 +107,7 @@ sudo systemctl reboot
 - 확인: `uname -r`(새 커널), `docker ps`(healthy), `curl -s 127.0.0.1:8080/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑), `crontab -l`(백업).
 - Docker 데몬 설정은 [docker-daemon.json](../../../scripts/ops/docker-daemon.json)이 정본이다. `/etc/docker/daemon.json`에 두고 `sudo dockerd --validate --config-file /etc/docker/daemon.json`으로 확인한다. `live-restore`가 켜져 있으면 데몬을 재시작해도 컨테이너가 계속 돈다.
 - 손으로 만든 이미지 태그(`pre-<버전>` 등)는 그 버전 롤백이 필요 없어지면 지운다. 롤백은 `:rollback` 한 세대다.
+- DB 백업은 [backup-database.sh](../../../scripts/ops/backup-database.sh)가 정본이고, 서버 cron(03:00 UTC)이 사본 `~/apps/backup.sh`를 실행한다. 바꾸면 `install -m 700`으로 사본을 덮고, 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. 로그는 `~/backups/backup.log`다.
 - `REDIS_URL`은 `CACHE_TYPE=redis`로 여러 대를 운영할 때만 둔다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)). 큐는 pg-boss라 Redis가 필요 없다.
 
 ## 공개 버전과 env 반영
