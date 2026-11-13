@@ -244,14 +244,14 @@ flowchart LR
 
 ```sh
 pnpm install                                   # postinstall이 packages/*를 빌드한다
-pnpm docker:up                                 # PostgreSQL 16(5432)·Redis(6379)
-cp .env.example apps/api/.env.development       # DATABASE_URL 포트를 5432로 맞춘다
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm db:migrate
+pnpm docker:up                                 # PostgreSQL 16(5433)
+cp apps/api/.env.example apps/api/.env.development
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/aido pnpm db:migrate
 pnpm dev                                       # API + Expo Metro
 ```
 
 - API는 `http://localhost:8080`, Swagger UI는 `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)다. 서버만은 `pnpm --filter @aido/server dev`.
-- API까지 Docker로 띄우려면 `.env.docker.dev.example`을 `.env.docker.dev`로 복사하고 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
+- env 파일은 앱마다 `.env`(운영) · `.env.development`(개발) · `.env.example`(예시)이고 도커도 같은 파일을 읽는다. API까지 Docker로 띄우려면 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
 
 | 명령어                                                  | 설명                                                                       |
 | ------------------------------------------------------- | -------------------------------------------------------------------------- |

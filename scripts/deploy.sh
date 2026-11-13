@@ -15,7 +15,7 @@
 #           && DEPLOY_SHA=<sha> bash scripts/deploy.sh
 # 비상 서버 빌드: 위 서버 명령 끝을 `bash scripts/deploy.sh --build`로
 # 수동 롤백: cd ~/apps/Aido-platform && bash scripts/deploy.sh --rollback
-# [보안] 이 디렉터리에서 git clean 절대 금지 — .env.docker.prod(untracked 시크릿)가 삭제됨
+# [보안] 이 디렉터리에서 git clean 절대 금지 — apps/api/.env(untracked 운영 시크릿)가 삭제됨
 # [보안] set -x 금지 — 환경변수 노출 방지. 토큰은 argv·history에 두지 않고 stdin 로그인 후 즉시 logout
 # =============================================================================
 set -Eeuo pipefail
@@ -40,7 +40,7 @@ export BUILDKIT_PROGRESS=plain
 
 # --env-file: compose 변수 보간(${PORT:-8080} 등)은 서비스 env_file이 아닌 이 플래그/호스트 env만 읽음
 #             — 루트 package.json의 docker:prod:* 스크립트와 동일 형태로 통일
-compose() { docker compose --env-file .env.docker.prod -f "$COMPOSE_FILE" "$@"; }
+compose() { docker compose --env-file apps/api/.env -f "$COMPOSE_FILE" "$@"; }
 log()  { printf '\n[deploy] %s\n' "$*"; }
 fail() { printf '\n[deploy][ERROR] %s\n' "$*" >&2; exit 1; }
 file_mode() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }

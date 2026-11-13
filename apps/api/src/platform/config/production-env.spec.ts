@@ -33,11 +33,29 @@ vi.mock("pg-boss", () => ({
 }));
 
 const SOURCE_ROOT = resolve(import.meta.dirname, "../..");
-const PRODUCTION_ENV_EXAMPLE = resolve(SOURCE_ROOT, "../../../.env.docker.prod.example");
-// 예시의 CHANGE_ME는 운영 비밀 자리다. 길이 검사를 통과하는 자리표시자로 바꾼다
+const ENV_EXAMPLE = resolve(SOURCE_ROOT, "../.env.example");
 const SECRET_PLACEHOLDER = "production-secret-placeholder-0123456789abcdef";
-// 예시가 주석으로 둔 운영 필수 값(WeatherKit 네 값은 운영에서 모두 필요하다)
-const COMMENTED_PRODUCTION_VALUES = {
+// 예시는 개발 값이다. 운영에서 바꾸는 값(예시 주석의 "운영")을 여기 모아 운영 시작 검증을 돌린다
+const PRODUCTION_VALUES: Env = {
+  NODE_ENV: "production",
+  APP_ENV: "production",
+  API_PUBLIC_URL: "https://api.example.com",
+  DATABASE_URL: `postgresql://postgres:${SECRET_PLACEHOLDER}@db.example.com:5432/aido?sslmode=require`,
+  JWT_SECRET: SECRET_PLACEHOLDER,
+  JWT_REFRESH_SECRET: `${SECRET_PLACEHOLDER}-refresh`,
+  TOKEN_ENCRYPTION_KEY: `${SECRET_PLACEHOLDER}-token`,
+  CORS_ORIGINS: "https://example.com",
+  THROTTLE_LIMIT: "100",
+  GOOGLE_CLIENT_ID: SECRET_PLACEHOLDER,
+  GOOGLE_CLIENT_SECRET: SECRET_PLACEHOLDER,
+  GOOGLE_CALLBACK_URL: "https://api.example.com/v1/auth/google/web-callback",
+  KAKAO_CALLBACK_URL: "https://api.example.com/v1/auth/kakao/web-callback",
+  NAVER_CALLBACK_URL: "https://api.example.com/v1/auth/naver/web-callback",
+  EMAIL_PROVIDER: "resend",
+  RESEND_API_KEY: SECRET_PLACEHOLDER,
+  REVENUECAT_WEBHOOK_SECRET: SECRET_PLACEHOLDER,
+  INVITE_CLAIM_HASH_SECRET: SECRET_PLACEHOLDER,
+  // WeatherKit 네 값은 운영에서 모두 필요하다
   WEATHERKIT_TEAM_ID: "TEAMID1234",
   WEATHERKIT_KEY_ID: "KEYID12345",
   WEATHERKIT_SERVICE_ID: "com.example.weatherkit-client",
@@ -53,13 +71,13 @@ const DEPLOYED_DEV_SERVER_ENV: Env = {
   TOKEN_ENCRYPTION_KEY: "development-token-encryption-key-0123456789",
 };
 
-/** 운영 env 예시의 키 구성 그대로, 값은 모두 문자열이다. */
+function exampleText(): string {
+  return readFileSync(ENV_EXAMPLE, "utf8");
+}
+
+/** env 예시의 키 구성에 운영 값을 덮은 env. 값은 모두 문자열이다. */
 function productionEnv(): Env {
-  const example = parseEnv(readFileSync(PRODUCTION_ENV_EXAMPLE, "utf8"));
-  const values = Object.entries(example).flatMap(([key, value]) =>
-    value == null ? [] : [[key, value.replaceAll("CHANGE_ME", SECRET_PLACEHOLDER)] as const],
-  );
-  return { ...Object.fromEntries(values), ...COMMENTED_PRODUCTION_VALUES };
+  return { ...parseEnv(exampleText()), ...PRODUCTION_VALUES };
 }
 
 function isNamespaceConfig(value: unknown): value is AnyNamespaceConfig {
@@ -97,7 +115,7 @@ function refusalOf(env: Env): string {
   return "";
 }
 
-describe("운영 env 예시로 시작하는 설정", () => {
+describe("env 예시에 운영 값을 넣어 시작하는 설정", () => {
   let module: TestingModule | undefined;
   let namespaces: AnyNamespaceConfig[];
 
@@ -134,7 +152,20 @@ describe("운영 env 예시로 시작하는 설정", () => {
     );
   });
 
-  it("예시는 APP_ENV=production이고 운영 시작 검증을 통과한다", () => {
+  it("운영에서 바꾸는 키는 모두 예시에 값이나 주석으로 있다", () => {
+    // Given
+    const text = exampleText();
+
+    // When
+    const missing = Object.keys(PRODUCTION_VALUES).filter(
+      (key) => !new RegExp(`^(# )?${key}=`, "m").test(text),
+    );
+
+    // Then
+    expect(missing).toEqual([]);
+  });
+
+  it("운영 값을 넣으면 운영 시작 검증을 통과한다", () => {
     // Given
     const env = productionEnv();
 
@@ -142,7 +173,6 @@ describe("운영 env 예시로 시작하는 설정", () => {
     const refusal = refusalOf(env);
 
     // Then
-    expect(env.APP_ENV).toBe("production");
     expect(refusal).toBe("");
   });
 

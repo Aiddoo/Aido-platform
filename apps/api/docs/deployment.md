@@ -4,16 +4,16 @@
 
 ## 로컬 실행
 
-`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. DB·Redis만 띄우는 `pnpm docker:up`과 API까지 띄우는 `pnpm docker:dev:up`은 별도 구성이다. 전자는 `docker-compose.yml`의 DB5432, 후자는 `docker-compose.dev.yml`의 기본 host DB5433을 사용하므로 연결을 혼동하지 않는다.
+`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만, `pnpm docker:dev:up`은 같은 DB에 migrate → API까지 띄운다(profile `api`). 둘 다 `apps/api/.env.development`를 읽는다.
 
 ```sh
-cp .env.docker.dev.example .env.docker.dev
+cp apps/api/.env.example apps/api/.env.development
 pnpm docker:dev:build
 pnpm docker:dev:up
 pnpm docker:dev:logs
 ```
 
-개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 이미지를 로컬에서 시험하려면 `.env.docker.prod.example`을 별도 환경에 맞춰 준비한 뒤 `docker:prod:build`/`docker:prod:up`을 사용한다. production compose는 원격 migration 허용을 명시하므로 실제 운영 연결을 로컬 시험에 재사용하지 않는다.
+개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 `apps/api/.env`를 읽는다. 운영 이미지를 로컬에서 시험하려면 운영 값이 아닌 시험용 `apps/api/.env`로 `docker:prod:build`/`docker:prod:up`을 사용한다. production compose는 원격 migration 허용을 명시하므로 실제 운영 연결을 로컬 시험에 재사용하지 않는다.
 
 ## 동일 SHA의 배포 흐름
 
@@ -125,6 +125,8 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
 - **반영**: `scripts/ops/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 - **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
 - **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
+
+운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 루트 `.env.docker.prod`는 이 파일을 가리키는 링크로, env 경로를 옮기기 전 커밋을 다시 배포할 때만 쓴다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
 
 env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
