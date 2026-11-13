@@ -381,7 +381,15 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
   }
 
   async countThanksRecipients(query: NudgeThanksCandidateQuery): Promise<number> {
-    return (await this.#listThanksCandidateIds(query)).length;
+    if (query.friendIds.length === 0) {
+      return 0;
+    }
+    // 후보는 보낸 사람마다 하나라 id를 가져오지 않고 보낸 사람 수를 센다
+    const [row] = await this.#db
+      .select({ count: countDistinct(nudgeTable.senderId) })
+      .from(nudgeTable)
+      .where(await this.#thanksCandidateCondition(query));
+    return row?.count ?? 0;
   }
 
   #thankedOnTodo(todoId: TodoId, receiverId: UserId): SQL | undefined {
@@ -396,43 +404,44 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort, NudgeReaderP
     if (query.friendIds.length === 0) {
       return [];
     }
+    const groups = await this.#db
+      .select({ latestId: max(nudgeTable.id) })
+      .from(nudgeTable)
+      .where(await this.#thanksCandidateCondition(query))
+      .groupBy(nudgeTable.senderId);
+    return compact(groups.map((group) => group.latestId)).toSorted((left, right) => right - left);
+  }
+
+  // 아직 고마움을 받지 않은 친구가 공개 할 일에 보낸 콕. 보낸 사람마다 묶으면 감사 후보 하나다
+  async #thanksCandidateCondition(query: NudgeThanksCandidateQuery): Promise<SQL | undefined> {
     const thanked = await this.#db
       .select({ senderId: nudgeTable.senderId })
       .from(nudgeTable)
       .where(this.#thankedOnTodo(query.todoId, query.ownerId));
     const thankedSenderIds = thanked.map((row) => row.senderId);
-    const groups = await this.#db
-      .select({ latestId: max(nudgeTable.id) })
-      .from(nudgeTable)
-      .where(
-        and(
-          eq(nudgeTable.todoId, query.todoId.value),
-          eq(nudgeTable.receiverId, query.ownerId.value),
-          lte(nudgeTable.id, query.throughNudgeId.value),
-          inArray(
-            nudgeTable.senderId,
-            query.friendIds.map((friendId) => friendId.value),
+    return and(
+      eq(nudgeTable.todoId, query.todoId.value),
+      eq(nudgeTable.receiverId, query.ownerId.value),
+      lte(nudgeTable.id, query.throughNudgeId.value),
+      inArray(
+        nudgeTable.senderId,
+        query.friendIds.map((friendId) => friendId.value),
+      ),
+      thankedSenderIds.length === 0 ? undefined : notInArray(nudgeTable.senderId, thankedSenderIds),
+      isNull(nudgeTable.thankedAt),
+      exists(
+        this.#db
+          .select({ one: sql`1` })
+          .from(todoTable)
+          .where(
+            and(
+              eq(todoTable.id, nudgeTable.todoId),
+              eq(todoTable.visibility, "PUBLIC"),
+              eq(todoTable.userId, query.ownerId.value),
+            ),
           ),
-          thankedSenderIds.length === 0
-            ? undefined
-            : notInArray(nudgeTable.senderId, thankedSenderIds),
-          isNull(nudgeTable.thankedAt),
-          exists(
-            this.#db
-              .select({ one: sql`1` })
-              .from(todoTable)
-              .where(
-                and(
-                  eq(todoTable.id, nudgeTable.todoId),
-                  eq(todoTable.visibility, "PUBLIC"),
-                  eq(todoTable.userId, query.ownerId.value),
-                ),
-              ),
-          ),
-        ),
-      )
-      .groupBy(nudgeTable.senderId);
-    return compact(groups.map((group) => group.latestId)).toSorted((left, right) => right - left);
+      ),
+    );
   }
 
   async #listOwned(params: ListNudgesParams, direction: NudgeDirection): Promise<NudgeListItem[]> {

@@ -216,7 +216,7 @@ describe("FanOutBroadcastCampaignUseCase — 수신자 현지 시각 발송", ()
       delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2026-11-04" },
     });
 
-  it("알림을 바로 만들지 않고 시간대별 발송 시각으로 묶어 작업을 등록한다", async () => {
+  it("알림을 바로 만들지 않고 시간대별 발송 시각으로 묶어 작업을 한 번에 등록한다", async () => {
     // Given
     const { useCase, campaignId, notifier, jobEnqueuer, stored } = setup({
       audience: ["user-la", "user-seoul-1", "user-seoul-2"],
@@ -240,6 +240,7 @@ describe("FanOutBroadcastCampaignUseCase — 수신자 현지 시각 발송", ()
       { startAfter: "2026-11-04T01:00:00Z", userIds: ["user-seoul-1", "user-seoul-2"] },
       { startAfter: "2026-11-04T18:00:00Z", userIds: ["user-la"] },
     ]);
+    expect(jobEnqueuer.deliveryCalls).toBe(1);
     expect((await stored()).toPrimitives()).toMatchObject({
       status: "COMPLETED",
       processedCount: 3,

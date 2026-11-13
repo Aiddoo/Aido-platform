@@ -33,6 +33,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CheerFixture,
   FollowFixture,
@@ -109,6 +110,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       logger,
     });
     blockUser = new BlockUserUseCase({
+      nudgeCountCache: new PassThroughCountCache(),
+      cheerCountCache: new PassThroughCountCache(),
       userBlockRepository: blockRepository,
       unitOfWork: uow,
       mutationLock,

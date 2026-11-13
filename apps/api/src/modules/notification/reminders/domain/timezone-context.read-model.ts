@@ -1,12 +1,12 @@
 /**
  * 타임존 리마인더 실행 컨텍스트 (도메인 값 타입).
  *
- * 오케스트레이터가 매분 스윕에서 각 타임존의 로컬 시각을 계산해 채우고,
+ * 오케스트레이터가 매분 스윕에서 현지 시각이 같은 타임존을 묶어 채우고,
  * 각 Strategy는 이 컨텍스트만 받아 발송 여부를 판단한다(프레임워크·DB 비의존).
  */
 export interface TimezoneContext {
-  /** IANA 타임존 (예: "Asia/Seoul") */
-  readonly tz: string;
+  /** 이 분에 현지 날짜·시·분이 같은 IANA 타임존들 (예: ["Asia/Seoul", "Asia/Tokyo"]) */
+  readonly timezones: readonly string[];
   /** 로컬 시(0-23) */
   readonly localHour: number;
   /** 로컬 분(0-59) */

@@ -1,4 +1,4 @@
-import { cacheKey, cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
 
 export const TODO_CACHE_TTL_MS = {
   FRIEND_VIEW: 60_000,
@@ -19,6 +19,4 @@ export const TodoCacheKey = {
     size: number,
   ) =>
     cacheKey("todo", "friend-view-v2", ownerUserId, generation, startDate, endDate, String(size)),
-  friendTodosGenerationPattern: (ownerUserId: string, generation: string) =>
-    cachePattern("todo", "friend-view-v2", ownerUserId, generation),
 } as const;

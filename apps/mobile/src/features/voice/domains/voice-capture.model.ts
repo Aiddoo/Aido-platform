@@ -12,7 +12,15 @@ import {
   voiceTranscriptSchema,
 } from './voice-transcript.model';
 
-const voiceCaptureFailureReasonSchema = z.enum([...SPEECH_ERROR_CODES, 'planning-failed']);
+// 인식기가 오류 없이 답하지 않아 앱이 세션을 끝낸 이유. 인식기 오류 코드와 섞지 않아 버그로 보고하지 않는다
+const RECOGNIZER_UNRESPONSIVE_REASONS = ['preparing-timeout', 'restart-loop'] as const;
+export type RecognizerUnresponsiveReason = (typeof RECOGNIZER_UNRESPONSIVE_REASONS)[number];
+
+const voiceCaptureFailureReasonSchema = z.enum([
+  ...SPEECH_ERROR_CODES,
+  ...RECOGNIZER_UNRESPONSIVE_REASONS,
+  'planning-failed',
+]);
 export type VoiceCaptureFailureReason = z.infer<typeof voiceCaptureFailureReasonSchema>;
 
 const voicePauseCauseSchema = z.enum(['app-background', 'interrupted', 'user', 'limit']);
@@ -62,6 +70,7 @@ export type VoiceCaptureEvent =
   | { type: 'end' }
   /** `isStopRequested`: 이 구간은 앱이 이미 stop을 불렀다 */
   | { type: 'error'; code: SpeechErrorCode; at: number; isStopRequested?: boolean }
+  | { type: 'unresponsive'; reason: RecognizerUnresponsiveReason; at: number }
   | { type: 'planned'; result: CapturedPlan | null }
   | { type: 'plan-failed' }
   | { type: 'retry-plan' }
@@ -221,6 +230,10 @@ export function reduceVoiceCapture(
                 : toFailed(current, code, at),
             )
             .otherwise(() => toFailed(current, code, at)),
+      )
+      .with(
+        [{ status: P.union('preparing', 'listening') }, { type: 'unresponsive' }],
+        ([current, { reason, at }]) => toFailed(current, reason, at),
       )
       .with([{ status: 'planning' }, { type: 'planned' }], ([current, { result }]) =>
         result == null ? createVoiceCaptureState() : { ...current, ...result, status: 'review' },

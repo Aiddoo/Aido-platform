@@ -27,12 +27,12 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
     const monthAgo = today.subtract({ months: 1 });
 
     // 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 유저 대상
     const users = await this.#dependencies.reader.findMonthlyReportRecipients({
-      tz,
+      timezones,
       periodStart: monthAgo,
       periodEnd: today,
     });
@@ -83,7 +83,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
       event: NotificationRemindersLogEvent.MONTHLY_REPORT_SENT,
-      timezone: tz,
+      timezones,
       count: notifications.length,
     });
     return { sent: notifications.length };

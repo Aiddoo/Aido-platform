@@ -61,7 +61,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     expect(reader.queries[0]).toEqual({
       method: "findSocialDigestCandidates",
       params: {
-        tz: "Asia/Seoul",
+        timezones: ["Asia/Seoul"],
         today: ctx.today,
         tomorrow: ctx.tomorrow,
         recipientUserIds: [TEST_CUID.USER_1],

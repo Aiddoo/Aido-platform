@@ -4,11 +4,13 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { CheerCountCachePort } from "../../../cheers/application/ports/cheer-count-cache.port.js";
 import { FriendLockKeys } from "../../../friends/application/friends.lock-keys.js";
 import {
   type FriendshipCacheInvalidator,
   invalidateFriendshipCaches,
 } from "../../../friends/application/ports/follow-cache.port.js";
+import type { NudgeCountCachePort } from "../../../nudges/application/ports/nudge-count-cache.port.js";
 import { UserBlock } from "../../domain/user-block.aggregate.js";
 import { blockTargetNotFound } from "../blocks.errors.js";
 import { BlockLogEvent } from "../blocks.log-events.js";
@@ -27,6 +29,9 @@ export interface BlockUserDependencies {
     "nextId" | "existsActiveUser" | "findByPair" | "removeFriendshipsBetween" | "save"
   >;
   readonly friendshipCache: FriendshipCacheInvalidator;
+  // 차단한 상대의 콕·응원은 목록 수에서 빠진다
+  readonly nudgeCountCache: Pick<NudgeCountCachePort, "invalidate">;
+  readonly cheerCountCache: Pick<CheerCountCachePort, "invalidate">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -82,6 +87,10 @@ export class BlockUserUseCase {
       await invalidateFriendshipCaches(friendshipCache, blockerId, blockedId);
     }
     if (result.isNewlyBlocked) {
+      await Promise.all([
+        this.#dependencies.nudgeCountCache.invalidate([blockerId, blockedId]),
+        this.#dependencies.cheerCountCache.invalidate([blockerId, blockedId]),
+      ]);
       logger.log({
         event: BlockLogEvent.BLOCKED,
         userId: command.blockerId,

@@ -37,7 +37,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     execute: vi.fn().mockResolvedValue({ sent: 0 }),
   };
   const mockEveningReminder = {
-    execute: vi.fn().mockResolvedValue({ sent: 0, recipientUserIds: [] }),
+    execute: vi.fn().mockResolvedValue({ sent: 0, recipients: [] }),
   };
   const mockOnboarding = { execute: vi.fn().mockResolvedValue({ sent: 0 }) };
   const mockWeeklyReport = {
@@ -145,7 +145,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Then - 아침 리마인더가 실행되어야 함
       expect(mockMorningReminder.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: 8,
           localMinute: 0,
         }),
@@ -164,12 +164,12 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       vi.setSystemTime(new Date("2026-03-16T09:00:00Z"));
       mockEveningReminder.execute.mockResolvedValue({
         sent: 5,
-        recipientUserIds: [
-          TEST_CUID.USER_1,
-          TEST_CUID.USER_2,
-          TEST_CUID.USER_3,
-          TEST_CUID.USER_4,
-          TEST_CUID.USER_5,
+        recipients: [
+          { userId: TEST_CUID.USER_1, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_2, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_3, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_4, timezone: "Asia/Seoul" },
+          { userId: TEST_CUID.USER_5, timezone: "Asia/Seoul" },
         ],
       });
 
@@ -179,7 +179,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Then - 저녁 리마인더가 실행되고 SocialDigest enqueue
       expect(mockEveningReminder.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: 18,
           localMinute: 0,
         }),
@@ -206,7 +206,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Then - 주간 리포트가 실행되어야 함
       expect(mockWeeklyReport.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: NOTIFICATION_SCHEDULE.WEEKLY_REPORT.hour,
           localMinute: NOTIFICATION_SCHEDULE.WEEKLY_REPORT.minute,
         }),
@@ -223,7 +223,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Then - 월간 리포트가 실행되어야 함
       expect(mockMonthlyReport.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: NOTIFICATION_SCHEDULE.MONTHLY_REPORT.hour,
           localMinute: NOTIFICATION_SCHEDULE.MONTHLY_REPORT.minute,
         }),
@@ -240,7 +240,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Then - 주간 달성 전략이 실행되어야 함
       expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           localHour: NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.hour,
           localMinute: NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT.minute,
         }),
@@ -276,7 +276,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // 두 번째 타임존(Asia/Seoul)도 정상 실행됨
       expect(mockMorningReminder.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
         }),
       );
     });

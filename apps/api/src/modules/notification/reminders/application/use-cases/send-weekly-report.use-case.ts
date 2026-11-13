@@ -27,12 +27,12 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
     const weekAgo = today.subtract({ days: 7 });
 
     // 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 유저 대상
     const users = await this.#dependencies.reader.findWeeklyReportRecipients({
-      tz,
+      timezones,
       periodStart: weekAgo,
       periodEnd: today,
     });
@@ -83,7 +83,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
       event: NotificationRemindersLogEvent.WEEKLY_REPORT_SENT,
-      timezone: tz,
+      timezones,
       count: notifications.length,
     });
     return { sent: notifications.length };

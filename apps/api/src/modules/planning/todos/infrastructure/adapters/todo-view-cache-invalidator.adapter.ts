@@ -13,6 +13,10 @@ export class TodoViewCacheInvalidatorAdapter implements TodoViewCacheInvalidator
   }
 
   invalidateForTodo(todoId: TodoId): Promise<void> {
-    return this.#invalidateTodoViewCache.execute(todoId);
+    return this.#invalidateTodoViewCache.execute([todoId]);
+  }
+
+  invalidateForTodos(todoIds: readonly TodoId[]): Promise<void> {
+    return this.#invalidateTodoViewCache.execute(todoIds);
   }
 }

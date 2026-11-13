@@ -1,4 +1,4 @@
-import type { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import type { DedupEntry, DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 import { NotificationDedupAdapter } from "./notification-dedup.adapter.js";
 
@@ -18,8 +18,8 @@ class RecordingDedupProvider implements DedupProviderPort {
     return new Set(members.filter((member) => stored.has(member)));
   }
 
-  async isMember(setKey: string, member: string): Promise<boolean> {
-    return this.#sets.get(setKey)?.has(member) ?? false;
+  async filterEntries<TEntry extends DedupEntry>(entries: readonly TEntry[]): Promise<TEntry[]> {
+    return entries.filter(({ setKey, member }) => this.#sets.get(setKey)?.has(member) === true);
   }
 
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
@@ -29,6 +29,12 @@ class RecordingDedupProvider implements DedupProviderPort {
       stored.add(member);
     }
     this.#sets.set(setKey, stored);
+  }
+
+  async addEntries(entries: readonly DedupEntry[], ttlMs: number): Promise<void> {
+    for (const { setKey, member } of entries) {
+      await this.addMembers(setKey, [member], ttlMs);
+    }
   }
 }
 

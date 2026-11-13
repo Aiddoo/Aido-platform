@@ -3,6 +3,7 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryUserBlockRepository } from "#test/doubles/social/in-memory-user-block.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   createUserBlockFixture,
   USER_BLOCK_FIXTURE_BLOCKED_ID,
@@ -18,6 +19,8 @@ const BLOCKED_ID = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKED_ID);
 
 function createUnblockUserUseCase(overrides: Partial<UnblockUserDependencies> = {}) {
   return new UnblockUserUseCase({
+    nudgeCountCache: new PassThroughCountCache(),
+    cheerCountCache: new PassThroughCountCache(),
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     userBlockRepository: new InMemoryUserBlockRepository(),
@@ -27,14 +30,21 @@ function createUnblockUserUseCase(overrides: Partial<UnblockUserDependencies> = 
 }
 
 describe("UnblockUserUseCase — 차단 해제", () => {
-  it("쌍 잠금 안에서 내 차단을 지우고 로그를 남긴다", async () => {
+  it("쌍 잠금 안에서 내 차단을 지우고 두 사람의 콕·응원 수 캐시를 버리며 로그를 남긴다", async () => {
     // Given
     const userBlockRepository = new InMemoryUserBlockRepository({
       blocks: [createUserBlockFixture()],
     });
     const mutationLock = new RecordingMutationLock();
     const logger = new SilentLogger();
-    const useCase = createUnblockUserUseCase({ userBlockRepository, mutationLock, logger });
+    const countCache = new PassThroughCountCache();
+    const useCase = createUnblockUserUseCase({
+      userBlockRepository,
+      mutationLock,
+      logger,
+      nudgeCountCache: countCache,
+      cheerCountCache: countCache,
+    });
 
     // When
     await useCase.execute({
@@ -52,6 +62,7 @@ describe("UnblockUserUseCase — 차단 해제", () => {
         targetUserId: USER_BLOCK_FIXTURE_BLOCKED_ID,
       },
     ]);
+    expect(countCache.invalidatedUserIds).toHaveLength(4);
   });
 
   it("상대가 나를 차단한 기록은 내가 해제할 수 없고 성공으로 끝내며 로그를 남기지 않는다", async () => {

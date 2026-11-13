@@ -15,6 +15,7 @@ import {
   resolveDeadLetterQueue,
   type EnqueueManyJob,
   type EnqueueOptions,
+  type JobBatchFailures,
   type JobEnvelope,
   type JobQueueHealth,
   type QueueDefinition,
@@ -141,6 +142,26 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     queue: QueueDefinition<TPayload>,
     handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
   ): Promise<void> {
+    await this.#work(queue, (accepted, reportFailure) =>
+      queue.worker.isolateJobFailures === true
+        ? settleEachJob(accepted, handler, reportFailure)
+        : settleWholeBatch(accepted, handler, reportFailure),
+    );
+  }
+
+  async workBatch<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
+  ): Promise<void> {
+    await this.#work(queue, (accepted, reportFailure) =>
+      settleBatchFailures(accepted, handler, reportFailure),
+    );
+  }
+
+  async #work<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    settle: JobSettler<TPayload>,
+  ): Promise<void> {
     await this.#ensure(queue);
     const { worker } = queue;
     await this.#boss.work(
@@ -158,7 +179,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
         ...(worker.minPriority != null && { minPriority: worker.minPriority }),
         ...(worker.maxPriority != null && { maxPriority: worker.maxPriority }),
       },
-      async (jobs) => this.#handle(queue, jobs, handler),
+      async (jobs) => this.#handle(queue, jobs, settle),
     );
   }
 
@@ -225,7 +246,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   async #handle<TPayload extends object>(
     queue: QueueDefinition<TPayload>,
     jobs: readonly JobWithMetadata<object>[],
-    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+    settle: JobSettler<TPayload>,
   ): Promise<JobResult[]> {
     const accepted: JobEnvelope<TPayload>[] = [];
     const results: JobResult[] = [];
@@ -269,21 +290,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
       attempt: first.attempt,
       batchSize: accepted.length,
     };
-    if (queue.worker.isolateJobFailures === true) {
-      return [
-        ...results,
-        ...(await withJobScope(scope, () => settleEachJob(accepted, handler, reportFailure))),
-      ];
-    }
-    try {
-      await withJobScope(scope, () => handler(accepted));
-    } catch (error) {
-      for (const envelope of accepted) {
-        reportFailure(envelope, error);
-      }
-      throw error;
-    }
-    return [...results, ...accepted.map(({ id }) => ({ id, status: "completed" as const }))];
+    return [...results, ...(await withJobScope(scope, () => settle(accepted, reportFailure)))];
   }
 
   #reportFailure(
@@ -314,10 +321,60 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   }
 }
 
+type JobFailureReporter<TPayload extends object> = (
+  job: JobEnvelope<TPayload>,
+  error: unknown,
+) => void;
+
+type JobSettler<TPayload extends object> = (
+  jobs: readonly JobEnvelope<TPayload>[],
+  onFailure: JobFailureReporter<TPayload>,
+) => Promise<JobResult[]>;
+
+async function settleWholeBatch<TPayload extends object>(
+  jobs: readonly JobEnvelope<TPayload>[],
+  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
+  onFailure: JobFailureReporter<TPayload>,
+): Promise<JobResult[]> {
+  try {
+    await handler(jobs);
+  } catch (error) {
+    for (const job of jobs) {
+      onFailure(job, error);
+    }
+    throw error;
+  }
+  return jobs.map(({ id }) => ({ id, status: "completed" }));
+}
+
+async function settleBatchFailures<TPayload extends object>(
+  jobs: readonly JobEnvelope<TPayload>[],
+  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
+  onFailure: JobFailureReporter<TPayload>,
+): Promise<JobResult[]> {
+  let failures: JobBatchFailures;
+  try {
+    failures = await handler(jobs);
+  } catch (error) {
+    for (const job of jobs) {
+      onFailure(job, error);
+    }
+    throw error;
+  }
+  return jobs.map((job): JobResult => {
+    if (!failures.has(job.id)) {
+      return { id: job.id, status: "completed" };
+    }
+    const error = failures.get(job.id);
+    onFailure(job, error);
+    return { id: job.id, status: "failed", output: error };
+  });
+}
+
 async function settleEachJob<TPayload extends object>(
   jobs: readonly JobEnvelope<TPayload>[],
   handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
-  onFailure: (job: JobEnvelope<TPayload>, error: unknown) => void,
+  onFailure: JobFailureReporter<TPayload>,
 ): Promise<JobResult[]> {
   const results: JobResult[] = [];
   for (const job of jobs) {

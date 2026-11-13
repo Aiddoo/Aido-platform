@@ -60,11 +60,17 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
   }
 
   #selectWithCount() {
-    return this.#db
-      .select({ ...getTableColumns(todoCategory), todos: count(todo.id) })
-      .from(todoCategory)
-      .leftJoin(todo, eq(todo.categoryId, todoCategory.id))
-      .groupBy(todoCategory.id);
+    return (
+      this.#db
+        .select({ ...getTableColumns(todoCategory), todos: count(todo.id) })
+        .from(todoCategory)
+        // categoryId만으로 이으면 Todo 전체를 훑는다. 소유자를 같이 걸어 (userId, categoryId) 인덱스를 탄다
+        .leftJoin(
+          todo,
+          and(eq(todo.userId, todoCategory.userId), eq(todo.categoryId, todoCategory.id)),
+        )
+        .groupBy(todoCategory.id)
+    );
   }
 
   async nextId(): Promise<TodoCategoryId> {

@@ -1,13 +1,14 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
+  EveningReminderUser,
   ReminderCountUser,
   UserIdRow,
-  UserWithTodosAndStreak,
 } from "../read-models/scheduler.read-model.js";
 
 export interface CustomTimeReminderParams {
-  readonly tz: string;
+  /** 이 분에 현지 날짜·시·분이 같은 시간대들 */
+  readonly timezones: readonly string[];
   readonly hour: number;
   readonly minute: number;
   readonly today: Temporal.PlainDate;
@@ -17,13 +18,13 @@ export interface CustomTimeReminderParams {
 }
 
 export interface FixedTimeReminderParams {
-  readonly tz: string;
+  readonly timezones: readonly string[];
   readonly today: Temporal.PlainDate;
   readonly tomorrow: Temporal.PlainDate;
 }
 
 export interface PeriodReportParams {
-  readonly tz: string;
+  readonly timezones: readonly string[];
   readonly periodStart: Temporal.PlainDate;
   readonly periodEnd: Temporal.PlainDate;
 }
@@ -39,11 +40,11 @@ export abstract class ScheduledReminderReaderPort {
   /** 오늘 할 일이 있는 사용자만 */
   abstract findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]>;
+  ): Promise<EveningReminderUser[]>;
   /** 오늘 할 일이 있는 사용자만 */
   abstract findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<UserWithTodosAndStreak[]>;
+  ): Promise<EveningReminderUser[]>;
   /** 오늘 할 일이 있지만 하나도 끝내지 않은 사용자 */
   abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]>;
   abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]>;

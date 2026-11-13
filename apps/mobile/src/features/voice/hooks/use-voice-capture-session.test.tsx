@@ -14,6 +14,7 @@ import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Pressable } from 'react-native';
 
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
+import { VOICE_PREPARING_TIMEOUT_MS } from '../constants/voice.constants';
 import type { CapturedPlan } from '../domains/voice-capture.model';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
 
@@ -717,7 +718,7 @@ describe('useVoiceCaptureSession', () => {
       return session;
     };
 
-    it('400ms 안에 네 번 연달아 끝나면 다시 열지 않고 실패로 멈춘다', async () => {
+    it('400ms 안에 네 번 연달아 끝나면 다시 열지 않고 실패로 멈추되 Sentry 오류는 남기지 않는다', async () => {
       // Given
       const { speechRecognizer, analytics } = await beginListening();
       logger.error.mockClear();
@@ -730,10 +731,37 @@ describe('useVoiceCaptureSession', () => {
       // Then
       expect(speechRecognizer.start).toHaveBeenCalledTimes(4);
       expect(screen.getByTestId('status')).toHaveTextContent('failed');
-      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(VOICE_LOG_EVENT.RECOGNIZER_UNRESPONSIVE, {
+        reason: 'restart-loop',
+        on_device: true,
+      });
       expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_failed', {
         mode: 'note',
-        reason: 'client',
+        reason: 'restart-loop',
+      });
+    });
+
+    it('시작 신호가 오지 않으면 준비 시간이 지나 실패로 멈추되 Sentry 오류는 남기지 않는다', async () => {
+      // Given
+      const { speechRecognizer, analytics } = await renderSession({ mode: 'note' });
+      logger.error.mockClear();
+      await userEvent.press(screen.getByRole('button', { name: 'begin' }));
+
+      // When
+      await act(async () => jest.advanceTimersByTimeAsync(VOICE_PREPARING_TIMEOUT_MS));
+
+      // Then
+      expect(screen.getByTestId('status')).toHaveTextContent('failed');
+      expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
+      expect(logger.error).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(VOICE_LOG_EVENT.RECOGNIZER_UNRESPONSIVE, {
+        reason: 'preparing-timeout',
+        on_device: true,
+      });
+      expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_failed', {
+        mode: 'note',
+        reason: 'preparing-timeout',
       });
     });
 

@@ -7,7 +7,10 @@ import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
 import type { StreakMilestoneNotifierPort } from "../ports/streak-milestone-notifier.port.js";
-import type { TodoCompletionStatsReaderPort } from "../ports/todo-completion-stats.reader.port.js";
+import type {
+  DatedTodoCompletionStats,
+  TodoCompletionStatsReaderPort,
+} from "../ports/todo-completion-stats.reader.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { PreferenceLogEvent } from "../preferences.log-events.js";
 
@@ -17,6 +20,7 @@ export interface OnTodoToggledCommand {
   readonly userId: string;
   readonly completed: boolean;
   readonly timezone?: string;
+  readonly todayStats?: DatedTodoCompletionStats;
 }
 
 interface OnTodoToggledDependencies {
@@ -41,9 +45,12 @@ export class OnTodoToggledUseCase {
     const userId = UserId.reconstitute(input.userId);
     try {
       const today = localDateIn(this.#dependencies.clock.now(), input.timezone);
+      // 같은 날 현황이 넘어왔으면 첫 시도는 그 값을 쓰고, CAS 충돌 뒤에는 최신 값을 다시 읽는다
+      const givenTodayStats = input.todayStats?.date.equals(today) ? input.todayStats : undefined;
       // 충돌은 오류가 아니라 false로 오고 다 쓰면 경고만 남겨 es-toolkit retry(오류 재시도·시도 사이 타이머)를 쓰지 않는다
       for (let attempt = 0; attempt < MAX_STREAK_UPDATE_ATTEMPTS; attempt += 1) {
-        const stats = await this.#statsForDay(userId, today);
+        const stats =
+          (attempt === 0 ? givenTodayStats : undefined) ?? (await this.#statsForDay(userId, today));
         if (stats.total === 0) {
           return;
         }

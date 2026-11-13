@@ -2,6 +2,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
 import type { UserPreferenceRecord } from "../../domain/user-preference.constants.js";
+import type { DatedTodoCompletionStats } from "./todo-completion-stats.reader.port.js";
 import type {
   ConsentSeedInput,
   UserConsentRecordWithId,
@@ -16,7 +17,12 @@ export abstract class UserSettingsProvisionerPort {
 
 /** todo가 완료 처리 후 스트릭을 기록하고 조회하는 capability. */
 export abstract class UserStreakAccessPort {
-  abstract recordTodoToggle(userId: UserId, completed: boolean, timezone: string): Promise<void>;
+  abstract recordTodoToggle(
+    userId: UserId,
+    completed: boolean,
+    timezone: string,
+    todayStats: DatedTodoCompletionStats | null,
+  ): Promise<void>;
   abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceRecord | null>;
 }
 

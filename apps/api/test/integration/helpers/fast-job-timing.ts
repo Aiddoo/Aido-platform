@@ -1,6 +1,7 @@
 import {
   type EnqueueManyJob,
   type EnqueueOptions,
+  type JobBatchFailures,
   type JobEnvelope,
   JobQueuePort,
   type JobQueueHealth,
@@ -67,6 +68,13 @@ export class FastJobQueue extends JobQueuePort {
     handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
   ): Promise<void> {
     return this.#queue.work(withFastJobTiming(queue), handler);
+  }
+
+  workBatch<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
+  ): Promise<void> {
+    return this.#queue.workBatch(withFastJobTiming(queue), handler);
   }
 
   registerSchedules(queue: QueueDefinition<object>): Promise<void> {

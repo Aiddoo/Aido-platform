@@ -295,7 +295,7 @@ describe("WriteTodoCommentChainUseCase — 댓글 작성과 멱등성", () => {
 
 const TODO_COMMENT_FIXTURE_NOW_PLUS_MINUTE = Temporal.Instant.from("2026-08-26T00:01:00Z");
 
-/** 처음 조회에서는 먼저 저장한 요청을 못 본 것처럼 굴고, 저장할 때 유니크 경합을 낸다 */
+/** 처음 조회에서는 먼저 저장한 요청을 못 본 것처럼 굴고, 새 글을 넣을 때 유니크 경합을 낸다 */
 class RacingTodoCommentRepository extends InMemoryTodoCommentRepository {
   readonly #inner: InMemoryTodoCommentRepository;
   readonly #onRace: () => void;
@@ -315,7 +315,7 @@ class RacingTodoCommentRepository extends InMemoryTodoCommentRepository {
       : Promise.resolve([]);
   }
 
-  override async save(): Promise<void> {
+  override async insertMany(): Promise<void> {
     this.#hasRaced = true;
     this.#onRace();
     throw new TodoCommentIdempotencyRace();

@@ -22,6 +22,7 @@
 - 장애 계약은 fail-open이다: 읽기는 미스와 같고 쓰기는 던지지 않는다.
 - 값은 읽을 때 Zod로 검증하고 다르면 미스다(배포 사이 값 모양이 달라도 안전). 직렬화는 JSON 하나이고 Temporal은 문자열로 저장한다.
 - 범용 `wrap`은 미스 뒤 factory 값을 그대로 저장한다. 쓰기의 커밋 뒤 무효화보다 늦게 끝난 읽기가 커밋 전 값을 다시 저장해 TTL 동안 남길 수 있으므로, 그러면 안 되는 캐시는 세대를 쓴다. 일간 완료·친구 화면 할 일은 세대를 키에 넣고, 권한(`subscription:status:v2`)·프로필(`auth:user-profile`)은 키를 두고 [GenerationGuardedCache](../src/platform/cache/generation-guarded-cache.ts)로 factory 전에 읽은 세대가 그대로일 때만 저장한다.
+- 세대 무효화는 세대 키만 바꾼다. 이전 세대 값은 닿지 않고 짧은 값 TTL(친구 화면 1분·일간 완료 10분)에 사라지므로, Redis 키 전체를 훑는 `delByPattern`(SCAN)을 요청 경로에서 기다리지 않는다.
 - 캐시·잠금·dedup·throttler 저장소의 계약 suite([test/contracts/platform](../test/contracts/platform))를 in-memory(unit)와 Redis·Valkey 컨테이너([redis-adapters.integration-spec.ts](../test/integration/platform/redis-adapters.integration-spec.ts))에서 같이 돌린다.
 - slice 캐시 어댑터는 `CacheStorePort`만 받는다(사례: [daily-completion.cache.ts](../src/modules/insights/daily-completions/infrastructure/cache/daily-completion.cache.ts), weather `weather-report.cache.ts`). 다른 캐시 진입점을 만들지 않는다.
 - memory 저장소는 모든 캐시가 항목 한도 하나(`CACHE_MAX_ITEMS`, 운영 3,000)를 LRU로 나눠 쓴다(dedup·잠금·throttler는 따로 둔다). 만료 항목은 읽히거나 밀려날 때만 빠지므로 쓴 키가 한도를 넘은 뒤로는 늘 가득 차 있고 새 키가 가장 오래 안 읽은 키를 밀어낸다. 키를 가장 많이 만드는 것은 활성 사용자 수에 비례하는 사용자 키(30초마다 다시 채우는 세션, 프로필·권한·설정·카테고리·팔로우·일간 완료 범위, 24시간 남는 일간 완료·친구 화면 세대)와 활성 칸·격자 수에 비례하는 날씨 키(칸마다 리포트·latest·대기질·가용성, 격자마다 날짜별 예보·일출입)다. 운영 측정값은 없고 키 모양에서 본 추정이다. 날씨 공급자 호출이나 캐시 뒤 DB 읽기가 늘면 한도를 올리거나 Redis로 바꾼다.

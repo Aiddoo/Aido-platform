@@ -82,6 +82,25 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
     expect(afterCommitPublisher.registered).toEqual([[101, 102]]);
   });
 
+  it("SINGLE을 고르면 알림은 한 번에 넣고 dispatch는 단건 발송 경로로 둔다", async () => {
+    // Given
+    const { pushDispatchStaging, unitOfWork, useCase } = createPersistUseCase();
+    const dataList = [
+      createNotificationDraftFixture({ userId: "u1", type: "TODO_REMINDER" }),
+      createNotificationDraftFixture({ userId: "u2", type: "TODO_REMINDER" }),
+    ];
+
+    // When
+    await useCase.execute(dataList, { deliveryMode: "SINGLE" });
+
+    // Then
+    expect(unitOfWork.runCount).toBe(1);
+    expect(pushDispatchStaging.dispatches.map((dispatch) => dispatch.deliveryMode)).toEqual([
+      "SINGLE",
+      "SINGLE",
+    ]);
+  });
+
   it("빈 입력은 UOW, DB, staging, 발행 등록을 모두 건너뛴다", async () => {
     // Given
     const {

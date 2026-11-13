@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, gte, isNull, lte, or } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -11,6 +11,7 @@ import {
   type TodoCompletionGroupQuery,
   TodoCompletionGroupReaderPort,
 } from "../../application/ports/todo-completion-group.reader.port.js";
+import { todoDateCondition } from "./drizzle-todo-read.repository.js";
 
 @Injectable()
 export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupReaderPort {
@@ -24,7 +25,7 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
     return this.#txHost.tx;
   }
 
-  // 하루 조건을 구간 양끝으로 넓힌 것이고 `Todo_userId_startDate_endDate_idx`를 탄다
+  // 하루 조건을 구간 양끝으로 넓힌 것이다
   async listCompletionGroups({
     userId,
     start,
@@ -43,8 +44,7 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
       .where(
         and(
           eq(todo.userId, userId.value),
-          lte(todo.startDate, end),
-          or(gte(todo.endDate, start), and(isNull(todo.endDate), gte(todo.startDate, start))),
+          todoDateCondition(start, end),
           publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
         ),
       )

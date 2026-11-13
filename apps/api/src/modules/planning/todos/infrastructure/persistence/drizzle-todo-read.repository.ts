@@ -1,6 +1,19 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, eq, gte, isNotNull, isNull, lte, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -26,8 +39,9 @@ import type {
 } from "../../application/read-models/todo.read-model.js";
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
+// 종료일 유무로 갈라야 두 갈래가 각각 `Todo_userId_startDate_endDate_idx` 범위 조회가 된다
 /** Inclusive overlap. A single supplied boundary selects that exact calendar date. */
-function todoDateCondition(
+export function todoDateCondition(
   startDate?: Temporal.PlainDate,
   endDate?: Temporal.PlainDate,
 ): SQL | undefined {
@@ -92,12 +106,20 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return this.#txHost.tx;
   }
 
-  async findOwnerId(id: TodoId): Promise<string | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { userId: true },
-      where: { id: id.value },
-    });
-    return row?.userId ?? null;
+  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.#db
+      .selectDistinct({ userId: todo.userId })
+      .from(todo)
+      .where(
+        inArray(
+          todo.id,
+          ids.map((id) => id.value),
+        ),
+      );
+    return rows.map((row) => row.userId);
   }
 
   async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {
@@ -159,8 +181,16 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return ids.map((row) => row.id);
   }
 
-  countCompletedByUser(userId: UserId): Promise<number> {
-    return this.#db.$count(todo, and(eq(todo.userId, userId.value), eq(todo.completed, true)));
+  async countCompletedByUser(userId: UserId, limit: number): Promise<number> {
+    // 전체를 세지 않고 limit행에서 멈춘다. (userId, completed) 인덱스 앞부분만 읽는다
+    const completed = this.#db
+      .select({ id: todo.id })
+      .from(todo)
+      .where(and(eq(todo.userId, userId.value), eq(todo.completed, true)))
+      .limit(limit)
+      .as("completed");
+    const [row] = await this.#db.select({ count: count() }).from(completed);
+    return row?.count ?? 0;
   }
 
   async existsByUserId(userId: UserId): Promise<boolean> {

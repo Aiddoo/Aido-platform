@@ -152,7 +152,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     // When
     const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
     const premiumMorning = await reader.findPremiumMorningReminderUsers({
-      tz: "UTC",
+      timezones: ["UTC"],
       hour: 8,
       minute: 0,
       today: TODAY,

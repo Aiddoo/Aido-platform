@@ -6,6 +6,11 @@ export interface TodoCompletionStats {
   completed: number;
 }
 
+/** 할 일 Context가 완료 토글 커밋 뒤 이미 센 그날 현황. 스트릭이 같은 집계를 다시 하지 않게 넘긴다 */
+export interface DatedTodoCompletionStats extends TodoCompletionStats {
+  readonly date: Temporal.PlainDate;
+}
+
 /**
  * 투두 완료 통계 리더 포트.
  *

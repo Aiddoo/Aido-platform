@@ -86,6 +86,53 @@ describe("OnTodoToggled — 최신 완료 현황과 streak CAS", () => {
     });
     expect(fixture.milestoneNotifier.userIds).toEqual([fixture.userId]);
   });
+  it("할 일 쪽이 넘긴 같은 날 현황이 있으면 다시 세지 않고 그 값으로 반영한다", async () => {
+    // Given
+    const fixture = given();
+    fixture.statsReader.days.clear();
+    // When
+    await fixture.useCase.execute({
+      userId: fixture.userId,
+      completed: true,
+      todayStats: { date: today, total: 3, completed: 3 },
+    });
+    // Then
+    expect(fixture.statsReader.queries).toEqual([]);
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
+      currentStreak: 3,
+      lastCompletedDate: today,
+    });
+  });
+  it("넘긴 현황이 다른 날짜면 버리고 오늘 현황을 다시 센다", async () => {
+    // Given
+    const fixture = given();
+    // When
+    await fixture.useCase.execute({
+      userId: fixture.userId,
+      completed: true,
+      todayStats: { date: yesterday, total: 3, completed: 0 },
+    });
+    // Then
+    expect(fixture.statsReader.queries.map((query) => query.day)).toEqual([today]);
+    expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
+      currentStreak: 3,
+      lastCompletedDate: today,
+    });
+  });
+  it("넘긴 현황으로 CAS가 충돌하면 다음 시도는 최신 현황을 다시 읽는다", async () => {
+    // Given
+    const fixture = givenContended();
+    fixture.preferenceRepository.conflictOnNext({});
+    // When
+    await fixture.useCase.execute({
+      userId: fixture.userId,
+      completed: true,
+      todayStats: { date: today, total: 2, completed: 2 },
+    });
+    // Then
+    expect(fixture.statsReader.queries.map((query) => query.day)).toEqual([today]);
+    expect(fixture.preferenceRepository.compareAndSetAttempts).toBe(2);
+  });
   it("동시에 읽은 같은 streak는 CAS 성공 요청만 상태와 마일스톤을 반영한다", async () => {
     // Given
     const fixture = given();

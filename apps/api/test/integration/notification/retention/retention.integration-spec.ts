@@ -2,7 +2,12 @@ import { eq } from "drizzle-orm";
 
 import { ProcessRetentionStagesUseCase } from "#api/modules/notification/retention/application/use-cases/process-retention-stages.use-case";
 import { isRetentionStageDue } from "#api/modules/notification/retention/domain/retention-stage.domain-service";
+import {
+  RETENTION_CACHE_TTL_MS,
+  RetentionCacheKey,
+} from "#api/modules/notification/retention/infrastructure/cache/retention-cache.keyspace";
 import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -27,7 +32,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     db = await testDb.start();
     const { txHost, uow } = createDatabaseTransactionFixture(db);
     unitOfWork = uow;
-    repository = new DrizzleRetentionRepository(txHost, uow);
+    repository = new DrizzleRetentionRepository(
+      txHost,
+      uow,
+      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
+    );
   }, 60_000);
 
   beforeEach(async () => {
@@ -219,6 +228,33 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
         (candidate) => candidate.timezone === "US/Eastern" && candidate.todoCount === 1,
       ),
     ).toBe(true);
+  });
+
+  it("앱은 받지만 PG 시간대 목록에 없는 이름은 UTC로 조회해 묶음이 실패하지 않는다", async () => {
+    // Given: PG 목록 캐시에 Asia/Seoul이 없는 상황(DB tzdata가 앱보다 오래됨)을 만든다
+    const cache = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
+    await cache.set(
+      RetentionCacheKey.postgresTimezoneNames(),
+      ["UTC", "US/Eastern"],
+      RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
+    );
+    const { txHost, uow } = createDatabaseTransactionFixture(db);
+    const staleTzdataRepository = new DrizzleRetentionRepository(txHost, uow, cache);
+    const userId = await createUser("seoultz1@example.com", { timezone: "Asia/Seoul" });
+    await staleTzdataRepository.enroll({
+      userId: UserId.reconstitute(userId),
+      variant: "TREATMENT",
+      startedAt: Temporal.Instant.from("2026-07-15T00:00:00.000Z"),
+    });
+
+    // When
+    const candidates = await staleTzdataRepository.findDueStages({
+      dueAt: ALL_DUE_AT,
+      limit: 200,
+    });
+
+    // Then
+    expect(candidates.map((candidate) => candidate.timezone)).toEqual(["UTC", "UTC", "UTC", "UTC"]);
   });
 
   async function stageOf(userId: string, stageName: "D0" | "D1") {

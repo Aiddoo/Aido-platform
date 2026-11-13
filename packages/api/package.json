@@ -1,6 +1,6 @@
 {
   "name": "@aido/api",
-  "version": "1.15.2",
+  "version": "1.15.3",
   "private": true,
   "description": "Shared REST contracts, error codes and pure vocabulary for Aido",
   "files": [

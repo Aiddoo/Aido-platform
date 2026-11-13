@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import type { TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
 import type { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
@@ -68,6 +69,57 @@ export function describeTodoReadRepositoryContract(
       expect(empty).toEqual({ hasTodo: false, hasCompletedTodo: false });
       expect(created).toEqual({ hasTodo: true, hasCompletedTodo: false });
       expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true });
+    });
+
+    it("여러 할 일의 소유자를 중복 없이 한 번에 찾고 없는 할 일은 뺀다", async () => {
+      // Given
+      const context = await createContext();
+      const ids = [];
+      for (const userId of [
+        TODO_FIXTURE_USER_ID,
+        TODO_FIXTURE_USER_ID,
+        TODO_FIXTURE_OTHER_USER_ID,
+      ]) {
+        const id = await context.todoRepository.nextId();
+        await context.todoRepository.insert(
+          createTodoFixture({ id: id.value, categoryId: context.categoryId, userId }),
+        );
+        ids.push(id);
+      }
+
+      // When
+      const owners = await context.todoReadRepository.findOwnerIds([
+        ...ids,
+        TodoId.reconstitute(999_999),
+      ]);
+
+      // Then
+      expect(owners.toSorted()).toEqual(
+        [TODO_FIXTURE_USER_ID, TODO_FIXTURE_OTHER_USER_ID].toSorted(),
+      );
+      expect(await context.todoReadRepository.findOwnerIds([])).toEqual([]);
+    });
+
+    it("완료한 할 일 수는 자기 것만 세고 상한에서 멈춘다", async () => {
+      // Given
+      const context = await createContext();
+      const owner = UserId.reconstitute(TODO_FIXTURE_USER_ID);
+      const completed = { completed: true, completedAt: TODO_FIXTURE_NOW };
+      for (let index = 0; index < 4; index += 1) {
+        await insertTodo(context, completed);
+      }
+      await insertTodo(context);
+      await insertTodo(context, { ...completed, userId: TODO_FIXTURE_OTHER_USER_ID });
+
+      // When
+      const counts = await Promise.all(
+        [3, 4, 5, 101].map((limit) =>
+          context.todoReadRepository.countCompletedByUser(owner, limit),
+        ),
+      );
+
+      // Then
+      expect(counts).toEqual([3, 4, 4, 4]);
     });
   });
 }

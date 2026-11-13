@@ -40,7 +40,7 @@ describe("PublishNotificationUseCase", () => {
 
     expect(send.execute).toHaveBeenCalledWith(input);
     expect(sendWithDeduplication.execute).toHaveBeenCalledWith(input);
-    expect(sendBatch.execute).toHaveBeenCalledWith([input]);
+    expect(sendBatch.execute).toHaveBeenCalledWith([input], {});
     expect(todoTargetReader.findTodoTargets).not.toHaveBeenCalled();
   });
 
@@ -64,6 +64,6 @@ describe("PublishNotificationUseCase", () => {
       metadata: { commentId: "comment-1", todoOwnerId: "owner-1", todoDate: "2026-10-27" },
     };
     expect(send.execute).toHaveBeenCalledWith(enriched);
-    expect(sendBatch.execute).toHaveBeenCalledWith([enriched, deleted]);
+    expect(sendBatch.execute).toHaveBeenCalledWith([enriched, deleted], {});
   });
 });

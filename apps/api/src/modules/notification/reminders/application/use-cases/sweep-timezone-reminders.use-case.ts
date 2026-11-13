@@ -1,9 +1,15 @@
+import { groupBy } from "es-toolkit";
+
 import { minutesToSweep } from "#api/shared/application/minutes-to-sweep";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
+import {
+  groupTimezonesByLocalClock,
+  timezoneContextAt,
+} from "../../domain/local-clock.domain-service.js";
 import {
   FIRST_DAY_OF_MONTH,
   isWithinScheduleWindow,
@@ -61,7 +67,7 @@ interface SweepTimezoneRemindersDependencies {
 }
 
 /**
- * 매분 활성 시간대마다 현지 시:분에 맞는 전략을 실행한다.
+ * 매분 현지 시각이 같은 활성 시간대 묶음마다 현지 시:분에 맞는 전략을 실행한다.
  * 마지막으로 끝낸 분 다음부터 지금 분까지(최대 15분)를 차례로 처리해 worker가 멈춘 사이의 분도 보낸다.
  */
 export class SweepTimezoneRemindersUseCase {
@@ -122,7 +128,7 @@ export class SweepTimezoneRemindersUseCase {
   async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
     try {
       const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
-      const ctx = timezoneContextAt(payload.timezone, local, payload.userId);
+      const ctx = timezoneContextAt([payload.timezone], local.toPlainDateTime(), payload.userId);
       const { localHour, localMinute } = ctx;
 
       const morningMinute = payload.morningReminderMinute ?? 0;
@@ -173,7 +179,11 @@ export class SweepTimezoneRemindersUseCase {
         return;
       }
       const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
-      const ctx = { ...timezoneContextAt(payload.timezone, local), localHour: 0, localMinute: 0 };
+      const ctx = {
+        ...timezoneContextAt([payload.timezone], local.toPlainDateTime()),
+        localHour: 0,
+        localMinute: 0,
+      };
       await this.#dependencies.socialDigest.execute(ctx, payload.recipientUserIds);
     } catch {
       this.#dependencies.logger.error({
@@ -185,23 +195,21 @@ export class SweepTimezoneRemindersUseCase {
   }
 
   async #sweepMinute(minute: Temporal.Instant, timezones: readonly string[]): Promise<void> {
-    const results = await Promise.allSettled(
-      timezones.map(async (tz) => this.#sweepTimezone(tz, minute.toZonedDateTimeISO(tz))),
-    );
+    const groups = groupTimezonesByLocalClock(minute, timezones);
+    const results = await Promise.allSettled(groups.map(async (ctx) => this.#sweepGroup(ctx)));
     results.forEach((result, index) => {
       if (result.status === "rejected") {
         this.#dependencies.logger.error({
           event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
-          timezone: timezones[index] ?? "unknown",
+          timezones: groups[index]?.timezones ?? [],
           errorType: "strategy-execution",
         });
       }
     });
   }
 
-  async #sweepTimezone(tz: string, local: Temporal.ZonedDateTime): Promise<void> {
-    const ctx = timezoneContextAt(tz, local);
-    const { localHour, localMinute, dayOfWeek } = ctx;
+  async #sweepGroup(ctx: TimezoneContext): Promise<void> {
+    const { localHour, localMinute, dayOfWeek, today } = ctx;
 
     await this.#dependencies.morningReminder.execute(ctx);
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, localHour, localMinute)) {
@@ -209,17 +217,18 @@ export class SweepTimezoneRemindersUseCase {
     }
     const eveningResult = await this.#dependencies.eveningReminder.execute(ctx);
 
-    // 저녁 리마인더를 받은 사용자에게 90분 뒤 소셜 다이제스트를 보낸다
-    if (eveningResult.recipientUserIds.length > 0) {
+    // 저녁 리마인더를 받은 사용자에게 90분 뒤 소셜 다이제스트를 보낸다. 큐 payload는 시간대 하나씩이다
+    const recipientsByTimezone = groupBy(eveningResult.recipients, ({ timezone }) => timezone);
+    for (const [timezone, recipients] of Object.entries(recipientsByTimezone)) {
       this.#dependencies.enqueuer.enqueueSocialDigest({
-        timezone: tz,
-        recipientUserIds: eveningResult.recipientUserIds,
+        timezone,
+        recipientUserIds: recipients.map(({ userId }) => userId),
       });
     }
 
     // 11:30 요약 슬롯: 매월 1일은 프리미엄 월간 리포트가 주간 리포트를 대체한다.
     const isMonthlyReportTime =
-      local.day === FIRST_DAY_OF_MONTH &&
+      today.day === FIRST_DAY_OF_MONTH &&
       isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, localHour, localMinute);
     if (isMonthlyReportTime) {
       await this.#dependencies.monthlyReport.execute(ctx);
@@ -254,25 +263,6 @@ export class SweepTimezoneRemindersUseCase {
     await this.#dependencies.weatherMorning.execute(ctx);
     await this.#dependencies.weatherEvening.execute(ctx);
   }
-}
-
-// 처리하는 분의 현지 시각으로 시:분·요일·오늘을 정한다. 늦게 따라잡아도 그 분의 날짜로 보낸다
-function timezoneContextAt(
-  tz: string,
-  local: Temporal.ZonedDateTime,
-  userId?: string,
-): TimezoneContext {
-  const today = local.toPlainDate();
-  return {
-    tz,
-    localHour: local.hour,
-    localMinute: local.minute,
-    // Temporal은 월=1…일=7, 컨텍스트는 일=0
-    dayOfWeek: local.dayOfWeek % 7,
-    today,
-    tomorrow: today.add({ days: 1 }),
-    userId,
-  };
 }
 
 // 마지막으로 끝낸 분과 이번에 처음 처리하는 분 사이에서 버린 분의 수

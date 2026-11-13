@@ -7,6 +7,7 @@ import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.po
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { CheerUsageReader } from "./application/cheer-usage.reader.js";
+import { CheerCountCachePort } from "./application/ports/cheer-count-cache.port.js";
 import { CheerLimitReaderPort } from "./application/ports/cheer-limit.reader.port.js";
 import { CheerNotifierPort } from "./application/ports/cheer-notifier.port.js";
 import { CheerUsageReaderPort } from "./application/ports/cheer-usage.reader.port.js";
@@ -19,6 +20,7 @@ import { GetSentCheersUseCase } from "./application/use-cases/get-sent-cheers.us
 import { MarkCheerReadUseCase } from "./application/use-cases/mark-cheer-read.use-case.js";
 import { MarkManyCheersReadUseCase } from "./application/use-cases/mark-many-cheers-read.use-case.js";
 import { SendCheerUseCase } from "./application/use-cases/send-cheer.use-case.js";
+import { CheerCountCacheAdapter } from "./infrastructure/adapters/cheer-count-cache.adapter.js";
 import { CheerLimitReaderAdapter } from "./infrastructure/adapters/cheer-limit-reader.adapter.js";
 import { CheerNotifierAdapter } from "./infrastructure/adapters/cheer-notifier.adapter.js";
 import { DrizzleCheerRepository } from "./infrastructure/persistence/drizzle-cheer.repository.js";
@@ -28,6 +30,7 @@ export const SOCIAL_CHEERS_PROVIDERS = [
   { provide: CheerReaderPort, useExisting: CheerRepositoryPort },
   { provide: CheerLimitReaderPort, useClass: CheerLimitReaderAdapter },
   { provide: CheerNotifierPort, useClass: CheerNotifierAdapter },
+  { provide: CheerCountCachePort, useClass: CheerCountCacheAdapter },
   provideUseCase(CheerUsageReader, { cheerRepository: CheerRepositoryPort, clock: ClockPort }),
   { provide: CheerUsageReaderPort, useExisting: CheerUsageReader },
   provideUseCase(SendCheerUseCase, {
@@ -37,15 +40,18 @@ export const SOCIAL_CHEERS_PROVIDERS = [
     limitReader: CheerLimitReaderPort,
     followReader: FollowReaderPort,
     notifier: CheerNotifierPort,
+    countCache: CheerCountCachePort,
     clock: ClockPort,
     logger: loggerFor(SendCheerUseCase),
   }),
   provideUseCase(GetReceivedCheersUseCase, {
     cheerReader: CheerReaderPort,
+    countCache: CheerCountCachePort,
     logger: loggerFor(GetReceivedCheersUseCase),
   }),
   provideUseCase(GetSentCheersUseCase, {
     cheerReader: CheerReaderPort,
+    countCache: CheerCountCachePort,
     logger: loggerFor(GetSentCheersUseCase),
   }),
   provideUseCase(GetCheerLimitUseCase, {
@@ -59,11 +65,13 @@ export const SOCIAL_CHEERS_PROVIDERS = [
   }),
   provideUseCase(MarkCheerReadUseCase, {
     cheerRepository: CheerRepositoryPort,
+    countCache: CheerCountCachePort,
     clock: ClockPort,
     logger: loggerFor(MarkCheerReadUseCase),
   }),
   provideUseCase(MarkManyCheersReadUseCase, {
     cheerRepository: CheerRepositoryPort,
+    countCache: CheerCountCachePort,
     clock: ClockPort,
     logger: loggerFor(MarkManyCheersReadUseCase),
   }),

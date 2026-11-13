@@ -1039,8 +1039,18 @@ describe("할 일 E2E", () => {
         .send({ position: "before" })
         .expect(200);
 
-      // Then - sortOrder 0 검증
-      expect(firstResponse.body.data.todo.sortOrder).toBe(0);
+      // Then - 맨 앞으로 옮겨져 목록 첫 자리다(3 → 1 → 2 순서에서 2가 맨 앞)
+      expect(firstResponse.body.data.todo.id).toBe(todo2Id);
+      const listResponse = await request(ctx.app.getHttpServer())
+        .get("/v1/todos")
+        .query({ startDate: "2024-03-01", endDate: "2024-03-01" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      expect(listResponse.body.data.items.map((item: { id: number }) => item.id)).toEqual([
+        todo2Id,
+        todo3Id,
+        todo1Id,
+      ]);
     });
 
     it("존재하지 않는 Todo로 이동 시도 시 404 에러", async () => {

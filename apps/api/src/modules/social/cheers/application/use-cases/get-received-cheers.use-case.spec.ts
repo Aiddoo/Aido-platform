@@ -1,5 +1,6 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CHEER_FIXTURE_NOW,
   CHEER_FIXTURE_OTHER_USER_ID,
@@ -21,7 +22,11 @@ describe("GetReceivedCheersUseCase — 받은 응원 목록", () => {
         }),
       ),
     );
-    const useCase = new GetReceivedCheersUseCase({ cheerReader, logger: new SilentLogger() });
+    const useCase = new GetReceivedCheersUseCase({
+      countCache: new PassThroughCountCache(),
+      cheerReader,
+      logger: new SilentLogger(),
+    });
 
     // When
     const firstPage = await useCase.execute({ userId: CHEER_FIXTURE_RECEIVER_ID, size: 2 });
@@ -45,7 +50,11 @@ describe("GetReceivedCheersUseCase — 받은 응원 목록", () => {
   it("다른 사람이 받은 응원은 내 목록과 개수에 없다", async () => {
     // Given
     const cheerReader = new InMemoryCheerRepository([createCheerFixture()]);
-    const useCase = new GetReceivedCheersUseCase({ cheerReader, logger: new SilentLogger() });
+    const useCase = new GetReceivedCheersUseCase({
+      countCache: new PassThroughCountCache(),
+      cheerReader,
+      logger: new SilentLogger(),
+    });
 
     // When
     const received = await useCase.execute({ userId: CHEER_FIXTURE_OTHER_USER_ID });

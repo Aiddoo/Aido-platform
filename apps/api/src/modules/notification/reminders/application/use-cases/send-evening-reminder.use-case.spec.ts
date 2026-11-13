@@ -8,7 +8,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
+import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
 import { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 
 describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
@@ -29,9 +29,10 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
   const user = (
     id: string,
     todos: readonly boolean[],
-    preference: Partial<NonNullable<UserWithTodosAndStreak["preference"]>> = {},
-  ): UserWithTodosAndStreak => ({
+    preference: Partial<NonNullable<EveningReminderUser["preference"]>> = {},
+  ): EveningReminderUser => ({
     id,
+    timezone: "Asia/Seoul",
     todos: todos.map((completed) => ({ completed })),
     preference: { currentStreak: 0, lastCompletedDate: null, locale: "ko", ...preference },
   });
@@ -60,11 +61,14 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     const result = await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 1, recipientUserIds: [TEST_CUID.USER_1] });
+    expect(result).toEqual({
+      sent: 1,
+      recipients: [{ userId: TEST_CUID.USER_1, timezone: "Asia/Seoul" }],
+    });
     expect(reader.queries).toEqual([
       {
         method: "findPremiumEveningReminderUsers",
-        params: expect.objectContaining({ tz: "Asia/Seoul", hour: 20, minute: 30 }),
+        params: expect.objectContaining({ timezones: ["Asia/Seoul"], hour: 20, minute: 30 }),
       },
     ]);
     expect(sent()).toEqual([
@@ -85,7 +89,10 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     const result = await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 1, recipientUserIds: [TEST_CUID.USER_2] });
+    expect(result).toEqual({
+      sent: 1,
+      recipients: [{ userId: TEST_CUID.USER_2, timezone: "Asia/Seoul" }],
+    });
     expect(reader.queriedMethods()).toEqual([
       "findPremiumEveningReminderUsers",
       "findFreeEveningReminderUsers",
@@ -101,7 +108,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     const result = await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 0, recipientUserIds: [] });
+    expect(result).toEqual({ sent: 0, recipients: [] });
     expect(reader.queriedMethods()).toEqual(["findPremiumEveningReminderUsers"]);
   });
 
@@ -226,7 +233,10 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     const result = await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 1, recipientUserIds: [TEST_CUID.USER_2] });
+    expect(result).toEqual({
+      sent: 1,
+      recipients: [{ userId: TEST_CUID.USER_2, timezone: "Asia/Seoul" }],
+    });
     expect(sent().map(({ userId }) => userId)).toEqual([TEST_CUID.USER_2]);
   });
 
@@ -238,7 +248,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     const result = await strategy.execute(ctx);
 
     // Then
-    expect(result).toEqual({ sent: 0, recipientUserIds: [] });
+    expect(result).toEqual({ sent: 0, recipients: [] });
     expect(publisher.published).toEqual([]);
   });
 });

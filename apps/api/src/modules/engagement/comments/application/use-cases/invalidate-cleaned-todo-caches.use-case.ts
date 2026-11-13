@@ -9,11 +9,11 @@ export interface InvalidateCleanedTodoCachesCommand {
 }
 
 interface InvalidateCleanedTodoCachesDependencies {
-  readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodo">;
+  readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodos">;
   readonly logger: ApplicationLoggerPort;
 }
 
-/** 끝난 계정 삭제를 캐시 장애 때문에 실패로 보고하지 않도록 할 일마다 best-effort로 정리한다 */
+/** 끝난 계정 삭제를 캐시 장애 때문에 실패로 보고하지 않도록 best-effort로 정리한다. 소유자는 한 번에 찾는다 */
 export class InvalidateCleanedTodoCachesUseCase {
   readonly #dependencies: InvalidateCleanedTodoCachesDependencies;
 
@@ -23,13 +23,18 @@ export class InvalidateCleanedTodoCachesUseCase {
 
   async execute(command: InvalidateCleanedTodoCachesCommand): Promise<void> {
     const { todoViewCache, logger } = this.#dependencies;
-    await settleAfterCommit(
-      logger,
-      command.todoIds.map((todoId) => ({
+    if (command.todoIds.length === 0) {
+      return;
+    }
+    await settleAfterCommit(logger, [
+      {
         failureEvent: TodoCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
-        context: { todoId },
-        run: () => todoViewCache.invalidateForTodo(TodoId.reconstitute(todoId)),
-      })),
-    );
+        context: { todoCount: command.todoIds.length },
+        run: () =>
+          todoViewCache.invalidateForTodos(
+            command.todoIds.map((todoId) => TodoId.reconstitute(todoId)),
+          ),
+      },
+    ]);
   }
 }

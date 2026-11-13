@@ -58,6 +58,7 @@ import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -849,6 +850,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
     const useCase = new SendCheerUseCase({
+      countCache: new PassThroughCountCache(),
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(DAILY_LIMIT),
@@ -883,6 +885,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       new BestEffortRendezvous(CONCURRENCY),
     );
     const useCase = new SendCheerUseCase({
+      countCache: new PassThroughCountCache(),
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(null),
@@ -924,6 +927,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const { txHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
     const useCase = new SendNudgeUseCase({
+      countCache: new PassThroughCountCache(),
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(DAILY_LIMIT),
@@ -959,6 +963,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       new BestEffortRendezvous(CONCURRENCY),
     );
     const useCase = new SendNudgeUseCase({
+      countCache: new PassThroughCountCache(),
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(null),
@@ -1259,6 +1264,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       },
     };
     const useCase = new SendCheerUseCase({
+      countCache: new PassThroughCountCache(),
       cheerRepository: new DrizzleCheerRepository(txHost),
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(1),

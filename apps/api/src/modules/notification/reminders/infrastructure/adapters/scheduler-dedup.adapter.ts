@@ -14,19 +14,17 @@ export class SchedulerDedupAdapter extends SchedulerDedupPort {
     this.#dedupProvider = dedupProvider;
   }
 
-  hasWinbackStage(userId: string, stage: string): Promise<boolean> {
-    return this.#dedupProvider.isMember(SchedulerDedupKey.winbackStages(userId), stage);
+  async findSentWinbackStages(
+    records: ReadonlyArray<{ userId: string; stage: string }>,
+  ): Promise<Set<string>> {
+    const sent = await this.#dedupProvider.filterEntries(records.map(toWinbackStageEntry));
+    return new Set(sent.map(({ userId }) => userId));
   }
 
-  async recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {
-    await Promise.all(
-      records.map(({ userId, stage }) =>
-        this.#dedupProvider.addMembers(
-          SchedulerDedupKey.winbackStages(userId),
-          [stage],
-          SCHEDULER_DEDUP_TTL_MS.WINBACK_STAGES,
-        ),
-      ),
+  recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {
+    return this.#dedupProvider.addEntries(
+      records.map(toWinbackStageEntry),
+      SCHEDULER_DEDUP_TTL_MS.WINBACK_STAGES,
     );
   }
 
@@ -41,4 +39,13 @@ export class SchedulerDedupAdapter extends SchedulerDedupPort {
       SCHEDULER_DEDUP_TTL_MS.NUDGE_SUGGEST,
     );
   }
+}
+
+// 단계 기록은 사용자마다 따로인 Set이다(키를 바꾸면 이미 보낸 단계 기록을 잃는다)
+function toWinbackStageEntry(record: { readonly userId: string; readonly stage: string }) {
+  return {
+    ...record,
+    setKey: SchedulerDedupKey.winbackStages(record.userId),
+    member: record.stage,
+  };
 }

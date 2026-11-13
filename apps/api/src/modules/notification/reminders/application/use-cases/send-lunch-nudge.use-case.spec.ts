@@ -46,7 +46,7 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
     expect(reader.queries).toEqual([
       {
         method: "findLunchNudgeUsers",
-        params: { tz: "Asia/Seoul", today: ctx.today, tomorrow: ctx.tomorrow },
+        params: { timezones: ["Asia/Seoul"], today: ctx.today, tomorrow: ctx.tomorrow },
       },
     ]);
     expect(sent()).toEqual([

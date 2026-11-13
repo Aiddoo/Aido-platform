@@ -1,6 +1,7 @@
 export const VOICE_LOG_EVENT = {
   RECOGNIZER_FAILED: 'voice.recognizer.failed',
   RECOGNIZER_EXPECTED_STOP: 'voice.recognizer.expected-stop',
+  RECOGNIZER_UNRESPONSIVE: 'voice.recognizer.unresponsive',
   LANGUAGE_CHANGE_FAILED: 'voice.language.change-failed',
   DRAFT_RESTORE_FAILED: 'voice.draft.restore-failed',
   DRAFT_SAVE_FAILED: 'voice.draft.save-failed',

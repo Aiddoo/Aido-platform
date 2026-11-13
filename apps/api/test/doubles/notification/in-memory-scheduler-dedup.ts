@@ -5,8 +5,14 @@ export class InMemorySchedulerDedup extends SchedulerDedupPort {
   readonly #winbackStages = new Set<string>();
   readonly #nudgePairsByWeek = new Map<string, Set<string>>();
 
-  async hasWinbackStage(userId: string, stage: string): Promise<boolean> {
-    return this.#winbackStages.has(`${userId}:${stage}`);
+  async findSentWinbackStages(
+    records: ReadonlyArray<{ userId: string; stage: string }>,
+  ): Promise<Set<string>> {
+    return new Set(
+      records
+        .filter(({ userId, stage }) => this.#winbackStages.has(`${userId}:${stage}`))
+        .map(({ userId }) => userId),
+    );
   }
 
   async recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {

@@ -12,11 +12,13 @@ type TodoCommentFailureEvent = (typeof TodoCommentLogEvent)[keyof typeof TodoCom
 
 interface AfterCommitTask {
   readonly failureEvent: TodoCommentFailureEvent;
-  readonly context: {
-    readonly todoId: number;
-    readonly commentId?: string;
-    readonly userId?: string;
-  };
+  readonly context:
+    | {
+        readonly todoId: number;
+        readonly commentId?: string;
+        readonly userId?: string;
+      }
+    | { readonly todoCount: number };
   readonly run: () => Promise<unknown>;
 }
 

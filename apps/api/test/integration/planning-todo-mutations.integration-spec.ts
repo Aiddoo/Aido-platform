@@ -390,7 +390,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     expect(response.todos.map((created) => created.items.map((item) => item.title))).toEqual(
       Array.from({ length: 3 }, () => ["첫 항목", "둘째 항목"]),
     );
-    expect(response.todos.map((created) => created.sortOrder)).toEqual([0, 1, 2]);
+    expect(response.todos.map((created) => created.sortOrder)).toEqual([1024, 2048, 3072]);
     expect(statements.filter((statement) => /^insert into "Todo"/i.test(statement))).toHaveLength(
       1,
     );

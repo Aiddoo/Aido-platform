@@ -1,5 +1,6 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -27,7 +28,11 @@ describe("GetSentNudgesUseCase — 보낸 콕 목록", () => {
     await nudgeReader.save(
       createNudgeFixture({ id: 4, todoId, senderId: NUDGE_FIXTURE_OTHER_USER_ID }),
     );
-    const useCase = new GetSentNudgesUseCase({ nudgeReader, logger: new SilentLogger() });
+    const useCase = new GetSentNudgesUseCase({
+      countCache: new PassThroughCountCache(),
+      nudgeReader,
+      logger: new SilentLogger(),
+    });
 
     // When
     const sent = await useCase.execute({ userId: NUDGE_FIXTURE_SENDER_ID, size: 2 });

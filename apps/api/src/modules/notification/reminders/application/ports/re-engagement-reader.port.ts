@@ -11,13 +11,13 @@ import type {
 } from "../read-models/scheduler.read-model.js";
 
 export interface InactiveWindowParams {
-  readonly tz: string;
+  readonly timezones: readonly string[];
   readonly inactiveSince: Temporal.Instant;
   readonly inactiveUntil: Temporal.Instant;
 }
 
 export interface TodayRangeParams {
-  readonly tz: string;
+  readonly timezones: readonly string[];
   readonly today: Temporal.PlainDate;
   readonly tomorrow: Temporal.PlainDate;
 }
@@ -32,11 +32,11 @@ export abstract class ReEngagementReaderPort {
   /** 3~30일 미접속 사용자 */
   abstract findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]>;
   abstract findOnboardingCandidates(params: {
-    tz: string;
+    timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidate[]>;
   abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]>;
-  abstract findActiveUsersInTimezone(tz: string): Promise<UserIdRow[]>;
+  abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]>;
   /** candidate들의 비활성 맞팔 친구 관계 */
   abstract findNudgeSuggestFollows(params: {
     candidateIds: string[];

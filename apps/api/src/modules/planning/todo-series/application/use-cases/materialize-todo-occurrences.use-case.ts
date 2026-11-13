@@ -1,3 +1,4 @@
+import { appendSortOrders } from "../../../shared/domain/todo-sort-order.domain-service.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
@@ -59,10 +60,12 @@ export class MaterializeTodoOccurrencesUseCase {
     const maxSortOrder = await todoRepository.getMaxSortOrder(series.userId);
     // 회차 id를 한 문장으로 먼저 받는다
     const ids = await todoRepository.nextIds(drafts.length);
+    const sortOrders = appendSortOrders(maxSortOrder, drafts.length);
     const created = await todoRepository.insertOccurrences(
       drafts.flatMap((draft, index) => {
         const id = ids[index];
-        return id == null ? [] : [{ ...draft, id, sortOrder: maxSortOrder + 1 + index }];
+        const sortOrder = sortOrders[index];
+        return id == null || sortOrder == null ? [] : [{ ...draft, id, sortOrder }];
       }),
       series.id,
       series.checklistTemplate,

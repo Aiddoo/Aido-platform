@@ -54,9 +54,9 @@ export class DedupModule {
    * 특정 어댑터를 직접 주입하여 사용
    *
    * @example
-   * const mockAdapter = { filterMembers: vi.fn(), isMember: vi.fn(), addMembers: vi.fn() };
+   * const adapter = new InMemoryDedupAdapter();
    * const module = await Test.createTestingModule({
-   *   imports: [DedupModule.forTesting(mockAdapter)],
+   *   imports: [DedupModule.forTesting(adapter)],
    * }).compile();
    */
   static forTesting(adapter: DedupProviderPort): DynamicModule {

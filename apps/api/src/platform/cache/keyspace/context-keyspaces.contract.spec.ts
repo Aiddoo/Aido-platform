@@ -24,6 +24,10 @@ import {
   SchedulerDedupKey,
 } from "#api/modules/notification/reminders/infrastructure/cache/scheduler-dedup.keyspace";
 import {
+  RETENTION_CACHE_TTL_MS,
+  RetentionCacheKey,
+} from "#api/modules/notification/retention/infrastructure/cache/retention-cache.keyspace";
+import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
 } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
@@ -32,9 +36,17 @@ import {
   TodoCacheKey,
 } from "#api/modules/planning/todos/infrastructure/cache/todo-cache.keyspace";
 import {
+  CHEER_COUNT_CACHE_TTL_MS,
+  CheerCountCacheKey,
+} from "#api/modules/social/cheers/infrastructure/cache/cheer-count-cache.keyspace";
+import {
   FollowCacheKey,
   FOLLOW_CACHE_TTL_MS,
 } from "#api/modules/social/friends/infrastructure/cache/follow-cache.keyspace";
+import {
+  NUDGE_COUNT_CACHE_TTL_MS,
+  NudgeCountCacheKey,
+} from "#api/modules/social/nudges/infrastructure/cache/nudge-count-cache.keyspace";
 import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
@@ -78,6 +90,13 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(SchedulerDedupKey.winbackStages("user-1")).toBe(
       "aido:v1:scheduler:dedup-winback-stages:user-1",
     );
+    expect(NudgeCountCacheKey.received("user-1")).toBe("aido:v1:nudge:received-counts:user-1");
+    expect(NudgeCountCacheKey.sent("user-1")).toBe("aido:v1:nudge:sent-count:user-1");
+    expect(CheerCountCacheKey.received("user-1")).toBe("aido:v1:cheer:received-counts:user-1");
+    expect(CheerCountCacheKey.sent("user-1")).toBe("aido:v1:cheer:sent-count:user-1");
+    expect(RetentionCacheKey.postgresTimezoneNames()).toBe(
+      "aido:v1:retention:postgres-timezone-names",
+    );
   });
 
   it("기존 TTL과 sentinel 값을 그대로 유지한다", () => {
@@ -97,6 +116,9 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS).toBe(300_000);
     expect(NOTIFICATION_DEDUP_TTL_MS).toBe(90_000_000);
     expect(NOTIFICATION_DEDUP_SENTINEL).toBe("__init__");
+    expect(RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES).toBe(86_400_000);
+    expect(NUDGE_COUNT_CACHE_TTL_MS).toBe(60_000);
+    expect(CHEER_COUNT_CACHE_TTL_MS).toBe(60_000);
     expect(SCHEDULER_DEDUP_TTL_MS).toEqual({
       WINBACK_STAGES: 7_776_000_000,
       NUDGE_SUGGEST: 691_200_000,

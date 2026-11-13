@@ -189,36 +189,74 @@ export function describeTodoRepositoryContract(
       });
     });
 
-    it.each([
-      { name: "닫힌 구간", from: 1, to: 2, delta: 1, expected: [0, 2, 3, 3, 1] },
-      { name: "끝이 열린 구간", from: 2, to: null, delta: -1, expected: [0, 1, 1, 2, 1] },
-    ])(
-      "$name 순서 밀기는 그 사용자 구간 안 할 일만 옮긴다",
-      async ({ from, to, delta, expected }) => {
-        // Given
-        const context = await createContext();
-        const todos: Todo[] = [];
-        for (const sortOrder of [0, 1, 2, 3]) {
-          todos.push(await insertTodo(context, { sortOrder }));
-        }
-        todos.push(await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 1 }));
+    it("이웃·끝 순서는 그 사용자 할 일을 (sortOrder, id)로 보고 옮기는 할 일은 건너뛴다", async () => {
+      // Given: 같은 sortOrder 둘(20)은 id 순서로 줄 선다
+      const context = await createContext();
+      const owner = UserId.reconstitute(TODO_FIXTURE_USER_ID);
+      const first = await insertTodo(context, { sortOrder: 10 });
+      const tieLow = await insertTodo(context, { sortOrder: 20 });
+      const tieHigh = await insertTodo(context, { sortOrder: 20 });
+      const last = await insertTodo(context, { sortOrder: 30 });
+      await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 25 });
+      const at = (todo: Todo) => ({ id: todo.id, sortOrder: todo.sortOrder });
 
-        // When
-        await context.todoRepository.shiftSortOrders(
-          UserId.reconstitute(TODO_FIXTURE_USER_ID),
-          from,
-          to,
-          delta,
-        );
+      // When
+      const neighbors = {
+        afterTieLow: await context.todoRepository.findAdjacentSortOrder(
+          owner,
+          at(tieLow),
+          "next",
+          first.id,
+        ),
+        afterTieLowSkippingTieHigh: await context.todoRepository.findAdjacentSortOrder(
+          owner,
+          at(tieLow),
+          "next",
+          tieHigh.id,
+        ),
+        beforeFirst: await context.todoRepository.findAdjacentSortOrder(
+          owner,
+          at(first),
+          "previous",
+          last.id,
+        ),
+        firstSkippingFirst: await context.todoRepository.findEdgeSortOrder(
+          owner,
+          "first",
+          first.id,
+        ),
+        lastSkippingLast: await context.todoRepository.findEdgeSortOrder(owner, "last", last.id),
+      };
 
-        // Then
-        const sortOrders = [];
-        for (const todo of todos) {
-          sortOrders.push((await findPrimitives(context, todo))?.sortOrder);
-        }
-        expect(sortOrders).toEqual(expected);
-      },
-    );
+      // Then
+      expect(neighbors).toEqual({
+        afterTieLow: 20,
+        afterTieLowSkippingTieHigh: 30,
+        beforeFirst: null,
+        firstSkippingFirst: 20,
+        lastSkippingLast: 20,
+      });
+    });
+
+    it("다시 번호 매김은 그 사용자 할 일만 지금 순서대로 간격을 둔다", async () => {
+      // Given
+      const context = await createContext();
+      const todos: Todo[] = [];
+      for (const sortOrder of [5, 3, 3, 4]) {
+        todos.push(await insertTodo(context, { sortOrder }));
+      }
+      const other = await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 1 });
+
+      // When
+      await context.todoRepository.renumberSortOrders(UserId.reconstitute(TODO_FIXTURE_USER_ID));
+
+      // Then: (3, 앞 id) → (3, 뒤 id) → 4 → 5 순서다
+      const sortOrders = [];
+      for (const todo of [...todos, other]) {
+        sortOrders.push((await findPrimitives(context, todo))?.sortOrder);
+      }
+      expect(sortOrders).toEqual([4096, 1024, 2048, 3072, 1]);
+    });
 
     it("최대 순서는 그 사용자 할 일만 보고 없으면 -1이다", async () => {
       // Given

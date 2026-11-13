@@ -41,7 +41,7 @@ const isFailureForBreaker = (kind: AiCircuitBreakerKind) => (error: unknown) =>
   resolveAiFailureRule(error.kind).breaker === kind;
 
 /**
- * 업체별 회로. 결제 실패는 한 번에, 인증 실패와 일시 장애는 연속으로 쌓이면 연다. 결제·인증은 운영 경보를 올린다.
+ * 업체별 회로. 결제 실패는 한 번에, 인증 실패와 일시 장애는 연속으로 쌓이면 연다. 열리면 운영 경보를 올린다.
  * 재시도는 AI SDK maxRetries 한 층뿐이라 여기에는 timeout·재시도를 두지 않는다.
  */
 export function createAiProviderPolicy(
@@ -71,6 +71,7 @@ export function createAiProviderPolicy(
         consecutiveFailures: breaker.healthThreshold,
         halfOpenAfterMs: breaker.healthCooldownMs,
         handles: isFailureForBreaker("health"),
+        alert: AiAlerts.PROVIDER_HEALTH_CIRCUIT_OPENED,
       },
     ],
     describeFailure: (failure): Readonly<Record<string, string>> =>

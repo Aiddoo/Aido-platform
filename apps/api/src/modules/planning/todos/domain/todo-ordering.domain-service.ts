@@ -1,67 +1,30 @@
 import type { ReorderPosition } from "@aido/api/vocabulary";
 
-/**
- * sortOrder 범위 시프트 지시
- *
- * `[from, to]` 구간(to가 null이면 끝까지)의 sortOrder를 delta만큼 이동합니다.
- */
-interface SortOrderShift {
-  from: number;
-  to: number | null;
-  delta: 1 | -1;
-}
+import { sortOrderBetween } from "../../shared/domain/todo-sort-order.domain-service.js";
 
-/** 순서 변경 계산 결과 — 시프트할 구간과 이동 대상의 새 sortOrder */
-export interface ReorderPlan {
-  newSortOrder: number;
-  shift: SortOrderShift;
+/** 기준 할 일과, 옮길 할 일을 뺀 그 반대쪽 바로 옆 할 일(없으면 null)의 sortOrder */
+export interface ReorderNeighbors {
+  readonly target: number;
+  readonly beyond: number | null;
 }
 
 /**
- * 기준 할 일의 앞/뒤로 이동하는 계획을 계산합니다 (순수 도메인 정책).
- *
- * - 아래로 이동: 사이 구간 `[current+1, new-1]`을 위로 당기고 최종 위치는 한 칸 앞
- * - 위로 이동: 사이 구간 `[new, current-1]`을 아래로 밀어냄
+ * 기준 할 일 앞이면 (앞 이웃, 기준), 뒤면 (기준, 뒤 이웃) 사이에 둘 새 sortOrder다.
+ * 사이에 정수가 없으면 null이라 그 사용자 할 일을 다시 번호 매긴 뒤 다시 계산한다
  */
 export function planReorderRelativeTo(
-  currentSortOrder: number,
-  targetSortOrder: number,
   position: ReorderPosition,
-): ReorderPlan {
-  const desired = position === "before" ? targetSortOrder : targetSortOrder + 1;
-
-  if (currentSortOrder < desired) {
-    return {
-      newSortOrder: desired - 1,
-      shift: { from: currentSortOrder + 1, to: desired - 1, delta: -1 },
-    };
-  }
-
-  return {
-    newSortOrder: desired,
-    shift: { from: desired, to: currentSortOrder - 1, delta: 1 },
-  };
+  { target, beyond }: ReorderNeighbors,
+): number | null {
+  return position === "before"
+    ? sortOrderBetween(beyond, target)
+    : sortOrderBetween(target, beyond);
 }
 
 /**
- * 맨 앞(before) 또는 맨 뒤(after)로 이동하는 계획을 계산합니다 (순수 도메인 정책).
- *
- * @param maxSortOrder 맨 뒤 이동 시 사용할 현재 최대 sortOrder (시프트 전 기준)
+ * 맨 앞(before)·맨 끝(after)에 둘 새 sortOrder다. edge는 옮길 할 일을 뺀 가장 앞·끝 값(없으면 null)이다.
+ * 자리가 없으면 null이다
  */
-export function planReorderToEdge(
-  currentSortOrder: number,
-  position: ReorderPosition,
-  maxSortOrder: number,
-): ReorderPlan {
-  if (position === "before") {
-    return {
-      newSortOrder: 0,
-      shift: { from: 0, to: currentSortOrder - 1, delta: 1 },
-    };
-  }
-
-  return {
-    newSortOrder: maxSortOrder,
-    shift: { from: currentSortOrder + 1, to: null, delta: -1 },
-  };
+export function planReorderToEdge(position: ReorderPosition, edge: number | null): number | null {
+  return position === "before" ? sortOrderBetween(null, edge) : sortOrderBetween(edge, null);
 }

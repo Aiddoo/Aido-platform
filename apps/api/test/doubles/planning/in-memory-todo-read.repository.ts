@@ -1,4 +1,5 @@
 import type { Todo as TodoResponse } from "@aido/api";
+import { uniq } from "es-toolkit";
 
 import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
@@ -51,8 +52,8 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     record.category = this.categories.get(record.categoryId) ?? null;
     return createTodoReadModelFromRecord(record);
   }
-  async findOwnerId(id: TodoId): Promise<string | null> {
-    return this.records.get(id.value)?.userId ?? null;
+  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+    return uniq(ids.flatMap((id) => this.records.get(id.value)?.userId ?? []));
   }
   async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const records = [...this.records.values()]
@@ -89,10 +90,11 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
       ).length
     );
   }
-  async countCompletedByUser(userId: UserId): Promise<number> {
-    return [...this.records.values()].filter(
+  async countCompletedByUser(userId: UserId, limit: number): Promise<number> {
+    const completed = [...this.records.values()].filter(
       (record) => record.userId === userId.value && record.completed,
     ).length;
+    return Math.min(completed, limit);
   }
   async existsByUserId(userId: UserId): Promise<boolean> {
     return [...this.records.values()].some((record) => record.userId === userId.value);

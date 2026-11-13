@@ -1,0 +1,101 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ab99f799-748e-4c0f-92e6-ee70cc7f2933",
+  "prevIds": [
+    "1db040fc-c003-4442-87c3-9a740c8d5582"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "Cheer",
+        "Cheer_receiverId_unread_idx"
+      ],
+      "writes": [
+        "s|idx|public.Cheer_receiverId_unread_idx",
+        "n|idx|public.Cheer_receiverId_unread_idx",
+        "e|idx|public.Cheer_receiverId_unread_idx",
+        "n|rel|public.Cheer_receiverId_unread_idx"
+      ],
+      "reads": [
+        "n|tbl|public.Cheer",
+        "n|sch|public",
+        "n|col|public.Cheer.receiverId"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_receiverId_unread_idx"
+      ],
+      "writes": [
+        "s|idx|public.Nudge_receiverId_unread_idx",
+        "n|idx|public.Nudge_receiverId_unread_idx",
+        "e|idx|public.Nudge_receiverId_unread_idx",
+        "n|rel|public.Nudge_receiverId_unread_idx"
+      ],
+      "reads": [
+        "n|tbl|public.Nudge",
+        "n|sch|public",
+        "n|col|public.Nudge.receiverId"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Cheer",
+        "name": "Cheer_receiverId_unread_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "receiverId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "(\"readAt\" IS NULL)",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "Nudge",
+        "name": "Nudge_receiverId_unread_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "receiverId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "(\"readAt\" IS NULL)",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

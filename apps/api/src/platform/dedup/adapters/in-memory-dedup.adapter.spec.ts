@@ -19,7 +19,9 @@ describe("InMemoryDedupAdapter — 크기 상한", () => {
     }
 
     // Then
-    expect(await dedup.isMember("set:oldest", "member")).toBe(false);
-    expect(await dedup.isMember(`set:${DEDUP_MAX_ENTRIES - 1}`, "member")).toBe(true);
+    expect(await dedup.filterMembers("set:oldest", ["member"])).toEqual(new Set());
+    expect(await dedup.filterMembers(`set:${DEDUP_MAX_ENTRIES - 1}`, ["member"])).toEqual(
+      new Set(["member"]),
+    );
   });
 });

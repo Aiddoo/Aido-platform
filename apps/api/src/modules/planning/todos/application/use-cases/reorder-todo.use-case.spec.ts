@@ -38,9 +38,9 @@ describe("할 일 순서 변경", () => {
     position: "before" | "after";
     expected: number[];
   }>)(
-    "$name 이동은 전체 순서에 충돌 없이 반영된다",
+    "$name 이동은 전체 순서에 충돌 없이 반영된다(간격 없는 옛 순서는 다시 매긴다)",
     async ({ id, targetTodoId, position, expected }) => {
-      // Given
+      // Given: 간격 없이 0,1,2,3으로 쌓인 옛 순서
       fixture.records.clear();
       for (let todoId = 1; todoId <= 4; todoId++) {
         fixture.records.set(todoId, {
@@ -55,8 +55,65 @@ describe("할 일 순서 변경", () => {
         (left, right) => left.sortOrder - right.sortOrder,
       );
       expect(sorted.map((todo) => todo.id)).toEqual(expected);
-      expect(sorted.map((todo) => todo.sortOrder)).toEqual([0, 1, 2, 3]);
-      expect(result.sortOrder).toBe(expected.indexOf(id));
+      expect(new Set(sorted.map((todo) => todo.sortOrder)).size).toBe(4);
+      expect(result.sortOrder).toBe(fixture.records.get(id)?.sortOrder);
+    },
+  );
+
+  it.each([
+    {
+      name: "사이로",
+      id: 4,
+      targetTodoId: 2,
+      position: "after",
+      expected: [1, 2, 4, 3],
+      value: 2560,
+    },
+    {
+      name: "맨 앞",
+      id: 3,
+      targetTodoId: undefined,
+      position: "before",
+      expected: [3, 1, 2, 4],
+      value: 0,
+    },
+    {
+      name: "맨 끝",
+      id: 1,
+      targetTodoId: undefined,
+      position: "after",
+      expected: [2, 3, 4, 1],
+      value: 5120,
+    },
+  ] satisfies Array<{
+    name: string;
+    id: number;
+    targetTodoId: number | undefined;
+    position: "before" | "after";
+    expected: number[];
+    value: number;
+  }>)(
+    "간격이 있으면 $name 옮긴 할 일 한 행만 바꾼다",
+    async ({ id, targetTodoId, position, expected, value }) => {
+      // Given: 1024 간격 순서
+      fixture.records.clear();
+      for (let todoId = 1; todoId <= 4; todoId++) {
+        fixture.records.set(todoId, {
+          ...createPlanningTodo(fixture.userId, todoId),
+          sortOrder: todoId * 1024,
+        });
+      }
+      // When
+      await useCase.execute({ id, userId: fixture.userId, targetTodoId, position });
+      // Then
+      const sorted = [...fixture.records.values()].sort(
+        (left, right) => left.sortOrder - right.sortOrder,
+      );
+      expect(sorted.map((todo) => todo.id)).toEqual(expected);
+      expect(sorted.filter((todo) => todo.id !== id).map((todo) => todo.sortOrder)).toEqual(
+        [1024, 2048, 3072, 4096].filter((sortOrder) => sortOrder !== id * 1024),
+      );
+      expect(fixture.records.get(id)?.sortOrder).toBe(value);
     },
   );
   it("없는 기준과 다른 소유자의 요청은 순서를 변경하지 않는다", async () => {

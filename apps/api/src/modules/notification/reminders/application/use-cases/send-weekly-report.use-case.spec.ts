@@ -47,7 +47,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
       {
         method: "findWeeklyReportRecipients",
         params: {
-          tz: "Asia/Seoul",
+          timezones: ["Asia/Seoul"],
           periodStart: Temporal.PlainDate.from("2024-01-08"),
           periodEnd: ctx.today,
         },

@@ -10,7 +10,7 @@ import type { TodoReadRepositoryPort } from "#api/modules/planning/todos/applica
 export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
   return {
     findByIdAndUserId: vi.fn(),
-    findOwnerId: vi.fn(),
+    findOwnerIds: vi.fn(),
     findManyBySeriesId: vi.fn(),
     findManyByUserId: vi.fn(),
     findPublicTodosByUserId: vi.fn(),

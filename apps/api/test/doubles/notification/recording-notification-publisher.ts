@@ -1,5 +1,6 @@
 import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
+import type { BatchNotificationOptions } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
 import type { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
 
 type PublishMode = "publish" | "publishWithDeduplication" | "publishBatch";
@@ -15,6 +16,7 @@ export class RecordingNotificationPublisher implements Pick<
   PublishMode
 > {
   readonly published: PublishedNotification[] = [];
+  readonly batchOptions: BatchNotificationOptions[] = [];
   failWith: Error | null = null;
 
   async publish(data: CreateNotificationData): Promise<InboxNotification | null> {
@@ -27,8 +29,12 @@ export class RecordingNotificationPublisher implements Pick<
     return null;
   }
 
-  async publishBatch(items: CreateNotificationData[]): Promise<{ count: number }> {
+  async publishBatch(
+    items: CreateNotificationData[],
+    options: BatchNotificationOptions = {},
+  ): Promise<{ count: number }> {
     this.#record("publishBatch", items);
+    this.batchOptions.push(options);
     return { count: items.length };
   }
 

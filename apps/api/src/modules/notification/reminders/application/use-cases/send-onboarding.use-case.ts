@@ -38,12 +38,12 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, today } = ctx;
+    const { timezones, today } = ctx;
     const cutoffDate = utcStartOf(today.subtract({ days: ONBOARDING_MAX_DAY }));
 
     // 가입 0~7일 + 해당 timezone 유저 조회
     const users = await this.#dependencies.reader.findOnboardingCandidates({
-      tz,
+      timezones,
       createdSince: cutoffDate,
     });
 
@@ -129,7 +129,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
       await this.#dependencies.notificationPublisher.publishBatch(notifications);
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.ONBOARDING_SENT,
-        timezone: tz,
+        timezones,
         count: notifications.length,
       });
     }

@@ -15,6 +15,7 @@ export const TodoLogEvent = {
   STREAK_RECORD_FAILED: "planning.todo.streak-record.failed",
   FRIEND_COMPLETED_ENQUEUED: "planning.todo.friend-completed.enqueued",
   FRIEND_COMPLETED_FAILED: "planning.todo.friend-completed.failed",
+  TODAY_STATS_FAILED: "planning.todo.today-stats.failed",
   MILESTONE_CHECK_FAILED: "planning.todo.milestone-check.failed",
   TIMEZONE_REBASED: "planning.todo.timezone-rebase.completed",
   TIMEZONE_REBASE_INVALID: "planning.todo.timezone-rebase.invalid",

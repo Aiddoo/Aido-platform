@@ -5,6 +5,7 @@ export class RecordingTodoViewCacheInvalidator extends TodoViewCacheInvalidatorP
   readonly invalidatedTodoIds: number[] = [];
   /** 이 할 일의 캐시 정리를 이 오류로 실패시킨다 */
   readonly failures = new Map<number, Error>();
+  batchCalls = 0;
 
   async invalidateForTodo(todoId: TodoId): Promise<void> {
     const failure = this.failures.get(todoId.value);
@@ -12,5 +13,18 @@ export class RecordingTodoViewCacheInvalidator extends TodoViewCacheInvalidatorP
       throw failure;
     }
     this.invalidatedTodoIds.push(todoId.value);
+  }
+
+  async invalidateForTodos(todoIds: readonly TodoId[]): Promise<void> {
+    this.batchCalls += 1;
+    const settled = await Promise.allSettled(
+      todoIds.map((todoId) => this.invalidateForTodo(todoId)),
+    );
+    const failure = settled.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failure != null) {
+      throw failure.reason;
+    }
   }
 }

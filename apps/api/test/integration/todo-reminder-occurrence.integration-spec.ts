@@ -10,6 +10,8 @@ import { z } from "zod";
 
 import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
 import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
+import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
+import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
@@ -35,6 +37,7 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import {
   notification,
   pushDispatch,
+  pushDispatchOutbox,
   todo,
   todoCategory,
   todoSeries,
@@ -165,7 +168,17 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         logger: silentLogger,
       }),
       sendNotificationWithDeduplication: { execute: async () => null },
-      sendBatchNotification: { execute: async () => ({ count: 0 }) },
+      sendBatchNotification: new SendBatchNotificationUseCase({
+        persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
+          notificationRepository: new DrizzleNotificationRepository(txHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+          unitOfWork: uow,
+          afterCommitPublisher: { register: () => undefined },
+        }),
+        finalizeBatchNotificationUseCase: { execute: async () => ({ count: 0 }) },
+        unitOfWork: uow,
+        afterCommitTasks: { register: () => undefined },
+      }),
       todoTargetReader: new DrizzleNotificationTodoTargetReader(txHost),
     });
     const readerModule = await Test.createTestingModule({
@@ -306,6 +319,18 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       }),
     };
   }
+
+  it("설정 행이 없는 사용자의 리마인더도 단건 publish와 같이 단건 발송 경로로 넣는다", async () => {
+    // Given: 단건 경로는 설정 행이 없으면 기본 설정(푸시 켬)으로 보낸다
+    const id = await seedTodo(0, "10:00");
+    await client.delete(userPreference).where(eq(userPreference.userId, userId));
+    // When
+    await fireStage(id, "60min");
+    // Then
+    const outboxes = await client.select().from(pushDispatchOutbox);
+    expect(outboxes.map((outbox) => outbox.deliveryMode)).toEqual(["SINGLE"]);
+    expect(await readSent(id)).toEqual({ sent: ["D0 60min"], dispatches: 1 });
+  });
 
   it("오늘 울린 할 일을 다음 날로 옮기면 새 날짜에 다시 울린다", async () => {
     // Given

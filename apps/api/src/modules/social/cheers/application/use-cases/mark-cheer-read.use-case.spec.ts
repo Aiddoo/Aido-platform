@@ -5,6 +5,7 @@ import type { Cheer } from "#api/modules/social/cheers/domain/cheer.aggregate";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CHEER_FIXTURE_NOW,
   CHEER_FIXTURE_OTHER_USER_ID,
@@ -34,6 +35,7 @@ describe("MarkCheerReadUseCase — 응원 읽음", () => {
     // Given
     const cheerRepository = new InMemoryCheerRepository([createCheerFixture({ id: 1 })]);
     const useCase = new MarkCheerReadUseCase({
+      countCache: new PassThroughCountCache(),
       cheerRepository,
       clock: new FixedClock(READ_AT),
       logger: new SilentLogger(),
@@ -55,6 +57,7 @@ describe("MarkCheerReadUseCase — 응원 읽음", () => {
     const cheerRepository = new CountingCheerRepository([createCheerFixture({ id: 1 })]);
     const clock = new FixedClock(READ_AT);
     const useCase = new MarkCheerReadUseCase({
+      countCache: new PassThroughCountCache(),
       cheerRepository,
       clock,
       logger: new SilentLogger(),

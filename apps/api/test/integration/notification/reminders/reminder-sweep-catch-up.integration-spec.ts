@@ -164,7 +164,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           return morningReminder.execute(context);
         },
       },
-      eveningReminder: { execute: async () => ({ sent: 0, recipientUserIds: [] }) },
+      eveningReminder: { execute: async () => ({ sent: 0, recipients: [] }) },
       weeklyReport: idleStrategy,
       monthlyReport: idleStrategy,
       weeklyAchievement: idleStrategy,

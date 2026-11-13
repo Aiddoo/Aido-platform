@@ -1,5 +1,9 @@
 # @aido/api
 
+## 1.15.3
+
+No changes in this release.
+
 ## 1.15.2
 
 ### Minor Changes

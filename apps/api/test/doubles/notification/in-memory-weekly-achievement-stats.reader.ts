@@ -62,7 +62,7 @@ export class InMemoryWeeklyAchievementStatsReader extends WeeklyAchievementStats
     const firstDay = dayNumberOf(params.periodStart);
     const lastDay = dayNumberOf(params.periodEnd) - 1;
     return [...this.#users.values()].flatMap((user) => {
-      if (user.timezone !== params.tz) {
+      if (!params.timezones.includes(user.timezone)) {
         return [];
       }
       const overlapping = user.todos.filter(

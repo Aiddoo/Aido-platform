@@ -1,8 +1,9 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { createEntityId } from "#api/platform/database/entity-id";
@@ -24,6 +25,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationId } from "../../../inbox/domain/notification-id.vo.js";
 import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
@@ -38,6 +40,7 @@ import {
   RETENTION_VARIANTS,
   type RetentionVariant,
 } from "../../domain/retention.constants.js";
+import { RETENTION_CACHE_TTL_MS, RetentionCacheKey } from "../cache/retention-cache.keyspace.js";
 
 // raw SQL 결과는 칸 디코더를 거치지 않아 Date로 읽은 뒤 Instant로 바꾼다
 const rawInstantSchema = rawTimestamptzSchema.transform(instantFromDate);
@@ -69,10 +72,16 @@ const stageRowSchema = z.object({
 export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #uow: UnitOfWorkPort;
+  readonly #cache: Pick<CacheStorePort, "wrap">;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, uow: UnitOfWorkPort) {
+  constructor(
+    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    uow: UnitOfWorkPort,
+    cache: CacheStorePort,
+  ) {
     this.#txHost = txHost;
     this.#uow = uow;
+    this.#cache = cache;
   }
 
   get #db() {
@@ -153,6 +162,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       params.dueAt.subtract({ milliseconds: RETENTION_STAGE_TIMING.d0MinWaitMs }),
     );
     const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
+    const validTimezones = await this.#scheduledStageTimezones();
     const afterCursor =
       params.after == null
         ? sql`TRUE`
@@ -160,11 +170,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     const rows = z.array(stageRowSchema).parse(
       (
         await this.#db.execute<Record<string, unknown>>(sql`
-			WITH valid_timezones AS MATERIALIZED (
-				SELECT timezone.name
-				FROM pg_timezone_names AS timezone
-			),
-			due_stages AS (
+			WITH due_stages AS (
 				-- isRetentionStageDue와 같은 기준이다. 아직 기다리는 단계가 묶음 자리를 차지하지 않게 한다
 				SELECT
 					stage."id",
@@ -177,7 +183,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 					ON assignment."id" = stage."assignmentId"
 				LEFT JOIN ${userPreference} AS preference
 					ON preference."userId" = assignment."userId"
-				LEFT JOIN valid_timezones AS valid_timezone
+				LEFT JOIN unnest(${sql.param(validTimezones)}::TEXT[]) AS valid_timezone(name)
 					ON valid_timezone.name = preference."timezone"
 				CROSS JOIN LATERAL (
 					SELECT COALESCE(valid_timezone.name, 'UTC') AS timezone
@@ -274,6 +280,48 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
       locale: toSupportedLocale(row.locale),
       incompleteCount: row.todoCount - row.completedCount,
     }));
+  }
+
+  // AT TIME ZONE에 넘길 수 있는 저장값만 고른다. PG가 아는 이름(하루 캐시)이면서 앱 규칙(resolveTimezone과 같은
+  // Intl 판정)도 받는 값이다. 고르지 못한 값은 SQL에서 UTC가 되어 PG가 모르는 이름으로 묶음이 실패하지 않는다
+  async #scheduledStageTimezones(): Promise<string[]> {
+    const postgresNames = new Set(await this.#postgresTimezoneNames());
+    const rows = await this.#db
+      .selectDistinct({ timezone: userPreference.timezone })
+      .from(retentionExperimentStage)
+      .innerJoin(
+        retentionExperimentAssignment,
+        eq(retentionExperimentAssignment.id, retentionExperimentStage.assignmentId),
+      )
+      .innerJoin(userPreference, eq(userPreference.userId, retentionExperimentAssignment.userId))
+      .where(
+        and(
+          eq(retentionExperimentStage.status, "SCHEDULED"),
+          eq(retentionExperimentAssignment.experimentKey, RETENTION_EXPERIMENT_KEY),
+          isNotNull(retentionExperimentAssignment.startedAt),
+        ),
+      );
+    return rows.flatMap(({ timezone }) =>
+      postgresNames.has(timezone) && normalizeIanaTimezone(timezone) != null ? [timezone] : [],
+    );
+  }
+
+  #postgresTimezoneNames(): Promise<string[]> {
+    return this.#cache.wrap(
+      RetentionCacheKey.postgresTimezoneNames(),
+      z.array(z.string()),
+      async () => {
+        // 시스템 뷰라 Drizzle 스키마에 없다. 시간대 파일 600여 개를 읽으므로 캐시 미스 때만 부른다
+        const result = await this.#db.execute<{ name: string }>(
+          sql`SELECT name FROM pg_timezone_names`,
+        );
+        return z
+          .array(z.object({ name: z.string() }))
+          .parse(result.rows)
+          .map((row) => row.name);
+      },
+      RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
+    );
   }
 
   async markStageSkipped(

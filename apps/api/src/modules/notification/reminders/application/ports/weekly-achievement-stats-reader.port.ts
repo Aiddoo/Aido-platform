@@ -2,7 +2,7 @@ import type { UserTodoCount } from "../read-models/scheduler.read-model.js";
 
 /** [periodStart, periodEnd) 로컬 날짜 범위 */
 export interface WeeklyStatsParams {
-  readonly tz: string;
+  readonly timezones: readonly string[];
   readonly periodStart: Temporal.PlainDate;
   readonly periodEnd: Temporal.PlainDate;
 }

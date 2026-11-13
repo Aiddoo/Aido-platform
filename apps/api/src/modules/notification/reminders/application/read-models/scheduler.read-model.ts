@@ -24,6 +24,11 @@ export interface UserWithTodosAndStreak {
   } | null;
 }
 
+/** 저녁 리마인더 수신자. 소셜 다이제스트를 사용자 시간대마다 예약하려고 시간대를 싣는다 */
+export interface EveningReminderUser extends UserWithTodosAndStreak {
+  readonly timezone: string;
+}
+
 /** ID만 필요한 수신자 (점심 넛지·주간/월간 리포트·활성 유저 목록) */
 export interface UserIdRow {
   readonly id: string;
@@ -84,6 +89,8 @@ export interface FriendWithTodos {
 /** 날씨 알림 수신자 (위치 있음 — 위치·KMA 격자는 조회 후 필터로 non-null 확정. 해외 위치는 격자가 없다) */
 export interface WeatherReminderUser {
   readonly id: string;
+  /** 브리핑 시각·오늘 할 일은 사용자 시간대로 정한다 */
+  readonly timezone: string;
   readonly preference: { readonly locale: string } | null;
   readonly location: {
     readonly latitude: number;

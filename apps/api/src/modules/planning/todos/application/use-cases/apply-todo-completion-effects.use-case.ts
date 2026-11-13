@@ -8,10 +8,11 @@ import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service
 import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
 import {
   isAllCompletedToday,
+  MILESTONE_COMPLETION_COUNT_LIMIT,
   milestoneForCount,
 } from "../../domain/todo-completion.domain-service.js";
 import type { FriendPort } from "../ports/friend.port.js";
-import type { StreakPort } from "../ports/streak.port.js";
+import type { StreakPort, TodayCompletionStats } from "../ports/streak.port.js";
 import type { TodoNotificationPort } from "../ports/todo-notification.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { TodoLogEvent } from "../todos.log-events.js";
@@ -49,19 +50,46 @@ export class ApplyTodoCompletionEffectsUseCase {
   }
 
   async #apply({ userId, completed, timezone }: TodoToggledEvent): Promise<void> {
-    const effects = [this.#recordStreak(userId, completed, timezone)];
-    if (completed) {
-      effects.push(this.#notifyFriendsIfAllDone(userId, timezone), this.#notifyMilestone(userId));
+    const milestone = completed ? this.#notifyMilestone(userId) : Promise.resolve();
+    // 스트릭과 친구 완료 알림이 같은 오늘 현황을 보므로 한 번만 센다
+    const todayStats = await this.#readTodayStats(userId, timezone);
+    const effects = [milestone, this.#recordStreak(userId, completed, timezone, todayStats)];
+    if (completed && todayStats != null) {
+      effects.push(this.#notifyFriendsIfAllDone(userId, timezone, todayStats));
     }
     await Promise.all(effects);
   }
 
-  async #recordStreak(userId: string, completed: boolean, timezone: string): Promise<void> {
+  async #readTodayStats(userId: string, timezone: string): Promise<TodayCompletionStats | null> {
+    try {
+      const date = localDateAt(this.#dependencies.clock.now(), timezone);
+      const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(
+        UserId.reconstitute(userId),
+        date,
+      );
+      return { date, ...stats };
+    } catch (error) {
+      this.#dependencies.logger.error({
+        event: TodoLogEvent.TODAY_STATS_FAILED,
+        userId,
+        errorType: toErrorType(error),
+      });
+      return null;
+    }
+  }
+
+  async #recordStreak(
+    userId: string,
+    completed: boolean,
+    timezone: string,
+    todayStats: TodayCompletionStats | null,
+  ): Promise<void> {
     try {
       await this.#dependencies.streakPort.recordTodoToggle(
         UserId.reconstitute(userId),
         completed,
         timezone,
+        todayStats,
       );
     } catch (error) {
       this.#dependencies.logger.error({
@@ -72,16 +100,16 @@ export class ApplyTodoCompletionEffectsUseCase {
     }
   }
 
-  async #notifyFriendsIfAllDone(userId: string, timezone: string): Promise<void> {
+  async #notifyFriendsIfAllDone(
+    userId: string,
+    timezone: string,
+    todayStats: TodayCompletionStats,
+  ): Promise<void> {
+    if (!isAllCompletedToday(todayStats)) {
+      return;
+    }
     try {
       const ownerId = UserId.reconstitute(userId);
-      const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(
-        ownerId,
-        localDateAt(this.#dependencies.clock.now(), timezone),
-      );
-      if (!isAllCompletedToday(stats)) {
-        return;
-      }
       const [friendIds, userName] = await Promise.all([
         this.#dependencies.friendPort.getMutualFriendIds(ownerId),
         this.#dependencies.friendPort.getUserDisplayName(ownerId),
@@ -114,6 +142,7 @@ export class ApplyTodoCompletionEffectsUseCase {
       const milestone = milestoneForCount(
         await this.#dependencies.todoReadRepository.countCompletedByUser(
           UserId.reconstitute(userId),
+          MILESTONE_COMPLETION_COUNT_LIMIT,
         ),
       );
       if (milestone == null) {

@@ -25,6 +25,10 @@ import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { WeatherBriefingTodoReaderPort } from "../ports/weather-briefing-todo.reader.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
+import type {
+  WeatherReminderTodo,
+  WeatherReminderUser,
+} from "../read-models/scheduler.read-model.js";
 import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
 import {
   buildWeatherNotification,
@@ -62,7 +66,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { tz, localHour, localMinute, today } = ctx;
+    const { timezones, localHour, localMinute, today } = ctx;
 
     // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
     const weather = await this.#sendWeatherNotifications(ctx, today);
@@ -74,7 +78,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     if (total > 0) {
       this.#dependencies.logger.log({
         event: NotificationRemindersLogEvent.WEATHER_MORNING_SENT,
-        timezone: tz,
+        timezones,
         localHour,
         localMinute,
         weatherCount: weather.sent - weather.unavailable,
@@ -90,7 +94,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
-      tz: ctx.tz,
+      timezones: ctx.timezones,
       hour: ctx.localHour,
       minute: ctx.localMinute,
       userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
@@ -107,16 +111,8 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
 
     const now = this.#dependencies.clock.now();
     const at = instantToDate(now);
-    const timeZone = resolveTimezone(ctx.tz);
-    const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
     const [todos, reports] = await Promise.all([
-      this.#dependencies.todoReader.listTodayTodos({
-        userIds: targets.map((u) => UserId.reconstitute(u.id)),
-        date,
-        timezone: ctx.tz,
-        from: now,
-        until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
-      }),
+      this.#listTodayTodos(targets, now),
       this.#dependencies.weatherReportReader.readReports(
         targets.map((user) => ({
           key: user.id,
@@ -144,7 +140,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
                 title: todo.title,
                 scheduledAt: todo.scheduledTime,
               })),
-              { now: at, timezone: ctx.tz, locationTimezone: located.timezone },
+              { now: at, timezone: user.timezone, locationTimezone: located.timezone },
             );
       if (briefing == null) {
         unavailable += 1;
@@ -163,9 +159,9 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
           briefing,
           locale,
           variantContext,
-          timezone: ctx.tz,
+          timezone: user.timezone,
           formatTime: (instant) =>
-            formatWeatherNotificationTime(instant, { locale, timezone: ctx.tz }),
+            formatWeatherNotificationTime(instant, { locale, timezone: user.timezone }),
         }),
         action: rescheduleActionOf(briefing),
         today,
@@ -176,12 +172,34 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     return { sent: notifications.length, unavailable };
   }
 
+  // 오늘·다음 자정은 시간대마다 정한다. 지금 현지 시각이 같아도 자정 전 서머타임 전환은 다를 수 있다
+  async #listTodayTodos(
+    targets: readonly WeatherReminderUser[],
+    now: Temporal.Instant,
+  ): Promise<WeatherReminderTodo[]> {
+    const targetsByTimezone = groupBy(targets, (user) => user.timezone);
+    const todosByTimezone = await Promise.all(
+      Object.entries(targetsByTimezone).map(([timezone, users]) => {
+        const timeZone = resolveTimezone(timezone);
+        const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
+        return this.#dependencies.todoReader.listTodayTodos({
+          userIds: users.map((user) => UserId.reconstitute(user.id)),
+          date,
+          timezone,
+          from: now,
+          until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
+        });
+      }),
+    );
+    return todosByTimezone.flat();
+  }
+
   async #sendFallbackNotifications(
     ctx: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
-      tz: ctx.tz,
+      timezones: ctx.timezones,
       hour: ctx.localHour,
       minute: ctx.localMinute,
       userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),

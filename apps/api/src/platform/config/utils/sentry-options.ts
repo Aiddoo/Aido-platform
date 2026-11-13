@@ -12,6 +12,7 @@ import { isBusinessRejection } from "#api/shared/application/utils/business-reje
 
 import { appConfig } from "../app.config.js";
 import type { AppEnvironment } from "../schemas/app.schema.js";
+import { externalSchema } from "../schemas/external.schema.js";
 
 /**
  * 분산 추적 헤더(sentry-trace·baggage)를 붙일 대상 — 우리 서비스로 한정한다.
@@ -113,24 +114,27 @@ export interface TraceSamplingInput {
 
 /** 앱이 이어 보낸 추적은 앱의 결정을 따라 한 추적이 끊기지 않게 하고, 0인 경로는 앱이 보내도 남기지 않는다. */
 export function sampleTrace(input: TraceSamplingInput, defaultHttpRate: number): number {
-  const attributes = input.attributes ?? {};
-  const queue = attributes[JOB_QUEUE_SPAN_ATTRIBUTE];
-  const rate =
-    typeof queue === "string"
-      ? (JOB_TRACE_RATES.get(queue) ?? DEFAULT_JOB_TRACE_RATE)
-      : httpTraceRate(attributes, defaultHttpRate);
+  const rate = traceRate(input.attributes ?? {}, defaultHttpRate);
   if (rate === 0 || input.parentSampled == null) {
     return rate;
   }
   return input.parentSampled ? 1 : 0;
 }
 
-function httpTraceRate(attributes: Readonly<Record<string, unknown>>, defaultRate: number): number {
-  const path = attributes["url.path"];
-  const method = attributes["http.request.method"];
-  if (typeof path !== "string") {
-    return defaultRate;
+function traceRate(attributes: Readonly<Record<string, unknown>>, defaultHttpRate: number): number {
+  const queue = attributes[JOB_QUEUE_SPAN_ATTRIBUTE];
+  if (typeof queue === "string") {
+    return JOB_TRACE_RATES.get(queue) ?? DEFAULT_JOB_TRACE_RATE;
   }
+  const path = attributes["url.path"];
+  if (typeof path === "string") {
+    return httpTraceRate(path, attributes["http.request.method"], defaultHttpRate);
+  }
+  // 요청·작업 밖의 루트 span(타이머·Redis·pg-boss 폴링)은 볼 것이 없고 무료 span 한도만 먹는다
+  return 0;
+}
+
+function httpTraceRate(path: string, method: unknown, defaultRate: number): number {
   const rule = HTTP_TRACE_RULES.find(
     (candidate) =>
       candidate.path.test(path) && (candidate.method == null || candidate.method === method),
@@ -233,9 +237,8 @@ export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOpti
   const { environment, isProduction } = appConfig.parse(env);
   // 운영에서 비율을 잠시 바꿀 때 쓴다. 경로·큐별로 정한 비율은 그대로 두고 기본 HTTP 비율만 바꾼다
   const defaultHttpRate =
-    env.SENTRY_TRACES_SAMPLE_RATE != null
-      ? Number(env.SENTRY_TRACES_SAMPLE_RATE)
-      : DEFAULT_HTTP_TRACE_RATE;
+    externalSchema.shape.SENTRY_TRACES_SAMPLE_RATE.parse(env.SENTRY_TRACES_SAMPLE_RATE) ??
+    DEFAULT_HTTP_TRACE_RATE;
 
   return {
     enabled: isSentryEnabled({ isProduction, dsn: env.SENTRY_DSN }),

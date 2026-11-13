@@ -8,6 +8,7 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingCheerNotifier } from "#test/doubles/social/recording-cheer-notifier";
 import { StubCheerLimitReader } from "#test/doubles/social/stub-cheer-limit-reader";
 import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
@@ -49,6 +50,7 @@ function createFollowReader(): StubFollowReader {
 
 function createSendCheerUseCase(overrides: Partial<SendCheerDependencies> = {}) {
   return new SendCheerUseCase({
+    countCache: new PassThroughCountCache(),
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     cheerRepository: new InMemoryCheerRepository(),

@@ -9,6 +9,7 @@ export class StubTodoSeriesOwner extends TodoSeriesOwnerPort {
   readonly exemptUserIds = new Set<string>();
   /** 정지·탈퇴 대기 계정 */
   readonly suspendedUserIds = new Set<string>();
+  exemptionChecks = 0;
   async findOperatingOwners(
     userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
@@ -27,6 +28,7 @@ export class StubTodoSeriesOwner extends TodoSeriesOwnerPort {
     );
   }
   async isExemptFromDormancy(userId: UserId): Promise<boolean> {
+    this.exemptionChecks += 1;
     return this.exemptUserIds.has(userId.value);
   }
 }

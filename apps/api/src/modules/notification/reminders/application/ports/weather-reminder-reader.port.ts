@@ -6,7 +6,8 @@ import type {
 } from "../read-models/scheduler.read-model.js";
 
 export interface WeatherReminderParams {
-  readonly tz: string;
+  /** 이 분에 현지 날짜·시·분이 같은 시간대들 */
+  readonly timezones: readonly string[];
   readonly hour: number;
   readonly minute: number;
   /** 리마인더 시간을 바꾼 직후 그 사용자만 볼 때 */

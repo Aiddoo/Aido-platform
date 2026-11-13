@@ -1,5 +1,6 @@
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryCheerRepository } from "#test/doubles/social/in-memory-cheer.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import {
   CHEER_FIXTURE_NOW,
   CHEER_FIXTURE_OTHER_USER_ID,
@@ -18,7 +19,11 @@ describe("GetSentCheersUseCase — 보낸 응원 목록", () => {
       createCheerFixture({ id: 3, createdAt: CHEER_FIXTURE_NOW.add({ minutes: 2 }) }),
       createCheerFixture({ id: 4, senderId: CHEER_FIXTURE_OTHER_USER_ID }),
     ]);
-    const useCase = new GetSentCheersUseCase({ cheerReader, logger: new SilentLogger() });
+    const useCase = new GetSentCheersUseCase({
+      countCache: new PassThroughCountCache(),
+      cheerReader,
+      logger: new SilentLogger(),
+    });
 
     // When
     const sent = await useCase.execute({ userId: CHEER_FIXTURE_SENDER_ID, size: 2 });

@@ -498,6 +498,33 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
     expect(chain.anthropic.callCount).toBe(0);
   });
 
+  it("동의 범위 때문에 업체가 없으면 경보 없이 끝나고 키가 설정된 업체가 하나도 없을 때만 경보한다", async () => {
+    // Given
+    const consentOnly = createChain({
+      google: new StubProviderAdapter("google", [ok()], "gemini-3.1-flash-lite", false),
+    });
+    const noneConfigured = createChain({
+      anthropic: new StubProviderAdapter("anthropic", [ok()], "claude-haiku-5-5", false),
+      google: new StubProviderAdapter("google", [ok()], "gemini-3.1-flash-lite", false),
+      openai: new StubProviderAdapter("openai", [ok()], "gpt-6-luna", false),
+    });
+    // When
+    const withheld = await generate(consentOnly.generator, null).catch((cause: unknown) => cause);
+    const missing = await generate(noneConfigured.generator).catch((cause: unknown) => cause);
+    // Then
+    expect([withheld, missing]).toMatchObject([
+      { kind: "UNAVAILABLE", errorCode: "AI_1301" },
+      { kind: "UNAVAILABLE", errorCode: "AI_1301" },
+    ]);
+    expect(consentOnly.alert.alerts).toEqual([]);
+    expect(noneConfigured.alert.alerts).toEqual([
+      {
+        ...AiAlerts.NO_PROVIDER_AVAILABLE,
+        tags: { task: "parse-todo", taskClass: "interactive" },
+      },
+    ]);
+  });
+
   it("AI_PROVIDER_ORDER 순서를 따른다", async () => {
     // Given
     const chain = createChain({ env: { AI_PROVIDER_ORDER: "openai,anthropic" } });
@@ -985,7 +1012,17 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     // Then
     expect(duringCooldown).toBe(5);
     expect(chain.anthropic.callCount).toBe(6);
-    expect(chain.alert.alerts).toEqual([]);
+    expect(chain.alert.alerts).toEqual([
+      expect.objectContaining({
+        key: AiAlerts.PROVIDER_HEALTH_CIRCUIT_OPENED.key,
+        tags: expect.objectContaining({
+          policy: "ai:anthropic",
+          breaker: "health",
+          reason: "OVERLOADED",
+        }),
+      }),
+      expect.objectContaining({ key: AiAlerts.PROVIDER_HEALTH_CIRCUIT_OPENED.key }),
+    ]);
   });
 
   it("장애 사이에 한 번이라도 성공하면 연속 횟수를 다시 센다", async () => {

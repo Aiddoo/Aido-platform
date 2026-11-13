@@ -9,6 +9,7 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryNudgeRepository } from "#test/doubles/social/in-memory-nudge.repository";
+import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
 import { StubFollowReader } from "#test/doubles/social/stub-follow-reader";
 import { StubNudgeLimitReader } from "#test/doubles/social/stub-nudge-limit-reader";
@@ -77,6 +78,7 @@ async function repositoryWithTodo(
 
 function createSendNudgeUseCase(overrides: Partial<SendNudgeDependencies> = {}) {
   return new SendNudgeUseCase({
+    countCache: new PassThroughCountCache(),
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
     nudgeRepository: new InMemoryNudgeRepository(),
@@ -95,7 +97,8 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
     const { nudgeRepository, todoId } = await repositoryWithTodo();
     const mutationLock = new RecordingMutationLock();
     const notifier = new RecordingNudgeNotifier();
-    const useCase = createSendNudgeUseCase({ nudgeRepository, mutationLock, notifier });
+    const countCache = new PassThroughCountCache();
+    const useCase = createSendNudgeUseCase({ nudgeRepository, mutationLock, notifier, countCache });
 
     // When
     const nudge = await useCase.execute({
@@ -116,6 +119,10 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
     });
     expect(mutationLock.acquiredKeys).toEqual([
       [NudgeLockKeys.dailyQuota(SENDER_ID), NudgeLockKeys.cooldown(SENDER_ID, todoId)],
+    ]);
+    expect(countCache.invalidatedUserIds).toEqual([
+      NUDGE_FIXTURE_SENDER_ID,
+      NUDGE_FIXTURE_RECEIVER_ID,
     ]);
     expect(notifier.sent).toEqual([
       {

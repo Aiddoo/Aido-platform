@@ -487,20 +487,25 @@ export function describeNotificationRepositoryContract(
         expect(otherFriend.size).toBe(0);
       });
 
-      it("마일스톤 알림은 metadata.milestone이 같은 그 사용자 알림이 있을 때만 있다", async () => {
+      it("마일스톤 알림은 metadata.milestone이 같은 그 사용자의 마일스톤 종류 알림이 있을 때만 있다", async () => {
         // Given
         const { repository, historyReader } = await createSubject();
-        await create(repository, { type: "DAILY_COMPLETE", metadata: { milestone: "STREAK_3" } });
+        await create(repository, {
+          type: "WEEKLY_ACHIEVEMENT",
+          metadata: { milestone: "STREAK_3" },
+        });
+        await create(repository, { type: "DAILY_COMPLETE", metadata: { milestone: "COUNT_50" } });
 
         // When
         const results = [
           await historyReader.hasMilestoneNotification(USER_ID, "STREAK_3"),
           await historyReader.hasMilestoneNotification(USER_ID, "COUNT_10"),
+          await historyReader.hasMilestoneNotification(USER_ID, "COUNT_50"),
           await historyReader.hasMilestoneNotification(OTHER_USER_ID, "STREAK_3"),
         ];
 
         // Then
-        expect(results).toEqual([true, false, false]);
+        expect(results).toEqual([true, false, false, false]);
       });
     });
   });

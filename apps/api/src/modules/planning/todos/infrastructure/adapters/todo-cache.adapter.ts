@@ -105,17 +105,11 @@ export class TodoCacheAdapter implements TodoCachePort {
   }
 
   async invalidateFriendTodos(ownerUserId: UserId): Promise<void> {
-    const previousGeneration = await this.#getFriendTodosGeneration(ownerUserId);
-
-    // 먼저 generation을 회전해야 진행 중인 reader가 이전 페이지를 다시 채워도 보이지 않는다.
+    // 세대를 회전하면 이전 페이지는 닿지 않고 FRIEND_VIEW TTL(1분)에 사라진다. 키 전체 SCAN을 기다리지 않는다
     await this.#cacheService.set(
       TodoCacheKey.friendTodosGeneration(ownerUserId.value),
       randomUUID(),
       TODO_CACHE_TTL_MS.FRIEND_VIEW_GENERATION,
-    );
-
-    await this.#cacheService.delByPattern(
-      TodoCacheKey.friendTodosGenerationPattern(ownerUserId.value, previousGeneration),
     );
   }
 
