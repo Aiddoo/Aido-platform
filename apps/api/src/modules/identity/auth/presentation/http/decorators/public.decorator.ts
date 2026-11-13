@@ -1,15 +1,4 @@
-import { SetMetadata } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 
-export const IS_PUBLIC_KEY = "isPublic";
-
-/**
- * 인증이 필요없는 공개 라우트를 표시하는 데코레이터
- *
- * @example
- * ```typescript
- * @Public()
- * @Post('login')
- * async login() { ... }
- * ```
- */
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+/** 인증이 필요 없는 라우트. 전역 JwtAuthGuard가 건너뛴다. */
+export const Public = Reflector.createDecorator<void, true>({ transform: () => true });
