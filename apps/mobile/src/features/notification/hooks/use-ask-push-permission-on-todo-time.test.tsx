@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import {
   createAnalyticsStub,
   createHttpClientStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createPushNotificationGatewayStub,
   createTestQueryClient,
   createTestDi,
@@ -29,7 +29,7 @@ async function renderPrompt(permission: PushPermission) {
         httpClient,
         pushNotification,
         analytics: createAnalyticsStub(),
-        logger: createLoggerStub(),
+        logger: createAppLoggerStub(),
         queryClient,
       },
     }),

@@ -12,29 +12,30 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 4    | React Native  | 위에 없을 때만(`ScrollView` 등)                                                                                 |
 
 - 글자와 레이아웃은 `shared/ui`가 먼저다. RN `Text`·`View`·`Pressable`을 직접 쓰지 않는다. 예외는 `shared/ui` 내부 구현과 native ref·Animated가 필요한 곳이다.
+- `shared/ui` 밖은 `@src/shared/ui`(입구 `shared/ui/index.ts`) 하나로 import한다. 부품 폴더에는 `index.ts`를 두지 않고(ls-lint), `shared/ui` 안의 부품끼리는 실제 파일을 import한다. 타입만 가져오는 `shared/hooks`·`shared/providers`도 입구를 쓴다. 예외는 입구에 내지 않는 테스트 전용 값(`OverlayStateContext`, `PaneAreaSize`)을 읽는 테스트와 `src/testing`이다.
 
 ## 역할별 부품
 
-굵은 이름은 새로 만드는 공용 부품이다. 지금 상태는 [migration-status](./migration-status.md)에 있다.
+굵은 이름은 1.15.2에서 새로 만든 공용 부품이다. 아직 옮기지 않은 자리는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
 
-| 역할                | 쓸 것                                                                                                                                          | 판정                                                                    |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 레이아웃·글자       | `Box`·`HStack`·`VStack`·`Grid`·`Spacing`·`ReadableContent`·`AdaptivePane`·`SafeAreaScrollView`, `Text`·`H1`~`H4`·`TextSkeleton`·`WordWrapText` | 유지. heroui Typography는 앱 11단계 크기 × 글꼴 5단계를 대신하지 못한다 |
-| 버튼·아이콘·닫기    | `Button`·`IconButton`·`TextButton`(heroui 확장), `KeyboardAdaptiveButton`, heroui `CloseButton`                                                | 유지                                                                    |
-| 목록·설정 행        | `ListRow`, `SettingsListGroup`(`ListGroup` 확장, 빈 카드 `.Empty`), `InfiniteList`                                                             | 유지. 빈 상태를 다시 그리지 않는다                                      |
-| 카드                | **`SurfaceCard`**                                                                                                                              | 직접 만든 카드와 직접 쓴 `Card`를 옮긴다                                |
-| 입력                | `Input`·`TextArea`·`BottomSheetInput`, `PasswordInput`(auth 기능)                                                                              | 유지([이유](#직접-만든-부품을-둔-이유))                                 |
-| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **`Checkbox`**(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                       | 고르는 입력은 `RadioGroup.Item`                                         |
-| 칩                  | **`LabelChip`**, 누르는 칩은 `ActionButton`                                                                                                    | soft 칩 복제를 옮긴다                                                   |
-| 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`, route가 그리면 `isOpen`·`onFinish`), **`useOpenSheet`**, **`RouteBottomSheet`** | [시트](#시트)                                                           |
-| 팝오버·메뉴         | heroui `Popover` + `HintPopoverContent`, heroui `Menu` + `MenuActionItem` + **`MenuContent`**                                                  | 위험 항목 빨강은 하나                                                   |
-| 토스트·안내         | `useAppToast`, `InlineAlert`, `OfflineBanner`, **`QueryErrorFallback.Inline`**                                                                 | 흐름 안 배너는 `InlineAlert` 하나                                       |
-| 오류·빈 상태        | `QueryErrorBoundary`, `Result` + `shared/ui/illustration`의 그림                                                                               | 톤은 [design](../design.md#일러스트와-캐릭터)                           |
-| 스켈레톤·스피너     | heroui `Skeleton`·`Spinner`, `TextSkeleton`(`Omit<ComponentProps<typeof Skeleton>, …>`)                                                        | 스피너 색은 `useResolvedColor`                                          |
-| 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, **`ScrollFade`**                  | 실선 구분선은 토큰 하나                                                 |
-| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`(+`.Loading`), `AspectRatio`, **`Mascot`**                                                                              | 비율을 직접 계산하지 않는다                                             |
-| 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                           |
-| 크기 재기           | `useLayoutSize()`, Skia는 `onSize`·`useCanvasSize()`                                                                                           | `onLayout` → `setSize`를 직접 쓰지 않는다                               |
+| 역할                | 쓸 것                                                                                                                                          | 판정                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 레이아웃·글자       | `Box`·`HStack`·`VStack`·`Grid`·`Spacing`·`ReadableContent`·`AdaptivePane`·`SafeAreaScrollView`, `Text`·`H1`~`H4`·`TextSkeleton`·`WordWrapText` | 유지. heroui Typography는 앱 11단계 크기 × 글꼴 5단계를 대신하지 못한다                       |
+| 버튼·아이콘·닫기    | `Button`·`IconButton`·`TextButton`(heroui 확장), `KeyboardAdaptiveButton`, heroui `CloseButton`                                                | 유지                                                                                          |
+| 목록·설정 행        | `ListRow`, `SettingsListGroup`(`ListGroup` 확장, 빈 카드 `.Empty`), `InfiniteList`                                                             | 유지. 빈 상태를 다시 그리지 않는다                                                            |
+| 카드                | **`SurfaceCard`**                                                                                                                              | 직접 만든 카드와 직접 쓴 `Card`를 옮긴다                                                      |
+| 입력                | `Input`·`TextArea`·`BottomSheetInput`, `PasswordInput`(auth 기능)                                                                              | 유지([이유](#직접-만든-부품을-둔-이유))                                                       |
+| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **`Checkbox`**(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                       | 고르는 입력은 `RadioGroup.Item`                                                               |
+| 칩                  | **`LabelChip`**, 누르는 칩은 `ActionButton`                                                                                                    | soft 칩 복제를 옮긴다                                                                         |
+| 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`, route가 그리면 `isOpen`·`onFinish`), **`useOpenSheet`**, **`RouteBottomSheet`** | [시트](#시트)                                                                                 |
+| 팝오버·메뉴         | heroui `Popover` + `HintPopoverContent`, heroui `Menu` + `MenuActionItem` + **`MenuContent`**                                                  | 위험 항목 빨강은 하나                                                                         |
+| 토스트·안내         | `useAppToast`, `InlineAlert`, `OfflineBanner`, **`QueryErrorFallback.Inline`**                                                                 | 흐름 안 배너는 `InlineAlert` 하나                                                             |
+| 오류·빈 상태        | `QueryErrorBoundary`, `Result` + `shared/ui/illustration`의 그림                                                                               | 톤은 [design](../design.md#일러스트와-캐릭터)                                                 |
+| 스켈레톤·스피너     | heroui `Skeleton`·`Spinner`, `TextSkeleton`(`Omit<ComponentProps<typeof Skeleton>, …>`)                                                        | 스피너 색은 `useResolvedColor`                                                                |
+| 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, **`ScrollFade`**                  | 실선 구분선은 토큰 하나                                                                       |
+| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, **`Mascot`**                                                                                           | 비율을 직접 계산하지 않는다                                                                   |
+| 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                                                 |
+| 크기 재기           | `useLayoutSize()`, Skia는 감싼 View `onLayout` → shared value(프레임마다 그리는 Canvas만 `onSize`, [ui](./ui.md#모션과-skia))                  | 재기 전은 `null`이고 첫 프레임은 어림값으로 그린다. `onLayout` → `setSize`를 직접 쓰지 않는다 |
 
 ## 새 공용 부품의 인터페이스
 

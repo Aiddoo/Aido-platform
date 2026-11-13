@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AppleIcon,
@@ -20,9 +21,11 @@ import {
   useOpenKakaoLoginMutationOptions,
   useOpenNaverLoginMutationOptions,
 } from '../queries/auth.mutations';
+import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 
 export function SocialLoginButtons() {
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth']);
+  const fontScaledSize = useFontScaledSize();
   const exchangeCode = useMutation(useExchangeCodeMutationOptions());
   const appleLogin = useMutation(useOpenAppleLoginMutationOptions());
   const kakaoLogin = useMutation(useOpenKakaoLoginMutationOptions());
@@ -40,8 +43,14 @@ export function SocialLoginButtons() {
     <VStack gap={8}>
       {process.env.EXPO_OS === 'ios' && (
         <SocialLoginButton
-          icon={<AppleIcon width={20} height={20} colorClassName="text-white dark:text-black" />}
-          label={t('login.continueWith', { provider: t('providers.APPLE') })}
+          icon={
+            <AppleIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-white dark:text-black"
+            />
+          }
+          label={t('login.continueWith', { provider: t(getOAuthProviderLabelKey('APPLE')) })}
           onPress={() => appleLogin.mutate()}
           isLoading={appleLogin.isPending}
           className="bg-apple-button dark:bg-apple-button-dark"
@@ -49,24 +58,30 @@ export function SocialLoginButtons() {
         />
       )}
       <SocialLoginButton
-        icon={<KakaoIcon width={20} height={20} />}
-        label={t('login.continueWith', { provider: t('providers.KAKAO') })}
+        icon={<KakaoIcon width={fontScaledSize(20)} height={fontScaledSize(20)} />}
+        label={t('login.continueWith', { provider: t(getOAuthProviderLabelKey('KAKAO')) })}
         onPress={() => kakaoLogin.mutate(undefined, exchangeOnSuccess('kakao'))}
         isLoading={kakaoLogin.isPending || exchangeCode.isPending}
         className="bg-kakao"
         labelClassName="dark:text-gray-1"
       />
       <SocialLoginButton
-        icon={<GoogleIcon width={20} height={20} />}
-        label={t('login.continueWith', { provider: t('providers.GOOGLE') })}
+        icon={<GoogleIcon width={fontScaledSize(20)} height={fontScaledSize(20)} />}
+        label={t('login.continueWith', { provider: t(getOAuthProviderLabelKey('GOOGLE')) })}
         onPress={() => googleLogin.mutate(undefined, exchangeOnSuccess('google'))}
         isLoading={googleLogin.isPending || exchangeCode.isPending}
-        className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
+        className="border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-2"
         labelClassName="dark:text-gray-9"
       />
       <SocialLoginButton
-        icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
-        label={t('login.continueWith', { provider: t('providers.NAVER') })}
+        icon={
+          <NaverIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-white"
+          />
+        }
+        label={t('login.continueWith', { provider: t(getOAuthProviderLabelKey('NAVER')) })}
         onPress={() => naverLogin.mutate(undefined, exchangeOnSuccess('naver'))}
         isLoading={naverLogin.isPending || exchangeCode.isPending}
         className="bg-naver"

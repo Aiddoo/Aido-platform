@@ -1,13 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { getErrorMessage } from '@src/shared/errors';
+import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useFocusEffect } from 'expo-router';
 import { type PropsWithChildren, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
-import { useAndroidTodoCommentBackHandler } from '../hooks/use-android-todo-comment-back-handler';
+import { TodoCommentDeleteProvider } from '../hooks/use-confirm-todo-comment-delete';
+import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 import { TodoCommentFormProvider } from '../hooks/use-todo-comment-form';
 import {
   EMPTY_TODO_COMMENT_FORM_VALUES,
@@ -21,7 +23,7 @@ interface TodoCommentSessionProps extends PropsWithChildren {
   onExit?: () => void;
 }
 
-/** 한 할 일의 작성기(새 댓글·답글·수정) 폼과 펼친 묶음, 키보드 위치를 그 아래 조각들이 함께 쓴다 */
+/** 한 할 일의 작성기(새 댓글·답글·수정) 폼과 펼친 묶음, 키보드 위치, 삭제 확인을 그 아래 조각들이 함께 쓴다 */
 export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps) {
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
@@ -33,8 +35,10 @@ export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps
     <TodoCommentFormProvider form={form}>
       <TodoCommentRevealProvider>
         <TodoCommentExpansionProvider>
-          <BackAndKeyboardEffects onExit={onExit} />
-          {children}
+          <TodoCommentDeleteProvider>
+            <BackAndKeyboardEffects onExit={onExit} />
+            {children}
+          </TodoCommentDeleteProvider>
         </TodoCommentExpansionProvider>
       </TodoCommentRevealProvider>
     </TodoCommentFormProvider>
@@ -62,4 +66,19 @@ function BackAndKeyboardEffects({ onExit }: Pick<TodoCommentSessionProps, 'onExi
   );
 
   return null;
+}
+
+/** 화면에 focus가 있을 때만 듣는다 */
+function useAndroidTodoCommentBackHandler({ onExit }: Pick<TodoCommentSessionProps, 'onExit'>) {
+  const { interceptBack } = useTodoCommentBack();
+  useAndroidBackHandler({
+    onBack: () => {
+      if (interceptBack()) {
+        return true;
+      }
+      // 화면이 처리하지 않은 뒤로가기는 pane이면 선택만 풀고, 화면이면 기본 뒤로가기에 맡긴다
+      onExit?.();
+      return onExit != null;
+    },
+  });
 }

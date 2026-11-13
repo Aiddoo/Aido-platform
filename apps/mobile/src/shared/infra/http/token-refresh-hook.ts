@@ -1,4 +1,4 @@
-import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { ErrorCode, type ErrorCodeType, HttpStatus } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import { ERROR_REPORT_MESSAGES } from '@src/core/observability/telemetry-keys';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -6,16 +6,24 @@ import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { TokenRefresher } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
-import { getErrorMessage } from '@src/shared/errors';
-import ky, { type AfterResponseHook } from 'ky';
+import { getErrorMessage, TimeoutError } from '@src/shared/errors';
+import { TimeoutError as RecoveryTimeoutError, withTimeout } from 'es-toolkit';
+import ky, { type AfterResponseHook, type AfterResponseState } from 'ky';
 import { match } from 'ts-pattern';
 
 import { getPathname } from './request-path';
+import { REFRESH_TIMEOUT_MS } from './request-timeout';
 import { toServerErrorCode } from './server-error-code';
 import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 /** 재시도가 다시 401이어도 갱신을 반복하지 않는다 */
 export const RETRY_MARKER_HEADER = 'x-retried-after-refresh';
+
+/**
+ * 401 하나를 갱신·재전송으로 넘기기까지 기다리는 상한. ky timeout은 afterResponse 훅을 세지 않아 이 상한이 없으면 끝나지 않는 대기가 요청을 붙잡는다.
+ * 갱신 한 번(refresh 토큰 읽기 TOKEN_READ_TIMEOUT_MS + 왕복 REFRESH_TIMEOUT_MS)과 그 앞 액세스 토큰 읽기를 덮도록 왕복의 두 배로 잡는다. 키체인 쓰기는 기다리지 않는다
+ */
+export const UNAUTHORIZED_RECOVERY_TIMEOUT_MS = 2 * REFRESH_TIMEOUT_MS;
 
 /** 토큰·세션이 거부된 401 코드(지금 JWT 가드는 AUTH_0101 하나로 낸다). 비밀번호가 틀린 USER_0602 같은 업무 401은 갱신하지 않는다 */
 const ACCESS_TOKEN_REJECTED_CODES: ReadonlySet<ErrorCodeType> = new Set([
@@ -75,8 +83,8 @@ export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterRespon
     return ky.retry({ request: new Request(request, { headers }) });
   };
 
-  return async ({ request, options, response }) => {
-    if (response.status !== 401 || !(await isAccessTokenRejected(response))) {
+  const recoverFromUnauthorized = async ({ request, options, response }: AfterResponseState) => {
+    if (!(await isAccessTokenRejected(response))) {
       return response;
     }
 
@@ -84,7 +92,7 @@ export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterRespon
       errorReporter.captureMessage(ERROR_REPORT_MESSAGES.AUTH_REFRESH_RETRY_REJECTED, {
         severity: 'warning',
         feature: 'auth_cold_start',
-        statusCode: 401,
+        statusCode: HttpStatus.UNAUTHORIZED,
         endpoint: getPathname(request.url ?? ''),
       });
       return response;
@@ -117,5 +125,27 @@ export function createTokenRefreshHook(deps: TokenRefreshHookPorts): AfterRespon
       })
       .with({ kind: 'superseded' }, () => response)
       .exhaustive();
+  };
+
+  return async (state) => {
+    if (state.response.status !== HttpStatus.UNAUTHORIZED) {
+      return state.response;
+    }
+
+    try {
+      return await withTimeout(
+        () => recoverFromUnauthorized(state),
+        UNAUTHORIZED_RECOVERY_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (!(error instanceof RecoveryTimeoutError)) {
+        throw error;
+      }
+      // 이 요청만 일시 장애로 끝낸다. 세션은 그대로 두고 React Query 재시도와 화면의 다시 시도에 맡긴다
+      logger.warn(TOKEN_REFRESHER_LOG_EVENT.UNAUTHORIZED_RECOVERY_TIMED_OUT, {
+        endpoint: getPathname(state.request.url),
+      });
+      throw new TimeoutError({ cause: error });
+    }
   };
 }

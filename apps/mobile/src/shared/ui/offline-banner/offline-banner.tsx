@@ -49,7 +49,7 @@ export function OfflineBanner() {
             height={fontScaledSize(ICON_SIZE)}
             colorClassName="text-gray-8"
           />
-          <Text size="b4" weight="medium" className="text-gray-9 shrink">
+          <Text size="b4" weight="medium" className="shrink text-gray-9">
             {message}
           </Text>
         </HStack>

@@ -1,0 +1,79 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "1db040fc-c003-4442-87c3-9a740c8d5582",
+  "prevIds": [
+    "90ce44ae-0164-428e-96f0-33533d8fcc3b"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Subscription",
+        "dataRetentionUntil"
+      ],
+      "writes": [
+        "s|col|public.Subscription.dataRetentionUntil",
+        "n|col|public.Subscription.dataRetentionUntil",
+        "e|col|public.Subscription.dataRetentionUntil"
+      ],
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "User",
+        "twoFactorEnabled"
+      ],
+      "writes": [
+        "s|col|public.User.twoFactorEnabled",
+        "n|col|public.User.twoFactorEnabled",
+        "e|col|public.User.twoFactorEnabled"
+      ],
+      "reads": [
+        "n|tbl|public.User",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "User",
+        "twoFactorSecret"
+      ],
+      "writes": [
+        "s|col|public.User.twoFactorSecret",
+        "n|col|public.User.twoFactorSecret",
+        "e|col|public.User.twoFactorSecret"
+      ],
+      "reads": [
+        "n|tbl|public.User",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"Subscription\",\"dataRetentionUntil\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"User\",\"twoFactorEnabled\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"User\",\"twoFactorSecret\"]"
+    }
+  ]
+}

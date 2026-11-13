@@ -1,8 +1,9 @@
 import type { AppLifecycleGateway } from '@src/core/ports/app-lifecycle-gateway';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 
 type MinuteClockSource = {
-  now: () => number;
+  now: () => Instant;
   /** 앱이 앞으로 오면 true, 뒤로 가면 false를 알린다. 해제 함수를 돌려준다. */
   listenForeground: (onChange: (isForeground: boolean) => void) => () => void;
 };
@@ -32,7 +33,7 @@ export function createMinuteClockStore({ now, listenForeground }: MinuteClockSou
 
   const schedule = () => {
     cancel();
-    const current = now();
+    const current = toEpochMs(now());
     timer = setTimeout(
       () => {
         timer = null;
@@ -66,16 +67,22 @@ export function createMinuteClockStore({ now, listenForeground }: MinuteClockSou
         }
       };
     },
-    getSnapshot: (): number => toMinuteStart(now()),
+    getSnapshot: (): number => toMinuteStart(toEpochMs(now())),
   };
 }
 
 export type MinuteClockStore = ReturnType<typeof createMinuteClockStore>;
 
 /** 앱 수명 포트에 매단 분 시계. 컨테이너가 하나 만들어 모든 소비자가 나눠 쓴다 */
-export function createAppMinuteClock(appLifecycle: AppLifecycleGateway): MinuteClockStore {
+export function createAppMinuteClock({
+  appLifecycle,
+  now,
+}: {
+  appLifecycle: AppLifecycleGateway;
+  now: () => Instant;
+}): MinuteClockStore {
   return createMinuteClockStore({
-    now: () => Date.now(),
+    now,
     listenForeground: (onChange) => appLifecycle.subscribe((state) => onChange(state === 'active')),
   });
 }

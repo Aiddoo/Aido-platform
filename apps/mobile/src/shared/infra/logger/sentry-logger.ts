@@ -3,7 +3,7 @@ import {
   ERROR_REPORT_FEATURES,
   type ErrorReportFeature,
 } from '@src/core/observability/telemetry-keys';
-import type { LogContext, AppLogger, LogLevel } from '@src/core/ports/app-logger';
+import type { AppLogger, DebugLogContext, LogContext, LogLevel } from '@src/core/ports/app-logger';
 import { captureError } from '@src/shared/infra/observability/capture-error';
 
 import { SENTRY_TAGS } from '../error-reporter/sentry-tags';
@@ -38,7 +38,7 @@ export function createSentryLogger(): AppLogger {
   };
 
   return {
-    debug: (_message: string, _context?: LogContext): void => {
+    debug: (_message: string, _context?: DebugLogContext): void => {
       // debug는 Sentry에 남기지 않음(노이즈 억제).
     },
     info: (message: string, context?: LogContext): void => {

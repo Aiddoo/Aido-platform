@@ -54,7 +54,7 @@ export function SubscriptionReceipt() {
         <IconCircle
           tone="brand"
           pointerEvents="none"
-          className="absolute right-4 top-4 -rotate-6"
+          className="absolute top-4 right-4 -rotate-6"
           icon={
             <>
               <Box className="absolute inset-1 rounded-full border border-dashed border-white/90 dark:border-gray-1/90" />
@@ -65,7 +65,7 @@ export function SubscriptionReceipt() {
       )}
 
       <Box className="px-5 pt-5" testID={`subscription-receipt-${variant}`}>
-        <HStack className="gap-4 items-center">
+        <HStack className="items-center gap-4">
           <FillTicketIcon width={40} height={40} />
 
           {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
@@ -120,7 +120,7 @@ export function SubscriptionReceipt() {
         )}
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Box className="px-5">
         <Text size="b3" weight="semibold" shade={9} className="mb-3">
@@ -150,7 +150,7 @@ export function SubscriptionReceipt() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Barcode className="px-5 pb-5" />
     </ScallopedContainer>
@@ -187,7 +187,7 @@ SubscriptionReceipt.Loading = function Loading() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Box className="px-5">
         <TextSkeleton size="b3" className="mb-3 w-32" />
@@ -203,7 +203,7 @@ SubscriptionReceipt.Loading = function Loading() {
         </VStack>
       </Box>
 
-      <DashedDivider className="my-5 mx-5" />
+      <DashedDivider className="mx-5 my-5" />
 
       <Barcode className="px-5 pb-5" />
     </ScallopedContainer>

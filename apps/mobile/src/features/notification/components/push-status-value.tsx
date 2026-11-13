@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -25,8 +25,8 @@ function PushStatus() {
   });
 
   return (
-    <Text size="b3" shade={7} testID="push-status-value">
+    <SettingsListGroup.Value testID="push-status-value">
       {t(getPushSummaryLabelKey(toPushSummary(permission, preference)))}
-    </Text>
+    </SettingsListGroup.Value>
   );
 }

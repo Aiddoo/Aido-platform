@@ -1,20 +1,30 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
-import { ControlField, ListGroup, RadioGroup, Separator, Skeleton } from 'heroui-native';
+import {
+  ControlField,
+  ListGroup,
+  RadioGroup,
+  Separator as HeroSeparator,
+  Skeleton,
+} from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { ScrollView } from 'react-native';
 
-import { Box } from '../box';
-import { ChoiceRadio } from '../choice-radio';
-import { HStack } from '../h-stack';
-import { ArrowRightIcon, type StyledIcon } from '../icon';
-import { QueryErrorFallback, type QueryErrorFallbackProps } from '../query-error-boundary';
-import { ReadableContent } from '../readable-content';
-import { Result } from '../result';
-import { SafeAreaScrollView } from '../safe-area-scroll-view';
-import { Text, TextSkeleton } from '../text';
-import { VStack } from '../v-stack';
+import { Box } from '../box/box';
+import { ChoiceRadio } from '../choice-radio/choice-radio';
+import { HStack } from '../h-stack/h-stack';
+import { type StyledIcon } from '../icon/create-styled-icon';
+import { ArrowRightIcon } from '../icon/icons';
+import { type QueryErrorFallbackProps } from '../query-error-boundary/query-error-boundary';
+import { QueryErrorFallback } from '../query-error-boundary/query-error-fallback';
+import { ReadableContent } from '../readable-content/readable-content';
+import { Result } from '../result/result';
+import { SafeAreaScrollView } from '../safe-area-scroll-view/safe-area-scroll-view';
+import { Text } from '../text/text';
+import { TextSkeleton } from '../text/text-skeleton';
+import { type TextProps } from '../text/text.types';
+import { VStack } from '../v-stack/v-stack';
 
 export interface SettingsListGroupProps extends ComponentProps<typeof ListGroup> {
   label?: string;
@@ -42,6 +52,9 @@ function SettingsListGroupLabel({ label }: { label: string }) {
   );
 }
 
+/** 행 끝 화살표. 아이콘 원본 크기(20)이고 글자처럼 앱 글꼴 배율을 따른다 */
+const ARROW_ICON_SIZE = 20;
+
 interface SettingsListGroupItemProps extends Omit<
   ComponentProps<typeof ListGroup.Item>,
   'children' | 'disabled'
@@ -67,6 +80,9 @@ function SettingsListGroupItem({
   className,
   ...props
 }: SettingsListGroupItemProps) {
+  const fontScaledSize = useFontScaledSize();
+  const arrowSize = fontScaledSize(ARROW_ICON_SIZE);
+
   return (
     <ListGroup.Item
       accessibilityRole="button"
@@ -96,7 +112,7 @@ function SettingsListGroupItem({
         {right ?? (
           <HStack align="center" gap={4} className="shrink">
             <Box className="shrink">{value}</Box>
-            <ArrowRightIcon colorClassName="text-gray-6" />
+            <ArrowRightIcon width={arrowSize} height={arrowSize} colorClassName="text-gray-6" />
           </HStack>
         )}
       </ListGroup.ItemSuffix>
@@ -113,6 +129,9 @@ SettingsListGroupItem.Loading = function Loading({
   descriptionLines = 0,
   hasValue = false,
 }: SettingsListGroupItemLoadingProps) {
+  const fontScaledSize = useFontScaledSize();
+  const arrowSize = fontScaledSize(ARROW_ICON_SIZE);
+
   return (
     <HStack align="center" gap={12} className="min-h-12 p-4 py-3">
       <VStack flex={1} gap={2}>
@@ -123,7 +142,7 @@ SettingsListGroupItem.Loading = function Loading({
       </VStack>
       <HStack align="center" gap={4}>
         {hasValue && <TextSkeleton size="b3" className="w-12" />}
-        <ArrowRightIcon colorClassName="text-gray-3" />
+        <ArrowRightIcon width={arrowSize} height={arrowSize} colorClassName="text-gray-3" />
       </HStack>
     </HStack>
   );
@@ -186,7 +205,7 @@ SettingsListGroupToggle.Loading = function Loading({
 const ITEM_ICON_TILE_SIZE = 30;
 const ITEM_ICON_SIZE = 18;
 
-function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
+SettingsListGroup.Icon = function Icon({ Icon: Glyph }: { Icon: StyledIcon }) {
   const fontScaledSize = useFontScaledSize();
   const tileSize = fontScaledSize(ITEM_ICON_TILE_SIZE);
   const iconSize = fontScaledSize(ITEM_ICON_SIZE);
@@ -198,10 +217,10 @@ function SettingsListGroupIcon({ Icon }: { Icon: StyledIcon }) {
       className="items-center justify-center rounded-[9px] bg-main/10"
       style={{ width: tileSize, height: tileSize }}
     >
-      <Icon width={iconSize} height={iconSize} colorClassName="text-main" />
+      <Glyph width={iconSize} height={iconSize} colorClassName="text-main" />
     </Box>
   );
-}
+};
 
 interface SettingsListGroupRadioProps extends Omit<
   ComponentProps<typeof RadioGroup.Item>,
@@ -260,50 +279,65 @@ SettingsListGroupRadio.Loading = function Loading({ icon }: { icon?: ReactNode }
   );
 };
 
-interface SettingsListGroupSegmentProps extends ComponentProps<typeof Box> {
+interface SettingsListGroupSegmentProps {
   isFirst: boolean;
   isLast: boolean;
   /** 첫 조각에만 그리는 카드 제목 */
   label?: string;
+  children: ReactNode;
 }
 
 /** 가상 목록의 행 하나를 카드 조각으로 그린다. 행마다 그려도 이어 붙이면 `SettingsListGroup` 한 장처럼 보인다 */
-function SettingsListGroupSegment({
+SettingsListGroup.Segment = function Segment({
   isFirst,
   isLast,
   label,
-  className,
   children,
-  ...props
 }: SettingsListGroupSegmentProps) {
   return (
-    <Box
-      className={cn('bg-gray-1', isFirst && 'rounded-t-2xl', isLast && 'rounded-b-2xl', className)}
-      {...props}
-    >
+    <Box className={cn('bg-gray-1', isFirst && 'rounded-t-2xl', isLast && 'rounded-b-2xl')}>
       {isFirst && label != null && <SettingsListGroupLabel label={label} />}
       {!isFirst && <SettingsListGroup.Separator />}
       {children}
     </Box>
   );
-}
+};
 
+// `.Loading`을 단 부속은 함수 선언이어야 TS가 그 속성을 안다
 SettingsListGroup.Item = SettingsListGroupItem;
-SettingsListGroup.Icon = SettingsListGroupIcon;
 SettingsListGroup.Toggle = SettingsListGroupToggle;
 SettingsListGroup.Radio = SettingsListGroupRadio;
-SettingsListGroup.Segment = SettingsListGroupSegment;
 
-SettingsListGroup.Content = function Content(props: ComponentProps<typeof VStack>) {
-  return <VStack px={16} py={12} gap={12} {...props} />;
+/** 행 오른쪽 값 글자(현재 설정·개수·상태). 화살표 앞에 같은 크기·색으로 놓인다 */
+SettingsListGroup.Value = function Value(props: Omit<TextProps, 'size' | 'shade'>) {
+  return <Text size="b3" shade={7} {...props} />;
+};
+
+interface SettingsListGroupCustomProps {
+  children: ReactNode;
+  /** 안쪽 줄 사이 간격(기본 12) */
+  gap?: number;
+  className?: string;
+}
+
+SettingsListGroup.Custom = function Custom({
+  children,
+  gap = 12,
+  className,
+}: SettingsListGroupCustomProps) {
+  return (
+    <VStack gap={gap} className={cn('px-4 py-3', className)}>
+      {children}
+    </VStack>
+  );
 };
 
 SettingsListGroup.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return (
     <SettingsListGroup>
-      <SettingsListGroup.Content>
+      <SettingsListGroup.Custom>
         <QueryErrorFallback className="py-4" illustrationSize="block" reset={reset} />
-      </SettingsListGroup.Content>
+      </SettingsListGroup.Custom>
     </SettingsListGroup>
   );
 };
@@ -316,8 +350,8 @@ SettingsListGroup.Empty = function Empty(props: ComponentProps<typeof Result>) {
   );
 };
 
-SettingsListGroup.Separator = function CardSeparator() {
-  return <Separator className="mx-4 bg-gray-3 dark:bg-gray-2" />;
+SettingsListGroup.Separator = function Separator() {
+  return <HeroSeparator className="mx-4 bg-gray-3 dark:bg-gray-2" />;
 };
 
 export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollView> {
@@ -327,7 +361,7 @@ export interface SettingsScreenLayoutProps extends ComponentProps<typeof ScrollV
 export function SettingsScreenLayout({ gap = 12, children, ...props }: SettingsScreenLayoutProps) {
   return (
     <SafeAreaScrollView className="flex-1 bg-white" {...props}>
-      <ReadableContent gap={gap} className="px-4 pb-4 pt-5">
+      <ReadableContent gap={gap} className="px-4 pt-5 pb-4">
         {children}
       </ReadableContent>
     </SafeAreaScrollView>

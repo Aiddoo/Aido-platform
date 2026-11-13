@@ -86,9 +86,19 @@ describe("콕 주고받기 조회", () => {
   });
 
   it.each([
-    { name: "기능이 꺼짐", isEnabled: false, userId: NUDGE_FIXTURE_RECEIVER_ID },
-    { name: "주고받지 않은 콕", isEnabled: true, userId: NUDGE_FIXTURE_OTHER_USER_ID },
-  ])("$name이면 NUDGE_1105로 거절한다", async ({ isEnabled, userId }) => {
+    {
+      name: "기능이 꺼짐",
+      isEnabled: false,
+      userId: NUDGE_FIXTURE_RECEIVER_ID,
+      code: ErrorCode.NUDGE_1111,
+    },
+    {
+      name: "주고받지 않은 콕",
+      isEnabled: true,
+      userId: NUDGE_FIXTURE_OTHER_USER_ID,
+      code: ErrorCode.NUDGE_1105,
+    },
+  ])("$name이면 $code로 거절한다", async ({ isEnabled, userId, code }) => {
     // Given
     const nudgeReader = await seedInteractions();
     const single = new GetNudgeInteractionUseCase({
@@ -101,6 +111,6 @@ describe("콕 주고받기 조회", () => {
     const result = single.execute({ userId, nudgeId: 1 });
 
     // Then
-    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
+    await expect(result).rejects.toMatchObject({ errorCode: code });
   });
 });

@@ -9,7 +9,7 @@ import {
   createHttpClientStub,
   createMemoryDeviceIdStore,
   createMemoryObservableSyncStorage,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createMemorySyncStorage,
   createMemoryTokenStore,
   createSocialAuthGatewayStub,
@@ -51,7 +51,7 @@ export function createAuthSession({ tokens, tokenStore, ports }: AuthSessionOpti
   const socialAuthGateway = createSocialAuthGatewayStub();
   const queryClient = createTestQueryClient();
   const errorReporter = createErrorReporterStub();
-  const storage = createMemoryStorage();
+  const storage = createMemoryKeyValueStorage();
   const syncStorage = createMemoryObservableSyncStorage();
   const queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage());
   const requestRefresh = jest.fn<Promise<Response>, [string]>();

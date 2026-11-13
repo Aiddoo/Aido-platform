@@ -36,11 +36,11 @@ export function useWeatherLocation(): WeatherLocation {
   const logger = useLogger();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const { data, isError } = useQuery(useGetWeatherLocationQueryOptions());
-  const location = match({ data, isError })
+  const { data: reading, isError } = useQuery(useGetWeatherLocationQueryOptions());
+  const location = match({ reading, isError })
     .returnType<WeatherLocationStatus>()
-    .with({ data: P.nonNullable }, ({ data: reading }) =>
-      WeatherLocationPolicy.getLocationStatus(reading),
+    .with({ reading: P.nonNullable }, (narrowed) =>
+      WeatherLocationPolicy.getLocationStatus(narrowed.reading),
     )
     .with({ isError: true }, () => ({ status: 'unavailable' }))
     .otherwise(() => ({ status: 'checking' }));

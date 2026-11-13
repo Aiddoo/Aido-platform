@@ -3,7 +3,6 @@
   "extends": "@aido/typescript-config/expo.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./app/*"],
       "@src/*": ["./src/*"],
       "@assets/*": ["./assets/*"]
     },

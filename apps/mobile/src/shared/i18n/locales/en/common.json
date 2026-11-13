@@ -27,7 +27,9 @@
   "daysOfWeekSeparator": ", ",
   "calendar": {
     "nextMonth": "Next month",
+    "nextWeek": "Next week",
     "previousMonth": "Previous month",
+    "previousWeek": "Previous week",
     "weekHeader": "Week {{week}} of {{month}}"
   },
   "relativeDay": {
@@ -60,7 +62,13 @@
     "inquiry": "Contact us",
     "restart": "Restart app",
     "mailSubject": "[Aido] Error report ({{code}})",
-    "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n"
+    "mailBody": "Diagnostic code: {{code}}\n\nTell us which screen you were on and what you were doing, and we'll look into it.\n",
+    "inquiryDraft": {
+      "body": "A screen failed to load\n({{details}})\n\n",
+      "diagnosticCode": "Diagnostic code: {{value}}",
+      "errorCode": "Error code: {{value}}",
+      "requestId": "Request ID: {{value}}"
+    }
   },
   "infiniteList": {
     "loadMoreFailed": "Try again",
@@ -71,9 +79,6 @@
   },
   "pushChannel": {
     "default": "General notifications"
-  },
-  "toast": {
-    "defaultError": "Something went wrong"
   },
   "share": {
     "unsupported": "Sharing isn't available on this device",

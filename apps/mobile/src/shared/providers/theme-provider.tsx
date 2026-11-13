@@ -9,7 +9,6 @@ import { useColorScheme } from 'react-native';
 import { match } from 'ts-pattern';
 import { Uniwind, useResolveClassNames } from 'uniwind';
 
-export type { ThemeMode };
 type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeProviderProps extends PropsWithChildren {

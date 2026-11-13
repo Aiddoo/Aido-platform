@@ -1,11 +1,11 @@
-import { createLoggerStub } from '@src/testing/core';
+import { createAppLoggerStub } from '@src/testing/core';
 
 import { cleanStartupKeys } from './startup-key-cleanup';
 
 describe('cleanStartupKeys', () => {
   it('한 정리가 실패해도 나머지를 계속하고 실패를 남긴다', () => {
     // Given
-    const logger = createLoggerStub();
+    const logger = createAppLoggerStub();
     const next = jest.fn();
 
     // When

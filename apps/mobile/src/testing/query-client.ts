@@ -1,4 +1,5 @@
 import { createAppMutationCache } from '@src/bootstrap/query/mutation-error-feedback-cache';
+import { createAppQueryCache } from '@src/bootstrap/query/query-error-report-cache';
 import { notifyManager, QueryClient, type QueryClientConfig } from '@tanstack/react-query';
 
 const createdClients = new Set<QueryClient>();
@@ -7,13 +8,19 @@ const createdClients = new Set<QueryClient>();
  * 테스트용 QueryClient. TanStack Query 테스트 가이드의 권장값을 기본으로 둔다.
  * - retry: false — 실패를 바로 드러낸다
  * - gcTime: Infinity — 캐시 정리 타이머를 만들지 않아 테스트가 끝나면 Jest가 바로 종료된다
- * mutation 캐시는 앱과 같아 `meta.errorFeedback`이 `createTestProviders`가 올린 전역 오류 피드백으로 간다.
+ * 조회·mutation 캐시는 앱과 같아 실패가 `createTestProviders`가 올린 전역 오류 피드백·보고로 간다.
  * 각 테스트가 끝나면 jest.setup의 afterEach가 만든 클라이언트를 모두 비운다.
  */
 export function createTestQueryClient(config: QueryClientConfig = {}): QueryClient {
-  const { defaultOptions, mutationCache = createAppMutationCache(), ...rest } = config;
+  const {
+    defaultOptions,
+    queryCache = createAppQueryCache(),
+    mutationCache = createAppMutationCache(),
+    ...rest
+  } = config;
   const client = new QueryClient({
     ...rest,
+    queryCache,
     mutationCache,
     defaultOptions: {
       ...defaultOptions,

@@ -8,6 +8,7 @@ import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -17,7 +18,6 @@ import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
-import { reflectFeatureQuota } from '@src/features/voice/queries/voice-plan-cache';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
 import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {
@@ -28,12 +28,17 @@ import { useTrack } from '@src/shared/analytics';
 import { toEpochMs } from '@src/shared/date/instant';
 import type { DraftKey } from '@src/shared/draft/draft.model';
 import type { DraftService } from '@src/shared/draft/draft.service';
-import { getUserFacingMessage, NetworkError } from '@src/shared/errors';
+import { NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui/toast/use-app-toast';
+import { isLastMutation } from '@src/shared/query/is-last-mutation';
+import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
+import {
+  isMemoParseRejectionHandledByFeature,
+  isMemoUnavailableError,
+} from '../domains/memo.error';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
 import {
   createMemoCreateRequestDraftKey,
@@ -50,8 +55,8 @@ import {
   invalidateMemo,
   invalidateMemoList,
   invalidateMemoResourceLimit,
-  setMemoDetailInCache,
-  setMemoInCache,
+  removeMemo,
+  settleMemoWrite,
 } from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
 
@@ -94,7 +99,7 @@ export function useCreateMemoMutationOptions() {
   });
 }
 
-export function useUpdateMemoMutationOptions() {
+export function useUpdateMemoMutationOptions({ memoId }: { memoId: number }) {
   const memoApi = useMemoApi();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
@@ -102,15 +107,18 @@ export function useUpdateMemoMutationOptions() {
   return mutationOptions({
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
-    mutationFn: async ({ memoId, values }: { memoId: number; values: MemoFormValues }) =>
-      unwrap(await memoApi.updateMemo(memoId, values)),
+    mutationKey: MEMO_MUTATION_KEYS.writes({ memoId }),
+    mutationFn: async (values: MemoFormValues) => unwrap(await memoApi.updateMemo(memoId, values)),
+    onMutate: () => ({
+      startedWithOthers: !isLastMutation(queryClient, MEMO_MUTATION_KEYS.writes({ memoId })),
+    }),
     // 돌아간 목록에 옛 글자가 보이지 않게 응답으로 상세와 목록을 바꾼다. 글만 바뀌어 목록 순서는 그대로다
-    onSuccess: async (memo, { memoId }) => {
-      await setMemoInCache(queryClient, memo);
+    onSuccess: async (memo, _values, { startedWithOthers }) => {
+      await settleMemoWrite(queryClient, memo, { startedWithOthers, isListItemReplaced: true });
       trackEvent('memo_updated', { memo_id: memoId });
     },
     // 응답으로 바꾼 키는 다시 받지 않는다. 기다리면 mutateAsync가 재조회까지 묶여 뒤로 가기가 늦어진다
-    onSettled: (_memo, error, { memoId }) => {
+    onSettled: (_memo, error) => {
       if (error != null) {
         invalidateMemoList(queryClient);
         invalidateMemo(queryClient, { memoId });
@@ -132,7 +140,7 @@ function rebaseDraftSource<TValue>(
   }
 }
 
-export function useSetMemoPinnedMutationOptions() {
+export function useSetMemoPinnedMutationOptions({ memoId }: { memoId: number }) {
   const memoApi = useMemoApi();
   const draftService = useDraftService();
   const haptics = useHaptics();
@@ -143,11 +151,18 @@ export function useSetMemoPinnedMutationOptions() {
   return mutationOptions({
     // 오프라인에 멈춰 두면 버튼이 꺼진 채 남고 연결되는 순간 나도 모르게 실행된다. 바로 실패해 안내한다
     networkMode: 'always',
-    onMutate: () => haptics.impact('light'),
-    mutationFn: async ({ memoId, isPinned }: { memoId: number; isPinned: boolean }) =>
+    mutationKey: MEMO_MUTATION_KEYS.writes({ memoId }),
+    onMutate: () => {
+      haptics.impact('light');
+      return {
+        startedWithOthers: !isLastMutation(queryClient, MEMO_MUTATION_KEYS.writes({ memoId })),
+      };
+    },
+    mutationFn: async ({ isPinned }: { isPinned: boolean }) =>
       unwrap(await memoApi.setPinned(memoId, isPinned)),
-    onSuccess: async (memo, { memoId, isPinned }) => {
-      const previousMemo = await setMemoDetailInCache(queryClient, memo);
+    onSuccess: async (memo, { isPinned }, { startedWithOthers }) => {
+      const previousMemo = getCachedMemo(queryClient, { memoId });
+      await settleMemoWrite(queryClient, memo, { startedWithOthers, isListItemReplaced: false });
       const accountId = getCachedMe(queryClient)?.id;
       if (previousMemo != null && accountId != null) {
         const source = { from: toEpochMs(previousMemo.updatedAt), to: toEpochMs(memo.updatedAt) };
@@ -166,7 +181,7 @@ export function useSetMemoPinnedMutationOptions() {
       trackEvent('memo_pin_toggled', { memo_id: memoId, is_pinned: isPinned });
     },
     // 상세는 응답으로 고쳤고 고정 순서만 서버가 정한다
-    onSettled: (_memo, error, { memoId }) => {
+    onSettled: (_memo, error) => {
       invalidateMemoList(queryClient);
       if (error != null) {
         invalidateMemo(queryClient, { memoId });
@@ -187,14 +202,17 @@ export function useDeleteMemoMutationOptions() {
     networkMode: 'always',
     mutationFn: async (memoId: number) => unwrap(await memoApi.deleteMemo(memoId)),
     onSuccess: (_result, memoId) => {
+      removeMemo(queryClient, { memoId });
       toast.success(t('memo:toasts.deleted'));
       trackEvent('memo_deleted', { memo_id: memoId });
     },
-    // 기다리면 지운 메모의 404 재조회가 먼저 끝나 다이얼로그가 닫히기 전에 경계로 내려갈 수 있다
-    onSettled: (_result, _error, memoId) => {
+    // 기다리면 다이얼로그가 목록을 다시 받을 때까지 닫히지 않는다
+    onSettled: (_result, error, memoId) => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
-      invalidateMemo(queryClient, { memoId });
+      if (error != null) {
+        invalidateMemo(queryClient, { memoId });
+      }
     },
     meta: { errorFeedback: { feature: 'memo', fallbackKey: 'memo:toasts.deleteRetry' } },
   });
@@ -216,12 +234,25 @@ export function useConvertMemoToTodosMutationOptions() {
       toast.success(t('memo:toasts.convertedOne'));
       trackEvent('memo_converted_to_todo', { memo_id: memoId });
     },
+    // 다른 기기에서 지웠거나 이미 할 일로 바꾼 메모는 다시 보내도 없다. 시트를 연 쪽이 메모를 떠난다
+    onError: (error, { memoId }) => {
+      if (isMemoUnavailableError(error)) {
+        removeMemo(queryClient, { memoId });
+        toast.warning(t('memo:toasts.unavailable'));
+      }
+    },
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
       invalidateTodos(queryClient);
     },
-    meta: { errorFeedback: { feature: 'todo', fallbackKey: 'memo:toasts.retryLater' } },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'memo:toasts.retryLater',
+        isHandledByFeature: isMemoUnavailableError,
+      },
+    },
   });
 }
 
@@ -240,7 +271,6 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
-  const toast = useAppToast();
   const { timeZone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
@@ -313,17 +343,19 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
 
       trackEvent('ai_parse_used', { success: false });
       trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
-      haptics.notify('error');
-
       if (gate.promptIfBlockedError(error)) {
-        return;
+        haptics.notify('error');
       }
-
-      toast.error(getUserFacingMessage(error), {
-        fallback: t('ai:suggestions.toasts.retryLater'),
-        description: isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
-      });
     },
-    meta: { errorFeedback: false },
+    meta: {
+      errorFeedback: {
+        feature: 'memo',
+        fallbackKey: 'ai:suggestions.toasts.retryLater',
+        isHandledByFeature: isMemoParseRejectionHandledByFeature,
+        // 서버가 차감하지 않은 실패는 이번 시도가 한도에서 빠지지 않았다고 함께 알린다
+        describe: (error) =>
+          isFreeOfChargeError(error) ? t('subscription:gate.notCharged') : undefined,
+      },
+    },
   });
 }

@@ -1,16 +1,17 @@
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import { toInstant } from '@src/shared/date/instant';
-import { NetworkError, ok } from '@src/shared/errors';
+import { type ApiError, NetworkError, ok, type Result } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createIdGeneratorStub,
-  createLoggerStub,
+  createAppLoggerStub,
   createMemoryDeviceIdStore,
-  createMemoryStorage,
+  createMemoryKeyValueStorage,
   createPendingResponse,
   createPushNotificationGatewayStub,
   createVendorIdGatewayStub,
 } from '@src/testing/core';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import {
   createNotificationApiError,
@@ -29,7 +30,7 @@ const NOW = toInstant('2026-11-12T09:00:00.000Z');
 function setup(
   gateway = createPushNotificationGatewayStub(),
   getTimeZone = () => 'Asia/Seoul',
-  storage = createMemoryStorage(),
+  storage = createMemoryKeyValueStorage(),
   getLanguage = () => 'ko',
 ) {
   const sessionEpoch = createSessionEpoch();
@@ -38,7 +39,7 @@ function setup(
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue({ ok: true, value: { unregistered: true } });
   const registrationRepository = createPushRegistrationRepository(storage);
-  const logger = createLoggerStub();
+  const logger = createAppLoggerStub();
   const service = new PushRegistrationService({
     gateway,
     pushDeviceApi: new PushDeviceApi({ authHttpClient: httpClient, publicHttpClient }),
@@ -270,8 +271,8 @@ describe('PushRegistrationService.report', () => {
         idGenerator: createIdGeneratorStub(),
         platform: 'ios',
       }),
-      registrationRepository: createPushRegistrationRepository(createMemoryStorage()),
-      logger: createLoggerStub(),
+      registrationRepository: createPushRegistrationRepository(createMemoryKeyValueStorage()),
+      logger: createAppLoggerStub(),
       getTimeZone: () => 'Asia/Seoul',
       getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
@@ -359,36 +360,86 @@ describe('PushRegistrationService.report', () => {
 });
 
 describe('PushRegistrationService.requestPermission', () => {
-  it('시스템 창을 띄우고, 바뀐 권한을 바로 보고한다', async () => {
+  setupFakeTimersPerTest();
+
+  it('시스템 창이 닫히면 토큰 발급과 보고를 기다리지 않고 권한을 돌려준 뒤 보고한다', async () => {
     // Given
     const gateway = createPushNotificationGatewayStub({
       requestPermission: jest.fn(async () => createPushPermissionResponse()),
     });
+    const token = Promise.withResolvers<string>();
+    gateway.getToken.mockReturnValueOnce(token.promise);
     const { service, httpClient } = setup(gateway);
 
     // When
     const permission = await service.requestPermission();
+    const reportedBeforeToken = httpClient.put.mock.calls.length > 0;
+    token.resolve('ExponentPushToken[device-123]');
+    await jest.advanceTimersByTimeAsync(0);
 
     // Then
     expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
     expect(permission).toEqual({ status: 'GRANTED', canAskAgain: false });
+    expect(reportedBeforeToken).toBe(false);
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 
-  it('보고가 실패해도 권한 요청 결과는 돌려준다', async () => {
+  it('권한을 돌려준 뒤 가는 중인 보고는 로그아웃 해제가 끝까지 기다린다', async () => {
     // Given
-    const { service, httpClient, logger } = setup();
-    httpClient.put.mockRejectedValue(new Error('offline'));
+    const { service, httpClient } = setup();
+    const put = createPendingResponse(ok(createPushDeviceResponseDto()));
+    httpClient.put.mockReturnValueOnce(put.response);
+    httpClient.delete.mockResolvedValue({ ok: true, value: { message: 'ok' } });
+    await service.requestPermission();
+    await jest.advanceTimersByTimeAsync(0);
 
     // When
-    const permission = await service.requestPermission();
+    const unregistering = service.unregister();
+    await jest.advanceTimersByTimeAsync(0);
+    const deletedBeforeReportSettled = httpClient.delete.mock.calls.length > 0;
+    put.settle();
+    const result = await unregistering;
 
     // Then
-    expect(permission.status).toBe('GRANTED');
-    expect(logger.warn).toHaveBeenCalledWith('notification.push-device.report-failed', {
-      error: 'offline',
-    });
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
+    expect(deletedBeforeReportSettled).toBe(false);
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    {
+      failure: '연결이 끊겨',
+      respond: async (): Promise<Result<unknown, ApiError>> => {
+        throw new Error('offline');
+      },
+      logged: { error: 'offline' },
+    },
+    {
+      failure: '서버가 거절해',
+      respond: async (): Promise<Result<unknown, ApiError>> => ({
+        ok: false,
+        error: createNotificationApiError(),
+      }),
+      logged: { errorCode: 'NOTIFICATION_1001' },
+    },
+  ])(
+    '$failure 보고가 실패해도 권한을 돌려주고 실패를 경고로 남긴다',
+    async ({ respond, logged }) => {
+      // Given
+      const { service, httpClient, logger } = setup();
+      httpClient.put.mockImplementation(respond);
+
+      // When
+      const permission = await service.requestPermission();
+      await jest.advanceTimersByTimeAsync(0);
+
+      // Then
+      expect(permission.status).toBe('GRANTED');
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith('notification.push-device.report-failed', logged);
+    },
+  );
 });
 
 describe('PushRegistrationService.unregister', () => {
@@ -607,7 +658,7 @@ describe('PushRegistrationService.requestRelease', () => {
 
   it('연결이 끊겨 보내지 못한 해제는 앱을 다시 켜도 남아 다음 시도에 보낸다', async () => {
     // Given
-    const storage = createMemoryStorage();
+    const storage = createMemoryKeyValueStorage();
     const before = setup(undefined, undefined, storage);
     await before.service.report();
     before.publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
@@ -627,6 +678,31 @@ describe('PushRegistrationService.requestRelease', () => {
       token: CURRENT_TOKEN,
     });
     expect(await after.registrationRepository.find()).toEqual({
+      reportedToken: null,
+      releaseRequestedAt: null,
+    });
+  });
+
+  it('너무 자주 보내 막히면(429) 해제를 남겨 다음 시도에 다시 보낸다', async () => {
+    // Given
+    const { service, publicHttpClient, registrationRepository } = setup();
+    await service.report();
+    publicHttpClient.post.mockResolvedValueOnce({
+      ok: false,
+      error: createNotificationApiError({ code: 'SYS_0005', status: 429 }),
+    });
+    await service.requestRelease();
+    expect(await registrationRepository.find()).toEqual({
+      reportedToken: CURRENT_TOKEN,
+      releaseRequestedAt: NOW,
+    });
+
+    // When
+    await service.flushRelease();
+
+    // Then
+    expect(publicHttpClient.post).toHaveBeenCalledTimes(2);
+    expect(await registrationRepository.find()).toEqual({
       reportedToken: null,
       releaseRequestedAt: null,
     });

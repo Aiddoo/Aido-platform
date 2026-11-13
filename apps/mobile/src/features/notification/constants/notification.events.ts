@@ -3,7 +3,7 @@ import type { Notification } from '../domains/notification.model';
 import type { PushOpenAppState } from '../domains/push-notification-response.model';
 import type { PushNotification } from '../domains/push-notification.model';
 import type { PushPermission, PushPermissionStep } from '../domains/push-permission.model';
-import type { NotificationDestination } from '../utils/notification-destination';
+import type { NotificationDestination } from '../utils/notification-destination.view-model';
 
 export type PushPermissionPromptSource =
   | 'onboarding'
@@ -29,8 +29,8 @@ declare module '@src/shared/analytics/event-map' {
       type: Notification['type'];
       destination: NotificationDestination['kind'];
     };
-    marketing_push_opted_out: { source: 'push_action' };
-    marketing_push_opted_in: { source: 'completion_sheet' };
+    marketing_push_opted_out: { source: 'push_action' | 'settings' };
+    marketing_push_opted_in: { source: 'completion_sheet' | 'settings' };
     marketing_push_prompt_shown: { source: 'completion_sheet' };
     marketing_push_prompt_dismissed: { source: 'completion_sheet' };
     push_permission_prompt_shown: { source: PushPermissionPromptSource; step: PushPermissionStep };

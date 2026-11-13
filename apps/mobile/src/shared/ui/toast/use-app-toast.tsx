@@ -21,7 +21,7 @@ export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
 /** 문자열은 그대로, Error는 사용자 문구일 때만 쓴다. 파싱 오류 등은 폴백 문구로 바꾼다. */
 function getToastErrorMessage(
   input: string | Error | undefined,
-  fallback = t('common:toast.defaultError'),
+  fallback = t('errors:fallback'),
 ): string {
   if (typeof input === 'string') {
     return input.trim() ? input : fallback;
