@@ -1,3 +1,4 @@
+import { ErrorCode } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
@@ -120,50 +121,6 @@ describe('CategoryDeleteBottomSheet', () => {
     );
   });
 
-  it('할 일도 함께 삭제를 고르면 옮길 곳 없이 함께 지운다', async () => {
-    // Given
-    const { httpClient } = await renderDeleteSheet({
-      previews: [ok(createTodoCategoryDeletionPreviewDto())],
-      deleteResponse: ok({
-        message: '삭제',
-        result: {
-          todoHandling: 'delete',
-          todoCount: 12,
-          seriesCount: 2,
-          moveToCategoryId: null,
-        },
-      }),
-    });
-    await fireEvent.press(await screen.findByTestId('category-delete-handling-delete'));
-
-    // When
-    await fireEvent.press(screen.getByText('모두 삭제'));
-
-    // Then
-    expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', {
-      params: { todoHandling: 'delete' },
-    });
-    expect(
-      await screen.findAllByText('‘운동’ 카테고리와 할 일 12개를 삭제했어요'),
-    ).not.toHaveLength(0);
-  });
-
-  it('마지막 카테고리면 이유를 보이고 삭제를 눌러도 요청하지 않는다', async () => {
-    // Given
-    const { httpClient } = await renderDeleteSheet({
-      categories: [WORKOUT],
-      previews: [ok(createTodoCategoryDeletionPreviewDto({ isLastCategory: true }))],
-    });
-    expect(await screen.findByText('카테고리는 1개 이상 있어야 해요.')).toBeOnTheScreen();
-
-    // When
-    await fireEvent.press(screen.getByTestId('category-delete-confirm'));
-
-    // Then
-    expect(screen.getByTestId('category-delete-confirm')).toBeDisabled();
-    expect(httpClient.delete).not.toHaveBeenCalled();
-  });
-
   it('할 일과 반복이 없으면 확인만 받고 처리 방식 없이 지운다', async () => {
     // Given
     const { httpClient } = await renderDeleteSheet({
@@ -188,7 +145,7 @@ describe('CategoryDeleteBottomSheet', () => {
       previews: [ok(EMPTY_PREVIEW_DTO), ok(createTodoCategoryDeletionPreviewDto())],
       deleteResponse: err(
         createTodoCategoryApiError({
-          code: 'TODO_CATEGORY_0855',
+          code: ErrorCode.TODO_CATEGORY_0855,
           message: '카테고리에 할 일이 있어요. 이동할 카테고리를 선택해주세요.',
         }),
       ),

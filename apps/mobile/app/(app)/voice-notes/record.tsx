@@ -1,4 +1,4 @@
-import { VoiceNoteRecorder } from '@src/features/voice/components/note/voice-note-recorder';
+import { VoiceNoteRecorder } from '@src/features/voice/components/voice-note-recorder/voice-note-recorder';
 import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen-awake';
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';

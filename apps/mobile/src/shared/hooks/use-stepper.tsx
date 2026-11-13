@@ -22,8 +22,6 @@ import {
 } from '../utils/stepper-reducer';
 import { useAndroidBackHandler } from './use-android-back-handler';
 
-export type { StepperContexts } from '../utils/stepper-reducer';
-
 /** 값이나 지금 단계의 context를 받아 다음 context를 만드는 updater */
 type ContextInput<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
   | Contexts[Name]

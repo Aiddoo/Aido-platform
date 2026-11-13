@@ -170,8 +170,7 @@
     "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
     "allDoneDismiss": "오늘은 그만 보기",
     "friendsEmptyTitle": "첫 친구를 초대해보세요",
-    "allDoneTitlePrefix": "오늘 할 일을",
-    "allDoneTitleHighlight": "다 끝냈어요"
+    "allDoneTitle": "오늘 할 일을 <highlight>다 끝냈어요</highlight>"
   },
   "welcome": {
     "friendsTitle": "{{name}}님과 친구가 됐어요",

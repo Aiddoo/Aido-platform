@@ -8,7 +8,6 @@ interface FriendCalendarProps {
   friendId: string;
 }
 
-/** 친구가 공개(PUBLIC)한 완료 현황을 표시하는 캘린더. 틀은 내 캘린더와 같다. */
 export function FriendCalendar({ friendId }: FriendCalendarProps) {
   const [selectedDateKey] = useFeedDateKey();
   const calendar = useFriendCalendarCompletions({

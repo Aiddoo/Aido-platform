@@ -1,5 +1,5 @@
 import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
-import { excludeCategory, findFirstInSortOrder, TodoCategoryPolicy } from './todo-category.model';
+import { findFirstInSortOrder, TodoCategoryPolicy } from './todo-category.model';
 
 const PERSONAL = createTodoCategoryWithCount({ id: 1, name: '개인', sortOrder: 0 });
 const WORK = createTodoCategoryWithCount({ id: 3, name: '업무', sortOrder: 2 });
@@ -101,21 +101,21 @@ describe('TodoCategoryPolicy.canReorder', () => {
   });
 });
 
-describe('TodoCategoryPolicy.getMoveTargets', () => {
-  it('지우는 카테고리만 빼고 나머지를 목록 순서대로 남긴다', () => {
+describe('TodoCategoryPolicy.isMoveTarget', () => {
+  it.each([
+    { title: '다른 카테고리는 옮길 곳이다', category: PERSONAL, expected: true },
+    { title: '지우는 카테고리 자신은 옮길 곳이 아니다', category: WORKOUT, expected: false },
+    {
+      title: '저장 중인 임시 행은 서버 id가 없어 옮길 곳이 아니다',
+      category: createTodoCategoryWithCount({ id: -1, name: '새 카테고리' }),
+      expected: false,
+    },
+  ])('$title', ({ category, expected }) => {
     // When
-    const moveTargets = TodoCategoryPolicy.getMoveTargets(WORKOUT, CATEGORIES);
+    const result = TodoCategoryPolicy.isMoveTarget(category, WORKOUT);
 
     // Then
-    expect(moveTargets).toEqual([PERSONAL, WORK]);
-  });
-
-  it('다른 카테고리가 없으면 옮길 곳이 없다', () => {
-    // When
-    const moveTargets = TodoCategoryPolicy.getMoveTargets(WORKOUT, [WORKOUT]);
-
-    // Then
-    expect(moveTargets).toEqual([]);
+    expect(result).toBe(expected);
   });
 });
 
@@ -158,22 +158,27 @@ describe('TodoCategoryPolicy.findMoveTarget', () => {
     expect(moveTarget).toEqual(PERSONAL);
   });
 
+  it('저장 중인 임시 행을 골랐다고 와도 서버 id가 있는 곳으로 옮긴다', () => {
+    // Given
+    const saving = createTodoCategoryWithCount({ id: -1, name: '새 카테고리', sortOrder: -1 });
+
+    // When
+    const moveTarget = TodoCategoryPolicy.findMoveTarget(
+      WORKOUT,
+      [saving, ...CATEGORIES],
+      saving.id,
+    );
+
+    // Then
+    expect(moveTarget).toEqual(PERSONAL);
+  });
+
   it('다른 카테고리가 없으면 옮길 곳이 없다', () => {
     // When
     const moveTarget = TodoCategoryPolicy.findMoveTarget(WORKOUT, [WORKOUT], null);
 
     // Then
     expect(moveTarget).toBeNull();
-  });
-});
-
-describe('excludeCategory', () => {
-  it('그 id만 빼고 순서를 지킨다', () => {
-    // When
-    const remaining = excludeCategory(CATEGORIES, WORK.id);
-
-    // Then
-    expect(remaining).toEqual([PERSONAL, WORKOUT]);
   });
 });
 

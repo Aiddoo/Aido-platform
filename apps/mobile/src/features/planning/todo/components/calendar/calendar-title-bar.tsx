@@ -5,6 +5,7 @@ import {
   formatCalendarWeekLabel,
 } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -16,6 +17,7 @@ import { PressableFeedback, Tabs } from 'heroui-native';
 import {
   type ComponentProps,
   type ComponentRef,
+  type Ref,
   useEffectEvent,
   useLayoutEffect,
   useRef,
@@ -81,7 +83,7 @@ export function CalendarTitleBar() {
             ref={todayRef}
             onPress={() => setSelectedDateKey(todayKey)}
             hitSlop={8}
-            className="px-2 py-0.5 bg-gray-2 rounded-full"
+            className="rounded-full bg-gray-2 px-2 py-0.5"
           >
             <Text size="e1" weight="medium" shade={7}>
               {t('relativeDay.today')}
@@ -178,7 +180,7 @@ function measureWidth(node: Pick<HostInstance, 'measure'> | null): number | null
 }
 
 /** 이 언어가 지금 보기에서 보일 수 있는 제목을 달마다 쌓아, 묶음 폭이 가장 긴 제목의 폭이다 */
-function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) {
+function CalendarTitleSamples({ ref }: { ref: Ref<ComponentRef<typeof Box>> }) {
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
@@ -205,7 +207,7 @@ function CalendarTitleSamples({ ref }: Pick<ComponentProps<typeof Box>, 'ref'>) 
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className="absolute left-0 top-0 opacity-0"
+      className="absolute top-0 left-0 opacity-0"
     >
       {titles.map((title) => (
         // 헤더보다 길면 줄바꿈 대신 헤더 폭으로 잘려 잰 폭이 짧아지지 않는다
@@ -275,27 +277,52 @@ function CalendarViewModeTrigger({
   );
 }
 
-interface CalendarNavigationProps extends Pick<ComponentProps<typeof HStack>, 'ref'> {
+interface CalendarNavigationProps {
+  ref: Ref<ComponentRef<typeof HStack>>;
   onPrevious: () => void;
   onNext: () => void;
 }
 
 function CalendarNavigation({ ref, onPrevious, onNext }: CalendarNavigationProps) {
   const { t } = useTranslation('common');
+  const fontScaledSize = useFontScaledSize();
+  const [viewMode] = useStoredValue(calendarViewModeStoredValue);
+  const labels = match(viewMode)
+    .with('week', () => ({
+      previous: t('calendar.previousWeek'),
+      next: t('calendar.nextWeek'),
+    }))
+    .with('month', () => ({
+      previous: t('calendar.previousMonth'),
+      next: t('calendar.nextMonth'),
+    }))
+    .exhaustive();
 
   return (
     <HStack ref={ref} gap={4}>
       <IconButton
-        accessibilityLabel={t('calendar.previousMonth')}
-        icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-6" />}
-        className="min-h-0 min-w-0 p-1"
+        accessibilityLabel={labels.previous}
+        icon={
+          <ArrowLeftIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-6"
+          />
+        }
+        className="size-7 min-h-0 min-w-0"
         hitSlop={8}
         onPress={onPrevious}
       />
       <IconButton
-        accessibilityLabel={t('calendar.nextMonth')}
-        icon={<ArrowRightIcon width={20} height={20} colorClassName="text-gray-6" />}
-        className="min-h-0 min-w-0 p-1"
+        accessibilityLabel={labels.next}
+        icon={
+          <ArrowRightIcon
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
+            colorClassName="text-gray-6"
+          />
+        }
+        className="size-7 min-h-0 min-w-0"
         hitSlop={8}
         onPress={onNext}
       />

@@ -2,7 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { NetworkError } from '@src/shared/errors';
 
-import { isNudgeUnavailableError, isSentNudgeListDisabledError } from './todo-nudge.error';
+import { isNudgeUnavailableError } from './todo-nudge.error';
 
 describe('isNudgeUnavailableError', () => {
   it.each([
@@ -14,19 +14,6 @@ describe('isNudgeUnavailableError', () => {
   ])('%s는 다시 시도해도 같은 상태인지: %s', (_case, error, expected) => {
     // When
     const result = isNudgeUnavailableError(error);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('isSentNudgeListDisabledError', () => {
-  it.each([
-    ['꺼짐(NUDGE_1111)', new ApiError(ErrorCode.NUDGE_1111, 'x', 404), true],
-    ['없는 콕(NUDGE_1105)', new ApiError(ErrorCode.NUDGE_1105, 'x', 404), false],
-  ])('%s면 보낸 콕 목록이 꺼진 상태인지: %s', (_case, error, expected) => {
-    // When
-    const result = isSentNudgeListDisabledError(error);
 
     // Then
     expect(result).toBe(expected);

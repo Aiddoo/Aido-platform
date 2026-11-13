@@ -1,3 +1,4 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -5,7 +6,7 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
-import { TodoCategoryPolicy } from '../domains/todo-category.model';
+import { type FilterTodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;
@@ -16,8 +17,8 @@ interface CategoryPickFormProps {
   onSubmit: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
   isLoading?: boolean;
-  /** 고를 수 없는 카테고리(지우는 카테고리의 할 일을 옮길 곳을 고를 때 그 카테고리) */
-  excludedCategoryId?: number;
+  /** 보일 카테고리. 지우는 카테고리의 할 일을 옮길 곳을 고를 때 옮길 수 있는 곳만 남긴다 */
+  filters?: FilterTodoCategory;
 }
 
 export function CategoryPickForm({
@@ -25,19 +26,14 @@ export function CategoryPickForm({
   onSubmit,
   submitLabel,
   isLoading = false,
-  excludedCategoryId,
+  filters,
 }: CategoryPickFormProps) {
   const { t } = useTranslation('todo');
-  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const [localCategoryId, setLocalCategoryId] = useState(defaultValue);
-  const excludedCategory =
-    excludedCategoryId == null
-      ? null
-      : TodoCategoryPolicy.findCategory(categoriesResult.categories, excludedCategoryId);
-  const categories =
-    excludedCategory == null
-      ? categoriesResult.categories
-      : TodoCategoryPolicy.getMoveTargets(excludedCategory, categoriesResult.categories);
+  const fontScaledSize = useFontScaledSize();
+  const {
+    data: { categories },
+  } = useSuspenseQuery(useGetTodoCategoriesQueryOptions({ filters }));
+  const [selectedCategoryId, setSelectedCategoryId] = useState(defaultValue);
 
   return (
     <VStack gap={20}>
@@ -47,11 +43,11 @@ export function CategoryPickForm({
 
       {/* 하나만 고르는 목록이라 스크린 리더에 라디오와 선택 상태로 알린다. 눌림 면은 그대로 둔다 */}
       <RadioGroup
-        value={String(localCategoryId)}
+        value={String(selectedCategoryId)}
         onValueChange={(value) => {
           const category = categories.find(({ id }) => String(id) === value);
           if (category != null) {
-            setLocalCategoryId(category.id);
+            setSelectedCategoryId(category.id);
           }
         }}
         className="gap-2"
@@ -82,11 +78,15 @@ export function CategoryPickForm({
                   contents={<Text size="b3">{category.name}</Text>}
                   right={
                     isSelected ? (
-                      <CheckIcon width={18} height={18} colorClassName="text-main" />
+                      <CheckIcon
+                        width={fontScaledSize(18)}
+                        height={fontScaledSize(18)}
+                        colorClassName="text-main"
+                      />
                     ) : undefined
                   }
                   horizontalPadding="medium"
-                  className="bg-gray-1 rounded-xl dark:bg-gray-2"
+                  className="rounded-xl bg-gray-1 dark:bg-gray-2"
                 />
               </PressableFeedback>
             )}
@@ -97,7 +97,7 @@ export function CategoryPickForm({
       <Button
         size="large"
         testID="category-select-submit"
-        onPress={() => onSubmit(localCategoryId)}
+        onPress={() => onSubmit(selectedCategoryId)}
         isLoading={isLoading}
       >
         {submitLabel}
@@ -117,7 +117,7 @@ CategoryPickForm.Loading = function Loading() {
             left={<Skeleton className="size-2 rounded-full" />}
             contents={<TextSkeleton size="b3" className="w-24" />}
             horizontalPadding="medium"
-            className="bg-gray-1 rounded-xl dark:bg-gray-2"
+            className="rounded-xl bg-gray-1 dark:bg-gray-2"
           />
         ))}
       </VStack>

@@ -1,4 +1,4 @@
-import { VoiceNoteDraftList } from '@src/features/voice/components/note/voice-note-draft-list';
+import { VoiceNoteDraftList } from '@src/features/voice/components/voice-note-draft-list';
 import { QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';
 

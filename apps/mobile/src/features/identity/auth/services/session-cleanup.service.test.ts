@@ -53,15 +53,69 @@ describe('SessionCleanupService', () => {
     ]);
   });
 
-  it('탈퇴 정리는 그 계정의 안내 기록을 지운다', () => {
+  it('탈퇴 뒤 로그아웃 정리는 그 계정의 안내 기록까지 지운다', () => {
     // Given
     const { calls, ports } = createPorts();
+    const service = new SessionCleanupService(ports);
+    service.beforeAccountDeletion('user-1');
 
     // When
-    new SessionCleanupService(ports).afterAccountDeleted('user-1');
+    service.afterSignedOut();
 
     // Then
-    expect(calls).toEqual(['device-data:user-1']);
+    expect(calls.at(-1)).toBe('device-data:user-1');
+  });
+
+  it.each([
+    ['응답을 기다리는 탈퇴', () => undefined, true],
+    [
+      '응답 없이 끝난 탈퇴',
+      (service: SessionCleanupService) => service.afterAccountDeletionUnanswered(),
+      true,
+    ],
+    [
+      '서버가 거절했거나 보내지 못한 탈퇴',
+      (service: SessionCleanupService) => service.afterAccountDeletionRejected(),
+      false,
+    ],
+    [
+      '응답 없이 끝난 뒤 인증 요청이 성공한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterAccountDeletionUnanswered();
+        service.afterSessionConfirmed();
+      },
+      false,
+    ],
+    [
+      '응답을 기다리는 동안에만 인증 요청이 성공한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterSessionConfirmed();
+        service.afterAccountDeletionUnanswered();
+      },
+      true,
+    ],
+    [
+      '응답 없이 끝난 뒤 다시 로그인한 탈퇴',
+      (service: SessionCleanupService) => {
+        service.afterAccountDeletionUnanswered();
+        service.beforeSignIn();
+      },
+      false,
+    ],
+  ])('%s 뒤 세션이 만료되면 초안을 지우는지가 갈린다', (_name, settle, removesDrafts) => {
+    // Given
+    const { calls, ports } = createPorts();
+    const service = new SessionCleanupService(ports);
+    service.beforeAccountDeletion('user-1');
+    settle(service);
+
+    // When
+    service.afterSessionExpired();
+
+    // Then
+    expect(calls.includes('drafts')).toBe(removesDrafts);
+    expect(calls.includes('device-data:user-1')).toBe(removesDrafts);
+    expect(calls.at(-1)).toBe('pushDeviceRelease');
   });
 
   it('세션 만료 정리는 캐시를 지우고 서버에 알리지 못한 이 기기의 푸시 해제를 요청하며 초안과 녹음은 남긴다', () => {

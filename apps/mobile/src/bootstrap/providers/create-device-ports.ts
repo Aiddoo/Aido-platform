@@ -1,6 +1,7 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
 import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
+import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon-gateway';
@@ -138,5 +139,6 @@ export function createDevicePorts(): DevicePorts {
     getTimeZone: getDeviceTimezone,
     // 요청 헤더(Accept-Language)와 같은 값이다
     getLanguage: () => i18n.language,
+    inviteLinkOpenedStore: createInviteLinkOpenedStore(),
   };
 }

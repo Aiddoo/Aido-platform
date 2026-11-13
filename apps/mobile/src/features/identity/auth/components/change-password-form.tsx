@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
 import {
   Controller,
   useController,
@@ -46,8 +45,8 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
     id: 'change-password',
     initial: { step: 'currentPassword' },
   });
-  const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');
+  const changePassword = useMutation(useChangePasswordMutationOptions());
   const newPassword = useController({
     control: form.control,
     name: 'newPassword',
@@ -56,7 +55,7 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
   const { isSubmitting } = useFormState({ control: form.control });
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/settings/profile' });
 
   const submitNewPassword = form.handleSubmit(async (input) => {
     try {
@@ -147,7 +146,7 @@ function CurrentPasswordStep({ title, form, onNext }: CurrentPasswordStepProps) 
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="next"
-                isInvalid={!!error}
+                isInvalid={error != null}
                 errorMessage={resolveValidationMessage(error, {
                   default: 'currentPassword.required',
                   byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'currentPassword.mismatch' },

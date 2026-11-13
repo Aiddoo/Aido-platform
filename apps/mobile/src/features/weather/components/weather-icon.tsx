@@ -1,6 +1,6 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
-import { createStyledIcon } from '@src/shared/ui/icon/create-styled-icon';
+import { createStyledIcon } from '@src/shared/ui';
 import { round } from 'es-toolkit';
 import type { ComponentProps } from 'react';
 import Svg, { Path } from 'react-native-svg';

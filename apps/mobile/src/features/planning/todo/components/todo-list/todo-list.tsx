@@ -37,10 +37,8 @@ import {
 } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 
-import { SubTodoPolicy } from '../../domains/sub-todo.model';
-import { type SubTodo } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, TodoPolicy } from '../../domains/todo.model';
-import { type Todo } from '../../domains/todo.model';
+import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
+import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
@@ -124,12 +122,12 @@ TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
-interface CategoryHeaderProps {
+interface CategoryAddPillProps {
   category: TodoCategoryWithCount;
   date: DateKey;
 }
 
-function CategoryAddPill({ category, date }: CategoryHeaderProps) {
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
@@ -177,7 +175,7 @@ function TodoReorderableList({
     isOptimistic: TodoPolicy.isOptimisticTodo,
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedId,
+        todoId: movedId,
         input: { targetTodoId: targetId, position },
       });
     },
@@ -218,6 +216,7 @@ TodoList.Item = function Item({
   onOpenDetail,
 }: TodoListItemProps) {
   const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
 
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -349,8 +348,14 @@ TodoList.Item = function Item({
           />
           <IconButton
             accessibilityLabel={t('actions.more')}
-            icon={<MoreIcon width={20} height={20} colorClassName="text-gray-5" />}
-            className="min-h-0 min-w-0"
+            icon={
+              <MoreIcon
+                width={fontScaledSize(20)}
+                height={fontScaledSize(20)}
+                colorClassName="text-gray-5"
+              />
+            }
+            className="size-5 min-h-0 min-w-0"
             hitSlop={8}
             onPress={isOptimistic ? undefined : handleActionsPress}
             testID={`todo-more-${todo.id}`}

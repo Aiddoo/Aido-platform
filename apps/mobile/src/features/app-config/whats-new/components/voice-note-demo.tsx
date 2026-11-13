@@ -1,9 +1,9 @@
-import { DigestProgress } from '@src/features/voice/components/note/digest-progress';
-import { DigestScanPreview } from '@src/features/voice/components/note/digest-scan-preview';
-import { KeyPointList } from '@src/features/voice/components/note/key-point-list';
-import { RecognizerWaveform } from '@src/features/voice/components/note/recognizer-waveform';
-import { RecordingTimer } from '@src/features/voice/components/note/recording-timer';
-import { SentenceCaptionList } from '@src/features/voice/components/note/sentence-caption-list';
+import { SentenceCaptionList } from '@src/features/voice/components/sentence-caption-list';
+import { DigestProgress } from '@src/features/voice/components/voice-note-digest/digest-progress';
+import { DigestScanPreview } from '@src/features/voice/components/voice-note-digest/digest-scan-preview';
+import { RecognizerWaveform } from '@src/features/voice/components/voice-note-recorder/recognizer-waveform';
+import { RecordingTimer } from '@src/features/voice/components/voice-note-recorder/recording-timer';
+import { KeyPointList } from '@src/features/voice/components/voice-note-result/key-point-list';
 import type { VoiceNoteSentence } from '@src/features/voice/domains/voice-note.model';
 import {
   type VoiceNoteTab,

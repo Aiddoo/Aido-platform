@@ -51,29 +51,13 @@ describe('parseApiResponse', () => {
     const response = ok({ count: -1 });
     const toPositiveCount = (dto: z.output<typeof schema>) =>
       z.number().positive().parse(dto.count);
-    const logInvalid = jest.fn();
 
     // When
     const parse = () =>
-      parseApiResponse(response, schema, toPositiveCount, '[Test] Invalid response', logInvalid);
+      parseApiResponse(response, schema, toPositiveCount, '[Test] Invalid response');
 
     // Then
     expect(parse).toThrow(ParseError);
     expect(parse).toThrow(/^\[Test\] Invalid response: /);
-    expect(logInvalid).toHaveBeenCalled();
-  });
-
-  it('응답이 계약과 다르면 던지기 전에 검증 메시지를 로그 함수로 넘긴다', () => {
-    // Given
-    const response = ok({ count: 'one' });
-    const logInvalid = jest.fn();
-
-    // When
-    const parse = () =>
-      parseApiResponse(response, schema, toCount, '[Test] Invalid response', logInvalid);
-
-    // Then
-    expect(parse).toThrow(ParseError);
-    expect(logInvalid).toHaveBeenCalledTimes(1);
   });
 });

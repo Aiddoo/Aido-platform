@@ -4,7 +4,7 @@ import { Box } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
+import { isBeyondRepeatHorizon, isMonthBeyondRepeatHorizon } from '../../domains/todo-repeat.model';
 import { useCalendarCompletions } from '../../hooks/use-calendar-completions';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';
@@ -20,8 +20,8 @@ export function MyCalendar({
   const calendar = useCalendarCompletions({ dateKey: selectedDateKey });
   // 월 보기는 그 달이 일부라도 넘어가면(점이 끊겨 보인다), 주 보기는 고른 날이 넘어가면 안내한다
   const isHorizonHintVisible = match(viewMode)
-    .with('month', () => TodoRepeatPolicy.isMonthBeyondRepeatHorizon(selectedDateKey, todayKey))
-    .with('week', () => TodoRepeatPolicy.isBeyondRepeatHorizon(selectedDateKey, todayKey))
+    .with('month', () => isMonthBeyondRepeatHorizon(selectedDateKey, todayKey))
+    .with('week', () => isBeyondRepeatHorizon(selectedDateKey, todayKey))
     .exhaustive();
 
   const status = match({ isError: calendar.isError, isHorizonHintVisible })

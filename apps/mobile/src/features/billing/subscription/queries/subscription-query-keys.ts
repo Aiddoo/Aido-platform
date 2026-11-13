@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import type { OfferingsAvailability } from '../utils/offerings-availability.view-model';
+import type { OfferingsAvailability } from '../domains/subscription-failure.model';
 
 export const SUBSCRIPTION_QUERY_KEYS = {
   all: ['subscription'] as const,

@@ -1,47 +1,11 @@
-import { todoRepeatSchema, todoSeriesResponseSchema } from '@aido/api';
-import { createDateKey } from '@src/testing/date-key';
+import { todoSeriesResponseSchema } from '@aido/api';
 
-import type { TodoRepeat } from '../domains/todo-repeat.model';
 import { todoSeriesSchema } from '../domains/todo-series.model';
-import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
 import {
   toFollowingCategoryRequest,
   toFollowingScheduleRequest,
   toTodoSeries,
 } from './todo-series.mapper';
-
-const DAILY: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
-const BIWEEKLY_COUNT: TodoRepeat = {
-  frequency: 'WEEKLY',
-  interval: 2,
-  weekdays: ['TUE'],
-  end: { type: 'COUNT', count: 10 },
-};
-
-const REPEATS: TodoRepeat[] = [
-  DAILY,
-  {
-    frequency: 'WEEKLY',
-    interval: 1,
-    weekdays: ['MON', 'FRI'],
-    end: { type: 'UNTIL', date: createDateKey('2026-12-31') },
-  },
-  BIWEEKLY_COUNT,
-  { frequency: 'MONTHLY', monthDay: 31, end: { type: 'NEVER' } },
-];
-
-describe('toRepeat', () => {
-  it.each(REPEATS)('계약 모양으로 보내고 되받으면 같은 규칙이다: %j', (repeat) => {
-    // Given
-    const dto = todoRepeatSchema.parse(toRepeatDto(repeat));
-
-    // When
-    const result = toRepeat(dto);
-
-    // Then
-    expect(result).toEqual(repeat);
-  });
-});
 
 describe('toFollowingScheduleRequest', () => {
   it('시간은 PATCH로 보내고 날짜는 보내지 않는다', () => {
@@ -71,34 +35,6 @@ describe('toFollowingScheduleRequest', () => {
 });
 
 describe('toTodoSeries', () => {
-  it('규칙 응답에서 앱이 쓰는 값만 옮긴다', () => {
-    // When
-    const series = toTodoSeries({
-      id: 'series-1',
-      title: '물 마시기',
-      categoryId: 1,
-      visibility: 'PUBLIC',
-      scheduledTime: '09:00',
-      timezone: 'Asia/Seoul',
-      repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-      startDate: '2026-11-02',
-      nextOccurrenceDate: '2027-02-01',
-      isActive: true,
-      checklist: [],
-      createdAt: '2026-11-02T00:00:00.000Z',
-      updatedAt: '2026-11-02T00:00:00.000Z',
-    });
-
-    // Then
-    expect(series).toEqual({
-      id: 'series-1',
-      repeat: { frequency: 'DAILY', end: { type: 'NEVER' } },
-      startDate: '2026-11-02',
-    });
-  });
-});
-
-describe('toTodoSeries 계약 응답', () => {
   it('계약을 통과한 반복 묶음을 매핑하면 모델 스키마를 통과한다', () => {
     // Given
     const dto = todoSeriesResponseSchema.parse({

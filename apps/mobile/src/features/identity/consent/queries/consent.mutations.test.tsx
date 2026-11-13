@@ -3,12 +3,14 @@ import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  respondByPath,
 } from '@src/testing/core';
-import { renderScreen } from '@src/testing/render';
+import { renderScreenHook } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react-native';
 
@@ -21,34 +23,28 @@ import {
   useUpdateMarketingPushConsentMutationOptions,
 } from './consent.mutations';
 
-async function renderMarketing(httpClient = createHttpClientStub()) {
+async function renderMarketing(
+  httpClient = createHttpClientStub(),
+  analytics = createAnalyticsStub(),
+) {
   const queryClient = createTestQueryClient();
   queryClient.setQueryData(
     CONSENT_QUERY_KEYS.detail(),
     createConsent({ marketingAgreedAt: null, marketingPushAgreedAt: null }),
   );
-  let marketing: ReturnType<typeof useMarketing> | undefined;
-  let marketingPush: ReturnType<typeof useMarketingPush> | undefined;
-  function useMarketing() {
-    return useMutation(useUpdateMarketingConsentMutationOptions());
-  }
-  function useMarketingPush() {
-    return useMutation(useUpdateMarketingPushConsentMutationOptions());
-  }
-  function Capture() {
-    marketing = useMarketing();
-    marketingPush = useMarketingPush();
-    return null;
-  }
-  await renderScreen(<Capture />, {
-    di: createTestDi({ ports: { httpClient, queryClient } }),
-    withLocalDate: true,
-  });
+  const { result } = await renderScreenHook(
+    () => ({
+      marketing: useMutation(useUpdateMarketingConsentMutationOptions()),
+      marketingPush: useMutation(useUpdateMarketingPushConsentMutationOptions()),
+    }),
+    { di: createTestDi({ ports: { httpClient, queryClient, analytics } }), withLocalDate: true },
+  );
 
   return {
     cached: () => queryClient.getQueryData<Consent>(CONSENT_QUERY_KEYS.detail()),
-    updateMarketing: (agreed = true) => marketing?.mutateAsync({ agreed }),
-    updateMarketingPush: () => marketingPush?.mutateAsync({ agreed: true }),
+    updateMarketing: (agreed = true) => result.current.marketing.mutateAsync({ agreed }),
+    updateMarketingPush: (agreed = true) =>
+      result.current.marketingPush.mutateAsync({ agreed, source: 'settings' }),
   };
 }
 
@@ -128,6 +124,41 @@ describe('마케팅 수신 동의 결과 알림', () => {
   });
 });
 
+describe('마케팅 수신 동의 분석', () => {
+  it.each([
+    ['마케팅 정보 수신 동의', 'marketing', true, 'marketing_opted_in'],
+    ['마케팅 정보 수신 철회', 'marketing', false, 'marketing_opted_out'],
+    ['광고성 푸시 동의', 'marketingPush', true, 'marketing_push_opted_in'],
+    ['광고성 푸시 철회', 'marketingPush', false, 'marketing_push_opted_out'],
+  ] as const)(
+    '설정에서 바꾼 %s를 서버가 기록하면 설정에서 바꿨다고 한 번 센다',
+    async (_name, consent, agreed, eventName) => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.patch.mockImplementation(
+        respondByPath({
+          'v1/auth/consent/marketing': ok(createUpdateMarketingConsentDto()),
+          'v1/auth/consent/marketing-push': ok({
+            marketingPushAgreedAt: '2026-02-01T00:00:00.000Z',
+            marketingPushWithdrawnAt: null,
+          }),
+        }),
+      );
+      const analytics = createAnalyticsStub();
+      const { updateMarketing, updateMarketingPush } = await renderMarketing(httpClient, analytics);
+
+      // When
+      await act(async () => {
+        await (consent === 'marketing' ? updateMarketing(agreed) : updateMarketingPush(agreed));
+      });
+
+      // Then
+      expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+      expect(analytics.trackEvent).toHaveBeenCalledWith(eventName, { source: 'settings' });
+    },
+  );
+});
+
 describe('마케팅 수신 동의를 연달아 바꿈', () => {
   it('켜기 응답이 끄기보다 먼저 와도 마지막에 고른 꺼짐을 지킨다', async () => {
     // Given
@@ -182,20 +213,14 @@ describe('AI 데이터 제공 동의 저장 실패', () => {
       aiDataSharingConsentVersion: null,
     });
     queryClient.setQueryData(CONSENT_QUERY_KEYS.detail(), before);
-    let updateMarketing: ((agreed: boolean) => Promise<unknown>) | undefined;
-    let updateAi: ((agreed: boolean) => Promise<unknown>) | undefined;
-    function Capture() {
-      const marketingMutation = useMutation(useUpdateMarketingConsentMutationOptions());
-      const aiMutation = useMutation(useUpdateAiDataSharingConsentMutationOptions());
-      updateMarketing = (agreed) => marketingMutation.mutateAsync({ agreed });
-      updateAi = (agreed) => aiMutation.mutateAsync({ agreed });
-      return null;
-    }
-    await renderScreen(<Capture />, {
-      di: createTestDi({ ports: { httpClient, queryClient } }),
-      withLocalDate: true,
-    });
-    const marketingResult = updateMarketing?.(true);
+    const { result } = await renderScreenHook(
+      () => ({
+        marketing: useMutation(useUpdateMarketingConsentMutationOptions()),
+        ai: useMutation(useUpdateAiDataSharingConsentMutationOptions()),
+      }),
+      { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    );
+    const marketingResult = result.current.marketing.mutateAsync({ agreed: true });
     await waitFor(() =>
       expect(
         queryClient.getQueryData(CONSENT_QUERY_KEYS.detail())?.marketingAgreedAt,
@@ -204,7 +229,7 @@ describe('AI 데이터 제공 동의 저장 실패', () => {
 
     // When
     await act(async () => {
-      await updateAi?.(true).catch(() => undefined);
+      await result.current.ai.mutateAsync({ agreed: true }).catch(() => undefined);
     });
 
     // Then
