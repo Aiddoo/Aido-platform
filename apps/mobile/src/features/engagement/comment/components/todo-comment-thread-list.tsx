@@ -36,7 +36,14 @@ import {
 import { noop, range } from 'es-toolkit';
 import { useNavigation } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
-import { type ComponentProps, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ComponentProps,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -129,6 +136,7 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
     ),
   );
   const isHighlightActive = useScrollToAnchor({ threads, anchor });
+  useScrollToTopOnSortChange(sort);
   const renderItem = useCallback(
     ({ item }: { item: TodoCommentThread }) => (
       <ThreadRow thread={item} anchor={anchor} isHighlightActive={isHighlightActive} />
@@ -140,7 +148,8 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
     <InfiniteList
       {...listProps}
       ref={listRef}
-      key={`${todoId}:${sort}:${comment ?? ''}`}
+      // 알림으로 연 댓글이 바뀌면 새 위치로 처음부터 그린다. 정렬은 미리 받은 목록이라 다시 마운트하지 않는다(FlashList가 다시 재는 동안 행이 빈다)
+      key={`${todoId}:${comment ?? ''}`}
       data={threads}
       extraData={isHighlightActive ? anchor : null}
       keyExtractor={getThreadKey}
@@ -492,6 +501,23 @@ function useSortChange() {
     });
 
   return { isPending: prefetch.isPending, prefetchThenCommit };
+}
+
+/**
+ * 정렬을 바꾸면 새 순서를 맨 위부터 보인다. 목록을 다시 마운트하지 않아 FlashList가 보던 첫 행의 자리를 지키려 스크롤을 옮기므로,
+ * 그 보정(FlashList의 layout effect)이 끝난 같은 커밋에서 맨 위로 올린다
+ */
+function useScrollToTopOnSortChange(sort: TodoCommentSort) {
+  const { listRef } = useTodoCommentReveal();
+  const shownSortRef = useRef(sort);
+
+  useLayoutEffect(() => {
+    if (shownSortRef.current === sort) {
+      return;
+    }
+    shownSortRef.current = sort;
+    listRef.current?.scrollToTop({ animated: false });
+  }, [listRef, sort]);
 }
 
 /**

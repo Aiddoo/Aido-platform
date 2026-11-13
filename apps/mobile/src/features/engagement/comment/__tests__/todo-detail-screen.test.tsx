@@ -599,6 +599,82 @@ describe('TodoDetailRoute', () => {
     });
   });
 
+  describe('댓글 정렬', () => {
+    const POPULAR_COMMENT_ID = 'ckcomment0002';
+
+    // 정렬 메뉴는 누른 자리를 재야 열린다. 테스트에는 레이아웃이 없어 자리를 준다
+    beforeEach(() => {
+      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
+        if (typeof callback === 'function') {
+          callback(0, 0, 32, 24, 300, 200);
+        }
+      });
+    });
+
+    afterEach(() => {
+      jest.mocked(View.prototype.measure).mockReset();
+    });
+
+    function toThreadItem(comment: typeof COMMENT_DTO) {
+      return {
+        comment,
+        previewReply: null,
+        replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
+      };
+    }
+
+    it('인기순으로 바꾸면 새 정렬을 미리 받은 뒤 보던 목록을 다시 마운트하지 않고 바꾼다', async () => {
+      // Given
+      const popularComment = { ...COMMENT_DTO, id: POPULAR_COMMENT_ID, content: '하트 많은 댓글' };
+      const httpClient = createHttpClientStub();
+      const respond = respondByPath({
+        'v1/auth/me': ok(createCurrentUserDto({ userId: USER_ID })),
+        'v1/auth/preference': ok(createPreferenceDto()),
+        [`v1/todos/${TODO_ID}/details`]: ok(createDetailsDto()),
+      });
+      httpClient.get.mockImplementation(async (path, config) => {
+        if (path !== `v2/todos/${TODO_ID}/comments`) {
+          return respond(path);
+        }
+        const isPopular = config?.params?.sort === 'POPULAR';
+        return ok({
+          items: isPopular
+            ? [toThreadItem(popularComment), toThreadItem(COMMENT_DTO)]
+            : [toThreadItem(COMMENT_DTO), toThreadItem(popularComment)],
+          pagination: PAGINATION,
+          anchor: null,
+        });
+      });
+      createRouteParamsFake({ todoId: String(TODO_ID) });
+      await renderScreen(<TodoDetailRoute />, {
+        di: createTestDi({ ports: { httpClient } }),
+        withLocalDate: true,
+        withOverlay: true,
+      });
+      const shownRow = await screen.findByTestId(`todo-comment-thread-${COMMENT_ID}`);
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: '댓글 정렬 기준, 최신순' }));
+      // 메뉴 항목은 그려진 자리를 재야 눌린다
+      const popularItem = await screen.findByRole('menuitem', { name: '인기순' });
+      await fireEvent(popularItem, 'layout', {
+        nativeEvent: { layout: { x: 0, y: 240, width: 200, height: 44 } },
+      });
+      await fireEvent.press(popularItem);
+
+      // Then
+      expect(
+        await screen.findByRole('button', { name: '댓글 정렬 기준, 인기순' }),
+      ).toBeOnTheScreen();
+      expect(httpClient.get).toHaveBeenCalledWith(`v2/todos/${TODO_ID}/comments`, {
+        params: expect.objectContaining({ sort: 'POPULAR' }),
+        signal: expect.anything(),
+      });
+      expect(screen.queryByTestId('todo-comment-thread-list-loading')).toBeNull();
+      expect(screen.getByTestId(`todo-comment-thread-${COMMENT_ID}`)).toBe(shownRow);
+    });
+  });
+
   describe('할 일 상세와 차단', () => {
     it('보던 할 일의 주인을 차단하면 다시 받아 본문 대신 볼 수 없음 안내를 보인다', async () => {
       // Given
