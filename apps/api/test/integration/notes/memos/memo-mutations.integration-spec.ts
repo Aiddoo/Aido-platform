@@ -174,8 +174,8 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
 
     // When
     const outcomes = await contend(
-      () => create.execute({ userId, content: "첫 번째 새 메모" }),
-      () => create.execute({ userId, content: "두 번째 새 메모" }),
+      () => create.execute({ userId, content: "첫 번째 새 메모", idempotencyKey: null }),
+      () => create.execute({ userId, content: "두 번째 새 메모", idempotencyKey: null }),
     );
     const rows = await client
       .select({ sortOrder: memo.sortOrder })
@@ -190,6 +190,43 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     });
     expect(rows).toHaveLength(MEMO_LIMITS.MAX_PER_USER);
     expect(new Set(rows.map((row) => row.sortOrder)).size).toBe(rows.length);
+  });
+
+  it("늦게 닿은 첫 생성과 같은 키의 재시도가 겹쳐도 메모는 하나이고 둘 다 그 메모를 받는다", async () => {
+    // Given
+    const create = context.module.get(CreateMemoUseCase);
+    const command = { userId, content: "시간 초과된 메모", idempotencyKey: "memo-create-1" };
+
+    // When
+    const outcomes = await contend(
+      () => create.execute(command),
+      () => create.execute(command),
+    );
+    const rows = await client.select({ id: memo.id }).from(memo).where(eq(memo.userId, userId));
+
+    // Then
+    const createdIds = outcomes.map((outcome) =>
+      outcome.status === "fulfilled" ? outcome.value.id.value : null,
+    );
+    expect(rows).toHaveLength(1);
+    expect(createdIds).toEqual([rows.at(0)?.id, rows.at(0)?.id]);
+  });
+
+  it("같은 키로 글이 다른 저장은 MEMO_2004이고 메모는 처음 하나다", async () => {
+    // Given
+    const create = context.module.get(CreateMemoUseCase);
+    await create.execute({ userId, content: "처음 글", idempotencyKey: "memo-create-2" });
+
+    // When
+    const result = create.execute({ userId, content: "고친 글", idempotencyKey: "memo-create-2" });
+
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.MEMO_2004 });
+    const rows = await client
+      .select({ content: memo.content })
+      .from(memo)
+      .where(eq(memo.userId, userId));
+    expect(rows).toEqual([{ content: "처음 글" }]);
   });
 
   it("동일 메모를 동일 위치로 동시 재정렬해도 두 요청 이후 순서가 중복되지 않는다", async () => {
@@ -284,12 +321,16 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     // Given
     const create = context.module.get(CreateMemoUseCase);
     const release = await holdListLock();
-    const blocked = create.execute({ userId, content: "대기 중 메모" });
+    const blocked = create.execute({ userId, content: "대기 중 메모", idempotencyKey: null });
 
     // When
     try {
       await waitForBlockedRequests(1);
-      const created = await create.execute({ userId: otherUserId, content: "다른 사용자 메모" });
+      const created = await create.execute({
+        userId: otherUserId,
+        content: "다른 사용자 메모",
+        idempotencyKey: null,
+      });
 
       // Then
       expect(created.toPrimitives()).toMatchObject({

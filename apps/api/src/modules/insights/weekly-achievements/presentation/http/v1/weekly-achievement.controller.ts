@@ -89,7 +89,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 ### 응답 필드
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| \`items[].weekLabel\` | string | 주차 라벨 (예: 3월 2주차) |
+| \`items[].weekLabel\` | string | 주차 라벨 (예: 3월 2주차, 올해가 아닌 주는 2025년 12월 1주차) |
 | \`items[].dateRange\` | object | 해당 주의 월~일 날짜 범위 |
 | \`items[].completionRate\` | number | 완료율 (0-100%) |
 | \`summary.currentStreak\` | number | 현재 연속 달성 주 |
@@ -154,11 +154,11 @@ GET /weekly-achievements/2026/10
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
     @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    const achievement = await this.#readWeeklyAchievement.execute({
+    const { achievement, localToday } = await this.#readWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,
     });
-    return toWeeklyAchievementResponse(achievement, locale ?? DEFAULT_LOCALE);
+    return toWeeklyAchievementResponse(achievement, locale ?? DEFAULT_LOCALE, localToday);
   }
 }

@@ -12,8 +12,8 @@ interface RevealedFieldProps {
 export function RevealedField({ onRevealed, children }: RevealedFieldProps) {
   return (
     <Animated.View
-      entering={FadeInUp.duration(ANIMATION.duration.slow)
-        .delay(ANIMATION.delay.short)
+      entering={FadeInUp.duration(ANIMATION.durationMs.slow)
+        .delay(ANIMATION.delayMs.short)
         .withCallback((finished) => {
           'worklet';
           if (finished) {

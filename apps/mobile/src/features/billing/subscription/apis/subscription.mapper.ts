@@ -1,5 +1,4 @@
 import type {
-  PurchaseStatus,
   PurchaseOffering,
   PurchasePackage,
   PurchasePackageType,
@@ -8,7 +7,6 @@ import type {
 import { type PlanType, toPlanType } from '@src/shared/domains/plan-type.model';
 import { match } from 'ts-pattern';
 
-import { type CustomerInfo, customerInfoSchema } from '../domains/customer-info.model';
 import {
   type FreeTrial,
   type SubscriptionOffering,
@@ -66,8 +64,4 @@ export function toSubscriptionOffering(offering: PurchaseOffering): Subscription
     identifier: offering.identifier,
     plans: offering.packages.flatMap((storePackage) => toSubscriptionPlan(storePackage) ?? []),
   };
-}
-
-export function toCustomerInfo(dto: PurchaseStatus): CustomerInfo {
-  return customerInfoSchema.parse(dto);
 }

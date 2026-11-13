@@ -1,5 +1,6 @@
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createPendingResponse, createTestQueryClient } from '@src/testing/core';
+import { createDateKey } from '@src/testing/date-key';
 import { QueryObserver, type QueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 
@@ -8,11 +9,13 @@ import type { DailyCompletionsResult } from '../domains/daily-completion.model';
 import type { Todo, TodoListResult, TodoSummary } from '../domains/todo.model';
 import {
   getCachedTodoDateSpan,
-  invalidateFeedTodos,
+  getTodoSummaryRefetchInterval,
+  invalidateCategorizedTodos,
   invalidateTodoDependentQueries,
   invalidateTodos,
   invalidateTodoSummaries,
   settleTodoWrite,
+  shouldPersistTodosByDate,
   syncDailyCompletionWithList,
   withTodoAdded,
   withTodoCompleted,
@@ -25,10 +28,10 @@ import {
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
-const DAY = '2026-07-14';
-const NEXT_DAY = '2026-07-15';
-const WEEK = { startDate: '2026-07-13', endDate: '2026-07-19' };
-const NEXT_WEEK = { startDate: '2026-07-20', endDate: '2026-07-26' };
+const DAY = createDateKey('2026-07-14');
+const NEXT_DAY = createDateKey('2026-07-15');
+const WEEK = { startDate: createDateKey('2026-07-13'), endDate: createDateKey('2026-07-19') };
+const NEXT_WEEK = { startDate: createDateKey('2026-07-20'), endDate: createDateKey('2026-07-26') };
 
 const toList = (todos: Todo[]): TodoListResult => ({ todos, hasNext: false, nextCursor: null });
 const toCompletions = (range: typeof WEEK): DailyCompletionsResult => ({
@@ -37,7 +40,7 @@ const toCompletions = (range: typeof WEEK): DailyCompletionsResult => ({
   dateRange: range,
 });
 const toSummary = (date: string): TodoSummary => ({
-  date,
+  date: createDateKey(date),
   totalTodos: 0,
   completedTodos: 0,
   completionRate: 0,
@@ -50,367 +53,487 @@ function isInvalidated(client: QueryClient, queryKey: readonly unknown[]) {
   return client.getQueryState(queryKey)?.isInvalidated === true;
 }
 
-describe('목록 updater', () => {
-  const first = createParentTodo({ id: 1 });
-  const second = createParentTodo({ id: 2 });
+describe('todo-cache', () => {
+  describe('목록 updater', () => {
+    const first = createParentTodo({ id: 1 });
+    const second = createParentTodo({ id: 2 });
 
-  it('더하면 끝에 붙고 원래 목록은 바뀌지 않는다', () => {
-    // Given
-    const list = toList([first]);
+    it('더하면 끝에 붙고 원래 목록은 바뀌지 않는다', () => {
+      // Given
+      const list = toList([first]);
 
-    // When
-    const next = withTodoAdded(list, second);
+      // When
+      const next = withTodoAdded(list, second);
 
-    // Then
-    expect(next.todos.map((todo) => todo.id)).toEqual([1, 2]);
-    expect(list.todos).toHaveLength(1);
-  });
-
-  it('지우거나 고치면 그 할 일만 바뀐다', () => {
-    // Given
-    const list = toList([first, second]);
-
-    // When
-    const removed = withTodoRemoved(list, 1);
-    const updated = withTodoUpdated(list, 2, (todo) => ({ ...todo, completed: true }));
-
-    // Then
-    expect(removed.todos).toEqual([second]);
-    expect(updated.todos[0]).toBe(first);
-    expect(updated.todos[1]?.completed).toBe(true);
-  });
-
-  it('되돌리면 빠진 할 일은 원래 자리로, 남은 할 일은 값만 돌아온다', () => {
-    // Given
-    const list = toList([second]);
-    const changed = toList([{ ...first, completed: true }, second]);
-
-    // When
-    const reinserted = withTodoRestored(list, { todo: first, index: 0 });
-    const reverted = withTodoRestored(changed, { todo: first, index: 0 });
-
-    // Then
-    expect(reinserted.todos).toEqual([first, second]);
-    expect(reverted.todos).toEqual([first, second]);
-  });
-
-  it.each([
-    {
-      title: '만들기 응답은 임시 행을 서버 행으로 바꾼다',
-      todos: [first, createParentTodo({ id: -7 })],
-      expectedIds: [1, 2],
-    },
-    {
-      title: '응답 전에 다시 받아 임시 행이 사라졌으면 서버 행을 끝에 붙인다',
-      todos: [first],
-      expectedIds: [1, 2],
-    },
-    {
-      title: '다시 받은 목록에 이미 서버 행이 있으면 한 번만 둔다',
-      todos: [first, second],
-      expectedIds: [1, 2],
-    },
-  ])('$title', ({ todos, expectedIds }) => {
-    // Given
-    const list = toList(todos);
-
-    // When
-    const next = withTodoSaved(list, -7, second);
-
-    // Then
-    expect(next.todos.map((todo) => todo.id)).toEqual(expectedIds);
-    expect(next.todos.at(-1)).toBe(second);
-  });
-
-  it('개요는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {
-    // Given
-    const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
-
-    // When
-    const created = withTodoCreated(overview);
-    const completed = withTodoCompleted(overview);
-
-    // Then
-    expect(created).toBe(overview);
-    expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true, hasActiveRepeat: false });
-  });
-});
-
-describe('캐시에서 할 일 찾기', () => {
-  it('알림으로 연 상세처럼 그날 목록이 없으면 상세의 여러 날 기간으로 달력 범위를 고른다', () => {
-    // Given
-    const queryClient = createTestQueryClient();
-    const multiDay = createParentTodo({ id: 7, startDate: DAY, endDate: '2026-07-22' });
-    queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
-      todo: multiDay,
-      owner: { id: 'u', name: null, profileImage: null },
-      permissions: { canEdit: true, canComment: true, canNudge: false },
-      metrics: { viewCount: 0, commentCount: 0 },
+      // Then
+      expect(next.todos.map((todo) => todo.id)).toEqual([1, 2]);
+      expect(list.todos).toHaveLength(1);
     });
 
-    // When
-    const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
+    it('지우거나 고치면 그 할 일만 바뀐다', () => {
+      // Given
+      const list = toList([first, second]);
 
-    // Then
-    expect(span).toEqual({ startDate: DAY, endDate: '2026-07-22' });
-  });
+      // When
+      const removed = withTodoRemoved(list, 1);
+      const updated = withTodoUpdated(list, 2, (todo) => ({ ...todo, completed: true }));
 
-  it('어디에도 없으면 보고 있는 하루로 본다', () => {
-    // Given
-    const queryClient = createTestQueryClient();
-
-    // When
-    const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
-
-    // Then
-    expect(span).toEqual({ startDate: NEXT_DAY, endDate: NEXT_DAY });
-  });
-});
-
-describe('할 일 쓰기 정리', () => {
-  function createSeededClient() {
-    const client = createTestQueryClient();
-    client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
-    client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }), toList([]));
-    client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), toCompletions(WEEK));
-    client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), toCompletions(NEXT_WEEK));
-    client.setQueryData(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY }), toSummary(DAY));
-    client.setQueryData(
-      TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY }),
-      toSummary(NEXT_DAY),
-    );
-    return client;
-  }
-
-  it('하루짜리를 다 불러온 목록에서 고쳤으면 그 목록·달력은 그대로 두고 그날 위젯 요약만 낡음으로 표시한다', async () => {
-    // Given
-    const client = createSeededClient();
-
-    // When
-    await settleTodoWrite(client, {
-      date: DAY,
-      todoId: 1,
-      span: { startDate: DAY, endDate: DAY },
-      isCompletionAffected: true,
-      hasFailed: false,
-      ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      // Then
+      expect(removed.todos).toEqual([second]);
+      expect(updated.todos[0]).toBe(first);
+      expect(updated.todos[1]?.completed).toBe(true);
     });
 
-    // Then
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(false);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(false);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY }))).toBe(true);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY }))).toBe(
-      false,
-    );
-  });
+    it('되돌리면 빠진 할 일은 원래 자리로, 남은 할 일은 값만 돌아온다', () => {
+      // Given
+      const list = toList([second]);
+      const changed = toList([{ ...first, completed: true }, second]);
 
-  it('여러 날 할 일은 기간 안의 다른 날짜 목록과 겹치는 달력 범위만 낡음으로 표시한다', async () => {
-    // Given
-    const client = createSeededClient();
+      // When
+      const reinserted = withTodoRestored(list, { todo: first, index: 0 });
+      const reverted = withTodoRestored(changed, { todo: first, index: 0 });
 
-    // When
-    await settleTodoWrite(client, {
-      date: DAY,
-      span: { startDate: DAY, endDate: NEXT_DAY },
-      isCompletionAffected: true,
-      hasFailed: false,
-      ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      // Then
+      expect(reinserted.todos).toEqual([first, second]);
+      expect(reverted.todos).toEqual([first, second]);
     });
 
-    // Then
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(true);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(false);
-  });
+    it.each([
+      {
+        title: '만들기 응답은 임시 행을 서버 행으로 바꾼다',
+        todos: [first, createParentTodo({ id: -7 })],
+        expectedIds: [1, 2],
+      },
+      {
+        title: '응답 전에 다시 받아 임시 행이 사라졌으면 서버 행을 끝에 붙인다',
+        todos: [first],
+        expectedIds: [1, 2],
+      },
+      {
+        title: '다시 받은 목록에 이미 서버 행이 있으면 한 번만 둔다',
+        todos: [first, second],
+        expectedIds: [1, 2],
+      },
+    ])('$title', ({ todos, expectedIds }) => {
+      // Given
+      const list = toList(todos);
 
-  it('실패하면 고친 목록·상세·그날 달력까지 서버 값으로 다시 맞춘다', async () => {
-    // Given
-    const client = createSeededClient();
-    const detailKey = TODO_QUERY_KEYS.detail({ todoId: 1 });
-    client.getQueryCache().build(client, { queryKey: detailKey });
+      // When
+      const next = withTodoSaved(list, -7, second);
 
-    // When
-    await settleTodoWrite(client, {
-      date: DAY,
-      todoId: 1,
-      span: { startDate: DAY, endDate: DAY },
-      isCompletionAffected: true,
-      hasFailed: true,
-      ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      // Then
+      expect(next.todos.map((todo) => todo.id)).toEqual(expectedIds);
+      expect(next.todos.at(-1)).toBe(second);
     });
 
-    // Then
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
-    expect(isInvalidated(client, detailKey)).toBe(true);
-    expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
-  });
+    it('개요는 이미 참이면 같은 객체를 돌려 구독자가 다시 그리지 않는다', () => {
+      // Given
+      const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
 
-  it('다른 쓰기가 진행 중이면 낡음만 표시하고 화면에 붙은 조회도 다시 받지 않는다', async () => {
-    // Given
-    const client = createSeededClient();
-    const queryFn = jest.fn(async () => toList([]));
-    const unsubscribe = new QueryObserver(client, {
-      queryKey: TODO_QUERY_KEYS.listByDate({ date: DAY }),
-      queryFn,
-      staleTime: Infinity,
-    }).subscribe(noop);
-    const otherWrite = createPendingResponse(undefined);
-    const running = client
-      .getMutationCache()
-      .build(client, {
-        mutationKey: TODO_MUTATION_KEYS.listWrites(),
-        mutationFn: () => otherWrite.response,
-      })
-      .execute(undefined);
-    // 이 쓰기 자신도 진행 중으로 센다
-    const self = createPendingResponse(undefined);
-    const selfRunning = client
-      .getMutationCache()
-      .build(client, {
-        mutationKey: TODO_MUTATION_KEYS.listWrites(),
-        mutationFn: () => self.response,
-      })
-      .execute(undefined);
+      // When
+      const created = withTodoCreated(overview);
+      const completed = withTodoCompleted(overview);
 
-    // When
-    await settleTodoWrite(client, {
-      date: DAY,
-      todoId: 1,
-      span: { startDate: DAY, endDate: DAY },
-      isCompletionAffected: false,
-      hasFailed: true,
-      ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      // Then
+      expect(created).toBe(overview);
+      expect(completed).toEqual({ hasTodo: true, hasCompletedTodo: true, hasActiveRepeat: false });
     });
-
-    // Then
-    expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
-    expect(queryFn).not.toHaveBeenCalled();
-    otherWrite.settle();
-    self.settle();
-    await Promise.all([running, selfRunning]);
-    unsubscribe();
-  });
-});
-
-describe('바뀐 날짜를 모를 때의 무효화', () => {
-  const listKey = TODO_QUERY_KEYS.listByDate({ date: DAY });
-  const completionKey = TODO_QUERY_KEYS.completionsByRange(WEEK);
-  const friendKey = TODO_QUERY_KEYS.friendListByDate({ userId: 'u', date: DAY });
-  const categoryKey = TODO_CATEGORY_QUERY_KEYS.list();
-
-  function createSeededClient() {
-    const client = createTestQueryClient();
-    client.setQueryData(listKey, toList([createParentTodo({ id: 7 })]));
-    client.setQueryData(completionKey, toCompletions(WEEK));
-    client.setQueryData(friendKey, toList([]));
-    client.setQueryData(categoryKey, { categories: [] });
-
-    return client;
-  }
-
-  it('내 할 일과 카테고리를 무효화하고 친구 목록은 건드리지 않는다', async () => {
-    // Given
-    const client = createSeededClient();
-
-    // When
-    await invalidateTodos(client);
-
-    // Then
-    expect(isInvalidated(client, listKey)).toBe(true);
-    expect(isInvalidated(client, completionKey)).toBe(true);
-    expect(isInvalidated(client, categoryKey)).toBe(true);
-    expect(isInvalidated(client, friendKey)).toBe(false);
   });
 
-  it('댓글 수가 바뀌면 그 할 일을 보여 주는 목록만 무효화한다', async () => {
-    // Given
-    const client = createSeededClient();
-    const otherListKey = TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY });
-    client.setQueryData(otherListKey, toList([createParentTodo({ id: 8 })]));
-
-    // When
-    await invalidateTodoSummaries(client, { todoId: 7 });
-
-    // Then
-    expect(isInvalidated(client, listKey)).toBe(true);
-    expect(isInvalidated(client, otherListKey)).toBe(false);
-    expect(isInvalidated(client, friendKey)).toBe(false);
-  });
-
-  it('할 일이 바뀌면 refreshOnTodoChange로 밝힌 다른 피처의 조회만 무효화한다', async () => {
-    // Given
-    const client = createSeededClient();
-    const dependentKey = ['other-feature', 'depends-on-todo'];
-    const independentKey = ['other-feature', 'independent'];
-    client.setQueryData(dependentKey, 1);
-    client.setQueryData(independentKey, 1);
-    client
-      .getQueryCache()
-      .find({ queryKey: dependentKey })
-      ?.setOptions({
-        meta: { refreshOnTodoChange: true },
+  describe('캐시에서 할 일 찾기', () => {
+    it('알림으로 연 상세처럼 그날 목록이 없으면 상세의 여러 날 기간으로 달력 범위를 고른다', () => {
+      // Given
+      const queryClient = createTestQueryClient();
+      const multiDay = createParentTodo({
+        id: 7,
+        startDate: DAY,
+        endDate: createDateKey('2026-07-22'),
+      });
+      queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
+        todo: multiDay,
+        owner: { id: 'u', name: null, profileImage: null },
+        permissions: { canEdit: true, canComment: true, canNudge: false },
+        metrics: { viewCount: 0, commentCount: 0 },
       });
 
-    // When
-    await invalidateTodoDependentQueries(client);
+      // When
+      const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
 
-    // Then
-    expect(isInvalidated(client, dependentKey)).toBe(true);
-    expect(isInvalidated(client, independentKey)).toBe(false);
-    expect(isInvalidated(client, listKey)).toBe(false);
-  });
-
-  it('피드를 새로 고치면 목록과 완료 통계만 무효화한다', async () => {
-    // Given
-    const client = createSeededClient();
-
-    // When
-    await invalidateFeedTodos(client);
-
-    // Then
-    expect(isInvalidated(client, listKey)).toBe(true);
-    expect(isInvalidated(client, completionKey)).toBe(true);
-    expect(isInvalidated(client, friendKey)).toBe(false);
-    expect(isInvalidated(client, categoryKey)).toBe(false);
-  });
-});
-
-describe('달력 요약 맞추기', () => {
-  it('그날을 담은 범위만 고치고 같은 접두사의 위젯 요약·개요 캐시는 건드리지 않는다', () => {
-    // Given
-    const client = createTestQueryClient();
-    const widgetKey = TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: 'u' });
-    const widgetSummary = toSummary(DAY);
-    const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
-    const nextWeek = toCompletions(NEXT_WEEK);
-    client.setQueryData(widgetKey, widgetSummary);
-    client.setQueryData(TODO_QUERY_KEYS.overview(), overview);
-    client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
-    client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), nextWeek);
-    client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), {
-      ...toCompletions(WEEK),
-      completions: [
-        {
-          date: DAY,
-          totalTodos: 1,
-          completedTodos: 0,
-          isComplete: false,
-          completionRate: 0,
-          categoryColors: [],
-        },
-      ],
+      // Then
+      expect(span).toEqual({ startDate: DAY, endDate: '2026-07-22' });
     });
 
-    // When
-    syncDailyCompletionWithList(client, { date: DAY });
+    it('어디에도 없으면 보고 있는 하루로 본다', () => {
+      // Given
+      const queryClient = createTestQueryClient();
 
-    // Then
-    expect(client.getQueryData(widgetKey)).toBe(widgetSummary);
-    expect(client.getQueryData(TODO_QUERY_KEYS.overview())).toBe(overview);
-    expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(nextWeek);
-    expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK))?.completions).toEqual([]);
+      // When
+      const span = getCachedTodoDateSpan(queryClient, { date: NEXT_DAY, todoId: 7 });
+
+      // Then
+      expect(span).toEqual({ startDate: NEXT_DAY, endDate: NEXT_DAY });
+    });
+  });
+
+  describe('할 일 쓰기 정리', () => {
+    function createSeededClient() {
+      const client = createTestQueryClient();
+      client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
+      client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }), toList([]));
+      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), toCompletions(WEEK));
+      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), toCompletions(NEXT_WEEK));
+      client.setQueryData(
+        TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
+        toSummary(DAY),
+      );
+      client.setQueryData(
+        TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY, userId: null }),
+        toSummary(NEXT_DAY),
+      );
+      return client;
+    }
+
+    // 화면 없이 쓰기를 돌리려고 TanStack 내부 MutationCache.build().execute()를 쓰고, 쓰기는 onSettled가 끝나야
+    // success가 된다는 순서에 기댄다. TanStack을 올려 이 테스트가 깨지면 이 두 가정부터 본다
+    /** 쓰기 콜백 안에서 부르는 정리라 그 쓰기 자신을 진행 중으로 센다. 돌려준 함수가 쓰기를 끝낸다 */
+    function startWrite(client: QueryClient) {
+      const response = createPendingResponse(undefined);
+      const running = client
+        .getMutationCache()
+        .build(client, {
+          mutationKey: TODO_MUTATION_KEYS.listWrites(),
+          mutationFn: () => response.response,
+        })
+        .execute(undefined);
+      return () => {
+        response.settle();
+        return running;
+      };
+    }
+
+    it('하루짜리를 다 불러온 목록에서 고쳤으면 그 목록·달력은 그대로 두고 그날 위젯 요약만 낡음으로 표시한다', async () => {
+      // Given
+      const client = createSeededClient();
+      const finishWrite = startWrite(client);
+
+      // When
+      await settleTodoWrite(client, {
+        date: DAY,
+        todoId: 1,
+        span: { startDate: DAY, endDate: DAY },
+        isCompletionAffected: true,
+        hasFailed: false,
+        ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      });
+
+      // Then
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(false);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(false);
+      expect(
+        isInvalidated(client, TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
+      ).toBe(true);
+      expect(
+        isInvalidated(
+          client,
+          TODO_QUERY_KEYS.widgetSummaryByDate({ date: NEXT_DAY, userId: null }),
+        ),
+      ).toBe(false);
+      await finishWrite();
+    });
+
+    it('여러 날 할 일은 기간 안의 다른 날짜 목록과 겹치는 달력 범위만 낡음으로 표시한다', async () => {
+      // Given
+      const client = createSeededClient();
+      const finishWrite = startWrite(client);
+
+      // When
+      await settleTodoWrite(client, {
+        date: DAY,
+        span: { startDate: DAY, endDate: NEXT_DAY },
+        isCompletionAffected: true,
+        hasFailed: false,
+        ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      });
+
+      // Then
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(false);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY }))).toBe(true);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(false);
+      await finishWrite();
+    });
+
+    it('실패하면 고친 목록·상세·그날 달력까지 서버 값으로 다시 맞춘다', async () => {
+      // Given
+      const client = createSeededClient();
+      const detailKey = TODO_QUERY_KEYS.detail({ todoId: 1 });
+      client.getQueryCache().build(client, { queryKey: detailKey });
+      const finishWrite = startWrite(client);
+
+      // When
+      await settleTodoWrite(client, {
+        date: DAY,
+        todoId: 1,
+        span: { startDate: DAY, endDate: DAY },
+        isCompletionAffected: true,
+        hasFailed: true,
+        ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+      });
+
+      // Then
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
+      expect(isInvalidated(client, detailKey)).toBe(true);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.completionsByRange(WEEK))).toBe(true);
+      await finishWrite();
+    });
+
+    it('낡음 표시를 기다리는 사이 이 쓰기가 끝나도 다른 쓰기가 남아 있으면 다시 받지 않는다', async () => {
+      // Given
+      const client = createSeededClient();
+      const queryFn = jest.fn(async () => toList([]));
+      const unsubscribe = new QueryObserver(client, {
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: DAY }),
+        queryFn,
+        staleTime: Infinity,
+      }).subscribe(noop);
+      const finishOtherWrite = startWrite(client);
+      const response = createPendingResponse(undefined);
+      const settled = Promise.withResolvers<void>();
+      // 실제 쓰기처럼 onSettled가 정리를 기다리지 않아, 정리가 낡음 표시를 기다리는 사이 이 쓰기가 끝난다
+      const running = client
+        .getMutationCache()
+        .build(client, {
+          mutationKey: TODO_MUTATION_KEYS.listWrites(),
+          mutationFn: () => response.response,
+          onSettled: () => {
+            settleTodoWrite(client, {
+              date: DAY,
+              todoId: 1,
+              span: { startDate: DAY, endDate: DAY },
+              isCompletionAffected: false,
+              hasFailed: true,
+              ticket: { sequence: Number.MAX_SAFE_INTEGER, startedWithOthers: false },
+            }).then(settled.resolve, settled.reject);
+          },
+        })
+        .execute(undefined);
+
+      // When
+      response.settle();
+      await running;
+      await settled.promise;
+
+      // Then
+      expect(client.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() })).toBe(1);
+      expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
+      expect(queryFn).not.toHaveBeenCalled();
+      await finishOtherWrite();
+      unsubscribe();
+    });
+  });
+
+  describe('바뀐 날짜를 모를 때의 무효화', () => {
+    const listKey = TODO_QUERY_KEYS.listByDate({ date: DAY });
+    const completionKey = TODO_QUERY_KEYS.completionsByRange(WEEK);
+    const friendKey = TODO_QUERY_KEYS.friendListByDate({ userId: 'u', date: DAY });
+    const categoryKey = TODO_CATEGORY_QUERY_KEYS.list();
+
+    function createSeededClient() {
+      const client = createTestQueryClient();
+      client.setQueryData(listKey, toList([createParentTodo({ id: 7 })]));
+      client.setQueryData(completionKey, toCompletions(WEEK));
+      client.setQueryData(friendKey, toList([]));
+      client.setQueryData(categoryKey, { categories: [] });
+
+      return client;
+    }
+
+    it('내 할 일과 카테고리를 무효화하고 친구 목록은 건드리지 않는다', async () => {
+      // Given
+      const client = createSeededClient();
+
+      // When
+      await invalidateTodos(client);
+
+      // Then
+      expect(isInvalidated(client, listKey)).toBe(true);
+      expect(isInvalidated(client, completionKey)).toBe(true);
+      expect(isInvalidated(client, categoryKey)).toBe(true);
+      expect(isInvalidated(client, friendKey)).toBe(false);
+    });
+
+    it('댓글 수가 바뀌면 그 할 일을 보여 주는 목록만 무효화한다', async () => {
+      // Given
+      const client = createSeededClient();
+      const otherListKey = TODO_QUERY_KEYS.listByDate({ date: NEXT_DAY });
+      client.setQueryData(otherListKey, toList([createParentTodo({ id: 8 })]));
+
+      // When
+      await invalidateTodoSummaries(client, { todoId: 7 });
+
+      // Then
+      expect(isInvalidated(client, listKey)).toBe(true);
+      expect(isInvalidated(client, otherListKey)).toBe(false);
+      expect(isInvalidated(client, friendKey)).toBe(false);
+    });
+
+    it('할 일이 바뀌면 refreshOnTodoChange로 밝힌 다른 피처의 조회만 무효화한다', async () => {
+      // Given
+      const client = createSeededClient();
+      const dependentKey = ['other-feature', 'depends-on-todo'];
+      const independentKey = ['other-feature', 'independent'];
+      client.setQueryData(dependentKey, 1);
+      client.setQueryData(independentKey, 1);
+      client
+        .getQueryCache()
+        .find({ queryKey: dependentKey })
+        ?.setOptions({
+          meta: { refreshOnTodoChange: true },
+        });
+
+      // When
+      await invalidateTodoDependentQueries(client);
+
+      // Then
+      expect(isInvalidated(client, dependentKey)).toBe(true);
+      expect(isInvalidated(client, independentKey)).toBe(false);
+      expect(isInvalidated(client, listKey)).toBe(false);
+    });
+
+    it('카테고리 이름·색이 바뀌면 목록·완료 통계·상세만 무효화한다', async () => {
+      // Given
+      const client = createSeededClient();
+      const detailKey = TODO_QUERY_KEYS.detail({ todoId: 7 });
+      client.getQueryCache().build(client, { queryKey: detailKey });
+
+      // When
+      await invalidateCategorizedTodos(client);
+
+      // Then
+      expect(isInvalidated(client, listKey)).toBe(true);
+      expect(isInvalidated(client, completionKey)).toBe(true);
+      expect(isInvalidated(client, detailKey)).toBe(true);
+      expect(isInvalidated(client, friendKey)).toBe(false);
+      expect(isInvalidated(client, categoryKey)).toBe(false);
+    });
+  });
+
+  describe('달력 요약 맞추기', () => {
+    it('그날을 담은 범위만 고치고 같은 접두사의 위젯 요약·개요 캐시는 건드리지 않는다', () => {
+      // Given
+      const client = createTestQueryClient();
+      const widgetKey = TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: 'u' });
+      const widgetSummary = toSummary(DAY);
+      const overview = { hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false };
+      const nextWeek = toCompletions(NEXT_WEEK);
+      client.setQueryData(widgetKey, widgetSummary);
+      client.setQueryData(TODO_QUERY_KEYS.overview(), overview);
+      client.setQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }), toList([]));
+      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK), nextWeek);
+      client.setQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK), {
+        ...toCompletions(WEEK),
+        completions: [
+          {
+            date: DAY,
+            totalTodos: 1,
+            completedTodos: 0,
+            isComplete: false,
+            completionRate: 0,
+            categoryColors: [],
+          },
+        ],
+      });
+
+      // When
+      syncDailyCompletionWithList(client, { date: DAY });
+
+      // Then
+      expect(client.getQueryData(widgetKey)).toBe(widgetSummary);
+      expect(client.getQueryData(TODO_QUERY_KEYS.overview())).toBe(overview);
+      expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(NEXT_WEEK))).toBe(nextWeek);
+      expect(client.getQueryData(TODO_QUERY_KEYS.completionsByRange(WEEK))?.completions).toEqual(
+        [],
+      );
+    });
+  });
+
+  describe('shouldPersistTodosByDate', () => {
+    const todayKey = createDateKey('2026-11-03');
+
+    it.each(['2026-11-02', '2026-11-03', '2026-11-04'])('%s 목록은 기기에 남긴다', (date) => {
+      // When
+      const result = shouldPersistTodosByDate({ date: createDateKey(date), todayKey: todayKey });
+
+      // Then
+      expect(result).toBe(true);
+    });
+
+    it.each(['2026-11-01', '2026-11-05', '2026-10-03'])('%s 목록은 남기지 않는다', (date) => {
+      // When
+      const result = shouldPersistTodosByDate({ date: createDateKey(date), todayKey: todayKey });
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('달이 바뀌는 날에도 앞뒤 하루를 남긴다', () => {
+      // When
+      const monthEnd = shouldPersistTodosByDate({
+        date: createDateKey('2026-10-31'),
+        todayKey: createDateKey('2026-11-01'),
+      });
+      const yearEnd = shouldPersistTodosByDate({
+        date: createDateKey('2027-01-01'),
+        todayKey: createDateKey('2026-12-31'),
+      });
+
+      // Then
+      expect(monthEnd).toBe(true);
+      expect(yearEnd).toBe(true);
+    });
+  });
+
+  describe('getTodoSummaryRefetchInterval', () => {
+    const success = (responseDate: string, dataUpdateCount = 1) =>
+      ({
+        data: { date: createDateKey(responseDate) },
+        status: 'success',
+        dataUpdateCount,
+        errorUpdateCount: 0,
+      }) as const;
+
+    it('오늘 요청에 전날 요약이 오면 서버가 날짜를 따라잡을 때까지 짧게 다시 묻는다', () => {
+      // Given
+      const state = success('2026-07-12');
+
+      // When
+      const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
+
+      // Then
+      expect(interval).toBe(5_000);
+    });
+
+    it('요청한 날짜의 요약이 오면 다시 묻지 않는다', () => {
+      // Given
+      const state = success('2026-07-13');
+
+      // When
+      const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
+
+      // Then
+      expect(interval).toBe(false);
+    });
+
+    it('따라잡지 못한 채 네 번 물었으면 더 묻지 않는다', () => {
+      // Given
+      const state = success('2026-07-12', 5);
+
+      // When
+      const interval = getTodoSummaryRefetchInterval(state, createDateKey('2026-07-13'));
+
+      // Then
+      expect(interval).toBe(false);
+    });
   });
 });

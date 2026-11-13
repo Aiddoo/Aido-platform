@@ -1,7 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
-
 import { toTodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
 import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import type {
@@ -10,6 +6,7 @@ import type {
   StagedTodoCreation,
 } from "../ports/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
+import { todoNotFound } from "../todos.errors.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 import { toSingleTodoSpec, type WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
 
@@ -51,7 +48,7 @@ export class StageTodoCreationUseCase {
       input.userId,
     );
     if (response == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: created.todo.id.value });
+      throw todoNotFound(created.todo.id.value);
     }
     return {
       todos: [response],

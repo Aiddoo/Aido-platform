@@ -31,11 +31,12 @@ import {
 
 describe("콕 답장·감사 E2E (실제 DB)", () => {
   let ctx: E2eTestContext;
+  const interactionConfig = { isEnabled: true };
 
   beforeAll(async () => {
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(NudgeInteractionConfigPort).useValue({ isEnabled: true }),
+        builder.overrideProvider(NudgeInteractionConfigPort).useValue(interactionConfig),
     });
   }, 60_000);
 
@@ -442,6 +443,32 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     expect(preview.recipients.map((friend) => friend.id)).toEqual([secondFriend.userId]);
     expect(preview.thankedRecipientCount).toBe(1);
     expect(preview.lastThankedAt).toEqual(expect.any(String));
+  });
+
+  it.each([
+    { name: "버전 헤더가 없는 출시 앱", appVersion: null, code: ErrorCode.NUDGE_1105 },
+    { name: "1.15.1 앱", appVersion: "1.15.1", code: ErrorCode.NUDGE_1105 },
+    { name: "1.15.2 앱", appVersion: "1.15.2", code: ErrorCode.NUDGE_1111 },
+  ])("기능이 꺼지면 $name은 보낸 콕 목록에서 404 $code를 받는다", async ({ appVersion, code }) => {
+    // Given
+    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    interactionConfig.isEnabled = false;
+    try {
+      const pending = request(ctx.app.getHttpServer())
+        .get("/v1/nudges/interactions")
+        .query({ direction: "sent" })
+        .set("Authorization", `Bearer ${sender.accessToken}`);
+
+      // When
+      const response = await (
+        appVersion == null ? pending : pending.set("X-App-Version", appVersion)
+      ).expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe(code);
+    } finally {
+      interactionConfig.isEnabled = true;
+    }
   });
 
   it("다른 할 일의 콕을 감사 기준으로 보내면 거절한다", async () => {

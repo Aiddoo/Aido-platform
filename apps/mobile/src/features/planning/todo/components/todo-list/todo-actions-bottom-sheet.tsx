@@ -1,51 +1,42 @@
-import { formatDateKeyCompactRange } from '@src/shared/date/format/date-format';
-import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  BottomSheet,
+  RouteBottomSheet,
   CalendarIcon,
   ClockIcon,
   EditIcon,
-  INQUIRY_SHEET_EXIT,
   ListFilledIcon,
   MoveRightIcon,
-  QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
   RepeatIcon,
   type SheetRouteExit,
   SunIcon,
   TrashIcon,
   useConfirmDialog,
-  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import { type ComponentProps, type ComponentType, Suspense, useEffect } from 'react';
+import type { ComponentProps, ComponentType } from 'react';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
-import type { Todo } from '../../domains/todo.model';
+import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useTodoId } from '../../hooks/use-todo-params';
+import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import {
   useDeleteTodoMutationOptions,
   useUpdateTodoScheduleMutationOptions,
 } from '../../queries/todo.mutations';
-import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
+import { formatTodoPeriod } from '../../utils/todo-period.view-model';
 import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
 
 type TodoActionsBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'isOpen' | 'onOpenChange'
+  ComponentProps<typeof RouteBottomSheet>,
+  'fallbackHref' | 'loading' | 'children'
 > & {
   /** 목록 맨 위에 붙는 요약 줄(받은 감사 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
   summary: ComponentType<TodoActionsSummaryProps>;
@@ -57,23 +48,10 @@ interface TodoActionsSummaryProps {
 }
 
 export function TodoActionsBottomSheet({ summary, ...props }: TodoActionsBottomSheetProps) {
-  const sheet = useSheetRoute('/feed');
-
   return (
-    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
-      <QueryErrorBoundary
-        fallback={(fallbackProps) => (
-          <TodoActionsBottomSheet.Error
-            {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
-          />
-        )}
-      >
-        <Suspense fallback={<TodoActionsBottomSheet.Loading />}>
-          <TodoActionsBottomSheet.ActionList summary={summary} onClose={sheet.close} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </BottomSheet>
+    <RouteBottomSheet {...props} fallbackHref="/feed" loading={<TodoActionsBottomSheet.Loading />}>
+      {(sheet) => <TodoActionsBottomSheet.ActionList summary={summary} onClose={sheet.close} />}
+    </RouteBottomSheet>
   );
 }
 
@@ -87,11 +65,11 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   onClose,
 }: TodoActionListProps) {
   const { t } = useTranslation(['todo', 'common']);
-  const today = useToday();
-  const [todoId] = useTodoId();
+  const fontScaledSize = useFontScaledSize();
+  const actionIconSize = fontScaledSize(16);
+  const todayKey = useTodayKey();
   const [date] = useTodoSheetDateKey();
-  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const todo = useSheetTodo({ onMissing: onClose });
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
@@ -100,12 +78,6 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   const confirmDialog = useConfirmDialog();
   const dateFormatContext = useDateFormatContext();
 
-  useEffect(() => {
-    if (todo == null) {
-      onClose();
-    }
-  }, [todo, onClose]);
-
   if (todo == null) {
     return null;
   }
@@ -113,7 +85,6 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
   const isBusy =
     deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
-  const todayKey = toDateKey(today, dateFormatContext.timeZone);
   const isTodoToday = todo.startDate === todayKey;
 
   const sheetParams = { todoId: todo.id, date };
@@ -136,25 +107,27 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     );
   };
 
-  const confirmDeleteMultiDayTodo = () =>
-    confirmDialog.openAsync({
+  // 할 일은 낙관적으로 빠져도 시트가 마지막 값을 들고 남아(useSheetTodo) 다이얼로그가 진행 중·실패 뒤에도 남는다
+  const deleteMultiDayTodo = async () => {
+    const isDeleted = await confirmDialog.openAsync({
       title: t('multiDayDelete.title'),
       description: t('multiDayDelete.description', {
-        period: formatDateKeyCompactRange(
-          todo.startDate,
-          todo.endDate ?? todo.startDate,
-          todayKey,
-          dateFormatContext,
-        ),
+        period: formatTodoPeriod(todo, todayKey, dateFormatContext),
       }),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('multiDayDelete.confirm'),
       confirmColor: 'danger',
+      onConfirm: () => deleteMutation.mutateAsync({ todoId: todo.id, date }),
     });
+    if (isDeleted) {
+      onClose();
+    }
+  };
 
   const handleDelete = async () => {
     if (!TodoPolicy.isRecurringTodo(todo)) {
-      if (TodoPolicy.isMultiDayTodo(todo) && !(await confirmDeleteMultiDayTodo())) {
+      if (TodoPolicy.isMultiDayTodo(todo)) {
+        await deleteMultiDayTodo();
         return;
       }
       deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
@@ -162,7 +135,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       return;
     }
 
-    const scope = await selectDeleteScope(todo.startDate, TodoRepeatPolicy.getDeleteScopes(todo));
+    const scope = await selectDeleteScope(todo.startDate, TodoPolicy.getDeleteScopes(todo));
     if (scope == null) {
       return;
     }
@@ -177,7 +150,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       <VStack gap={8}>
         <Summary todo={todo} onClose={onClose} />
         <TodoActionRow
-          icon={<EditIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <EditIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
+          }
           label={t('actions.edit')}
           hasArrow
           isDisabled={isBusy}
@@ -190,7 +165,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<CalendarIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <CalendarIcon
+              width={actionIconSize}
+              height={actionIconSize}
+              colorClassName="text-main"
+            />
+          }
           label={t('actions.changeDate')}
           hasArrow
           isDisabled={isBusy}
@@ -203,7 +184,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<ClockIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <ClockIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
+          }
           label={t('actions.changeTime')}
           hasArrow
           isDisabled={isBusy}
@@ -216,7 +199,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         />
 
         <TodoActionRow
-          icon={<ListFilledIcon width={16} height={16} colorClassName="text-main" />}
+          icon={
+            <ListFilledIcon
+              width={actionIconSize}
+              height={actionIconSize}
+              colorClassName="text-main"
+            />
+          }
           label={t('actions.changeCategory')}
           hasArrow
           isDisabled={isBusy}
@@ -231,9 +220,13 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         <TodoActionRow
           icon={
             isTodoToday ? (
-              <MoveRightIcon width={16} height={16} colorClassName="text-main" />
+              <MoveRightIcon
+                width={actionIconSize}
+                height={actionIconSize}
+                colorClassName="text-main"
+              />
             ) : (
-              <SunIcon width={16} height={16} colorClassName="text-main" />
+              <SunIcon width={actionIconSize} height={actionIconSize} colorClassName="text-main" />
             )
           }
           label={isTodoToday ? t('actions.doTomorrow') : t('actions.doToday')}
@@ -241,9 +234,15 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           onPress={handleScheduleToggle}
         />
 
-        {TodoRepeatPolicy.hasRepeatRule(todo) && (
+        {TodoPolicy.hasRepeatRule(todo) && (
           <TodoActionRow
-            icon={<RepeatIcon width={16} height={16} colorClassName="text-main" />}
+            icon={
+              <RepeatIcon
+                width={actionIconSize}
+                height={actionIconSize}
+                colorClassName="text-main"
+              />
+            }
             label={t('actions.stopRepeat')}
             isDisabled={isBusy}
             onPress={handleStopRepeat}
@@ -251,7 +250,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         )}
 
         <TodoActionRow
-          icon={<TrashIcon width={16} height={16} colorClassName="text-error" />}
+          icon={
+            <TrashIcon width={actionIconSize} height={actionIconSize} colorClassName="text-error" />
+          }
           label={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
           isDanger
           isDisabled={isBusy}
@@ -271,11 +272,4 @@ TodoActionsBottomSheet.Loading = function Loading() {
       ))}
     </VStack>
   );
-};
-
-TodoActionsBottomSheet.Error = function ErrorFallback({
-  reset,
-  onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
-  return <QueryErrorFallback reset={reset} onInquiry={onInquiry} />;
 };

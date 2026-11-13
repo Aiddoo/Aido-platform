@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -15,6 +12,12 @@ import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-chang
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
+import {
+  todoNotFound,
+  todoNotRepeating,
+  todoSeriesEnded,
+  todoSeriesNotFound,
+} from "../todo-series.errors.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
 
@@ -59,24 +62,21 @@ export class StopTodoSeriesUseCase {
     const ownerId = UserId.reconstitute(userId);
     const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(todoId), ownerId);
     if (todo == null) {
-      throw new ApplicationException(ErrorCode.TODO_0801, { todoId });
+      throw todoNotFound(todoId);
     }
     const { seriesId, occurrenceDate } = todo;
     if (seriesId == null || occurrenceDate == null) {
-      throw new ApplicationException(ErrorCode.TODO_0844, {
-        todoId,
-        scope: "THIS_AND_FOLLOWING",
-      });
+      throw todoNotRepeating(todoId);
     }
     const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
     if (series == null || series.userId.value !== userId) {
-      throw new ApplicationException(ErrorCode.TODO_0841, { seriesId });
+      throw todoSeriesNotFound(seriesId);
     }
     const lastDate = occurrenceDate.toString();
     const following = await seriesRepository.lockFollowingSegments(series);
     const stopped = [series, ...following].filter((segment) => segment.stopAfter(lastDate));
     if (stopped.length === 0) {
-      throw new ApplicationException(ErrorCode.TODO_0846, { seriesId });
+      throw todoSeriesEnded(seriesId);
     }
     for (const segment of stopped) {
       await seriesRepository.update(segment);

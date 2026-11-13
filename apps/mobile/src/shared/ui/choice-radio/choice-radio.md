@@ -19,12 +19,3 @@ import { ChoiceRadio } from '@src/shared/ui';
 | Prop     | 타입                           | 설명                                                |
 | -------- | ------------------------------ | --------------------------------------------------- |
 | ...props | `ComponentProps<typeof Radio>` | `children`을 제외한 heroui `Radio` props. 원은 고정 |
-
-## 파일 구조
-
-```
-choice-radio/
-├── choice-radio.tsx
-├── choice-radio.md
-└── index.ts
-```

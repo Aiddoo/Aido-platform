@@ -3,6 +3,9 @@ import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notif
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
 import { usePushPermissionAction } from '@src/features/notification/hooks/use-push-permission-action';
 import { useGetPushPermissionQueryOptions } from '@src/features/notification/queries/push-permission.queries';
+import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,7 +17,6 @@ import {
   FishIcon,
   H3,
   HStack,
-  INQUIRY_SHEET_EXIT,
   QueryErrorActions,
   QueryErrorBoundary,
   type QueryErrorFallbackProps,
@@ -29,6 +31,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import type { Href } from 'expo-router';
 import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -37,20 +40,19 @@ import Animated, {
   ReduceMotion,
   type SharedValue,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import {
-  InviteePremiumAccessPolicy,
-  InviteRedemptionPolicy,
-} from '../domains/invite-redemption.model';
+import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
+import { InviteePremiumAccessPolicy } from '../domains/invitee-premium-access.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
+
+const WELCOME_CAT_ENTER = { delayMs: ANIMATION.delayMs.long, durationMs: 900 } as const;
 
 type InviteWelcomeBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,
@@ -68,7 +70,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {
     if (redemption == null) {
-      sheet.exit({ type: 'replace', href: '/feed' });
+      sheet.exit();
     }
   }, [redemption, sheet]);
 
@@ -86,13 +88,13 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
           redemption={redemption}
           onCreateFirstTodo={() =>
             sheet.close({
-              type: 'replace',
+              type: 'dismiss-to',
               href: { pathname: '/feed', params: { action: 'add-todo' } },
             })
           }
           onOpenFriendFeed={() =>
             sheet.close({
-              type: 'replace',
+              type: 'dismiss-to',
               href: { pathname: '/feed', params: { friendId: redemption.inviter.userId } },
             })
           }
@@ -105,13 +107,13 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
         fallback={(fallbackProps) => (
           <InviteWelcomeBottomSheet.Error
             {...fallbackProps}
-            onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
           />
         )}
       >
         {/* 수락 mutation이 내 정보를 이미 받아 캐시에서 바로 그린다. 기다릴 일이 거의 없어 자리를 잡지 않는다 */}
         <Suspense fallback={null}>
-          <InviteWelcomeBottomSheet.Contents redemption={redemption} />
+          <InviteWelcomeBottomSheet.Welcome redemption={redemption} />
         </Suspense>
       </QueryErrorBoundary>
     </BottomSheet>
@@ -121,7 +123,7 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
 InviteWelcomeBottomSheet.Error = function ErrorFallback({
   reset,
   onInquiry,
-}: QueryErrorFallbackProps & { onInquiry: () => void }) {
+}: QueryErrorFallbackProps & { onInquiry: (href: Href) => void }) {
   const { t } = useTranslation('common');
 
   return (
@@ -132,12 +134,11 @@ InviteWelcomeBottomSheet.Error = function ErrorFallback({
   );
 };
 
-interface WelcomeContentsProps {
+interface WelcomeProps {
   redemption: RedemptionResult;
 }
 
-// oxlint-disable-next-line aido/component-name -- 1.15.2 전환 #1400
-InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeContentsProps) {
+InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps) {
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -186,7 +187,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({ redemption }: WelcomeCon
       </Text>
 
       {premiumDays > 0 && (
-        <HStack gap={10} align="center" className="mt-4 w-full rounded-2xl bg-highlight px-4 py-3">
+        <HStack align="center" className="mt-4 w-full gap-2.5 rounded-2xl bg-highlight px-4 py-3">
           <FillTicketIcon width={32} height={32} />
           <VStack gap={1} className="flex-1">
             <Text size="b2" weight="bold" tone="brand">
@@ -252,6 +253,7 @@ InviteWelcomeBottomSheet.Actions = function Actions({
 /** 친구 소식을 받으려면 알림이 필요하다는 맥락을 이 순간에 한 번 알린다. 이미 켰으면 보여 주지 않는다 */
 function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const { t } = useTranslation('invite');
+  const fontScaledSize = useFontScaledSize();
   const { data: permission } = useQuery({
     ...useGetPushPermissionQueryOptions(),
     throwOnError: false,
@@ -273,7 +275,11 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
 
   return (
     <SurfaceCard surface="sheet" className={cn('flex-row items-center gap-2 px-4 py-3', className)}>
-      <BellFilledIcon width={18} height={18} colorClassName="text-gray-7" />
+      <BellFilledIcon
+        width={fontScaledSize(18)}
+        height={fontScaledSize(18)}
+        colorClassName="text-gray-7"
+      />
       <Text
         size="b4"
         shade={7}
@@ -301,19 +307,20 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
 
 /** 인사하는 고양이와 튀어 오르는 생선 뼈. 한 번만 재생하고 transform·opacity만 바꾼다 */
 function WelcomeCat() {
-  const isReducedMotion = useReducedMotion();
+  const isReducedMotion = useIsReduceMotionEnabled();
   const progress = useSharedValue(isReducedMotion ? 1 : 0);
 
   useEffect(() => {
     if (isReducedMotion) {
+      progress.set(1);
       return;
     }
 
     progress.set(
       withDelay(
-        200,
+        WELCOME_CAT_ENTER.delayMs,
         withTiming(1, {
-          duration: 900,
+          duration: WELCOME_CAT_ENTER.durationMs,
           easing: Easing.bezier(0.23, 1, 0.32, 1),
           reduceMotion: ReduceMotion.System,
         }),

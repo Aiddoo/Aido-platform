@@ -1,3 +1,4 @@
+import type { ObservableSyncStorage } from '@src/core/ports/observable-sync-storage';
 import { useAccountSyncStorage, useSyncStorage } from '@src/shared/di/shared-di-context';
 import { useMemo, useSyncExternalStore } from 'react';
 import { match } from 'ts-pattern';
@@ -28,7 +29,23 @@ export function useStoredValue<TValue, TScope = never>(
   ...scope: StoredValueScope<TScope>
 ) {
   const storage = useStoredValueStorage(definition);
-  const key = resolveStoredValueKey(definition, ...scope);
+
+  return useStoredValueSource(storage, definition, resolveStoredValueKey(definition, ...scope));
+}
+
+/** DI 위 설정 Provider(테마·언어·글꼴)는 DI 저장소를 꺼낼 수 없어 저장소를 직접 받는다 */
+export function useStoredValueIn<TValue>(
+  storage: ObservableSyncStorage,
+  definition: StoredValueDefinition<TValue>,
+) {
+  return useStoredValueSource(storage, definition, resolveStoredValueKey(definition));
+}
+
+function useStoredValueSource<TValue, TScope>(
+  storage: ObservableSyncStorage,
+  definition: StoredValueDefinition<TValue, TScope>,
+  key: string | null,
+) {
   const source = useMemo(
     () => createStoredValueSource(storage, definition, key),
     [storage, definition, key],

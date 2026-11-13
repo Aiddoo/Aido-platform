@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
@@ -6,7 +5,6 @@ import type { EntitlementReaderPort } from "#api/modules/access/entitlements/acc
 import type { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
@@ -16,6 +14,7 @@ import type {
   CurrentUserEntitlements,
   CurrentUserResult,
 } from "../read-models/current-user.read-model.js";
+import { userNotFound } from "../users.errors.js";
 
 export interface GetCurrentUserQuery {
   readonly userId: string;
@@ -86,7 +85,7 @@ export class GetCurrentUserUseCase {
     );
 
     if (cachedProfile == null) {
-      throw new ApplicationException(ErrorCode.USER_0601, { userId: input.userId });
+      throw userNotFound(input.userId);
     }
     // 만료 경계를 넘긴 프로필 캐시를 쓰지 않도록 권한은 기한을 함께 담은 Access 판단으로 매번 계산한다
     const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);

@@ -152,6 +152,8 @@
     "title": "말로 남긴 메모",
     "notDigested": "정리 전",
     "viewAll": "전체 보기 {{amount}}개",
-    "empty": "말로 남긴 메모가 없어요"
+    "empty": "말로 남긴 메모가 없어요",
+    "open": "열기",
+    "loadFailed": "말로 남긴 메모를 불러오지 못했어요"
   }
 }

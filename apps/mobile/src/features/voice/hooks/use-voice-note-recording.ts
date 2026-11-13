@@ -1,5 +1,6 @@
 import {
   useIdGenerator,
+  useSignOutEpoch,
   useSpeechRecognizer,
   useVoiceNoteDraftRepository,
   useVoiceNoteStorageService,
@@ -11,9 +12,9 @@ import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { VoiceRecordingIntake } from '../apis/voice-recording-intake';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
-import { VoiceNotePolicy, type VoiceNote } from '../domains/voice-note.model';
+import { VoiceNotePolicy, type VoiceNote, createVoiceNote } from '../domains/voice-note.model';
+import { VoiceRecordingIntakeSession } from '../services/voice-recording-intake.session';
 import { useOfferOnDeviceModel } from './use-offer-on-device-model';
 import { useSpeechEvent } from './use-speech-event';
 import { useVoiceCaptureSession } from './use-voice-capture-session';
@@ -46,6 +47,7 @@ export function useVoiceNoteRecording({
   const draftRepository = useVoiceNoteDraftRepository();
   const recordingRepository = useVoiceRecordingRepository();
   const idGenerator = useIdGenerator();
+  const signOutEpoch = useSignOutEpoch();
   const offerOnDeviceModel = useOfferOnDeviceModel({ accountId, entry });
 
   const [seedNote] = useState(() =>
@@ -54,7 +56,7 @@ export function useVoiceNoteRecording({
   const [baseNote] = useState<VoiceNote>(
     () =>
       seedNote ??
-      VoiceNotePolicy.createVoiceNote({
+      createVoiceNote({
         draftId: idGenerator.create(),
         locale,
         createdAt: getNowInstant(),
@@ -62,12 +64,13 @@ export function useVoiceNoteRecording({
   );
   const [intake] = useState(
     () =>
-      new VoiceRecordingIntake({
+      new VoiceRecordingIntakeSession({
         accountId,
         draftId: baseNote.draftId,
         draftRepository,
         recordingRepository,
         discard: storage.discard,
+        signOutEpoch,
         // persist는 아래에 선언한 함수지만 녹음 조각이 저장된 뒤에만 불린다
         // oxlint-disable-next-line react/immutability -- 위 이유로 초기화 전에 접근하지 않는다
         onRecordingSaved: () => persist('later'),

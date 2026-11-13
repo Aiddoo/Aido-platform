@@ -4,7 +4,7 @@ import type {
   GetTodoCommentThreadsQuery,
   TodoCommentLikeResponse,
   TodoCommentRepliesResponse,
-  TodoCommentThread as TodoCommentThreadDTO,
+  TodoCommentThread as TodoCommentThreadDto,
   TodoCommentThreadsResponse,
   TodoCommentV2,
 } from '@aido/api';
@@ -21,12 +21,12 @@ import type {
   TodoCommentThread,
   TodoCommentThreadPage,
 } from '../domains/todo-comment.model';
+import type { TodoCommentPageParam } from '../queries/todo-comment-pages-cache';
 import type {
   WrittenTodoCommentChainResponse,
   WrittenTodoCommentMutationResponse,
   WrittenTodoCommentResponse,
 } from '../schemas/todo-comment-response.schema';
-import type { TodoCommentPageParam } from '../utils/todo-comment-cache-pages';
 
 function toTodoComment(dto: TodoCommentV2): TodoComment {
   return {
@@ -69,7 +69,7 @@ export function toWrittenTodoComment(todoId: number, dto: WrittenTodoCommentResp
   };
 }
 
-function toTodoCommentThread(dto: TodoCommentThreadDTO): TodoCommentThread {
+function toTodoCommentThread(dto: TodoCommentThreadDto): TodoCommentThread {
   return {
     comment: toTodoComment(dto.comment),
     previewReply: dto.previewReply == null ? null : toTodoComment(dto.previewReply),

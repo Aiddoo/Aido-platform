@@ -15,10 +15,18 @@ export const router = {
 };
 export const useLocalSearchParams = jest.fn();
 export const useGlobalSearchParams = jest.fn();
+/** 화면이 하나뿐이라 focus route의 params는 그 화면의 `useLocalSearchParams` 값이다 */
+export const useRootNavigationState = jest.fn();
 export const useIsFocused = jest.fn();
 export const usePathname = jest.fn();
 export const useSegments = jest.fn();
 export const useFocusEffect = jest.fn();
+/** 화면이 마운트된 채 focus만 잃는 경우(탭 바꾸기·위에 쌓기)는 테스트가 바꾼 navigation을 돌려준다 */
+export const useNavigation = jest.fn();
+
+function createNavigation() {
+  return { isFocused: () => true, getParent: () => undefined, addListener: () => () => undefined };
+}
 
 function useRunFocusEffect(effect: () => void | (() => void)) {
   useEffect(effect, [effect]);
@@ -36,10 +44,15 @@ export function resetExpoRouterMock() {
   router.canDismiss.mockReturnValue(false);
   useLocalSearchParams.mockReset().mockImplementation(() => ({}));
   useGlobalSearchParams.mockReset().mockImplementation(() => ({}));
+  useRootNavigationState.mockReset().mockImplementation(() => ({
+    index: 0,
+    routes: [{ key: 'screen', name: 'screen', params: useLocalSearchParams() }],
+  }));
   useIsFocused.mockReset().mockReturnValue(true);
   usePathname.mockReset().mockReturnValue('/');
   useSegments.mockReset().mockReturnValue([]);
   useFocusEffect.mockReset().mockImplementation(useRunFocusEffect);
+  useNavigation.mockReset().mockImplementation(createNavigation);
 }
 
 resetExpoRouterMock();
@@ -176,14 +189,14 @@ function StackScreen({ options }: { options?: { title?: string; headerTitle?: ()
   return options?.headerTitle?.() ?? <Text>{options?.title}</Text>;
 }
 
-export const Stack = { Toolbar, Screen: StackScreen };
+function StackSearchBar() {
+  return null;
+}
+
+export const Stack = { Toolbar, Screen: StackScreen, SearchBar: StackSearchBar };
 
 export function useRouter() {
   return router;
-}
-
-export function useNavigation() {
-  return { isFocused: () => true, getParent: () => undefined };
 }
 
 export function Redirect() {
