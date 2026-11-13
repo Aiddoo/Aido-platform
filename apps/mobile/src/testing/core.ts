@@ -36,7 +36,11 @@ export {
   createNetworkStatusGatewayStub,
   type NetworkStatusGatewayStub,
 } from './ports/network-status-gateway.stub';
-export { createPendingResponse } from './pending-response';
+export {
+  createPendingResponse,
+  createStalledBodyResponse,
+  observeSettlement,
+} from './pending-response';
 export {
   createPushNotificationGatewayStub,
   type PushNotificationGatewayStub,

@@ -2,7 +2,7 @@ import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
 
-import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette';
+import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette.constants';
 import type { WeatherReport } from '../domains/weather-report.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherScene, type WeatherSceneSky } from '../utils/weather-scene.view-model';

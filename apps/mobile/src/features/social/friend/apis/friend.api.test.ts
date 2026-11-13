@@ -1,11 +1,7 @@
 import { unwrap } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/testing/core';
 
-import {
-  createReorderFriendDto,
-  createSearchUsersDto,
-  createSendFriendRequestDto,
-} from '../__tests__/friend.fixtures';
+import { createSearchUsersDto, createSendFriendRequestDto } from '../__tests__/friend.fixtures';
 import { FRIEND_ERROR_CODE } from '../domains/friend.error';
 import { FriendApi } from './friend.api';
 
@@ -52,33 +48,6 @@ describe('FriendApi', () => {
       expect(result).toEqual({
         ok: true,
         value: { autoAccepted: dto.autoAccepted },
-      });
-    });
-  });
-
-  describe('reorderFriend', () => {
-    it('응답을 받으면 순서를 바꾼 친구를 반환한다', async () => {
-      // Given
-      const dto = createReorderFriendDto();
-      httpClient.patch.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.reorderFriend('follow-1', {
-        targetFollowId: 'follow-2',
-        position: 'after',
-      });
-
-      // Then
-      expect(httpClient.patch).toHaveBeenCalledWith('v1/follows/friends/follow-1/reorder', {
-        targetFollowId: 'follow-2',
-        position: 'after',
-      });
-      expect(result).toMatchObject({
-        ok: true,
-        value: {
-          followId: dto.friend.followId,
-          friendsSince: expect.stringMatching(/^2026-/),
-        },
       });
     });
   });

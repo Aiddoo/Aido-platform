@@ -1,11 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { invalidCredentials } from "../auth.errors.js";
 import { AuthLogEvent } from "../auth.log-events.js";
 import type { AuthCachePort } from "../ports/auth-collaboration.port.js";
 import type { AuthOAuthStateRepositoryPort } from "../ports/auth-oauth-state.repository.port.js";
@@ -88,6 +87,6 @@ export class LinkOAuthAccountWithCodeUseCase {
       event: AuthLogEvent.OAUTH_EXCHANGE_REJECTED,
       mode: "link",
     });
-    return new ApplicationException(ErrorCode.USER_0602);
+    return invalidCredentials();
   }
 }

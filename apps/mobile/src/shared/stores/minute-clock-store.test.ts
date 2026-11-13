@@ -1,3 +1,4 @@
+import { getNowInstant } from '@src/shared/date/clock';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { createMinuteClockStore, toMinuteStart } from './minute-clock-store';
@@ -9,7 +10,7 @@ function createSource() {
     stop,
     setForeground: (isForeground: boolean) => emit(isForeground),
     source: {
-      now: () => Date.now(),
+      now: getNowInstant,
       listenForeground: (onChange: (isForeground: boolean) => void) => {
         emit = onChange;
         return stop;

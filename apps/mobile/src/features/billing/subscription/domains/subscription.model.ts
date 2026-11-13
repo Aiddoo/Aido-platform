@@ -40,11 +40,11 @@ export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
 
 /** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
 function getAnnualDiscountPercent(monthlyPlan: SubscriptionPlan, annualPlan: SubscriptionPlan) {
-  return Math.round((1 - annualPlan.price / (monthlyPlan.price * 12)) * 100);
+  return Math.round((1 - annualPlan.price / (monthlyPlan.price * MONTHS_PER_YEAR)) * 100);
 }
 
 function getMonthlyEquivalent(annualPlan: SubscriptionPlan) {
-  return round(annualPlan.price / 12, 2);
+  return round(annualPlan.price / MONTHS_PER_YEAR, 2);
 }
 
 function findSelectedPlan(offering: SubscriptionOffering, chosenPlanId: string | undefined) {

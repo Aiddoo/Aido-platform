@@ -1,6 +1,3 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
@@ -9,6 +6,7 @@ import {
   toTodoSeriesReadModel,
   type TodoSeriesReadModel,
 } from "../read-models/todo-series.read-model.js";
+import { todoSeriesNotFound } from "../todo-series.errors.js";
 
 export interface GetTodoSeriesInput {
   readonly seriesId: string;
@@ -32,7 +30,7 @@ export class GetTodoSeriesUseCase {
       UserId.reconstitute(input.userId),
     );
     if (series == null) {
-      throw new ApplicationException(ErrorCode.TODO_0841, { seriesId: input.seriesId });
+      throw todoSeriesNotFound(input.seriesId);
     }
     return toTodoSeriesReadModel(series);
   }

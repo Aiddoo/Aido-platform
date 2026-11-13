@@ -1,4 +1,5 @@
 import { createSignOutEpoch } from '@src/core/session/sign-out-epoch';
+import { fromEpochMs } from '@src/shared/date/instant';
 import { createMemorySyncStorage } from '@src/testing/core';
 import { z } from 'zod';
 
@@ -15,7 +16,11 @@ function createDraftService(now: () => number = () => NOW) {
   return {
     storage,
     signOutEpoch,
-    service: new DraftService(createDraftRepository(storage), now, signOutEpoch.current),
+    service: new DraftService(
+      createDraftRepository(storage),
+      () => fromEpochMs(now()),
+      signOutEpoch.current,
+    ),
   };
 }
 

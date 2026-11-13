@@ -1,7 +1,16 @@
 import { invalidateTodoSummaries } from '@src/features/planning/todo/queries/todo-cache';
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import type {
+  DefaultError,
+  InfiniteQueryExecuteOptions,
+  QueryClient,
+  QueryKey,
+} from '@tanstack/react-query';
 
-import type { TodoComment } from '../domains/todo-comment.model';
+import type {
+  TodoComment,
+  TodoCommentReplyPage,
+  TodoCommentThreadPage,
+} from '../domains/todo-comment.model';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,
@@ -15,17 +24,32 @@ import {
   removeCommentFromThreadPages,
   restoreCommentInReplyPages,
   restoreCommentInThreadPages,
+  type TodoCommentPageParam,
   type TodoCommentPlacement,
   type TodoCommentReplyPages,
   type TodoCommentThreadPlacement,
   type TodoCommentThreadPages,
   type TodoCommentTransform,
-} from '../utils/todo-comment-cache-pages';
+} from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
-import type {
-  useGetTodoCommentRepliesInfiniteQueryOptions,
-  useGetTodoCommentThreadsInfiniteQueryOptions,
-} from './todo-comment.queries';
+
+/** 조회 함수가 DI Api를 써서 `useGetTodoCommentThreadsInfiniteQueryOptions`가 만든다 */
+type TodoCommentThreadsQueryOptions<TData> = InfiniteQueryExecuteOptions<
+  TodoCommentThreadPage,
+  DefaultError,
+  TData,
+  ReturnType<typeof TODO_COMMENT_QUERY_KEYS.threads>,
+  TodoCommentPageParam
+>;
+
+/** 조회 함수가 DI Api를 써서 `useGetTodoCommentRepliesInfiniteQueryOptions`가 만든다 */
+type TodoCommentRepliesQueryOptions<TData> = InfiniteQueryExecuteOptions<
+  TodoCommentReplyPage,
+  DefaultError,
+  TData,
+  ReturnType<typeof TODO_COMMENT_QUERY_KEYS.replies>,
+  TodoCommentPageParam
+>;
 
 interface TodoCommentCacheInput {
   todoId: number;
@@ -52,8 +76,7 @@ export function cancelTodoCommentQueries(
 ) {
   return queryClient.cancelQueries({
     queryKey: TODO_COMMENT_QUERY_KEYS.todo({ todoId }),
-    // oxlint-disable-next-line aido/no-strict-nullish -- 데이터가 아직 없음(undefined)만 첫 로드로 본다
-    predicate: (query) => query.state.data !== undefined,
+    predicate: (query) => query.state.data != null,
   });
 }
 
@@ -160,17 +183,17 @@ export function addTodoCommentRepliesToCaches(
 }
 
 /** 정렬을 바꾸기 전에 그 정렬의 묶음 목록을 받는다. 받은 첫 페이지가 있으면 다시 받지 않는다 */
-export function fetchTodoCommentThreads(
+export function fetchTodoCommentThreads<TData>(
   queryClient: QueryClient,
-  options: ReturnType<typeof useGetTodoCommentThreadsInfiniteQueryOptions>,
+  options: TodoCommentThreadsQueryOptions<TData>,
 ) {
   return queryClient.infiniteQuery(options);
 }
 
 /** 펼치기 전에 답글을 받는다. 한 번 받은 답글은 다시 받지 않는다 */
-export function ensureTodoCommentReplies(
+export function ensureTodoCommentReplies<TData>(
   queryClient: QueryClient,
-  options: ReturnType<typeof useGetTodoCommentRepliesInfiniteQueryOptions>,
+  options: TodoCommentRepliesQueryOptions<TData>,
 ) {
   return queryClient.infiniteQuery({ ...options, staleTime: 'static' });
 }

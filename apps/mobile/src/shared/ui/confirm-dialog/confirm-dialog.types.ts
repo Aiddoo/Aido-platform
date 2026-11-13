@@ -1,5 +1,6 @@
-import type { ButtonProps } from '@src/shared/ui/button';
 import type { ReactNode } from 'react';
+
+import type { ButtonProps } from '../button/button.types';
 
 export interface ConfirmDialogOptions {
   title: ReactNode;

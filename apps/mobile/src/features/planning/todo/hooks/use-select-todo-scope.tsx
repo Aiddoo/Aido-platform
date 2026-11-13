@@ -3,7 +3,7 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
-import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
+import type { TodoEditScope } from '../domains/todo-repeat.model';
 
 export interface ScopeRequest {
   action: 'edit' | 'delete';
@@ -29,14 +29,20 @@ export function useSelectTodoScope() {
     [],
   );
 
-  const selectScope = (
+  // 고른 값을 보인 범위에서 다시 찾아 부른 쪽이 넘긴 범위 타입으로 돌려준다
+  const selectScope = <TScope extends TodoEditScope>(
     action: ScopeRequest['action'],
     date: DateKey,
-    scopes: readonly TodoEditScope[],
+    scopes: readonly TScope[],
   ) =>
-    new Promise<TodoEditScope | null>((resolve) => {
+    new Promise<TScope | null>((resolve) => {
       Keyboard.dismiss();
-      setRequest({ action, date, scopes, resolve });
+      setRequest({
+        action,
+        date,
+        scopes,
+        resolve: (scope) => resolve(scopes.find((shown) => shown === scope) ?? null),
+      });
     });
 
   const settle = (scope: TodoEditScope | null) => {
@@ -45,10 +51,7 @@ export function useSelectTodoScope() {
   };
 
   return {
-    selectEditScope: async (date: DateKey): Promise<TodoUpdateScope | null> => {
-      const scope = await selectScope('edit', date, TODO_UPDATE_SCOPES);
-      return scope === 'ALL' ? null : scope;
-    },
+    selectEditScope: (date: DateKey) => selectScope('edit', date, TODO_UPDATE_SCOPES),
     selectDeleteScope: (date: DateKey, scopes: readonly TodoEditScope[]) =>
       selectScope('delete', date, scopes),
     scopeRequest: request,

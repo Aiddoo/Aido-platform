@@ -25,7 +25,7 @@ export const renderStoredAndroidWidget = createStoredAndroidWidgetRenderer({
 
 export function createAndroidWidgetsBridge(): WidgetBridge {
   return {
-    writeSnapshot: async (snapshot, userId = null) => {
+    writeSnapshot: async (snapshot, userId) => {
       if (WidgetSnapshotPolicy.isLoggedOut(snapshot)) {
         const pendingCommand = navigationRepository.findPendingCommand();
         if (pendingCommand == null) {

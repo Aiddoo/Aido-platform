@@ -1,12 +1,10 @@
-import { ErrorCode } from "@aido/api/errors";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { Entity } from "#api/shared/domain/model/entity";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { Coordinate } from "../../shared/domain/coordinate.vo.js";
 import { GridCoordinate } from "../../shared/domain/grid-coordinate.vo.js";
+import { kmaGridUnavailable } from "./locations.errors.js";
 
 export interface UserLocationPrimitives {
   readonly userId: string;
@@ -83,7 +81,7 @@ export class UserLocation extends Entity<UserId, UserLocationProps> {
   /** v1 KMA 경로는 격자 없는 해외 위치를 "위치 없음"과 같은 WEATHER_1902로 다룬다. */
   requireKmaGrid(): GridCoordinate {
     if (this.props.grid == null) {
-      throw new DomainException(ErrorCode.WEATHER_1902);
+      throw kmaGridUnavailable();
     }
     return this.props.grid;
   }

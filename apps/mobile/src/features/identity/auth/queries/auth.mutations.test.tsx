@@ -22,6 +22,7 @@ import {
   useOpenAppleLoginMutationOptions,
   useOpenKakaoLoginMutationOptions,
   useRegisterMutationOptions,
+  useResetPasswordMutationOptions,
   useVerifyEmailMutationOptions,
 } from './auth.mutations';
 
@@ -269,6 +270,41 @@ describe('회원가입 인증 메일', () => {
     // Then
     expect(screen.queryByText(NOT_SENT_MESSAGE)).toBeNull();
   });
+});
+
+describe('비밀번호 재설정 코드 거절', () => {
+  it.each(['VERIFY_0751', 'VERIFY_0752', 'VERIFY_0754'] as const)(
+    '%s면 HTTP 어댑터가 고른 카탈로그 문구를 전역 피드백 한 번(햅틱 1회)으로 보인다',
+    async (code) => {
+      // Given
+      const haptics = createHapticsGatewayStub();
+      const session = createAuthSession({ ports: { haptics } });
+      session.publicHttp.post.mockResolvedValue(
+        err(createAuthApiError({ code, status: 400, message: i18n.t(`errors:${code}`) })),
+      );
+      const { result } = await session.renderSession(
+        () => useMutation(useResetPasswordMutationOptions()),
+        'unauthenticated',
+      );
+
+      // When
+      await act(async () => {
+        await result.current
+          .mutateAsync({
+            email: 'test@example.com',
+            code: '123456',
+            newPassword: 'NewPass1234',
+            newPasswordConfirm: 'NewPass1234',
+          })
+          .catch(() => undefined);
+      });
+
+      // Then
+      expect(await screen.findAllByText(i18n.t(`errors:${code}`))).not.toHaveLength(0);
+      expect(haptics.notify).toHaveBeenCalledTimes(1);
+      expect(haptics.notify).toHaveBeenCalledWith('error');
+    },
+  );
 });
 
 describe('계정 연결 실패 안내', () => {

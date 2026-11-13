@@ -1,17 +1,13 @@
 import { cn } from '@src/shared/utils/cn';
-import type { ComponentProps } from 'react';
 
-import { Box } from '../box';
+import { Box } from '../box/box';
 
-export type DashedDividerProps = Omit<ComponentProps<typeof Box>, 'children'>;
-
-export function DashedDivider({ className, ...props }: DashedDividerProps) {
+export function DashedDivider({ className }: { className?: string }) {
   return (
     <Box
       accessibilityElementsHidden
       importantForAccessibility="no"
       className={cn('border-b border-dashed border-gray-3', className)}
-      {...props}
     />
   );
 }

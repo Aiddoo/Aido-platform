@@ -1,11 +1,11 @@
-import { CategorySelectInput } from '@src/features/planning/category/components/category-select-input';
+import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { useTranslation } from '@src/shared/i18n';
 import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
+import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
@@ -50,7 +50,7 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
 
   return (
     <TodoScopeStep step={scopeSelector}>
-      <CategorySelectInput
+      <CategoryPickForm
         defaultValue={todo.category.id}
         submitLabel={t('actions.changeSubmit')}
         isLoading={changeCategory.isPending}
@@ -60,14 +60,14 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
 
             return;
           }
-          if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
+          if (!TodoPolicy.hasRepeatRule(todo)) {
             await changeTodoCategory({ categoryId });
 
             return;
           }
           const scope = await selectEditScope(todo.startDate);
-          // oxlint-disable-next-line aido/no-strict-nullish -- null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
-          if (scope === null) {
+          // 범위 선택에서 시트를 닫거나 뒤로 가면 취소다
+          if (scope == null) {
             return;
           }
           await changeTodoCategory({ categoryId }, scope);
@@ -77,4 +77,4 @@ TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onCl
   );
 };
 
-TodoCategoryBottomSheet.Loading = CategorySelectInput.Loading;
+TodoCategoryBottomSheet.Loading = CategoryPickForm.Loading;

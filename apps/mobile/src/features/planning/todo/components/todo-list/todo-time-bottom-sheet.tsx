@@ -3,7 +3,6 @@ import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import { TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
 import { getScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
@@ -91,14 +90,14 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
                 },
               },
             );
-          if (!TodoRepeatPolicy.hasRepeatRule(todo)) {
+          if (!TodoPolicy.hasRepeatRule(todo)) {
             saveTime();
 
             return;
           }
           const scope = await selectEditScope(todo.startDate);
-          // oxlint-disable-next-line aido/no-strict-nullish -- null은 범위 선택에서 시트를 닫거나 뒤로 간 취소다
-          if (scope === null) {
+          // 범위 선택에서 시트를 닫거나 뒤로 가면 취소다
+          if (scope == null) {
             return;
           }
           saveTime(scope);

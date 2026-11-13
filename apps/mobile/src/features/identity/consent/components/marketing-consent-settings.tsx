@@ -46,7 +46,7 @@ export function MarketingConsentSettings({
           )
         }
         isSelected={consent.marketingPushAgreedAt != null}
-        onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed })}
+        onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed, source: 'settings' })}
         isDisabled={marketingPushMutation.isPending}
       />
     </SettingsListGroup>

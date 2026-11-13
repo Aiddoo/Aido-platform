@@ -4,8 +4,8 @@ import type { ReleaseId } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 import type { RELEASE_1_15_0_STEPS } from './release-1-15-0.constants';
 
-/** 소개 단계 이름. 1.14.0 소개는 한 장(friendInvite)이고 목록 줄에서 바로 해 보기는 list다 */
-export type WhatsNewStep = (typeof RELEASE_1_15_0_STEPS)[number] | 'friendInvite' | 'list';
+/** 소개 단계 이름. 목록 줄에서 바로 해 보기는 list다 */
+export type WhatsNewStep = (typeof RELEASE_1_15_0_STEPS)[number] | 'list';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

@@ -66,11 +66,6 @@ export function isDateKey(value: string): value is DateKey {
   return 1 <= month && month <= MONTHS_PER_YEAR && 1 <= day && day <= getDaysInMonth(year, month);
 }
 
-/** 검증 안 된 바깥 문자열(위젯 명령·딥링크)을 날짜 key로 읽는다. 아니면 null이다 */
-export function parseDateKey(value: string): DateKey | null {
-  return isDateKey(value) ? value : null;
-}
-
 /** brand는 입력 타입에 남지 않아 폼과 폼이 같이 쓰는 스키마는 이것을 쓴다 */
 export const dateKeyFieldSchema = z.custom<DateKey>(
   (value) => typeof value === 'string' && isDateKey(value),

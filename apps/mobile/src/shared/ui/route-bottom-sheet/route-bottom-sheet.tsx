@@ -5,7 +5,6 @@ import { BottomSheet } from '../bottom-sheet/bottom-sheet';
 import { KeyboardBottomSheet } from '../bottom-sheet/keyboard-bottom-sheet';
 import type { SheetRouteExit } from '../bottom-sheet/sheet-route';
 import { useSheetRoute } from '../bottom-sheet/use-sheet-route';
-import { INQUIRY_SHEET_EXIT } from '../query-error-boundary/query-error-actions';
 import { QueryErrorBoundary } from '../query-error-boundary/query-error-boundary';
 import { QueryErrorFallback } from '../query-error-boundary/query-error-fallback';
 
@@ -96,7 +95,10 @@ function RouteSheetBoundary({ sheet, loading, children }: RouteSheetBoundaryProp
   return (
     <QueryErrorBoundary
       fallback={({ reset }) => (
-        <QueryErrorFallback reset={reset} onInquiry={() => sheet.close(INQUIRY_SHEET_EXIT)} />
+        <QueryErrorFallback
+          reset={reset}
+          onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
+        />
       )}
     >
       <Suspense fallback={loading}>{children(sheet)}</Suspense>

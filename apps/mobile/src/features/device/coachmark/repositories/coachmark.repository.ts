@@ -3,7 +3,7 @@ import type { EnumerableSyncStorage, SyncStorage } from '@src/core/ports/sync-st
 import type { CoachmarkInput } from '../domains/coachmark.model';
 import { COACHMARK_KEY_PREFIX, toCoachmarkKey } from '../schemas/coachmark-storage.schema';
 
-// 1.15.1까지 재정렬(`:{account}:todo|category`)·친구 줄(`:{account}`) 안내가 쓰던 키. 1.16.0에서 옮기는 코드와 함께 지운다
+// 1.15.1까지 재정렬(`:{account}:todo|category`)·친구 줄(`:{account}`) 안내가 쓰던 키. 옮기는 코드와 함께 1.16.0에서 지운다(compatibility.md)
 const LEGACY_REORDER_KEY_PREFIX = 'aido_reorder_coachmark_v1';
 const LEGACY_FRIEND_STRIP_KEY_PREFIX = 'aido_friend_strip_hint_dismissed_v1';
 /** 더는 쓰지 않아 지우는 안내. 이미 본 사람에게 다시 뜰 일이 없어진 뒤에만 올린다 */

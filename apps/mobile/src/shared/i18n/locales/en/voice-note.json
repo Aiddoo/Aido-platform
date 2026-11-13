@@ -153,6 +153,8 @@
     "title": "Voice notes",
     "notDigested": "Not summarized",
     "viewAll": "View all {{amount}}",
-    "empty": "No voice notes yet"
+    "empty": "No voice notes yet",
+    "open": "Open",
+    "loadFailed": "Couldn't load your voice notes"
   }
 }
