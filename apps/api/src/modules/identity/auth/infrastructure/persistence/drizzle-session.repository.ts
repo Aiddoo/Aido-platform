@@ -10,9 +10,9 @@ import type {
 } from "#api/modules/identity/auth/domain/auth-session.aggregate";
 import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { session } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { toAuthSession, toAuthSessionRow } from "./auth-row.mapper.js";
 

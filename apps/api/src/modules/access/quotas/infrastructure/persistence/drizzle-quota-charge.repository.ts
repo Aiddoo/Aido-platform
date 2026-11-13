@@ -8,9 +8,9 @@ import {
   isUniqueConstraintViolation,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { quotaCharge } from "#api/platform/database/schema/access.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { QuotaChargeRepositoryPort } from "../../application/ports/quota-charge.repository.port.js";
 import { quotaChargeConflict } from "../../application/quotas.errors.js";

@@ -12,8 +12,8 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import { quotaChargeStatus, quotaMeter, resourceType } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 

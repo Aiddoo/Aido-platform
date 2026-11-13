@@ -4,9 +4,9 @@ import { and, eq, inArray, notExists, or, sql, type AnyColumn, type SQL } from "
 import { QueryBuilder } from "drizzle-orm/pg-core";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { follow, userBlock } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import type {
   UserBlockReaderPort,

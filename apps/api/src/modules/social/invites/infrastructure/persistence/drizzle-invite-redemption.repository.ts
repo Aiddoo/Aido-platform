@@ -4,11 +4,11 @@ import { Injectable } from "@nestjs/common";
 import { and, count, eq, inArray, lte } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { inviteActiveDay, inviteRedemption } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { InviteRedemptionRepositoryPort } from "../../application/ports/invite-redemption.repository.port.js";
 import type { InviteRedemptionSummary } from "../../application/read-models/invite-redemption-summary.read-model.js";

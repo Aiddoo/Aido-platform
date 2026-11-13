@@ -7,13 +7,13 @@ import {
 } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
 import { requireRecord } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
   user as userTable,
   userPreference,
 } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";

@@ -7,9 +7,9 @@ import { RecordInviteeActivityUseCase } from "#api/modules/social/invites/applic
 import { RedeemInviteUseCase } from "#api/modules/social/invites/application/use-cases/redeem-invite.use-case";
 import { SendInviteQualifyReminderUseCase } from "#api/modules/social/invites/application/use-cases/send-invite-qualify-reminder.use-case";
 import { qualifyReminderExpiresBefore } from "#api/modules/social/invites/domain/invite-qualify-reminder.domain-service";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";

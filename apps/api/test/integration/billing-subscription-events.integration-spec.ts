@@ -14,7 +14,6 @@ import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/s
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   subscription as subscriptionTable,
   subscriptionEventReceipt,
@@ -22,6 +21,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";

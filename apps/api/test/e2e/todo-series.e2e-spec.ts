@@ -10,8 +10,8 @@ import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 

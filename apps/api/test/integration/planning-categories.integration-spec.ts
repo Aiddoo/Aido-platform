@@ -11,10 +11,10 @@ import { UpdateTodoCategoryUseCase } from "#api/modules/planning/categories/appl
 import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import type { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { todo, user } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { TodoFixture, UserFixture } from "#test/fixtures/index";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";

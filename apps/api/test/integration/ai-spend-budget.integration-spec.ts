@@ -5,9 +5,9 @@ import {
   aiAssistanceGenerationConfig,
 } from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
 import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";

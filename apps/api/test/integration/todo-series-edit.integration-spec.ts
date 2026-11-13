@@ -23,7 +23,6 @@ import {
   type EditTodoInput,
 } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
 import { UpdateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo.use-case";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   todo,
   todoCategory,
@@ -34,6 +33,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";

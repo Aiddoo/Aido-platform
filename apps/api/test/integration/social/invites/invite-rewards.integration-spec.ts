@@ -21,7 +21,6 @@ import {
 } from "#api/modules/social/invites/domain/invite-reward.domain-service";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/invites/domain/invites.constants";
 import { InviteeActivityEventHandler } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   inviteActiveDay,
   inviteRedemption,
@@ -34,6 +33,7 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";

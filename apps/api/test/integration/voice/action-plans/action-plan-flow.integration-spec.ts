@@ -8,7 +8,6 @@ import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.p
 import { ApplyActionPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/apply-action-plan.use-case";
 import { CreateQuickPlanUseCase } from "#api/modules/voice/action-plans/application/use-cases/create-quick-plan.use-case";
 import { DigestVoiceNoteUseCase } from "#api/modules/voice/voice-notes/application/use-cases/digest-voice-note.use-case";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   memo as memoTable,
   planApplication,
@@ -20,6 +19,7 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { UserFixture } from "#test/fixtures/index";

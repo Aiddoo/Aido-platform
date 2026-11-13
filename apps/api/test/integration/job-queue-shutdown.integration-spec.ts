@@ -4,11 +4,11 @@ import { eq } from "drizzle-orm";
 import { Pool } from "pg";
 
 import { createDatabase, DRIZZLE, type Database } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobQueueLifecycle } from "#api/platform/jobs/job-queue.module";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createTestClient } from "#test/setup/database-context";

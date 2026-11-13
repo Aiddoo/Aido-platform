@@ -2,10 +2,10 @@ import { count, eq, sql } from "drizzle-orm";
 
 import { DrizzleUserLocationRepository } from "#api/modules/weather/locations/infrastructure/persistence/drizzle-user-location.repository";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user, userLocation } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeUserLocationRepositoryContract } from "#test/contracts/weather/user-location-repository.contract";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {

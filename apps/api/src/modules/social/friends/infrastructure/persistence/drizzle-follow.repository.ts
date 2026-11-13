@@ -8,9 +8,9 @@ import {
   requireRecord,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { follow } from "#api/platform/database/schema/social.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { friendRequestAlreadySent } from "../../application/friends.errors.js";
 import { FollowRepositoryPort } from "../../application/ports/follow.repository.port.js";

@@ -15,8 +15,8 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant, plainDate } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import {
   notificationActionType,
   notificationPurpose,

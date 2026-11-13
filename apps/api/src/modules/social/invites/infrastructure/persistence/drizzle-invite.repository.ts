@@ -3,10 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { invite as inviteTable } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { InviteRepositoryPort } from "../../application/ports/invite.repository.port.js";
 import type { InviteWithInviter } from "../../application/read-models/inviter-profile.read-model.js";

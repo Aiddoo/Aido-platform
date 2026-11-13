@@ -3,9 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, gte, inArray } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { user, userReport } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import type { UserReportRepositoryPort } from "../../application/ports/user-report.repository.port.js";
 import { UserReportId } from "../../domain/user-report-id.vo.js";

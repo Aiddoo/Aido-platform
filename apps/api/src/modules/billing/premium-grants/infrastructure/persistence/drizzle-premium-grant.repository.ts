@@ -5,10 +5,10 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { validStoreEntitlementCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {

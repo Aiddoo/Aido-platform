@@ -2,8 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { resourceBonus } from "#api/platform/database/schema/access.schema";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { FeatureGrantRepositoryPort } from "../../application/ports/feature-grant.repository.port.js";
 import { FeatureGrantId } from "../../domain/feature-grant-id.vo.js";

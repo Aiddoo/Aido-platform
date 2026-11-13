@@ -13,7 +13,6 @@ import {
 } from "#api/modules/social/invites/infrastructure/event-handlers/invitee-activity.event-handler";
 import { INVITEE_ACTIVITY_QUEUE } from "#api/modules/social/invites/infrastructure/jobs/invitee-activity.queue";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { inviteActiveDay, user } from "#api/platform/database/schema/index";
 import { EventSubscriptionCatalog } from "#api/platform/events/event-subscription.catalog";
 import { FanOutDomainEventPublisher } from "#api/platform/events/fan-out-domain-event.publisher";
@@ -22,6 +21,7 @@ import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adap
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { type PublishedDomainEvent } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";

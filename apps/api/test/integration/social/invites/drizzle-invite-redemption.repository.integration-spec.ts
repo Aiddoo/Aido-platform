@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { SummarizeMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/summarize-my-invite.use-case";
 import { DrizzleInviteRedemptionRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite-redemption.repository";
 import { DrizzleRewardGrantRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-reward-grant.repository";
-import { createEntityId } from "#api/platform/database/entity-id";
 import {
   inviteActiveDay,
   inviteRedemption,
@@ -12,6 +11,7 @@ import {
 } from "#api/platform/database/schema/index";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeInviteRedemptionRepositoryContract } from "#test/contracts/social/invite-redemption-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";

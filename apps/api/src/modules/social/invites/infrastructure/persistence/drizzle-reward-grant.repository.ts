@@ -5,9 +5,9 @@ import { and, asc, eq, gt, inArray, lt, lte, ne, or, sql, sum } from "drizzle-or
 import { sumBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { rewardGrant } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import {
   type RewardGrantFailure,

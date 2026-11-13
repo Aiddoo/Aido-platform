@@ -8,7 +8,7 @@ import { tupleLessThan } from "#api/platform/database/keyset";
 import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 {{else}}
-import { createEntityId } from "#api/platform/database/entity-id";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { {{camelCase aggregate}} as {{camelCase aggregate}}Table } from "#api/platform/database/schema/index";
 {{/if}}

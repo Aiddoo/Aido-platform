@@ -8,9 +8,9 @@ import {
   isUniqueConstraintViolation,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { createEntityId } from "#api/platform/database/entity-id";
 import { todoComment as todoCommentTable } from "#api/platform/database/schema/engagement.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
 
 import { TodoCommentIdempotencyRace } from "../../application/comments.errors.js";
 import { TodoCommentRepositoryPort } from "../../application/ports/todo-comment.repository.port.js";

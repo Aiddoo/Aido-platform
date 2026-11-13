@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
 import { pgTable, integer, text, serial, index, foreignKey, unique } from "drizzle-orm/pg-core";
 
+import { createEntityId } from "../../../shared/domain/model/entity-id.js";
 import { instant, plainDate } from "../columns/temporal-columns.js";
-import { createEntityId } from "../entity-id.js";
 import { user } from "./identity.schema.js";
 
 export const dailyCompletion = pgTable(
