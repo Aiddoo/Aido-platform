@@ -24,6 +24,10 @@ import {
   SchedulerDedupKey,
 } from "#api/modules/notification/reminders/infrastructure/cache/scheduler-dedup.keyspace";
 import {
+  RETENTION_CACHE_TTL_MS,
+  RetentionCacheKey,
+} from "#api/modules/notification/retention/infrastructure/cache/retention-cache.keyspace";
+import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
 } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
@@ -78,6 +82,9 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(SchedulerDedupKey.winbackStages("user-1")).toBe(
       "aido:v1:scheduler:dedup-winback-stages:user-1",
     );
+    expect(RetentionCacheKey.postgresTimezoneNames()).toBe(
+      "aido:v1:retention:postgres-timezone-names",
+    );
   });
 
   it("기존 TTL과 sentinel 값을 그대로 유지한다", () => {
@@ -97,6 +104,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS).toBe(300_000);
     expect(NOTIFICATION_DEDUP_TTL_MS).toBe(90_000_000);
     expect(NOTIFICATION_DEDUP_SENTINEL).toBe("__init__");
+    expect(RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES).toBe(86_400_000);
     expect(SCHEDULER_DEDUP_TTL_MS).toEqual({
       WINBACK_STAGES: 7_776_000_000,
       NUDGE_SUGGEST: 691_200_000,
