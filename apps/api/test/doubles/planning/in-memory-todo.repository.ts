@@ -6,6 +6,7 @@ import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
 import type { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import type { TodoScheduleProps } from "#api/modules/planning/shared/domain/todo-schedule.vo";
+import { TODO_SORT_ORDER_GAP } from "#api/modules/planning/shared/domain/todo-sort-order.domain-service";
 import { Todo } from "#api/modules/planning/shared/domain/todo.aggregate";
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
@@ -294,20 +295,45 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   async updateSortOrder(id: TodoId, sortOrder: number): Promise<void> {
     this.#record(id.value).sortOrder = sortOrder;
   }
-  async shiftSortOrders(
+  // (sortOrder, id) 순서로 줄 세운 그 사용자 할 일
+  #ordered(userId: UserId): { id: number; sortOrder: number }[] {
+    return [...this.records.values()]
+      .filter((record) => record.userId === userId.value)
+      .map(({ id, sortOrder }) => ({ id, sortOrder }))
+      .sort((left, right) => left.sortOrder - right.sortOrder || left.id - right.id);
+  }
+  async findAdjacentSortOrder(
     userId: UserId,
-    from: number,
-    to: number | null,
-    delta: number,
-  ): Promise<void> {
-    for (const record of this.records.values()) {
-      if (
-        record.userId === userId.value &&
-        record.sortOrder >= from &&
-        (to === null || record.sortOrder <= to)
-      ) {
-        record.sortOrder += delta;
-      }
+    from: { readonly id: TodoId; readonly sortOrder: number },
+    direction: "previous" | "next",
+    excludeId: TodoId,
+  ): Promise<number | null> {
+    const isAfter = (record: { id: number; sortOrder: number }) =>
+      record.sortOrder > from.sortOrder ||
+      (record.sortOrder === from.sortOrder && record.id > from.id.value);
+    const isBefore = (record: { id: number; sortOrder: number }) =>
+      record.sortOrder < from.sortOrder ||
+      (record.sortOrder === from.sortOrder && record.id < from.id.value);
+    const candidates = this.#ordered(userId).filter(
+      (record) =>
+        record.id !== excludeId.value &&
+        (direction === "next" ? isAfter(record) : isBefore(record)),
+    );
+    const found = direction === "next" ? candidates.at(0) : candidates.at(-1);
+    return found?.sortOrder ?? null;
+  }
+  async findEdgeSortOrder(
+    userId: UserId,
+    edge: "first" | "last",
+    excludeId: TodoId,
+  ): Promise<number | null> {
+    const ordered = this.#ordered(userId).filter((record) => record.id !== excludeId.value);
+    const found = edge === "first" ? ordered.at(0) : ordered.at(-1);
+    return found?.sortOrder ?? null;
+  }
+  async renumberSortOrders(userId: UserId): Promise<void> {
+    for (const [index, { id }] of this.#ordered(userId).entries()) {
+      this.#record(id).sortOrder = (index + 1) * TODO_SORT_ORDER_GAP;
     }
   }
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {

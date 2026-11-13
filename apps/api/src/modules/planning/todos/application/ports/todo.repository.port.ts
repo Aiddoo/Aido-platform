@@ -119,15 +119,25 @@ export abstract class TodoRepositoryPort {
   abstract updateSortOrder(id: TodoId, sortOrder: number): Promise<void>;
 
   /**
-   * [from, to] 범위(둘 다 포함)의 sortOrder를 delta만큼 일괄 이동.
-   * to가 null이면 from 이상 전체.
+   * 그 사용자 할 일을 (sortOrder, id) 순서로 볼 때 from 바로 앞(previous)·뒤(next) 할 일의 sortOrder.
+   * excludeId(옮기는 할 일)는 건너뛰고, 없으면 null이다
    */
-  abstract shiftSortOrders(
+  abstract findAdjacentSortOrder(
     userId: UserId,
-    from: number,
-    to: number | null,
-    delta: number,
-  ): Promise<void>;
+    from: { readonly id: TodoId; readonly sortOrder: number },
+    direction: "previous" | "next",
+    excludeId: TodoId,
+  ): Promise<number | null>;
+
+  /** excludeId를 뺀 그 사용자 할 일의 가장 앞(first)·끝(last) sortOrder. 없으면 null이다 */
+  abstract findEdgeSortOrder(
+    userId: UserId,
+    edge: "first" | "last",
+    excludeId: TodoId,
+  ): Promise<number | null>;
+
+  /** 그 사용자 할 일을 지금 (sortOrder, id) 순서대로 간격을 두고 다시 번호 매긴다 */
+  abstract renumberSortOrders(userId: UserId): Promise<void>;
 
   /**
    * 회차를 한 문장으로 만든다. 같은 (seriesId, occurrenceDate)는 건너뛰어(ON CONFLICT DO NOTHING)

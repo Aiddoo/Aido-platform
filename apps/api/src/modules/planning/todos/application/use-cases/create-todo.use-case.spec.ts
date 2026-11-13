@@ -86,7 +86,7 @@ describe("할 일 생성", () => {
     expect(fixture.records.get(result.id)).toMatchObject({
       title: "새 할 일",
       categoryId: 1,
-      sortOrder: 0,
+      sortOrder: 1024,
       completed: false,
       visibility: "PUBLIC",
     });
@@ -194,9 +194,9 @@ describe("할 일 생성", () => {
       );
       // Then
       expect(todos.map((todo) => [todo.startDate, todo.sortOrder])).toEqual([
-        ["2026-05-18", 0],
-        ["2026-05-20", 1],
-        ["2026-05-22", 2],
+        ["2026-05-18", 1024],
+        ["2026-05-20", 2048],
+        ["2026-05-22", 3072],
       ]);
       expect(todos.every((todo) => todo.seriesId === series?.id)).toBe(true);
       expect(todos.every((todo) => todo.items.length === 2)).toBe(true);

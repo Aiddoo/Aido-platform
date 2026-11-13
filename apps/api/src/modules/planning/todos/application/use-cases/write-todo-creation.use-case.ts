@@ -5,6 +5,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
+import { sortOrderAfterLast } from "../../../shared/domain/todo-sort-order.domain-service.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
 import { Todo, type TodoEvent } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
@@ -99,7 +100,7 @@ export class WriteTodoCreationUseCase {
       title: spec.title,
       schedule: spec.schedule,
       visibility: spec.visibility,
-      sortOrder: maxSortOrder + 1,
+      sortOrder: sortOrderAfterLast(maxSortOrder),
       now: this.#dependencies.clock.now(),
     });
     await todoRepository.insert(todo);

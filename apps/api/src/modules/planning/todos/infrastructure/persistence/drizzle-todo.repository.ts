@@ -1,7 +1,7 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gt, gte, inArray, isNotNull, isNull, lte, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
@@ -9,6 +9,7 @@ import {
   requireRecord,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
 import { todo, todoItem, todoSeries } from "#api/platform/database/schema/index";
 import { nextSequenceValue, nextSequenceValues } from "#api/platform/database/sequence";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -20,6 +21,7 @@ import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
 import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
 import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
+import { TODO_SORT_ORDER_GAP } from "../../../shared/domain/todo-sort-order.domain-service.js";
 import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type {
@@ -445,22 +447,66 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return result?.maximum ?? -1;
   }
 
-  async shiftSortOrders(
+  async findAdjacentSortOrder(
     userId: UserId,
-    from: number,
-    to: number | null,
-    delta: number,
-  ): Promise<void> {
-    await this.#db
-      .update(todo)
-      .set({ sortOrder: sql`${todo.sortOrder} + ${delta}`, updatedAt: this.#clock.now() })
+    from: { readonly id: TodoId; readonly sortOrder: number },
+    direction: "previous" | "next",
+    excludeId: TodoId,
+  ): Promise<number | null> {
+    const keyset = [todo.sortOrder, todo.id];
+    const anchor = [from.sortOrder, from.id.value];
+    const [row] = await this.#db
+      .select({ sortOrder: todo.sortOrder })
+      .from(todo)
       .where(
         and(
           eq(todo.userId, userId.value),
-          gte(todo.sortOrder, from),
-          to == null ? undefined : lte(todo.sortOrder, to),
+          ne(todo.id, excludeId.value),
+          direction === "next" ? tupleGreaterThan(keyset, anchor) : tupleLessThan(keyset, anchor),
         ),
-      );
+      )
+      .orderBy(
+        ...(direction === "next"
+          ? [asc(todo.sortOrder), asc(todo.id)]
+          : [desc(todo.sortOrder), desc(todo.id)]),
+      )
+      .limit(1);
+    return row?.sortOrder ?? null;
+  }
+
+  async findEdgeSortOrder(
+    userId: UserId,
+    edge: "first" | "last",
+    excludeId: TodoId,
+  ): Promise<number | null> {
+    const row = await this.#db.query.todo.findFirst({
+      columns: { sortOrder: true },
+      where: { userId: userId.value, id: { ne: excludeId.value } },
+      orderBy: { sortOrder: edge === "first" ? "asc" : "desc" },
+    });
+    return row?.sortOrder ?? null;
+  }
+
+  async renumberSortOrders(userId: UserId): Promise<void> {
+    // 순번은 창 함수(row_number)라 ORM 식이 없다. 지금 순서대로 1부터 매겨 간격을 곱한다
+    const ranked = this.#db
+      .select({
+        id: todo.id,
+        position: sql<number>`row_number() over (order by ${todo.sortOrder}, ${todo.id})`.as(
+          "position",
+        ),
+      })
+      .from(todo)
+      .where(eq(todo.userId, userId.value))
+      .as("ranked");
+    await this.#db
+      .update(todo)
+      .set({
+        sortOrder: sql`${ranked.position} * ${TODO_SORT_ORDER_GAP}`,
+        updatedAt: this.#clock.now(),
+      })
+      .from(ranked)
+      .where(eq(todo.id, ranked.id));
   }
 
   async insertItem(todoId: TodoId, item: TodoItem): Promise<void> {
