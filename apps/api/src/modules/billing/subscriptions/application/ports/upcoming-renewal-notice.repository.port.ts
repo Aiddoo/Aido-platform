@@ -1,4 +1,4 @@
-import { BillingNoticeRepositoryPort } from "../../../premium-grants/application/ports/billing-notice.port.js";
+import { BillingNoticeRepositoryPort } from "../../../shared/application/ports/billing-notice.repository.port.js";
 
 /** 이번 기간에 아직 갱신 안내를 보내지 않은, 연간으로 자동 갱신될 구독 */
 export interface UpcomingRenewalNotice {

@@ -1,5 +1,5 @@
 import { StoreEntitlementReaderPort } from "#api/modules/billing/premium-grants/application/ports/store-entitlement.reader.port";
-import type { StoreSubscriptionEntitlement } from "#api/modules/billing/shared/premium-access.domain-service";
+import type { StoreSubscriptionEntitlement } from "#api/modules/billing/shared/domain/premium-access.domain-service";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemorySubscriptionRepository } from "./in-memory-subscription.repository.js";

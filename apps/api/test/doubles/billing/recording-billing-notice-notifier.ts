@@ -1,7 +1,5 @@
-import {
-  type BillingNotice,
-  BillingNoticeNotifierPort,
-} from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
+import { BillingNoticeNotifierPort } from "#api/modules/billing/shared/application/ports/billing-notice-notifier.port";
+import type { BillingNotice } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
 
 export class RecordingBillingNoticeNotifier<
   TNotice extends BillingNotice,

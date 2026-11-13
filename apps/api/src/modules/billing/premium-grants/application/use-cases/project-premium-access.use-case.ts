@@ -5,7 +5,7 @@ import {
   resolvePremiumAccess,
   type PremiumAccess,
   type StoreEventChainState,
-} from "../../../shared/premium-access.domain-service.js";
+} from "../../../shared/domain/premium-access.domain-service.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import type {

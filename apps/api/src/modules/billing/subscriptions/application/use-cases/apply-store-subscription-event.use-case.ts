@@ -2,6 +2,11 @@ import { ErrorCode } from "@aido/api/errors";
 import { sortBy, uniq, uniqBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
+import type {
+  PremiumAccessCachePort,
+  ProjectPremiumAccessUseCase,
+  UserSubscriptionProjection,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -12,13 +17,10 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
-import type { UserSubscriptionProjection } from "../../../premium-grants/application/ports/user-subscription-projection.repository.port.js";
-import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type {
   PremiumAccess,
   StoreEventChainState,
-} from "../../../shared/premium-access.domain-service.js";
+} from "../../../shared/domain/premium-access.domain-service.js";
 import { resolveCancellationUserStatus } from "../../domain/cancellation-user-status.domain-service.js";
 import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import type {

@@ -1,12 +1,14 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
+import {
+  NotifyEndingPremiumGrantsUseCase,
+  SweepPremiumGrantsUseCase,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
-import { PremiumGrantLogEvent } from "../../../premium-grants/application/premium-grants.log-events.js";
-import { NotifyEndingPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/notify-ending-premium-grants.use-case.js";
-import { SweepPremiumGrantsUseCase } from "../../../premium-grants/application/use-cases/sweep-premium-grants.use-case.js";
+import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import { NotifyEndingTrialsUseCase } from "../../application/use-cases/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewalsUseCase } from "../../application/use-cases/notify-upcoming-renewals.use-case.js";
 import { PREMIUM_GRANT_SWEEP_QUEUE } from "./premium-grant-sweep.queue.js";
@@ -51,7 +53,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
       await this.#sweepPremiumGrants.execute({ now });
     } catch (error) {
       this.#logger.error({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
+        event: SubscriptionLogEvent.PREMIUM_GRANT_SWEEP_JOB_FAILED,
         errorType: toErrorType(error),
       });
       throw error;
@@ -70,7 +72,7 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
         await useCase.execute({ now });
       } catch (error) {
         this.#logger.error({
-          event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEEP_STEP_FAILED,
+          event: SubscriptionLogEvent.PREMIUM_GRANT_SWEEP_STEP_FAILED,
           step,
           errorType: toErrorType(error),
         });

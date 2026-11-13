@@ -5,8 +5,8 @@ import type {
   BillingNoticeSweepInput,
   BillingNoticeSweepResult,
   SweepBillingNoticesUseCase,
-} from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
-import { isBillingNoticeable } from "../../../shared/billing-notice-window.domain-service.js";
+} from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
+import { isBillingNoticeable } from "../../../shared/domain/billing-notice-window.domain-service.js";
 import type {
   TrialEndingNotice,
   TrialEndingNoticeRepositoryPort,

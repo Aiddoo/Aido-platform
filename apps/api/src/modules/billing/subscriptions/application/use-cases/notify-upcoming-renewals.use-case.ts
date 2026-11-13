@@ -5,7 +5,7 @@ import type {
   BillingNoticeSweepInput,
   BillingNoticeSweepResult,
   SweepBillingNoticesUseCase,
-} from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+} from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type {
   UpcomingRenewalNotice,
   UpcomingRenewalNoticeRepositoryPort,

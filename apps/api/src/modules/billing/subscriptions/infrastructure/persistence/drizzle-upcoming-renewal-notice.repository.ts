@@ -7,14 +7,14 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
-import { currentStoreChainOf } from "../../../shared/premium-access.domain-service.js";
-import { storeProductIdsOfPlan } from "../../../shared/subscription-plan.domain-service.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
+import { currentStoreChainOf } from "../../../shared/domain/premium-access.domain-service.js";
+import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
+import { storeProductIdsOfPlan } from "../../../shared/domain/subscription-plan.domain-service.js";
 import {
   type UpcomingRenewalNotice,
   UpcomingRenewalNoticeRepositoryPort,
 } from "../../application/ports/upcoming-renewal-notice.repository.port.js";
-import { toStorePeriodType } from "../../domain/subscription-lifecycle.domain-service.js";
 
 @Injectable()
 export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNoticeRepositoryPort {
@@ -30,7 +30,7 @@ export class DrizzleUpcomingRenewalNoticeRepository extends UpcomingRenewalNotic
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<UpcomingRenewalNotice>,
+    params: ListDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
     const rows = await this.#db
       .select({

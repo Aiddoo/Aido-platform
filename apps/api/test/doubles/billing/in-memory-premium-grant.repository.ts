@@ -7,7 +7,7 @@ import { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium
 import {
   isStoreEntitlementValid,
   type StoreEntitlement,
-} from "#api/modules/billing/shared/premium-access.domain-service";
+} from "#api/modules/billing/shared/domain/premium-access.domain-service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다

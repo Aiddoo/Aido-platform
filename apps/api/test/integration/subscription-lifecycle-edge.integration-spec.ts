@@ -4,7 +4,7 @@ import {
   PremiumAccessReaderPort,
   PremiumGranterPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/store-renewal-grace.domain-service";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/domain/store-renewal-grace.domain-service";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

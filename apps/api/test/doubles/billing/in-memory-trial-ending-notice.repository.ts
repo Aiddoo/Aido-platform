@@ -1,5 +1,5 @@
-import type { FindDueBillingNoticesParams } from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
-import { planTypeOfProduct } from "#api/modules/billing/shared/subscription-plan.domain-service";
+import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
+import { planTypeOfProduct } from "#api/modules/billing/shared/domain/subscription-plan.domain-service";
 import {
   type TrialEndingNotice,
   TrialEndingNoticeRepositoryPort,
@@ -18,7 +18,7 @@ export class InMemoryTrialEndingNoticeRepository extends TrialEndingNoticeReposi
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<TrialEndingNotice>,
+    params: ListDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
     const { now, endsBefore, after, limit } = params;
     return this.#subscriptions.all

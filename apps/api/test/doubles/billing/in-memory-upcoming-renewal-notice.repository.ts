@@ -1,6 +1,6 @@
-import type { FindDueBillingNoticesParams } from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
-import { currentStoreChainOf } from "#api/modules/billing/shared/premium-access.domain-service";
-import { storeProductIdsOfPlan } from "#api/modules/billing/shared/subscription-plan.domain-service";
+import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
+import { currentStoreChainOf } from "#api/modules/billing/shared/domain/premium-access.domain-service";
+import { storeProductIdsOfPlan } from "#api/modules/billing/shared/domain/subscription-plan.domain-service";
 import {
   type UpcomingRenewalNotice,
   UpcomingRenewalNoticeRepositoryPort,
@@ -26,7 +26,7 @@ export class InMemoryUpcomingRenewalNoticeRepository extends UpcomingRenewalNoti
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<UpcomingRenewalNotice>,
+    params: ListDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
     const { now, endsBefore, after, limit } = params;
     const all = this.#subscriptions.all;

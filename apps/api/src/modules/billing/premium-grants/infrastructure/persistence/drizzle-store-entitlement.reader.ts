@@ -4,8 +4,8 @@ import { Injectable } from "@nestjs/common";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { StoreSubscriptionEntitlement } from "../../../shared/premium-access.domain-service.js";
-import { toStorePeriodType } from "../../../subscriptions/domain/subscription-lifecycle.domain-service.js";
+import type { StoreSubscriptionEntitlement } from "../../../shared/domain/premium-access.domain-service.js";
+import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
 import { StoreEntitlementReaderPort } from "../../application/ports/store-entitlement.reader.port.js";
 
 @Injectable()

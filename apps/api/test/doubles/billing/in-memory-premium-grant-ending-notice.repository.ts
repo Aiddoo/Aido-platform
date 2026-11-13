@@ -1,9 +1,9 @@
-import type { FindDueBillingNoticesParams } from "#api/modules/billing/premium-grants/application/ports/billing-notice.port";
 import {
   type PremiumGrantEndingNotice,
   PremiumGrantEndingNoticeRepositoryPort,
 } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import type { PremiumGrantPrimitives } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
+import type { ListDueBillingNoticesParams } from "#api/modules/billing/shared/application/ports/billing-notice.repository.port";
 
 import type { InMemoryPremiumGrantRepository } from "./in-memory-premium-grant.repository.js";
 import type { InMemorySubscriptionRepository } from "./in-memory-subscription.repository.js";
@@ -28,7 +28,7 @@ export class InMemoryPremiumGrantEndingNoticeRepository extends PremiumGrantEndi
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<PremiumGrantEndingNotice>,
+    params: ListDueBillingNoticesParams<PremiumGrantEndingNotice>,
   ): Promise<PremiumGrantEndingNotice[]> {
     const { now, endsBefore, after, limit } = params;
     const grants = this.#grants.all.map((grant) => grant.toPrimitives());

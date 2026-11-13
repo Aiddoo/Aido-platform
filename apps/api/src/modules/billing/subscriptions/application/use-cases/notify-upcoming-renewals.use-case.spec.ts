@@ -10,7 +10,7 @@ import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import { SweepBillingNoticesUseCase } from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type { Subscription, SubscriptionPrimitives } from "../../domain/subscription.aggregate.js";
 import type { UpcomingRenewalNotice } from "../ports/upcoming-renewal-notice.repository.port.js";
 import { NotifyUpcomingRenewalsUseCase } from "./notify-upcoming-renewals.use-case.js";

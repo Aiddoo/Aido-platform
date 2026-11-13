@@ -3,7 +3,7 @@ import {
   SUBSCRIPTION_FIXTURE_NOW,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import { STORE_RENEWAL_GRACE_MS } from "../../shared/store-renewal-grace.domain-service.js";
+import { STORE_RENEWAL_GRACE_MS } from "../../shared/domain/store-renewal-grace.domain-service.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
 const EXPIRES_AT = NOW.add({ hours: 24 * 30 });

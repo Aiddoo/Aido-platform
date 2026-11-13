@@ -2,12 +2,12 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
 
+import { BillingNoticeNotifierPort } from "../ports/billing-notice-notifier.port.js";
 import {
   type BillingNotice,
-  BillingNoticeNotifierPort,
   BillingNoticeRepositoryPort,
-  type FindDueBillingNoticesParams,
-} from "../ports/billing-notice.port.js";
+  type ListDueBillingNoticesParams,
+} from "../ports/billing-notice.repository.port.js";
 import { QuietHoursReaderPort } from "../ports/quiet-hours.reader.port.js";
 import {
   BILLING_NOTICE_SWEEP,
@@ -22,7 +22,7 @@ interface TestNotice extends BillingNotice {
 
 class InMemoryNoticeRepository extends BillingNoticeRepositoryPort<TestNotice> {
   readonly claimed = new Set<number>();
-  readonly listCalls: FindDueBillingNoticesParams<TestNotice>[] = [];
+  readonly listCalls: ListDueBillingNoticesParams<TestNotice>[] = [];
 
   readonly notices: readonly TestNotice[];
 
@@ -31,7 +31,7 @@ class InMemoryNoticeRepository extends BillingNoticeRepositoryPort<TestNotice> {
     this.notices = notices;
   }
 
-  async listDue(params: FindDueBillingNoticesParams<TestNotice>): Promise<TestNotice[]> {
+  async listDue(params: ListDueBillingNoticesParams<TestNotice>): Promise<TestNotice[]> {
     this.listCalls.push(params);
     const afterId = params.after?.id ?? 0;
     return this.notices

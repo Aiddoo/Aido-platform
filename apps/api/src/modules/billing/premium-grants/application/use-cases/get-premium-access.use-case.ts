@@ -4,7 +4,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   resolvePremiumAccess,
   type PremiumAccess,
-} from "../../../shared/premium-access.domain-service.js";
+} from "../../../shared/domain/premium-access.domain-service.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
 import type { LoadPremiumEntitlementsUseCase } from "./load-premium-entitlements.use-case.js";
 

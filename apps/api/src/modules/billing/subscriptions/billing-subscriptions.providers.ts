@@ -1,13 +1,15 @@
 import type { Provider } from "@nestjs/common";
 
+import {
+  PremiumAccessCachePort,
+  ProjectPremiumAccessUseCase,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { PremiumAccessCachePort } from "../premium-grants/application/ports/premium-access-cache.port.js";
-import { ProjectPremiumAccessUseCase } from "../premium-grants/application/use-cases/project-premium-access.use-case.js";
-import { SweepBillingNoticesUseCase } from "../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import { StoreCustomerConsolePort } from "./application/ports/store-customer-console.port.js";
 import { StoreSubscriptionReconcileSchedulerPort } from "./application/ports/store-subscription-reconcile-scheduler.port.js";
 import { StoreSubscriptionStatusReaderPort } from "./application/ports/store-subscription-status.reader.port.js";

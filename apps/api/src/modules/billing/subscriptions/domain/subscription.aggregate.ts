@@ -9,8 +9,8 @@ import {
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { storeEntitlementEndsAt } from "../../shared/store-renewal-grace.domain-service.js";
-import { planTypeOfProduct } from "../../shared/subscription-plan.domain-service.js";
+import { storeEntitlementEndsAt } from "../../shared/domain/store-renewal-grace.domain-service.js";
+import { planTypeOfProduct } from "../../shared/domain/subscription-plan.domain-service.js";
 import { StoreSubscriptionId } from "./store-subscription-id.vo.js";
 import { SubscriptionId } from "./subscription-id.vo.js";
 import type { SubscriptionProvider } from "./subscriptions.constants.js";

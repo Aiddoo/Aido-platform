@@ -1,6 +1,6 @@
 import type { SubscriptionPlanType } from "@aido/api/vocabulary";
 
-import { BillingNoticeRepositoryPort } from "../../../premium-grants/application/ports/billing-notice.port.js";
+import { BillingNoticeRepositoryPort } from "../../../shared/application/ports/billing-notice.repository.port.js";
 
 /** 아직 종료 안내를 보내지 않은 무료 체험 구독 */
 export interface TrialEndingNotice {

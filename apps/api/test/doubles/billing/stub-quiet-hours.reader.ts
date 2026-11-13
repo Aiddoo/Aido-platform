@@ -1,4 +1,4 @@
-import { QuietHoursReaderPort } from "#api/modules/billing/premium-grants/application/ports/quiet-hours.reader.port";
+import { QuietHoursReaderPort } from "#api/modules/billing/shared/application/ports/quiet-hours.reader.port";
 
 export class StubQuietHoursReader extends QuietHoursReaderPort {
   readonly #quietUserIds: ReadonlySet<string>;

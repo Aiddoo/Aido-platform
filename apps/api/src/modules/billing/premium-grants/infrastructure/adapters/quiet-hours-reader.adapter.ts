@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { PushQuietHoursReaderPort } from "#api/modules/notification/notification-delivery.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { QuietHoursReaderPort } from "../../application/ports/quiet-hours.reader.port.js";
+import { QuietHoursReaderPort } from "../../../shared/application/ports/quiet-hours.reader.port.js";
 
 // 야간 판단은 notification Context의 공개 capability다. 시각 형식만 맞춰 넘긴다
 @Injectable()

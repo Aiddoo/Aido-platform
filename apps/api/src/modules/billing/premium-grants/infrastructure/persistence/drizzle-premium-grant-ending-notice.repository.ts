@@ -7,7 +7,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../application/ports/billing-notice.port.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
 import {
   type PremiumGrantEndingNotice,
   PremiumGrantEndingNoticeRepositoryPort,
@@ -32,7 +32,7 @@ export class DrizzlePremiumGrantEndingNoticeRepository extends PremiumGrantEndin
 
   // 뒤에 다른 보상 기간이나 스토어 구독이 이어지면 프리미엄이 끝나지 않으므로 마지막 기간만 고른다
   async listDue(
-    params: FindDueBillingNoticesParams<PremiumGrantEndingNotice>,
+    params: ListDueBillingNoticesParams<PremiumGrantEndingNotice>,
   ): Promise<PremiumGrantEndingNotice[]> {
     const rows = await this.#db
       .select({ grantId: grantOf.id, userId: grantOf.userId, endsAt: grantOf.endsAt })

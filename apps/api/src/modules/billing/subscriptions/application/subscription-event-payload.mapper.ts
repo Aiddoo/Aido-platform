@@ -2,8 +2,8 @@ import type { StorePeriodType } from "@aido/api/vocabulary";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { PremiumAccess } from "../../shared/premium-access.domain-service.js";
-import { planTypeOfProduct } from "../../shared/subscription-plan.domain-service.js";
+import type { PremiumAccess } from "../../shared/domain/premium-access.domain-service.js";
+import { planTypeOfProduct } from "../../shared/domain/subscription-plan.domain-service.js";
 import type {
   StoreSubscriptionChainEvent,
   StoreSubscriptionPrice,

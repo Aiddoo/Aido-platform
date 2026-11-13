@@ -6,8 +6,8 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { subscription } from "#api/platform/database/schema/billing.schema";
 
-import type { FindDueBillingNoticesParams } from "../../../premium-grants/application/ports/billing-notice.port.js";
-import { planTypeOfProduct } from "../../../shared/subscription-plan.domain-service.js";
+import type { ListDueBillingNoticesParams } from "../../../shared/application/ports/billing-notice.repository.port.js";
+import { planTypeOfProduct } from "../../../shared/domain/subscription-plan.domain-service.js";
 import {
   type TrialEndingNotice,
   TrialEndingNoticeRepositoryPort,
@@ -27,7 +27,7 @@ export class DrizzleTrialEndingNoticeRepository extends TrialEndingNoticeReposit
   }
 
   async listDue(
-    params: FindDueBillingNoticesParams<TrialEndingNotice>,
+    params: ListDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
     const rows = await this.#db
       .select({

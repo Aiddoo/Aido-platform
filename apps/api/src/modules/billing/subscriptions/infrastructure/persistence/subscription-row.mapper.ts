@@ -1,6 +1,6 @@
 import type { subscription as subscriptionTable } from "#api/platform/database/schema/billing.schema";
 
-import { toStorePeriodType } from "../../domain/subscription-lifecycle.domain-service.js";
+import { toStorePeriodType } from "../../../shared/domain/store-period-type.domain-service.js";
 import { Subscription } from "../../domain/subscription.aggregate.js";
 
 type SubscriptionRow = typeof subscriptionTable.$inferSelect;

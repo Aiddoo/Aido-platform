@@ -3,12 +3,12 @@ import { chunk, sumBy } from "es-toolkit";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { billingNoticeUntil } from "../../../shared/billing-notice-window.domain-service.js";
+import { billingNoticeUntil } from "../../domain/billing-notice-window.domain-service.js";
+import type { BillingNoticeNotifierPort } from "../ports/billing-notice-notifier.port.js";
 import type {
   BillingNotice,
-  BillingNoticeNotifierPort,
   BillingNoticeRepositoryPort,
-} from "../ports/billing-notice.port.js";
+} from "../ports/billing-notice.repository.port.js";
 import type { QuietHoursReaderPort } from "../ports/quiet-hours.reader.port.js";
 
 export const BILLING_NOTICE_SWEEP = {

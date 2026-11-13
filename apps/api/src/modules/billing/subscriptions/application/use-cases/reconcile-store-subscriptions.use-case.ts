@@ -1,11 +1,13 @@
 import { uniq } from "es-toolkit";
 
+import type {
+  PremiumAccessCachePort,
+  ProjectPremiumAccessUseCase,
+} from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { PremiumAccessCachePort } from "../../../premium-grants/application/ports/premium-access-cache.port.js";
-import type { ProjectPremiumAccessUseCase } from "../../../premium-grants/application/use-cases/project-premium-access.use-case.js";
 import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
 import type { StoreSubscriptionStatusReaderPort } from "../ports/store-subscription-status.reader.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";

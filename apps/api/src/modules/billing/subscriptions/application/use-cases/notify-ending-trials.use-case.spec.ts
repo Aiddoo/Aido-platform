@@ -11,7 +11,7 @@ import {
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import { SweepBillingNoticesUseCase } from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
+import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type { Subscription, SubscriptionPrimitives } from "../../domain/subscription.aggregate.js";
 import type { TrialEndingNotice } from "../ports/trial-ending-notice.repository.port.js";
 import { NotifyEndingTrialsUseCase } from "./notify-ending-trials.use-case.js";

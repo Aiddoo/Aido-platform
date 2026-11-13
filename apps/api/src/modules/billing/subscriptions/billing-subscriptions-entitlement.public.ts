@@ -5,4 +5,4 @@ export {
   storeRenewalCutoff,
   storeRenewalGraceEndsAt,
   type StoreEntitlementWindow,
-} from "../shared/store-renewal-grace.domain-service.js";
+} from "../shared/domain/store-renewal-grace.domain-service.js";

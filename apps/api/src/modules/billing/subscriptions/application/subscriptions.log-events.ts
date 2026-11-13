@@ -16,4 +16,8 @@ export const SubscriptionLogEvent = {
   RECONCILE_COMPLETED: "billing.subscription.reconcile.completed",
   RECONCILE_FAILED: "billing.subscription.reconcile.failed",
   RECONCILE_DISABLED: "billing.subscription.reconcile.disabled",
+  // 보상 기간 정리 잡은 이 slice가 돌리지만 키는 배포 전과 같다
+  PREMIUM_GRANT_SWEEP_STEP_FAILED: "billing.premium-grant.sweep.step.failed",
+  PREMIUM_GRANT_SWEEP_SCHEDULER_REGISTERED: "billing.premium-grant.sweep.scheduler.registered",
+  PREMIUM_GRANT_SWEEP_JOB_FAILED: "billing.premium-grant.sweep.job.failed",
 } as const;

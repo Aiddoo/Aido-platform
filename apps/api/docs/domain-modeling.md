@@ -41,7 +41,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 ## 규칙을 둘 곳
 
 1. 한 Entity·VO의 상태만 보는 규칙은 그 클래스 메서드다(`subscription.renewingPlanType()`, `memoContent.toTodoTitle()`).
-2. 여러 모델에 걸치거나 상태가 없는 규칙은 `*.domain-service.ts`의 순수 함수다(`billing/shared/premium-access.domain-service.ts`).
+2. 여러 모델에 걸치거나 상태가 없는 규칙은 `*.domain-service.ts`의 순수 함수다(`billing/shared/domain/premium-access.domain-service.ts`).
    - 입력은 이름 붙은 객체 하나, `now`는 인자다.
    - 업무 판단은 throw하지 않고 판별 유니온으로 돌려준다. 같은 종류 함수는 반환 모양을 통일한다.
    - static만 있는 클래스로 감싸지 않는다(`no-extraneous-class`·`no-static-only-class`).

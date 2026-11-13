@@ -1,17 +1,17 @@
 import { PREMIUM_GRANT_ENDING_NOTICE_DAYS } from "@aido/api/vocabulary";
 
 import type {
+  BillingNoticeSettings,
+  BillingNoticeSweepInput,
+  BillingNoticeSweepResult,
+  SweepBillingNoticesUseCase,
+} from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
+import type {
   PremiumGrantEndingNotice,
   PremiumGrantEndingNoticeRepositoryPort,
 } from "../ports/premium-grant-ending-notice.repository.port.js";
 import type { PremiumGrantNotifierPort } from "../ports/premium-grant-notifier.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
-import type {
-  BillingNoticeSettings,
-  BillingNoticeSweepInput,
-  BillingNoticeSweepResult,
-  SweepBillingNoticesUseCase,
-} from "./sweep-billing-notices.use-case.js";
 
 const PREMIUM_GRANT_ENDING_NOTICE = {
   noticeDays: PREMIUM_GRANT_ENDING_NOTICE_DAYS,
