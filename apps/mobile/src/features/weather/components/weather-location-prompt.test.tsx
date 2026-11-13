@@ -12,7 +12,8 @@ describe('WeatherLocationPrompt', () => {
     // When
     fireEvent.press(screen.getByRole('button', { name: '계속' }));
 
-    // Then 시스템 창을 건너뛰는 버튼은 없다(App Store 5.1.1)
+    // 시스템 창을 건너뛰는 버튼은 없다(App Store 5.1.1)
+    // Then
     expect(screen.getByText('지금 있는 곳 날씨를 보여드릴게요')).toBeOnTheScreen();
     expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(onContinue).toHaveBeenCalledTimes(1);

@@ -162,7 +162,7 @@ describe('root 인증 route 전환', () => {
   it.each(['loading', 'locked'] as const)(
     '%s 상태에서 복원 전에는 loading을 유지한다',
     async (status) => {
-      // Given·When
+      // When
       const { route } = await renderAuthRoutes(status);
 
       // Then
@@ -213,7 +213,7 @@ describe('root 인증 route 전환', () => {
   });
 
   it('인증된 재실행의 root는 feed로 이동한다', async () => {
-    // Given·When
+    // When
     const { route } = await renderAuthRoutes('authenticated');
 
     // Then
@@ -221,7 +221,7 @@ describe('root 인증 route 전환', () => {
   });
 
   it('미인증 사용자의 private URL은 login으로 이동한다', async () => {
-    // Given·When
+    // When
     const { route } = await renderAuthRoutes('unauthenticated', '/feed');
 
     // Then
@@ -342,7 +342,7 @@ describe('root 인증 route 전환', () => {
     });
 
     it('미인증 사용자의 private URL은 막힌 화면을 세지 않고 로그인만 센다', async () => {
-      // Given·When
+      // When
       const { route, screenViews } = await renderAuthRoutes('unauthenticated', '/todo/8');
 
       // Then
@@ -368,7 +368,7 @@ describe('root 인증 route 전환', () => {
     });
 
     it('Android OAuth 콜백 route는 세지 않는다', async () => {
-      // Given·When
+      // When
       const { route, screenViews } = await renderAuthRoutes('authenticated', '/auth/google');
 
       // Then

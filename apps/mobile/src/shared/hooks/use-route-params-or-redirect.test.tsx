@@ -33,7 +33,7 @@ describe('useRouteParamsOrRedirect', () => {
   it.each(['/todo/abc', '/todo/0', '/todo/012'])(
     '검증에 실패한 주소(%s)는 fallbackHref로 바꾸고 안쪽 화면을 그리지 않는다',
     async (url) => {
-      // Given·When
+      // When
       const route = await openTodoRoute(url);
 
       // Then
@@ -43,7 +43,7 @@ describe('useRouteParamsOrRedirect', () => {
   );
 
   it('검증을 지나면 좁혀진 값으로 그린다', async () => {
-    // Given·When
+    // When
     const route = await openTodoRoute('/todo/12');
 
     // Then

@@ -55,7 +55,8 @@ describe('useClaimDeviceDataForUser', () => {
   });
 
   it('로그인한 사용자의 초안은 남기고 이전 사용자의 초안은 삭제한다', async () => {
-    // Given — 세션 만료로 남은 초안
+    // 세션 만료로 남은 초안
+    // Given
     di.draftService.save(createMemoDraftKey(CURRENT_USER_ID), { content: '내 초안' });
     di.draftService.save(createMemoDraftKey('user-2'), { content: '이전 사용자 초안' });
 
@@ -73,7 +74,8 @@ describe('useClaimDeviceDataForUser', () => {
   });
 
   it('로그인한 사용자를 오프라인 캐시 주인으로 정하고 이전 사용자의 캐시는 지운다', async () => {
-    // Given — 이전 사용자가 남긴 캐시
+    // 이전 사용자가 남긴 캐시
+    // Given
     queryCacheStorage.setOwner('user-2');
     queryCacheStorage.setItem(QUERY_CACHE_STORAGE_KEY, '이전 사용자 캐시');
 

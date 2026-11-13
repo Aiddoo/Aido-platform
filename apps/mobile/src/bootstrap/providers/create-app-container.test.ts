@@ -225,8 +225,11 @@ describe('createAppContainer', () => {
     const scopedStoredValues = findScopedDeviceStoredValues();
 
     it('범위 키를 쓰는 기기 저장 값 정의를 찾는다', () => {
-      // When·Then
-      expect(scopedStoredValues.length).toBeGreaterThan(0);
+      // When
+      const definitionCount = scopedStoredValues.length;
+
+      // Then
+      expect(definitionCount).toBeGreaterThan(0);
     });
 
     it.each(scopedStoredValues)(

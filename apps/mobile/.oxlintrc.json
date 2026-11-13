@@ -1404,7 +1404,8 @@
         ],
         "aido/test-spy-target": "error",
         "aido/no-real-sleep": "error",
-        "aido/no-style-assertion": "error"
+        "aido/no-style-assertion": "error",
+        "aido/test-gwt-comments": "error"
       }
     },
     {
