@@ -226,7 +226,7 @@ function TodoCreateForm({
   });
 
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 할 일을 하나 더 만든다
-  const submitTodo = useSingleTap(() => {
+  const handleSavePress = useSingleTap(() => {
     saveTodo().catch((error: unknown) => {
       // 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다. 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
@@ -245,7 +245,7 @@ function TodoCreateForm({
 
       return;
     }
-    submitTodo();
+    handleSavePress();
   };
 
   const confirmDiscardPlan = async () => {
@@ -401,7 +401,7 @@ function TodoCreateForm({
               <TodoComposerSubmitButton
                 isDisabled={isSubmitDisabled}
                 isSubmitting={isSubmitLocked}
-                onPress={() => submitTodo()}
+                onPress={() => handleSavePress()}
                 testID="todo-add-submit"
               />
             </HStack>

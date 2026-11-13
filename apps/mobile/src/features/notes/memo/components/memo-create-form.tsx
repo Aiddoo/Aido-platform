@@ -74,9 +74,9 @@ export function MemoCreateForm() {
   });
 
   // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
-  const handleSave = useSingleTap(() => saveMemo().catch(noop));
+  const handleSavePress = useSingleTap(() => saveMemo().catch(noop));
 
-  const handleBack = useSingleTap(async () => {
+  const handleBackPress = useSingleTap(async () => {
     if (!isValid) {
       goBack();
 
@@ -97,7 +97,7 @@ export function MemoCreateForm() {
           icon={STACK_BACK_ICON}
           accessibilityLabel={t('common:actions.goBack')}
           disabled={isSubmitLocked}
-          onPress={handleBack}
+          onPress={handleBackPress}
         />
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
@@ -107,7 +107,7 @@ export function MemoCreateForm() {
           variant="prominent"
           tintColor={saveTint}
           disabled={!isValid || isSubmitLocked}
-          onPress={handleSave}
+          onPress={handleSavePress}
         />
       </Stack.Toolbar>
 
