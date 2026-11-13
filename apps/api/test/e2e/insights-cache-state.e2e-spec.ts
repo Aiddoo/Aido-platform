@@ -7,8 +7,8 @@ import {
   type DailyCompletionRangeQuery,
   DailyCompletionRepositoryPort,
 } from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
-import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.entity";
-import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/daily-completion-repository.adapter";
+import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.aggregate";
+import { PlanningDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/planning-daily-completion.repository";
 import { todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,
@@ -19,7 +19,7 @@ import { DAILY_COMPLETION_FIXTURE_NOW } from "#test/fixtures/insights/daily-comp
 
 // 실제 집계를 끝낸 직후 멈춰 조회와 완료 쓰기가 겹치는 순서를 재현한다
 @Injectable()
-class HoldableDailyCompletionRepository extends DailyCompletionRepositoryAdapter {
+class HoldableDailyCompletionRepository extends PlanningDailyCompletionRepository {
   #held: { readonly entered: () => void; readonly release: Promise<void> } | null = null;
 
   holdNextRead(): { readonly entered: Promise<void>; readonly release: () => void } {

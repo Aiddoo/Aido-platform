@@ -7,7 +7,7 @@ import {
   DAILY_COMPLETION_FIXTURE_USER_ID,
 } from "#test/fixtures/insights/daily-completion.fixture";
 
-import { DailyCompletion } from "./daily-completion.entity.js";
+import { DailyCompletion } from "./daily-completion.aggregate.js";
 
 describe("DailyCompletion", () => {
   it.each([
@@ -22,7 +22,7 @@ describe("DailyCompletion", () => {
 
       // When
       const result = {
-        isComplete: completion.isComplete,
+        isComplete: completion.isComplete(),
         completionRate: completion.completionRate,
       };
 

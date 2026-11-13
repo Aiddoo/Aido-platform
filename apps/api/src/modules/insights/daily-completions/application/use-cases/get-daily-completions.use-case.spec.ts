@@ -24,7 +24,7 @@ function summariesOf(result: DailyCompletionRange) {
     date: completion.date.toString(),
     totalTodos: completion.totalTodos,
     completedTodos: completion.completedTodos,
-    isComplete: completion.isComplete,
+    isComplete: completion.isComplete(),
     completionRate: completion.completionRate,
     categoryColors: completion.categoryColors,
   }));

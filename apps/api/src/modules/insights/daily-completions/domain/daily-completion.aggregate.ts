@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { Entity } from "#api/shared/domain/model/entity";
+import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { DailyCompletionId } from "./daily-completion-id.vo.js";
 import { invalidCompletedTodos, invalidTotalTodos } from "./daily-completions.errors.js";
@@ -29,7 +29,7 @@ interface CreateDailyCompletionParams {
 }
 
 /** 한 사용자의 하루 할 일 완료 현황. 할 일이 있는 날만 만든다. */
-export class DailyCompletion extends Entity<DailyCompletionId, DailyCompletionProps> {
+export class DailyCompletion extends AggregateRoot<DailyCompletionId, DailyCompletionProps> {
   static create(params: CreateDailyCompletionParams): DailyCompletion {
     const { totalTodos, completedTodos } = params;
     if (!Number.isSafeInteger(totalTodos) || totalTodos < 0) {
@@ -76,7 +76,7 @@ export class DailyCompletion extends Entity<DailyCompletionId, DailyCompletionPr
   }
 
   /** 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기) */
-  get isComplete(): boolean {
+  isComplete(): boolean {
     return this.props.totalTodos > 0 && this.props.totalTodos === this.props.completedTodos;
   }
 

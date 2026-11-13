@@ -1,4 +1,4 @@
-import { DailyCompletionRepositoryAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/daily-completion-repository.adapter";
+import { PlanningDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/planning-daily-completion.repository";
 import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { describeDailyCompletionRepositoryContract } from "#test/contracts/insights/daily-completion-repository.contract";
@@ -74,6 +74,6 @@ describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () =
   describeDailyCompletionRepositoryContract(async (todos) => {
     await seed(todos);
     const { txHost } = createDatabaseTransactionFixture(client);
-    return new DailyCompletionRepositoryAdapter(new DrizzleTodoCompletionGroupReader(txHost));
+    return new PlanningDailyCompletionRepository(new DrizzleTodoCompletionGroupReader(txHost));
   });
 });

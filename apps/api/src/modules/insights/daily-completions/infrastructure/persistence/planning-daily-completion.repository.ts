@@ -6,12 +6,12 @@ import {
   type DailyCompletionRangeQuery,
   DailyCompletionRepositoryPort,
 } from "../../application/ports/daily-completion.repository.port.js";
+import type { DailyCompletion } from "../../domain/daily-completion.aggregate.js";
 import { tallyDailyCompletions } from "../../domain/daily-completion.domain-service.js";
-import type { DailyCompletion } from "../../domain/daily-completion.entity.js";
 
 // 할 일 테이블은 planning이 소유해 planning 조회 포트로 묶음 수를 받고 날짜별로 펼치는 일만 여기서 한다
 @Injectable()
-export class DailyCompletionRepositoryAdapter implements DailyCompletionRepositoryPort {
+export class PlanningDailyCompletionRepository implements DailyCompletionRepositoryPort {
   readonly #groupReader: Pick<TodoCompletionGroupReaderPort, "listCompletionGroups">;
 
   constructor(groupReader: TodoCompletionGroupReaderPort) {

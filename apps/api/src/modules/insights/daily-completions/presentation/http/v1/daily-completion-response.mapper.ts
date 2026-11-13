@@ -4,14 +4,14 @@ import type {
 } from "@aido/api/contracts/daily-completion";
 
 import type { DailyCompletionRange } from "../../../application/read-models/daily-completion-range.read-model.js";
-import type { DailyCompletion } from "../../../domain/daily-completion.entity.js";
+import type { DailyCompletion } from "../../../domain/daily-completion.aggregate.js";
 
 function toDailyCompletionSummaryResponse(completion: DailyCompletion): DailyCompletionSummary {
   return {
     date: completion.date.toString(),
     totalTodos: completion.totalTodos,
     completedTodos: completion.completedTodos,
-    isComplete: completion.isComplete,
+    isComplete: completion.isComplete(),
     completionRate: completion.completionRate,
     categoryColors: [...completion.categoryColors],
   };

@@ -9,7 +9,7 @@ export class StubFriendshipReader extends FriendshipReaderPort {
     this.#mutualPairs.add(`${otherUserId}:${userId}`);
   }
 
-  async isMutualFriend(userId: UserId, targetUserId: UserId): Promise<boolean> {
-    return this.#mutualPairs.has(`${userId.value}:${targetUserId.value}`);
+  async isMutualFriend(userId: UserId, friendUserId: UserId): Promise<boolean> {
+    return this.#mutualPairs.has(`${userId.value}:${friendUserId.value}`);
   }
 }
