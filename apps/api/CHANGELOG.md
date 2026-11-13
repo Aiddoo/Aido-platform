@@ -7,7 +7,18 @@
 - 운영 관측을 다듬는다. AI 업체 health 회로(시간 초과·5xx·과부하)가 열리면 `ai.provider.health-circuit-opened`, 키가 설정된 AI 업체가 하나도 없으면 `ai.provider.none-available` 경보를 올린다(동의 범위 때문에 없는 경우는 경보 없이 `AI_1301`). 경로·큐가 없는 루트 span은 추적 표본에서 빼고, 빈 `SENTRY_TRACES_SAMPLE_RATE`는 기본값으로 읽는다. 운영 경보 Sentry 이슈의 부제는 경보 key다.
 - 자주 도는 조회의 DB 비용을 줄인다. 카테고리 할 일 개수 join에 소유자를 걸어 인덱스를 타고, 완료 묶음·연속 기록의 날짜 겹침 조건을 목록과 같은 두 갈래로 나눈다. 완료 토글은 오늘 현황을 한 번만 세고 마일스톤 집계를 101에서 멈추며, 캐시 세대를 바꾼 뒤 키 전체 SCAN을 기다리지 않는다(옛 값은 TTL 1분·10분 안에 만료). 할 일 순서는 1024 간격 정수로 두어 순서 바꾸기가 한 행만 쓰고, 간격이 없을 때만 그 사용자 범위를 다시 번호 매긴다. 응답의 `sortOrder`는 여전히 정수이고 순서 의미는 같지만 숫자 값은 달라진다(새 할 일은 1024부터). 콕·응원 안 읽음 수에 부분 인덱스(추가 마이그레이션 `social_unread_count_indexes`)와 60초 캐시를 두고, 사용자 검색 다음 쪽은 커서에 실은 총수를 써 다시 세지 않는다(옛 커서도 받는다). 댓글 이어 쓰기는 한 INSERT, 공지 발송 등록은 `enqueueMany` 한 번, 리텐션 조회는 `pg_timezone_names`를 하루 캐시한다. 응답 모양·오류 코드·큐 이름은 그대로다.
 - 매분 도는 시간대 리마인더(`timezone-reminder.v1`)가 시간대마다 같은 쿼리를 따로 보내던 것을 같은 현지 시각(날짜·시·분·요일)인 시간대 묶음마다 한 번(`timezone IN (...)`)으로 줄인다. 날씨 문구와 오늘 할 일은 행에 실은 사용자 시간대로 계산하고, 소셜 다이제스트 큐 payload는 시간대마다 그대로 보낸다. 윈백 단계 확인·기록은 Redis pipeline 한 번이다. 할 일 리마인더 큐는 묶음을 한 번에 읽고 알림을 한 번에 넣되 발송은 단건 경로라 설정 행이 없는 사용자도 전처럼 기본값으로 받는다. 서버 로그의 `timezone` 필드는 `timezones`(배열)가 된다. 큐 이름·잡 키·payload·응답 모양은 그대로다.
-- @aido/api@1.15.3
+- 404d68e: 결제 웹훅·스토어 상태 대조 운영 경보의 제목과 첫 대응 문구에 공급자 이름 대신 "결제 공급자"를 쓴다. 경보 key·심각도·Sentry 이슈 묶음은 같다.
+- 1cbfa53: 이름을 정하지 않은 사용자의 댓글 작성자 이름·답글 대상 이름·댓글 알림 보낸 사람을 빈 값 대신 Aido ID(userTag)로 보여 준다.
+- de4da3a: 할 일 완료 효과(스트릭 기록·친구 완료 알림·마일스톤 알림)를 토글과 같은 트랜잭션에서 처리해, 커밋 직후 서버가 재시작돼도 효과를 잃지 않는다.
+- bd6fa6a: Nest 12.5, pg-boss 12.38.2, AI SDK, Sentry NestJS를 호환 범위 안 최신 패치로 올린다.
+- 7018244: 팔로우·친구 성립·응원·넛지 알림 작업을 상태 변경과 같은 트랜잭션에 넣어, 커밋 직후 서버가 재시작돼도 알림을 잃지 않는다.
+- 4832ee9: 서버 이미지를 Node 26.13.1(2026-11 보안 릴리스)로 올리고 Redis 클라이언트를 ioredis 6으로 올린다(Redis 캐시를 켤 때만 쓰며 재접속은 ioredis 6 기본 지수 백오프).
+- 0693b39: 웹 OAuth `start`·`web-callback` query와 `PATCH /follows/friends/{followId}/reorder` path를 공유 schema(`oauthStartQuerySchema`·`oauthWebCallbackQuerySchema`·`followIdParamSchema`)로 검증한다. 출시 앱이 보내는 `redirect_uri`·`mode`(login·link)와 서버가 준 followId는 그대로 받고, 정하지 않은 `mode`·형식이 틀린 `user_hint`·followId만 400 `SYS_0002`가 된다. 공급자 화면에서 취소해 code 없이 온 콜백은 공급자에 교환을 묻지 않고 지금과 같은 `USER_0602`로 앱 딥링크에 돌려보낸다.
+- d2f088c: pg-boss 연결 풀이 앱 풀과 같은 `createPostgresPoolConfig`로 만들어진다. 이제 pg-boss 연결도 세션 `TimeZone=UTC`, `statement_timeout` 15초·`lock_timeout` 5초·`idle_in_transaction_session_timeout` 60초, 유휴 연결 정리(`DATABASE_POOL_IDLE_TIMEOUT_MS`), URL `sslmode`의 TLS 인증서 검증과 `DATABASE_SSL_ALLOW_UNVERIFIED` 비상 설정을 따른다. 크기 3과 연결 이름 `aido-pg-boss`, 큐 이름·작업 payload는 그대로다.
+- 87adfaf: 푸시 발송 원장(`PushDispatch`·`PushDispatchOutbox`·`PushDeliveryAttempt`)의 `updatedAt`·`sentAt`·`publishedAt`·receipt 만료 시각을 DB `CURRENT_TIMESTAMP` 대신 서버 `ClockPort` 시각으로 남긴다. stale lease 복구의 `availableAt`은 claim과 같은 DB 시계(`LOCALTIMESTAMP(3)`)로 열어 바로 다시 발행된다. outbox·lifecycle 복구, rate limit 예약, 종결 표시, receipt 만료·종결은 Drizzle query builder로 옮기고 claim·finalize·release의 데이터 변경 CTE만 raw SQL로 남긴다. 상태 전이·fence·잠금 순서, 큐 이름과 payload는 그대로다.
+- 6c668f6: 일일 가입 리포트가 그날 가입한 사용자를 첫 계정 공급자로 세고, 기존 사용자의 계정 연동은 가입으로 세지 않는다. 전체 사용자에서 탈퇴한 사용자를 뺀다.
+- Updated dependencies [0693b39]
+  - @aido/api@1.15.3
 
 ## 1.15.2
 
