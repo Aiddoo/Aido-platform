@@ -116,15 +116,15 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 새 유료 인프라 없이 Sentry Performance, `/health`, `OperationalAlertPort`로 본다.
 
-| 신호        | 무엇                                                                     | 어디서                                                                                                |
-| ----------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95                | Sentry Performance                                                                                    |
-| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                       | Sentry(5xx), 로그(4xx)                                                                                |
-| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS | [runtime-stats](../src/platform/observability/runtime-stats.ts)(60초) → `/health` `runtime` 상세·경보 |
-| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                     | Health job 상태(`JobQueueRegistry`), 스케줄 감시                                                      |
-| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                             | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`                                         |
-| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum          | CloudWatch RDS + `pg_stat_statements`(느린 쿼리 로그는 꺼져 있다)                                     |
-| 업무        | 가입·DAU·푸시 퍼널                                                       | [알림·지표](notifications.md#지표)                                                                    |
+| 신호        | 무엇                                                                     | 어디서                                                                                                         |
+| ----------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95                | Sentry Performance                                                                                             |
+| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                       | Sentry(5xx), 로그(4xx)                                                                                         |
+| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS | [runtime-stats](../src/platform/observability/runtime-stats.ts)(60초) → `/health` `runtime` 상세·경보          |
+| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                     | Health job 상태(`JobQueueRegistry`), 스케줄 감시                                                               |
+| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                             | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`                                                  |
+| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum          | CloudWatch RDS 경보([목록](deployment.md#서버-설정과-관리)) + `pg_stat_statements`(느린 쿼리 로그는 꺼져 있다) |
+| 업무        | 가입·DAU·푸시 퍼널                                                       | [알림·지표](notifications.md#지표)                                                                             |
 
 - 판정은 순수 함수 `evaluateRuntimeSample`·`newlyBreached`이고 `runtime` 상세는 항상 up이다. 경보는 넘기 시작한 표본에서만 올린다. Swagger 설명은 계약 지문 때문에 바꾸지 않는다.
 - 공개 `/health`의 상세(`database`·`queues`·`outbound`·`runtime`·`instanceId`)는 development·staging에서만 싣는다(`appConfig.exposeHealthDetails`). 운영은 `{ status }`와 200/503만 주므로 큐·포화도 감시는 경보(`OperationalAlertPort`)와 로그로 한다.
