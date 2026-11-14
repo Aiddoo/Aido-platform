@@ -13,7 +13,7 @@ describe("스토어 공개 버전 반영 (E2E)", () => {
   let ctx: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({ env: { APP_VERSION_CHECK_ENABLED: "false" } });
+    ctx = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {

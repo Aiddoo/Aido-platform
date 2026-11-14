@@ -3,6 +3,7 @@ import { vi } from "vitest";
 
 import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-versions/application/ports/app-release.repository.port";
 import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.repository.port";
+import { createAppReleaseFixture } from "#test/fixtures/app-config/app-release.fixture";
 
 import {
   releasedAppVersionResponseSchema,
@@ -11,9 +12,6 @@ import {
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 const enabledEnvironment = {
-  APP_VERSION_CHECK_ENABLED: "true",
-  APP_VERSION_CHECK_IOS_LATEST_VERSION: "1.15.1",
-  APP_VERSION_CHECK_ANDROID_LATEST_VERSION: "1.15.0",
   FEATURE_DISCOVERY_ENABLED: "true",
   FEATURE_DISCOVERY_CAMPAIGN_ID: "feature-discovery-2026-12",
   FEATURE_DISCOVERY_MIN_APP_VERSION: "1.15.0",
@@ -40,6 +38,15 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
   }
 
   it("켜진 앱 버전 응답을 1.10.0 이후 출시 앱이 플랫폼별 값 그대로 읽는다", async () => {
+    // Given
+    const appReleaseRepository = ctx.module.get(AppReleaseRepositoryPort);
+    await appReleaseRepository.save(
+      createAppReleaseFixture({ platform: "ios", latestVersion: "1.15.1" }),
+    );
+    await appReleaseRepository.save(
+      createAppReleaseFixture({ platform: "android", latestVersion: "1.15.0" }),
+    );
+
     // When
     const response = await server().get("/v1/app-config/app-version").expect(200);
 
