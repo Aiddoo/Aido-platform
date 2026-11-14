@@ -2,6 +2,7 @@ import { ErrorCode, Errors } from "@aido/api/errors";
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
+import { AppConfigAppVersionsAdminModule } from "#api/modules/app-config/app-versions/app-config-app-versions.public";
 import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
 import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
 import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
@@ -180,7 +181,12 @@ ${adminErrorCodeTable()}
     .build();
 
   const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
-    include: [OperationsBroadcastsModule, OperationsMetricsModule, SocialReportsAdminModule],
+    include: [
+      AppConfigAppVersionsAdminModule,
+      OperationsBroadcastsModule,
+      OperationsMetricsModule,
+      SocialReportsAdminModule,
+    ],
     standardSchemaConverter: convertStandardSchema,
   });
   SwaggerModule.setup(ADMIN_DOCS_PATH, app, adminDocument, {

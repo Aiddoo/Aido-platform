@@ -42,6 +42,7 @@
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`, 조립 메시지를 싣던 `{ channel, notification }`의 `LegacySendDataSchema`): 배포 순간 쌓여 있는 잡을 위해 1.15.1까지 둔다. 대기 잡 보관이 24시간이라 1.15.1 배포 뒤 남은 잡이 없으면 다음 릴리스에서 지운다.
+- env `APP_VERSION_CHECK_ENABLED`·`_IOS_LATEST_VERSION`·`_ANDROID_LATEST_VERSION`과 env 대체(`withEnvironmentFallback`): 스토어 공개 버전의 정본은 DB `AppRelease`이고 관리자 API(`PUT /v1/admin/app-config/app-releases/{platform}`)로 바꾼다. DB에 행이 없는 플랫폼만 env 값으로 응답해, 배포 직후와 한 플랫폼만 반영한 동안에도 `/v1/app-config/app-version` 응답이 전과 같다. 운영 DB에 `ios`·`android` 두 행이 생긴 것을 확인한 뒤 다음 릴리스에서 env 키·설정 schema·대체 코드를 함께 지운다.
 - 콕 답장·감사 기능 꺼짐의 `NUDGE_1105`: 마지막 지원 앱 1.15.1. `NUDGE_1105` 하나가 "없는 콕"과 "서버 설정으로 기능 꺼짐" 두 뜻이라 꺼짐을 새 코드 `NUDGE_1111`(404, 상태는 같다)로 나눴다. 출시 앱은 보낸 콕 목록에서 `NUDGE_1105`를 보고 목록을 꺼진 상태로 보이고, 감사 시트는 404에 `NUDGE_1105` 문구("찾을 수 없어요")를 보인다. 그래서 `X-App-Version`이 1.15.2보다 낮거나 없으면 `ReleasedAppNudgeErrorInterceptor`(답장·감사 controller)가 `NUDGE_1111`을 `NUDGE_1105`로 바꿔 보낸다. 앱은 `nativeApplicationVersion`(숫자 x.y.z)을 보내 1.15.2 RC·TestFlight 빌드도 출시판과 같이 `NUDGE_1111`을 받는다. "없는 콕"은 모든 앱에 `NUDGE_1105` 그대로다. 1.15.2 앱도 보낸 콕 목록에서는 `NUDGE_1105`·`NUDGE_1111`을 모두 꺼짐으로 읽어(목록 API의 1105는 꺼짐 뜻뿐이다) 서버를 먼저 배포하지 못했거나 되돌려도 꺼진 상태로 보인다. 1.15.1 이하 사용자가 사라지면 interceptor를 지운다.
 
 모바일은 최신 코드(1.15.2)만 둔다. 앱은 옛 앱·옛 서버를 위한 분기와 대체 경로, mapper 기본값을 두지 않고 지금 서버가 주는 값만 받는다. 남기는 것은 셋이다.

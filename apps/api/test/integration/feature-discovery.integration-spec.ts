@@ -4,8 +4,9 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types.js";
 
-import { AppConfigModule } from "#api/modules/app-config/app-config.module";
+import { AppConfigAppVersionsModule } from "#api/modules/app-config/app-versions/app-config-app-versions.module";
 import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-versions/application/ports/app-release.repository.port";
+import { AppConfigFeatureDiscoveryModule } from "#api/modules/app-config/feature-discovery/app-config-feature-discovery.module";
 import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery/application/ports/feature-discovery-campaign.repository.port";
 import { API_VERSIONING_OPTIONS } from "#api/platform/http/api-versioning";
 import { ResponseTransformInterceptor } from "#api/platform/http/interceptors/response-transform.interceptor";
@@ -29,7 +30,8 @@ describe("기능 발견 설정 route (Integration)", () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [AppConfigModule],
+      // 공개 조회 route만 띄운다. 관리자 모듈은 트랜잭션·잠금 같은 전역 platform 모듈이 있어야 뜬다
+      imports: [AppConfigAppVersionsModule, AppConfigFeatureDiscoveryModule],
       providers: [ResponseTransformInterceptor],
     })
       .overrideProvider(FeatureDiscoveryCampaignRepositoryPort)

@@ -1,6 +1,7 @@
 export * from "./enums.schema.js";
 export * from "./access.schema.js";
 export * from "./ai-assistance.schema.js";
+export * from "./app-config.schema.js";
 export * from "./billing.schema.js";
 export * from "./engagement.schema.js";
 export * from "./identity.schema.js";

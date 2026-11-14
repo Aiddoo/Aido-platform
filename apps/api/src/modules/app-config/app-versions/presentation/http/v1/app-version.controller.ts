@@ -32,7 +32,7 @@ export class AppVersionController {
     summary: "스토어 최신 앱 버전 조회",
     operationId: "getAppVersionConfig",
     description:
-      "로그인 없이 iOS·Android 스토어에 공개된 최신 앱 버전을 돌려줍니다. 설정이 꺼져 있거나 한 플랫폼이라도 버전이 없으면 enabled: false만 보냅니다. 응답은 캐시하지 않습니다.",
+      "로그인 없이 iOS·Android 스토어에 공개된 최신 앱 버전을 돌려줍니다. 한 플랫폼이라도 반영된 버전이 없으면 enabled: false만 보냅니다. 응답은 캐시하지 않습니다.",
   })
   @ApiExtraModels(AppVersionDisabledResponseDto, AppVersionEnabledResponseDto)
   @ApiResponse({
@@ -40,7 +40,7 @@ export class AppVersionController {
     description: "App version configuration",
     schema: appVersionResponseOpenApiSchema,
   })
-  getAppVersion(): AppVersionResponse {
-    return toAppVersionResponse(this.#listAppReleases.execute());
+  async getAppVersion(): Promise<AppVersionResponse> {
+    return toAppVersionResponse(await this.#listAppReleases.execute());
   }
 }

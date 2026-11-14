@@ -12,7 +12,7 @@ export class ListAppReleasesUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(): AppRelease[] {
+  execute(): Promise<AppRelease[]> {
     return this.#dependencies.appReleaseRepository.listLatestReleases();
   }
 }

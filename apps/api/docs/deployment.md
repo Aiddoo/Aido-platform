@@ -136,25 +136,31 @@ env 목록과 규칙은 [설정](configuration.md), 운영 경보를 사람에�
 
 Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/admin/docs`로 제공한다(배포된 개발서버는 열지 않는다). OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
-스토어 공개 버전(`APP_VERSION_CHECK_*`, `/v1/app-config/app-version`)은 앱 설정의 "버전 정보"를 누를 때만 쓰인다. 서버 값보다 낮은 앱은 그 탭에서 스토어를 연다. 앱을 열 때 뜨는 업데이트 안내나 강제 업데이트는 없고 API 접근도 막지 않는다.
+스토어 공개 버전(DB `AppRelease`, `/v1/app-config/app-version`)은 앱 설정의 "버전 정보"를 누를 때만 쓰인다. 서버 값보다 낮은 앱은 그 탭에서 스토어를 연다. 앱을 열 때 뜨는 업데이트 안내나 강제 업데이트는 없고 API 접근도 막지 않는다.
 
 - **올리기**: 플랫폼마다 그 스토어에서 실제로 업데이트를 받을 수 있게 된 뒤에 올린다. 그 전에 올리면 사용자가 스토어에 가도 "열기"만 보인다.
   - Android: 100% 출시하고 Play 화면에 업데이트가 보인 뒤. 단계 출시 대상이 아닌 기기는 업데이트를 받을 수 없다.
   - iOS: 공개(Ready for Sale) 뒤. 단계적 출시 중에도 App Store에서 직접 업데이트할 수 있다.
-  - 두 값은 따로 정한다. 한쪽만 공개됐으면 다른 쪽은 이전 공개값을 둔다.
-- **반영**: `scripts/ops/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
-- **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
+  - 두 값은 따로 정한다. 한쪽만 공개됐으면 그 플랫폼만 부르고 다른 쪽은 이전 공개값을 둔다.
+- **반영**: 관리자 계정(role `ADMIN`)의 access token으로 플랫폼마다 관리자 API를 한 번 부른다. env를 고치거나 서버를 다시 배포하지 않고 다음 조회부터 바뀐다. 버전은 그 release의 실제 공개값(MAJOR.MINOR.PATCH)이다.
+- **되돌리기**: 이전 공개값으로 다시 부른다. 끄는 방법은 두지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
+- **env 대체**: DB에 행이 없는 플랫폼은 env `APP_VERSION_CHECK_*` 값으로 응답한다. 두 플랫폼을 한 번씩 반영한 뒤에는 env 값을 읽지 않는다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 있다.
 - **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
-운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
+```sh
+# <플랫폼>은 ios 또는 android
+curl -fsS -X PUT "https://api.aido.kr/v1/admin/app-config/app-releases/<플랫폼>" \
+  -H "Authorization: Bearer <관리자 토큰>" -H "Content-Type: application/json" \
+  -d '{"latestVersion":"<공개 버전>"}'
+curl -fsS https://api.aido.kr/v1/app-config/app-version
+```
 
-env만 반영할 때는 값을 고친 뒤 같은 SHA를 다시 배포한다. 새 슬롯이 새 env로 뜨고 healthy가 된 뒤에 전환하므로 끊기지 않고, env가 잘못돼 기동하지 못하면 살아 있는 API가 그대로 남는다. `docker restart`는 env_file 변경을 반영하지 않는다.
+운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 값은 화면에 찍지 않는다: 바꿀 때는 편집기로 고치고, 비교는 키 이름과 해시로 한다.
+
+env를 반영할 때는 값을 고친 뒤 같은 SHA를 다시 배포한다. 새 슬롯이 새 env로 뜨고 healthy가 된 뒤에 전환하므로 끊기지 않고, env가 잘못돼 기동하지 못하면 살아 있는 API가 그대로 남는다. `docker restart`는 env_file 변경을 반영하지 않는다.
 
 ```sh
 cd ~/apps/Aido-platform
-flock -n ~/apps/deploy-state/deploy.lock python3 scripts/ops/update-app-version-env.py \
-  --ios <iOS 공개 버전> --android <Android 공개 버전> --enabled true --published \
-  --backup-dir ~/apps/deploy-state/backups apps/api/.env
 DEPLOY_SHA=$(cat ~/apps/deploy-state/last_deployed_sha) bash scripts/deploy.sh
 ```
 
