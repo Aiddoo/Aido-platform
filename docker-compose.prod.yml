@@ -41,6 +41,8 @@ services:
     image: ghcr.io/aiddoo/aido-platform-migrate:${IMAGE_TAG:?IMAGE_TAG가 없다 — scripts/deploy.sh로 실행한다}
     env_file:
       - apps/api/.env
+      # 소유자 계정의 DATABASE_URL 한 줄이다. 뒤 파일이 이겨서 migration만 소유자로 돌고, API 컨테이너는 이 파일을 받지 않는다
+      - apps/api/.env.migrate
     environment:
       # 문지기(apps/api/scripts/guard-database-url.cjs)는 원격 DB를 기본으로 거절한다. 운영 migration은 이 서비스 하나뿐이다
       AIDO_ALLOW_REMOTE_DB: '1'

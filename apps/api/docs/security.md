@@ -26,6 +26,7 @@
 - 운영 컨테이너는 비루트·읽기 전용 루트·capability 제거·`no-new-privileges`로 돈다([production compose](../../../docker-compose.prod.yml)).
 - Nginx·sshd·자동 보안 패치 설정의 정본과 설치 위치는 [서버 설정과 관리](deployment.md#서버-설정과-관리)에 있다.
 - 이미지는 Trivy 검사를 통과한 것만 발행하고 서버에서 빌드하지 않는다([CI](ci.md)).
+- API는 테이블을 만들거나 바꾸거나 지우지 못하는 DB 역할로 붙는다. 소유자 계정의 주소는 migration 컨테이너만 받는다([서버 설정과 관리](deployment.md#서버-설정과-관리)).
 
 ## 서명 키 회전
 

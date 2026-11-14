@@ -71,6 +71,7 @@ if [[ "${DEPLOY_LOCK_HELD:-0}" != 1 ]]; then
   flock -n 9 || fail "다른 배포가 진행 중이다"
 fi
 is_private_file apps/api/.env || fail "apps/api/.env가 없거나 권한이 600이 아니다"
+is_private_file apps/api/.env.migrate || fail "apps/api/.env.migrate가 없거나 권한이 600이 아니다"
 
 IMAGE_TAG="$(git rev-parse "${DEPLOY_SHA:-HEAD}^{commit}")"
 export IMAGE_TAG
