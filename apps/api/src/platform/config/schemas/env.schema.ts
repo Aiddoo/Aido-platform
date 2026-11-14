@@ -1,11 +1,6 @@
 import { z } from "zod";
 
 import { type AiConfig, aiSchema } from "./ai.schema.js";
-import {
-  type AppVersionConfig,
-  appVersionSchema,
-  validateAppVersionConfig,
-} from "./app-version.schema.js";
 import { type AppConfig, appSchema } from "./app.schema.js";
 import { type CacheEnvConfig, cacheSchema, validateCacheConfig } from "./cache.schema.js";
 import { type DatabaseConfig, databaseSchema } from "./database.schema.js";
@@ -39,7 +34,6 @@ import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 export const envSchema = z
   .object({
     ...appSchema.shape,
-    ...appVersionSchema.shape,
     ...cacheSchema.shape,
     ...databaseSchema.shape,
     ...emailSchema.shape,
@@ -57,7 +51,6 @@ export const envSchema = z
     ...inviteSchema.shape,
   })
   .check(validateFeatureDiscoveryConfig)
-  .check(validateAppVersionConfig)
   .check(validateInviteConfig)
   .check(validateWeatherKitConfig)
   .check(validateCacheConfig);
@@ -66,7 +59,6 @@ export const envSchema = z
  * 환경변수 전체 타입
  */
 export type EnvConfig = AppConfig &
-  AppVersionConfig &
   CacheEnvConfig &
   DatabaseConfig &
   EmailConfig &
