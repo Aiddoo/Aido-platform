@@ -127,6 +127,19 @@ Blue-Green으로 바꾼 커밋 이전으로는 되돌리지 않는다. 그 이�
 - 재부팅 뒤 확인: `docker ps`(healthy), 살아 있는 슬롯의 `/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑).
 - DB 백업은 서버 cron(03:00 UTC)이 [backup-database.sh](../../../scripts/ops/backup-database.sh)를 저장소 경로에서 바로 실행한다(`0 3 * * * bash ~/apps/Aido-platform/scripts/ops/backup-database.sh >> ~/backups/backup.log 2>&1`). 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. RDS 자동 백업(7일)과 따로 도는 두 번째 사본이다.
 - 백업 버킷은 버전 관리를 켜 두고 [수명주기](../../../scripts/ops/s3/backup-lifecycle.json)가 지운다: `daily/`는 30일 뒤 만료하고, 만료되거나 지운 파일의 옛 버전은 버킷 전체에서 7일 뒤 완전히 지운다(`aws s3api put-bucket-lifecycle-configuration --bucket <버킷> --lifecycle-configuration file://scripts/ops/s3/backup-lifecycle.json`). 옛 버전 규칙이 없으면 만료된 덤프가 숨겨진 채 계속 남는다. 서버 역할은 올리기·읽기·목록만 갖고 지우지 못한다.
+- AWS 경보는 CloudWatch 여섯 개이고 SNS 토픽 `aido-alerts`(이메일)로 간다. RDS 이벤트(장애·저장소 부족·유지보수·가용성)도 같은 토픽으로 받는다.
+
+  | 경보                           | 울리는 조건                   | 뜻                                             |
+  | ------------------------------ | ----------------------------- | ---------------------------------------------- |
+  | `aido-ec2-status-check-failed` | 상태 검사 실패가 2분 이어짐   | 인스턴스나 호스트 장애                         |
+  | `aido-ec2-cpu-surplus-credits` | 초과 CPU 크레딧이 15분 이어짐 | 크레딧을 다 써서 초과분이 과금된다             |
+  | `aido-rds-swap-high`           | 스왑 256MB 초과가 15분 이어짐 | 메모리 부족. 인스턴스를 한 단계 올릴 신호다    |
+  | `aido-rds-storage-low`         | 디스크 여유 4GB 미만          | 자동 확장(상한 50GB)이 따라가지 못한다         |
+  | `aido-rds-cpu-high`            | CPU 80% 초과가 15분 이어짐    | 느린 쿼리나 부하 증가                          |
+  | `aido-rds-connections-high`    | 연결 60개 초과가 10분 이어짐  | 한도 79에 가깝다([확장](scaling.md#확장-단계)) |
+
+- RDS는 삭제 방지를 켜고 저장소 자동 확장 상한을 50GB로 둔다. 유지보수 창은 일요일 19:00~20:00 UTC(월요일 04:00~05:00 KST)이고 엔진·OS 패치로 몇 분 멈출 수 있다.
+- EC2 메타데이터는 IMDSv2만 받고 hop 제한이 1이다. 호스트의 백업 스크립트만 인스턴스 역할을 쓰고 컨테이너는 메타데이터에 닿지 못한다.
 - `REDIS_URL`은 `CACHE_TYPE=redis`로 여러 대를 운영할 때만 둔다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)). 큐는 pg-boss라 Redis가 필요 없다.
 
 ## 공개 버전과 env 반영
