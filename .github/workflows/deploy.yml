@@ -131,9 +131,10 @@ jobs:
             git rev-parse --verify "${DEPLOY_SHA}^{commit}" >/dev/null
             git merge-base --is-ancestor "$DEPLOY_SHA" origin/main \
               || { echo "::error::DEPLOY_SHA가 origin/main 이력에 없습니다"; exit 1; }
+            # Blue-Green 이전 커밋의 스크립트는 슬롯과 Nginx upstream을 모른다. 성공으로 보이지만 Nginx는 넘어가지 않는다
+            git cat-file -e "$DEPLOY_SHA:scripts/ops/nginx/api.aido.kr.conf" 2>/dev/null \
+              || { echo "::error::Blue-Green 이전 커밋은 배포하지 않는다(apps/api/docs/deployment.md)"; exit 1; }
             git reset --hard "$DEPLOY_SHA"
-            [[ -f scripts/deploy.sh ]] \
-              || { echo "::error::scripts/deploy.sh 없음 — 스크립트 포함 커밋 이후로만 배포 가능"; exit 1; }
             bash scripts/deploy.sh
           }
           # 함수를 다 읽은 뒤 stdin을 끊고 실행한다. 배포 중 명령이 남은 스크립트를 읽어 가지 않게 한다

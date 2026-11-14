@@ -1,242 +1,154 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Aido 프로덕션 배포 스크립트 (버전 관리: scripts/deploy.sh)
-# 호출: .github/workflows/deploy.yml → SSH 부트스트랩(락 획득 + git reset) → 이 스크립트
-# 전제: 실행 시점에 레포는 이미 DEPLOY_SHA로 reset --hard 된 상태
-#
-# 이미지 소스: 항상 GHCR pull (CI 또는 개발자 Mac이 빌드한 SHA 태그). 서버(2GB)는 빌드하지 않는다.
-#              --build만 서버 로컬 빌드(비상 폴백, 끝나면 빌드 캐시 전체 삭제)
-# 읽기 토큰: GHCR_TOKEN env(Actions) → $GHCR_TOKEN_FILE(기본 $STATE_DIR/ghcr-read-token, 600)
-#            → 터미널 프롬프트. 없으면 빌드로 넘어가지 않고 중단한다. PAT 로그인 실패 시 GHCR_USER=<GitHub 로그인>
-# 수동 배포 (apps/api/docs/deployment.md "수동 배포"):
-#   Mac: TAG=<sha> docker buildx bake -f docker-bake.hcl → trivy 검사 → docker push
-#   서버: cd ~/apps/Aido-platform && git fetch origin main \
-#           && git merge-base --is-ancestor <sha> origin/main && git reset --hard <sha> \
-#           && DEPLOY_SHA=<sha> bash scripts/deploy.sh
-# 비상 서버 빌드: 위 서버 명령 끝을 `bash scripts/deploy.sh --build`로
-# 수동 롤백: cd ~/apps/Aido-platform && bash scripts/deploy.sh --rollback
-# [보안] 이 디렉터리에서 git clean 절대 금지 — apps/api/.env(untracked 운영 시크릿)가 삭제됨
-# [보안] set -x 금지 — 환경변수 노출 방지. 토큰은 argv·history에 두지 않고 stdin 로그인 후 즉시 logout
-# =============================================================================
+# Aido 운영 배포(Blue-Green): migrate → 쉬는 슬롯에 새 API → healthy 확인 → Nginx 전환 → 옛 슬롯 종료.
+# 호출: deploy.yml이 서버 checkout을 DEPLOY_SHA로 reset한 뒤 실행한다. 수동: DEPLOY_SHA=<sha> bash scripts/deploy.sh
+# 롤백: 이전 SHA를 FORCE_DEPLOY=1로 다시 배포한다(이미지가 서버에 남아 있으면 토큰 없이 된다). 스키마는 되돌리지 않는다.
+# 이 디렉터리에서 git clean을 하지 않는다(apps/api/.env가 지워진다). set -x를 쓰지 않는다(env가 로그에 남는다).
 set -Eeuo pipefail
 
 STATE_DIR="${STATE_DIR:-$HOME/apps/deploy-state}"
-COMPOSE_FILE="docker-compose.prod.yml"
-API_IMAGE="aido-platform-api"
-MIGRATE_IMAGE="aido-platform-migrate"
-GHCR_API_IMAGE="ghcr.io/aiddoo/aido-platform-api"
-GHCR_MIGRATE_IMAGE="ghcr.io/aiddoo/aido-platform-migrate"
-API_CONTAINER="aido-prod-api"
-MIGRATE_CONTAINER="aido-prod-migrate"
-HEALTH_URL="${HEALTH_URL:-http://localhost:8080/health}"   # 드릴 시 env로 교체 가능
-HEALTH_TIMEOUT_S=90
-HEALTH_INTERVAL_S=5
-HEALTH_CONSECUTIVE_OK=3
-GHCR_USER="${GHCR_USER:-x-access-token}"               # Actions GITHUB_TOKEN 기본값. PAT면 GitHub 로그인
-GHCR_TOKEN_FILE="${GHCR_TOKEN_FILE:-$STATE_DIR/ghcr-read-token}"  # 서버 1회 등록 read:packages 토큰
-MIN_FREE_KB="${MIN_FREE_KB:-$((3 * 1024 * 1024))}"   # 빌드 전 최소 디스크 여유 3GB (드릴 시 env로 상향 가능)
-DEPLOY_MODE=pull                                       # pull | build(--build) | rollback(--rollback)
-export BUILDKIT_PROGRESS=plain
+# Nginx가 가리키는 슬롯 한 줄. 지금 어느 슬롯이 살아 있는지는 이 파일이 정한다
+UPSTREAM_FILE="${UPSTREAM_FILE:-/etc/nginx/aido-api-upstream.inc}"
+REGISTRY=ghcr.io/aiddoo/aido-platform
+GHCR_USER="${GHCR_USER:-x-access-token}"
+GHCR_TOKEN_FILE="${GHCR_TOKEN_FILE:-$STATE_DIR/ghcr-read-token}"
+NGINX_PID_FILE="${NGINX_PID_FILE:-/run/nginx.pid}"
+HEALTH_WAIT_S=90
+NGINX_RELOAD_WAIT_S=15
+# Nginx proxy_read_timeout(60초)보다 길게 기다린다
+NGINX_DRAIN_WAIT_S=70
+# compose stop_grace_period와 같다
+STOP_WAIT_S=120
+draining_workers=""
 
-# --env-file: compose 변수 보간(${PORT:-8080} 등)은 서비스 env_file이 아닌 이 플래그/호스트 env만 읽음
-compose() { docker compose --env-file apps/api/.env -f "$COMPOSE_FILE" "$@"; }
-# 운영 compose에 build:가 있어도 기동은 준비된 이미지로만 한다(태그가 없으면 서버에서 몰래 빌드하지 않고 실패)
-compose_up() { compose up -d --no-build --pull never "$@"; }
-log()  { printf '\n[deploy] %s\n' "$*"; }
-fail() { printf '\n[deploy][ERROR] %s\n' "$*" >&2; exit 1; }
-file_mode() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
-file_owner() { stat -c '%u' "$1" 2>/dev/null || stat -f '%u' "$1"; }
-# 서버는 빌드 캐시를 두지 않는다 (2GB 서버에서 캐시가 5GB까지 쌓이고 dockerd RSS가 커졌다)
-prune_build_cache() { docker builder prune -af >/dev/null || log "경고: 빌드 캐시 정리 실패"; }
-disk_avail_kb() { df -k --output=avail / | tail -1 | tr -d '[:space:]'; }
-
-acquire_lock() {
-  # 부트스트랩이 이미 락(fd 9)을 잡고 넘어온 경우 재획득 금지 (재-open 시 락 해제됨)
-  if [[ "${DEPLOY_LOCK_HELD:-0}" != "1" ]]; then
-    mkdir -p "$STATE_DIR"
-    exec 9>"$STATE_DIR/deploy.lock"
-    flock -n 9 || fail "다른 배포가 진행 중입니다 ($STATE_DIR/deploy.lock)"
-  fi
+log() { printf '\n[deploy] %s\n' "$*"; }
+fail() {
+  printf '\n[deploy][ERROR] %s\n' "$*" >&2
+  exit 1
 }
-
-dump_logs() {
-  log "── migrate 로그 (마지막 50줄) ──"
-  docker logs --tail 50 "$MIGRATE_CONTAINER" 2>&1 || true
-  log "── api 로그 (마지막 50줄) ──"
-  docker logs --tail 50 "$API_CONTAINER" 2>&1 || true
-  docker ps -a --filter "name=aido-prod" || true
+compose() { docker compose --env-file apps/api/.env -f docker-compose.prod.yml "$@"; }
+is_private_file() { [[ -f "$1" && ! -L "$1" && "$(stat -c '%a' "$1")" =~ ^[46]00$ ]]; }
+# 슬롯은 호스트 바인딩 문자열로 찾는다(blue·green 둘 다 컨테이너 안 포트는 8080이다)
+containers_on() {
+  docker ps --format '{{.ID}} {{.Ports}}' | awk -v bind="127.0.0.1:$1->" 'index($0, bind) { print $1 }'
 }
-
-wait_healthy() {
-  local deadline=$((SECONDS + HEALTH_TIMEOUT_S)) ok=0 status
-  while (( SECONDS < deadline )); do
-    status="$(docker inspect --format '{{.State.Health.Status}}' "$API_CONTAINER" 2>/dev/null || echo missing)"
-    if [[ "$status" == "healthy" ]] && curl -fsS -m 5 "$HEALTH_URL" >/dev/null 2>&1; then
-      ok=$((ok + 1))
-      (( ok >= HEALTH_CONSECUTIVE_OK )) && { log "헬스체크 통과 (연속 ${ok}회)"; return 0; }
-    else
-      ok=0
+nginx_workers() { pgrep -P "$(cat "$NGINX_PID_FILE")" | sort; }
+# reload는 신호만 보내고 돌아온다. 새 worker가 떠야 새 설정이 적용된 것이다
+reload_nginx() {
+  local before waited
+  before="$(nginx_workers)"
+  sudo nginx -t -q && sudo systemctl reload nginx || return 1
+  for ((waited = 0; waited < NGINX_RELOAD_WAIT_S; waited++)); do
+    if [[ -n "$(comm -13 <(printf '%s\n' "$before") <(nginx_workers))" ]]; then
+      draining_workers="$before"
+      return 0
     fi
-    sleep "$HEALTH_INTERVAL_S"
+    sleep 1
   done
   return 1
 }
-
-restore_previous_images() {
-  docker image inspect "$API_IMAGE:rollback" >/dev/null 2>&1 \
-    || fail "롤백 이미지($API_IMAGE:rollback) 없음 — 수동 개입 필요"
-  docker tag "$API_IMAGE:rollback" "$API_IMAGE:latest"
-  if docker image inspect "$MIGRATE_IMAGE:rollback" >/dev/null 2>&1; then
-    docker tag "$MIGRATE_IMAGE:rollback" "$MIGRATE_IMAGE:latest"
-  fi
+# 옛 설정을 쥔 worker가 받던 요청을 끝내고 모두 빠질 때까지 기다린다.
+# 곧바로 옛 슬롯을 내리면 그 사이 옛 슬롯으로 간 요청이 502가 된다(로컬 전환 연습에서 확인)
+wait_nginx_drain() {
+  local waited
+  for ((waited = 0; waited < NGINX_DRAIN_WAIT_S; waited++)); do
+    [[ -n "$(comm -12 <(printf '%s\n' "$draining_workers") <(nginx_workers))" ]] || return 0
+    sleep 1
+  done
+}
+point_nginx_at() {
+  # 쓰다 만 파일이 남지 않게 옆에 쓰고 바꾼다
+  printf 'server 127.0.0.1:%s;\n' "$1" | sudo tee "$UPSTREAM_FILE.new" >/dev/null \
+    && sudo mv "$UPSTREAM_FILE.new" "$UPSTREAM_FILE" \
+    && reload_nginx
 }
 
-rollback() {
-  trap - ERR
-  log "배포 실패 — 이전 이미지로 롤백 시도"
-  dump_logs
-  restore_previous_images
-  compose_up --no-deps api   # migrate 재실행 없이 api만 복구 (--no-deps 필수)
-  local healthy=0
-  wait_healthy && healthy=1
-  [[ "$DEPLOY_MODE" == "build" ]] && prune_build_cache
-  if (( healthy )); then
-    log "롤백 성공 — 이전 버전으로 서비스 중 (이번 배포는 실패 처리)"
-    exit 1
+(($# == 0)) || fail "인자를 받지 않는다. 롤백은 DEPLOY_SHA=<sha> FORCE_DEPLOY=1 bash scripts/deploy.sh"
+cd "$(dirname "$0")/.."
+mkdir -p "$STATE_DIR"
+# workflow가 이미 잡고 넘어온 잠금(fd 9)은 다시 열지 않는다. 다시 열면 풀린다
+if [[ "${DEPLOY_LOCK_HELD:-0}" != 1 ]]; then
+  exec 9>"$STATE_DIR/deploy.lock"
+  flock -n 9 || fail "다른 배포가 진행 중이다"
+fi
+is_private_file apps/api/.env || fail "apps/api/.env가 없거나 권한이 600이 아니다"
+
+IMAGE_TAG="$(git rev-parse "${DEPLOY_SHA:-HEAD}^{commit}")"
+export IMAGE_TAG
+[[ "$(git rev-parse HEAD)" == "$IMAGE_TAG" ]] || fail "작업 tree가 $IMAGE_TAG 상태가 아니다"
+last="$(cat "$STATE_DIR/last_deployed_sha" 2>/dev/null || true)"
+if [[ "${FORCE_DEPLOY:-0}" != 1 && -n "$last" ]] && git cat-file -e "$last^{commit}" 2>/dev/null; then
+  git merge-base --is-ancestor "$last" "$IMAGE_TAG" \
+    || fail "마지막 배포($last)보다 오래된 커밋이다. 롤백이면 FORCE_DEPLOY=1"
+fi
+
+live_port="$(grep -oE '127\.0\.0\.1:[0-9]+' "$UPSTREAM_FILE" 2>/dev/null | cut -d: -f2 || true)"
+case "$live_port" in
+  8080) next=green next_port=8081 ;;
+  8081) next=blue next_port=8080 ;;
+  *) fail "$UPSTREAM_FILE 에서 살아 있는 슬롯(8080·8081)을 읽지 못했다" ;;
+esac
+# 지난 배포가 전환 도중 끊겼어도 실행 중인 Nginx가 파일과 같은 슬롯을 보게 맞춘다
+reload_nginx || fail "Nginx reload가 적용되지 않았다. 설정을 확인한다"
+log "배포 $IMAGE_TAG: 지금 $live_port → 새 슬롯 $next($next_port)"
+
+if ! docker image inspect "$REGISTRY-api:$IMAGE_TAG" "$REGISTRY-migrate:$IMAGE_TAG" >/dev/null 2>&1; then
+  token="${GHCR_TOKEN:-}"
+  if [[ -z "$token" ]] && is_private_file "$GHCR_TOKEN_FILE"; then
+    token="$(tr -d '[:space:]' <"$GHCR_TOKEN_FILE")"
   fi
-  printf '\n[deploy][FATAL] 롤백 후에도 unhealthy — 즉시 수동 개입 필요\n' >&2
-  dump_logs
-  exit 2
-}
+  [[ -n "$token" ]] || fail "GHCR 토큰이 없다: GHCR_TOKEN 또는 $GHCR_TOKEN_FILE(600)"
+  trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+  printf '%s' "$token" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null 2>&1 \
+    || fail "GHCR 로그인 실패"
+  compose pull -q migrate "api-$next"
+  docker logout ghcr.io >/dev/null 2>&1 || true
+fi
 
-# GHCR 읽기 토큰을 GHCR_TOKEN에 채운다 (env → 소유자 전용 파일 → 터미널 프롬프트). 값은 출력하지 않는다.
-resolve_ghcr_token() {
-  [[ -n "${GHCR_TOKEN:-}" ]] && return 0
-  if [[ -f "$GHCR_TOKEN_FILE" ]]; then
-    [[ "$(file_owner "$GHCR_TOKEN_FILE")" == "$(id -u)" ]] \
-      || fail "$GHCR_TOKEN_FILE 소유자가 현재 사용자가 아닙니다"
-    [[ "$(file_mode "$GHCR_TOKEN_FILE")" =~ ^[46]00$ ]] \
-      || fail "$GHCR_TOKEN_FILE 권한이 너무 넓습니다 — chmod 600 \"$GHCR_TOKEN_FILE\""
-    GHCR_TOKEN="$(tr -d '[:space:]' < "$GHCR_TOKEN_FILE")"
-  elif [[ -t 0 ]]; then
-    read -rsp "GHCR read:packages 토큰 (입력은 표시되지 않음): " GHCR_TOKEN; echo
-  fi
-  [[ -n "${GHCR_TOKEN:-}" ]] || fail "GHCR 토큰이 없습니다 — 서버에서 이미지를 빌드하지 않습니다.
-  Mac에서 docker buildx bake로 빌드해 GHCR에 올린 뒤 토큰 파일($GHCR_TOKEN_FILE, 600)을
-  두거나 터미널에서 실행하세요. 비상시에만 서버 빌드: bash scripts/deploy.sh --build"
-}
+# migrate가 실패하면 여기서 끝나고 살아 있는 API는 그대로다
+log "migrate"
+compose run --rm --pull never migrate
 
-main() {
-  case "${1:-}" in
-    "") ;;
-    --build) DEPLOY_MODE=build ;;
-    --rollback) DEPLOY_MODE=rollback ;;
-    *) fail "알 수 없는 인자: $1 (--build | --rollback)" ;;
-  esac
-  (( $# <= 1 )) || fail "인자는 하나만 받습니다: $*"
+# 새 슬롯 자리에 남은 컨테이너를 치운다(끊긴 지난 배포, 첫 전환 때의 옛 컨테이너). Nginx는 이 포트를 보지 않는다
+mapfile -t stale < <(containers_on "$next_port")
+if ((${#stale[@]})); then
+  log "새 슬롯($next_port)에 남은 컨테이너 정리"
+  docker stop -t "$STOP_WAIT_S" "${stale[@]}" >/dev/null
+  docker rm "${stale[@]}" >/dev/null
+fi
+compose rm -sf "api-$next" >/dev/null || fail "새 슬롯의 옛 컨테이너를 지우지 못했다"
+log "새 API 기동"
+if ! compose up -d --no-deps --pull never --wait --wait-timeout "$HEALTH_WAIT_S" "api-$next" \
+  || ! curl -fsS -m 5 "http://127.0.0.1:$next_port/health" >/dev/null; then
+  compose logs --tail 80 "api-$next" || true
+  compose rm -sf "api-$next" >/dev/null || true
+  fail "새 API가 healthy가 아니어서 지웠다. 살아 있는 슬롯($live_port)은 그대로다"
+fi
 
-  cd "$(dirname "$0")/.."
-  mkdir -p "$STATE_DIR"
-  acquire_lock
-  [[ -f apps/api/.env && ! -L apps/api/.env ]] \
-    || fail "운영 env apps/api/.env 없음 — apps/api/docs/deployment.md '서버 관리' (서비스는 구 버전)"
-  [[ "$(file_mode apps/api/.env)" =~ ^[46]00$ ]] || fail "apps/api/.env 권한은 600이어야 한다"
+log "Nginx 전환"
+if ! point_nginx_at "$next_port"; then
+  point_nginx_at "$live_port" || true
+  compose rm -sf "api-$next" >/dev/null || true
+  fail "Nginx 전환 실패. 살아 있는 슬롯($live_port)으로 되돌렸다"
+fi
+# 여기부터 새 버전이 응답한다. 뒤 단계가 끊겨도 기록은 맞다
+printf '%s\n' "$IMAGE_TAG" >"$STATE_DIR/last_deployed_sha"
+printf '%s %s deployed %s\n' "$(date -Is)" "${IMAGE_TAG:0:9}" "$next" >>"$STATE_DIR/history.log"
+wait_nginx_drain
 
-  if [[ "$DEPLOY_MODE" == "rollback" ]]; then
-    restore_previous_images
-    compose_up --no-deps api
-    wait_healthy || { dump_logs; fail "수동 롤백 후에도 unhealthy"; }
-    printf '%s %s rollback\n' "$(date -Is)" "$(git rev-parse --short HEAD)" >> "$STATE_DIR/history.log"
-    log "수동 롤백 완료"
-    exit 0
-  fi
+mapfile -t old < <(containers_on "$live_port")
+previous_image=""
+if ((${#old[@]})); then
+  previous_image="$(docker inspect -f '{{.Config.Image}}' "${old[0]}")"
+  log "옛 API 종료"
+  docker stop -t "$STOP_WAIT_S" "${old[@]}" >/dev/null
+  docker rm "${old[@]}" >/dev/null
+fi
 
-  # 0. 배포 대상 검증
-  DEPLOY_SHA="${DEPLOY_SHA:-$(git rev-parse HEAD)}"
-  [[ "$(git rev-parse HEAD)" == "$(git rev-parse "${DEPLOY_SHA}^{commit}")" ]] \
-    || fail "작업트리가 DEPLOY_SHA(${DEPLOY_SHA}) 상태가 아닙니다"
-
-  local last_sha_file="$STATE_DIR/last_deployed_sha"
-  if [[ "${FORCE_DEPLOY:-0}" != "1" && -f "$last_sha_file" ]]; then
-    local last; last="$(cat "$last_sha_file")"
-    if git cat-file -e "${last}^{commit}" 2>/dev/null; then
-      git merge-base --is-ancestor "$last" "$DEPLOY_SHA" \
-        || fail "마지막 배포($last)보다 오래된 커밋 — 의도적이면 FORCE_DEPLOY=1"
-    fi
-  fi
-  log "배포 대상: $(git log -1 --oneline HEAD)"
-  # 이미지 소스를 컨테이너·태그를 건드리기 전에 확정 (토큰 부재로 조용히 서버 빌드하지 않음)
-  if [[ "$DEPLOY_MODE" == "pull" ]]; then
-    resolve_ghcr_token
-  else
-    log "비상 폴백: 서버 로컬 빌드 (--build) — 2GB 서버라 swap·디스크 압박이 큼"
-  fi
-
-  # 1. 디스크 사전 점검: 부족 → 전체 정리 → 재확인 → 그래도 부족하면 빌드 시작 전 중단
-  #    (도중 ENOSPC로 죽는 빌드를 만들지 않는다 — 서비스는 구 버전으로 무영향)
-  local avail_kb; avail_kb="$(disk_avail_kb)"
-  log "디스크 여유: $(( avail_kb / 1024 / 1024 ))GB"
-  if (( avail_kb < MIN_FREE_KB )); then
-    log "여유 부족 — 빌드 캐시 전체 + dangling 이미지 정리 (이번 빌드는 콜드 빌드)"
-    docker builder prune -af
-    docker image prune -f
-    avail_kb="$(disk_avail_kb)"
-    (( avail_kb >= MIN_FREE_KB )) \
-      || fail "정리 후에도 디스크 여유 부족($(( avail_kb / 1024 / 1024 ))GB) — 빌드 미시작, 서비스는 구 버전으로 계속 동작 중. df -h / docker system df로 원인 확인"
-  fi
-
-  # 2. 지금 돌고 있는 이미지를 롤백 지점으로 태깅 (첫 실행 시 자동 시드)
-  #    :latest가 아니라 컨테이너 기준이다. 중단된 배포는 헬스 검증 전 이미지를 :latest에 남긴다
-  local running_image
-  if running_image="$(docker inspect -f '{{.Image}}' "$API_CONTAINER" 2>/dev/null)"; then
-    docker tag "$running_image" "$API_IMAGE:rollback"
-    if running_image="$(docker inspect -f '{{.Image}}' "$MIGRATE_CONTAINER" 2>/dev/null)"; then
-      docker tag "$running_image" "$MIGRATE_IMAGE:rollback"
-    fi
-    log "롤백 태그 갱신 완료(실행 중 컨테이너 기준)"
-  else
-    log "실행 중 api 없음(첫 배포) — 롤백 태그 생략"
-  fi
-
-  # 3. 이미지 준비 — 기본: CI 또는 Mac이 빌드해 GHCR에 올린 이미지 pull (실패 시 컨테이너 무접촉 중단)
-  #    폴백: --build일 때만 서버 로컬 빌드 (순차로 메모리 피크 분산)
-  trap rollback ERR
-  if [[ "$DEPLOY_MODE" == "build" ]]; then
-    log "이미지 빌드(로컬): migrate"
-    compose build migrate
-    log "이미지 빌드(로컬): api"
-    compose build api
-  else
-    log "이미지 pull: ${GHCR_API_IMAGE}:${DEPLOY_SHA}"
-    # 로그인 실패는 롤백 없이 중단 — 아직 :latest와 컨테이너를 바꾸지 않았다
-    printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null 2>&1 \
-      || { trap - ERR; fail "GHCR 로그인 실패 — 토큰의 read:packages 권한·만료, GHCR_USER 확인 (서비스는 구 버전)"; }
-    # pull 실패로 ERR trap(롤백)을 타는 경로를 포함해 어떤 종료에서도 자격 증명이 남지 않도록 보장
-    trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
-    docker pull -q "${GHCR_API_IMAGE}:${DEPLOY_SHA}"
-    docker pull -q "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}"
-    docker logout ghcr.io >/dev/null 2>&1 || true
-    # 로컬 이름으로 retag 후 GHCR 태그 제거 — 기존 :latest/:rollback 2세대 모델 그대로 유지
-    docker tag "${GHCR_API_IMAGE}:${DEPLOY_SHA}" "$API_IMAGE:latest"
-    docker tag "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}" "$MIGRATE_IMAGE:latest"
-    docker rmi "${GHCR_API_IMAGE}:${DEPLOY_SHA}" "${GHCR_MIGRATE_IMAGE}:${DEPLOY_SHA}" >/dev/null 2>&1 || true
-  fi
-
-  # 4. 기동 (migrate 완료 대기 후 api 재생성; migrate 실패 시 구 api 유지된 채 비정상 종료 → 롤백 경로)
-  log "컨테이너 기동 (migrate → api)"
-  compose_up
-
-  # 5. 헬스 게이트
-  wait_healthy || rollback
-  trap - ERR
-
-  # 6. 성공 처리: 상태 기록 + 안전한 정리 (정리 실패가 성공한 배포를 실패로 만들지 않도록 비치명 처리)
-  git rev-parse HEAD > "$last_sha_file"
-  printf '%s %s deployed\n' "$(date -Is)" "$(git rev-parse --short HEAD)" >> "$STATE_DIR/history.log"
-  docker image prune -f || log "경고: dangling 이미지 정리 실패 (배포는 성공)"   # dangling만 — :rollback 보존 위해 -a 절대 금지
-  prune_build_cache
-  log "배포 완료: $(git rev-parse --short HEAD)"
-  df -h / | tail -1
-}
-
-main "$@"
+# 롤백용으로 방금 내린 버전의 이미지까지 남긴다. 같은 SHA를 다시 배포했으면 지우지 않는다. 정리 실패는 배포 실패가 아니다
+previous_tag="${previous_image##*:}"
+if [[ "$previous_tag" != "$IMAGE_TAG" ]]; then
+  docker images --filter "reference=$REGISTRY-*" --format '{{.Repository}}:{{.Tag}}' \
+    | grep -vE ":(${IMAGE_TAG}|${previous_tag:-${last:-none}})$" | xargs -r docker rmi >/dev/null 2>&1 || true
+fi
+docker image prune -f >/dev/null || true
+log "배포 완료: ${IMAGE_TAG:0:9} ($next)"

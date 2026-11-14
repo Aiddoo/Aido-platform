@@ -15,22 +15,31 @@ pnpm docker:dev:logs
 
 개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 서버에서 `scripts/deploy.sh`만 실행한다. production compose는 원격 migration을 허용하므로 로컬에서 띄우지 않는다(로컬 `apps/api/.env`는 운영 값 사본이다).
 
-## 동일 SHA의 배포 흐름
+## 배포 흐름 (Blue-Green)
 
 main의 API 영향 변경에서 CI 검증이 성공하면 ARM64 API와 migrate 이미지를 같은 40자리 SHA 태그로 GHCR에 발행한다. deploy workflow는 이미지 발행 job 성공 여부와 두 태그를 확인한 뒤 해당 SHA를 선택한다. 배포 시점의 main HEAD를 임의로 대신 쓰지 않는다. API 영향이 없어 image job을 건너뛴 run은 자동 배포하지 않는다.
 
+API 컨테이너 자리는 둘이다: blue(`127.0.0.1:8080`)와 green(`127.0.0.1:8081`). 평소에는 Nginx가 가리키는 한 슬롯만 떠 있고, 지금 어느 슬롯이 살아 있는지는 `/etc/nginx/aido-api-upstream.inc` 한 줄이 정한다.
+
 ```text
-CI 검증 → 같은 SHA의 API/migrate 이미지 → Deploy to EC2
-  → 배포 락·SHA 확인 → migration/verify → API 교체 → health 확인
+① migrate → ② 쉬는 슬롯에 새 API 기동 → ③ Docker healthy + /health 확인
+  → ④ upstream 파일을 새 슬롯으로 쓰고 nginx -t → reload(새 worker가 뜬 것을 확인)
+  → ⑤ 옛 Nginx worker가 받던 요청을 끝내고 빠질 때까지 대기 → ⑥ 옛 API 종료(하던 작업을 끝낸 뒤)
 ```
+
+- ①~③에서 실패하면 새 컨테이너만 지운다. ④에서 `nginx -t`나 reload가 실패하면 upstream 파일을 옛 슬롯으로 되돌리고 새 컨테이너를 지운다. 어느 쪽이든 살아 있는 API는 건드리지 않는다.
+- ⑤를 두는 이유: `reload`는 비동기라 직후 잠깐은 옛 worker가 새 요청을 옛 슬롯으로 보낸다. 곧바로 옛 API를 내리면 그 요청이 502가 된다(로컬 전환 연습에서 확인).
+- ②~⑥ 동안 두 API가 같이 돌고 둘 다 worker를 돌린다. 작업 꺼내기(`SKIP LOCKED`)와 정기 작업 발행은 DB가 조정해 겹치지 않는다. 그 사이 옛 코드와 새 코드가 같은 DB를 쓰므로 migration은 옛 코드와 호환되어야 한다([영속성](persistence.md#마이그레이션)).
+- 전환 뒤에 배포가 끊겨 옛 컨테이너가 남으면 다음 배포가 시작할 때 Nginx를 upstream 파일에 맞추고 그 슬롯을 치운다. 그때까지 두 컨테이너가 같이 돈다.
+- 겹치는 동안 두 프로세스의 메모리 캐시는 따로다. 그 사이 push token을 다시 등록한 기기는 다른 프로세스의 캐시(최대 5분)가 지날 때까지 알림을 옛 token으로 받을 수 있다.
+- 운영 compose는 `JOB_WORKER_ENABLED`를 `true`로 고정한다. env 파일에서 끄면 두 슬롯이 모두 worker를 끄기 때문이다. API와 worker를 나눌 때 compose에 worker 서비스를 더하며 바꾼다([확장](scaling.md#확장-단계)).
+- 대량 공지를 보내는 중에는 배포하지 않는다. 두 프로세스가 같이 보내면 Expo 초당 한도를 넘을 수 있다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)).
 
 deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 배포한다. 접속은 러너의 OpenSSH이고 host key는 `EC2_SSH_HOST_KEYS` secret(서버 `/etc/ssh/ssh_host_*_key.pub`의 `종류 키` 줄)으로 고정한다. 없으면 배포가 시작되지 않는다. 서버를 새로 만들어 host key가 바뀌면 `ssh <서버> 'for f in /etc/ssh/ssh_host_*_key.pub; do cut -d" " -f1,2 "$f"; done' | gh secret set EC2_SSH_HOST_KEYS`로 다시 넣는다. 토큰은 stdin 스크립트로만 넘긴다.
 
-서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 운영 env(`apps/api/.env`, 600)를 확인하고, 지금 돌고 있는 컨테이너의 이미지를 rollback 태그로 보존한다. 이미지는 GHCR에서 pull만 하고 기동은 `--no-build --pull never`로 준비된 이미지만 쓴다. 토큰이 없으면 서버에서 빌드하지 않고 중단하며, 서버 빌드는 `--build`를 준 비상 폴백뿐이다.
+서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·운영 env(`apps/api/.env`, 600)를 확인한다. 이미지는 GHCR의 SHA 태그를 pull만 하고(`--pull never`로 준비된 이미지만 기동) 서버에서 빌드하지 않는다. 성공 뒤 현재와 직전 배포 이미지만 남긴다.
 
-production compose는 host API 포트를 `127.0.0.1:${PORT:-8080}`에만 bind한다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다. API container 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB는 현재 구성값이다.
-
-migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는 Docker healthy와 `/health` 연속 3회 성공을 함께 요구하고, workflow는 공개 `/health`도 확인한다. 실패하면 이전 API image로 복구한다. 성공 뒤 dangling 이미지와 BuildKit cache 전체를 정리하며 `image prune -a`로 rollback image를 제거하지 않는다.
+API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 읽기 전용 루트(`/tmp`만 tmpfs)·capability 전부 제거·`no-new-privileges`로 돈다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다.
 
 ## 수동 배포
 
@@ -58,9 +67,9 @@ Actions를 쓸 수 없을 때만 Mac에서 빌드한다. 서버(메모리 2GB)�
      && DEPLOY_SHA=<sha> bash scripts/deploy.sh
    ```
 
-수동 이미지에는 CI attestation이 없고, GHCR 보존 개수 정리는 다음 CI image job이 한다. `bash scripts/deploy.sh --build`는 GHCR를 쓸 수 없을 때만 쓰는 비상 서버 빌드이며 끝나면 빌드 캐시를 모두 지운다.
+수동 이미지에는 CI attestation이 없고, GHCR 보존 개수 정리는 다음 CI image job이 한다.
 
-**서버 GHCR 읽기 토큰 (1회)**: `read:packages`만 가진 classic PAT를 만료일을 정해 만들고 서버에 소유자 전용 파일로 둔다. 토큰을 명령 인자·shell history에 남기지 않는다. 파일이 없으면 터미널 실행 시 입력을 묻는다. 로그인에 실패하면 `GHCR_USER=<GitHub 로그인>`을 앞에 붙인다.
+**서버 GHCR 읽기 토큰 (1회)**: `read:packages`만 가진 classic PAT를 만료일을 정해 만들고 서버에 소유자 전용 파일로 둔다. 토큰을 명령 인자·shell history에 남기지 않는다. 로그인에 실패하면 `GHCR_USER=<GitHub 로그인>`을 앞에 붙인다. 이미지가 이미 서버에 있으면(직전 버전 롤백) 토큰 없이 배포된다.
 
 ```sh
 install -m 600 /dev/null ~/apps/deploy-state/ghcr-read-token
@@ -91,7 +100,9 @@ delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.m
 
 ## 롤백의 범위
 
-workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 스키마와 업무 데이터를 되돌리지 않는다.
+실패한 배포는 살아 있는 API를 건드리지 않으므로 자동 롤백이 없다. 배포가 끝난 뒤 이전 버전으로 돌아가려면 그 SHA를 다시 배포한다: workflow 수동 실행에 SHA와 force를 주거나, 서버에서 `git reset --hard <sha> && DEPLOY_SHA=<sha> FORCE_DEPLOY=1 bash scripts/deploy.sh`다. 직전 배포 이미지는 서버에 남아 있어 pull 없이 된다. 이 배포도 migrate를 실행하지만 적용할 것이 없고, 이미지를 되돌려도 스키마와 업무 데이터는 되돌아가지 않는다.
+
+Blue-Green으로 바꾼 커밋 이전으로는 되돌리지 않는다. 그 이전의 배포 스크립트는 슬롯과 upstream 파일을 몰라 성공으로 끝나도 Nginx가 넘어가지 않는다. deploy workflow는 그런 SHA를 거절한다.
 
 배포 순서는 서버 → 안정화 확인 → 앱이다. 모바일은 최신 서버 응답만 읽으므로 앱 출시 뒤에는 서버를 그 릴리스 이전으로 되돌리지 않고 수정 배포로 대응한다. 릴리스마다 다른 되돌리기 SQL·배포 전 건수 확인은 그 릴리스 문서(`docs/releases/<버전>/`)에 둔다.
 
@@ -99,22 +110,24 @@ workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `script
 
 새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 스키마가 함께 바뀌는 릴리스는 그 릴리스 노트(`docs/releases`)의 제한을 함께 확인한다.
 
-## 서버 관리 (보안 패치·재부팅·Docker)
+## 서버 설정과 관리
 
-`/var/run/reboot-required`가 생기거나 한 달이 지나면 사용이 적은 시간(KST 새벽)에 한다. 야간 백업 cron(`~/apps/backup.sh`, 03:00 UTC)과 겹치지 않게 한다. 재부팅은 1분 안팎 멈추고, 컨테이너는 `restart: unless-stopped`로 다시 뜬다. 멈춘 동안의 리마인더는 sweep이 따라잡는다([Job과 종료](#job과-종료)).
+호스트 설정의 정본은 저장소에 있다. 서버를 새로 만들거나 파일을 고쳤을 때 아래대로 설치한다.
 
-```sh
-sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get -y \
-  -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade --with-new-pkgs
-docker image prune -f && docker builder prune -af   # :latest·:rollback 두 세대만 남긴다(deploy.sh와 같은 모델)
-sudo systemctl reboot
-```
+| 정본                                                                            | 설치 위치                                        | 반영                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| [Nginx 사이트](../../../scripts/ops/nginx/api.aido.kr.conf)                     | `/etc/nginx/sites-available/api.aido.kr`         | `sudo nginx -t && sudo systemctl reload nginx`      |
+| [Docker 데몬](../../../scripts/ops/docker-daemon.json)                          | `/etc/docker/daemon.json`                        | `sudo dockerd --validate --config-file …` 뒤 재시작 |
+| [자동 보안 패치·재부팅](../../../scripts/ops/host/apt-unattended-upgrades.conf) | `/etc/apt/apt.conf.d/52aido-unattended-upgrades` | 다음 실행부터                                       |
+| [저널 크기](../../../scripts/ops/host/journald.conf)                            | `/etc/systemd/journald.conf.d/aido.conf`         | `sudo systemctl restart systemd-journald`           |
+| [SSH](../../../scripts/ops/host/sshd.conf)                                      | `/etc/ssh/sshd_config.d/10-aido.conf`            | `sudo sshd -t && sudo systemctl reload ssh`         |
 
-- 확인: `uname -r`(새 커널), `docker ps`(healthy), `curl -s 127.0.0.1:8080/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑), `crontab -l`(백업).
-- Docker 데몬 설정은 [docker-daemon.json](../../../scripts/ops/docker-daemon.json)이 정본이다. `/etc/docker/daemon.json`에 두고 `sudo dockerd --validate --config-file /etc/docker/daemon.json`으로 확인한다. `live-restore`가 켜져 있으면 데몬을 재시작해도 컨테이너가 계속 돈다.
-- 손으로 만든 이미지 태그(`pre-<버전>` 등)는 그 버전 롤백이 필요 없어지면 지운다. 롤백은 `:rollback` 한 세대다.
-- DB 백업은 [backup-database.sh](../../../scripts/ops/backup-database.sh)가 정본이고, 서버 cron(03:00 UTC)이 사본 `~/apps/backup.sh`를 실행한다. 바꾸면 `install -m 700`으로 사본을 덮고, 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. 로그는 `~/backups/backup.log`다.
+- Nginx를 처음 설치할 때는 살아 있는 슬롯 파일을 먼저 만든다: `echo 'server 127.0.0.1:8080;' | sudo tee /etc/nginx/aido-api-upstream.inc`. 이후에는 배포 스크립트만 이 파일을 쓴다. 인증서는 certbot(`certbot.timer`, nginx 플러그인)이 갱신한다. Nginx 설정을 바꾼 뒤에는 `sudo certbot renew --dry-run`으로 갱신이 되는지 본다.
+- OS 보안 패치는 `unattended-upgrades`가 매일 적용하고, 재부팅이 필요한 패치는 05:00 KST(20:00 UTC)에 스스로 재부팅한다. 재부팅은 1분 안팎 멈추고 컨테이너는 `restart: unless-stopped`로 다시 뜬다. 멈춘 동안의 리마인더는 sweep이 따라잡는다([Job과 종료](#job과-종료)).
+- 메모리를 비우는 cron을 두지 않는다. `free`의 buff/cache는 커널이 필요할 때 내주는 캐시다. 상한은 컨테이너 memory 512M과 Node heap 384MiB가 정한다.
+- 재부팅 뒤 확인: `docker ps`(healthy), 살아 있는 슬롯의 `/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑).
+- DB 백업은 서버 cron(03:00 UTC)이 [backup-database.sh](../../../scripts/ops/backup-database.sh)를 저장소 경로에서 바로 실행한다(`0 3 * * * bash ~/apps/Aido-platform/scripts/ops/backup-database.sh >> ~/backups/backup.log 2>&1`). 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. RDS 자동 백업(7일)과 따로 도는 두 번째 사본이다.
+- 백업 버킷은 버전 관리를 켜 두고 [수명주기](../../../scripts/ops/s3/backup-lifecycle.json)가 지운다: `daily/`는 30일 뒤 만료하고, 만료되거나 지운 파일의 옛 버전은 버킷 전체에서 7일 뒤 완전히 지운다(`aws s3api put-bucket-lifecycle-configuration --bucket <버킷> --lifecycle-configuration file://scripts/ops/s3/backup-lifecycle.json`). 옛 버전 규칙이 없으면 만료된 덤프가 숨겨진 채 계속 남는다. 서버 역할은 올리기·읽기·목록만 갖고 지우지 못한다.
 - `REDIS_URL`은 `CACHE_TYPE=redis`로 여러 대를 운영할 때만 둔다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)). 큐는 pg-boss라 Redis가 필요 없다.
 
 ## 공개 버전과 env 반영
@@ -133,19 +146,18 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
 - **되돌리기**: 이전 공개값으로 다시 실행하거나 backup을 복원한다. `--enabled false`로 끄지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
 - **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
-운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 루트 `.env.docker.prod`는 이 파일을 가리키는 링크로, env 경로를 옮기기 전 커밋을 다시 배포할 때만 쓴다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
+운영 env는 서버의 `~/apps/Aido-platform/apps/api/.env`(권한 600, git이 무시함) 하나다. 값은 화면에 찍지 않는다: 바꿀 때는 위 script나 편집기로 고치고, 비교는 키 이름과 해시로 한다.
 
-env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
+env만 반영할 때는 값을 고친 뒤 같은 SHA를 다시 배포한다. 새 슬롯이 새 env로 뜨고 healthy가 된 뒤에 전환하므로 끊기지 않고, env가 잘못돼 기동하지 못하면 살아 있는 API가 그대로 남는다. `docker restart`는 env_file 변경을 반영하지 않는다.
 
 ```sh
 cd ~/apps/Aido-platform
 flock -n ~/apps/deploy-state/deploy.lock python3 scripts/ops/update-app-version-env.py \
   --ios <iOS 공개 버전> --android <Android 공개 버전> --enabled true --published \
   --backup-dir ~/apps/deploy-state/backups apps/api/.env
-flock -n ~/apps/deploy-state/deploy.lock docker compose --env-file apps/api/.env -f docker-compose.prod.yml \
-  up -d --no-deps --no-build --pull never --force-recreate api
+DEPLOY_SHA=$(cat ~/apps/deploy-state/last_deployed_sha) bash scripts/deploy.sh
 ```
 
-script는 링크를 거부하므로 옛 경로 `.env.docker.prod`가 아니라 `apps/api/.env`를 넘긴다. `docker compose config`로 확인할 때는 값이 찍히지 않게 `--quiet`를 붙인다.
+`docker compose config`로 확인할 때는 값이 찍히지 않게 `--quiet`를 붙인다.
 
 PR·stack 규칙은 [Git](../../../docs/conventions/git.md)에 있다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

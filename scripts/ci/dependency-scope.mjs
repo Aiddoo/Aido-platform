@@ -25,7 +25,8 @@ export function dependencyScope(paths) {
       path === '.dockerignore' ||
       path === 'docker-bake.hcl' ||
       path === 'docker-compose.prod.yml' ||
-      path.startsWith('scripts/deploy')
+      path.startsWith('scripts/deploy') ||
+      path.startsWith('scripts/ops/')
     ) {
       scope.api = true;
     } else if (path.startsWith('apps/mobile/')) {

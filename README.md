@@ -195,7 +195,7 @@ flowchart LR
   Push -- Turbo 원격 캐시 --> MainCI
   Merge --> MainCI["main CI<br/>lint · 캐시 재사용 테스트 · build"]
   MainCI --> Image["ARM64 이미지 · Trivy · GHCR"]
-  Image --> Deploy["migrate → API 교체 → health gate"]
+  Image --> Deploy["migrate → 새 슬롯 기동 → Nginx 전환"]
 ```
 
 위층 PR은 CI를 돌리지 않는다. tip의 pre-push가 누적 tree를 검증하고, 합친 뒤 main CI가 배포 전에 한 번 더 확인한다. 각 PR은 혼자 빌드·테스트를 통과하도록 나눈다.
@@ -275,7 +275,7 @@ pnpm dev                                       # API + Expo Metro
 - 푸시·메일·AI·날씨는 Fake나 고정 원문으로 격리한다. 유료 AI 평가(`ai:eval`)와 `test:performance`는 CI 밖이다.
 - lefthook: pre-commit은 staged 파일 lint·format·이름 검사와 문서 검사(`pnpm docs:check`), pre-push는 `turbo run typecheck test build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
 - CI(main을 향한 PR·main push)는 lint·typecheck·build와 함께 단위·통합·계약 테스트를 같은 원격 캐시로 다시 확인하고, 캐시에 없는 작업만 러너에서 한 번에 하나씩 돈다.
-- `main`은 같은 run의 검증이 성공하면 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 migrate가 먼저 끝난 뒤 API를 바꾸고 health gate가 실패하면 이전 이미지로 돌린다.
+- `main`은 같은 run의 검증이 성공하면 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 Blue-Green이다. migrate가 끝난 뒤 새 API를 쉬는 슬롯에 띄우고 healthy가 되면 Nginx를 넘긴다. 실패하면 살아 있는 API를 건드리지 않고 끝난다.
 
 ## 문서
 

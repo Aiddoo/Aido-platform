@@ -136,7 +136,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 배포 중 내구성
 
-블루그린이 없어 `compose up` 동안 API와 worker가 잠깐 멈춘다.
+배포는 Blue-Green이라 새 API가 healthy가 된 뒤 옛 API를 내린다([배포](deployment.md#배포-흐름-blue-green)). 그 사이 두 프로세스가 같이 worker를 돌리고, 호스트 재부팅 때는 API와 worker가 잠깐 멈춘다.
 
 | 대상                               | 보장                                                                                                                         |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |

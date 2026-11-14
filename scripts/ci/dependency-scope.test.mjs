@@ -40,6 +40,7 @@ test('image and deploy definitions outside the packages belong to the API scope'
     '.dockerignore',
     'docker-compose.prod.yml',
     'scripts/deploy.sh',
+    'scripts/ops/nginx/api.aido.kr.conf',
   ]) {
     assert.deepEqual(dependencyScope([path]), { ...none, api: true });
   }
