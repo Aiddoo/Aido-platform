@@ -7,7 +7,7 @@ import {
   validateAppVersionConfig,
 } from "./app-version.schema.js";
 import { type AppConfig, appSchema } from "./app.schema.js";
-import { type CacheEnvConfig, cacheSchema } from "./cache.schema.js";
+import { type CacheEnvConfig, cacheSchema, validateCacheConfig } from "./cache.schema.js";
 import { type DatabaseConfig, databaseSchema } from "./database.schema.js";
 import { type EmailConfig, emailSchema } from "./email.schema.js";
 import {
@@ -59,7 +59,8 @@ export const envSchema = z
   .check(validateFeatureDiscoveryConfig)
   .check(validateAppVersionConfig)
   .check(validateInviteConfig)
-  .check(validateWeatherKitConfig);
+  .check(validateWeatherKitConfig)
+  .check(validateCacheConfig);
 
 /**
  * 환경변수 전체 타입

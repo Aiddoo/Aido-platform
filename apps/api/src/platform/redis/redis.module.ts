@@ -10,12 +10,12 @@ import {
 } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { withTimeout } from "es-toolkit";
-import { Redis, type RedisOptions } from "ioredis";
+import { Redis } from "ioredis";
 
 import { cacheConfig } from "../config/cache.config.js";
 import { redisConfig } from "../config/redis.config.js";
 import { PlatformLogEvent } from "../logging/platform.log-events.js";
-import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
+import { buildCommandRedisOptions } from "./redis-client.factory.js";
 import { REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
 /** quit이 오프라인 큐에 걸려 hang할 때 disconnect로 폴백하기까지의 대기 시간 */
@@ -23,13 +23,13 @@ const QUIT_TIMEOUT_MS = 3000;
 
 const logger = new Logger("RedisModule");
 
-function createRedisClient(
-  settings: RedisConnectionSettings,
-  buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
-  name: string,
-): Redis {
-  const options = buildOptions(settings);
-  const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
+function createCommandClient(settings: ConfigType<typeof redisConfig>): Redis {
+  const name = "command";
+  if (settings.url == null || settings.url === "") {
+    // 시작 검증(validateCacheConfig)이 먼저 막는다. 주소 없이 localhost로 붙지 않게 한 번 더 막는다
+    throw new Error("REDIS_URL is required when CACHE_TYPE=redis");
+  }
+  const client = new Redis(settings.url, buildCommandRedisOptions(settings));
 
   client.on("connect", () => {
     logger.log({ event: PlatformLogEvent.REDIS_CONNECTED, client: name });
@@ -98,10 +98,7 @@ export class RedisModule implements OnApplicationShutdown {
       useFactory: (
         cache: ConfigType<typeof cacheConfig>,
         redis: ConfigType<typeof redisConfig>,
-      ): Redis | null =>
-        cache.type === "redis"
-          ? createRedisClient(redis, buildCommandRedisOptions, "command")
-          : null,
+      ): Redis | null => (cache.type === "redis" ? createCommandClient(redis) : null),
       inject: [cacheConfig.KEY, redisConfig.KEY],
     };
 

@@ -1,19 +1,7 @@
-/**
- * Redis 클라이언트 옵션 팩토리 단위 테스트
- *
- * @description
- * 연결 없이 순수 함수로 명령용 fail-fast 옵션(enableOfflineQueue: false + commandTimeout)을
- * 검증합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test redis-client.factory
- * ```
- */
-import { buildCommandRedisOptions, type RedisConnectionSettings } from "./redis-client.factory.js";
+import { buildCommandRedisOptions, type RedisTimeoutSettings } from "./redis-client.factory.js";
 
 describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () => {
-  const baseSettings: RedisConnectionSettings = {
+  const baseSettings: RedisTimeoutSettings = {
     connectTimeoutMs: 5000,
     commandTimeoutMs: 1500,
   };
@@ -34,7 +22,7 @@ describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () =
 
     it("설정된 타임아웃 값을 그대로 반영한다", () => {
       // Given
-      const settings: RedisConnectionSettings = {
+      const settings: RedisTimeoutSettings = {
         connectTimeoutMs: 3000,
         commandTimeoutMs: 800,
       };
@@ -45,51 +33,6 @@ describe("redis-client.factory — Redis 클라이언트 옵션 팩토리", () =
       // Then
       expect(options.commandTimeout).toBe(800);
       expect(options.connectTimeout).toBe(3000);
-    });
-
-    it("URL이 없으면 host/port 기본값을 포함한다", () => {
-      // When
-      const options = buildCommandRedisOptions(baseSettings);
-
-      // Then
-      expect(options.host).toBe("localhost");
-      expect(options.port).toBe(6379);
-    });
-
-    it("URL이 없으면 host/port/password/db를 옵션에 포함한다", () => {
-      // Given
-      const settings: RedisConnectionSettings = {
-        ...baseSettings,
-        host: "redis.internal",
-        port: 6380,
-        password: "secret",
-        db: 2,
-      };
-
-      // When
-      const options = buildCommandRedisOptions(settings);
-
-      // Then
-      expect(options.host).toBe("redis.internal");
-      expect(options.port).toBe(6380);
-      expect(options.password).toBe("secret");
-      expect(options.db).toBe(2);
-    });
-
-    it("URL이 있으면 host/port를 옵션에 포함하지 않는다 (URL이 우선)", () => {
-      // Given
-      const settings: RedisConnectionSettings = {
-        ...baseSettings,
-        url: "redis://redis:6379",
-        host: "ignored",
-      };
-
-      // When
-      const options = buildCommandRedisOptions(settings);
-
-      // Then
-      expect(options.host).toBeUndefined();
-      expect(options.port).toBeUndefined();
     });
   });
 });

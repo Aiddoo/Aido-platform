@@ -251,7 +251,7 @@ pnpm dev                                       # API + Expo Metro
 ```
 
 - API는 `http://localhost:8080`, Swagger UI는 `http://localhost:8080/api/docs`(로컬 `pnpm dev` 실행에서만)다. 서버만은 `pnpm --filter @aido/server dev`.
-- env 파일은 앱마다 `.env`(운영) · `.env.development`(개발) · `.env.example`(예시)이고 도커도 같은 파일을 읽는다. API까지 Docker로 띄우려면 `pnpm docker:dev:up`(DB → migrate → API)을 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
+- env 파일은 앱마다 `.env`(운영) · `.env.development`(개발) · `.env.example`(예시)이고 도커도 같은 파일을 읽는다. API까지 Docker로 띄우려면 `docker compose --profile api up -d`(DB → migrate → API)를 쓴다. 모바일 실행은 [apps/mobile/README.md](./apps/mobile/README.md)를 따른다.
 
 | 명령어                                                  | 설명                                                                       |
 | ------------------------------------------------------- | -------------------------------------------------------------------------- |

@@ -4,13 +4,12 @@
 
 ## 로컬 실행
 
-`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만, `pnpm docker:dev:up`은 같은 DB에 migrate → API까지 띄운다(profile `api`). migrate·API 컨테이너는 `apps/api/.env.development`를 읽고 DB 주소만 compose 네트워크의 `db`로 덮는다. 포트(`DB_PORT`·`API_HOST_PORT`)는 셸 env로 바꾼다.
+`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. 개발 compose는 [`docker-compose.yml`](../../../docker-compose.yml) 하나다. `pnpm docker:up`은 DB(host 5433)만 띄우고, profile `api`를 주면 같은 DB에 migrate → API까지 띄운다. migrate·API 컨테이너는 `apps/api/.env.development`를 읽고 DB 주소만 compose 네트워크의 `db`로 덮는다. 포트(`DB_PORT`·`API_HOST_PORT`)는 셸 env로 바꾼다.
 
 ```sh
 cp apps/api/.env.example apps/api/.env.development
-pnpm docker:dev:build
-pnpm docker:dev:up
-pnpm docker:dev:logs
+docker compose --profile api up -d --build
+docker compose --profile api logs -f api
 ```
 
 개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 compose는 서버에서 `scripts/deploy.sh`만 실행한다. production compose는 원격 migration을 허용하므로 로컬에서 띄우지 않는다(로컬 `apps/api/.env`는 운영 값 사본이다).

@@ -10,12 +10,23 @@ export const cacheSchema = z.object({
   CACHE_TYPE: z.enum(CACHE_TYPES).default("memory"),
   CACHE_DEFAULT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   CACHE_MAX_ITEMS: z.coerce.number().int().positive().default(1000),
-  REDIS_HOST: z.string().optional(),
-  REDIS_PORT: z.coerce.number().int().positive().optional(),
-  REDIS_PASSWORD: z.string().optional(),
-  REDIS_DB: z.coerce.number().int().min(0).optional(),
   REDIS_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(1500),
   REDIS_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 export type CacheEnvConfig = z.infer<typeof cacheSchema>;
+
+/** 주소 없이 redis를 고르면 ioredis가 localhost로 붙으므로 시작을 거부한다 */
+export function validateCacheConfig({
+  value: config,
+  issues,
+}: z.core.ParsePayload<CacheEnvConfig & { readonly REDIS_URL?: string }>): void {
+  if (config.CACHE_TYPE === "redis" && (config.REDIS_URL ?? "") === "") {
+    issues.push({
+      code: "custom",
+      input: config,
+      path: ["REDIS_URL"],
+      message: "REDIS_URL is required when CACHE_TYPE=redis",
+    });
+  }
+}

@@ -1,7 +1,6 @@
-# 로컬 개발. env는 API와 같은 apps/api/.env.development를 읽는다
-# DB만: pnpm docker:up (API는 pnpm dev) · DB → migrate → API 모두: pnpm docker:dev:up
+# 로컬 개발. DB만: pnpm docker:up (API는 pnpm dev) · DB → migrate → API: docker compose --profile api up -d
 # Redis는 CACHE_TYPE=redis를 시험할 때만: docker compose --profile redis up -d
-# 서버의 운영 compose(같은 폴더)와 프로젝트가 섞이지 않게 이름을 따로 둔다
+# 운영 compose와 같은 폴더에 있어 프로젝트 이름을 따로 둔다
 name: aido-dev
 
 services:
@@ -30,17 +29,12 @@ services:
     env_file:
       - apps/api/.env.development
     environment:
-      # 컨테이너 안에서는 compose 네트워크의 db로 붙는다(.env.development는 호스트 기준 localhost)
+      &container-db # .env.development의 주소는 호스트 기준(localhost)이라 컨테이너에서는 compose 네트워크의 db로 붙는다
       DATABASE_URL: postgresql://postgres:postgres@db:5432/aido
     depends_on:
       db:
         condition: service_healthy
     restart: 'no'
-    logging:
-      driver: json-file
-      options:
-        max-size: '20m'
-        max-file: '5'
 
   api:
     profiles: [api]
@@ -53,8 +47,8 @@ services:
     env_file:
       - apps/api/.env.development
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/aido
-      # .env.development의 REDIS_URL은 호스트 기준이라 컨테이너에서는 memory로 고정한다
+      <<: *container-db
+      # REDIS_URL도 호스트 기준이라 컨테이너에서는 memory로 고정한다
       CACHE_TYPE: memory
     volumes:
       - ./apps/api/src:/app/apps/api/src
