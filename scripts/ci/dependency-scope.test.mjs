@@ -15,6 +15,12 @@ test('mobile and API have independent scopes', () => {
   assert.deepEqual(dependencyScope(['apps/mobile/src/app.tsx']), { ...none, mobile: true });
   assert.deepEqual(dependencyScope(['apps/api/src/main.ts']), { ...none, api: true });
 });
+test('an app version bump with its release notes leaves the API image alone', () => {
+  assert.deepEqual(
+    dependencyScope(['apps/mobile/package.json', 'docs/releases/1.15.4/README.md']),
+    { ...none, mobile: true },
+  );
+});
 test('shared code, lock/root inputs, unknown paths and unavailable diff fail open', () => {
   for (const paths of [
     ['packages/api/src/todo.ts'],
