@@ -20,8 +20,3 @@ export abstract class NotificationDedupPort {
     userIds: readonly string[],
   ): Promise<void>;
 }
-
-export abstract class NotificationDedupLockPort {
-  // 잠금을 얻으면 해제 함수를, 이미 잡혀 있으면 null을 돌려준다
-  abstract acquire(dedupKey: string): Promise<(() => Promise<void>) | null>;
-}

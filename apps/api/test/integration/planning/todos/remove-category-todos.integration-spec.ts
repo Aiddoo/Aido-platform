@@ -66,6 +66,7 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     uow = transaction.uow;
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
     reminders = new ReminderSchedulerAdapter(

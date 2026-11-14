@@ -1,56 +1,59 @@
+# 운영 서버에서 scripts/deploy.sh만 실행한다. 이미지는 GHCR의 SHA 태그를 pull해 쓰고 서버에서 빌드하지 않는다.
+# API는 blue(8080)·green(8081) 두 슬롯이고, 평소에는 Nginx가 가리키는 한 슬롯만 떠 있다.
+
+x-api: &api
+  image: ghcr.io/aiddoo/aido-platform-api:${IMAGE_TAG:?IMAGE_TAG가 없다 — scripts/deploy.sh로 실행한다}
+  environment:
+    # 컨테이너 안 포트는 8080으로 고정한다(Dockerfile HEALTHCHECK가 8080을 본다). env_file의 PORT가 덮지 못하게 한다
+    PORT: '8080'
+    # 두 슬롯이 같은 env 파일을 읽는다. 파일에서 꺼지면 worker를 돌리는 프로세스가 하나도 남지 않는다
+    JOB_WORKER_ENABLED: 'true'
+  env_file:
+    - apps/api/.env
+  restart: unless-stopped
+  # JOB_SHUTDOWN_TIMEOUT_MS(90초) 동안 하던 작업을 끝낸 뒤 HTTP·풀을 닫을 여유를 둔다
+  stop_grace_period: 120s
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+        cpus: '1'
+        pids: 256
+      reservations:
+        memory: 128M
+        cpus: '0.25'
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: '20m'
+      max-file: '5'
+
 services:
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-      target: migrate
-    image: aido-platform-migrate:latest
-    container_name: aido-prod-migrate
+    image: ghcr.io/aiddoo/aido-platform-migrate:${IMAGE_TAG:?IMAGE_TAG가 없다 — scripts/deploy.sh로 실행한다}
     env_file:
       - apps/api/.env
     environment:
-      # 프로덕션 DB로 마이그레이션하는 것이 이 서비스의 목적이다.
-      # 문지기(apps/api/scripts/guard-database-url.cjs)는 원격을 기본 거절하므로,
-      # 의도된 유일한 경로임을 여기서 선언한다.
+      # 문지기(apps/api/scripts/guard-database-url.cjs)는 원격 DB를 기본으로 거절한다. 운영 migration은 이 서비스 하나뿐이다
       AIDO_ALLOW_REMOTE_DB: '1'
     restart: 'no'
-    logging:
-      driver: json-file
-      options:
-        max-size: '20m'
-        max-file: '5'
+    logging: *logging
 
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-      target: production
-    image: aido-platform-api:latest
-    container_name: aido-prod-api
+  # host Nginx만 닿도록 loopback에만 연다
+  api-blue:
+    <<: *api
     ports:
-      # host-local Nginx만 API에 접근하도록 loopback에 한정한다.
-      - '127.0.0.1:${PORT:-8080}:8080'
-    environment:
-      # 컨테이너 내부 포트는 8080 불변 — Dockerfile HEALTHCHECK·서버 nginx proxy_pass가 8080 전제
-      # (env_file의 PORT 정의가 컨테이너에 주입되어 미스매치 나는 것을 차단)
-      PORT: '8080'
-    env_file:
-      - apps/api/.env
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    restart: unless-stopped
-    stop_grace_period: 120s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '1'
-        reservations:
-          memory: 128M
-          cpus: '0.25'
-    logging:
-      driver: json-file
-      options:
-        max-size: '20m'
-        max-file: '5'
+      - '127.0.0.1:8080:8080'
+
+  api-green:
+    <<: *api
+    ports:
+      - '127.0.0.1:8081:8080'

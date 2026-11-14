@@ -1,12 +1,14 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type NotificationHistoryReaderPort } from "../../../inbox/application/ports/notification-history.reader.port.js";
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
 import { createMilestoneNotificationMessage } from "../messages/system-notification.messages.js";
 import { NotificationDeliveryLogEvent } from "../notification-delivery.log-events.js";
-import { type NotificationDedupLockPort } from "../ports/notification-dedup.port.js";
 import type { NotificationRecipientLocaleReaderPort } from "../ports/notification-recipient-locale.reader.port.js";
+import { PushLockKeys } from "../push.lock-keys.js";
 import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 export interface SendMilestoneNotificationInput {
@@ -21,7 +23,8 @@ interface SendMilestoneNotificationDependencies {
     NotificationHistoryReaderPort,
     "hasMilestoneNotification"
   >;
-  readonly notificationDedupLock: Pick<NotificationDedupLockPort, "acquire">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
 }
 
@@ -33,18 +36,12 @@ export class SendMilestoneNotificationUseCase {
   }
 
   async execute(input: SendMilestoneNotificationInput): Promise<void> {
-    const release = await this.#dependencies.notificationDedupLock.acquire(
-      `milestone:${input.userId}:${input.milestone}`,
-    );
-    if (release == null) {
-      this.#dependencies.logger.debug({
-        event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_LOCK_BUSY,
-        userId: input.userId,
-      });
-      return;
-    }
+    await this.#dependencies.unitOfWork.run(async () => {
+      // 같은 마일스톤의 동시 발송은 앞선 트랜잭션이 커밋한 알림을 보고 건너뛰도록 조회 전에 줄을 세운다
+      await this.#dependencies.mutationLock.acquire([
+        PushLockKeys.milestone(input.userId, input.milestone),
+      ]);
 
-    try {
       const alreadySent =
         await this.#dependencies.notificationHistoryReader.hasMilestoneNotification(
           input.userId,
@@ -78,8 +75,6 @@ export class SendMilestoneNotificationUseCase {
         event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_SENT,
         userId: input.userId,
       });
-    } finally {
-      await release();
-    }
+    });
   }
 }

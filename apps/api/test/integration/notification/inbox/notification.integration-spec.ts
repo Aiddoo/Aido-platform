@@ -44,6 +44,7 @@ import {
   NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push/notification-push.providers";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   notification,
   pushDispatch,
@@ -53,10 +54,10 @@ import {
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
-import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -245,11 +246,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useFactory: (store: NoCacheStore) => store,
         },
         {
-          provide: LockProviderPort,
-          useValue: {
-            acquire: vi.fn().mockResolvedValue(vi.fn().mockResolvedValue(undefined)),
-            isLocked: vi.fn().mockResolvedValue(false),
-          },
+          provide: MutationLockPort,
+          useValue: new PostgresMutationLockAdapter(transaction.txHost),
         },
         {
           provide: DedupProviderPort,

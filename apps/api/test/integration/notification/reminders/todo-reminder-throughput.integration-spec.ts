@@ -72,6 +72,7 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
 

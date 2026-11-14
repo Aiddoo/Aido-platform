@@ -63,7 +63,8 @@ export const AI_REPORT_QUEUE = defineQueue({
     retentionSeconds: 7 * 24 * 60 * 60,
     deleteAfterSeconds: 7 * 24 * 60 * 60,
   },
-  worker: { localConcurrency: 5, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
+  // 백그라운드 AI 호출 자리(ai:background 2)보다 많이 꺼내면 작업이 꺼낸 채 자리를 기다리다 만료된다
+  worker: { localConcurrency: 2, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
   schedules: [
     {
       key: "weekly-report-scheduler",

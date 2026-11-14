@@ -184,7 +184,10 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
           registry: JobQueueRegistry,
         ) =>
           new FastJobQueue(
-            new PgBossJobQueueAdapter(boss, txHost, registry, { shutdownTimeoutMs: 10_000 }),
+            new PgBossJobQueueAdapter(boss, txHost, registry, {
+              shutdownTimeoutMs: 10_000,
+              workerEnabled: true,
+            }),
           ),
       },
       ...notificationProviders(pushProvider),

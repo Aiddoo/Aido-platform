@@ -26,9 +26,6 @@ import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 // 업무 포트가 아니라 pg-boss 클라이언트 인스턴스라 Symbol 토큰으로 둔다(platform/jobs 어댑터만 주입받는다)
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
-// 앱 풀(DATABASE_POOL_MAX)과 따로 잡는 연결이다. RDS 연결 예산 때문에 늘리지 않는다(jobs-and-events.md)
-const PG_BOSS_POOL_MAX = 3;
-
 /** health가 읽는 큐 수만 받는다. */
 export type PgBossQueueCounts = Pick<
   QueueResult,
@@ -188,7 +185,7 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
     const options: ConstructorOptions & PoolConfig = {
       ...createPostgresPoolConfig(database.url, {
         applicationName: "aido-pg-boss",
-        max: PG_BOSS_POOL_MAX,
+        max: job.poolMax,
         idleTimeoutMs: database.idleTimeoutMs,
         connectionTimeoutMs: database.connectionTimeoutMs,
         queryTimeoutMs: database.queryTimeoutMs,
@@ -198,6 +195,9 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
       migrate: false,
       createSchema: false,
       useListenNotify: false,
+      // 정기 작업 발행과 큐 유지보수는 worker를 돌리는 프로세스만 한다
+      schedule: job.workerEnabled,
+      supervise: job.workerEnabled,
     };
     return new LazyPgBossClient(() => new PgBoss(options));
   },

@@ -45,7 +45,7 @@ describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
       boss,
       createDatabaseTransactionFixture(client).txHost,
       new JobQueueRegistry(),
-      { shutdownTimeoutMs: 10_000 },
+      { shutdownTimeoutMs: 10_000, workerEnabled: true },
     );
   }, 60_000);
 

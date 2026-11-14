@@ -62,13 +62,14 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | 이름         | 새 큐는 `<context>.<purpose>.v1`. worker 동시성은 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                                                                                                                                     |
 | 묶음         | 발송량이 많거나 같은 시각에 몰리는 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`). 작업마다 끝내면서 조회·발행을 묶을 큐는 `workBatch`로 묶음을 한 번에 받고 실패한 작업만 돌려준다(`todo-reminder.v1`) |
 | Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다. 큐를 따로 목록에 적지 않는다                                                                                                                                                                                                                                                                                   |
-| 연결 예산    | 앱 풀 10 + pg-boss 3 = 13. 늘리지 않는다                                                                                                                                                                                                                                                                                                                                                                 |
+| 연결 예산    | 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 13                                                                                                                                                                                                                                                                                                                                  |
 | `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                                                                                                                   |
 | 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                                                                                                                                           |
 
-**연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 약 47인데 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
+**연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 41인데 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
 
 - 큐·스케줄은 모두 `defineQueue` + `JobQueuePort` 하나로 만든다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡고, pg-boss를 직접 부르거나 큐 이름 문자열을 따로 적지 않는다.
+- `JOB_WORKER_ENABLED=false`인 프로세스는 작업을 넣기만 한다. `work`·`registerSchedules`가 아무것도 등록하지 않고 pg-boss의 정기 작업 발행과 큐 유지보수도 끈다. 이렇게 띄운 프로세스가 있으면 worker를 켠 프로세스가 반드시 하나는 돌아야 한다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)).
 - E2E 앱은 `JobQueuePort`를 [InMemoryJobQueue](../test/doubles/platform/in-memory-job-queue.ts)로 바꾼다.
 
 **바꾸지 않는 운영 계약**
@@ -135,7 +136,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 배포 중 내구성
 
-블루그린이 없어 `compose up` 동안 API와 worker가 잠깐 멈춘다.
+배포는 Blue-Green이라 새 API가 healthy가 된 뒤 옛 API를 내린다([배포](deployment.md#배포-흐름-blue-green)). 그 사이 두 프로세스가 같이 worker를 돌리고, 호스트 재부팅 때는 API와 worker가 잠깐 멈춘다.
 
 | 대상                               | 보장                                                                                                                         |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -147,6 +148,6 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 검증은 [reminder-sweep-catch-up](../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](deployment.md#job과-종료)에 있다.
 
-## 전환 중
+## 같은 트랜잭션에서 끝내는 효과
 
-초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 `ApplyTodoCompletionEffectsUseCase`가 토글과 같은 트랜잭션에서 한다. 스트릭은 응답 직후 위젯·요약에 보여야 해서 큐로 미루지 않고, 알림은 작업 행이 함께 커밋된다.
+planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 `ApplyTodoCompletionEffectsUseCase`가 토글과 같은 트랜잭션에서 한다. 스트릭은 응답 직후 위젯·요약에 보여야 해서 큐로 미루지 않고, 알림은 작업 행이 함께 커밋된다. 초대 활동 기록은 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다.

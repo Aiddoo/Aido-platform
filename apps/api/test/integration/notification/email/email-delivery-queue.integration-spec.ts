@@ -88,7 +88,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
         boss,
         createDatabaseTransactionFixture(client).txHost,
         new JobQueueRegistry(),
-        { shutdownTimeoutMs: 10_000 },
+        { shutdownTimeoutMs: 10_000, workerEnabled: true },
       ),
     );
 

@@ -56,7 +56,7 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
 
   it("꺼진 앱 버전 응답도 1.10.0 이후 출시 앱이 읽는다", async () => {
     // Given
-    vi.spyOn(ctx.module.get(AppReleaseRepositoryPort), "listLatestReleases").mockReturnValueOnce(
+    vi.spyOn(ctx.module.get(AppReleaseRepositoryPort), "listLatestReleases").mockResolvedValueOnce(
       [],
     );
 

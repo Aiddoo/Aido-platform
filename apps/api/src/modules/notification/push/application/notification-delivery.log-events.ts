@@ -63,13 +63,9 @@ export const NotificationDeliveryLogEvent = {
     "notification.delivery.send-friend-completion-notifications.persisted",
   SEND_FRIEND_COMPLETION_NOTIFICATIONS_EFFECTS_FINALIZED:
     "notification.delivery.send-friend-completion-notifications.effects-finalized",
-  SEND_MILESTONE_NOTIFICATION_LOCK_BUSY:
-    "notification.delivery.send-milestone-notification.lock-busy",
   SEND_MILESTONE_NOTIFICATION_DUPLICATE_SKIPPED:
     "notification.delivery.send-milestone-notification.duplicate-skipped",
   SEND_MILESTONE_NOTIFICATION_SENT: "notification.delivery.send-milestone-notification.sent",
-  SEND_NOTIFICATION_WITH_DEDUP_LOCK_BUSY:
-    "notification.delivery.send-notification-with-dedup.lock-busy",
   SEND_NOTIFICATION_WITH_DEDUP_DUPLICATE_SKIPPED:
     "notification.delivery.send-notification-with-dedup.duplicate-skipped",
   SEND_NOTIFICATION_DUPLICATE_PREVENTED:

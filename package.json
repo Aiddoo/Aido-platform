@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "changeset": "changeset",
     "check": "turbo run lint format:check docs:check lint:names check:unused lint:deps typecheck",
     "check:unused": "knip --workspace '!apps/mobile'",
     "clean": "turbo run clean && rm -rf node_modules",
@@ -14,10 +13,6 @@
     "db:migrate": "pnpm --filter @aido/database-migrate db:deploy",
     "dev": "turbo run dev",
     "docs:check": "node scripts/docs/docs-check.mjs",
-    "docker:dev:build": "docker compose --profile api build",
-    "docker:dev:logs": "docker compose --profile api logs -f api",
-    "docker:dev:migrate": "docker compose --profile api run --rm migrate",
-    "docker:dev:up": "docker compose --profile api up -d",
     "docker:down": "docker compose --profile '*' down",
     "docker:up": "docker compose up -d",
     "format": "oxfmt .",
@@ -35,11 +30,9 @@
     "test:contract": "turbo run test:contract --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
     "typecheck": "turbo run typecheck",
-    "version-packages": "changeset version && node scripts/release/sync-versions.mjs",
     "test:generator": "node turbo/generators/smoke.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "catalog:",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@commitlint/types": "21.2.3",

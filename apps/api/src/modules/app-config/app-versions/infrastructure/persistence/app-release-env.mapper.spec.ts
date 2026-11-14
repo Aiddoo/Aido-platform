@@ -1,5 +1,8 @@
+import { createAppReleaseFixture } from "#test/fixtures/app-config/app-release.fixture";
+
 import type { AppConfigAppVersionsConfig } from "../../app-config-app-versions.config.js";
-import { toAppReleases } from "./app-release-env.mapper.js";
+import type { AppRelease } from "../../domain/app-release.aggregate.js";
+import { withEnvironmentFallback } from "./app-release-env.mapper.js";
 
 function createConfig(
   overrides: Partial<AppConfigAppVersionsConfig> = {},
@@ -12,34 +15,54 @@ function createConfig(
   };
 }
 
-describe("toAppReleases — 환경 설정의 최신 앱 버전", () => {
-  it("확인을 끄면 릴리스가 없다", () => {
-    // Given
-    const config = createConfig({ enabled: false });
+function toVersionByPlatform(releases: readonly AppRelease[]): Record<string, string> {
+  return Object.fromEntries(
+    releases.map((release) => [release.platform, release.latestVersion.value]),
+  );
+}
 
-    // Then
-    expect(toAppReleases(config)).toEqual([]);
-  });
-
-  it("한 플랫폼이라도 버전이 없으면 릴리스가 없다", () => {
-    // Given
-    const config = createConfig({ androidLatestVersion: undefined });
-
-    // Then
-    expect(toAppReleases(config)).toEqual([]);
-  });
-
-  it("두 플랫폼의 최신 버전을 릴리스로 돌려준다", () => {
+describe("withEnvironmentFallback — DB에 없는 플랫폼의 env 대체", () => {
+  it("DB에 행이 없으면 두 플랫폼 모두 env 값이다", () => {
     // Given
     const config = createConfig();
 
     // When
-    const releases = toAppReleases(config).map((release) => release.toPrimitives());
+    const releases = withEnvironmentFallback([], config);
 
     // Then
-    expect(releases).toEqual([
-      { platform: "ios", latestVersion: "1.9.1" },
-      { platform: "android", latestVersion: "1.9.2" },
-    ]);
+    expect(toVersionByPlatform(releases)).toEqual({ ios: "1.9.1", android: "1.9.2" });
+  });
+
+  it("DB에 있는 플랫폼은 DB 값이고 없는 플랫폼만 env 값이다", () => {
+    // Given
+    const stored = [createAppReleaseFixture({ platform: "ios", latestVersion: "1.10.0" })];
+
+    // When
+    const releases = withEnvironmentFallback(stored, createConfig());
+
+    // Then
+    expect(toVersionByPlatform(releases)).toEqual({ ios: "1.10.0", android: "1.9.2" });
+  });
+
+  it("env 확인을 꺼도 DB에 있는 플랫폼은 그대로 주고 없는 플랫폼은 채우지 않는다", () => {
+    // Given
+    const stored = [createAppReleaseFixture({ platform: "android", latestVersion: "1.10.0" })];
+
+    // When
+    const releases = withEnvironmentFallback(stored, createConfig({ enabled: false }));
+
+    // Then
+    expect(toVersionByPlatform(releases)).toEqual({ android: "1.10.0" });
+  });
+
+  it("env에 버전이 없는 플랫폼은 채우지 않는다", () => {
+    // Given
+    const config = createConfig({ androidLatestVersion: undefined });
+
+    // When
+    const releases = withEnvironmentFallback([], config);
+
+    // Then
+    expect(toVersionByPlatform(releases)).toEqual({ ios: "1.9.1" });
   });
 });

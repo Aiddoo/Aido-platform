@@ -69,7 +69,6 @@ catalog:
   '@ai-sdk/anthropic': '4.0.104'
   '@ai-sdk/google': '4.0.120'
   '@ai-sdk/openai': '4.0.117'
-  '@changesets/cli': '3.0.3'
   '@ls-lint/ls-lint': '2.3.2'
   '@photostructure/tz-lookup': '11.8.0'
   '@react-native-kakao/core': '2.4.11'

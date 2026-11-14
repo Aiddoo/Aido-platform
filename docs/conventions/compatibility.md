@@ -42,6 +42,7 @@
 - `Todo.scheduledTime`(응답): 영구. 출시 앱은 이 순간을 기기 시간대로 보여 준다. 시간대 재계산은 완료했거나 지난 할 일까지 모두 다시 쓰므로 옛 앱에서도 고른 시각으로 보인다. 재계산 전 1~2분만 옛 시간대의 시각으로 보인다.
 - Gemini 전용 AI 동의 경로: 영구. 재동의를 받지 않는 한 그 동의자는 Gemini만 쓴다.
 - 옛 관리자 알림 잡 형식(`LegacyAdminNotificationSchema`, 조립 메시지를 싣던 `{ channel, notification }`의 `LegacySendDataSchema`): 배포 순간 쌓여 있는 잡을 위해 1.15.1까지 둔다. 대기 잡 보관이 24시간이라 1.15.1 배포 뒤 남은 잡이 없으면 다음 릴리스에서 지운다.
+- env `APP_VERSION_CHECK_ENABLED`·`_IOS_LATEST_VERSION`·`_ANDROID_LATEST_VERSION`과 env 대체(`withEnvironmentFallback`): 스토어 공개 버전의 정본은 DB `AppRelease`이고 관리자 API(`PUT /v1/admin/app-config/app-releases/{platform}`)로 바꾼다. DB에 행이 없는 플랫폼만 env 값으로 응답해, 배포 직후와 한 플랫폼만 반영한 동안에도 `/v1/app-config/app-version` 응답이 전과 같다. 운영 DB에 `ios`·`android` 두 행이 생긴 것을 확인한 뒤 다음 릴리스에서 env 키·설정 schema·대체 코드를 함께 지운다.
 - 콕 답장·감사 기능 꺼짐의 `NUDGE_1105`: 마지막 지원 앱 1.15.1. `NUDGE_1105` 하나가 "없는 콕"과 "서버 설정으로 기능 꺼짐" 두 뜻이라 꺼짐을 새 코드 `NUDGE_1111`(404, 상태는 같다)로 나눴다. 출시 앱은 보낸 콕 목록에서 `NUDGE_1105`를 보고 목록을 꺼진 상태로 보이고, 감사 시트는 404에 `NUDGE_1105` 문구("찾을 수 없어요")를 보인다. 그래서 `X-App-Version`이 1.15.2보다 낮거나 없으면 `ReleasedAppNudgeErrorInterceptor`(답장·감사 controller)가 `NUDGE_1111`을 `NUDGE_1105`로 바꿔 보낸다. 앱은 `nativeApplicationVersion`(숫자 x.y.z)을 보내 1.15.2 RC·TestFlight 빌드도 출시판과 같이 `NUDGE_1111`을 받는다. "없는 콕"은 모든 앱에 `NUDGE_1105` 그대로다. 1.15.2 앱도 보낸 콕 목록에서는 `NUDGE_1105`·`NUDGE_1111`을 모두 꺼짐으로 읽어(목록 API의 1105는 꺼짐 뜻뿐이다) 서버를 먼저 배포하지 못했거나 되돌려도 꺼진 상태로 보인다. 1.15.1 이하 사용자가 사라지면 interceptor를 지운다.
 
 모바일은 최신 코드(1.15.2)만 둔다. 앱은 옛 앱·옛 서버를 위한 분기와 대체 경로, mapper 기본값을 두지 않고 지금 서버가 주는 값만 받는다. 남기는 것은 셋이다.
@@ -81,5 +82,5 @@
 - 경로 버전은 Nest URI 버저닝(`platform/http/api-versioning.ts`)이 붙인다. 버전을 지정하지 않은 컨트롤러는 `v1`, 버전이 없는 `health`는 `VERSION_NEUTRAL`이다.
 - 응답 형태나 데이터 공급자가 통째로 바뀌어 구 앱이 같은 경로를 쓸 수 없을 때만 `/v{n+1}`을 연다. 필드 추가와 같은 버전 안의 동작 차이는 위 표의 방식으로 처리한다.
 - 버전은 presentation과 계약에만 드러난다. `presentation/http/v{n}/`, `packages/api/src/contracts/<domain>/v{n}/`에 두고, UseCase·Domain·Port는 버전을 모른다.
-- 이전 버전 작업에는 `@ApiDoc({ deprecated: true })`와 Swagger 태그(`… · Deprecated`)를 달고, 설명 첫 줄에 지원하는 마지막 앱 버전을 적는다(예: 날씨 v1은 1.13.1 이하). 그 앱 버전 사용자가 사라진 뒤 경로를 제거하고 Changesets major로 기록한다.
+- 이전 버전 작업에는 `@ApiDoc({ deprecated: true })`와 Swagger 태그(`… · Deprecated`)를 달고, 설명 첫 줄에 지원하는 마지막 앱 버전을 적는다(예: 날씨 v1은 1.13.1 이하). 그 앱 버전 사용자가 사라진 뒤 경로를 제거하고 그 릴리스 문서(`docs/releases/<앱 버전>/`)에 기록한다.
 - 앱이 호출하지 않는 관리자 경로도 공개 OpenAPI 계약이다. 응답 의미가 바뀌면 같은 원칙으로 새 버전을 열고, 제거 조건은 앱 버전 대신 관리자 도구의 전환으로 적는다(예: 동기 `POST /v1/admin/notifications/broadcast` → 비동기 캠페인 `POST /v2/admin/notifications/broadcasts`).

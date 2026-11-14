@@ -96,7 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Changeset 검사가 PR base부터의 변경 패키지를 계산한다. 이력은 PR에서만 받고 blob은 필요할 때만 받는다.
+          # turbo --affected가 PR base부터의 변경 패키지를 계산한다. 이력은 PR에서만 받고 blob은 필요할 때만 받는다.
           # 표현식에서 숫자 0은 거짓이라 `&& 0 || 1`은 항상 1이 된다. 문자열로 비교한다.
           fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           filter: ${{ github.event_name == 'pull_request' && 'blob:none' || '' }}
@@ -119,20 +119,6 @@ jobs:
       # 위험을 수용한 advisory는 pnpm-workspace.yaml auditConfig.ignoreGhsas에서 관리한다.
       - name: Dependency audit
         run: pnpm audit --prod --audit-level high
-
-      # 서버·공유 계약을 바꾼 PR은 Changesets 변경 파일을 함께 올린다(docs/conventions/git.md#버전).
-      # 모바일은 스토어 버전이라 Changesets에서 제외되어 있어 이 검사에 걸리지 않는다.
-      # 릴리스 PR은 `pnpm version-packages`가 변경 파일을 CHANGELOG로 소비하므로 CHANGELOG 변경으로 대신 확인한다.
-      - name: Changeset
-        if: github.event_name == 'pull_request' && (needs.scope.outputs.api == 'true' || needs.scope.outputs.shared == 'true')
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          if git diff --name-only "$BASE_SHA" HEAD | grep -q 'CHANGELOG\.md$'; then
-            echo "버전을 확정한 릴리스 PR이다. 변경 파일은 CHANGELOG로 반영됐다."
-            exit 0
-          fi
-          pnpm changeset status --since="$BASE_SHA"
 
       # 코드 관례는 Oxlint 단계(aido JS 플러그인)가 본다. 여기서는 파일 이름(ls-lint)과 import 경계(dependency-cruiser)를 본다.
       # 모바일 의존성이 없는 API 범위에서는 서버만 돈다.
@@ -190,21 +176,16 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      # api·migrate를 한 번에 빌드한다(base·pruner stage 공유). 빌드 정의는 docker-bake.hcl 하나이고 로컬 수동 빌드와 같다.
       # 검사를 통과한 이미지만 GHCR에 올린다. deploy는 두 이미지가 모두 있는 SHA만 배포한다.
-      - name: Build api image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - name: Build images
+        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
+        env:
+          TAG: ${{ github.sha }}
+          CACHE: gha
         with:
-          context: .
-          file: apps/api/Dockerfile
-          target: production
-          platforms: linux/arm64
-          load: true
-          push: false
-          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
-          provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
-          tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,scope=api,mode=max
+          source: .
+          files: docker-bake.hcl
 
       - name: Scan api image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -213,21 +194,6 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
-
-      - name: Build migrate image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          target: migrate
-          platforms: linux/arm64
-          load: true
-          push: false
-          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
-          provenance: false
-          tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
-          cache-from: type=gha,scope=migrate
-          cache-to: type=gha,scope=migrate,mode=max
 
       - name: Scan migrate image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

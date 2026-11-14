@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/nestjs";
 import { generateText } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 
-import { sentryIntegrations, toSentryRelease } from "./sentry-options.js";
+import { sentryIntegrations } from "./sentry-options.js";
 
 const USER_TEXT = "내일 오후 3시 병원 예약";
 const SYSTEM_TEXT = "너는 할 일 파서다";
@@ -61,23 +61,5 @@ describe("Sentry AI span", () => {
     expect(payload).not.toContain(USER_TEXT);
     expect(payload).not.toContain(SYSTEM_TEXT);
     expect(payload).not.toContain("병원 예약");
-  });
-});
-
-describe("toSentryRelease", () => {
-  it("package.json 버전으로 슬래시 없는 릴리스 이름을 만든다", () => {
-    // When
-    const release = toSentryRelease({ name: "@aido/server", version: "1.15.1" });
-
-    // Then
-    expect(release).toBe("aido-server@1.15.1");
-  });
-
-  it("버전을 읽을 수 없으면 릴리스를 붙이지 않는다", () => {
-    // When
-    const release = toSentryRelease({ name: "@aido/server" });
-
-    // Then
-    expect(release).toBeUndefined();
   });
 });

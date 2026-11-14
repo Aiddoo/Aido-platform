@@ -92,6 +92,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     transaction = createDatabaseTransactionFixture(client);
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
@@ -465,6 +466,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const localQueue = new TodoTimezoneRebaseQueueService(
       new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
       }),
     );
     const at = nowInstant().add({ milliseconds: 10 * TODO_TIMEZONE_REBASE_WINDOW_MS });

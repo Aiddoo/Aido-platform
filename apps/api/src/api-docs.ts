@@ -2,11 +2,11 @@ import { ErrorCode, Errors } from "@aido/api/errors";
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
+import { AppConfigAppVersionsAdminModule } from "#api/modules/app-config/app-versions/app-config-app-versions.public";
 import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
 import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
 import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
-import { processEnv } from "#api/platform/config/env";
 import {
   SWAGGER_TAG_DESCRIPTIONS,
   SWAGGER_TAGS,
@@ -43,7 +43,8 @@ export function setupApiDocs(app: INestApplication): string | undefined {
     return undefined;
   }
 
-  const apiVersion = processEnv.npm_package_version ?? "development";
+  // Swagger는 로컬 실행에서만 뜬다. 서버는 버전 번호 없이 커밋 SHA로 식별한다(docs/conventions/git.md)
+  const apiVersion = "local";
   const config = new DocumentBuilder()
     .setTitle("Aido API")
     .setDescription(`AI TodoList 앱을 위한 백엔드 API
@@ -180,7 +181,12 @@ ${adminErrorCodeTable()}
     .build();
 
   const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
-    include: [OperationsBroadcastsModule, OperationsMetricsModule, SocialReportsAdminModule],
+    include: [
+      AppConfigAppVersionsAdminModule,
+      OperationsBroadcastsModule,
+      OperationsMetricsModule,
+      SocialReportsAdminModule,
+    ],
     standardSchemaConverter: convertStandardSchema,
   });
   SwaggerModule.setup(ADMIN_DOCS_PATH, app, adminDocument, {

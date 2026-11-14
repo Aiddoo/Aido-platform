@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# 운영 DB를 pg_dump로 떠서 S3에 올린다. 서버 cron이 매일 03:00 UTC에 ~/apps/backup.sh(이 파일의 사본)를 실행한다.
+# 운영 DB를 pg_dump로 떠서 S3에 올린다. 서버 cron이 매일 03:00 UTC에 저장소의 이 파일을 실행한다.
 # 설정은 ~/apps/backup.env(권한 600)의 BACKUP_DB_HOST·BACKUP_S3_URI, 비밀번호는 ~/.pgpass에서 읽는다.
 set -euo pipefail
+# 덤프는 사용자 데이터라 소유자만 읽는다
+umask 077
 # cron은 최소 PATH로 돌 수 있다. AWS CLI v2는 /usr/local/bin에 설치된다
 export PATH="/usr/local/bin:/usr/bin:/bin"
 

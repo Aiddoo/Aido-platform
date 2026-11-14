@@ -143,6 +143,6 @@ DB 프로젝트는 worker마다 자기 DB를 받아 파일을 병렬로 돌리�
 AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project performance test/performance/memory-soak.performance-spec.ts
 ```
 
-## 전환 중
+## 옛 테스트 도우미
 
 옛 spec 일부가 아직 `test/mocks`·`test/builders`를 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다.

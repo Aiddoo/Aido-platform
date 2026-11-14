@@ -34,6 +34,17 @@ test('cumulative stack diff includes the API ancestor even for a mobile tip', ()
     mobile: true,
   });
 });
+test('image and deploy definitions outside the packages belong to the API scope', () => {
+  for (const path of [
+    'docker-bake.hcl',
+    '.dockerignore',
+    'docker-compose.prod.yml',
+    'scripts/deploy.sh',
+    'scripts/ops/nginx/api.aido.kr.conf',
+  ]) {
+    assert.deepEqual(dependencyScope([path]), { ...none, api: true });
+  }
+});
 test('documentation in the diff asks for the docs check; an unavailable diff leaves it to verify', () => {
   assert.equal(touchesDocumentation(['apps/mobile/docs/architecture/data.md']), true);
   assert.equal(touchesDocumentation(['docs/api.png', 'apps/api/src/main.ts']), true);

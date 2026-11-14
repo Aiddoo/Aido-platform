@@ -36,13 +36,7 @@ export function resolveDeadLetterJobPolicy(
   return typeof deadLetter === "object" ? deadLetter.jobPolicy : undefined;
 }
 
-/**
- * 큐 폴링 주기.
- *
- * 폴링은 일이 없어도 도는 비용이다 — pg-boss는 주기마다 큐별로
- * `UPDATE ... FOR UPDATE SKIP LOCKED`를 날리므로, 유휴 상태에서도 WAL과 죽은 튜플이 쌓인다.
- * 그래서 주기는 "사람이 기다리고 있는가"로 정한다.
- */
+/** 큐 폴링 주기. 폴링은 일이 없어도 큐 저장소에 조회가 나가는 비용이라 "사람이 기다리고 있는가"로 정한다. */
 export const JOB_POLLING_SECONDS = {
   /** 사람이 결과를 기다린다 — 푸시 발송처럼 늦으면 체감되는 일. */
   INTERACTIVE: 2,
@@ -112,7 +106,7 @@ interface QueueHealth {
 }
 
 export interface JobQueueHealth {
-  readonly backend: "postgres";
+  readonly backend: string;
   readonly degraded: boolean;
   readonly reason?: string;
   readonly queues: Readonly<Record<string, QueueHealth>>;

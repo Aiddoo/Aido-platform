@@ -23,8 +23,10 @@ export function dependencyScope(paths) {
       path.startsWith('apps/api/') ||
       path.startsWith('tooling/database-migrate/') ||
       path === '.dockerignore' ||
+      path === 'docker-bake.hcl' ||
       path === 'docker-compose.prod.yml' ||
-      path.startsWith('scripts/deploy')
+      path.startsWith('scripts/deploy') ||
+      path.startsWith('scripts/ops/')
     ) {
       scope.api = true;
     } else if (path.startsWith('apps/mobile/')) {
