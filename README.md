@@ -36,22 +36,22 @@
 
 정확한 버전은 [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)의 catalog, 각 `package.json`, [`.nvmrc`](./.nvmrc)가 정본이다.
 
-| 영역        | 기술                                                                                     | 고른 이유                                                                                   |
-| ----------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 런타임      | Node.js 26.13.1 LTS (EAS 모바일 빌드는 24.22.3)                                          | 기본 탑재된 `Temporal`로 서버 날짜 계산을 통일한다                                          |
-| API 서버    | NestJS 12.4.2 (ESM, SWC)                                                                 | slice 하나를 Module 하나로 두고 abstract class 포트를 그대로 DI 토큰으로 쓴다               |
-| DB·ORM      | PostgreSQL 16, Drizzle ORM 1.0.0-rc.5, `@nestjs/drizzle`                                 | SQL에 가까운 쿼리와 행 타입 추론, `customType`으로 Temporal 칸을 둔다                       |
-| 작업·이벤트 | pg-boss 12.38.1                                                                          | 브로커 없이 큐·크론·이벤트 전달을 업무 데이터와 같은 트랜잭션에 쓴다                        |
-| 트랜잭션    | nestjs-cls 7, `@nestjs-cls/transactional`                                                | 트랜잭션을 인자로 넘기지 않고 요청 문맥으로 전파한다                                        |
-| 공유 계약   | Zod 4.6.7 (`@aido/api`)                                                                  | 서버 검증·Swagger·앱 응답 파싱이 같은 schema를 쓴다                                         |
-| 외부 호출   | `@nestjs/http-client`, cockatiel 4, `@nestjs/mail`                                       | 공식 HTTP·메일 모듈 위에 공급자별 회로·bulkhead·timeout을 한 정책으로 건다                  |
-| AI          | AI SDK 7 (Anthropic·Google·OpenAI)                                                       | 공급자 순서를 설정으로 바꾸고 출력은 Zod 구조로만 받는다                                    |
-| 다국어      | `@nestjs/i18n` 0.0.3                                                                     | 기준 언어 카탈로그에서 키 타입을 만들어 빠진 키를 컴파일 오류로 잡는다                      |
-| 관측        | nestjs-pino 5.3.1, Sentry (`@sentry/nestjs` 11.11.0)                                     | 요청 ID 하나로 앱·서버 로그·Sentry를 잇고, 유료 APM 없이 무료 플랜 안에서 쓴다              |
-| 모바일      | Expo SDK 58, React Native 0.88.1, React 19.3.0, Expo Router, TanStack Query 5            | iOS·Android·위젯을 한 코드베이스로, 서버 상태는 Query 캐시가 소유한다                       |
-| 테스트      | Vitest 5.1.0 + Testcontainers 12.2.1 (서버), Jest 30.5.2 + jest-expo (모바일)            | SQL·트랜잭션 의미는 실제 PostgreSQL로 검증한다                                              |
-| 품질 도구   | TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0, dependency-cruiser, ls-lint, knip         | 구조 규칙을 리뷰 대신 도구로 막는다                                                         |
-| 빌드·인프라 | pnpm 12.18.0, Turborepo 2.11.11, Changesets, Docker Compose, GitHub Actions, AWS EC2·RDS | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
+| 영역        | 기술                                                                             | 고른 이유                                                                                   |
+| ----------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 런타임      | Node.js 26.13.1 LTS (EAS 모바일 빌드는 24.22.3)                                  | 기본 탑재된 `Temporal`로 서버 날짜 계산을 통일한다                                          |
+| API 서버    | NestJS 12.4.2 (ESM, SWC)                                                         | slice 하나를 Module 하나로 두고 abstract class 포트를 그대로 DI 토큰으로 쓴다               |
+| DB·ORM      | PostgreSQL 16, Drizzle ORM 1.0.0-rc.5, `@nestjs/drizzle`                         | SQL에 가까운 쿼리와 행 타입 추론, `customType`으로 Temporal 칸을 둔다                       |
+| 작업·이벤트 | pg-boss 12.38.1                                                                  | 브로커 없이 큐·크론·이벤트 전달을 업무 데이터와 같은 트랜잭션에 쓴다                        |
+| 트랜잭션    | nestjs-cls 7, `@nestjs-cls/transactional`                                        | 트랜잭션을 인자로 넘기지 않고 요청 문맥으로 전파한다                                        |
+| 공유 계약   | Zod 4.6.7 (`@aido/api`)                                                          | 서버 검증·Swagger·앱 응답 파싱이 같은 schema를 쓴다                                         |
+| 외부 호출   | `@nestjs/http-client`, cockatiel 4, `@nestjs/mail`                               | 공식 HTTP·메일 모듈 위에 공급자별 회로·bulkhead·timeout을 한 정책으로 건다                  |
+| AI          | AI SDK 7 (Anthropic·Google·OpenAI)                                               | 공급자 순서를 설정으로 바꾸고 출력은 Zod 구조로만 받는다                                    |
+| 다국어      | `@nestjs/i18n` 0.0.3                                                             | 기준 언어 카탈로그에서 키 타입을 만들어 빠진 키를 컴파일 오류로 잡는다                      |
+| 관측        | nestjs-pino 5.3.1, Sentry (`@sentry/nestjs` 11.11.0)                             | 요청 ID 하나로 앱·서버 로그·Sentry를 잇고, 유료 APM 없이 무료 플랜 안에서 쓴다              |
+| 모바일      | Expo SDK 58, React Native 0.88.1, React 19.3.0, Expo Router, TanStack Query 5    | iOS·Android·위젯을 한 코드베이스로, 서버 상태는 Query 캐시가 소유한다                       |
+| 테스트      | Vitest 5.1.0 + Testcontainers 12.2.1 (서버), Jest 30.5.2 + jest-expo (모바일)    | SQL·트랜잭션 의미는 실제 PostgreSQL로 검증한다                                              |
+| 품질 도구   | TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0, dependency-cruiser, ls-lint, knip | 구조 규칙을 리뷰 대신 도구로 막는다                                                         |
+| 빌드·인프라 | pnpm 12.18.0, Turborepo 2.11.11, Docker Compose, GitHub Actions, AWS EC2·RDS     | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
 
 ## 아키텍처
 
@@ -261,7 +261,7 @@ pnpm dev                                       # API + Expo Metro
 | `pnpm test:contract`                                    | 출시 앱 OpenAPI 계약 테스트                                                |
 | `pnpm check:unused`                                     | 모바일 밖 workspace의 안 쓰는 파일·export·의존성(knip)                     |
 | `pnpm db:generate` · `pnpm db:migrate`                  | Drizzle 마이그레이션 생성 · 적용                                           |
-| `pnpm changeset` · `pnpm commit`                        | 변경 기록 · Conventional Commit 작성기                                     |
+| `pnpm commit`                                           | Conventional Commit 작성기                                                 |
 
 ## 테스트와 CI
 

@@ -29,6 +29,7 @@ target "api" {
   inherits   = ["_image"]
   target     = "production"
   tags       = ["ghcr.io/aiddoo/aido-platform-api:${TAG}"]
+  args       = { GIT_SHA = TAG }
   cache-from = CACHE == "gha" ? ["type=gha,scope=api"] : []
   cache-to   = CACHE == "gha" ? ["type=gha,scope=api,mode=max"] : []
 }

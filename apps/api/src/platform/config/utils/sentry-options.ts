@@ -6,7 +6,6 @@
  */
 
 import * as Sentry from "@sentry/nestjs";
-import { z } from "zod";
 
 import { isBusinessRejection } from "#api/shared/application/utils/business-rejection";
 
@@ -202,14 +201,6 @@ export function beforeSendError(
   hint: Sentry.EventHint,
 ): Sentry.ErrorEvent | null {
   return isBusinessRejection(hint.originalException) ? null : scrubErrorEvent(event);
-}
-
-const packageVersionSchema = z.object({ version: z.string().min(1) });
-
-/** Sentry 릴리스 이름은 `/`를 쓸 수 없어 패키지 이름(@aido/server) 대신 고정 접두사를 쓴다 */
-export function toSentryRelease(packageJson: unknown): string | undefined {
-  const parsed = packageVersionSchema.safeParse(packageJson);
-  return parsed.success ? `aido-server@${parsed.data.version}` : undefined;
 }
 
 /**

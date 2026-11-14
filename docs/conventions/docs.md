@@ -33,6 +33,6 @@
 | `ui-doc`      | shared/ui 부품 문서가 없다                                                                                                      |
 | `allow-stale` | 허용 항목이 더는 걸리지 않는다                                                                                                  |
 
-- 출시 기록은 그때 상태로 두어 보지 않는다. changesets·`CHANGELOG.md`·heroui 스킬·스토어 메타데이터는 보지 않는다.
+- 출시 기록은 그때 상태로 두어 보지 않는다. heroui 스킬·스토어 메타데이터는 보지 않는다.
 - 예외는 [docs-check.config.json](../../scripts/docs/docs-check.config.json)의 `allow`에 `reason`과 함께 둔다.
 - 백틱 식별자가 코드에 있는지는 `node scripts/docs/docs-check.mjs --idents`로 릴리스 끝에 한 번 사람이 읽는다. 반례·외부 API가 섞여 실패로 보지 않는다.

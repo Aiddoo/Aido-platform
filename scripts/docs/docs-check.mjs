@@ -8,10 +8,8 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
-// 생성·외부 문서(changesets, heroui 스킬, 스토어 메타데이터)는 이 저장소가 쓰지 않는다.
+// 외부 문서(heroui 스킬, 스토어 메타데이터)는 이 저장소가 쓰지 않는다.
 const EXCLUDED = [
-  /(^|\/)CHANGELOG\.md$/,
-  /^\.changeset\//,
   /^apps\/mobile\/\.agents\//,
   /^apps\/mobile\/store-metadata\//,
   /(^|\/)node_modules\//,

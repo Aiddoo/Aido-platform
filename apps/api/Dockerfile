@@ -79,6 +79,9 @@ ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 EXPOSE 8080
 USER nestjs
 RUN test -r "$NODE_EXTRA_CA_CERTS"
+# 서버는 커밋 SHA로 식별한다. Sentry SDK가 이 값을 release로 읽는다. 층을 만들지 않게 맨 뒤에 둔다
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=aido-server@${GIT_SHA}
 # start-interval(Docker 25+): 기동 중에는 2초마다 확인해 배포 헬스 게이트를 빨리 통과한다
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --start-interval=2s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1

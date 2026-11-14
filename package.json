@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "changeset": "changeset",
     "check": "turbo run lint format:check docs:check lint:names check:unused lint:deps typecheck",
     "check:unused": "knip --workspace '!apps/mobile'",
     "clean": "turbo run clean && rm -rf node_modules",
@@ -35,11 +34,9 @@
     "test:contract": "turbo run test:contract --filter=@aido/server",
     "test:integration": "turbo run test:integration --filter=@aido/server",
     "typecheck": "turbo run typecheck",
-    "version-packages": "changeset version && node scripts/release/sync-versions.mjs",
     "test:generator": "node turbo/generators/smoke.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "catalog:",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@commitlint/types": "21.2.3",
