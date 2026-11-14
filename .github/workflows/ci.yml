@@ -190,21 +190,16 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      # api·migrate를 한 번에 빌드한다(base·pruner stage 공유). 빌드 정의는 docker-bake.hcl 하나이고 로컬 수동 빌드와 같다.
       # 검사를 통과한 이미지만 GHCR에 올린다. deploy는 두 이미지가 모두 있는 SHA만 배포한다.
-      - name: Build api image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - name: Build images
+        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
+        env:
+          TAG: ${{ github.sha }}
+          CACHE: gha
         with:
-          context: .
-          file: apps/api/Dockerfile
-          target: production
-          platforms: linux/arm64
-          load: true
-          push: false
-          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
-          provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
-          tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,scope=api,mode=max
+          source: .
+          files: docker-bake.hcl
 
       - name: Scan api image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -213,21 +208,6 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '1'
-
-      - name: Build migrate image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          target: migrate
-          platforms: linux/arm64
-          load: true
-          push: false
-          pull: true # node:26.13.1-alpine3.24의 최신 base 보안 digest 수급
-          provenance: false
-          tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
-          cache-from: type=gha,scope=migrate
-          cache-to: type=gha,scope=migrate,mode=max
 
       - name: Scan migrate image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

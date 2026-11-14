@@ -9,7 +9,7 @@
 # 읽기 토큰: GHCR_TOKEN env(Actions) → $GHCR_TOKEN_FILE(기본 $STATE_DIR/ghcr-read-token, 600)
 #            → 터미널 프롬프트. 없으면 빌드로 넘어가지 않고 중단한다. PAT 로그인 실패 시 GHCR_USER=<GitHub 로그인>
 # 수동 배포 (apps/api/docs/deployment.md "수동 배포"):
-#   Mac: bash scripts/ops/build-push-api-images.sh --push   # 마지막에 서버 명령을 출력
+#   Mac: TAG=<sha> docker buildx bake -f docker-bake.hcl → trivy 검사 → docker push
 #   서버: cd ~/apps/Aido-platform && git fetch origin main \
 #           && git merge-base --is-ancestor <sha> origin/main && git reset --hard <sha> \
 #           && DEPLOY_SHA=<sha> bash scripts/deploy.sh
@@ -122,7 +122,7 @@ resolve_ghcr_token() {
     read -rsp "GHCR read:packages 토큰 (입력은 표시되지 않음): " GHCR_TOKEN; echo
   fi
   [[ -n "${GHCR_TOKEN:-}" ]] || fail "GHCR 토큰이 없습니다 — 서버에서 이미지를 빌드하지 않습니다.
-  Mac에서 bash scripts/ops/build-push-api-images.sh --push 후 토큰 파일($GHCR_TOKEN_FILE, 600)을
+  Mac에서 docker buildx bake로 빌드해 GHCR에 올린 뒤 토큰 파일($GHCR_TOKEN_FILE, 600)을
   두거나 터미널에서 실행하세요. 비상시에만 서버 빌드: bash scripts/deploy.sh --build"
 }
 

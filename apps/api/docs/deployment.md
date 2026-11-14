@@ -32,18 +32,25 @@ production compose는 host API 포트를 `127.0.0.1:${PORT:-8080}`에만 bind한
 
 migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는 Docker healthy와 `/health` 연속 3회 성공을 함께 요구하고, workflow는 공개 `/health`도 확인한다. 실패하면 이전 API image로 복구한다. 성공 뒤 dangling 이미지와 BuildKit cache 전체를 정리하며 `image prune -a`로 rollback image를 제거하지 않는다.
 
-## 수동 배포 (Actions 없이)
+## 수동 배포
 
-서버(t4g.small, 메모리 2GB)에서 이미지를 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 그래서 수동 배포도 Mac에서 CI image job과 같은 설정(Dockerfile·target·linux/arm64·SHA 태그)으로 빌드해 GHCR에 올리고, 서버는 pull만 한다.
+CI가 이미지를 만들지 않은 커밋(API 범위 밖 변경)을 배포하려면 `gh workflow run ci.yml --ref main`으로 CI를 다시 돌린다. 이미지가 발행되면 deploy workflow가 이어서 배포한다.
 
-1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. [build script](../../../scripts/ops/build-push-api-images.sh)는 trivy 검사(CI와 같은 기준)를 통과한 이미지만 올리고, GHCR에 이미 있는 SHA 태그는 덮어쓰지 않는다.
+Actions를 쓸 수 없을 때만 Mac에서 빌드한다. 서버(메모리 2GB)에서 빌드하면 swap을 쓰고 BuildKit cache가 5GB까지 쌓여 dockerd 메모리도 커졌다. 빌드 정의는 CI와 같은 [docker-bake.hcl](../../../docker-bake.hcl) 하나다.
+
+1. Mac: `origin/main`에 있는 커밋을 변경 없는 tree로 checkout하고 `docker login ghcr.io`(write:packages)를 해 둔다. CI와 같은 기준의 trivy 검사를 통과한 이미지만 올린다.
 
    ```sh
-   git switch main && git pull --ff-only
-   bash scripts/ops/build-push-api-images.sh --push   # 끝에 서버 명령을 출력한다
+   git switch main && git pull --ff-only && git status --short   # 출력이 없어야 한다
+   export TAG=$(git rev-parse HEAD)
+   docker buildx bake -f docker-bake.hcl
+   for image in api migrate; do
+     trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "ghcr.io/aiddoo/aido-platform-$image:$TAG" \
+       && docker push "ghcr.io/aiddoo/aido-platform-$image:$TAG" || break
+   done
    ```
 
-2. 서버: script가 출력한 명령을 실행한다.
+2. 서버: 같은 SHA로 배포한다.
 
    ```sh
    cd ~/apps/Aido-platform && git fetch origin main \

@@ -16,15 +16,23 @@ COPY --from=pruner /app/out/api/json/ ./
 COPY --from=pruner /app/out/api/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/core
 
-FROM deps AS builder
-COPY --from=pruner /app/out/api/full/ ./
+FROM deps AS contracts
+COPY --from=pruner /app/out/api/full/tooling/ ./tooling/
+COPY --from=pruner /app/out/api/full/packages/api/ ./packages/api/
 RUN pnpm --filter @aido/api build
-RUN pnpm --filter @aido/server build
+
+# 서버 소스를 받기 전에 운영 의존성을 떼어 낸다. lockfile·계약이 그대로면 이 stage가 캐시에 맞아
+# 운영 이미지의 의존성 층 digest가 같고, 배포는 dist 층만 옮긴다.
+FROM contracts AS prod-deps
 RUN pnpm --filter @aido/server deploy --legacy --prod --prefer-offline /app/production
 
-FROM deps AS development
+FROM contracts AS builder
 COPY --from=pruner /app/out/api/full/ ./
-RUN pnpm --filter @aido/api build
+# 타입 검사는 CI 검증 job과 pre-push가 이미 했다. 이미지 빌드는 컴파일만 한다
+RUN pnpm --filter @aido/server exec nest build --no-type-check
+
+FROM contracts AS development
+COPY --from=pruner /app/out/api/full/ ./
 WORKDIR /app/apps/api
 ENV NODE_ENV=development
 EXPOSE 8080
@@ -59,8 +67,11 @@ WORKDIR /app
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs && \
     mkdir -p /app/certs && chmod 0755 /app/certs
-COPY --from=builder --chown=nestjs:nodejs /app/production/ ./
 ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
+# --link는 앞 층과 독립된 층을 만들어 base 이미지가 바뀌어도 의존성 층을 다시 쓰게 한다. 이름 대신 숫자 id를 받는다.
+# 자주 바뀌는 dist를 맨 뒤에 둬 배포마다 이 층 하나만 새로 올라가게 한다
+COPY --link --chown=1001:1001 --from=prod-deps /app/production/ ./
+COPY --link --chown=1001:1001 --from=builder /app/apps/api/dist/ ./dist/
 ENV TZ=UTC
 ENV NODE_ENV=production
 ENV PORT=8080
