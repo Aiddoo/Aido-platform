@@ -38,5 +38,5 @@ Turbo 원격 캐시는 `TURBO_TOKEN`·`TURBO_TEAM`으로 로컬과 CI가 같은 
 - 출처 증명은 GitHub attestations API에만 저장하고 registry에는 올리지 않는다(GHCR 버전 보존 개수 유지). `gh attestation verify oci://ghcr.io/aiddoo/aido-platform-api:<sha> --repo Aiddoo/Aido-platform`으로 확인한다.
 - CodeQL(actions, JavaScript/TypeScript)은 PR마다 돌리지 않고 기본 브랜치를 주 1회 스캔한다([codeql.yml](../../../.github/workflows/codeql.yml)). schedule은 저장소 기본 브랜치에서만 돌므로 기본 브랜치는 `main`이어야 한다.
 
-- `pnpm audit --prod --audit-level high`가 high 이상 취약점을 막는다. 패치 버전이 없어 위험을 수용한 advisory는 `pnpm-workspace.yaml`의 `auditConfig.ignoreGhsas`에 사유·제거 조건 주석과 함께 둔다. 현재는 `@expo/cli`(Expo 빌드 도구) 내부의 `node-forge`(GHSA-86w9-cpqp-85rv)와 `zod` 3.x(GHSA-mrhx-c7xc-m3w5)이며, `@expo/cli`가 패치된 버전을 받으면 제거한다.
+- `pnpm audit --prod --audit-level high`가 high 이상 취약점을 막는다. 패치 버전이 없어 위험을 수용한 advisory는 `pnpm-workspace.yaml`의 `auditConfig.ignoreGhsas`에 사유·제거 조건 주석과 함께 둔다. 지금 수용한 advisory와 사유는 그 파일의 주석이 정본이다.
 - API/migrate 이미지는 runner에 load한 상태로 Trivy가 먼저 검사하고, 둘 다 고칠 수 있는 HIGH/CRITICAL이 없을 때만 GHCR에 push한다. 검사에 실패하면 그 SHA의 이미지가 발행되지 않으므로 deploy의 이미지 존재 확인(`docker buildx imagetools inspect`)에서 멈춘다.

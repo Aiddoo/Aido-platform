@@ -20,6 +20,13 @@
 - 비밀 하나에 여러 용도를 묶지 않는다. 용도마다 키를 나눠야 하나씩 회전할 수 있다.
 - 로그인 본문의 `deviceName`·`deviceType`은 출시 앱 호환으로 받기만 한다. 비밀번호 로그인은 `deviceName`을 세션의 기기 지문(없으면 User-Agent)에, 소셜 로그인은 둘을 신규 가입 관리자 알림의 기기 표시([관리자 알림](admin-notifications.md))에만 쓴다. 세션 목록의 `deviceName`·`deviceType`은 늘 null이고 둘 다 신뢰 판단에 쓰지 않는다.
 
+## 서버와 네트워크
+
+- 밖에서 닿는 문은 Nginx(80·443)와 키 전용 SSH(22)뿐이다. API 컨테이너는 서버 안(`127.0.0.1`)에만 열고, RDS는 서버의 보안 그룹만 받는다. 포트 표는 [README](../../../README.md#운영-인프라)에 있다.
+- 운영 컨테이너는 비루트·읽기 전용 루트·capability 제거·`no-new-privileges`로 돈다([production compose](../../../docker-compose.prod.yml)).
+- Nginx·sshd·자동 보안 패치 설정의 정본과 설치 위치는 [서버 설정과 관리](deployment.md#서버-설정과-관리)에 있다.
+- 이미지는 Trivy 검사를 통과한 것만 발행하고 서버에서 빌드하지 않는다([CI](ci.md)).
+
 ## 서명 키 회전
 
 1. ring 앞에 새 `kid:secret`(secret 32자 이상)을 더해 배포한다. 첫 항목이 서명 키이고 나머지는 검증만 한다.

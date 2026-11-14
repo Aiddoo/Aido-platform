@@ -171,6 +171,6 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 | 2026-11-06 | claude-haiku-5-5 1순위(`anthropic,openai,google`) / 작업별 기본 | parse-todo@7, quick-plan@8, voice-note-digest@8 | parse-todo 36건 날짜·제목·NO_ACTION 1.0(p50 1469ms, p95 1884ms). quick-plan 42건(추가 사례 3건 포함) 날짜·제목·겹침 0.976(p50 1372ms, 실패 qp-mx-04 "Call 엄마"→"엄마에게 전화하기"). digest 9건 날짜 0.889(실패 dg-mx-02 "그 전에 견적서 보내기"를 오늘로 읽음, 10회 중 3회). 제목 언어 dg-mx-03 5/5 실패 → 8회 중 0회. 대상 사례 gpt-6-luna quick-plan 8/9·digest 1/3, gemini-3.1-flash-lite quick-plan 7/9("등기 보고서" 유지 등)·digest 3/3. 총 $0.107 |
 | 2026-11-06 | claude-haiku-5-5 / 작업별 기본                                  | voice-note-digest@8                             | `dg-mx-02` 문장을 "내일 미팅 전에 견적서 보내기"로 바꾼 뒤 3회 재평가. 날짜·제목·겹침·중요 표시 3/3(p50 2589~3516ms). 앱 언어 지표 1/3은 요약에 쓴 "김 대리" 한글 때문이고 합격 기준이 아니다. 총 $0.0025                                                                                                                                                                                                                                                  |
 
-## 전환 중
+## 남은 예외
 
 parse-todo·parse-memo의 application 다섯 파일은 정리 결과를 공개 계약(`parsedTodoDataSchema`)으로 검증해 줄 단위 lint 예외가 있다(ParsedTodo read model로 옮길 때 지운다).

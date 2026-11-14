@@ -148,6 +148,6 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 검증은 [reminder-sweep-catch-up](../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](deployment.md#job과-종료)에 있다.
 
-## 전환 중
+## 같은 트랜잭션에서 끝내는 효과
 
-초대 활동 기록은 `social.invitee-activity` 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다. 옛 `publishAll`·이벤트 이름 상수·`@OnEvent` 구독은 없다. planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 `ApplyTodoCompletionEffectsUseCase`가 토글과 같은 트랜잭션에서 한다. 스트릭은 응답 직후 위젯·요약에 보여야 해서 큐로 미루지 않고, 알림은 작업 행이 함께 커밋된다.
+planning 완료 효과(스트릭·친구 완료 알림·마일스톤)는 `ApplyTodoCompletionEffectsUseCase`가 토글과 같은 트랜잭션에서 한다. 스트릭은 응답 직후 위젯·요약에 보여야 해서 큐로 미루지 않고, 알림은 작업 행이 함께 커밋된다. 초대 활동 기록은 내구성 구독(`social.invitee-activity.v1`), insights 일간 완료 캐시 정리는 planning 이벤트의 `after-commit` 구독이다.
