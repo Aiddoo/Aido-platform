@@ -127,6 +127,7 @@ Blue-Green으로 바꾼 커밋 이전으로는 되돌리지 않는다. 그 이�
 - 재부팅 뒤 확인: `docker ps`(healthy), 살아 있는 슬롯의 `/health`, 5분 안에 큐 작업이 completed로 쌓이는지, `free -m`(스왑).
 - DB 백업은 서버 cron(03:00 UTC)이 [backup-database.sh](../../../scripts/ops/backup-database.sh)를 저장소 경로에서 바로 실행한다(`0 3 * * * bash ~/apps/Aido-platform/scripts/ops/backup-database.sh >> ~/backups/backup.log 2>&1`). 접속 주소·S3 경로는 `~/apps/backup.env`(권한 600), 비밀번호는 `~/.pgpass`에 둔다. RDS 자동 백업(7일)과 따로 도는 두 번째 사본이다.
 - 백업 버킷은 버전 관리를 켜 두고 [수명주기](../../../scripts/ops/s3/backup-lifecycle.json)가 지운다: `daily/`는 30일 뒤 만료하고, 만료되거나 지운 파일의 옛 버전은 버킷 전체에서 7일 뒤 완전히 지운다(`aws s3api put-bucket-lifecycle-configuration --bucket <버킷> --lifecycle-configuration file://scripts/ops/s3/backup-lifecycle.json`). 옛 버전 규칙이 없으면 만료된 덤프가 숨겨진 채 계속 남는다. 서버 역할은 올리기·읽기·목록만 갖고 지우지 못한다.
+- DB 접속 계정은 둘이다. API와 pg-boss는 최소 권한 역할 `aido_app`(`apps/api/.env`의 `DATABASE_URL`)으로 붙어 행을 읽고 쓰기만 한다. migration은 소유자 계정으로 돌고 그 주소는 `apps/api/.env.migrate`(`DATABASE_URL` 한 줄, 권한 600)에만 둔다. API 컨테이너는 이 파일을 받지 않는다. 역할의 정본은 [app-role.sql](../../../scripts/ops/db/app-role.sql)이고 소유자 계정으로 실행한다. 소유자가 migration으로 만드는 새 테이블에는 기본 권한이 자동으로 붙고, `public`·`pgboss` 밖에 schema를 새로 만들면 그 파일에 더한다.
 - AWS 경보는 CloudWatch 여섯 개이고 SNS 토픽 `aido-alerts`(이메일)로 간다. RDS 이벤트(장애·저장소 부족·유지보수·가용성)도 같은 토픽으로 받는다.
 
   | 경보                           | 울리는 조건                   | 뜻                                             |
