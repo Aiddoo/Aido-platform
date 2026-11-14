@@ -58,6 +58,7 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
     });
     return new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
   }
 

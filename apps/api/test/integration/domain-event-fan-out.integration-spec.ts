@@ -146,6 +146,7 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
       new EventSubscriptionCatalog(SUBSCRIPTIONS),
       new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
       }),
       module.get(AfterCommitTaskRegistryPort),
       eventEmitter,

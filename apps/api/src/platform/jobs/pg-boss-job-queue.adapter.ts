@@ -49,7 +49,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   readonly #boss: PgBossClient;
   readonly #txHost: JobTransactionSource;
   readonly #registry: JobQueueRegistry;
-  readonly #config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">;
+  readonly #config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs" | "workerEnabled">;
   readonly #queues: PgBossQueueProvisioner;
   readonly #alerts: OperationalAlertPort | null;
 
@@ -57,7 +57,8 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     @Inject(PG_BOSS_CLIENT) boss: PgBossClient,
     @Inject(TransactionHost) txHost: JobTransactionSource,
     registry: JobQueueRegistry,
-    @Inject(jobConfig.KEY) config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs">,
+    @Inject(jobConfig.KEY)
+    config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs" | "workerEnabled">,
     // 경보 모듈 없이 직접 조립하는 integration 테스트는 마지막 실패를 로그로만 남긴다
     @Optional() alerts?: OperationalAlertPort,
   ) {
@@ -162,6 +163,11 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     queue: QueueDefinition<TPayload>,
     settle: JobSettler<TPayload>,
   ): Promise<void> {
+    if (!this.#config.workerEnabled) {
+      // health가 보는 큐 목록에는 남긴다
+      this.#registry.register(queue);
+      return;
+    }
     await this.#ensure(queue);
     const { worker } = queue;
     await this.#boss.work(
@@ -184,6 +190,10 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   }
 
   async registerSchedules(queue: QueueDefinition<object>): Promise<void> {
+    if (!this.#config.workerEnabled) {
+      this.#registry.register(queue);
+      return;
+    }
     await this.#ensure(queue);
     for (const schedule of queue.schedules ?? []) {
       const {

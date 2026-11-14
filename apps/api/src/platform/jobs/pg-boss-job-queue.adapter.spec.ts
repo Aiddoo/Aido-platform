@@ -216,6 +216,7 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
     registry = new JobQueueRegistry();
     jobQueue = new PgBossJobQueueAdapter(boss, { tx: fake.database }, registry, {
       shutdownTimeoutMs: 90_000,
+      workerEnabled: true,
     });
   });
 
@@ -397,6 +398,42 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
 
     // Then
     await expect(cancellation).rejects.toThrow("postgres unavailable");
+  });
+
+  it("worker를 끈 프로세스는 소비·스케줄을 등록하지 않고 작업 넣기와 health 큐 목록만 유지한다", async () => {
+    // Given
+    const apiOnly = new PgBossJobQueueAdapter(
+      boss,
+      { tx: createFakeDatabase().database },
+      registry,
+      {
+        shutdownTimeoutMs: 90_000,
+        workerEnabled: false,
+      },
+    );
+    const scheduled = defineQueue({
+      ...DOCUMENT_QUEUE,
+      schedules: [
+        {
+          key: "weekly-document",
+          cron: "0 1 * * 1",
+          timezone: "Asia/Seoul",
+          missed: "skip",
+          payload: { documentId: 42 },
+        },
+      ],
+    });
+
+    // When
+    await apiOnly.work(DOCUMENT_QUEUE, async () => {});
+    await apiOnly.registerSchedules(scheduled);
+    const enqueued = await apiOnly.enqueue(DOCUMENT_QUEUE, { documentId: 42 });
+
+    // Then
+    expect(boss.handlers.size).toBe(0);
+    expect(boss.scheduleCalls).toEqual([]);
+    expect(enqueued).toBe("job-1");
+    expect(registry.queueNames()).toEqual(expect.arrayContaining([QUEUE, DEAD_LETTER_QUEUE]));
   });
 
   it("정의로 쓴 큐와 그 DLQ의 상태를 공통 health 모델로 정규화한다", async () => {

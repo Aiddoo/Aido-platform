@@ -67,6 +67,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
     const transaction = createDatabaseTransactionFixture(client);
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
     reminders = new ReminderSchedulerAdapter(

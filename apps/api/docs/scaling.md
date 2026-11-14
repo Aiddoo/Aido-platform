@@ -28,7 +28,6 @@
 - 캐시·잠금·dedup·throttler 저장소의 계약 suite([test/contracts/platform](../test/contracts/platform))를 in-memory(unit)와 Redis·Valkey 컨테이너([redis-adapters.integration-spec.ts](../test/integration/platform/redis-adapters.integration-spec.ts))에서 같이 돌린다.
 - slice 캐시 어댑터는 `CacheStorePort`만 받는다(사례: [daily-completion.cache.ts](../src/modules/insights/daily-completions/infrastructure/cache/daily-completion.cache.ts), weather `weather-report.cache.ts`). 다른 캐시 진입점을 만들지 않는다.
 - memory 저장소는 모든 캐시가 항목 한도 하나(`CACHE_MAX_ITEMS`, 운영 3,000)를 LRU로 나눠 쓴다(dedup·잠금·throttler는 따로 둔다). 만료 항목은 읽히거나 밀려날 때만 빠지므로 쓴 키가 한도를 넘은 뒤로는 늘 가득 차 있고 새 키가 가장 오래 안 읽은 키를 밀어낸다. 키를 가장 많이 만드는 것은 활성 사용자 수에 비례하는 사용자 키(30초마다 다시 채우는 세션, 프로필·권한·설정·카테고리·팔로우·일간 완료 범위, 24시간 남는 일간 완료·친구 화면 세대)와 활성 칸·격자 수에 비례하는 날씨 키(칸마다 리포트·latest·대기질·가용성, 격자마다 날짜별 예보·일출입)다. 운영 측정값은 없고 키 모양에서 본 추정이다. 날씨 공급자 호출이나 캐시 뒤 DB 읽기가 늘면 한도를 올리거나 Redis로 바꾼다.
-- `CACHE_CLEANUP_INTERVAL_MS`는 더 쓰지 않지만 운영 env 호환으로 schema에 남아 있다.
 
 ## Redis로 바뀌는 것
 

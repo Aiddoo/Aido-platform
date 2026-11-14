@@ -68,6 +68,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const { txHost, uow } = createDatabaseTransactionFixture(client);
     jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(

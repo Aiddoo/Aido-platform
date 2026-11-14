@@ -62,6 +62,7 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     transaction = createDatabaseTransactionFixture(client);
     jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
+      workerEnabled: true,
     });
     await jobQueue.start();
     scheduler = new TodoReminderSchedulerAdapter(jobQueue, new DateClock());

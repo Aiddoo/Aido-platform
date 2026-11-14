@@ -80,6 +80,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY                  | 시작 검증에 필요한 32자 이상 값. `TOKEN_ENCRYPTION_SALT`는 선택(바꾸지 않는다)                                                                 |
 | CURSOR_SIGNING_KEYS / OPT_OUT_TOKEN_SIGNING_KEYS                        | 선택. `kid:secret,…`(첫 항목이 서명 키, secret 32자 이상). 비우면 JWT_SECRET으로 서명, 기존 토큰은 계속 검증([보안](security.md#서명-키-회전)) |
 | JOB_SHUTDOWN_TIMEOUT_MS                                                 | 90000. compose `stop_grace_period`(120초)보다 짧게 둔다                                                                                        |
+| JOB_WORKER_ENABLED / JOB_POOL_MAX                                       | true / 3. `false`면 작업을 넣기만 하는 API 전용 프로세스다([작업과 이벤트](jobs-and-events.md#큐-정의))                                        |
 | CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                                    | memory / postgres; 서로 다른 capability([확장](scaling.md))                                                                                    |
 | REDIS_*                                                                 | `CACHE_TYPE=redis` 또는 `PUSH_RATE_LIMIT_BACKEND=redis`일 때의 연결 설정                                                                       |
 | EXPO_ACCESS_TOKEN / RESEND_API_KEY                                      | Expo / 이메일 공급자                                                                                                                           |

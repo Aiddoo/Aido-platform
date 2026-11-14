@@ -84,7 +84,7 @@ export const PUSH_DELIVERY_DEAD_LETTER_QUEUE = defineQueue({
   name: "push-delivery-dead-letter.v1",
   payloadSchema: PushDeliveryDeadLetterJobSchema,
   retry: PUSH_DELIVERY_DEAD_LETTER_RETRY,
-  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE },
+  worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
 });
 
 // 앱 풀 10을 나눠 쓰므로 일반 3 + 거래성 전용 2로 옛 동시성(5)을 넘지 않는다.

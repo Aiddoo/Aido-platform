@@ -70,6 +70,7 @@ describe("시간대 재계산 규모 측정", () => {
       const transaction = createDatabaseTransactionFixture(client);
       const jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
       });
       await jobQueue.start();
       try {

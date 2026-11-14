@@ -7,6 +7,7 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
@@ -20,10 +21,7 @@ import { ActivePushTokenReaderPort } from "./application/ports/active-push-token
 import { ClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
 import { MarketingConsentReconfirmPort } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { MarketingPushOptOutTokenPort } from "./application/ports/marketing-push-opt-out-token.port.js";
-import {
-  NotificationDedupLockPort,
-  NotificationDedupPort,
-} from "./application/ports/notification-dedup.port.js";
+import { NotificationDedupPort } from "./application/ports/notification-dedup.port.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
@@ -75,7 +73,6 @@ import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/ca
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
 import { ExpoPushSenderAdapter } from "./infrastructure/adapters/expo-push-sender.adapter.js";
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/hmac-marketing-push-opt-out-token.adapter.js";
-import { NotificationDedupLockAdapter } from "./infrastructure/adapters/notification-dedup-lock.adapter.js";
 import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
 import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
@@ -125,7 +122,6 @@ export const NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS = [
   { provide: ClientAppVersionReaderPort, useClass: DrizzleClientAppVersionReader },
   { provide: ActivePushTokenReaderPort, useClass: CachedActivePushTokenReaderAdapter },
   { provide: NotificationDedupPort, useClass: NotificationDedupAdapter },
-  { provide: NotificationDedupLockPort, useClass: NotificationDedupLockAdapter },
   { provide: PushDeliveryJobEnqueuerPort, useClass: PushDeliveryQueueAdapter },
   CachedNotificationRecipientPreferenceAdapter,
   {
@@ -236,7 +232,8 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendNotificationWithDedupUseCase, {
     sendNotification: SendNotificationUseCase,
-    dedupLock: NotificationDedupLockPort,
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
     notificationHistoryReader: NotificationHistoryReaderPort,
     clock: ClockPort,
     logger: loggerFor(SendNotificationWithDedupUseCase),
@@ -293,7 +290,8 @@ export const NOTIFICATION_PUSH_USE_CASE_PROVIDERS = [
     notificationPublisher: PublishNotificationUseCase,
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     notificationHistoryReader: NotificationHistoryReaderPort,
-    notificationDedupLock: NotificationDedupLockPort,
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
     logger: loggerFor(SendMilestoneNotificationUseCase),
   }),
   provideUseCase(SendFriendCompletionNotificationsUseCase, {

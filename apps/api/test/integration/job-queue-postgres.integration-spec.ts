@@ -73,7 +73,7 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       boss,
       createDatabaseTransactionFixture(client).txHost,
       registry,
-      { shutdownTimeoutMs: 10_000 },
+      { shutdownTimeoutMs: 10_000, workerEnabled: true },
     );
   });
 

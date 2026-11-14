@@ -1,7 +1,7 @@
 import { jobSchema } from "./job.schema.js";
 
 describe("jobSchema — 작업 런타임 설정", () => {
-  it("미설정 시 pg-boss 스키마와 종료 기본값을 쓴다", () => {
+  it("미설정 시 worker를 켜고 pg-boss 스키마·종료 대기·풀 기본값을 쓴다", () => {
     // When
     const config = jobSchema.parse({});
 
@@ -9,7 +9,17 @@ describe("jobSchema — 작업 런타임 설정", () => {
     expect(config).toEqual({
       JOB_SCHEMA: "pgboss",
       JOB_SHUTDOWN_TIMEOUT_MS: 90_000,
+      JOB_WORKER_ENABLED: true,
+      JOB_POOL_MAX: 3,
     });
+  });
+
+  it("worker를 끄고 풀 크기를 줄인 값을 읽는다", () => {
+    // When
+    const config = jobSchema.parse({ JOB_WORKER_ENABLED: "false", JOB_POOL_MAX: "1" });
+
+    // Then
+    expect(config).toMatchObject({ JOB_WORKER_ENABLED: false, JOB_POOL_MAX: 1 });
   });
 
   it("배포 env에 남은 이전 backend 선택·폴링 값은 무시한다", () => {
