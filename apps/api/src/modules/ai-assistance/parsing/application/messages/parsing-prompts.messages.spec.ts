@@ -186,8 +186,8 @@ describe("파싱 프롬프트", () => {
     const versions = definitions.map(({ id, version }) => ({ id, version }));
     // Then
     expect(versions).toEqual([
-      { id: "parse-todo", version: "parse-todo@9" },
-      { id: "parse-memo", version: "parse-memo@9" },
+      { id: "parse-todo", version: "parse-todo@10" },
+      { id: "parse-memo", version: "parse-memo@10" },
     ]);
   });
 });
