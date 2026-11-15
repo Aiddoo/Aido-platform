@@ -32,6 +32,7 @@ import {
   reportFailedJobAttempt,
 } from "./jobs.alerts.js";
 import { PG_BOSS_CLIENT, type PgBossClient } from "./pg-boss-client.js";
+import { PgBossErrorLogSampler } from "./pg-boss-error-log-sampler.js";
 import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 interface JobTransactionSource {
@@ -46,6 +47,7 @@ interface JobTiming {
 @Injectable()
 export class PgBossJobQueueAdapter extends JobQueuePort {
   readonly #logger = new Logger(PgBossJobQueueAdapter.name);
+  readonly #runtimeErrorLog = new PgBossErrorLogSampler(this.#logger);
   readonly #boss: PgBossClient;
   readonly #txHost: JobTransactionSource;
   readonly #registry: JobQueueRegistry;
@@ -70,12 +72,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     this.#queues = new PgBossQueueProvisioner(boss);
     this.#alerts = alerts ?? null;
     this.#boss.on("error", (error) => {
-      // 오류 종류만 기록한다. 작업 payload나 DB 연결 문자열은 로그에 남기지 않는다.
-      this.#logger.error({
-        event: PlatformLogEvent.JOB_RUNTIME_ERRORED,
-        backend: "postgres",
-        errorType: error.name,
-      });
+      this.#runtimeErrorLog.error(error);
     });
   }
 

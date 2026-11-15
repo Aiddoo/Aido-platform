@@ -8,6 +8,7 @@
 - Application은 `ApplicationLoggerPort`를 `Pick`으로 받는다(조립은 `loggerFor(UseCase)`). 이벤트 상수는 slice의 `<slice>.log-events.ts`, platform 이벤트는 [platform.log-events.ts](../src/platform/logging/platform.log-events.ts), 경보 정의는 `<slice>.alerts.ts`([경보 카탈로그](alerts.md))다.
 - Infrastructure는 공급자 결과·재시도·작업 실패를, HTTP middleware·filter는 요청·HTTP 오류를 남긴다. Controller·UseCase·Repository에 같은 시작/종료 로그를 반복하지 않는다.
 - 같은 오류를 여러 층에서 다시 남기지 않는다. 4xx 업무 오류는 `errorCode`만 info·warn, 5xx만 error + 예외 보고다.
+- 연결이 끊긴 동안 같은 오류가 계속 나는 곳은 30초 창에 한 번만 남기고 나머지는 다음 로그의 `suppressed`로 센다. Redis 어댑터는 [RedisErrorLogSampler](../src/platform/redis/redis-error-log-sampler.ts), pg-boss 런타임 오류는 [PgBossErrorLogSampler](../src/platform/jobs/pg-boss-error-log-sampler.ts)다.
 
 ## 이벤트 키와 필드 (서버·앱 공통)
 
