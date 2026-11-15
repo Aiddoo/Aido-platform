@@ -74,6 +74,7 @@ export const SCHEDULE_RULES_EN = {
 - Put the number exactly as said in hour. "3pm" → hour 3, meridiem PM. "15:00" → hour 15, meridiem NONE. "half past 3" or "3:30" → minute 30.
 - am/morning → AM. pm/afternoon/evening/tonight → PM. Without an AM/PM cue, meridiem is NONE; do not guess.
 - With only a part of day and no clock time, set only partOfDay; hour, minute, and relativeMinutes are null: early morning DAWN, morning MORNING, noon/lunch NOON, afternoon AFTERNOON, evening EVENING, tonight/night NIGHT, midnight MIDNIGHT. Never invent a clock time such as hour 8 for "morning"; the server picks the default.
+- "first thing" and "first thing in the morning" mean the start of the day, not before dawn → partOfDay MORNING, never DAWN.
 - When a part of day comes with a clock time, the clock time wins. "7 in the morning" → hour 7, minute 0, meridiem AM, partOfDay null.
 - Use relativeMinutes only for time from now ("in N hours", "in N minutes"), as minutes of 1 or more, otherwise null. Never write 0 and never combine it with partOfDay or hour.
 </time_rules>`,
