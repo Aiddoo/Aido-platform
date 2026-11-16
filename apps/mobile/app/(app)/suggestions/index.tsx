@@ -50,7 +50,15 @@ export default function SuggestionsScreen() {
               </QueryErrorBoundary>
             </>
           ))
-          .with('free', () => <SuggestionsList.PremiumPreview />)
+          .with('free', () => (
+            <>
+              <SuggestionStatus.Free />
+
+              <Spacing size={12} />
+
+              <SuggestionsList.Free />
+            </>
+          ))
           .with('error', () => (
             <SuggestionStatus.Error
               error={featureAccess.error}

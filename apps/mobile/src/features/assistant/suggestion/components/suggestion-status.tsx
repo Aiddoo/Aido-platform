@@ -252,6 +252,18 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
   );
 };
 
+SuggestionStatus.Free = function Free() {
+  const { t } = useTranslation('ai');
+  return (
+    <ScallopedContainer testID="suggestions-status">
+      <SuggestionStatus.Message
+        title={t('suggestions.paywall.title')}
+        description={t('suggestions.paywall.description')}
+      />
+    </ScallopedContainer>
+  );
+};
+
 SuggestionStatus.Loading = function Loading() {
   return (
     <ScallopedContainer>
@@ -262,7 +274,7 @@ SuggestionStatus.Loading = function Loading() {
 
 SuggestionStatus.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   if (isSuggestionsPremiumRequiredError(error)) {
-    return null;
+    return <SuggestionStatus.Free />;
   }
 
   return (

@@ -88,8 +88,16 @@
     },
     "expiryNotice": "제안은 14일 뒤에 사라져요",
     "paywall": {
-      "previewTitle": "아침 스트레칭",
-      "previewEvidence": "최근 2주 9번 중 8번 끝냈어요",
+      "title": "자주 하는 할 일을 찾아드려요",
+      "description": "최근 2주 기록을 보고 이렇게 제안해요",
+      "exampleBadge": "예시",
+      "hiddenTitle": "프리미엄에서 볼 수 있어요",
+      "examples": {
+        "vitamins": "영양제 먹기",
+        "gym": "헬스장 가기",
+        "recycling": "분리수거하기",
+        "weeklyReview": "주간 회고 쓰기"
+      },
       "subscribeCta": "구독하고 제안 받기"
     },
     "toasts": {

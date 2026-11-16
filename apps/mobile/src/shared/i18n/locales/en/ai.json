@@ -93,8 +93,16 @@
     },
     "expiryNotice": "Suggestions go away after 14 days",
     "paywall": {
-      "previewTitle": "Morning stretch",
-      "previewEvidence": "Done 8 of 9 times in the last 2 weeks",
+      "title": "We'll find to-dos you do often",
+      "description": "Suggestions like these, from your last 2 weeks",
+      "exampleBadge": "Examples",
+      "hiddenTitle": "Available with Premium",
+      "examples": {
+        "vitamins": "Take vitamins",
+        "gym": "Go to the gym",
+        "recycling": "Take out the recycling",
+        "weeklyReview": "Write a weekly review"
+      },
       "subscribeCta": "Subscribe to get suggestions"
     },
     "toasts": {

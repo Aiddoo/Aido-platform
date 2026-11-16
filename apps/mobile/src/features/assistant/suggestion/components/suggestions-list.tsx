@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
+import { DAYS_OF_WEEK, USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
@@ -13,6 +13,7 @@ import {
   Button,
   DashedDivider,
   HStack,
+  LabelChip,
   type QueryErrorFallbackProps,
   ScallopedContainer,
   Spacing,
@@ -24,6 +25,7 @@ import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tans
 import { range } from 'es-toolkit';
 import { router, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
+import { match } from 'ts-pattern';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
@@ -32,10 +34,6 @@ import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
 
 const SUGGESTION_LOADING_COUNT = 2;
-const PREMIUM_PREVIEW_SCHEDULE: Pick<AiSuggestion, 'daysOfWeek' | 'scheduledTime'> = {
-  daysOfWeek: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
-  scheduledTime: '07:30',
-};
 
 interface SuggestionItemProps {
   suggestion: AiSuggestion;
@@ -43,6 +41,14 @@ interface SuggestionItemProps {
   onMake: () => void;
   onDismiss: () => void;
   isDismissing?: boolean;
+  isLast?: boolean;
+}
+
+interface ExampleItemProps extends Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime'> {
+  evidence: Pick<NonNullable<AiSuggestion['evidence']>, 'recordedCount' | 'completedCount'>;
+  timeFormat: TimeFormat;
+  /** teaser는 제목만 가리고 일정·근거는 보여 구독하면 무엇을 받는지 남긴다 */
+  visibility: 'full' | 'teaser';
   isLast?: boolean;
 }
 
@@ -168,19 +174,13 @@ SuggestionsList.Item = function Item({
   );
 };
 
-SuggestionsList.PremiumPreview = function PremiumPreview() {
+SuggestionsList.Free = function Free() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
-  const { repeat, timeLabel } = getSuggestionSchedule(PREMIUM_PREVIEW_SCHEDULE, {
-    todayKey,
-    timeFormat: preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
-    dateFormatContext,
-  });
+  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_SUGGESTION'),
     surface: 'suggestions',
@@ -195,30 +195,120 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
   };
 
   return (
-    <ScallopedContainer>
-      <Box className="px-4 py-4">
-        <VStack gap={2} className="py-2 opacity-60">
-          <TodoRow.TitleLine
-            label={
-              <TodoRow.Label isCompleted={false} className="flex-1">
-                {t('suggestions.paywall.previewTitle')}
-              </TodoRow.Label>
-            }
-            isPrivate={false}
+    <VStack gap={16}>
+      <ScallopedContainer>
+        <Box className="px-4 py-2">
+          <Box className="items-start pt-2">
+            <LabelChip
+              color="default"
+              label={t('suggestions.paywall.exampleBadge')}
+              className="bg-gray-3 dark:bg-gray-2"
+              pointerEvents="none"
+            />
+          </Box>
+          <SuggestionsList.ExampleItem
+            title={t('suggestions.paywall.examples.vitamins')}
+            daysOfWeek={[...DAYS_OF_WEEK]}
+            scheduledTime="08:30"
+            evidence={{ recordedCount: 14, completedCount: 13 }}
+            timeFormat={timeFormat}
+            visibility="full"
           />
-          <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
-          <Text size="e1" shade={6}>
-            {t('suggestions.paywall.previewEvidence')}
-          </Text>
-        </VStack>
+          <SuggestionsList.ExampleItem
+            title={t('suggestions.paywall.examples.gym')}
+            daysOfWeek={['MON', 'WED', 'FRI']}
+            scheduledTime="19:00"
+            evidence={{ recordedCount: 6, completedCount: 5 }}
+            timeFormat={timeFormat}
+            visibility="teaser"
+          />
+          <SuggestionsList.ExampleItem
+            title={t('suggestions.paywall.examples.recycling')}
+            daysOfWeek={['TUE', 'THU']}
+            scheduledTime="21:00"
+            evidence={{ recordedCount: 4, completedCount: 3 }}
+            timeFormat={timeFormat}
+            visibility="teaser"
+          />
+          <SuggestionsList.ExampleItem
+            title={t('suggestions.paywall.examples.weeklyReview')}
+            daysOfWeek={['SUN']}
+            scheduledTime={null}
+            evidence={{ recordedCount: 2, completedCount: 2 }}
+            timeFormat={timeFormat}
+            visibility="teaser"
+            isLast
+          />
+        </Box>
+      </ScallopedContainer>
 
-        <Spacing size={16} />
+      <Button size="medium" onPress={handleSubscribePress}>
+        {t('suggestions.paywall.subscribeCta')}
+      </Button>
+    </VStack>
+  );
+};
 
-        <Button size="medium" onPress={handleSubscribePress}>
-          {t('suggestions.paywall.subscribeCta')}
-        </Button>
-      </Box>
-    </ScallopedContainer>
+SuggestionsList.ExampleItem = function ExampleItem({
+  title,
+  daysOfWeek,
+  scheduledTime,
+  evidence,
+  timeFormat,
+  visibility,
+  isLast = false,
+}: ExampleItemProps) {
+  const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+  const { repeat, timeLabel } = getSuggestionSchedule(
+    { daysOfWeek, scheduledTime },
+    { todayKey, timeFormat, dateFormatContext },
+  );
+
+  return (
+    <Box className="py-2">
+      <VStack gap={2}>
+        {match(visibility)
+          .with('full', () => (
+            <TodoRow.TitleLine
+              label={
+                <TodoRow.Label isCompleted={false} numberOfLines={2} className="flex-1">
+                  {title}
+                </TodoRow.Label>
+              }
+              isPrivate={false}
+            />
+          ))
+          .with('teaser', () => (
+            // 가린 막대가 제목 길이·글꼴 단계만큼 자리를 잡도록 글자를 투명하게 그린다
+            <Box
+              accessible
+              accessibilityLabel={t('suggestions.paywall.hiddenTitle')}
+              className="self-start rounded-md bg-gray-3 dark:bg-gray-2"
+            >
+              <TodoRow.Label isCompleted={false} numberOfLines={1} className="opacity-0">
+                {title}
+              </TodoRow.Label>
+            </Box>
+          ))
+          .exhaustive()}
+        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
+        <Text size="e1" shade={6}>
+          {t('suggestions.item.evidence', {
+            total: evidence.recordedCount,
+            done: evidence.completedCount,
+          })}
+        </Text>
+      </VStack>
+
+      {!isLast && (
+        <>
+          <Spacing size={12} />
+          <DashedDivider />
+        </>
+      )}
+    </Box>
   );
 };
 
@@ -253,7 +343,7 @@ SuggestionsList.Loading = function Loading() {
 
 SuggestionsList.Error = function ErrorFallback({ error }: QueryErrorFallbackProps) {
   if (isSuggestionsPremiumRequiredError(error)) {
-    return <SuggestionsList.PremiumPreview />;
+    return <SuggestionsList.Free />;
   }
 
   return null;
