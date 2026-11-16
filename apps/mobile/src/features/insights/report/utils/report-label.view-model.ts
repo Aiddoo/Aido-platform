@@ -1,6 +1,10 @@
 import type { ReportType } from '../domains/report.model';
 
-export const REPORT_TYPE_LABEL_KEYS = {
+const REPORT_TYPE_LABEL_KEYS = {
   WEEKLY: 'report.typeWeekly',
   MONTHLY: 'report.typeMonthly',
 } as const satisfies Record<ReportType, string>;
+
+export function getReportTypeLabelKey(type: ReportType) {
+  return REPORT_TYPE_LABEL_KEYS[type];
+}

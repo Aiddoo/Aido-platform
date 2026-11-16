@@ -1,4 +1,5 @@
 import { REPORT_QUERY_KEYS } from '@src/features/insights/report/queries/report-query-keys';
+import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
 import type { QueryClient } from '@tanstack/react-query';
 
@@ -16,6 +17,8 @@ describe('invalidateAiSuggestions', () => {
     // Given
     queryClient.setQueryData(SUGGESTION_QUERY_KEYS.list(), { suggestions: [], analysis: null });
     queryClient.setQueryData(REPORT_QUERY_KEYS.status(), {
+      nextWeeklyAt: toInstant('2026-03-09T02:30:00.000Z'),
+      nextMonthlyAt: toInstant('2026-04-01T02:30:00.000Z'),
       daysUntilWeekly: 1,
       daysUntilMonthly: 1,
     });

@@ -10,31 +10,44 @@
     "card": {
       "completionRate": "Completion",
       "completed": "Done",
-      "streak": "Streak",
-      "streakDays_one": "{{count}} day",
-      "streakDays_other": "{{count}} days",
+      "streak": "Streak this period",
+      "perfectDays": "Perfect days",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
       "viewDetail": "View details"
     },
-    "detail": {
-      "statsSummary": "Stats summary",
-      "categoryBreakdown": "By category",
-      "dayPatterns": "By day of week",
-      "activeHours": "Most active hours",
-      "countUnit_one": "{{count}} task",
-      "countUnit_other": "{{count}} tasks",
-      "aiSummary": "AI summary",
-      "aiTips": "AI tips"
+    "headline": {
+      "noActivity": "No to-dos this period",
+      "improved": "Up {{points}} pts",
+      "declined": "Down {{points}} pts",
+      "unchanged": "Same as last time"
     },
-    "dday": {
-      "today": "Arrived today!",
-      "inDays_one": "In {{count}} day",
-      "inDays_other": "In {{count}} days"
+    "detail": {
+      "categoryBreakdown": "By category",
+      "dailyCompletions": "To-dos finished each day",
+      "dailyHint": "Tap a bar to see that day",
+      "dayCompletions": "{{date}} · Finished {{completed}} of {{total}}",
+      "dayEmpty": "{{date}} · No to-dos",
+      "completionHours": "When you usually finish",
+      "peakHour": "You finished the most around {{hour}}",
+      "hourCompletions": "{{hour}} · Finished {{count}}"
+    },
+    "coach": {
+      "aiTitle": "AI coach",
+      "templateTitle": "Summary for this period"
     },
     "statusBanner": {
-      "nextWeekly": "Next weekly report",
-      "nextMonthly": "Next monthly report"
+      "nextToday": "Next report today at {{time}}",
+      "nextInDays_one": "Next report in {{count}} day · {{date}}, {{time}}",
+      "nextInDays_other": "Next report in {{count}} days · {{date}}, {{time}}"
+    },
+    "latest": {
+      "trendTitle": "Recent weekly completion",
+      "trendLabel_one": "Completion over the last {{count}} week, from {{start}} to {{end}}",
+      "trendLabel_other": "Completion over the last {{count}} weeks, from {{start}} to {{end}}"
     },
     "list": {
+      "pastReports": "Past reports",
       "premiumTitle": "AI reports",
       "freeTitle": "Your personal AI-powered report",
       "premiumDescription": "We analyze your to-dos and turn them into reports",

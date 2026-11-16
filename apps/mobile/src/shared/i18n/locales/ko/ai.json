@@ -10,28 +10,41 @@
     "card": {
       "completionRate": "달성률",
       "completed": "완료",
-      "streak": "연속",
-      "streakDays": "{{count}}일",
+      "streak": "이 기간 연속",
+      "perfectDays": "모두 끝낸 날",
+      "days": "{{count}}일",
       "viewDetail": "자세히 보기"
     },
-    "detail": {
-      "statsSummary": "통계 요약",
-      "categoryBreakdown": "카테고리별 분석",
-      "dayPatterns": "요일별 패턴",
-      "activeHours": "활발한 시간대",
-      "countUnit": "{{count}}건",
-      "aiSummary": "AI 요약",
-      "aiTips": "AI 팁"
+    "headline": {
+      "noActivity": "이 기간에는 할 일이 없었어요",
+      "improved": "{{points}}%p 올랐어요",
+      "declined": "{{points}}%p 내려갔어요",
+      "unchanged": "지난번과 같아요"
     },
-    "dday": {
-      "today": "오늘 도착!",
-      "inDays": "D-{{count}}"
+    "detail": {
+      "categoryBreakdown": "카테고리별 분석",
+      "dailyCompletions": "날마다 끝낸 할 일",
+      "dailyHint": "막대를 누르면 그날 기록이 보여요",
+      "dayCompletions": "{{date}} · {{total}}개 중 {{completed}}개 끝냈어요",
+      "dayEmpty": "{{date}} · 할 일이 없었어요",
+      "completionHours": "주로 끝낸 시간",
+      "peakHour": "{{hour}}에 가장 많이 끝냈어요",
+      "hourCompletions": "{{hour}} · {{count}}개 끝냈어요"
+    },
+    "coach": {
+      "aiTitle": "AI 코치",
+      "templateTitle": "이번 기간 요약"
     },
     "statusBanner": {
-      "nextWeekly": "다음 주간 리포트",
-      "nextMonthly": "다음 월간 리포트"
+      "nextToday": "다음 리포트 오늘 {{time}}",
+      "nextInDays": "다음 리포트 D-{{count}} · {{date}} {{time}}"
+    },
+    "latest": {
+      "trendTitle": "최근 주간 달성률",
+      "trendLabel": "최근 {{count}}주 달성률, {{start}}에서 {{end}}"
     },
     "list": {
+      "pastReports": "지난 리포트",
       "premiumTitle": "AI 리포트",
       "freeTitle": "AI가 분석한 나만의 리포트",
       "premiumDescription": "할 일 데이터를 분석해서 리포트를 만들어드려요",

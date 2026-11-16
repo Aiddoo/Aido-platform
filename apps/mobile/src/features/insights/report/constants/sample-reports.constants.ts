@@ -64,15 +64,6 @@ function buildWeeklySampleReport(): AiReport {
         rate: 75,
       },
     ],
-    dayPatterns: [
-      { day: 'MON', total: 6, completed: 6, rate: 100 },
-      { day: 'TUE', total: 6, completed: 5, rate: 83 },
-      { day: 'WED', total: 5, completed: 3, rate: 60 },
-      { day: 'THU', total: 5, completed: 5, rate: 100 },
-      { day: 'FRI', total: 5, completed: 4, rate: 80 },
-      { day: 'SAT', total: 4, completed: 3, rate: 75 },
-      { day: 'SUN', total: 4, completed: 3, rate: 75 },
-    ],
     timePatterns: [
       { hour: 9, count: 9 },
       { hour: 19, count: 7 },
@@ -81,6 +72,7 @@ function buildWeeklySampleReport(): AiReport {
       { hour: 22, count: 3 },
       { hour: 12, count: 2 },
     ],
+    dailyCompletions: null,
     aiSummary: t('ai:sampleReport.weekly.summary'),
     aiTips: [
       t('ai:sampleReport.weekly.tip1'),
@@ -88,6 +80,7 @@ function buildWeeklySampleReport(): AiReport {
       t('ai:sampleReport.weekly.tip3'),
       t('ai:sampleReport.weekly.tip4'),
     ],
+    aiContentSource: 'AI',
     hasActivity: true,
     generatedAt: toInstant('2026-03-09T00:00:00.000Z'),
   };
@@ -147,15 +140,6 @@ function buildMonthlySampleReport(): AiReport {
         rate: 67,
       },
     ],
-    dayPatterns: [
-      { day: 'MON', total: 25, completed: 22, rate: 88 },
-      { day: 'TUE', total: 24, completed: 21, rate: 88 },
-      { day: 'WED', total: 23, completed: 17, rate: 74 },
-      { day: 'THU', total: 23, completed: 20, rate: 87 },
-      { day: 'FRI', total: 22, completed: 18, rate: 82 },
-      { day: 'SAT', total: 20, completed: 15, rate: 75 },
-      { day: 'SUN', total: 19, completed: 15, rate: 79 },
-    ],
     timePatterns: [
       { hour: 9, count: 38 },
       { hour: 19, count: 28 },
@@ -164,6 +148,7 @@ function buildMonthlySampleReport(): AiReport {
       { hour: 22, count: 14 },
       { hour: 12, count: 10 },
     ],
+    dailyCompletions: null,
     aiSummary: t('ai:sampleReport.monthly.summary'),
     aiTips: [
       t('ai:sampleReport.monthly.tip1'),
@@ -171,6 +156,7 @@ function buildMonthlySampleReport(): AiReport {
       t('ai:sampleReport.monthly.tip3'),
       t('ai:sampleReport.monthly.tip4'),
     ],
+    aiContentSource: 'AI',
     hasActivity: true,
     generatedAt: toInstant('2026-03-01T00:00:00.000Z'),
   };

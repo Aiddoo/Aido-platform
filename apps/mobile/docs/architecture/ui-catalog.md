@@ -36,6 +36,9 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, **`Mascot`**                                                                                           | 비율을 직접 계산하지 않는다                                                                   |
 | 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                                                 |
 | 크기 재기           | `useLayoutSize()`, Skia는 감싼 View `onLayout` → shared value(프레임마다 그리는 Canvas만 `onSize`, [ui](./ui.md#모션과-skia))                  | 재기 전은 `null`이고 첫 프레임은 어림값으로 그린다. `onLayout` → `setSize`를 직접 쓰지 않는다 |
+| 일별 완료 막대      | `DailyCompletionChart` + `.Loading`(`insights/report`, 누르기)                                                                                 | 리포트 모델을 모르는 controlled 차트. 무료 이번 주·리포트 상세가 함께 쓴다                    |
+| 시간대 완료 막대    | `CompletionHourChart` + `.Loading`(`insights/report`, 가로로 밀기·누르기)                                                                      | 24칸. 눈금은 compact 6시간, 그 밖 3시간 간격                                                  |
+| 주별 완료율 추세    | `CompletionTrendLine` + `.Loading`(`insights/report`)                                                                                          | 끝점만 강조한다. 차트 비율은 `report-chart.constants.ts` 하나를 `.Loading`과 함께 쓴다        |
 
 ## 새 공용 부품의 인터페이스
 
