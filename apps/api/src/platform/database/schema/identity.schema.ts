@@ -47,7 +47,6 @@ export const user = pgTable(
     storeAppUserId: varchar("revenueCatUserId", { length: 255 }),
     subscriptionExpiresAt: instant(),
     subscriptionStatus: subscriptionStatus().default("FREE").notNull(),
-    // DB에는 twoFactorEnabled·twoFactorSecret이 남아 있다(1.15.1 이미지가 SELECT). 1.16.0에서 지운다(compatibility.md)
     // User를 바꾸는 저장소가 ClockPort 값으로 insert·update마다 명시한다
     updatedAt: instant().notNull(),
     userTag: varchar({ length: USER_TAG_LENGTH }).notNull(),
