@@ -332,8 +332,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.15.1: 카테고리 삭제 응답(DeleteTodoCategoryResponseDto)에 선택 칸 result(todoHandling·todoCount·seriesCount·moveToCategoryId)만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/todo-category-deletion.e2e-spec.ts가 출시 앱 요청·응답 모양을 고정한다. */
 	preCategoryDeletionChoiceSchemasFingerprint:
 		"f9cdd86be7d22600eb61ec5d78f38f86cd51e1a369723615896b42741fee34a9",
-	schemasFingerprint:
+	/** 1.16.0: AI 제안 응답(SuggestionListResponseDto·SuggestionActionResponseDto)의 제안에 선택 칸 evidence(nullable), 제안 목록에 선택 칸 analysis, 리포트 응답(AiReportResponseDto·AiReportListResponseDto·ReportStatusResponseDto)에 선택 칸 dailyCompletions(nullable)·aiContentSource만 추가. 기존 칸·필수 여부는 같고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. test/e2e/ai-suggestion.e2e-spec.ts·ai-report.e2e-spec.ts가 응답 계약 검사로 응답 모양을 확인한다. */
+	preAiSuggestionAnalysisSchemasFingerprint:
 		"e69d9a25e4ed7fec5107bb9ca71a838eb143c1ce3849992b82103601da30f050",
+	schemasFingerprint:
+		"acba78b34f7ec07bdbf7af5274bd59cc9e6898dbc044569c0119fde2e17fcca8",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",

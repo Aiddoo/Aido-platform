@@ -87,6 +87,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "reports": {
           "items": {
             "properties": {
+              "aiContentSource": {
+                "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                "enum": [
+                  "AI",
+                  "TEMPLATE",
+                ],
+                "type": "string",
+              },
               "aiSummary": {
                 "type": "string",
               },
@@ -130,6 +138,36 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   ],
                   "type": "object",
                 },
+                "type": "array",
+              },
+              "dailyCompletions": {
+                "description": "기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null",
+                "items": {
+                  "properties": {
+                    "completed": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "date": {
+                      "format": "date",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                      "type": "string",
+                    },
+                    "total": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "date",
+                    "total",
+                    "completed",
+                  ],
+                  "type": "object",
+                },
+                "nullable": true,
                 "type": "array",
               },
               "dateRange": {
@@ -310,6 +348,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       "properties": {
         "report": {
           "properties": {
+            "aiContentSource": {
+              "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+              "enum": [
+                "AI",
+                "TEMPLATE",
+              ],
+              "type": "string",
+            },
             "aiSummary": {
               "type": "string",
             },
@@ -353,6 +399,36 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 ],
                 "type": "object",
               },
+              "type": "array",
+            },
+            "dailyCompletions": {
+              "description": "기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null",
+              "items": {
+                "properties": {
+                  "completed": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "date": {
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                    "type": "string",
+                  },
+                  "total": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "date",
+                  "total",
+                  "completed",
+                ],
+                "type": "object",
+              },
+              "nullable": true,
               "type": "array",
             },
             "dateRange": {
@@ -16090,6 +16166,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "latestMonthly": {
               "nullable": true,
               "properties": {
+                "aiContentSource": {
+                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                  "enum": [
+                    "AI",
+                    "TEMPLATE",
+                  ],
+                  "type": "string",
+                },
                 "aiSummary": {
                   "type": "string",
                 },
@@ -16133,6 +16217,36 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     ],
                     "type": "object",
                   },
+                  "type": "array",
+                },
+                "dailyCompletions": {
+                  "description": "기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null",
+                  "items": {
+                    "properties": {
+                      "completed": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "date": {
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "total": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "date",
+                      "total",
+                      "completed",
+                    ],
+                    "type": "object",
+                  },
+                  "nullable": true,
                   "type": "array",
                 },
                 "dateRange": {
@@ -16304,6 +16418,14 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "latestWeekly": {
               "nullable": true,
               "properties": {
+                "aiContentSource": {
+                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                  "enum": [
+                    "AI",
+                    "TEMPLATE",
+                  ],
+                  "type": "string",
+                },
                 "aiSummary": {
                   "type": "string",
                 },
@@ -16347,6 +16469,36 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     ],
                     "type": "object",
                   },
+                  "type": "array",
+                },
+                "dailyCompletions": {
+                  "description": "기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null",
+                  "items": {
+                    "properties": {
+                      "completed": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "date": {
+                        "format": "date",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                        "type": "string",
+                      },
+                      "total": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                    },
+                    "required": [
+                      "date",
+                      "total",
+                      "completed",
+                    ],
+                    "type": "object",
+                  },
+                  "nullable": true,
                   "type": "array",
                 },
                 "dateRange": {
@@ -17616,6 +17768,38 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "type": "array",
             },
+            "evidence": {
+              "description": "제안 근거. 1.16.0 전에 만든 제안은 null",
+              "nullable": true,
+              "properties": {
+                "completedCount": {
+                  "description": "그중 끝낸 횟수(recordedCount 이하)",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "periodDays": {
+                  "description": "근거를 센 기간(일). 지금은 14",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "recordedCount": {
+                  "description": "기간 안에 이 할 일을 적은 횟수",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "recordedCount",
+                "completedCount",
+                "periodDays",
+              ],
+              "type": "object",
+            },
             "expiresAt": {
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
@@ -17674,6 +17858,67 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     },
     "SuggestionListResponseDto": {
       "properties": {
+        "analysis": {
+          "description": "분석 상태. 1.16.0 서버부터 항상 온다",
+          "properties": {
+            "canRequestNow": {
+              "description": "지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true",
+              "type": "boolean",
+            },
+            "lastAnalyzedAt": {
+              "description": "마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null",
+              "format": "date-time",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "nextAnalysisAt": {
+              "description": "다음 자동 분석 순간. 사용자 저장 시간대의 다음 07:00",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "recentTodoCount": {
+              "description": "최근 14일 동안 적은 단건 할 일 수(반복 할 일 제외)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "state": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "HAS_SUGGESTIONS",
+                    "NEEDS_AI_CONSENT",
+                    "NEEDS_MORE_TODOS",
+                    "ANALYZING",
+                    "DONE_FOR_TODAY",
+                    "NO_PATTERN_FOUND",
+                    "UNAVAILABLE_TODAY",
+                    "WAITING_FOR_NEXT_RUN",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "enum": [
+                    "UNKNOWN",
+                  ],
+                  "type": "string",
+                },
+              ],
+              "default": "UNKNOWN",
+              "description": "제안 화면 상태. 앱은 이 값 하나로 카드를 고른다",
+            },
+          },
+          "required": [
+            "state",
+            "recentTodoCount",
+            "canRequestNow",
+            "lastAnalyzedAt",
+            "nextAnalysisAt",
+          ],
+          "type": "object",
+        },
         "suggestions": {
           "items": {
             "properties": {
@@ -17699,6 +17944,38 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "string",
                 },
                 "type": "array",
+              },
+              "evidence": {
+                "description": "제안 근거. 1.16.0 전에 만든 제안은 null",
+                "nullable": true,
+                "properties": {
+                  "completedCount": {
+                    "description": "그중 끝낸 횟수(recordedCount 이하)",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "periodDays": {
+                    "description": "근거를 센 기간(일). 지금은 14",
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "recordedCount": {
+                    "description": "기간 안에 이 할 일을 적은 횟수",
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                },
+                "required": [
+                  "recordedCount",
+                  "completedCount",
+                  "periodDays",
+                ],
+                "type": "object",
               },
               "expiresAt": {
                 "format": "date-time",
