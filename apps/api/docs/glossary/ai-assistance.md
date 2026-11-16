@@ -18,7 +18,7 @@ suggestions slice가 사용자의 최근 할 일 기록에서 반복할 만한 �
 | 멈춘 실행   | `isRunning(now)`, `RUN_STALE_AFTER_MINUTES`                            | 큐에 넣은 지 60분이 넘도록 끝나지 않은 실행. 분석 중으로 보지 않는다                                                                                                      |
 | 분석 상태   | `resolveSuggestionAnalysisState`, `AI_SUGGESTION_ANALYSIS_STATES`      | 제안 화면 상황. 대기 제안 → 동의 → 최근 단건 할 일 → 분석 중 → 오늘 결과 → 오늘 요청했지만 멈춤(오늘은 못 함) → 기다림 순서로 먼저 맞는 하나다. 앱은 다시 계산하지 않는다 |
 | 아침 배치   | `DispatchSuggestionAnalysesUseCase`                                    | 현지 09시대 사용자 묶음을 한 트랜잭션에서 잠그고 오늘 요청받지 않은 사람만 기록·큐에 넣는다                                                                               |
-| 다음 분석   | `nextSuggestionDispatchAt`                                             | 저장 시간대의 다음 09:00 순간. 오늘 09:00이 지났으면 내일이다                                                                                                             |
+| 다음 분석   | `nextSuggestionDispatchAt`                                             | 이 사용자에게 다음 자동 분석이 도는 순간. 오늘 요청 기록이 있거나 오늘 09:00이 지났으면 내일 09:00, 아니면 오늘 09:00이다                                                 |
 
 ## AI 제안 전이
 

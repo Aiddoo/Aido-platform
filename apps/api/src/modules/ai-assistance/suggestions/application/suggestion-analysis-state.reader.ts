@@ -53,7 +53,7 @@ export class SuggestionAnalysisStateReader {
       recentTodoCount,
       canRequestNow: canRequestAnalysisNow(state, this.#dependencies.settings.onDemandEnabled),
       lastAnalyzedAt: run?.finishedAt ?? null,
-      nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timeZone }),
+      nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timeZone, run }),
     };
   }
 

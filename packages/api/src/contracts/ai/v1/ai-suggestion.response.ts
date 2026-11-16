@@ -28,7 +28,9 @@ export const suggestionAnalysisSchema = z.object({
   lastAnalyzedAt: datetimeSchema
     .nullable()
     .describe("마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null"),
-  nextAnalysisAt: datetimeSchema.describe("다음 자동 분석 순간. 사용자 저장 시간대의 다음 09:00"),
+  nextAnalysisAt: datetimeSchema.describe(
+    "다음 자동 분석 순간. 저장 시간대의 다음 09:00이고, 오늘 이미 분석을 요청했다면 내일 09:00",
+  ),
 });
 
 export type SuggestionAnalysis = z.infer<typeof suggestionAnalysisSchema>;

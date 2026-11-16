@@ -2,6 +2,7 @@ import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
+import type { SuggestionAnalysisRun } from "./suggestion-analysis-run.entity.js";
 import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "./suggestion.constants.js";
 
 // 야간(21:00~08:00) 수신을 끈 사용자에게도 닿게 아침에 보낸다. 08시대는 기본 아침 알림과 겹쳐 09시대로 둔다
@@ -32,7 +33,10 @@ export function suggestionDispatchLocalDate(input: SuggestionDispatchMoment): Te
   return input.at.toZonedDateTimeISO(input.timeZone).toPlainDate();
 }
 
-export function nextSuggestionDispatchAt(input: SuggestionDispatchMoment): Temporal.Instant {
+// 오늘 요청 기록이 있으면 오늘 job key를 이미 써서 아침 배치가 건너뛰므로 다음 분석은 내일이다
+export function nextSuggestionDispatchAt(
+  input: SuggestionDispatchMoment & { readonly run: SuggestionAnalysisRun | null },
+): Temporal.Instant {
   const today = suggestionDispatchLocalDate(input);
   const dispatchAt = (date: Temporal.PlainDate) =>
     toZonedInstant({
@@ -41,7 +45,8 @@ export function nextSuggestionDispatchAt(input: SuggestionDispatchMoment): Tempo
       timeZone: TimeZone.create(input.timeZone),
     });
   const todayDispatchAt = dispatchAt(today);
-  if (Temporal.Instant.compare(input.at, todayDispatchAt) < 0) {
+  const isTodayDispatchAhead = Temporal.Instant.compare(input.at, todayDispatchAt) < 0;
+  if (isTodayDispatchAhead && !input.run?.isRequestedOn(today)) {
     return todayDispatchAt;
   }
   return dispatchAt(today.add({ days: 1 }));

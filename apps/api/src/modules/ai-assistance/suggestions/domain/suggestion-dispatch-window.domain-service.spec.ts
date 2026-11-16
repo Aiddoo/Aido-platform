@@ -1,6 +1,8 @@
 import { NIGHT_TIME_CONFIG } from "@aido/api/vocabulary";
 import { range } from "es-toolkit";
 
+import { createSuggestionAnalysisRunFixture } from "#test/fixtures/ai-assistance/suggestion-analysis-run.fixture";
+
 import {
   isInSuggestionDispatchWindow,
   nextSuggestionDispatchAt,
@@ -142,9 +144,96 @@ describe("nextSuggestionDispatchAt", () => {
     },
   ])("$label", ({ at, timeZone, expected }) => {
     // When
-    const next = nextSuggestionDispatchAt({ at: Temporal.Instant.from(at), timeZone });
+    const next = nextSuggestionDispatchAt({
+      at: Temporal.Instant.from(at),
+      timeZone,
+      run: null,
+    });
 
     // Then
     expect(next.toString()).toBe(expected);
+  });
+});
+
+describe("nextSuggestionDispatchAt 오늘 요청 기록이 있을 때", () => {
+  it.each([
+    {
+      label: "서울 08:59에 끝난 기록 → 내일 09:00",
+      status: "FINISHED" as const,
+      at: "2026-11-09T23:59:00Z",
+      timeZone: "Asia/Seoul",
+      localDate: "2026-11-10",
+      expected: "2026-11-11T00:00:00Z",
+    },
+    {
+      label: "서울 14:00 도는 중 → 내일 09:00",
+      status: "RUNNING" as const,
+      at: "2026-11-10T05:00:00Z",
+      timeZone: "Asia/Seoul",
+      localDate: "2026-11-10",
+      expected: "2026-11-11T00:00:00Z",
+    },
+    {
+      label: "서울 10:00 멈춘 대기 → 내일 09:00",
+      status: "QUEUED" as const,
+      at: "2026-11-10T01:00:00Z",
+      timeZone: "Asia/Seoul",
+      localDate: "2026-11-10",
+      expected: "2026-11-11T00:00:00Z",
+    },
+    {
+      label: "LA 14:00(PST) 끝난 기록 → 내일 09:00",
+      status: "FINISHED" as const,
+      at: "2026-11-10T22:00:00Z",
+      timeZone: "America/Los_Angeles",
+      localDate: "2026-11-10",
+      expected: "2026-11-11T17:00:00Z",
+    },
+    {
+      label: "LA 서머타임 시작 전날 10:00 끝난 기록 → 2027-03-14 09:00(PDT)",
+      status: "FINISHED" as const,
+      at: "2027-03-13T18:00:00Z",
+      timeZone: "America/Los_Angeles",
+      localDate: "2027-03-13",
+      expected: "2027-03-14T16:00:00Z",
+    },
+    {
+      label: "서울 12월 31일 끝난 기록 → 다음 해 1월 1일 09:00",
+      status: "FINISHED" as const,
+      at: "2026-12-31T05:00:00Z",
+      timeZone: "Asia/Seoul",
+      localDate: "2026-12-31",
+      expected: "2027-01-01T00:00:00Z",
+    },
+  ])("$label", ({ status, at, timeZone, localDate, expected }) => {
+    // Given
+    const run = createSuggestionAnalysisRunFixture({
+      status,
+      localDate: Temporal.PlainDate.from(localDate),
+    });
+
+    // When
+    const next = nextSuggestionDispatchAt({ at: Temporal.Instant.from(at), timeZone, run });
+
+    // Then
+    expect(next.toString()).toBe(expected);
+  });
+
+  it("어제 기록만 있으면 오늘 09시 전에는 오늘 09:00이다", () => {
+    // Given
+    const run = createSuggestionAnalysisRunFixture({
+      status: "FINISHED",
+      localDate: Temporal.PlainDate.from("2026-11-09"),
+    });
+
+    // When
+    const next = nextSuggestionDispatchAt({
+      at: Temporal.Instant.from("2026-11-09T23:59:00Z"),
+      timeZone: "Asia/Seoul",
+      run,
+    });
+
+    // Then
+    expect(next.toString()).toBe("2026-11-10T00:00:00Z");
   });
 });
