@@ -145,7 +145,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | 매분 큐(`timezone-reminder`·`retention`·`push-delivery`)                                     | 0.01 | 하루 1,440회씩                                                 |
 | `notification`·`todo-reminder`                                                               | 0.02 | 건수 많음                                                      |
 | `account-purge`·`store-subscription-reconcile`·`invite-reward`·`todo-series-materialization` | 1    | 드물고 중요                                                    |
-| `email-delivery`·`ai-report-generation`                                                      | 0.5  | 인증 메일·비싼 작업                                            |
+| `email-delivery`·`ai-report-generation`·`ai-suggestion-analysis`                             | 0.5  | 인증 메일·비싼 작업                                            |
 | 그 밖의 큐                                                                                   | 0.05 | 기본                                                           |
 
 ## Sentry 무료 플랜 운영

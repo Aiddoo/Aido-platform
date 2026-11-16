@@ -1,8 +1,17 @@
-import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/api";
+import type {
+  RecurringSuggestion,
+  SuggestionActionResponse,
+  SuggestionAnalysis,
+  SuggestionListResponse,
+} from "@aido/api";
 import { pick } from "es-toolkit";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
+import type {
+  PendingSuggestionsReadModel,
+  SuggestionAnalysisReadModel,
+} from "../../../application/read-models/suggestion-analysis.read-model.js";
 import type { SuggestionActionResult } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import type { Suggestion } from "../../../domain/suggestion.aggregate.js";
 
@@ -29,6 +38,25 @@ export function toSuggestionResponse(suggestion: Suggestion): RecurringSuggestio
       primitives.evidence == null
         ? null
         : pick(primitives.evidence, ["recordedCount", "completedCount", "periodDays"]),
+  };
+}
+
+function toSuggestionAnalysis(analysis: SuggestionAnalysisReadModel): SuggestionAnalysis {
+  return {
+    state: analysis.state,
+    recentTodoCount: analysis.recentTodoCount,
+    canRequestNow: analysis.canRequestNow,
+    lastAnalyzedAt: analysis.lastAnalyzedAt == null ? null : toIsoString(analysis.lastAnalyzedAt),
+    nextAnalysisAt: toIsoString(analysis.nextAnalysisAt),
+  };
+}
+
+export function toSuggestionListResponse(
+  list: PendingSuggestionsReadModel,
+): SuggestionListResponse {
+  return {
+    suggestions: list.suggestions.map(toSuggestionResponse),
+    analysis: toSuggestionAnalysis(list.analysis),
   };
 }
 

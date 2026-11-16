@@ -3,6 +3,7 @@ import { range } from "es-toolkit";
 
 import {
   isInSuggestionDispatchWindow,
+  nextSuggestionDispatchAt,
   suggestionDispatchLocalDate,
 } from "./suggestion-dispatch-window.domain-service.js";
 
@@ -72,7 +73,78 @@ describe("isInSuggestionDispatchWindow", () => {
     const losAngeles = suggestionDispatchLocalDate({ at, timeZone: "America/Los_Angeles" });
 
     // Then
-    expect(seoul).toBe("2026-11-10");
-    expect(losAngeles).toBe("2026-11-09");
+    expect(seoul.toString()).toBe("2026-11-10");
+    expect(losAngeles.toString()).toBe("2026-11-09");
+  });
+});
+
+describe("nextSuggestionDispatchAt", () => {
+  it.each([
+    {
+      label: "서울 08:59 → 오늘 09:00",
+      at: "2026-11-09T23:59:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2026-11-10T00:00:00Z",
+    },
+    {
+      label: "서울 09:00 → 내일 09:00",
+      at: "2026-11-10T00:00:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2026-11-11T00:00:00Z",
+    },
+    {
+      label: "서울 14:00 → 내일 09:00",
+      at: "2026-11-10T05:00:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2026-11-11T00:00:00Z",
+    },
+    {
+      label: "LA 08:59(PST) → 오늘 09:00",
+      at: "2026-11-10T16:59:00Z",
+      timeZone: "America/Los_Angeles",
+      expected: "2026-11-10T17:00:00Z",
+    },
+    {
+      label: "LA 10:00(PST) → 내일 09:00",
+      at: "2026-11-10T18:00:00Z",
+      timeZone: "America/Los_Angeles",
+      expected: "2026-11-11T17:00:00Z",
+    },
+    {
+      label: "LA 서머타임 시작 전날 10:00(PST) → 2027-03-14 09:00(PDT)",
+      at: "2027-03-13T18:00:00Z",
+      timeZone: "America/Los_Angeles",
+      expected: "2027-03-14T16:00:00Z",
+    },
+    {
+      label: "LA 서머타임 끝 전날 10:00(PDT) → 2026-11-01 09:00(PST)",
+      at: "2026-10-31T17:00:00Z",
+      timeZone: "America/Los_Angeles",
+      expected: "2026-11-01T17:00:00Z",
+    },
+    {
+      label: "서울 평년 2월 28일 10:00 → 3월 1일",
+      at: "2027-02-28T01:00:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2027-03-01T00:00:00Z",
+    },
+    {
+      label: "서울 윤년 2월 28일 10:00 → 2월 29일",
+      at: "2028-02-28T01:00:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2028-02-29T00:00:00Z",
+    },
+    {
+      label: "서울 12월 31일 10:00 → 다음 해 1월 1일",
+      at: "2026-12-31T01:00:00Z",
+      timeZone: "Asia/Seoul",
+      expected: "2027-01-01T00:00:00Z",
+    },
+  ])("$label", ({ at, timeZone, expected }) => {
+    // When
+    const next = nextSuggestionDispatchAt({ at: Temporal.Instant.from(at), timeZone });
+
+    // Then
+    expect(next.toString()).toBe(expected);
   });
 });

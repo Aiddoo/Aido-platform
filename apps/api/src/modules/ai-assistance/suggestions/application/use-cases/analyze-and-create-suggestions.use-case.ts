@@ -1,15 +1,18 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
+import { match } from "ts-pattern";
 
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
+  type AiFailureKind,
   AiGenerationError,
   isTransientAiFailure,
   isWithheldAiFailure,
@@ -21,34 +24,50 @@ import {
 } from "../../../generation/application/ai-generation.log-events.js";
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
-import type { ScheduledAiConsentReader } from "../../../generation/application/scheduled-ai-consent.reader.js";
+import type {
+  ScheduledAiConsent,
+  ScheduledAiConsentReader,
+} from "../../../generation/application/scheduled-ai-consent.reader.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
+import {
+  type SuggestionAnalysisResult,
+  SuggestionAnalysisRun,
+} from "../../domain/suggestion-analysis-run.entity.js";
+import type {
+  SuggestionAnalysisOutcome,
+  SuggestionAnalysisTrigger,
+} from "../../domain/suggestion-analysis.constants.js";
+import {
+  buildSuggestionCandidates,
+  suggestionModeOf,
+} from "../../domain/suggestion-candidates.domain-service.js";
 import { SuggestionEvidence } from "../../domain/suggestion-evidence.vo.js";
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestion.constants.js";
+import {
+  type DetectedPattern,
+  SUGGESTION_ANALYSIS_PERIOD_DAYS,
+} from "../../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import { suggestionPrompt } from "../messages/suggestion-prompt.messages.js";
-import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
+import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
+import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
 import type { SuggestionContextReader } from "../suggestion-context.reader.js";
+import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 
-/**
- * 사용자의 최근 할 일을 분석하여 반복 제안을 생성하는 use-case.
- *
- * 컨텍스트 수집 → 빈 기록 게이트 → AI 제안 1회 생성 →
- * 약패턴 필터·유형 캡·중복 제거 → 트랜잭션 내 기존 PENDING 교체·만료 정리·신규 저장.
- * 실행과 저장 직전에 최신 유료 자격을 확인한다.
- */
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
     SuggestionRepositoryPort,
     "deletePendingByUserId" | "deleteExpiredByUserId" | "nextIds" | "saveMany"
   >;
+  readonly runs: Pick<SuggestionAnalysisRunRepositoryPort, "findByUserId" | "save">;
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
   readonly clock: ClockPort;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly contextBuilder: Pick<SuggestionContextReader, "build">;
-  readonly logger: Pick<ApplicationLoggerPort, "debug" | "log" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
 }
@@ -57,7 +76,23 @@ export interface AnalyzeAndCreateSuggestionsCommand {
   readonly userId: string;
   readonly timezone: string;
   readonly locale?: SupportedLocale;
+  readonly localDate: Temporal.PlainDate;
+  readonly trigger: SuggestionAnalysisTrigger;
+  readonly isFinalAttempt: boolean;
 }
+
+export interface AnalyzeAndCreateSuggestionsResult extends SuggestionAnalysisResult {
+  readonly trigger: SuggestionAnalysisTrigger;
+}
+
+interface AnalysisTiming {
+  readonly startedAt: Temporal.Instant;
+  readonly queueWait: Temporal.Duration | null;
+}
+
+type GenerationOutcome =
+  | { readonly patterns: DetectedPattern[] }
+  | { readonly outcome: SuggestionAnalysisOutcome };
 
 export class AnalyzeAndCreateSuggestionsUseCase {
   readonly #dependencies: AnalyzeAndCreateSuggestionsDependencies;
@@ -66,42 +101,86 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: AnalyzeAndCreateSuggestionsCommand): Promise<number> {
-    const { userId, timezone, locale = "ko" } = command;
-    if (
-      !(await this.#dependencies.entitlementReader.canInTx(
-        UserId.reconstitute(userId),
-        "AI_SUGGESTION",
-      ))
-    ) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: "not-premium",
-      });
-      return 0;
+  async execute(
+    command: AnalyzeAndCreateSuggestionsCommand,
+  ): Promise<AnalyzeAndCreateSuggestionsResult> {
+    const owner = UserId.reconstitute(command.userId);
+    const startedAt = this.#dependencies.clock.now();
+    const timing = { startedAt, queueWait: await this.#start(owner, command, startedAt) };
+    const result = await this.#analyze(owner, command).catch(async (error: unknown) => {
+      // 일시 오류는 job이 다시 시도하므로 마지막 시도만 실패로 남긴다
+      if (command.isFinalAttempt) {
+        this.#logFinished(command, await this.#skip(owner, command, "FAILED", null), timing);
+      }
+      throw error;
+    });
+    this.#logFinished(command, result, timing);
+    return { ...result, trigger: command.trigger };
+  }
+
+  async #start(
+    owner: UserId,
+    command: AnalyzeAndCreateSuggestionsCommand,
+    now: Temporal.Instant,
+  ): Promise<Temporal.Duration | null> {
+    return this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(owner)]);
+      // 1.16.0 배포 전에 쌓인 작업은 실행 기록 없이 온다
+      const run =
+        (await this.#dependencies.runs.findByUserId(owner)) ??
+        SuggestionAnalysisRun.create({
+          userId: owner,
+          localDate: command.localDate,
+          trigger: command.trigger,
+          now,
+        });
+      if (run.start(command.localDate, now)) {
+        await this.#dependencies.runs.save(run);
+      }
+      return run.queueWait;
+    });
+  }
+
+  async #analyze(
+    owner: UserId,
+    command: AnalyzeAndCreateSuggestionsCommand,
+  ): Promise<SuggestionAnalysisResult> {
+    if (!(await this.#dependencies.entitlementReader.canInTx(owner, "AI_SUGGESTION"))) {
+      return this.#skip(owner, command, "NOT_PREMIUM", null);
     }
-    const consent = await this.#dependencies.scheduledAiConsent.find(userId);
+    const consent = await this.#dependencies.scheduledAiConsent.find(command.userId);
     if (!consent.allowed) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: "no-ai-consent",
-      });
-      return 0;
+      return this.#skip(owner, command, "CONSENT_MISSING", null);
     }
-    const context = await this.#dependencies.contextBuilder.build(userId, timezone);
-
-    if (context.todos.length === 0) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: "no-records",
-      });
-      return 0;
+    const context = await this.#dependencies.contextBuilder.build(command.userId, command.timezone);
+    const recentTodoCount = context.todos.length;
+    if (recentTodoCount === 0) {
+      return this.#skip(owner, command, "NO_RECENT_TODOS", 0);
     }
+    const candidates = buildSuggestionCandidates(
+      context.todos,
+      suggestionModeOf(recentTodoCount),
+      context.repeatingTitles,
+    );
+    if (candidates.length === 0) {
+      return this.#skip(owner, command, "NO_PATTERN_FOUND", recentTodoCount);
+    }
+    const generation = await this.#generate(command, context, consent);
+    if ("outcome" in generation) {
+      return this.#skip(owner, command, generation.outcome, recentTodoCount);
+    }
+    if (generation.patterns.length === 0) {
+      return this.#skip(owner, command, "NO_PATTERN_FOUND", recentTodoCount);
+    }
+    return this.#save(owner, command, context, generation.patterns);
+  }
 
-    // 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
+  async #generate(
+    command: AnalyzeAndCreateSuggestionsCommand,
+    context: SuggestionContext,
+    consent: ScheduledAiConsent,
+  ): Promise<GenerationOutcome> {
+    const { userId, locale = "ko" } = command;
     const definition = suggestionPrompt;
     const logBase = {
       task: definition.id,
@@ -110,73 +189,68 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       quotaCharged: false,
     } as const;
     const startedAt = this.#dependencies.clock.now().epochMilliseconds;
-    const generation = await generateWithPrompt(
+    return generateWithPrompt(
       this.#dependencies.generator,
       definition,
       definition.build(context, locale),
       { context, locale },
       { agreedConsentVersion: consent.agreedVersion, userId },
-    ).catch((error: unknown) => {
-      if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
-        return { skipped: error.kind } as const;
-      }
-      const failure = toGenerationFailure(error);
-      const settled = error instanceof AiGenerationError && !isTransientAiFailure(error.kind);
-      this.#dependencies.logger.warn(
-        buildGenerationFailedLog({
-          ...logBase,
-          outcome: settled ? "FAILED" : "RETRYING",
-          ...failure,
-          latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
-        }),
-      );
-      // 일시 장애만 잡 재시도로 넘긴다. 출력 오류·차단·잘림은 다시 불러도 같은 비용으로 같게 실패한다.
-      if (!settled) {
-        throw error;
-      }
-      return { skipped: failure.errorType } as const;
-    });
-    // 보낼 업체가 없거나 예산·킬 스위치로 멈췄거나 다시 시도해도 같은 실패면 이번 분석을 건너뛴다.
-    if ("skipped" in generation) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: generation.skipped === "UNAVAILABLE" ? "provider-unavailable" : "generation-failed",
-      });
-      return 0;
-    }
-    this.#dependencies.logger.log(
-      buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
+    ).then(
+      (generation) => {
+        this.#dependencies.logger.log(
+          buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
+        );
+        return { patterns: generation.value };
+      },
+      (error: unknown) => {
+        if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
+          return { outcome: toAnalysisOutcome(error.kind) };
+        }
+        const failure = toGenerationFailure(error);
+        const settled = error instanceof AiGenerationError && !isTransientAiFailure(error.kind);
+        this.#dependencies.logger.warn(
+          buildGenerationFailedLog({
+            ...logBase,
+            outcome: settled || command.isFinalAttempt ? "FAILED" : "RETRYING",
+            ...failure,
+            latencyMs: this.#dependencies.clock.now().epochMilliseconds - startedAt,
+          }),
+        );
+        // 일시 장애만 잡 재시도로 넘긴다. 출력 오류·차단·잘림은 다시 불러도 같은 비용으로 같게 실패한다.
+        if (!settled) {
+          throw error;
+        }
+        return { outcome: toAnalysisOutcome(failure.errorType) };
+      },
     );
-    const patterns = generation.value;
+  }
 
-    if (patterns.length === 0) {
-      this.#dependencies.logger.debug({
-        event: AiSuggestionLogEvent.SKIPPED,
-        userId,
-        reason: "no-patterns",
-      });
-      return 0;
-    }
-
+  async #save(
+    owner: UserId,
+    command: AnalyzeAndCreateSuggestionsCommand,
+    context: SuggestionContext,
+    patterns: readonly DetectedPattern[],
+  ): Promise<SuggestionAnalysisResult> {
     const now = this.#dependencies.clock.now();
     const expiresAt = now.add({ hours: AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS * 24 });
-    const owner = UserId.reconstitute(userId);
-
+    const recentTodoCount = context.todos.length;
     const limitedPatterns = orderBy(patterns, ["confidence"], ["desc"]).slice(
       0,
       AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER,
     );
 
-    const createdCount = await this.#dependencies.unitOfWork.run(async () => {
-      const { userMutationLock, entitlementReader } = this.#dependencies;
+    return this.#dependencies.unitOfWork.run(async () => {
+      const { userMutationLock, entitlementReader, repository } = this.#dependencies;
       if (
         !(await userMutationLock.lockById(owner)) ||
         !(await entitlementReader.canInTx(owner, "AI_SUGGESTION"))
       ) {
-        return 0;
+        return this.#finish(owner, command, {
+          outcome: "NOT_PREMIUM",
+          recentTodoCount,
+          createdSuggestionCount: 0,
+        });
       }
-      const { repository } = this.#dependencies;
       await repository.deletePendingByUserId(owner);
       await repository.deleteExpiredByUserId(owner, now);
 
@@ -211,18 +285,80 @@ export class AnalyzeAndCreateSuggestionsUseCase {
             ];
       });
       await repository.saveMany(suggestions);
-      return suggestions.length;
-    });
-
-    if (createdCount > 0) {
-      this.#dependencies.logger.log({
-        event: AiSuggestionLogEvent.SAVED,
-        userId,
-        patternCount: patterns.length,
-        createdCount,
+      return this.#finish(owner, command, {
+        outcome: "SUGGESTIONS_CREATED",
+        recentTodoCount,
+        createdSuggestionCount: suggestions.length,
       });
-    }
-
-    return createdCount;
+    });
   }
+
+  #skip(
+    owner: UserId,
+    command: AnalyzeAndCreateSuggestionsCommand,
+    outcome: SuggestionAnalysisOutcome,
+    recentTodoCount: number | null,
+  ): Promise<SuggestionAnalysisResult> {
+    return this.#dependencies.unitOfWork.run(() =>
+      this.#finish(owner, command, { outcome, recentTodoCount, createdSuggestionCount: 0 }),
+    );
+  }
+
+  // 활성 UoW 안에서 부른다. 사용자 잠금을 잡았다면 그 뒤에 장부 잠금을 잡는다
+  async #finish(
+    owner: UserId,
+    command: AnalyzeAndCreateSuggestionsCommand,
+    result: SuggestionAnalysisResult,
+  ): Promise<SuggestionAnalysisResult> {
+    await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(owner)]);
+    const run = await this.#dependencies.runs.findByUserId(owner);
+    if (run != null && run.finish(command.localDate, result, this.#dependencies.clock.now())) {
+      await this.#dependencies.runs.save(run);
+    }
+    return result;
+  }
+
+  #logFinished(
+    command: AnalyzeAndCreateSuggestionsCommand,
+    result: SuggestionAnalysisResult,
+    timing: AnalysisTiming,
+  ): void {
+    const entry = {
+      event: AiSuggestionLogEvent.ANALYSIS_FINISHED,
+      userId: command.userId,
+      trigger: command.trigger,
+      outcome: result.outcome,
+      createdSuggestionCount: result.createdSuggestionCount,
+      queueWaitMs: timing.queueWait?.total("milliseconds") ?? null,
+      durationMs:
+        this.#dependencies.clock.now().epochMilliseconds - timing.startedAt.epochMilliseconds,
+    };
+    if (result.outcome === "FAILED") {
+      this.#dependencies.logger.warn(entry);
+      return;
+    }
+    this.#dependencies.logger.log(entry);
+  }
+}
+
+function toAnalysisOutcome(kind: AiFailureKind): SuggestionAnalysisOutcome {
+  return match(kind)
+    .returnType<SuggestionAnalysisOutcome>()
+    .with("UNAVAILABLE", "HALTED", () => "AI_UNAVAILABLE")
+    .with("USER_SPEND_LIMITED", () => "SPEND_LIMIT_REACHED")
+    .with(
+      "QUOTA_EXHAUSTED",
+      "AUTH",
+      "RATE_LIMITED",
+      "OVERLOADED",
+      "UPSTREAM",
+      "TIMEOUT",
+      "BAD_REQUEST",
+      "BLOCKED",
+      "TRUNCATED",
+      "INVALID_OUTPUT",
+      "CIRCUIT_OPEN",
+      () => "FAILED",
+    )
+    .exhaustive();
 }

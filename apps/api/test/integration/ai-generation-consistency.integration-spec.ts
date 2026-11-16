@@ -27,6 +27,7 @@ import {
 import { AiSuggestionJobName } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { DrizzleSuggestionActivityReader } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-activity.reader";
+import { DrizzleSuggestionAnalysisRunRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-analysis-run.repository";
 import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
@@ -36,6 +37,7 @@ import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/inf
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   aiReport,
   recurringSuggestion,
@@ -179,12 +181,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
+      runs: new DrizzleSuggestionAnalysisRunRepository(fixture.txHost),
       generator: provider,
       scheduledAiConsent,
       clock,
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
+      mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
       userMutationLock,
       logger,
     });
@@ -212,8 +216,19 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       new StubUserLocalePreferenceReader(),
       { dispatchAnalysis: async () => undefined },
       new InMemoryJobQueue(),
+      clock,
     );
     return { analyze, report, reportProcessor, suggestionProcessor, notifications };
+  }
+
+  function analyzeCommand() {
+    return {
+      userId,
+      timezone: "Asia/Seoul",
+      localDate: Temporal.PlainDate.from("2026-10-08"),
+      trigger: "SCHEDULED",
+      isFinalAttempt: false,
+    } as const;
   }
 
   async function executeWorker(kind: "report" | "suggestion", provider: FakeAiGenerator) {
@@ -481,9 +496,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
 
     // When
-    const error = await flow.analyze
-      .execute({ userId, timezone: "Asia/Seoul" })
-      .catch((failure: unknown) => failure);
+    const error = await flow.analyze.execute(analyzeCommand()).catch((failure: unknown) => failure);
 
     // Then
     expect(databaseSqlState(error)).toBe("23503");
@@ -529,7 +542,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     ]);
 
     // When
-    const analysis = generation(provider).analyze.execute({ userId, timezone: "Asia/Seoul" });
+    const analysis = generation(provider).analyze.execute(analyzeCommand());
     try {
       await waitForLocks(1);
     } finally {
@@ -539,7 +552,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     }
 
     // Then
-    expect(await analysis).toBe(0);
+    expect((await analysis).outcome).toBe("NOT_PREMIUM");
     expect(provider.getCallCount()).toBe(1);
     expect(await counts()).toEqual({ reports: 0, suggestions: 0 });
   });

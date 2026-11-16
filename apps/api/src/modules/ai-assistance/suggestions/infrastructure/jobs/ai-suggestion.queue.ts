@@ -6,6 +6,8 @@ import {
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
 
+import { SUGGESTION_ANALYSIS_TRIGGERS } from "../../domain/suggestion-analysis.constants.js";
+
 export const AiSuggestionJobKey = {
   /** UTC 시각 단위. 같은 시각의 정기 실행과 재시작 보정이 한 번만 돈다 */
   dispatch: (hourId: string) => `dispatch_suggestion_${hourId}`,
@@ -32,6 +34,9 @@ export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
       timezone: z.string().min(1),
       // 배포가 겹치는 동안 옛 worker가 날씨 문맥에 쓴다. 새 worker는 읽지 않는다
       weatherGrid: weatherGridSchema,
+      // 1.16.0 전에 쌓인 작업에는 없다. 없으면 아침 배치로 보고 실행 시각의 현지 날짜를 쓴다
+      localDate: z.iso.date().optional(),
+      trigger: z.enum(SUGGESTION_ANALYSIS_TRIGGERS).optional(),
     }),
   }),
 ]);
@@ -42,8 +47,15 @@ export type AiSuggestionAnalyzeData = Extract<
   { name: typeof AiSuggestionJobName.ANALYZE }
 >["data"];
 
+const AI_SUGGESTION_RETRY_LIMIT = 2;
+
+// 1부터 세는 시도 번호다. 첫 시도 포함 총 retryLimit + 1회다
+export function isFinalSuggestionAttempt(attempt: number): boolean {
+  return attempt > AI_SUGGESTION_RETRY_LIMIT;
+}
+
 const AI_SUGGESTION_JOB_RETRY = {
-  retryLimit: 2,
+  retryLimit: AI_SUGGESTION_RETRY_LIMIT,
   retryDelaySeconds: 5,
   retryBackoff: true,
   expireInSeconds: 10 * 60,

@@ -1,5 +1,5 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
 import { premiumAccessCondition } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -7,32 +7,23 @@ import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
+import type { SuggestionWeatherGrid } from "../../application/ports/suggestion-analysis-enqueuer.port.js";
+import { DispatchSuggestionAnalysesUseCase } from "../../application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import {
   isInSuggestionDispatchWindow,
-  suggestionDispatchLocalDate,
+  resolveSuggestionTimeZone,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
-import {
-  AI_SUGGESTION_QUEUE,
-  type AiSuggestionAnalyzeData,
-  AiSuggestionJobKey,
-  AiSuggestionJobName,
-} from "./ai-suggestion.queue.js";
+import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 
-/** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
 /** 분석에 쓰는 최근 기록 기간. 이 안에 단건 할 일이 있는 사용자만 고른다 */
 const RECENT_ACTIVITY_DAYS = 14;
 
-/**
- * 매시 정각 디스패치가 현지 제안 창(09시대)인 유료 사용자마다 분석 작업을 하나씩 등록한다.
- * 같은 사용자의 같은 현지 날짜 작업은 멱등 키로 한 번만 등록된다.
- */
 @Injectable()
 export class SuggestionAnalysisScheduler implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisScheduler.name);
@@ -40,15 +31,19 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #jobQueue: JobQueuePort;
   readonly #clock: ClockPort;
+  readonly #dispatchAnalyses: Pick<DispatchSuggestionAnalysesUseCase, "execute">;
 
   constructor(
     txHost: TransactionHost<DrizzleTransactionalAdapter>,
     jobQueue: JobQueuePort,
     clock: ClockPort,
+    @Inject(DispatchSuggestionAnalysesUseCase)
+    dispatchAnalyses: Pick<DispatchSuggestionAnalysesUseCase, "execute">,
   ) {
     this.#txHost = txHost;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
+    this.#dispatchAnalyses = dispatchAnalyses;
   }
 
   /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
@@ -105,31 +100,19 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
           limit: take,
         }),
       onBatch: async (batch) => {
-        const due = batch.flatMap((user) => {
-          const timeZone = resolveTimezone(user.preference?.timezone ?? TimeZone.SEOUL.value);
-          return isInSuggestionDispatchWindow({ at, timeZone }) ? [{ user, timeZone }] : [];
+        const targets = batch.flatMap((user) => {
+          const timeZone = resolveSuggestionTimeZone(user.preference?.timezone);
+          return isInSuggestionDispatchWindow({ at, timeZone })
+            ? [
+                {
+                  userId: UserId.reconstitute(user.id),
+                  timeZone,
+                  weatherGrid: toWeatherGrid(user.location),
+                },
+              ]
+            : [];
         });
-        if (due.length === 0) {
-          return;
-        }
-        await this.#jobQueue.enqueueMany(
-          AI_SUGGESTION_QUEUE,
-          due.map(({ user, timeZone }) => ({
-            payload: {
-              name: AiSuggestionJobName.ANALYZE,
-              data: {
-                userId: user.id,
-                timezone: timeZone,
-                weatherGrid: toWeatherGrid(user.location),
-              } satisfies AiSuggestionAnalyzeData,
-            },
-            idempotencyKey: AiSuggestionJobKey.analyze(
-              user.id,
-              suggestionDispatchLocalDate({ at, timeZone }),
-            ),
-          })),
-        );
-        totalEnqueued += due.length;
+        totalEnqueued += await this.#dispatchAnalyses.execute({ targets });
       },
     });
 
@@ -141,7 +124,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
   }
 }
 
-/** 배포가 겹치는 동안 옛 worker가 읽는 KMA 격자. 격자 없는 해외 위치는 null이다. */
+// 배포가 겹치는 동안 옛 worker가 읽는 KMA 격자. 격자 없는 해외 위치는 null이다
 function toWeatherGrid(
   location: {
     readonly gridX: number | null;
@@ -149,7 +132,7 @@ function toWeatherGrid(
     readonly latitude: number;
     readonly longitude: number;
   } | null,
-): AiSuggestionAnalyzeData["weatherGrid"] {
+): SuggestionWeatherGrid | null {
   if (location == null || location.gridX == null || location.gridY == null) {
     return null;
   }

@@ -1,8 +1,12 @@
 import type { Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
-import { RepeatingTodoTitleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import {
+  RepeatingTodoTitleReaderPort,
+  SingleTodoCountReaderPort,
+} from "#api/modules/planning/todos/planning-todo-queries.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
@@ -14,12 +18,16 @@ import { AiGeneratorPort } from "../generation/application/ports/ai-generator.po
 import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
+import { SuggestionAnalysisEnqueuerPort } from "./application/ports/suggestion-analysis-enqueuer.port.js";
 import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
+import { SuggestionAnalysisStateReader } from "./application/suggestion-analysis-state.reader.js";
 import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { DispatchSuggestionAnalysesUseCase } from "./application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "./application/use-cases/list-pending-suggestions.use-case.js";
+import { SuggestionAnalysisQueueAdapter } from "./infrastructure/jobs/suggestion-analysis-queue.adapter.js";
 import { SuggestionAnalysisProcessor } from "./infrastructure/jobs/suggestion-analysis.processor.js";
 import { SuggestionAnalysisScheduler } from "./infrastructure/jobs/suggestion-analysis.scheduler.js";
 import { DrizzleSuggestionActivityReader } from "./infrastructure/persistence/drizzle-suggestion-activity.reader.js";
@@ -33,16 +41,33 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     provide: SuggestionAnalysisRunRepositoryPort,
     useClass: DrizzleSuggestionAnalysisRunRepository,
   },
+  { provide: SuggestionAnalysisEnqueuerPort, useClass: SuggestionAnalysisQueueAdapter },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
     repeatingTitleReader: RepeatingTodoTitleReaderPort,
     clock: ClockPort,
   }),
+  provideUseCase(SuggestionAnalysisStateReader, {
+    runs: SuggestionAnalysisRunRepositoryPort,
+    todoCountReader: SingleTodoCountReaderPort,
+    scheduledAiConsent: ScheduledAiConsentReader,
+    timezoneReader: UserTimezoneReaderPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(DispatchSuggestionAnalysesUseCase, {
+    runs: SuggestionAnalysisRunRepositoryPort,
+    enqueuer: SuggestionAnalysisEnqueuerPort,
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    clock: ClockPort,
+  }),
   provideUseCase(AnalyzeAndCreateSuggestionsUseCase, {
     repository: SuggestionRepositoryPort,
+    runs: SuggestionAnalysisRunRepositoryPort,
     generator: AiGeneratorPort,
     scheduledAiConsent: ScheduledAiConsentReader,
     unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
     contextBuilder: SuggestionContextReader,
     entitlementReader: EntitlementReaderPort,
     userMutationLock: UserMutationLockPort,
@@ -51,6 +76,7 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   }),
   provideUseCase(ListPendingSuggestionsUseCase, {
     repository: SuggestionRepositoryPort,
+    analysisState: SuggestionAnalysisStateReader,
     entitlementReader: EntitlementReaderPort,
     clock: ClockPort,
     logger: loggerFor(ListPendingSuggestionsUseCase),

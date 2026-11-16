@@ -1,0 +1,16 @@
+import type { AiSuggestionAnalysisState } from "@aido/api/vocabulary";
+
+import type { Suggestion } from "../../domain/suggestion.aggregate.js";
+
+export interface SuggestionAnalysisReadModel {
+  readonly state: AiSuggestionAnalysisState;
+  readonly recentTodoCount: number;
+  readonly canRequestNow: boolean;
+  readonly lastAnalyzedAt: Temporal.Instant | null;
+  readonly nextAnalysisAt: Temporal.Instant;
+}
+
+export interface PendingSuggestionsReadModel {
+  readonly suggestions: readonly Suggestion[];
+  readonly analysis: SuggestionAnalysisReadModel;
+}

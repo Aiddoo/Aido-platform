@@ -8,16 +8,23 @@ import type {
 import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
-import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import {
+  type AnalyzeAndCreateSuggestionsCommand,
+  AnalyzeAndCreateSuggestionsUseCase,
+} from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
+import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-repeating-todo-title.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
@@ -30,6 +37,8 @@ import {
 import { createReportAiResponse } from "./ai-response.fixture.js";
 
 const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
+/** 고정 시각(서울 21:00)의 현지 날짜 */
+export const AI_ASSISTANCE_TODAY = Temporal.PlainDate.from("2026-03-22");
 
 export function createAnalysisTodo(
   overrides: Partial<TodoSummaryForAnalysis> = {},
@@ -76,6 +85,9 @@ export function createAiAssistanceFixture() {
   const unitOfWork = new StubAiGenerationUnitOfWork();
   const access = new StubAiGenerationAccess(unitOfWork);
   const repository = new InMemorySuggestionRepository();
+  const runs = new InMemorySuggestionAnalysisRunRepository();
+  const mutationLock = new RecordingMutationLock();
+  const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
   const activityReader = new StubSuggestionActivityReader();
   activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
@@ -100,14 +112,23 @@ export function createAiAssistanceFixture() {
   });
   const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
+    runs,
     generator,
     scheduledAiConsent,
     unitOfWork,
+    mutationLock,
     contextBuilder,
     clock,
     logger,
     entitlementReader: access,
     userMutationLock: access,
+  });
+  const dispatch = new DispatchSuggestionAnalysesUseCase({
+    runs,
+    enqueuer,
+    unitOfWork,
+    mutationLock,
+    clock,
   });
   const generateReport = new GenerateReportUseCase({
     aiReportRepository: reportRepository,
@@ -125,6 +146,9 @@ export function createAiAssistanceFixture() {
     access,
     unitOfWork,
     repository,
+    runs,
+    mutationLock,
+    enqueuer,
     activityReader,
     repeatingTitleReader,
     reportRepository,
@@ -135,7 +159,22 @@ export function createAiAssistanceFixture() {
     logger,
     contextBuilder,
     analyze,
+    dispatch,
     generateReport,
+  };
+}
+
+export function createAnalyzeCommand(
+  fixture: ReturnType<typeof createAiAssistanceFixture>,
+  overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {},
+): AnalyzeAndCreateSuggestionsCommand {
+  return {
+    userId: fixture.userId,
+    timezone: "Asia/Seoul",
+    localDate: AI_ASSISTANCE_TODAY,
+    trigger: "SCHEDULED",
+    isFinalAttempt: false,
+    ...overrides,
   };
 }
 

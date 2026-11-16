@@ -4,17 +4,21 @@ import {
   createAiSuggestionNotificationMessage,
   PublishNotificationUseCase,
 } from "#api/modules/notification/notification-delivery.public";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import {
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
   type AiSuggestionRuntimeJob,
   AiSuggestionJobName,
+  isFinalSuggestionAttempt,
 } from "./ai-suggestion.queue.js";
 import { SuggestionAnalysisScheduler } from "./suggestion-analysis.scheduler.js";
 
@@ -30,6 +34,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   readonly #localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly #scheduler: Pick<SuggestionAnalysisScheduler, "dispatchAnalysis">;
   readonly #jobQueue: JobQueuePort;
+  readonly #clock: ClockPort;
 
   constructor(
     @Inject(AnalyzeAndCreateSuggestionsUseCase)
@@ -41,42 +46,70 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     @Inject(SuggestionAnalysisScheduler)
     scheduler: Pick<SuggestionAnalysisScheduler, "dispatchAnalysis">,
     jobQueue: JobQueuePort,
+    clock: ClockPort,
   ) {
     this.#analyzeSuggestions = analyzeSuggestions;
     this.#notificationPublisher = notificationPublisher;
     this.#localePreferenceReader = localePreferenceReader;
     this.#scheduler = scheduler;
     this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   async onModuleInit(): Promise<void> {
     await this.#jobQueue.work(AI_SUGGESTION_QUEUE, async (jobs) => {
       for (const job of jobs) {
-        await this.process(job.data);
+        await this.process(job.data, job.attempt);
       }
     });
   }
 
-  async process(job: AiSuggestionRuntimeJob): Promise<void> {
+  /** attempt는 1부터 센다. 생략하면 재시도 없는 단발 실행으로 본다. */
+  async process(job: AiSuggestionRuntimeJob, attempt = Number.POSITIVE_INFINITY): Promise<void> {
     if (job.name === AiSuggestionJobName.DISPATCH) {
       await this.#scheduler.dispatchAnalysis();
       return;
     }
-    await this.#analyze(job.data);
+    await this.#analyze(job.data, attempt);
   }
 
-  async #analyze({ userId, timezone }: AiSuggestionAnalyzeData): Promise<void> {
+  async #analyze(data: AiSuggestionAnalyzeData, attempt: number): Promise<void> {
     const queueName = AI_SUGGESTION_QUEUE.name;
+    const { userId, timezone } = data;
+    const startedAt = this.#clock.now();
     this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
     const { locale } = await this.#localePreferenceReader.read(UserId.reconstitute(userId));
-    const createdCount = await this.#analyzeSuggestions.execute({ userId, timezone, locale });
-    if (createdCount === 0) {
-      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName, userId });
-      return;
+    const result = await this.#analyzeSuggestions.execute({
+      userId,
+      timezone,
+      locale,
+      localDate:
+        data.localDate == null
+          ? suggestionDispatchLocalDate({ at: startedAt, timeZone: timezone })
+          : Temporal.PlainDate.from(data.localDate),
+      trigger: data.trigger ?? "SCHEDULED",
+      isFinalAttempt: isFinalSuggestionAttempt(attempt),
+    });
+
+    // 지금 받기는 사용자가 앱에서 결과를 기다리므로 푸시·알림함을 만들지 않는다
+    if (result.trigger === "SCHEDULED" && result.outcome === "SUGGESTIONS_CREATED") {
+      await this.#notify(userId, locale);
     }
 
+    this.#logger.log({
+      event: AiJobLogEvent.COMPLETED,
+      queueName,
+      userId,
+      trigger: result.trigger,
+      outcome: result.outcome,
+      createdCount: result.createdSuggestionCount,
+      durationMs: this.#clock.now().epochMilliseconds - startedAt.epochMilliseconds,
+    });
+  }
+
+  async #notify(userId: string, locale: SupportedLocale): Promise<void> {
     const message = createAiSuggestionNotificationMessage({ locale });
     await this.#notificationPublisher.publish({
       userId,
@@ -89,7 +122,5 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       copyKey: message.copyKey,
       copyFacts: message.copyFacts,
     });
-
-    this.#logger.log({ event: AiJobLogEvent.COMPLETED, queueName, userId, createdCount });
   }
 }

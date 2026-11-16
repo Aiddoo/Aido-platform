@@ -1,3 +1,4 @@
+import { suggestionListResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
@@ -98,7 +99,7 @@ describe("AI 제안 E2E", () => {
   }
 
   describe("GET /ai/suggestions", () => {
-    it("200: 빈 제안 목록을 반환해야 한다 (초기 상태)", async () => {
+    it("200: 할 일을 적지 않은 사용자는 빈 제안 목록과 할 일을 적어 달라는 분석 상태를 받는다", async () => {
       // Given
       const user = await createPremiumUser("ai-suggestion-list@example.com", "Test1234!");
 
@@ -109,8 +110,14 @@ describe("AI 제안 E2E", () => {
 
       // Then
       expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.suggestions).toEqual([]);
+      const data = suggestionListResponseSchema.parse(response.body.data);
+      expect(data.suggestions).toEqual([]);
+      expect(data.analysis).toMatchObject({
+        state: "NEEDS_MORE_TODOS",
+        recentTodoCount: 0,
+        canRequestNow: false,
+        lastAnalyzedAt: null,
+      });
     });
 
     it("401: 인증 토큰 없이 요청 시 에러를 반환해야 한다", async () => {

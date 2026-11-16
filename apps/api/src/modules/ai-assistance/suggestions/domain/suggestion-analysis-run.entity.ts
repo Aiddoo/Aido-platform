@@ -38,7 +38,8 @@ interface CreateSuggestionAnalysisRunParams extends RequestSuggestionAnalysisPar
 
 export interface SuggestionAnalysisResult {
   readonly outcome: SuggestionAnalysisOutcome;
-  readonly recentTodoCount: number;
+  // 기록을 읽기 전에 끝나면(권한·동의·예외) 모른다
+  readonly recentTodoCount: number | null;
   readonly createdSuggestionCount: number;
 }
 
@@ -73,6 +74,10 @@ export class SuggestionAnalysisRun extends Entity<UserId, SuggestionAnalysisRunP
 
   get queueWait(): Temporal.Duration | null {
     return this.props.startedAt == null ? null : this.props.queuedAt.until(this.props.startedAt);
+  }
+
+  get finishedAt(): Temporal.Instant | null {
+    return this.props.finishedAt;
   }
 
   request(params: RequestSuggestionAnalysisParams): boolean {

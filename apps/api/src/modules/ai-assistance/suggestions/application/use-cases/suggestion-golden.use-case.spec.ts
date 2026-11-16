@@ -2,6 +2,7 @@ import { DAYS_OF_WEEK } from "@aido/api/vocabulary";
 
 import {
   createAiAssistanceFixture,
+  createAnalyzeCommand,
   withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance.fixture";
 import {
@@ -27,13 +28,11 @@ async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
   fixture.activityReader.history = context.suggestionHistory;
   fixture.repeatingTitleReader.titles = context.repeatingTitles;
   fixture.generator.setRawResponse({ picks });
-  const count = await withAiAssistanceTime(
+  const { createdSuggestionCount: count } = await withAiAssistanceTime(
     () =>
-      fixture.analyze.execute({
-        userId: fixture.userId,
-        timezone: golden.timezone,
-        locale: golden.locale,
-      }),
+      fixture.analyze.execute(
+        createAnalyzeCommand(fixture, { timezone: golden.timezone, locale: golden.locale }),
+      ),
     new Date(golden.now),
   );
   const candidates = buildGoldenCandidates(golden);
@@ -103,7 +102,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase golden — fake model 출력을 서
     // When
     const { fixture, count, saved } = await analyze(golden, golden.draft.picks);
     // Then
-    if (golden.todos.length === 0) {
+    if (buildGoldenCandidates(golden).length === 0) {
       expect(fixture.generator.getCallCount()).toBe(0);
       expect(count).toBe(0);
       return;
