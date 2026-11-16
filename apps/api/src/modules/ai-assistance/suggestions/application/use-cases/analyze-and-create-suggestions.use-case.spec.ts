@@ -17,10 +17,17 @@ import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
+import type { AnalyzeAndCreateSuggestionsCommand } from "./analyze-and-create-suggestions.use-case.js";
 
 type Fixture = ReturnType<typeof createAiAssistanceFixture>;
 
 const RUN_LOCK_KEY = SuggestionLockKeys.analysisRun(UserId.reconstitute("ai-fixture-user"));
+
+async function analyze(f: Fixture, overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {}) {
+  const result = await f.analyze.execute(createAnalyzeCommand(f, overrides));
+  assert.exists(result);
+  return result;
+}
 
 async function seedQueuedRun(f: Fixture) {
   await f.runs.save(
@@ -63,7 +70,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           }),
         );
         // When
-        const { createdSuggestionCount: count } = await f.analyze.execute(createAnalyzeCommand(f));
+        const { createdSuggestionCount: count } = await analyze(f);
         // Then
         expect(count).toBe(1);
         expect(f.repository.created[0]).toMatchObject({
@@ -91,7 +98,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         createSuggestionPick({ daysOfWeek: ["MON", "SUN"], useRecordedTime: true }),
       ]);
       // When
-      const { createdSuggestionCount: count } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { createdSuggestionCount: count } = await analyze(f);
       // Then
       expect(count).toBe(1);
       expect(f.repository.created[0]).toMatchObject({
@@ -120,7 +127,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       f.aiDataSharingConsent.decision = "DECLINED";
       seedPendingSuggestion(f);
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe("CONSENT_MISSING");
       expect(f.generator.getCallCount()).toBe(0);
@@ -137,7 +144,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       agreed.clientAppVersion.latestAppVersion = "1.13.0";
       agreed.aiDataSharingConsent.decision = "AGREED";
       // When
-      const skipped = await undecided.analyze.execute(createAnalyzeCommand(undecided));
+      const skipped = await analyze(undecided);
       await agreed.analyze.execute(createAnalyzeCommand(agreed));
       // Then
       expect(skipped.outcome).toBe("CONSENT_MISSING");
@@ -152,7 +159,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       f.activityReader.todos = [];
       seedPendingSuggestion(f);
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe("NO_RECENT_TODOS");
       expect(f.generator.getCallCount()).toBe(0);
@@ -175,7 +182,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           f.access.subscriptionStatus = state;
         }
         // When
-        const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+        const { outcome } = await analyze(f);
         // Then
         expect(outcome).toBe("NOT_PREMIUM");
         expect(await findRun(f)).toMatchObject({ status: "FINISHED", outcome: "NOT_PREMIUM" });
@@ -209,7 +216,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           gate.release();
         }
         // Then
-        expect((await pending).outcome).toBe("NOT_PREMIUM");
+        expect((await pending)?.outcome).toBe("NOT_PREMIUM");
         expect(f.generator.getCallCount()).toBe(1);
         expect(f.repository.writes).toEqual([]);
         expect(f.repository.primitivesOf(1) != null).toBe(true);
@@ -247,7 +254,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         seedPendingSuggestion(f);
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
-        const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+        const { outcome } = await analyze(f);
         // Then
         expect(outcome).toBe("FAILED");
         expect(f.repository.writes).toEqual([]);
@@ -265,7 +272,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = createAiAssistanceFixture();
       f.generator.setInvalidResponse(createAiGenerationError(kind));
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe(expected);
       expect(f.repository.writes).toEqual([]);
@@ -296,7 +303,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       ]);
       seedPendingSuggestion(f);
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe("NO_PATTERN_FOUND");
       expect(f.repository.created).toEqual([]);
@@ -326,9 +333,10 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           createSuggestionPick({ daysOfWeek: ["SUN"], useRecordedTime: true }),
         ]);
         // When
-        const { createdSuggestionCount: count } = await f.analyze.execute(
-          createAnalyzeCommand(f, { timezone: "America/Los_Angeles", locale }),
-        );
+        const { createdSuggestionCount: count } = await analyze(f, {
+          timezone: "America/Los_Angeles",
+          locale,
+        });
         // Then
         expect(count).toBe(1);
         expect(f.repository.created[0]).toMatchObject({
@@ -379,7 +387,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ),
       );
       // When
-      const { createdSuggestionCount: count } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { createdSuggestionCount: count } = await analyze(f);
       // Then
       expect(count).toBe(5);
       expect(f.repository.created.map((row) => row.title)).toEqual(
@@ -402,7 +410,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         createSuggestionPick({ candidateId: "a2" }),
       ]);
       // When
-      const { createdSuggestionCount: count } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { createdSuggestionCount: count } = await analyze(f);
       // Then
       expect(count).toBe(1);
       expect(f.repository.created[0]).toMatchObject({
@@ -421,7 +429,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         f.activityReader.history = [{ title: "책 읽기 10분", status }];
         seedPendingSuggestion(f);
         // When
-        const { createdSuggestionCount: count } = await f.analyze.execute(createAnalyzeCommand(f));
+        const { createdSuggestionCount: count } = await analyze(f);
         // Then
         expect(count).toBe(0);
         expect(f.repository.created).toEqual([]);
@@ -449,9 +457,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ]);
         f.activityReader.todos = [createAnalysisTodo({ title, startDate: "2026-03-18" })];
         // When
-        const { createdSuggestionCount: count } = await f.analyze.execute(
-          createAnalyzeCommand(f, { locale }),
-        );
+        const { createdSuggestionCount: count } = await analyze(f, { locale });
         // Then
         expect(count).toBe(1);
         expect(f.repository.created[0]).toMatchObject({
@@ -510,7 +516,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = createAiAssistanceFixture();
       f.generator.setAvailable(false);
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe("AI_UNAVAILABLE");
       expect(f.repository.writes).toEqual([]);
@@ -605,7 +611,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = usePickResponse(createAiAssistanceFixture());
       arrange(f);
       // When
-      const { outcome } = await f.analyze.execute(createAnalyzeCommand(f));
+      const { outcome } = await analyze(f);
       // Then
       expect(outcome).toBe("NO_PATTERN_FOUND");
       expect(f.generator.getCallCount()).toBe(0);
@@ -660,6 +666,30 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       expect(f.generator.getLastRequest()).toMatchObject({ task: "suggestion", taskClass });
     }),
   );
+
+  it("이미 끝난 날의 같은 job이 다시 오면 AI·제안 교체 없이 끝내고 실행 기록을 바꾸지 않는다", () =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = usePickResponse(createAiAssistanceFixture());
+      seedPendingSuggestion(f);
+      await f.runs.save(
+        createSuggestionAnalysisRunFixture({
+          userId: f.userId,
+          localDate: AI_ASSISTANCE_TODAY,
+          status: "FINISHED",
+          outcome: "SUGGESTIONS_CREATED",
+          createdSuggestionCount: 1,
+        }),
+      );
+      const before = await findRun(f);
+      // When
+      const result = await f.analyze.execute(createAnalyzeCommand(f));
+      // Then
+      expect(result).toBeNull();
+      expect(f.generator.getCallCount()).toBe(0);
+      expect(f.repository.writes).toEqual([]);
+      expect(await findRun(f)).toEqual(before);
+    }));
 
   it("실행 기록이 없는 1.16.0 전 작업도 기록을 만들어 시작하고 끝낸다", () =>
     withAiAssistanceTime(async () => {

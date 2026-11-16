@@ -5,6 +5,7 @@ import {
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { z } from "zod";
@@ -12,7 +13,12 @@ import { z } from "zod";
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
-import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import {
+  type CreateTodoData,
+  type StagedTodoCreation,
+  StagedTodoCreatorPort,
+} from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { StagedTodoCreatorAdapter } from "#api/modules/planning/todos/infrastructure/adapters/staged-todo-creator.adapter";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -41,6 +47,25 @@ import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
+// 실제 할 일 생성 경로를 그대로 쓰고 다음 한 번만 실패를 넣는다
+@Injectable()
+class FailableStagedTodoCreator extends StagedTodoCreatorAdapter {
+  #nextFailure: Error | null = null;
+
+  failNextStage(error: Error): void {
+    this.#nextFailure = error;
+  }
+
+  override async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const failure = this.#nextFailure;
+    if (failure != null) {
+      this.#nextFailure = null;
+      throw failure;
+    }
+    return super.stage(input);
+  }
+}
+
 describe("AI 제안 E2E", () => {
   let ctx: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
@@ -50,7 +75,11 @@ describe("AI 제안 E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
+        builder
+          .overrideProvider(AiGeneratorPort)
+          .useValue(fakeAiGenerator)
+          .overrideProvider(StagedTodoCreatorPort)
+          .useClass(FailableStagedTodoCreator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60_000);
@@ -148,11 +177,10 @@ describe("AI 제안 E2E", () => {
       expect(response.status).toBe(200);
       const data = suggestionListResponseSchema.parse(response.body.data);
       expect(data.suggestions).toEqual([]);
-      expect(data.analysis).toMatchObject({
+      expect(response.body.data.analysis).toEqual({
         state: "NEEDS_MORE_TODOS",
-        recentTodoCount: 0,
         canRequestNow: false,
-        lastAnalyzedAt: null,
+        nextAnalysisAt: expect.any(String),
       });
     });
 
@@ -332,7 +360,6 @@ describe("AI 제안 E2E", () => {
         expect(suggestionAnalysisResponseSchema.parse(response.body.data).analysis).toMatchObject({
           state: "ANALYZING",
           canRequestNow: false,
-          recentTodoCount: 1,
         });
       }
       expect(analysisJobs()).toEqual([
@@ -489,29 +516,29 @@ describe("AI 제안 E2E", () => {
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
     const creator = ctx.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
+    if (!(creator instanceof FailableStagedTodoCreator)) {
+      throw new Error("실패를 넣을 수 있는 할 일 생성기로 바꾸지 않았다");
+    }
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
-    const failure = vi.spyOn(creator, "stage").mockRejectedValueOnce(new Error("테스트 생성 실패"));
-    try {
-      // When
-      const response = await request(ctx.app.getHttpServer())
-        .patch(`/v1/ai/suggestions/${id}`)
-        .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ action: "accept", categoryId });
+    creator.failNextStage(new Error("테스트 생성 실패"));
 
-      // Then
-      expect(response.status).toBe(500);
-      const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
-        where: { id },
-      });
-      expect(row?.status).toBe("PENDING");
-      const after = await ctx.testDatabase
-        .getClient()
-        .query.todo.findMany({ where: { userId: user.userId } });
-      expect(after).toHaveLength(before.length);
-    } finally {
-      failure.mockRestore();
-    }
+    // When
+    const response = await request(ctx.app.getHttpServer())
+      .patch(`/v1/ai/suggestions/${id}`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ action: "accept", categoryId });
+
+    // Then
+    expect(response.status).toBe(500);
+    const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
+      where: { id },
+    });
+    expect(row?.status).toBe("PENDING");
+    const after = await ctx.testDatabase
+      .getClient()
+      .query.todo.findMany({ where: { userId: user.userId } });
+    expect(after).toHaveLength(before.length);
   });
 });

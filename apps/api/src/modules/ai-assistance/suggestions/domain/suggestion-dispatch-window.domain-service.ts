@@ -16,6 +16,11 @@ interface SuggestionDispatchMoment {
   readonly timeZone: string;
 }
 
+export interface SuggestionAnalysisPeriod {
+  readonly from: Temporal.PlainDate;
+  readonly to: Temporal.PlainDate;
+}
+
 // 아침 배치·지금 받기·상태가 같은 날짜를 보도록 시간대를 저장하지 않은 사용자는 모두 서울로 본다
 export function resolveSuggestionTimeZone(storedTimeZone: string | null | undefined): string {
   return resolveTimezone(storedTimeZone ?? TimeZone.SEOUL.value);
@@ -38,12 +43,13 @@ export function nextSuggestionDispatchAt(
   input: SuggestionDispatchMoment & { readonly run: SuggestionAnalysisRun | null },
 ): Temporal.Instant {
   const today = suggestionDispatchLocalDate(input);
+  // 배치는 UTC 매시 정각에만 돌아 +5:30·+5:45 같은 시간대는 현지 09:00 뒤 첫 정각(09:30·09:45)에 분석한다
   const dispatchAt = (date: Temporal.PlainDate) =>
     toZonedInstant({
       date,
       time: Temporal.PlainTime.from({ hour: SUGGESTION_DISPATCH_LOCAL_HOUR }),
       timeZone: TimeZone.create(input.timeZone),
-    });
+    }).round({ smallestUnit: "hour", roundingMode: "ceil" });
   const todayDispatchAt = dispatchAt(today);
   const isTodayDispatchAhead = Temporal.Instant.compare(input.at, todayDispatchAt) < 0;
   if (isTodayDispatchAhead && !input.run?.isRequestedOn(today)) {
@@ -52,11 +58,10 @@ export function nextSuggestionDispatchAt(
   return dispatchAt(today.add({ days: 1 }));
 }
 
-// 상태의 기록 수가 분석 결과와 어긋나지 않게 분석 문맥(SuggestionContextReader)과 같은 구간을 쓴다
-export function suggestionAnalysisPeriod(input: SuggestionDispatchMoment): {
-  readonly from: Temporal.PlainDate;
-  readonly to: Temporal.PlainDate;
-} {
+// 상태·지금 받기의 할 일 수와 분석 문맥(SuggestionContextReader)이 어긋나지 않게 모두 이 구간을 센다
+export function suggestionAnalysisPeriod(
+  input: SuggestionDispatchMoment,
+): SuggestionAnalysisPeriod {
   return {
     from: suggestionDispatchLocalDate({
       at: input.at.subtract({ hours: 24 * SUGGESTION_ANALYSIS_PERIOD_DAYS }),

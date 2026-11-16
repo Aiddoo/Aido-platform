@@ -66,7 +66,7 @@ describe("recorded activity evidence", () => {
     expect(selectRecordedDays(evidence)).toEqual(["WED"]);
   });
   it("표기만 다른 제목은 한 활동으로 합쳐 세고 가장 많이 쓴 제목을 보이며 의미 없는 제목은 뺀다", () => {
-    // Given - 2026-09-21·28 월요일, 09-24 목요일
+    // Given
     const records = [
       { ...todo("2026-09-21"), title: "러닝 🏃", scheduledTime: "07:00" },
       { ...todo("2026-09-24"), title: "러닝", scheduledTime: "07:00" },
@@ -100,16 +100,22 @@ describe("toActivityKey", () => {
     ["전각", "yoga", "ｙｏｇａ"],
     ["대소문자", "Yoga", "YOGA"],
   ])("%s만 다른 제목은 같은 활동이다", (_difference, title, variant) => {
-    // When / Then
-    expect(toActivityKey(variant)).toBe(toActivityKey(title));
+    // When
+    const key = toActivityKey(variant);
+
+    // Then
+    expect(key).toBe(toActivityKey(title));
   });
 
   it.each([
     ["오타", "운동하기", "운동하가"],
     ["숫자", "Read 30 min", "Read 20 min"],
   ])("%s가 다른 제목은 다른 활동이다", (_difference, title, variant) => {
-    // When / Then
-    expect(toActivityKey(variant)).not.toBe(toActivityKey(title));
+    // When
+    const key = toActivityKey(variant);
+
+    // Then
+    expect(key).not.toBe(toActivityKey(title));
   });
 });
 
@@ -124,7 +130,10 @@ describe("isMeaningfulTitle", () => {
     ["숫자 섞인 두 글자", "물 2L", true],
     ["한글 두 글자", "운동", true],
   ])("%s 제목 '%s'는 의미 있는 제목 판정이 %s다", (_kind, title, expected) => {
-    // When / Then
-    expect(isMeaningfulTitle(title)).toBe(expected);
+    // When
+    const isMeaningful = isMeaningfulTitle(title);
+
+    // Then
+    expect(isMeaningful).toBe(expected);
   });
 });

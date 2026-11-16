@@ -11,9 +11,9 @@ describe("AiSuggestionRuntimeJobSchema", () => {
       valid: true,
     },
     {
-      name: "날씨 격자 칸이 없는 작업",
-      data: { userId: "user-1", timezone: "Asia/Seoul" },
-      valid: false,
+      name: "날씨 격자 칸을 뺀 다음 버전 작업",
+      data: { userId: "user-1", timezone: "Asia/Seoul", localDate: "2026-11-16" },
+      valid: true,
     },
     { name: "모르는 트리거", data: { ...OLD_DATA, trigger: "MANUAL" }, valid: false },
     {

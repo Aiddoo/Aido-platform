@@ -6,9 +6,7 @@ import type { AiSuggestion } from './suggestion.model';
 
 const suggestionAnalysisSchema = z.object({
   state: z.enum([...AI_SUGGESTION_ANALYSIS_STATES, 'UNKNOWN']),
-  recentTodoCount: z.int().nonnegative(),
   canRequestNow: z.boolean(),
-  lastAnalyzedAt: instantSchema.nullable(),
   nextAnalysisAt: instantSchema,
 });
 export type SuggestionAnalysis = z.infer<typeof suggestionAnalysisSchema>;

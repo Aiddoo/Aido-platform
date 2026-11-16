@@ -88,7 +88,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "items": {
             "properties": {
               "aiContentSource": {
-                "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
                 "enum": [
                   "AI",
                   "TEMPLATE",
@@ -349,7 +349,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "report": {
           "properties": {
             "aiContentSource": {
-              "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+              "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
               "enum": [
                 "AI",
                 "TEMPLATE",
@@ -16167,7 +16167,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "nullable": true,
               "properties": {
                 "aiContentSource": {
-                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
                   "enum": [
                     "AI",
                     "TEMPLATE",
@@ -16419,7 +16419,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "nullable": true,
               "properties": {
                 "aiContentSource": {
-                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글",
+                  "description": "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
                   "enum": [
                     "AI",
                     "TEMPLATE",
@@ -17864,24 +17864,11 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "description": "지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true",
               "type": "boolean",
             },
-            "lastAnalyzedAt": {
-              "description": "마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null",
-              "format": "date-time",
-              "nullable": true,
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
-              "type": "string",
-            },
             "nextAnalysisAt": {
-              "description": "다음 자동 분석 순간. 저장 시간대의 다음 09:00이고, 오늘 이미 분석을 요청했다면 내일 09:00",
+              "description": "다음 자동 분석 순간. 저장 시간대의 다음 09:00 뒤 첫 매시 실행이고, 오늘 이미 분석을 요청했다면 내일 그 시각",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
               "type": "string",
-            },
-            "recentTodoCount": {
-              "description": "최근 14일 동안 적은 단건 할 일 수(반복 할 일 제외)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
             },
             "state": {
               "anyOf": [
@@ -17911,9 +17898,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           },
           "required": [
             "state",
-            "recentTodoCount",
             "canRequestNow",
-            "lastAnalyzedAt",
             "nextAnalysisAt",
           ],
           "type": "object",
@@ -17933,24 +17918,11 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "description": "지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true",
               "type": "boolean",
             },
-            "lastAnalyzedAt": {
-              "description": "마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null",
-              "format": "date-time",
-              "nullable": true,
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
-              "type": "string",
-            },
             "nextAnalysisAt": {
-              "description": "다음 자동 분석 순간. 저장 시간대의 다음 09:00이고, 오늘 이미 분석을 요청했다면 내일 09:00",
+              "description": "다음 자동 분석 순간. 저장 시간대의 다음 09:00 뒤 첫 매시 실행이고, 오늘 이미 분석을 요청했다면 내일 그 시각",
               "format": "date-time",
               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
               "type": "string",
-            },
-            "recentTodoCount": {
-              "description": "최근 14일 동안 적은 단건 할 일 수(반복 할 일 제외)",
-              "maximum": 9007199254740991,
-              "minimum": 0,
-              "type": "integer",
             },
             "state": {
               "anyOf": [
@@ -17980,9 +17952,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           },
           "required": [
             "state",
-            "recentTodoCount",
             "canRequestNow",
-            "lastAnalyzedAt",
             "nextAnalysisAt",
           ],
           "type": "object",
@@ -30116,7 +30086,7 @@ AI_1310: 지금 AI 요청이 너무 많습니다.",
 - \`categoryBreakdown\`의 지운 카테고리는 리포트 언어의 "기타"(영어 "Other")로 묶입니다.
 - \`aiSummary\`·\`aiTips\`는 리포트를 만든 시점의 언어로 저장된 글입니다.
 - \`dailyCompletions\`는 기간 첫날부터 마지막 날까지 날마다 할 일 수와 끝낸 수(빈 날은 0)입니다. 1.16.0 전에 만든 리포트는 null입니다.
-- \`aiContentSource\`가 \`AI\`면 모델이 쓴 글이고, \`TEMPLATE\`이면 AI 없이 통계로 채운 글입니다.",
+- \`aiContentSource\`가 \`AI\`면 모델이 쓴 글이고, \`TEMPLATE\`이면 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전)에 만든 리포트입니다.",
       "operationId": "getAiReportById",
       "parameters": [
         {
@@ -30398,7 +30368,7 @@ AI_1310: 지금 AI 요청이 너무 많습니다.",
 
 - 모르는 새 값은 앱 계약이 \`UNKNOWN\`으로 읽습니다.
 - \`canRequestNow\`는 \`WAITING_FOR_NEXT_RUN\`일 때만 \`true\`입니다.
-- \`nextAnalysisAt\`은 이 사용자에게 다음 자동 분석이 도는 순간입니다. 오늘 분석을 이미 요청했거나(끝남·진행·멈춤) 오늘 09:00이 지났으면 내일 09:00, 아니면 오늘 09:00입니다.
+- \`nextAnalysisAt\`은 이 사용자에게 다음 자동 분석이 도는 순간입니다. 오늘 분석을 이미 요청했거나(끝남·진행·멈춤) 오늘 09:00이 지났으면 내일 09:00, 아니면 오늘 09:00입니다. 자동 분석은 UTC 매시 정각에 돌아 +5:30·+5:45 같은 시간대는 09:30·09:45입니다.
 - \`evidence\`·\`analysis\`는 1.16.0에 더한 칸이고 출시 앱은 읽지 않습니다.",
       "operationId": "getAiSuggestions",
       "parameters": [],

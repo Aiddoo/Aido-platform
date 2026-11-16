@@ -45,9 +45,7 @@ export function toSuggestionResponse(suggestion: Suggestion): RecurringSuggestio
 function toSuggestionAnalysis(analysis: SuggestionAnalysisReadModel): SuggestionAnalysis {
   return {
     state: analysis.state,
-    recentTodoCount: analysis.recentTodoCount,
     canRequestNow: analysis.canRequestNow,
-    lastAnalyzedAt: analysis.lastAnalyzedAt == null ? null : toIsoString(analysis.lastAnalyzedAt),
     nextAnalysisAt: toIsoString(analysis.nextAnalysisAt),
   };
 }

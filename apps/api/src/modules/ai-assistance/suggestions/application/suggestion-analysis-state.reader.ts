@@ -13,8 +13,8 @@ import {
   resolveSuggestionTimeZone,
   suggestionAnalysisPeriod,
 } from "../domain/suggestion-dispatch-window.domain-service.js";
+import type { OnDemandSuggestionAnalysisConfigPort } from "./ports/on-demand-suggestion-analysis-config.port.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "./ports/suggestion-analysis-run.repository.port.js";
-import type { SuggestionAnalysisSettingsPort } from "./ports/suggestion-analysis-settings.port.js";
 import type { SuggestionAnalysisReadModel } from "./read-models/suggestion-analysis.read-model.js";
 
 interface SuggestionAnalysisStateReaderDependencies {
@@ -22,8 +22,13 @@ interface SuggestionAnalysisStateReaderDependencies {
   readonly todoCountReader: Pick<SingleTodoCountReaderPort, "countSingleTodos">;
   readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
   readonly timezoneReader: Pick<UserTimezoneReaderPort, "findStoredTimezone">;
-  readonly settings: Pick<SuggestionAnalysisSettingsPort, "onDemandEnabled">;
+  readonly onDemandConfig: Pick<OnDemandSuggestionAnalysisConfigPort, "isEnabled">;
   readonly clock: ClockPort;
+}
+
+export interface RecentTodoCount {
+  readonly timeZone: string;
+  readonly recentTodoCount: number;
 }
 
 export class SuggestionAnalysisStateReader {
@@ -33,12 +38,17 @@ export class SuggestionAnalysisStateReader {
     this.#dependencies = dependencies;
   }
 
-  async read(userId: UserId, pendingCount: number): Promise<SuggestionAnalysisReadModel> {
+  // 지금 받기는 요청 판단에 읽은 값을 넘겨 시간대·할 일 수를 두 번 읽지 않는다
+  async read(
+    userId: UserId,
+    pendingCount: number,
+    recentTodos?: RecentTodoCount,
+  ): Promise<SuggestionAnalysisReadModel> {
     const now = this.#dependencies.clock.now();
     const [run, consent, { timeZone, recentTodoCount }] = await Promise.all([
       this.#dependencies.runs.findByUserId(userId),
       this.#dependencies.scheduledAiConsent.find(userId.value),
-      this.#readRecentTodos(userId, now),
+      recentTodos ?? this.readRecentTodoCount(userId, now),
     ]);
     const state = resolveSuggestionAnalysisState({
       pendingCount,
@@ -50,15 +60,13 @@ export class SuggestionAnalysisStateReader {
     });
     return {
       state,
-      recentTodoCount,
-      canRequestNow: canRequestAnalysisNow(state, this.#dependencies.settings.onDemandEnabled),
-      lastAnalyzedAt: run?.finishedAt ?? null,
+      canRequestNow: canRequestAnalysisNow(state, this.#dependencies.onDemandConfig.isEnabled),
       nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timeZone, run }),
     };
   }
 
   // 기간은 저장된 시간대의 현지 날짜라 시간대를 읽은 뒤에 센다
-  async #readRecentTodos(userId: UserId, now: Temporal.Instant) {
+  async readRecentTodoCount(userId: UserId, now: Temporal.Instant): Promise<RecentTodoCount> {
     const timeZone = resolveSuggestionTimeZone(
       await this.#dependencies.timezoneReader.findStoredTimezone(userId),
     );

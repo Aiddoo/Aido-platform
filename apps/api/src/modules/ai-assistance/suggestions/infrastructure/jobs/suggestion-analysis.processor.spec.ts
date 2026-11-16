@@ -87,6 +87,7 @@ describe("SuggestionAnalysisProcessor", () => {
     expect(publisher.published[0]?.data).toMatchObject({
       userId: "user-1",
       type: "AI_SUGGESTION",
+      purpose: "SCHEDULED_SERVICE",
       campaignKey: "ai_suggestion_v2",
       copyKey: expect.any(String),
     });

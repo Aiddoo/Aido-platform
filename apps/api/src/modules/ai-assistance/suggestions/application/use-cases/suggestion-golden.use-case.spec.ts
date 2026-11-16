@@ -1,4 +1,5 @@
 import { DAYS_OF_WEEK } from "@aido/api/vocabulary";
+import { assert } from "vitest";
 
 import {
   createAiAssistanceFixture,
@@ -28,13 +29,15 @@ async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
   fixture.activityReader.history = context.suggestionHistory;
   fixture.repeatingTitleReader.titles = context.repeatingTitles;
   fixture.generator.setRawResponse({ picks });
-  const { createdSuggestionCount: count } = await withAiAssistanceTime(
+  const result = await withAiAssistanceTime(
     () =>
       fixture.analyze.execute(
         createAnalyzeCommand(fixture, { timezone: golden.timezone, locale: golden.locale }),
       ),
     new Date(golden.now),
   );
+  assert.exists(result);
+  const count = result.createdSuggestionCount;
   const candidates = buildGoldenCandidates(golden);
   const saved = fixture.repository.created.map((suggestion) => ({
     suggestion,

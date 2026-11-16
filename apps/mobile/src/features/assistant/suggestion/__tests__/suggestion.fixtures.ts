@@ -21,9 +21,7 @@ export const createSuggestionDto = defineFixture(recurringSuggestionSchema, {
 
 export const createSuggestionAnalysisDto = defineFixture(suggestionAnalysisSchema, {
   state: 'WAITING_FOR_NEXT_RUN',
-  recentTodoCount: 5,
   canRequestNow: true,
-  lastAnalyzedAt: null,
   nextAnalysisAt: '2026-11-17T07:00:00.000Z',
 });
 

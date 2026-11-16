@@ -50,7 +50,7 @@ const REPORT_DETAIL_DESCRIPTION = `리포트 하나의 통계와 AI 요약·팁�
 - \`categoryBreakdown\`의 지운 카테고리는 리포트 언어의 "기타"(영어 "Other")로 묶입니다.
 - \`aiSummary\`·\`aiTips\`는 리포트를 만든 시점의 언어로 저장된 글입니다.
 - \`dailyCompletions\`는 기간 첫날부터 마지막 날까지 날마다 할 일 수와 끝낸 수(빈 날은 0)입니다. 1.16.0 전에 만든 리포트는 null입니다.
-- \`aiContentSource\`가 \`AI\`면 모델이 쓴 글이고, \`TEMPLATE\`이면 AI 없이 통계로 채운 글입니다.`;
+- \`aiContentSource\`가 \`AI\`면 모델이 쓴 글이고, \`TEMPLATE\`이면 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전)에 만든 리포트입니다.`;
 
 /** 유료 사용자의 리포트 조회 HTTP 진입점. */
 @ApiTags(SWAGGER_TAGS.AI)

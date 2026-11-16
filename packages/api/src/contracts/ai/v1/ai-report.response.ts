@@ -76,7 +76,9 @@ export const aiReportSchema = z.object({
   aiContentSource: z
     .enum(AI_REPORT_CONTENT_SOURCES)
     .optional()
-    .describe("aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글"),
+    .describe(
+      "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
+    ),
 });
 
 export type AiReport = z.infer<typeof aiReportSchema>;

@@ -17,19 +17,11 @@ export const suggestionAnalysisStateSchema = z
 
 export const suggestionAnalysisSchema = z.object({
   state: suggestionAnalysisStateSchema.describe("제안 화면 상태. 앱은 이 값 하나로 카드를 고른다"),
-  recentTodoCount: z
-    .number()
-    .int()
-    .nonnegative()
-    .describe("최근 14일 동안 적은 단건 할 일 수(반복 할 일 제외)"),
   canRequestNow: z
     .boolean()
     .describe("지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true"),
-  lastAnalyzedAt: datetimeSchema
-    .nullable()
-    .describe("마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null"),
   nextAnalysisAt: datetimeSchema.describe(
-    "다음 자동 분석 순간. 저장 시간대의 다음 09:00이고, 오늘 이미 분석을 요청했다면 내일 09:00",
+    "다음 자동 분석 순간. 저장 시간대의 다음 09:00 뒤 첫 매시 실행이고, 오늘 이미 분석을 요청했다면 내일 그 시각",
   ),
 });
 

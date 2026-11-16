@@ -93,6 +93,7 @@ describe("toAiReportResponse", () => {
     ["FALLBACK", "TEMPLATE"],
     ["TEMPLATE", "TEMPLATE"],
     ["NO_AI_CONSENT", "TEMPLATE"],
+    [null, "TEMPLATE"],
   ] as const)("저장된 출처 %s는 응답에서 %s이다", (contentSource, expected) => {
     // Given
     const report = AiReport.reconstitute(makeProps({ contentSource }));

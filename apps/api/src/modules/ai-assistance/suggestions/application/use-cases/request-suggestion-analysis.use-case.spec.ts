@@ -50,7 +50,7 @@ describe("RequestSuggestionAnalysisUseCase", () => {
     {
       name: "기능이 꺼져 있으면",
       arrange: async (f: Fixture) => {
-        f.settings.onDemandEnabled = false;
+        f.onDemandConfig.isEnabled = false;
       },
       state: "WAITING_FOR_NEXT_RUN",
     },
@@ -121,7 +121,6 @@ describe("RequestSuggestionAnalysisUseCase", () => {
           localDate: AI_ASSISTANCE_TODAY,
           trigger: "ON_DEMAND",
           timeZone: "Asia/Seoul",
-          weatherGrid: null,
         },
       ]);
       expect(await findRun(f)).toMatchObject({

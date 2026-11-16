@@ -13,6 +13,10 @@ export interface SuggestionAnalysisFacts {
   readonly timeZone: string;
 }
 
+export function hasEnoughRecentTodos(recentTodoCount: number): boolean {
+  return AI_SUGGESTION_LIMITS.MIN_ANALYSIS_RECORDS <= recentTodoCount;
+}
+
 export function resolveSuggestionAnalysisState(
   facts: SuggestionAnalysisFacts,
 ): AiSuggestionAnalysisState {
@@ -22,7 +26,7 @@ export function resolveSuggestionAnalysisState(
   if (!facts.hasAiConsent) {
     return "NEEDS_AI_CONSENT";
   }
-  if (facts.recentTodoCount < AI_SUGGESTION_LIMITS.MIN_ANALYSIS_RECORDS) {
+  if (!hasEnoughRecentTodos(facts.recentTodoCount)) {
     return "NEEDS_MORE_TODOS";
   }
   const { run } = facts;
@@ -58,7 +62,7 @@ export function resolveSuggestionAnalysisState(
 
 export function canRequestAnalysisNow(
   state: AiSuggestionAnalysisState,
-  onDemandEnabled: boolean,
+  isOnDemandEnabled: boolean,
 ): boolean {
-  return onDemandEnabled && state === "WAITING_FOR_NEXT_RUN";
+  return isOnDemandEnabled && state === "WAITING_FOR_NEXT_RUN";
 }

@@ -19,10 +19,10 @@ import { AiGeneratorPort } from "../generation/application/ports/ai-generator.po
 import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
 import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
+import { OnDemandSuggestionAnalysisConfigPort } from "./application/ports/on-demand-suggestion-analysis-config.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
 import { SuggestionAnalysisEnqueuerPort } from "./application/ports/suggestion-analysis-enqueuer.port.js";
 import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
-import { SuggestionAnalysisSettingsPort } from "./application/ports/suggestion-analysis-settings.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
 import { SuggestionAnalysisStateReader } from "./application/suggestion-analysis-state.reader.js";
 import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
@@ -47,11 +47,11 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   },
   { provide: SuggestionAnalysisEnqueuerPort, useClass: SuggestionAnalysisQueueAdapter },
   {
-    provide: SuggestionAnalysisSettingsPort,
+    provide: OnDemandSuggestionAnalysisConfigPort,
     inject: [aiAssistanceSuggestionsConfig.KEY],
     useFactory: (
       config: ConfigType<typeof aiAssistanceSuggestionsConfig>,
-    ): SuggestionAnalysisSettingsPort => config,
+    ): OnDemandSuggestionAnalysisConfigPort => ({ isEnabled: config.onDemandEnabled }),
   },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
@@ -63,14 +63,12 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     todoCountReader: SingleTodoCountReaderPort,
     scheduledAiConsent: ScheduledAiConsentReader,
     timezoneReader: UserTimezoneReaderPort,
-    settings: SuggestionAnalysisSettingsPort,
+    onDemandConfig: OnDemandSuggestionAnalysisConfigPort,
     clock: ClockPort,
   }),
   provideUseCase(RequestSuggestionAnalysisUseCase, {
     entitlementReader: EntitlementReaderPort,
-    settings: SuggestionAnalysisSettingsPort,
-    timezoneReader: UserTimezoneReaderPort,
-    todoCountReader: SingleTodoCountReaderPort,
+    onDemandConfig: OnDemandSuggestionAnalysisConfigPort,
     runs: SuggestionAnalysisRunRepositoryPort,
     suggestions: SuggestionRepositoryPort,
     enqueuer: SuggestionAnalysisEnqueuerPort,

@@ -138,21 +138,21 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 - 실행 기록(`SuggestionAnalysisRun`, 사용자당 한 행)이 현지 날짜마다 분석 한 번을 지킨다([전이 표](glossary/ai-assistance.md#분석-실행-전이)). 아침 배치(`SCHEDULED`)는 매시 정각 현지 09시대 사용자를 50명 묶음으로 고르고 `DispatchSuggestionAnalysesUseCase`가 묶음 전원을 한 트랜잭션에서 잠근 뒤 오늘 요청받지 않은 사람만 기록하고 큐에 넣는다(잠금·조회·저장·적재 각 1문장). 배포 전에 쌓인 job(payload에 `localDate`·`trigger` 없음)은 아침 배치로 보고 실행 시각의 현지 날짜로 기록을 만들어 시작한다.
 - 지금 받기(`ON_DEMAND`, `POST /v1/ai/suggestions/analyses`)는 같은 잠금(`SuggestionLockKeys.analysisRun`)·같은 하루 job key(`suggestion_<userId>_<현지 날짜>`)를 쓰고 날짜는 저장된 시간대다. 그래서 LLM은 사용자당 하루 1회 그대로이고 09시 전에 요청하면 그날 배치는 건너뛴다. 무료는 AI_1309, 1.13.0 이상 앱의 동의 없음은 AI_1311이고, 꺼짐(`AI_SUGGESTION_ON_DEMAND_ENABLED=false`)·최근 14일 단건 할 일 없음·오늘 이미 요청은 큐에 넣지 않고 202와 지금 상태만 준다. 사용자당 1분 5회(`AI_SUGGESTION_THROTTLE`)다. job은 `priority: 10`이고 같은 큐의 두 번째 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`: `localConcurrency 1`·2초 polling·`minPriority 10`)가 가져간다. 생성은 `taskClass = interactive`라 배경 작업 자리·`interactive-only` 킬 스위치·배경 예산과 나뉜다.
-- 푸시는 아침 배치가 제안을 만든 때(`SCHEDULED` + `SUGGESTIONS_CREATED`)만 보낸다. 지금 받기는 앱 안에서 결과를 기다리므로 푸시·알림함 항목이 없다.
+- 푸시는 아침 배치가 제안을 만든 때(`SCHEDULED` + `SUGGESTIONS_CREATED`)만 보낸다. 지금 받기는 앱 안에서 결과를 기다리므로 푸시·알림함 항목이 없다. 그날 실행 기록이 이미 `FINISHED`인데 같은 job이 다시 오면(커밋 뒤 worker 종료·푸시 실패 재시도) 분석·제안 교체·푸시를 건너뛴다(`ai.job.skipped`, debug). 푸시는 최대 한 번이고 한 번도 못 갈 수 있다.
 - 결과(`SUGGESTION_ANALYSIS_OUTCOMES`)는 실행 기록에 남고 목록 응답 `analysis.state`가 된다. 후보가 0개면 LLM을 부르지 않고 `NO_PATTERN_FOUND`, 업체 없음·킬 스위치는 `AI_UNAVAILABLE`, 사용자 예산은 `SPEND_LIMIT_REACHED`, 다시 불러도 같게 실패하는 출력은 `FAILED`다. 일시 장애는 job이 다시 시도하고 마지막 시도만 `FAILED`로 남긴다. 60분 넘게 끝나지 않은 실행은 그날 job key를 이미 써서 `UNAVAILABLE_TODAY`다.
 
 ## 관측
 
 모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `provider`, `model`, `attempts`, `fallbackFrom`, `estimatedCostMicroUsd`, `latencyMs`, 입력·캐시 읽기·캐시 쓰기·출력·사고 토큰, `finishReason`, `outcome`, `errorType`(공급자 실패 분류), 파싱 응답 `errorCode`, `statusCode`, `quotaCharged`, `userId`. 공급자 실패는 `upstream`(`errorType` = 오류 이름, `statusCode`, 오류 본문의 `providerStatus` 예: `UNAVAILABLE`·`billing_error`, 네트워크 `networkCode` 예: `ECONNRESET`)으로 원인을 남긴다. 업체 경계에서는 `ai.provider.fallback`(task·from·to·errorType·statusCode)과 공용 정책의 `outbound.circuit.{opened,half-open,closed}`(policy `ai:<업체>`·breaker·reason·task)·`outbound.bulkhead.rejected`(policy)를 남긴다. 방어선은 `ai.generation.input-rejected`(task·inputChars·maxInputChars), `ai.spend.halted`(task·taskClass·reason), `ai.spend.user-limited`(task·userId), `ai.spend.threshold-reached`(tier·window·period·totalMicroUsd·limitMicroUsd)다. parse-memo의 `ai.generation.completed`는 모델이 낸 날짜 표현 `dateRefs`(`kind`·`weekOffset`)를 더한다. 고정 기호만 담고 공급자 message·응답 본문·사용자 원문·제목·카테고리 이름은 남기지 않는다.
 
-제안 분석은 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`(지금 받기 요청, userId·trigger)와 `ai.suggestion-analysis.finished`(userId·trigger·outcome·createdSuggestionCount·queueWaitMs·durationMs, `FAILED`만 warn)를 남긴다. 제안·리포트 processor의 `ai.job.completed`는 `durationMs`를 싣는다.
+제안 분석은 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`(지금 받기 요청, userId·trigger)와 실행 기록에 남는 결과 `ai.suggestion-analysis.finished`(userId·trigger·outcome·recentTodoCount·createdSuggestionCount·queueWaitMs, `FAILED`만 warn)를 남긴다. 처리 시간은 리포트와 같이 processor의 `ai.job.completed`(queueName·userId·`durationMs`, 제안은 trigger도)만 싣는다. 결과는 UseCase, job 처리 시간(푸시 발행 포함)은 processor가 한 번씩 남긴다.
 
-CloudWatch Logs Insights(API 컨테이너 로그 그룹)에서 보는 쿼리다. 작업별 지연 p50·p95와 하루 추정 비용, 제안 분석 결과별 수와 큐 대기·처리 시간, 리포트·제안 job 처리 시간 순이다.
+CloudWatch Logs Insights(API 컨테이너 로그 그룹)에서 보는 쿼리다. 작업별 지연 p50·p95와 하루 추정 비용, 제안 분석 결과별 수와 큐 대기, 리포트·제안 job 처리 시간(제안은 trigger별) 순이다.
 
 ```text
 filter event = "ai.generation.completed" | stats count() as calls, pct(latencyMs, 50) as p50Ms, pct(latencyMs, 95) as p95Ms, sum(estimatedCostMicroUsd) / 1000000 as costUsd by task, bin(1d)
-filter event = "ai.suggestion-analysis.finished" | stats count() as runs, pct(queueWaitMs, 50) as waitP50Ms, pct(queueWaitMs, 95) as waitP95Ms, pct(durationMs, 95) as durationP95Ms by trigger, outcome, bin(1d)
-filter event = "ai.job.completed" | stats count() as jobs, pct(durationMs, 95) as p95Ms by queueName, bin(1d)
+filter event = "ai.suggestion-analysis.finished" | stats count() as runs, pct(queueWaitMs, 50) as waitP50Ms, pct(queueWaitMs, 95) as waitP95Ms by trigger, outcome, bin(1d)
+filter event = "ai.job.completed" | stats count() as jobs, pct(durationMs, 95) as p95Ms by queueName, trigger, bin(1d)
 ```
 
 ## 프롬프트 보안

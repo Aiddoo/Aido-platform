@@ -142,6 +142,24 @@ describe("nextSuggestionDispatchAt", () => {
       timeZone: "Asia/Seoul",
       expected: "2027-01-01T00:00:00Z",
     },
+    {
+      label: "콜카타(+5:30) 09:10 → 오늘 UTC 정각 회차 09:30",
+      at: "2026-11-10T03:40:00Z",
+      timeZone: "Asia/Kolkata",
+      expected: "2026-11-10T04:00:00Z",
+    },
+    {
+      label: "콜카타(+5:30) 09:30 → 내일 09:30",
+      at: "2026-11-10T04:00:00Z",
+      timeZone: "Asia/Kolkata",
+      expected: "2026-11-11T04:00:00Z",
+    },
+    {
+      label: "카트만두(+5:45) 08:50 → 오늘 UTC 정각 회차 09:45",
+      at: "2026-11-10T03:05:00Z",
+      timeZone: "Asia/Kathmandu",
+      expected: "2026-11-10T04:00:00Z",
+    },
   ])("$label", ({ at, timeZone, expected }) => {
     // When
     const next = nextSuggestionDispatchAt({

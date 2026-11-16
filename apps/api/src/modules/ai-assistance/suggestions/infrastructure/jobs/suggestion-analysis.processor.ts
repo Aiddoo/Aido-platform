@@ -88,6 +88,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       userId,
       timezone,
       locale,
+      // 1.16.0 전에 쌓인 job의 대체다. 1.17.0에서 지운다(compatibility.md)
       localDate:
         data.localDate == null
           ? suggestionDispatchLocalDate({ at: startedAt, timeZone: timezone })
@@ -95,6 +96,10 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       trigger: data.trigger ?? "SCHEDULED",
       isFinalAttempt: isFinalSuggestionAttempt(attempt),
     });
+    if (result == null) {
+      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName, userId });
+      return;
+    }
 
     // 지금 받기는 사용자가 앱에서 결과를 기다리므로 푸시·알림함을 만들지 않는다
     if (result.trigger === "SCHEDULED" && result.outcome === "SUGGESTIONS_CREATED") {
@@ -106,8 +111,6 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       queueName,
       userId,
       trigger: result.trigger,
-      outcome: result.outcome,
-      createdCount: result.createdSuggestionCount,
       durationMs: this.#clock.now().epochMilliseconds - startedAt.epochMilliseconds,
     });
   }
@@ -117,7 +120,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     await this.#notificationPublisher.publish({
       userId,
       type: "AI_SUGGESTION",
-      purpose: "ENGAGEMENT",
+      purpose: "SCHEDULED_SERVICE",
       campaignKey: AI_SUGGESTION_NOTIFICATION_CAMPAIGN_KEY,
       variantId: message.variantId,
       title: message.title,

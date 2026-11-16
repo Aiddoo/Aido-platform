@@ -76,10 +76,6 @@ export class SuggestionAnalysisRun extends Entity<UserId, SuggestionAnalysisRunP
     return this.props.startedAt == null ? null : this.props.queuedAt.until(this.props.startedAt);
   }
 
-  get finishedAt(): Temporal.Instant | null {
-    return this.props.finishedAt;
-  }
-
   request(params: RequestSuggestionAnalysisParams): boolean {
     if (this.isRequestedOn(params.localDate)) {
       return false;

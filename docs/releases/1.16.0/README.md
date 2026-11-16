@@ -18,7 +18,7 @@
 - **AI 제안 프롬프트**: 모델은 후보를 고르기만 한다(`suggestion@4`). 출시 앱이 읽는 `reason`은 서버가 기록 수치로 쓴다. 서버는 띄어쓰기·문장부호·이모지·대소문자·전각 차이만 다른 제목을 한 후보로 묶고, 자모·숫자·기호만인 제목과 이미 반복 중인 할 일을 후보에서 뺀다. 근거(`evidence`)를 저장한다(`[14/18]`). 입력 상한은 36,000자, 응답 이력은 30개다(`[17/18]`).
 - **AI 리포트**: 헤드라인(완료율·변화 칩), 날마다 끝낸 할 일 막대, 주로 끝낸 시간 24칸, 최근 8주 추세선, AI 코치 카드로 바뀐다. 프롬프트는 `report@4`로 숫자를 항목 단위로 검사하고 글 길이는 ko 70·55자, en 120·90자다. 템플릿으로 채운 글은 "AI 코치" 대신 "이번 기간 요약"으로 보인다.
 - **무료**: 이번 주 내 기록 막대를 실제로 그리고 AI 부분만 잠근다. 샘플 리포트를 지운다. 첫 리포트 전 프리미엄도 같은 기록을 보이고 리포트 끝에 제안 미리보기를 둔다(`[10/18]`).
-- **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠진 **서비스 알림**이라 "(광고)" 표기와 광고성 동의 조건이 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다.
+- **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠지고 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행하는 **서비스 알림**이라 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다.
 - **버그 수정**: 리포트 도착 시각 표시 08:00 ↔ 푸시 11:30 불일치, 지운 카테고리 이름('기타'가 en에도 하드코딩), en 시작 제안 문구, AI Swagger 설명(`[1/18]`).
 - **용어**: "루틴" 대신 "반복 할 일"(en "repeating to-do")이다. 스토어 검색어에만 "루틴"이 남는다.
 - **라이브러리**: 카카오 SDK 2.4.11 → 3.2.0(`[11/18]`), `react-native-purchases` 10.16.0 → 11.0.2(`[12/18]`).
@@ -60,7 +60,11 @@
 | 리포트 도착 표시 08:00 → 11:30      | 실제 도착과 맞음               | 같음                           | 08:00                      |
 
 - 앱은 옛 서버 분기를 두지 않고 optional 계약의 nullish만 정리한다. 서버 배포 → 안정화 → 앱 제출 순서다.
-- 큐 이름·job key·payload는 그대로다. 같은 큐에 두 번째 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`: 1칸·2초·`minPriority` 10)가 붙고 우선순위는 `SCHEDULED` 0, `ON_DEMAND` 10이다. worker 동시성 합은 41에서 42가 된다. payload의 `weatherGrid`는 배포 겹침 때문에 남겼고 다음 버전에서 지운다. payload `localDate`·`trigger`는 optional이라 옛 job은 `SCHEDULED`·실행 시각 현지 날짜로 읽는다.
+- 큐 이름·job key·payload는 그대로다. 같은 큐에 두 번째 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`: 1칸·2초·`minPriority` 10)가 붙고 우선순위는 `SCHEDULED` 0, `ON_DEMAND` 10이다. worker 동시성 합은 41에서 42가 된다. 아침 배치·지금 받기 모두 payload에 `weatherGrid: null`을 싣는다. 배포가 겹치는 동안 1.15 worker가 이 칸을 필수로 읽기 때문이고 날씨 문맥만 빠진다. scheduler는 weather `location`을 읽지 않는다. 새 schema에서 `weatherGrid`·`localDate`·`trigger`는 optional이라 옛 job은 `SCHEDULED`·실행 시각 현지 날짜로 읽는다. 지울 시점은 [호환](../../conventions/compatibility.md)에 있다.
+- 제안 푸시는 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행한다. 표의 "서비스(표기 없음)"가 실제로 이 값이다. `[4/18]`은 `AI_SUGGESTION`을 광고성 집합에서 뺐지만 발행은 `ENGAGEMENT`로 남아 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 그대로 걸렸다. 푸시 payload 모양은 같고 `purpose` 값만 출시 앱이 아는 값(`NOTIFICATION_PURPOSES`) 안에서 바뀐다. 1.15 worker가 배포 겹침 동안 보낸 제안 푸시만 옛 분류다.
+- 그날 실행 기록이 이미 `FINISHED`인데 같은 job이 다시 오면(커밋 뒤 worker 종료·푸시 실패 재시도) 분석·제안 교체·푸시를 건너뛴다.
+- 목록·`POST` 응답의 `analysis`에서 앱이 읽지 않는 `recentTodoCount`·`lastAnalyzedAt`을 출시 전에 뺐다. 두 값은 실행 기록(`SuggestionAnalysisRun.recentTodoCount`·`finishedAt`)과 `ai.suggestion-analysis.finished` 로그에만 남는다.
+- `aiContentSource`는 출처 칸(`AiReport.contentSource`, 2026-10-25 추가)이 null인 옛 리포트도 `TEMPLATE`이다. AI 글인지 폴백인지 몰라 AI 코치로 내세우지 않는다.
 - `POST /v1/ai/suggestions/analyses`는 202다. 가드는 `AiDataSharingConsentGuard` → 사용자별 throttle(1분 5회)이고 오류는 `AI_1309`·`AI_1311`·429 `SYS_0001`이다. `AI_SUGGESTION_ON_DEMAND_ENABLED`(기본 true)를 끄면 `canRequestNow`가 false다.
 - 요청 분석은 `taskClass` interactive라 배경 자리·배경 중단과 분리된다.
 - 제안 문맥 reader는 최근 기록과 응답 이력만 읽는다. 쓰지 않게 된 활동 reader 메서드 4개, `LatestReportStatsReaderPort`, 날씨 `WeatherForecastReaderPort`·묶음 조회 UseCase를 지웠다.
@@ -78,7 +82,7 @@
 | `ai_report_chart_tapped`(추가)                                                                    | `chart`(`daily_completions`·`completion_hours`)                   |
 | `premium_gate_shown`·`premium_gate_cta_tapped`(무료 리포트 잠금 카드·제안 미리보기에서 추가 발송) | inline 노출, `surface`(`report_list`·`suggestions`)               |
 
-서버 신호(분석 결과·대기 시간·AI 비용·수락률·리포트 생성 시간)는 측정 계획 3절 표에 있다. 분석 실행 로그는 `ai.suggestion-analysis.finished`(`trigger`·`outcome`·`createdSuggestionCount`·`queueWaitMs`·`durationMs`)와 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`다. 리포트 job 완료 로그에 `durationMs`, 공급자 불가 로그에 `userId`를 더했다(`[9/18]`).
+서버 신호(분석 결과·대기 시간·AI 비용·수락률·리포트 생성 시간)는 측정 계획 3절 표에 있다. 분석 실행 로그는 `ai.suggestion-analysis.finished`(`trigger`·`outcome`·`recentTodoCount`·`createdSuggestionCount`·`queueWaitMs`)와 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`다. 처리 시간은 리포트·제안 모두 job 완료 로그 `ai.job.completed`의 `durationMs` 하나다(제안은 `trigger`도). 공급자 불가 로그에 `userId`를 더했다(`[9/18]`).
 
 ## DB 마이그레이션
 
@@ -149,6 +153,8 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 6. 스토어 문구는 `apps/mobile/store-metadata/1.16.0/release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
 7. 스토어에서 1.16.0을 실제로 받을 수 있게 된 뒤 플랫폼마다 관리자 API로 `AppRelease`를 1.16.0으로 올린다. 앱 설정 "버전 정보"의 업데이트 안내가 이 값을 본다. 먼저 올리면 스토어에 "열기"만 보인다([서버 배포](../../../apps/api/docs/deployment.md#공개-버전과-env-반영)).
 
+배포 당일 예외: 1.15 worker가 그날 job key(`suggestion_<userId>_<현지 날짜>`)를 이미 쓴 사용자는 1.16 아침 배치가 같은 key의 job을 넣지 못해 실행 기록이 60분 `ANALYZING` 뒤 그날 `UNAVAILABLE_TODAY`로 보일 수 있다. 출시 앱(1.15.x)은 이 상태를 보지 않고 다음 날부터 맞는다.
+
 ## 검증
 
 레이어 커밋 본문에 적힌 실행 결과만 옮긴다. 로컬 통과이고 CI·머지·운영 배포는 아직이다.
@@ -186,7 +192,6 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 - Haiku 리포트 aiWritten이 0.95로 합격선 0.98 아래다. 실패분은 템플릿으로 나간다.
 - 제목을 `<`·`>`·`&`로 채우면 이스케이프로 입력 상한에 걸려 그날 제안을 건너뛴다.
 - 배포가 겹치는 몇 분 동안 옛 worker가 [지금 분석 받기] job을 가져가면 옛 규칙대로 푸시가 갈 수 있다.
-- 새 날 요청이 들어오면 `lastAnalyzedAt`이 비워진다.
 
 ## 다음 버전 후보
 
@@ -212,7 +217,7 @@ Expo가 관리하는 패키지(react, gesture-handler, Sentry RN, Skia, reanimat
 - `apps/api/docs/ai.md`가 200/200줄이라 나눈다.
 - 기존 스케줄러·활동 reader가 다른 Context 테이블을 직접 읽는 곳을 소유 Context의 `*.public.ts` 읽기 포트로 옮긴다.
 - weather 캐시 묶음 메서드를 정리한다.
-- 큐 payload의 `weatherGrid`를 지운다(배포 겹침이 끝난 뒤).
+- 제안 큐 payload의 `weatherGrid`와 옛 job 대체(optional `localDate`·`trigger`, 실행 기록 없는 job)를 지운다(1.17.0, [호환](../../conventions/compatibility.md)).
 - `AI_SUGGESTION_LIMITS.CONTEXT_WEEKS`를 정리한다.
 
 ## PR 목록

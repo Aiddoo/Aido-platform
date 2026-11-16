@@ -18,8 +18,7 @@ export function toAiSuggestion(dto: RecurringSuggestion): AiSuggestion {
 
 export function toSuggestionAnalysis(dto: SuggestionAnalysisDto): SuggestionAnalysis {
   return {
-    ...pick(dto, ['state', 'recentTodoCount', 'canRequestNow']),
-    lastAnalyzedAt: dto.lastAnalyzedAt == null ? null : toInstant(dto.lastAnalyzedAt),
+    ...pick(dto, ['state', 'canRequestNow']),
     nextAnalysisAt: toInstant(dto.nextAnalysisAt),
   };
 }

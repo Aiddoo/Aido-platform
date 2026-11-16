@@ -35,9 +35,9 @@ export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
     data: z.object({
       userId: z.string().min(1),
       timezone: z.string().min(1),
-      // 배포가 겹치는 동안 옛 worker가 날씨 문맥에 쓴다. 새 worker는 읽지 않는다
-      weatherGrid: weatherGridSchema,
-      // 1.16.0 전에 쌓인 작업에는 없다. 없으면 아침 배치로 보고 실행 시각의 현지 날짜를 쓴다
+      // 1.15 worker가 필수로 읽어 새 job도 null로 싣고 새 worker는 읽지 않는다. 1.17.0에서 지운다(compatibility.md)
+      weatherGrid: weatherGridSchema.optional(),
+      // 1.16.0 전에 쌓인 job에는 없어 아침 배치·실행 시각의 현지 날짜로 읽는다. 1.17.0에서 대체를 지운다(compatibility.md)
       localDate: z.iso.date().optional(),
       trigger: z.enum(SUGGESTION_ANALYSIS_TRIGGERS).optional(),
     }),
@@ -85,6 +85,7 @@ export const AI_SUGGESTION_QUEUE = defineQueue({
   schedules: [
     {
       key: "daily-suggestion-scheduler",
+      // 다음 분석 시각(nextSuggestionDispatchAt)이 UTC 매시 정각 회차로 계산하므로 함께 바꾼다
       cron: "0 * * * *",
       timezone: "UTC",
       missed: "once",

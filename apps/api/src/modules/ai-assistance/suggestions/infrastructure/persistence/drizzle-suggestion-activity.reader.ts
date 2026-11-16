@@ -5,22 +5,14 @@ import { Injectable } from "@nestjs/common";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 
-import {
-  localDateAt,
-  localDateTimeAt,
-} from "../../../shared/domain/user-calendar.domain-service.js";
+import { localDateTimeAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
+import type { SuggestionAnalysisPeriod } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import type {
   SuggestionHistoryItem,
   TodoSummaryForAnalysis,
 } from "../../domain/suggestion.constants.js";
-
-// planning Todo.startDate는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
-function localDay(value: Date, timezone: string): Temporal.PlainDate {
-  return localDateAt(value, timezone);
-}
 
 function toWallClock(local: Temporal.ZonedDateTime): string {
   return local.toPlainTime().toString({ smallestUnit: "minute" });
@@ -42,8 +34,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
   async findRecentTodos(
     userId: UserId,
-    from: Date,
-    to: Date,
+    period: SuggestionAnalysisPeriod,
     timezone: string,
   ): Promise<TodoSummaryForAnalysis[]> {
     const todos = await this.#db.query.todo.findMany({
@@ -59,7 +50,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       where: {
         userId: userId.value,
         seriesId: { isNull: true },
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
+        startDate: { gte: period.from, lte: period.to },
       },
       // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
       orderBy: { startDate: "desc" },
@@ -79,13 +70,16 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     }));
   }
 
-  async findRecentResponded(userId: UserId, since: Date): Promise<SuggestionHistoryItem[]> {
+  async findRecentResponded(
+    userId: UserId,
+    since: Temporal.Instant,
+  ): Promise<SuggestionHistoryItem[]> {
     const rows = await this.#db.query.recurringSuggestion.findMany({
       columns: { title: true, status: true },
       where: {
         userId: userId.value,
         status: { in: ["ACCEPTED", "DISMISSED"] },
-        updatedAt: { gte: instantFromDate(since) },
+        updatedAt: { gte: since },
       },
       orderBy: { updatedAt: "desc" },
     });

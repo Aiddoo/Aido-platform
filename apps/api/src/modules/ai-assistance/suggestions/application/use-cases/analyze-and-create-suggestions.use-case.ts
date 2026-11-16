@@ -33,6 +33,7 @@ import {
   type SuggestionAnalysisResult,
   SuggestionAnalysisRun,
 } from "../../domain/suggestion-analysis-run.entity.js";
+import { hasEnoughRecentTodos } from "../../domain/suggestion-analysis-state.domain-service.js";
 import type {
   SuggestionAnalysisOutcome,
   SuggestionAnalysisTrigger,
@@ -85,11 +86,6 @@ export interface AnalyzeAndCreateSuggestionsResult extends SuggestionAnalysisRes
   readonly trigger: SuggestionAnalysisTrigger;
 }
 
-interface AnalysisTiming {
-  readonly startedAt: Temporal.Instant;
-  readonly queueWait: Temporal.Duration | null;
-}
-
 type GenerationOutcome =
   | { readonly patterns: DetectedPattern[] }
   | { readonly outcome: SuggestionAnalysisOutcome };
@@ -101,20 +97,24 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     this.#dependencies = dependencies;
   }
 
+  // 커밋 뒤 worker가 죽거나 알림이 실패해 같은 job이 다시 오면 null로 끝내 분석·제안 교체·푸시를 되풀이하지 않는다
   async execute(
     command: AnalyzeAndCreateSuggestionsCommand,
-  ): Promise<AnalyzeAndCreateSuggestionsResult> {
+  ): Promise<AnalyzeAndCreateSuggestionsResult | null> {
     const owner = UserId.reconstitute(command.userId);
-    const startedAt = this.#dependencies.clock.now();
-    const timing = { startedAt, queueWait: await this.#start(owner, command, startedAt) };
+    const run = await this.#start(owner, command, this.#dependencies.clock.now());
+    if (run.isFinishedOn(command.localDate)) {
+      return null;
+    }
+    const queueWait = run.queueWait;
     const result = await this.#analyze(owner, command).catch(async (error: unknown) => {
       // 일시 오류는 job이 다시 시도하므로 마지막 시도만 실패로 남긴다
       if (command.isFinalAttempt) {
-        this.#logFinished(command, await this.#skip(owner, command, "FAILED", null), timing);
+        this.#logFinished(command, await this.#skip(owner, command, "FAILED", null), queueWait);
       }
       throw error;
     });
-    this.#logFinished(command, result, timing);
+    this.#logFinished(command, result, queueWait);
     return { ...result, trigger: command.trigger };
   }
 
@@ -122,10 +122,10 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
     now: Temporal.Instant,
-  ): Promise<Temporal.Duration | null> {
+  ): Promise<SuggestionAnalysisRun> {
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(owner)]);
-      // 1.16.0 배포 전에 쌓인 작업은 실행 기록 없이 온다
+      // 1.16.0 배포 전에 쌓인 job은 실행 기록 없이 온다. 1.17.0에서 지운다(compatibility.md)
       const run =
         (await this.#dependencies.runs.findByUserId(owner)) ??
         SuggestionAnalysisRun.create({
@@ -137,7 +137,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       if (run.start(command.localDate, now)) {
         await this.#dependencies.runs.save(run);
       }
-      return run.queueWait;
+      return run;
     });
   }
 
@@ -154,8 +154,8 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     }
     const context = await this.#dependencies.contextBuilder.build(command.userId, command.timezone);
     const recentTodoCount = context.todos.length;
-    if (recentTodoCount === 0) {
-      return this.#skip(owner, command, "NO_RECENT_TODOS", 0);
+    if (!hasEnoughRecentTodos(recentTodoCount)) {
+      return this.#skip(owner, command, "NO_RECENT_TODOS", recentTodoCount);
     }
     const candidates = buildSuggestionCandidates(
       context.todos,
@@ -318,20 +318,20 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     return result;
   }
 
+  // 처리 시간은 processor의 ai.job.completed가 남기고 여기서는 실행 기록에 남는 결과만 남긴다
   #logFinished(
     command: AnalyzeAndCreateSuggestionsCommand,
     result: SuggestionAnalysisResult,
-    timing: AnalysisTiming,
+    queueWait: Temporal.Duration | null,
   ): void {
     const entry = {
       event: AiSuggestionLogEvent.ANALYSIS_FINISHED,
       userId: command.userId,
       trigger: command.trigger,
       outcome: result.outcome,
+      recentTodoCount: result.recentTodoCount,
       createdSuggestionCount: result.createdSuggestionCount,
-      queueWaitMs: timing.queueWait?.total("milliseconds") ?? null,
-      durationMs:
-        this.#dependencies.clock.now().epochMilliseconds - timing.startedAt.epochMilliseconds,
+      queueWaitMs: queueWait?.total("milliseconds") ?? null,
     };
     if (result.outcome === "FAILED") {
       this.#dependencies.logger.warn(entry);

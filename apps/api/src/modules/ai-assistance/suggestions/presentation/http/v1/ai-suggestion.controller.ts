@@ -78,7 +78,7 @@ const SUGGESTION_LIST_DESCRIPTION = `프리미엄 사용자의 대기 중(PENDIN
 
 - 모르는 새 값은 앱 계약이 \`UNKNOWN\`으로 읽습니다.
 - \`canRequestNow\`는 \`WAITING_FOR_NEXT_RUN\`일 때만 \`true\`입니다.
-- \`nextAnalysisAt\`은 이 사용자에게 다음 자동 분석이 도는 순간입니다. 오늘 분석을 이미 요청했거나(끝남·진행·멈춤) 오늘 09:00이 지났으면 내일 09:00, 아니면 오늘 09:00입니다.
+- \`nextAnalysisAt\`은 이 사용자에게 다음 자동 분석이 도는 순간입니다. 오늘 분석을 이미 요청했거나(끝남·진행·멈춤) 오늘 09:00이 지났으면 내일 09:00, 아니면 오늘 09:00입니다. 자동 분석은 UTC 매시 정각에 돌아 +5:30·+5:45 같은 시간대는 09:30·09:45입니다.
 - \`evidence\`·\`analysis\`는 1.16.0에 더한 칸이고 출시 앱은 읽지 않습니다.`;
 
 const SUGGESTION_ANALYSIS_REQUEST_DESCRIPTION = `오늘(저장 시간대의 현지 날짜) 분석을 큐에 넣고 202와 지금 분석 상태를 줍니다.

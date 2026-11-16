@@ -103,7 +103,7 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	preAiSuggestionAnalysisSchemasFingerprint:
 		"e35b6d7f7afddf748ad686a2ff3abf9d63f57f5947316d2206f3c6d7a47d4780",
 	schemasFingerprint:
-		"2c5f50e63c18501b6b1a9cb1bdd5c8929b1f61dbafd5cbe824a05ea33cdd7f15",
+		"99dbd32b7d2cdf395cdb4516ed8c222f242958bbebf58753923eeb091b3262be",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",

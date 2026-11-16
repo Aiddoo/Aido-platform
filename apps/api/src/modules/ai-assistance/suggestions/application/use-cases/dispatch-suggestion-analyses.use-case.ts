@@ -10,7 +10,6 @@ import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-wi
 import type {
   SuggestionAnalysisEnqueuerPort,
   SuggestionAnalysisJob,
-  SuggestionWeatherGrid,
 } from "../ports/suggestion-analysis-enqueuer.port.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
@@ -18,7 +17,6 @@ import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 export interface SuggestionAnalysisTarget {
   readonly userId: UserId;
   readonly timeZone: string;
-  readonly weatherGrid: SuggestionWeatherGrid | null;
 }
 
 export interface DispatchSuggestionAnalysesCommand {

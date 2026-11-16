@@ -9,8 +9,6 @@ import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
-import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-single-todo-count.reader";
-import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SUGGESTION_FIXTURE_USER_ID } from "#test/fixtures/ai-assistance/suggestion.fixture";
 import { UserFixture } from "#test/fixtures/index";
@@ -45,20 +43,13 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
     const logger = createSpyApplicationLogger();
     const request = new RequestSuggestionAnalysisUseCase({
       entitlementReader: { can: async () => true },
-      settings: { onDemandEnabled: true },
-      timezoneReader: new StubUserTimezoneReader(),
-      todoCountReader: new StubSingleTodoCountReader(),
+      onDemandConfig: { isEnabled: true },
       runs: new DrizzleSuggestionAnalysisRunRepository(txHost),
       suggestions: new DrizzleSuggestionRepository(txHost),
       enqueuer,
       analysisState: {
-        read: async () => ({
-          state: "ANALYZING",
-          recentTodoCount: 3,
-          canRequestNow: false,
-          lastAnalyzedAt: null,
-          nextAnalysisAt: NOW,
-        }),
+        readRecentTodoCount: async () => ({ timeZone: "Asia/Seoul", recentTodoCount: 3 }),
+        read: async () => ({ state: "ANALYZING", canRequestNow: false, nextAnalysisAt: NOW }),
       },
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(txHost),

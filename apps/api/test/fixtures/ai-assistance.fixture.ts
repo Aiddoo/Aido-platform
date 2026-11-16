@@ -94,7 +94,7 @@ export function createAiAssistanceFixture() {
   const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
   const todoCountReader = new StubSingleTodoCountReader();
   const timezoneReader = new StubUserTimezoneReader();
-  const settings = { onDemandEnabled: true };
+  const onDemandConfig = { isEnabled: true };
   const activityReader = new StubSuggestionActivityReader();
   activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
@@ -135,14 +135,12 @@ export function createAiAssistanceFixture() {
     todoCountReader,
     scheduledAiConsent,
     timezoneReader,
-    settings,
+    onDemandConfig,
     clock,
   });
   const request = new RequestSuggestionAnalysisUseCase({
     entitlementReader: access,
-    settings,
-    timezoneReader,
-    todoCountReader,
+    onDemandConfig,
     runs,
     suggestions: repository,
     enqueuer,
@@ -180,7 +178,7 @@ export function createAiAssistanceFixture() {
     enqueuer,
     todoCountReader,
     timezoneReader,
-    settings,
+    onDemandConfig,
     activityReader,
     repeatingTitleReader,
     reportRepository,

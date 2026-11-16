@@ -9,12 +9,13 @@ import type { AiReport } from "../../../domain/ai-report.aggregate.js";
 import type { ReportContentSource } from "../../../domain/ai-report.constants.js";
 import { computeDateRange } from "../../../domain/report-period.domain-service.js";
 
+// 출처 칸이 생기기 전(2026-10-25) 행(null)은 AI 글인지 폴백인지 몰라 AI 코치로 내세우지 않는다
 function toAiContentSource(
-  contentSource: ReportContentSource,
+  contentSource: ReportContentSource | null,
 ): NonNullable<AiReportResponse["aiContentSource"]> {
   return match(contentSource)
     .with("AI", () => "AI" as const)
-    .with("FALLBACK", "TEMPLATE", "NO_AI_CONSENT", () => "TEMPLATE" as const)
+    .with("FALLBACK", "TEMPLATE", "NO_AI_CONSENT", null, () => "TEMPLATE" as const)
     .exhaustive();
 }
 
@@ -47,7 +48,7 @@ export function toAiReportResponse(
     generatedAt: toIsoString(primitives.generatedAt),
     dailyCompletions:
       primitives.dailyCompletions?.map((item) => ({ ...item, date: item.date.toString() })) ?? null,
-    aiContentSource: toAiContentSource(primitives.contentSource ?? "AI"),
+    aiContentSource: toAiContentSource(primitives.contentSource),
   };
 }
 

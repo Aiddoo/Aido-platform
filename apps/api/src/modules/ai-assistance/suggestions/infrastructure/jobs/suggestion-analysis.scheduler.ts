@@ -11,18 +11,15 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
-import type { SuggestionWeatherGrid } from "../../application/ports/suggestion-analysis-enqueuer.port.js";
 import { DispatchSuggestionAnalysesUseCase } from "../../application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import {
   isInSuggestionDispatchWindow,
   resolveSuggestionTimeZone,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestion.constants.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 
 const ENQUEUE_BATCH_SIZE = 50;
-
-/** 분석에 쓰는 최근 기록 기간. 이 안에 단건 할 일이 있는 사용자만 고른다 */
-const RECENT_ACTIVITY_DAYS = 14;
 
 @Injectable()
 export class SuggestionAnalysisScheduler implements OnModuleInit {
@@ -71,7 +68,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
     const atDate = instantToDate(at);
     // planning Todo.startDate는 달력 날짜 칸이라 지금처럼 그 순간의 UTC 날짜와 비교한다
     const recentFrom = at
-      .subtract({ hours: RECENT_ACTIVITY_DAYS * 24 })
+      .subtract({ hours: SUGGESTION_ANALYSIS_PERIOD_DAYS * 24 })
       .toZonedDateTimeISO("UTC")
       .toPlainDate();
     let totalEnqueued = 0;
@@ -81,10 +78,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
       fetchPage: (cursor, take) =>
         this.#txHost.tx.query.user.findMany({
           columns: { id: true },
-          with: {
-            preference: { columns: { timezone: true } },
-            location: { columns: { gridX: true, gridY: true, latitude: true, longitude: true } },
-          },
+          with: { preference: { columns: { timezone: true } } },
           where: {
             // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
             ...(cursor != null && { id: { gt: cursor } }),
@@ -103,13 +97,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
         const targets = batch.flatMap((user) => {
           const timeZone = resolveSuggestionTimeZone(user.preference?.timezone);
           return isInSuggestionDispatchWindow({ at, timeZone })
-            ? [
-                {
-                  userId: UserId.reconstitute(user.id),
-                  timeZone,
-                  weatherGrid: toWeatherGrid(user.location),
-                },
-              ]
+            ? [{ userId: UserId.reconstitute(user.id), timeZone }]
             : [];
         });
         totalEnqueued += await this.#dispatchAnalyses.execute({ targets });
@@ -122,24 +110,4 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
       enqueuedCount: totalEnqueued,
     });
   }
-}
-
-// 배포가 겹치는 동안 옛 worker가 읽는 KMA 격자. 격자 없는 해외 위치는 null이다
-function toWeatherGrid(
-  location: {
-    readonly gridX: number | null;
-    readonly gridY: number | null;
-    readonly latitude: number;
-    readonly longitude: number;
-  } | null,
-): SuggestionWeatherGrid | null {
-  if (location == null || location.gridX == null || location.gridY == null) {
-    return null;
-  }
-  return {
-    gridX: location.gridX,
-    gridY: location.gridY,
-    lat: location.latitude,
-    lon: location.longitude,
-  };
 }

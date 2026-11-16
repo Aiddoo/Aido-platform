@@ -19,6 +19,7 @@ import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infra
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { suggestionAnalysisPeriod } from "#api/modules/ai-assistance/suggestions/domain/suggestion-dispatch-window.domain-service";
 import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
 import {
   Suggestion,
@@ -281,25 +282,16 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   }
 
   it.each([
-    {
-      timezone: "Asia/Seoul",
-      from: "2026-10-07T15:00:00Z",
-      to: "2026-10-07T15:30:00Z",
-      dates: ["2026-10-07", "2026-10-08", "2026-10-09"],
-    },
-    {
-      timezone: "America/Los_Angeles",
-      from: "2026-10-07T07:00:00Z",
-      to: "2026-10-08T00:30:00Z",
-      dates: ["2026-10-06", "2026-10-07", "2026-10-08"],
-    },
+    { timezone: "Asia/Seoul", expected: ["2026-09-24", "2026-10-08"] },
+    { timezone: "America/Los_Angeles", expected: ["2026-09-23", "2026-09-24"] },
   ])(
     "$timezone 추천의 DATE 조회 범위는 UTC 날짜 대신 사용자 현지 날짜를 포함한다",
-    async ({ timezone, from, to, dates }) => {
+    async ({ timezone, expected }) => {
       // Given
+      const at = Temporal.Instant.from("2026-10-07T15:30:00Z");
       await client.delete(todo).where(eq(todo.userId, userId));
       await client.insert(todo).values(
-        dates.map((date) => {
+        ["2026-09-22", "2026-09-23", "2026-09-24", "2026-10-08", "2026-10-09"].map((date) => {
           const { id: _id, ...row } = TodoFixture.create({
             userId,
             categoryId,
@@ -315,13 +307,12 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       // When
       const todos = await activity.findRecentTodos(
         UserId.reconstitute(userId),
-        new Date(from),
-        new Date(to),
+        suggestionAnalysisPeriod({ at, timeZone: timezone }),
         timezone,
       );
 
       // Then
-      expect(todos.map((todo) => todo.title)).toEqual([dates[1]]);
+      expect(todos.map((todo) => todo.title)).toEqual(expected);
     },
   );
 
@@ -552,7 +543,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     }
 
     // Then
-    expect((await analysis).outcome).toBe("NOT_PREMIUM");
+    expect((await analysis)?.outcome).toBe("NOT_PREMIUM");
     expect(provider.getCallCount()).toBe(1);
     expect(await counts()).toEqual({ reports: 0, suggestions: 0 });
   });
