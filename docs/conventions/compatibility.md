@@ -28,13 +28,13 @@
 
 구 앱 경로를 남긴 경우 지원 범위는 여기에 적는다.
 
-- `POST /v1/todos/recurring`: 마지막 지원 앱 1.14.x. 내부는 `POST /v1/todos`의 `repeat`(매주 + 날짜까지)와 같은 경로다. 날짜 없음은 이 경로에서만 옛 코드 `SYS_0002`다. 1.16.0에서 출시 앱 비율을 보고 제거 일정을 정한다. 진행 중 반복 상한은 이 경로(메모 변환의 `isRecurring`, AI 제안 수락도 같다)에서 `TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY`(300개)이고 거절 코드는 `TODO_0813`이다. 옛 앱이 `TODO_0842`를 몰라 `SYS_0001`로 보이기 때문이고, `TODO_0813`은 옛 서버도 이 경로에서 보내던 코드라 옛 앱에 전용 문구("카테고리 한도")가 있다. 새 경로의 30개는 그대로 `TODO_0842`다. `TODO_0812`와 `RECURRING_TODO_LIMITS.MAX_DAYS_RANGE`는 이 경로와 함께 지운다.
-- `GET /v1/ai/usage`: 마지막 지원 앱 1.14.x(1.15 앱은 안 쓴다). 1.16.0에서 `/recurring`과 같이 판단한다.
-- `POST /v1/ai/parse-todo`: 마지막 지원 앱 1.14.x(1.15 앱은 `POST /v1/quick-plans`를 쓴다). 응답의 `meta`도 출시 계약이다. 1.16.0에서 `/recurring`과 같이 판단한다.
+- `POST /v1/todos/recurring`: 마지막 지원 앱 1.14.x. 내부는 `POST /v1/todos`의 `repeat`(매주 + 날짜까지)와 같은 경로다. 날짜 없음은 이 경로에서만 옛 코드 `SYS_0002`다. 1.16.0 확인(2026-11-16 운영 읽기 전용, `User.lastSeenAppVersion`·`lastActiveAt`): 7일 활성 20명 중 1.14 이하 5명, 30일 활성 57명 중 35명이라 남긴다. 1.17.0에서 다시 보고, 7일 활성 중 1.14 이하가 5% 아래이거나 앱 버전 관리(`app-config/app-versions`)의 최소 지원 버전을 1.15 이상으로 올린 뒤 지운다. 진행 중 반복 상한은 이 경로(메모 변환의 `isRecurring`, AI 제안 수락도 같다)에서 `TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY`(300개)이고 거절 코드는 `TODO_0813`이다. 옛 앱이 `TODO_0842`를 몰라 `SYS_0001`로 보이기 때문이고, `TODO_0813`은 옛 서버도 이 경로에서 보내던 코드라 옛 앱에 전용 문구("카테고리 한도")가 있다. 새 경로의 30개는 그대로 `TODO_0842`다. `TODO_0812`와 `RECURRING_TODO_LIMITS.MAX_DAYS_RANGE`는 이 경로와 함께 지운다.
+- `GET /v1/ai/usage`: 마지막 지원 앱 1.14.x(1.15 앱은 안 쓴다). 1.17.0에서 `/recurring`과 같이 판단한다.
+- `POST /v1/ai/parse-todo`: 마지막 지원 앱 1.14.x(1.15 앱은 `POST /v1/quick-plans`를 쓴다). 응답의 `meta`도 출시 계약이다. 1.17.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.
 - `POST /v1/memos`의 `Idempotency-Key` 생략: 출시 앱 1.15.1 이하와 서버 안 음성 계획 저장 경로(`PlanMemoWriterPort`). 헤더가 없으면 요청마다 메모를 만든다. 1.15.2 앱은 새 메모 저장마다 보내고, 같은 키로 글이 다르면 409 `MEMO_2004`다. 앱 쪽 생략을 막는 것은 1.15.1 이하 사용자가 사라진 뒤에 판단하고, 음성 계획 경로는 계속 키 없이 만든다.
-- 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.16.0에서 `/recurring`과 같이 판단한다.
-- 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.16.0에서 `/recurring`과 같이 판단한다.
+- 메모 변환의 `isRecurring`·`recurrence`: 마지막 지원 앱 1.14.x. 서버가 Presentation에서 같은 `repeat`로 바꾼다. 1.17.0에서 `/recurring`과 같이 판단한다.
+- 파싱 응답의 `recurrence`(요일 + 종료일): 마지막 지원 앱 1.14.x. 새 앱은 `repeat`를 쓴다. 1.17.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/notifications/token`: 마지막 지원 앱 1.14.1. 1.14.2 앱부터 `PUT /v1/notifications/push-devices/{deviceId}`를 쓴다. 같은 UseCase로 위임한다. 같은 경로의 `DELETE /v1/notifications/token?deviceId=`는 구 앱 경로가 아니다. 1.15.x 앱이 로그인한 채 로그아웃할 때 이 기기를 푸는 현행 경로(`PushDeviceApi.unregister`)이고, 세션이 끝난 기기는 인증 없이 `POST /v1/notifications/push-devices/unregister`로 푼다.
 - `Todo.recurrenceGroupId`(DB 칸·응답): 영구. 출시 앱 응답의 필수 칸이다.
 - `RetentionExperimentAssignment.assignedAt`(DB 칸): 영구. 코드는 읽지 않지만 DB 기본값으로 남는 배정 시각이고 다른 칸에 없다.
