@@ -154,6 +154,9 @@ toast.error(t('friend:toast.sendFailed'));
 | 연속 달성                    | 연속 기록                         | streak                                  | 스트릭                       |
 | 초대 보상 도장 / 친구 재촉   | 발자국 / 콕 찌르기                | paw prints / nudge                      |                              |
 | 프리미엄                     | 프리미엄                          | Premium(항상 대문자)                    | premium                      |
+| 반복되는 할 일               | 반복 할 일                        | repeating to-do                         | 루틴, routine                |
+| AI가 고른 반복 후보          | AI 제안                           | AI suggestions                          | 추천                         |
+| 기간별 AI 분석 글·차트       | AI 리포트                         | AI reports                              | 분석 보고서                  |
 
 - **녹음 고지**: `녹음 파일은 아이두 서버로 보내지 않아요` / `Audio files aren't sent to Aido's servers`. `폰에서만`·`이 기기에만`은 쓰지 않는다(백업 포함·네트워크 인식 경로가 있다).
 - **`음성 인식`**은 권한 이름과 Apple·Google 처리 고지에만 쓴다. 그 밖은 `말을 글자로 바꿔요`처럼 쓰고 `인식`·`텍스트`·`시간 초과`·`쿨다운`은 쓰지 않는다. **`정리`**는 AI 요약·나누기에만 쓴다(자동 삭제는 `삭제돼요`). `듣기`는 재생 뜻으로만 쓴다.
