@@ -104,7 +104,13 @@ SuggestionsList.Item = function Item({
   return (
     <Box className="py-2">
       <VStack gap={8}>
-        <Text size="b2" weight="semibold" shade={9}>
+        <Text
+          size="b2"
+          weight="semibold"
+          shade={9}
+          numberOfLines={2}
+          lineBreakStrategyIOS="hangul-word"
+        >
           {suggestion.title}
         </Text>
         <HStack gap={6} className="flex-wrap">

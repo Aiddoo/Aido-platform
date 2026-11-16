@@ -236,7 +236,7 @@
     "suggestion": {
       "analyzing": "최근 할 일을 살펴보고 있어요",
       "doneForToday": "오늘 제안을 모두 정리했어요",
-      "noPatternFound": "아직 반복할 만한 할 일을 찾지 못했어요",
+      "noPatternFound": "아직 반복할 만한 할 일이 없어요",
       "unavailableToday": "오늘은 분석하지 못했어요",
       "needsMoreTodos": "할 일을 적으면 자주 하는 일을 찾아 드려요",
       "needsAiConsent": "AI 제안을 받으려면 동의가 필요해요",

@@ -8,6 +8,7 @@ env:
 onFlowStart:
   - runScript: scripts/lib.js
   - runScript: scripts/screens-setup.js
+  - runScript: ../scripts/selectors.js
 ---
 - runFlow: subflows/resume.yaml
 - runFlow:
@@ -23,7 +24,7 @@ onFlowStart:
     commands:
       - extendedWaitUntil:
           visible:
-            id: report-this-week-record
+            id: ${output.ids.report.thisWeekRecord}
           timeout: 20000
 - takeScreenshot: 30_AI_리포트_목록
 - runFlow:
@@ -36,8 +37,13 @@ onFlowStart:
             ROUTE: reports/${MAESTRO_SHOT_WEEKLY_REPORT_ID}
       - extendedWaitUntil:
           visible:
-            id: report-summary
+            id: ${output.ids.report.summary}
           timeout: 20000
+      - runFlow: subflows/assert-no-dev-error.yaml
+      - assertVisible:
+          id: ${output.ids.report.dailyChart}
+      - assertVisible:
+          id: ${output.ids.report.hourChart}
       - takeScreenshot: 31_AI_리포트_주간
       - scroll
       - waitForAnimationToEnd:
@@ -49,8 +55,9 @@ onFlowStart:
             ROUTE: reports/${MAESTRO_SHOT_MONTHLY_REPORT_ID}
       - extendedWaitUntil:
           visible:
-            id: report-summary
+            id: ${output.ids.report.summary}
           timeout: 20000
+      - runFlow: subflows/assert-no-dev-error.yaml
       - waitForAnimationToEnd:
           timeout: 5000
       - takeScreenshot: 33_AI_리포트_월간
@@ -64,7 +71,7 @@ onFlowStart:
     commands:
       - extendedWaitUntil:
           visible:
-            id: suggestions-status
+            id: ${output.ids.suggestions.status}
           timeout: 20000
 - runFlow:
     when:

@@ -114,7 +114,12 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
           <ListRow.Texts
             type="1RowTypeA"
             top={label}
-            topProps={{ size: 'b3', weight: 'medium', shade: 8 }}
+            topProps={{
+              size: 'b3',
+              weight: 'medium',
+              shade: 8,
+              lineBreakStrategyIOS: 'hangul-word',
+            }}
           />
         }
         right={

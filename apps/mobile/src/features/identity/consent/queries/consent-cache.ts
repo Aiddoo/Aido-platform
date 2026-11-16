@@ -1,5 +1,10 @@
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import type { DefaultError, EnsureQueryDataOptions, QueryClient } from '@tanstack/react-query';
+import type {
+  DefaultError,
+  EnsureQueryDataOptions,
+  Query,
+  QueryClient,
+} from '@tanstack/react-query';
 
 import type { Consent } from '../domains/consent.model';
 import { CONSENT_QUERY_KEYS } from './consent-query-keys';
@@ -47,4 +52,13 @@ export function markAiDataSharingConsentRequired(queryClient: QueryClient) {
 
 export function invalidateConsent(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: CONSENT_QUERY_KEYS.detail() });
+}
+
+/** 조회 옵션이 `meta.refreshOnAiConsentChange`로 AI 동의에 따라 서버 상태가 달라진다고 밝힌 쿼리 */
+function isAiConsentDependentQuery(query: Pick<Query, 'meta'>) {
+  return query.meta?.refreshOnAiConsentChange === true;
+}
+
+export function invalidateAiConsentDependentQueries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ predicate: isAiConsentDependentQuery });
 }

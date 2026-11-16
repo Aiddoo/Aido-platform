@@ -105,7 +105,8 @@ seed 언어당 약 5~8분(가입 API 분당 5회 제한 + AI job 대기 최대 5
 화면 이동은 딥링크(`subflows/open.yaml`), 탭·대기는 testID를 우선 쓴다. 쓰는 testID(조립된 스택에 있음):
 `email-login-*`, `todo-detail`, `invite-card-signup`, `invite-card-redeem`, `invite-welcome-sheet`, `my-invite-code`,
 `invitees-see-all`, `invitees-tab-waiting`, `mypage-invite-card`, `whats-new-open`, `friends-empty-invite`,
-`report-this-week-record`(무료 리포트 목록), `report-summary`(리포트 상세), `suggestions-status`(제안 상태 카드).
+`report-this-week-record`(무료 리포트 목록), `report-summary`·`report-daily-chart`·`report-hour-chart`(리포트 상세), `suggestions-status`(제안 상태 카드).
+30-ai는 이 id와 개발 빌드 오류 창 제목을 `../scripts/selectors.js`에서 읽고, 차트 worklet 오류를 `subflows/assert-no-dev-error.yaml`로 잡는다.
 
 testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어와 무관해진다(앱 코드는 이 작업에서 고치지 않았다):
 

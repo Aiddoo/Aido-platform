@@ -77,14 +77,14 @@
     "status": {
       "hasSuggestions_one": "Found {{count}} to-do you do often",
       "hasSuggestions_other": "Found {{count}} to-dos you do often",
-      "hasSuggestionsDescription": "Make them repeat so you don't have to add them each time",
+      "hasSuggestionsDescription": "Make them repeat so you don't re-add them",
       "analyzing": "Looking at your recent to-dos",
       "analyzingDescription": "This only takes a moment",
-      "doneForToday": "You've gone through today's suggestions",
-      "noPatternFound": "No repeating to-dos found yet",
+      "doneForToday": "All caught up for today",
+      "noPatternFound": "No to-dos worth repeating yet",
       "unavailableToday": "We couldn't check today",
-      "needsMoreTodos": "Add to-dos and we'll find the ones you do often",
-      "needsMoreTodosDescription": "We'll look at the to-dos from the last 2 weeks",
+      "needsMoreTodos": "No to-dos to look at yet",
+      "needsMoreTodosDescription": "We look at to-dos from the last 2 weeks",
       "addTodo": "Add a to-do",
       "waitingForNextRun": "Waiting for the next check",
       "nextAnalysisAt": "We'll look again {{time}}",
@@ -101,7 +101,7 @@
     "toasts": {
       "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
       "retryLater": "Please try again later",
-      "accepted": "Made it repeat",
+      "accepted": "Set to repeat on {{days}}",
       "rejected": "Suggestion cleared"
     },
     "preview": {

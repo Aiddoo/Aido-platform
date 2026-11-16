@@ -1,10 +1,11 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
+import { NetworkError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { act, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
 
 import {
   createSuggestionAnalysisDto,
@@ -122,6 +123,35 @@ describe('useRequestSuggestionAnalysisMutationOptions', () => {
     await waitFor(() => expect(result.current.suggestions.data?.analysis?.state).toBe('ANALYZING'));
     expect(httpClient.post).toHaveBeenCalledWith('v1/ai/suggestions/analyses');
     await waitFor(() => expect(result.current.suggestions.isFetching).toBe(true));
+    await act(async () => refetched.settle());
+  });
+
+  it('서버에 닿지 않으면 알리고 목록 다시 받기를 기다리지 않아 버튼을 바로 다시 누를 수 있다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    const refetched = createPendingResponse(ok(createSuggestionListDto({ suggestions: [] })));
+    httpClient.get.mockImplementation(async () =>
+      httpClient.post.mock.calls.length === 0
+        ? ok(createSuggestionListDto({ suggestions: [] }))
+        : refetched.response,
+    );
+    httpClient.post.mockRejectedValue(new NetworkError());
+    const { result } = await renderScreenHook(
+      () => ({
+        suggestions: useQuery(useGetSuggestionsQueryOptions()),
+        request: useMutation(useRequestSuggestionAnalysisMutationOptions()),
+      }),
+      { di: createTestDi({ ports: { httpClient } }), withOverlay: true, withLocalDate: true },
+    );
+    await waitFor(() => expect(result.current.suggestions.isSuccess).toBe(true));
+
+    // When
+    await act(async () => result.current.request.mutate());
+
+    // Then
+    await waitFor(() => expect(result.current.request.isError).toBe(true));
+    expect(result.current.suggestions.isFetching).toBe(true);
+    expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
     await act(async () => refetched.settle());
   });
 });

@@ -184,6 +184,7 @@ ActivityReport.DailyCompletions = function DailyCompletions({
           onSelectedIndexChange={handleSelectedIndexChange}
           accessibilityLabel={t('report.detail.dailyCompletions')}
           accessibilityValue={{ text: valueLine }}
+          testID="report-daily-chart"
         />
         <Text size="b4" shade={7} className="tabular-nums">
           {valueLine}
@@ -244,6 +245,7 @@ ActivityReport.CompletionHours = function CompletionHours({
           onSelectedIndexChange={handleSelectedHourChange}
           accessibilityLabel={t('report.detail.completionHours')}
           accessibilityValue={{ text: valueLine }}
+          testID="report-hour-chart"
         />
         <Text size="b4" shade={7} className="tabular-nums">
           {valueLine}

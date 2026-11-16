@@ -33,6 +33,12 @@ onFlowComplete:
     visible:
       id: ${output.ids.report.freeSubscribe}
     timeout: 10000
+# 막대 차트 worklet 오류는 개발 빌드에서 오류 창이 덮을 뿐 뒤 요소는 그대로 보인다. 창은 1초까지 늦게 떠 기다린 뒤 본다
+- extendedWaitUntil:
+    visible: ${output.labels.devErrorOverlay}
+    timeout: 3000
+    optional: true
+- assertNotVisible: ${output.labels.devErrorOverlay}
 
 # When: 잠금 카드의 구독 버튼을 누른다
 - tapOn:

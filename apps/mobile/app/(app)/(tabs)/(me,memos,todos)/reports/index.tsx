@@ -1,12 +1,15 @@
 import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
+import { refreshWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
 import { ReportList } from '@src/features/insights/report/components/report-list';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
 import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
 import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { getReportTypeLabelKey } from '@src/features/insights/report/utils/report-label.view-model';
+import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -37,7 +40,13 @@ export default function ReportsScreen() {
   const queryClient = useQueryClient();
   const featureAccess = useFeatureAccess('AI_REPORT');
   const [reportType] = useReportType();
-  const [isRefreshing, handleRefresh] = useRefresh(() => refreshReports(queryClient));
+  const todayKey = useTodayKey();
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
+    Promise.all([
+      refreshReports(queryClient),
+      refreshWeeklyAchievements(queryClient, { year: getIsoWeekYear(todayKey) }),
+    ]),
+  );
 
   return (
     <>

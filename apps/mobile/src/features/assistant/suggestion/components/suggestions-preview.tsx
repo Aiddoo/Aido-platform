@@ -86,7 +86,13 @@ SuggestionsPreview.Item = function Item({ suggestion, isLast }: SuggestionsPrevi
   return (
     <Box className="py-2">
       <VStack gap={8}>
-        <Text size="b2" weight="semibold" shade={9}>
+        <Text
+          size="b2"
+          weight="semibold"
+          shade={9}
+          numberOfLines={2}
+          lineBreakStrategyIOS="hangul-word"
+        >
           {suggestion.title}
         </Text>
         <HStack justify="between" align="center" gap={8}>

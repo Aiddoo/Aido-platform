@@ -14,6 +14,7 @@ import { type ConsentAgreement } from '../schemas/consent-request.schema';
 import {
   cancelConsent,
   getCachedConsent,
+  invalidateAiConsentDependentQueries,
   invalidateConsent,
   updateConsentInCache,
 } from './consent-cache';
@@ -91,6 +92,9 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
 
     onSettled: (_data, error) => {
       settleConsentWrite(queryClient, error);
+      if (error == null) {
+        invalidateAiConsentDependentQueries(queryClient);
+      }
     },
     meta: { errorFeedback: { feature: 'ai', fallbackKey: 'ai:consent.saveFailed' } },
   });

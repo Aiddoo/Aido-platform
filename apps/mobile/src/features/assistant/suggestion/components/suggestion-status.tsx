@@ -1,4 +1,6 @@
 import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
+import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
+import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import type { Instant } from '@src/shared/date/instant';
@@ -35,7 +37,6 @@ import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model
 const SUGGESTION_STATUS_MASCOT_SIZE = 100;
 
 export function SuggestionStatus() {
-  const { t } = useTranslation('ai');
   const isFocused = useIsFocused();
   const { data: list } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
@@ -71,7 +72,7 @@ export function SuggestionStatus() {
           <SuggestionStatus.UnavailableToday nextAnalysisAt={analysis?.nextAnalysisAt} />
         ))
         .with('NEEDS_MORE_TODOS', () => <SuggestionStatus.NeedsMoreTodos />)
-        .with('NEEDS_AI_CONSENT', () => <AiConsentNotice title={t('consent.notice.suggestions')} />)
+        .with('NEEDS_AI_CONSENT', () => <SuggestionStatus.NeedsAiConsent />)
         .with('WAITING_FOR_NEXT_RUN', () => (
           <SuggestionStatus.WaitingForNextRun
             canRequestNow={analysis?.canRequestNow ?? false}
@@ -165,6 +166,18 @@ SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
   );
 };
 
+SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
+  const { t } = useTranslation('ai');
+  const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
+
+  // 동의를 저장하면 안내는 바로 숨고 제안 상태는 다시 받는 중이라 그동안 빈 카드 대신 받는 중 틀을 둔다
+  if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
+    return <StatusSkeleton />;
+  }
+
+  return <AiConsentNotice title={t('consent.notice.suggestions')} />;
+};
+
 SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
   canRequestNow,
   nextAnalysisAt,
@@ -200,10 +213,7 @@ SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
 SuggestionStatus.Loading = function Loading() {
   return (
     <SurfaceCard>
-      <StatusLayout
-        title={<TextSkeleton size="t3" className="w-48" />}
-        description={<TextSkeleton size="b4" className="w-56" />}
-      />
+      <StatusSkeleton />
     </SurfaceCard>
   );
 };
@@ -239,6 +249,15 @@ function StatusLayout({ title, description, children }: StatusLayoutProps) {
       <Spacing size={12} />
       <Box className="h-8 items-center justify-center">{children}</Box>
     </VStack>
+  );
+}
+
+function StatusSkeleton() {
+  return (
+    <StatusLayout
+      title={<TextSkeleton size="t3" className="w-48" />}
+      description={<TextSkeleton size="b4" className="w-56" />}
+    />
   );
 }
 

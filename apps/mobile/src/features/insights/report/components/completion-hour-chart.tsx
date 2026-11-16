@@ -77,15 +77,12 @@ export function CompletionHourChart({
     TICK_STEP_CHOICES_HOURS.find(
       (stepHours) => TICK_LABEL_MIN_WIDTH_PT <= ((layoutSize?.width ?? 0) * stepHours) / barCount,
     ) ?? WIDEST_TICK_STEP_HOURS;
+  // worklet 안의 인라인 콜백은 React Compiler가 worklet이 아닌 _temp로 빼내 UI 스레드에서 멈춘다
+  const barValues = deferredValues.map((count) => ({ total: count, completed: count }));
 
   const bars = useDerivedValue(() => {
     const chartWidth = width.get();
-    return toBarRects(
-      deferredValues.map((count) => ({ total: count, completed: count })),
-      chartWidth,
-      chartWidth / HOUR_CHART_ASPECT_RATIO,
-      HOUR_CHART_BAR,
-    );
+    return toBarRects(barValues, chartWidth, chartWidth / HOUR_CHART_ASPECT_RATIO, HOUR_CHART_BAR);
   });
   const readBars = () => {
     'worklet';

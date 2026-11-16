@@ -15,6 +15,8 @@ export type AppQueryMeta = {
   refreshOnTodoChange?: boolean;
   /** 차단·해제에 따라 서버가 가리는 사람이 달라지는 조회(친구, 댓글, 콕). 차단을 바꾼 뒤 다시 불러온다 */
   refreshOnBlockChange?: boolean;
+  /** AI 데이터 제공 동의에 따라 서버가 상태를 다르게 주는 조회(AI 제안). 동의를 바꾼 뒤 다시 불러온다 */
+  refreshOnAiConsentChange?: boolean;
 };
 
 export type MutationErrorFeedbackMeta = {

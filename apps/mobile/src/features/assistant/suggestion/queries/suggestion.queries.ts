@@ -28,6 +28,6 @@ export function useGetSuggestionsQueryOptions() {
       }
       return SUGGESTION_ANALYSIS_POLL_INTERVAL_MS;
     },
-    meta: { refreshOnPremiumChange: true },
+    meta: { refreshOnPremiumChange: true, refreshOnAiConsentChange: true },
   });
 }

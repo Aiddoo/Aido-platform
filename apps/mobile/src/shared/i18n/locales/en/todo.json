@@ -245,8 +245,8 @@
     "suggestionFree": "We'll turn your frequent to-dos into repeating ones",
     "suggestion": {
       "analyzing": "Looking at your recent to-dos",
-      "doneForToday": "You've gone through today's suggestions",
-      "noPatternFound": "No repeating to-dos found yet",
+      "doneForToday": "All caught up for today",
+      "noPatternFound": "No to-dos worth repeating yet",
       "unavailableToday": "We couldn't check today",
       "needsMoreTodos": "Add to-dos and we'll find the ones you do often",
       "needsAiConsent": "AI suggestions need your consent",
