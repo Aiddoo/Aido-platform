@@ -6,7 +6,10 @@ import {
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
 
-import { SUGGESTION_ANALYSIS_TRIGGERS } from "../../domain/suggestion-analysis.constants.js";
+import {
+  SUGGESTION_ANALYSIS_TRIGGERS,
+  type SuggestionAnalysisTrigger,
+} from "../../domain/suggestion-analysis.constants.js";
 
 export const AiSuggestionJobKey = {
   /** UTC 시각 단위. 같은 시각의 정기 실행과 재시작 보정이 한 번만 돈다 */
@@ -47,6 +50,12 @@ export type AiSuggestionAnalyzeData = Extract<
   { name: typeof AiSuggestionJobName.ANALYZE }
 >["data"];
 
+// 지금 받기 전용 worker가 minPriority로 이 값 이상만 가져가 아침 배치 적체에 밀리지 않는다
+export const AI_SUGGESTION_PRIORITY = {
+  SCHEDULED: 0,
+  ON_DEMAND: 10,
+} as const satisfies Record<SuggestionAnalysisTrigger, number>;
+
 const AI_SUGGESTION_RETRY_LIMIT = 2;
 
 // 1부터 세는 시도 번호다. 첫 시도 포함 총 retryLimit + 1회다
@@ -82,4 +91,14 @@ export const AI_SUGGESTION_QUEUE = defineQueue({
       payload: { name: AiSuggestionJobName.DISPATCH, data: {} },
     },
   ],
+});
+
+// 같은 큐의 두 번째 worker. 사용자가 앱에서 기다리는 지금 받기만 가져간다
+export const AI_SUGGESTION_ON_DEMAND_WORKER = defineQueue({
+  ...AI_SUGGESTION_QUEUE,
+  worker: {
+    localConcurrency: 1,
+    pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE,
+    minPriority: AI_SUGGESTION_PRIORITY.ON_DEMAND,
+  },
 });

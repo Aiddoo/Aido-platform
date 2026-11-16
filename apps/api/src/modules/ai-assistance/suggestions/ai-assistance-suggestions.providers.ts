@@ -1,4 +1,5 @@
 import type { Provider } from "@nestjs/common";
+import type { ConfigType } from "@nestjs/config";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
@@ -17,9 +18,11 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { AiGeneratorPort } from "../generation/application/ports/ai-generator.port.js";
 import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
+import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
 import { SuggestionAnalysisEnqueuerPort } from "./application/ports/suggestion-analysis-enqueuer.port.js";
 import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
+import { SuggestionAnalysisSettingsPort } from "./application/ports/suggestion-analysis-settings.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
 import { SuggestionAnalysisStateReader } from "./application/suggestion-analysis-state.reader.js";
 import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
@@ -27,6 +30,7 @@ import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/anal
 import { DispatchSuggestionAnalysesUseCase } from "./application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "./application/use-cases/list-pending-suggestions.use-case.js";
+import { RequestSuggestionAnalysisUseCase } from "./application/use-cases/request-suggestion-analysis.use-case.js";
 import { SuggestionAnalysisQueueAdapter } from "./infrastructure/jobs/suggestion-analysis-queue.adapter.js";
 import { SuggestionAnalysisProcessor } from "./infrastructure/jobs/suggestion-analysis.processor.js";
 import { SuggestionAnalysisScheduler } from "./infrastructure/jobs/suggestion-analysis.scheduler.js";
@@ -42,6 +46,13 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     useClass: DrizzleSuggestionAnalysisRunRepository,
   },
   { provide: SuggestionAnalysisEnqueuerPort, useClass: SuggestionAnalysisQueueAdapter },
+  {
+    provide: SuggestionAnalysisSettingsPort,
+    inject: [aiAssistanceSuggestionsConfig.KEY],
+    useFactory: (
+      config: ConfigType<typeof aiAssistanceSuggestionsConfig>,
+    ): SuggestionAnalysisSettingsPort => config,
+  },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
     repeatingTitleReader: RepeatingTodoTitleReaderPort,
@@ -52,7 +63,22 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     todoCountReader: SingleTodoCountReaderPort,
     scheduledAiConsent: ScheduledAiConsentReader,
     timezoneReader: UserTimezoneReaderPort,
+    settings: SuggestionAnalysisSettingsPort,
     clock: ClockPort,
+  }),
+  provideUseCase(RequestSuggestionAnalysisUseCase, {
+    entitlementReader: EntitlementReaderPort,
+    settings: SuggestionAnalysisSettingsPort,
+    timezoneReader: UserTimezoneReaderPort,
+    todoCountReader: SingleTodoCountReaderPort,
+    runs: SuggestionAnalysisRunRepositoryPort,
+    suggestions: SuggestionRepositoryPort,
+    enqueuer: SuggestionAnalysisEnqueuerPort,
+    analysisState: SuggestionAnalysisStateReader,
+    unitOfWork: UnitOfWorkPort,
+    mutationLock: MutationLockPort,
+    clock: ClockPort,
+    logger: loggerFor(RequestSuggestionAnalysisUseCase),
   }),
   provideUseCase(DispatchSuggestionAnalysesUseCase, {
     runs: SuggestionAnalysisRunRepositoryPort,

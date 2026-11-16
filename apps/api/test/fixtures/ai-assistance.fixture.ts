@@ -7,12 +7,14 @@ import type {
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { SuggestionAnalysisStateReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-analysis-state.reader";
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import {
   type AnalyzeAndCreateSuggestionsCommand,
   AnalyzeAndCreateSuggestionsUseCase,
 } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
+import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
@@ -22,7 +24,9 @@ import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-mem
 import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-repeating-todo-title.reader";
+import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-single-todo-count.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
+import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -88,6 +92,9 @@ export function createAiAssistanceFixture() {
   const runs = new InMemorySuggestionAnalysisRunRepository();
   const mutationLock = new RecordingMutationLock();
   const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
+  const todoCountReader = new StubSingleTodoCountReader();
+  const timezoneReader = new StubUserTimezoneReader();
+  const settings = { onDemandEnabled: true };
   const activityReader = new StubSuggestionActivityReader();
   activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
@@ -123,6 +130,28 @@ export function createAiAssistanceFixture() {
     entitlementReader: access,
     userMutationLock: access,
   });
+  const analysisState = new SuggestionAnalysisStateReader({
+    runs,
+    todoCountReader,
+    scheduledAiConsent,
+    timezoneReader,
+    settings,
+    clock,
+  });
+  const request = new RequestSuggestionAnalysisUseCase({
+    entitlementReader: access,
+    settings,
+    timezoneReader,
+    todoCountReader,
+    runs,
+    suggestions: repository,
+    enqueuer,
+    analysisState,
+    unitOfWork,
+    mutationLock,
+    clock,
+    logger,
+  });
   const dispatch = new DispatchSuggestionAnalysesUseCase({
     runs,
     enqueuer,
@@ -149,6 +178,9 @@ export function createAiAssistanceFixture() {
     runs,
     mutationLock,
     enqueuer,
+    todoCountReader,
+    timezoneReader,
+    settings,
     activityReader,
     repeatingTitleReader,
     reportRepository,
@@ -159,6 +191,7 @@ export function createAiAssistanceFixture() {
     logger,
     contextBuilder,
     analyze,
+    request,
     dispatch,
     generateReport,
   };

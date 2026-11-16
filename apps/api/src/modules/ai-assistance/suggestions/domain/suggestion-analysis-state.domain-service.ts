@@ -56,6 +56,9 @@ export function resolveSuggestionAnalysisState(
   return "WAITING_FOR_NEXT_RUN";
 }
 
-export function canRequestAnalysisNow(state: AiSuggestionAnalysisState): boolean {
-  return state === "WAITING_FOR_NEXT_RUN";
+export function canRequestAnalysisNow(
+  state: AiSuggestionAnalysisState,
+  onDemandEnabled: boolean,
+): boolean {
+  return onDemandEnabled && state === "WAITING_FOR_NEXT_RUN";
 }

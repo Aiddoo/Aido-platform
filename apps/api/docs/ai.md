@@ -134,9 +134,26 @@ Sentry AI span에는 입력·지시·응답 문장을 싣지 않는다([보안](
 
 끝내 실패하면 마지막 시도의 종류로 응답한다. 사용자 요청의 AI_1301·AI_1302·AI_1310은 예약을 환불한 뒤 던지므로 공개 상세 `{ charged: false }`를 싣는다(앱 문구 "횟수는 차감되지 않았어요"). 환불이 저장되지 않으면 차감 여부를 보장할 수 없으므로 상세 없이 같은 코드만 준다. 실패와 모델 대상 명령만 있는 입력(NO_ACTION)은 사용량을 차감하지 않는다. 사용량은 Access의 `QuotaLedger`가 센다: 공급자 호출 전에 `reserve`(한도 초과 AI_1303, 녹음 정리 AI_1313, 같은 키 처리 중 AI_1314 — 모두 `details: { charged: false, featureQuota }`), 결과를 주면 `commit`, 실패는 `refund(FAILED)`, NO_ACTION은 `refund(NO_ACTION)`이고 환불은 정확히 한 번이다. 요청(같은 키의 재예약·재생성은 한 줄)마다 `QuotaCharge` 한 줄이 남아 고객 문의 때 최종 상태와 시도 수(`attempt`)로 차감·환불을 설명한다. 재예약이 같은 행을 덮어쓰므로 시도별 이력은 로그(`access.quota.*`, `chargeId`)로 본다. 성공 응답은 갱신된 `featureQuota`를 함께 준다. 확정 뒤 한도를 읽지 못하면 결과를 살리고 `featureQuota`만 뺀다(`ai.generation.quota-read-failed`). 프로세스가 죽어 끝나지 못한 RESERVED는 10분 주기 `quota-abandoned-refund.v1` 잡이 `QUOTA_RESERVATION_TAKEOVER_AFTER_MS`(2분)가 지난 것만 `refundReason = ABANDONED`로 돌려준다(사용자 행 잠금 + 조건부 갱신이라 멱등). 30분 넘게 남은 예약이 있거나 돌려주지 못하면 `access.quota.stale-reservation` 경보를 올린다. 같은 잡이 7일 지난 `requestHash`를 지운다. 리포트는 일시 실패(`RATE_LIMITED`·`OVERLOADED`·`UPSTREAM`·`TIMEOUT`)를 마지막 잡 시도 전까지 다시 던지고, 이후에만 폴백을 `contentSource = FALLBACK`으로 저장한다. 제안 잡도 일시 실패만 다시 던지고 출력 오류·차단·잘림은 같은 비용으로 같게 실패하므로 건너뛴다. 보낼 업체가 없거나 킬 스위치·예산으로 멈추면 리포트는 폴백을 저장하고 제안은 건너뛴다.
 
+## 제안 분석 실행과 지금 받기
+
+- 실행 기록(`SuggestionAnalysisRun`, 사용자당 한 행)이 현지 날짜마다 분석 한 번을 지킨다([전이 표](glossary/ai-assistance.md#분석-실행-전이)). 아침 배치(`SCHEDULED`)는 매시 정각 현지 09시대 사용자를 50명 묶음으로 고르고 `DispatchSuggestionAnalysesUseCase`가 묶음 전원을 한 트랜잭션에서 잠근 뒤 오늘 요청받지 않은 사람만 기록하고 큐에 넣는다(잠금·조회·저장·적재 각 1문장). 배포 전에 쌓인 job(payload에 `localDate`·`trigger` 없음)은 아침 배치로 보고 실행 시각의 현지 날짜로 기록을 만들어 시작한다.
+- 지금 받기(`ON_DEMAND`, `POST /v1/ai/suggestions/analyses`)는 같은 잠금(`SuggestionLockKeys.analysisRun`)·같은 하루 job key(`suggestion_<userId>_<현지 날짜>`)를 쓰고 날짜는 저장된 시간대다. 그래서 LLM은 사용자당 하루 1회 그대로이고 09시 전에 요청하면 그날 배치는 건너뛴다. 무료는 AI_1309, 1.13.0 이상 앱의 동의 없음은 AI_1311이고, 꺼짐(`AI_SUGGESTION_ON_DEMAND_ENABLED=false`)·최근 14일 단건 할 일 없음·오늘 이미 요청은 큐에 넣지 않고 202와 지금 상태만 준다. 사용자당 1분 5회(`AI_SUGGESTION_THROTTLE`)다. job은 `priority: 10`이고 같은 큐의 두 번째 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`: `localConcurrency 1`·2초 polling·`minPriority 10`)가 가져간다. 생성은 `taskClass = interactive`라 배경 작업 자리·`interactive-only` 킬 스위치·배경 예산과 나뉜다.
+- 푸시는 아침 배치가 제안을 만든 때(`SCHEDULED` + `SUGGESTIONS_CREATED`)만 보낸다. 지금 받기는 앱 안에서 결과를 기다리므로 푸시·알림함 항목이 없다.
+- 결과(`SUGGESTION_ANALYSIS_OUTCOMES`)는 실행 기록에 남고 목록 응답 `analysis.state`가 된다. 후보가 0개면 LLM을 부르지 않고 `NO_PATTERN_FOUND`, 업체 없음·킬 스위치는 `AI_UNAVAILABLE`, 사용자 예산은 `SPEND_LIMIT_REACHED`, 다시 불러도 같게 실패하는 출력은 `FAILED`다. 일시 장애는 job이 다시 시도하고 마지막 시도만 `FAILED`로 남긴다. 60분 넘게 끝나지 않은 실행은 그날 job key를 이미 써서 `UNAVAILABLE_TODAY`다.
+
 ## 관측
 
 모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `provider`, `model`, `attempts`, `fallbackFrom`, `estimatedCostMicroUsd`, `latencyMs`, 입력·캐시 읽기·캐시 쓰기·출력·사고 토큰, `finishReason`, `outcome`, `errorType`(공급자 실패 분류), 파싱 응답 `errorCode`, `statusCode`, `quotaCharged`, `userId`. 공급자 실패는 `upstream`(`errorType` = 오류 이름, `statusCode`, 오류 본문의 `providerStatus` 예: `UNAVAILABLE`·`billing_error`, 네트워크 `networkCode` 예: `ECONNRESET`)으로 원인을 남긴다. 업체 경계에서는 `ai.provider.fallback`(task·from·to·errorType·statusCode)과 공용 정책의 `outbound.circuit.{opened,half-open,closed}`(policy `ai:<업체>`·breaker·reason·task)·`outbound.bulkhead.rejected`(policy)를 남긴다. 방어선은 `ai.generation.input-rejected`(task·inputChars·maxInputChars), `ai.spend.halted`(task·taskClass·reason), `ai.spend.user-limited`(task·userId), `ai.spend.threshold-reached`(tier·window·period·totalMicroUsd·limitMicroUsd)다. parse-memo의 `ai.generation.completed`는 모델이 낸 날짜 표현 `dateRefs`(`kind`·`weekOffset`)를 더한다. 고정 기호만 담고 공급자 message·응답 본문·사용자 원문·제목·카테고리 이름은 남기지 않는다.
+
+제안 분석은 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`(지금 받기 요청, userId·trigger)와 `ai.suggestion-analysis.finished`(userId·trigger·outcome·createdSuggestionCount·queueWaitMs·durationMs, `FAILED`만 warn)를 남긴다. 제안·리포트 processor의 `ai.job.completed`는 `durationMs`를 싣는다.
+
+CloudWatch Logs Insights(API 컨테이너 로그 그룹)에서 보는 쿼리다. 작업별 지연 p50·p95와 하루 추정 비용, 제안 분석 결과별 수와 큐 대기·처리 시간, 리포트·제안 job 처리 시간 순이다.
+
+```text
+filter event = "ai.generation.completed" | stats count() as calls, pct(latencyMs, 50) as p50Ms, pct(latencyMs, 95) as p95Ms, sum(estimatedCostMicroUsd) / 1000000 as costUsd by task, bin(1d)
+filter event = "ai.suggestion-analysis.finished" | stats count() as runs, pct(queueWaitMs, 50) as waitP50Ms, pct(queueWaitMs, 95) as waitP95Ms, pct(durationMs, 95) as durationP95Ms by trigger, outcome, bin(1d)
+filter event = "ai.job.completed" | stats count() as jobs, pct(durationMs, 95) as p95Ms by queueName, bin(1d)
+```
 
 ## 프롬프트 보안
 

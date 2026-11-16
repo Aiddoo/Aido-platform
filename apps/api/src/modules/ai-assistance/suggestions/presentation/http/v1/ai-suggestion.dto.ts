@@ -1,6 +1,7 @@
 import {
   suggestionActionResponseSchema,
   suggestionActionSchema,
+  suggestionAnalysisResponseSchema,
   suggestionIdParamSchema,
   suggestionListResponseSchema,
 } from "@aido/api";
@@ -24,3 +25,8 @@ export const SuggestionActionResponseDto = suggestionActionResponseSchema.meta({
   id: "SuggestionActionResponseDto",
 });
 export type SuggestionActionResponseDto = z.infer<typeof SuggestionActionResponseDto>;
+
+export const SuggestionAnalysisResponseDto = suggestionAnalysisResponseSchema.meta({
+  id: "SuggestionAnalysisResponseDto",
+});
+export type SuggestionAnalysisResponseDto = z.infer<typeof SuggestionAnalysisResponseDto>;

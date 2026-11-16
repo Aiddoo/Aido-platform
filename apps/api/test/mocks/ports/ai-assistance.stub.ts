@@ -27,7 +27,7 @@ export class StubAiGenerationUnitOfWork implements UnitOfWorkPort {
 }
 
 export class StubAiGenerationAccess
-  implements Pick<EntitlementReaderPort, "canInTx">, UserMutationLockPort
+  implements Pick<EntitlementReaderPort, "can" | "canInTx">, UserMutationLockPort
 {
   role = "USER";
   subscriptionStatus = "ACTIVE";
@@ -40,6 +40,9 @@ export class StubAiGenerationAccess
 
   constructor(unitOfWork: StubAiGenerationUnitOfWork) {
     this.unitOfWork = unitOfWork;
+  }
+  async can(userId: UserId, feature: PremiumFeature): Promise<boolean> {
+    return this.canInTx(userId, feature);
   }
   async canInTx(_userId: UserId, _feature: PremiumFeature): Promise<boolean> {
     const eligible =

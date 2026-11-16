@@ -143,9 +143,16 @@ describe("canRequestAnalysisNow", () => {
       timeZone: "America/Los_Angeles",
       expected: true,
     },
+    {
+      name: "서울 자정이지만 기능이 꺼짐",
+      now: "2026-11-15T15:00:00Z",
+      timeZone: "Asia/Seoul",
+      onDemandEnabled: false,
+      expected: false,
+    },
   ])(
     "현지 11-15에 끝난 분석은 $name에 다시 받을 수 있는지: $expected",
-    ({ now, timeZone, expected }) => {
+    ({ now, timeZone, onDemandEnabled = true, expected }) => {
       // Given
       const run = createSuggestionAnalysisRunFixture({
         status: "FINISHED",
@@ -157,6 +164,7 @@ describe("canRequestAnalysisNow", () => {
       // When
       const canRequest = canRequestAnalysisNow(
         resolveSuggestionAnalysisState(facts({ run, now: Temporal.Instant.from(now), timeZone })),
+        onDemandEnabled,
       );
 
       // Then

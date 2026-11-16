@@ -5,6 +5,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import type { PromptDefinition } from "../../../generation/application/messages/prompt-definition.messages.js";
 import { wrapUntrusted } from "../../../generation/application/messages/untrusted-input.messages.js";
 import { dedupeByTitlePrefixAndDays } from "../../domain/pattern-filter.domain-service.js";
+import type { SuggestionAnalysisTrigger } from "../../domain/suggestion-analysis.constants.js";
 import {
   buildSuggestionCandidates,
   resolveSuggestionPicks,
@@ -83,3 +84,12 @@ export const suggestionPrompt: PromptDefinition<
   }),
   normalize: normalizeSuggestions,
 };
+
+// 지금 받기는 사용자가 앱에서 기다리므로 배경 작업 자리·배경 중단 스위치와 나눠 interactive로 보낸다
+export function suggestionPromptFor(trigger: SuggestionAnalysisTrigger): typeof suggestionPrompt {
+  return match(trigger)
+    .returnType<typeof suggestionPrompt>()
+    .with("SCHEDULED", () => suggestionPrompt)
+    .with("ON_DEMAND", () => ({ ...suggestionPrompt, taskClass: "interactive" }))
+    .exhaustive();
+}

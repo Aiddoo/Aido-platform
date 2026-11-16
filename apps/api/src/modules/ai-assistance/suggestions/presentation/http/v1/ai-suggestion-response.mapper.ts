@@ -2,6 +2,7 @@ import type {
   RecurringSuggestion,
   SuggestionActionResponse,
   SuggestionAnalysis,
+  SuggestionAnalysisResponse,
   SuggestionListResponse,
 } from "@aido/api";
 import { pick } from "es-toolkit";
@@ -49,6 +50,12 @@ function toSuggestionAnalysis(analysis: SuggestionAnalysisReadModel): Suggestion
     lastAnalyzedAt: analysis.lastAnalyzedAt == null ? null : toIsoString(analysis.lastAnalyzedAt),
     nextAnalysisAt: toIsoString(analysis.nextAnalysisAt),
   };
+}
+
+export function toSuggestionAnalysisResponse(
+  analysis: SuggestionAnalysisReadModel,
+): SuggestionAnalysisResponse {
+  return { analysis: toSuggestionAnalysis(analysis) };
 }
 
 export function toSuggestionListResponse(

@@ -48,7 +48,7 @@ import {
   SUGGESTION_ANALYSIS_PERIOD_DAYS,
 } from "../../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
-import { suggestionPrompt } from "../messages/suggestion-prompt.messages.js";
+import { suggestionPromptFor } from "../messages/suggestion-prompt.messages.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
@@ -181,7 +181,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     consent: ScheduledAiConsent,
   ): Promise<GenerationOutcome> {
     const { userId, locale = "ko" } = command;
-    const definition = suggestionPrompt;
+    const definition = suggestionPromptFor(command.trigger);
     const logBase = {
       task: definition.id,
       promptVersion: definition.version,

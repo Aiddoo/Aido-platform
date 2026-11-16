@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 
 import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
@@ -8,6 +9,8 @@ import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { AiAssistanceGenerationModule } from "../generation/ai-assistance-generation.module.js";
+import { AiAssistanceParsingModule } from "../parsing/ai-assistance-parsing.module.js";
+import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { AI_ASSISTANCE_SUGGESTIONS_PROVIDERS } from "./ai-assistance-suggestions.providers.js";
 import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.controller.js";
 
@@ -17,10 +20,12 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
  */
 @Module({
   imports: [
+    ConfigModule.forFeature(aiAssistanceSuggestionsConfig),
     AccessQuotasModule,
     IdentitySettingsModule,
     IdentityUserAccessModule,
     AiAssistanceGenerationModule,
+    AiAssistanceParsingModule,
     NotificationPushModule,
     PlanningTodoQueriesModule,
     PlanningTodosModule,

@@ -7,6 +7,7 @@ import {
   SuggestionAnalysisEnqueuerPort,
 } from "../../application/ports/suggestion-analysis-enqueuer.port.js";
 import {
+  AI_SUGGESTION_PRIORITY,
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
   AiSuggestionJobKey,
@@ -27,6 +28,7 @@ function toQueuedJob(job: SuggestionAnalysisJob) {
       } satisfies AiSuggestionAnalyzeData,
     },
     idempotencyKey: AiSuggestionJobKey.analyze(job.userId.value, localDate),
+    priority: AI_SUGGESTION_PRIORITY[job.trigger],
   };
 }
 

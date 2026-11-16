@@ -17856,6 +17856,74 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "SuggestionAnalysisResponseDto": {
+      "properties": {
+        "analysis": {
+          "properties": {
+            "canRequestNow": {
+              "description": "지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true",
+              "type": "boolean",
+            },
+            "lastAnalyzedAt": {
+              "description": "마지막 분석이 끝난 순간(ISO 8601). 분석한 적 없으면 null",
+              "format": "date-time",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "nextAnalysisAt": {
+              "description": "다음 자동 분석 순간. 사용자 저장 시간대의 다음 09:00",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "recentTodoCount": {
+              "description": "최근 14일 동안 적은 단건 할 일 수(반복 할 일 제외)",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "state": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "HAS_SUGGESTIONS",
+                    "NEEDS_AI_CONSENT",
+                    "NEEDS_MORE_TODOS",
+                    "ANALYZING",
+                    "DONE_FOR_TODAY",
+                    "NO_PATTERN_FOUND",
+                    "UNAVAILABLE_TODAY",
+                    "WAITING_FOR_NEXT_RUN",
+                  ],
+                  "type": "string",
+                },
+                {
+                  "enum": [
+                    "UNKNOWN",
+                  ],
+                  "type": "string",
+                },
+              ],
+              "default": "UNKNOWN",
+              "description": "제안 화면 상태. 앱은 이 값 하나로 카드를 고른다",
+            },
+          },
+          "required": [
+            "state",
+            "recentTodoCount",
+            "canRequestNow",
+            "lastAnalyzedAt",
+            "nextAnalysisAt",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "analysis",
+      ],
+      "type": "object",
+    },
     "SuggestionListResponseDto": {
       "properties": {
         "analysis": {
@@ -30484,6 +30552,251 @@ AI_1310: 지금 AI 요청이 너무 많습니다.",
         },
       ],
       "summary": "AI 제안 목록과 분석 상태 조회",
+      "tags": [
+        "AI",
+      ],
+    },
+  },
+  "/v1/ai/suggestions/analyses": {
+    "post": {
+      "description": "오늘(저장 시간대의 현지 날짜) 분석을 큐에 넣고 202와 지금 분석 상태를 줍니다.
+
+- 분석은 사용자당 하루 한 번입니다. 오늘 이미 요청했거나(아침 자동 분석 포함) 기능이 꺼져 있거나 최근 14일 단건 할 일이 없으면 큐에 넣지 않고 202와 지금 상태를 줍니다.
+- 날짜는 요청 헤더가 아니라 저장된 시간대로 정합니다. 09:00 전에 요청하면 그날 자동 분석을 대신합니다.
+- 앱 안에서 결과를 기다리는 요청이라 푸시·알림함 항목을 만들지 않습니다. 응답의 \`analysis.state\`가 \`ANALYZING\`이면 목록을 다시 조회해 결과를 봅니다.
+- 사용자당 1분에 5회까지입니다.
+- 1.13.0 이상 앱은 AI 데이터 처리 동의가 있어야 합니다(AI_1311). 프리미엄이 아니면 AI_1309입니다.",
+      "operationId": "requestAiSuggestionAnalysis",
+      "parameters": [],
+      "responses": {
+        "202": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/SuggestionAnalysisResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1309": {
+                  "summary": "AI 제안은 프리미엄 기능입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1309",
+                      "details": null,
+                      "message": "AI 제안은 프리미엄 기능입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1311": {
+                  "summary": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1311",
+                      "details": null,
+                      "message": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1309",
+                          "AI_1311",
+                        ],
+                        "example": "AI_1309",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "AI 제안은 프리미엄 기능입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1309: AI 제안은 프리미엄 기능입니다.
+
+AI_1311: AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "지금 AI 제안 분석 요청",
       "tags": [
         "AI",
       ],

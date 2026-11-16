@@ -14,6 +14,7 @@ import {
   suggestionAnalysisPeriod,
 } from "../domain/suggestion-dispatch-window.domain-service.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "./ports/suggestion-analysis-run.repository.port.js";
+import type { SuggestionAnalysisSettingsPort } from "./ports/suggestion-analysis-settings.port.js";
 import type { SuggestionAnalysisReadModel } from "./read-models/suggestion-analysis.read-model.js";
 
 interface SuggestionAnalysisStateReaderDependencies {
@@ -21,6 +22,7 @@ interface SuggestionAnalysisStateReaderDependencies {
   readonly todoCountReader: Pick<SingleTodoCountReaderPort, "countSingleTodos">;
   readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
   readonly timezoneReader: Pick<UserTimezoneReaderPort, "findStoredTimezone">;
+  readonly settings: Pick<SuggestionAnalysisSettingsPort, "onDemandEnabled">;
   readonly clock: ClockPort;
 }
 
@@ -49,7 +51,7 @@ export class SuggestionAnalysisStateReader {
     return {
       state,
       recentTodoCount,
-      canRequestNow: canRequestAnalysisNow(state),
+      canRequestNow: canRequestAnalysisNow(state, this.#dependencies.settings.onDemandEnabled),
       lastAnalyzedAt: run?.finishedAt ?? null,
       nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timeZone }),
     };

@@ -647,6 +647,20 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       }),
   );
 
+  it.each([
+    ["SCHEDULED", "background"],
+    ["ON_DEMAND", "interactive"],
+  ] as const)("%s 분석은 AI 작업 분류 %s로 부른다", (trigger, taskClass) =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = usePickResponse(createAiAssistanceFixture());
+      // When
+      await f.analyze.execute(createAnalyzeCommand(f, { trigger }));
+      // Then
+      expect(f.generator.getLastRequest()).toMatchObject({ task: "suggestion", taskClass });
+    }),
+  );
+
   it("실행 기록이 없는 1.16.0 전 작업도 기록을 만들어 시작하고 끝낸다", () =>
     withAiAssistanceTime(async () => {
       // Given

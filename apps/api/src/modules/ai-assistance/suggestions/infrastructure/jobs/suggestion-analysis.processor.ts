@@ -14,6 +14,7 @@ import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-e
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
 import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import {
+  AI_SUGGESTION_ON_DEMAND_WORKER,
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
   type AiSuggestionRuntimeJob,
@@ -57,11 +58,13 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.#jobQueue.work(AI_SUGGESTION_QUEUE, async (jobs) => {
-      for (const job of jobs) {
-        await this.process(job.data, job.attempt);
-      }
-    });
+    for (const queue of [AI_SUGGESTION_QUEUE, AI_SUGGESTION_ON_DEMAND_WORKER]) {
+      await this.#jobQueue.work(queue, async (jobs) => {
+        for (const job of jobs) {
+          await this.process(job.data, job.attempt);
+        }
+      });
+    }
   }
 
   /** attempt는 1부터 센다. 생략하면 재시도 없는 단발 실행으로 본다. */

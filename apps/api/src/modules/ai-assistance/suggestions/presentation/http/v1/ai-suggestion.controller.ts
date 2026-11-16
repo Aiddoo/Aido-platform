@@ -1,6 +1,17 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -10,25 +21,38 @@ import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
+  ApiTooManyRequestsError,
   ApiUnauthorizedError,
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
+import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
+import { AiDataSharingConsentGuard } from "../../../../parsing/ai-assistance-parsing.public.js";
 import { HandleSuggestionActionUseCase } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "../../../application/use-cases/list-pending-suggestions.use-case.js";
+import { RequestSuggestionAnalysisUseCase } from "../../../application/use-cases/request-suggestion-analysis.use-case.js";
 import {
   toSuggestionActionResponse,
+  toSuggestionAnalysisResponse,
   toSuggestionListResponse,
 } from "./ai-suggestion-response.mapper.js";
 import {
   SuggestionActionDto,
   SuggestionActionResponseDto,
+  SuggestionAnalysisResponseDto,
   SuggestionIdParamDto,
   SuggestionListResponseDto,
 } from "./ai-suggestion.dto.js";
+
+// 하루 한 번은 같은 job key·실행 기록이 막고, 이 한도는 연타·두 기기 동시 요청의 요청 수만 줄인다
+const AI_SUGGESTION_THROTTLE = {
+  REQUEST_ANALYSIS: { default: { ttl: 60_000, limit: 5 } },
+} as const;
 
 const SUGGESTION_LIST_DESCRIPTION = `프리미엄 사용자의 대기 중(PENDING) 제안과 분석 상태(\`analysis\`)를 줍니다.
 
@@ -56,6 +80,14 @@ const SUGGESTION_LIST_DESCRIPTION = `프리미엄 사용자의 대기 중(PENDIN
 - \`canRequestNow\`는 \`WAITING_FOR_NEXT_RUN\`일 때만 \`true\`입니다.
 - \`nextAnalysisAt\`은 저장 시간대의 다음 09:00 순간입니다. 오늘 09:00이 지났으면 내일 09:00입니다.
 - \`evidence\`·\`analysis\`는 1.16.0에 더한 칸이고 출시 앱은 읽지 않습니다.`;
+
+const SUGGESTION_ANALYSIS_REQUEST_DESCRIPTION = `오늘(저장 시간대의 현지 날짜) 분석을 큐에 넣고 202와 지금 분석 상태를 줍니다.
+
+- 분석은 사용자당 하루 한 번입니다. 오늘 이미 요청했거나(아침 자동 분석 포함) 기능이 꺼져 있거나 최근 14일 단건 할 일이 없으면 큐에 넣지 않고 202와 지금 상태를 줍니다.
+- 날짜는 요청 헤더가 아니라 저장된 시간대로 정합니다. 09:00 전에 요청하면 그날 자동 분석을 대신합니다.
+- 앱 안에서 결과를 기다리는 요청이라 푸시·알림함 항목을 만들지 않습니다. 응답의 \`analysis.state\`가 \`ANALYZING\`이면 목록을 다시 조회해 결과를 봅니다.
+- 사용자당 1분에 ${AI_SUGGESTION_THROTTLE.REQUEST_ANALYSIS.default.limit}회까지입니다.
+- 1.13.0 이상 앱은 AI 데이터 처리 동의가 있어야 합니다(AI_1311). 프리미엄이 아니면 AI_1309입니다.`;
 
 const SUGGESTION_ACTION_DESCRIPTION = `제안을 수락하거나 거절합니다.
 
@@ -86,13 +118,16 @@ const SUGGESTION_ACTION_DESCRIPTION = `제안을 수락하거나 거절합니다
 export class AiSuggestionController {
   readonly #getPendingSuggestionsUseCase: ListPendingSuggestionsUseCase;
   readonly #handleSuggestionActionUseCase: HandleSuggestionActionUseCase;
+  readonly #requestSuggestionAnalysisUseCase: RequestSuggestionAnalysisUseCase;
 
   constructor(
     getPendingSuggestionsUseCase: ListPendingSuggestionsUseCase,
     handleSuggestionActionUseCase: HandleSuggestionActionUseCase,
+    requestSuggestionAnalysisUseCase: RequestSuggestionAnalysisUseCase,
   ) {
     this.#getPendingSuggestionsUseCase = getPendingSuggestionsUseCase;
     this.#handleSuggestionActionUseCase = handleSuggestionActionUseCase;
+    this.#requestSuggestionAnalysisUseCase = requestSuggestionAnalysisUseCase;
   }
 
   @Get()
@@ -109,6 +144,28 @@ export class AiSuggestionController {
   ): Promise<SuggestionListResponseDto> {
     return toSuggestionListResponse(
       await this.#getPendingSuggestionsUseCase.execute({ userId: user.userId }),
+    );
+  }
+
+  @Post("analyses")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(AiDataSharingConsentGuard)
+  @ThrottleByUser()
+  @Throttle(AI_SUGGESTION_THROTTLE.REQUEST_ANALYSIS)
+  @ApiDoc({
+    summary: "지금 AI 제안 분석 요청",
+    operationId: "requestAiSuggestionAnalysis",
+    description: SUGGESTION_ANALYSIS_REQUEST_DESCRIPTION,
+  })
+  @ApiSuccessResponse({ type: SuggestionAnalysisResponseDto, status: HttpStatus.ACCEPTED })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.AI_1309, ErrorCode.AI_1311])
+  @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
+  async requestAnalysis(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<SuggestionAnalysisResponseDto> {
+    return toSuggestionAnalysisResponse(
+      await this.#requestSuggestionAnalysisUseCase.execute({ userId: user.userId }),
     );
   }
 
