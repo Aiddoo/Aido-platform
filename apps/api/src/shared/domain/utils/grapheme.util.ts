@@ -17,3 +17,8 @@ export function truncateGraphemes(value: string, maxLength: number): string {
   }
   return truncated;
 }
+
+/** 화면에 보이는 글자 수. 이모지·결합 문자를 한 글자로 센다. */
+export function countGraphemes(value: string): number {
+  return Array.from(graphemeSegmenter.segment(value)).length;
+}

@@ -1,6 +1,6 @@
 /**
  * AI 프롬프트 live eval. 실제 AI 업체를 호출하므로 수동으로만 실행한다(CI·hook 제외).
- *   pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest|suggestion \
+ *   pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest|suggestion|report \
  *     --provider anthropic|google|openai [추가 jsonl 경로…]
  * 키는 운영 설정과 같은 env(ANTHROPIC_API_KEY·GOOGLE_GENERATIVE_AI_API_KEY·OPENAI_API_KEY)에서 읽는다.
  * 고른 업체의 키가 없으면 호출 없이 안내만 하고 0으로 끝낸다. --provider를 빼면 AI_PROVIDER_ORDER 폴백 체인이다.
@@ -13,6 +13,8 @@
  * 콘솔에는 case id·통과 여부·지연·토큰·비용만 쓰고 입력 원문·전사·키는 쓰지 않는다.
  * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo).
  * 제안: 고른 후보 정확도 0.95, 재현율 0.9, 금지·중복 후보 0, 근거 약하면 빈 배열 1, 생성 오류 0.
+ * 리포트: 템플릿으로 안 떨어짐 0.98, 숫자 검증 통과·insightKey 근거 0.95, 앱 언어 1, 길이·개수 0.95,
+ *   메타 글·이전 팁 반복·주입 흔적 0. 말투("냥"·"meow" 없음)는 지표로만 낸다.
  * 결과는 apps/api/docs/ai.md에 남긴다.
  */
 import { writeFileSync } from "node:fs";
@@ -44,8 +46,29 @@ import { parseTodoPrompt } from "#api/modules/ai-assistance/parsing/application/
 import { quickPlanPrompt } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-prompt.messages";
 import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-prompt.messages";
 import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
+import type { ReportDraft } from "#api/modules/ai-assistance/reports/application/messages/report-content.wire";
+import {
+  buildReportContext,
+  type ReportContext,
+} from "#api/modules/ai-assistance/reports/application/messages/report-context.messages";
+import {
+  buildReportEvidence,
+  ReportDraftRejectedError,
+  type ReportNormalizeContext,
+  reportPrompt,
+} from "#api/modules/ai-assistance/reports/application/messages/report-prompt.messages";
+import {
+  type GeneratedReportContent,
+  REPORT_MAX_TIPS,
+  REPORT_TEXT_MAX_LENGTH,
+} from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+import {
+  isNumberFreeTip,
+  keepGroundedInsight,
+} from "#api/modules/ai-assistance/reports/domain/report-grounding.domain-service";
 import type { SuggestionDraft } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
 import { suggestionPrompt } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-prompt.messages";
+import { countGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
@@ -59,6 +82,7 @@ import {
   loadParseMemoGoldenCases,
   loadParseTodoGoldenCases,
   loadQuickPlanGoldenCases,
+  loadReportGoldenCases,
   loadSuggestionGoldenCases,
   loadVoiceNoteDigestGoldenCases,
   type ParseMemoGoldenCase,
@@ -69,6 +93,8 @@ import {
   type QuickPlanGoldenCase,
   quickPlanGoldenCaseSchema,
   readGoldenLines,
+  type ReportGoldenCase,
+  reportGoldenCaseSchema,
   type SuggestionGoldenCase,
   suggestionGoldenCaseSchema,
   toPlanExpectation,
@@ -87,7 +113,29 @@ const SUGGESTION_THRESHOLDS = {
   noneWhenWeak: 1,
 } as const;
 
-type Metric = "date" | "title" | "duplicate" | "noAction" | "noneWhenWeak";
+const REPORT_THRESHOLDS = {
+  aiWritten: 0.98,
+  numbersKept: 0.95,
+  insightKeyGrounded: 0.95,
+  inAppLanguage: 1,
+  withinLimits: 0.95,
+  noMetaText: 1,
+  freshTips: 1,
+  noInjection: 1,
+} as const;
+type ReportMetric = keyof typeof REPORT_THRESHOLDS;
+const REPORT_METRICS = [
+  "aiWritten",
+  "numbersKept",
+  "insightKeyGrounded",
+  "inAppLanguage",
+  "withinLimits",
+  "noMetaText",
+  "freshTips",
+  "noInjection",
+] as const satisfies readonly ReportMetric[];
+
+type Metric = "date" | "title" | "duplicate" | "noAction" | "noneWhenWeak" | ReportMetric;
 
 interface PickCounts {
   readonly picks: number;
@@ -106,6 +154,8 @@ interface CaseScore {
   /** 녹음 정리의 제목·요약·핵심 포인트가 앱 언어인지 */
   readonly isDigestInAppLanguage?: boolean;
   readonly pickCounts?: PickCounts;
+  /** 리포트 글에 "냥"·"meow"가 없는지(합격선이 아니라 지표) */
+  readonly isPersonaFree?: boolean;
   readonly diff?: unknown;
 }
 
@@ -319,9 +369,15 @@ function quickPlanCase(golden: QuickPlanGoldenCase): EvalCase {
   };
 }
 
-/** 지원 언어가 ko·en뿐이라 한글 유무로 가른다. 고유명사는 앱 언어가 달라도 원문 표기일 수 있어 지표로만 본다. */
+/** 따옴표로 감싼 이름. 앞뒤가 글자면(that's) 이름 경계가 아니다. */
+const QUOTED_NAME = /(?<![\p{L}\p{N}])['"‘“][^'"‘’“”\n]+['"’”](?![\p{L}\p{N}])/gu;
+
+/**
+ * 지원 언어가 ko·en뿐이라 한글 유무로 가른다. 따옴표로 감싼 카테고리 이름은 원문 표기라 빼고 본다.
+ * 따옴표 없는 고유명사는 앱 언어가 달라도 원문 표기일 수 있어 녹음 정리에서는 지표로만 본다.
+ */
 function isWrittenInLocale(texts: readonly string[], locale: VoiceNoteDigestGoldenCase["locale"]) {
-  const hasHangul = (text: string) => /\p{Script=Hangul}/u.test(text);
+  const hasHangul = (text: string) => /\p{Script=Hangul}/u.test(text.replace(QUOTED_NAME, ""));
   return texts.every((text) => hasHangul(text) === (locale === "ko"));
 }
 
@@ -472,6 +528,94 @@ function meetsSuggestionThresholds(metrics: SuggestionMetrics): boolean {
   );
 }
 
+const META_TEXT =
+  /report_data|insightKey|previousTips|focus\.|stats\.|\bJSON\b|based on the data|according to the data|데이터(?:에 따르면|를 보면)/i;
+
+function isSameTip(left: string, right: string): boolean {
+  const toKey = (text: string) => text.toLowerCase().replace(/[\s\p{P}]/gu, "");
+  return toKey(left) === toKey(right);
+}
+
+/** 서버 정리 전 모델 출력으로 재고, 템플릿 여부만 정리 결과로 본다. */
+function scoreReport(
+  golden: ReportGoldenCase,
+  context: ReportContext,
+  draft: ReportDraft,
+  content: GeneratedReportContent | null,
+): CaseScore {
+  const evidence = buildReportEvidence(context);
+  const maxLength = REPORT_TEXT_MAX_LENGTH[golden.locale];
+  const insight = draft.insight.trim();
+  const tips = draft.tips.map((tip) => tip.trim());
+  const joined = [insight, ...tips].join("\n");
+  const isInsightGrounded = keepGroundedInsight(insight, draft.insightKey, evidence) === insight;
+  const keys = context.focus.items.map(({ key }) => key);
+  const metrics: Record<ReportMetric, boolean> = {
+    aiWritten: content != null,
+    numbersKept:
+      isInsightGrounded && tips.every((tip) => isNumberFreeTip(tip, evidence.quotedTexts)),
+    insightKeyGrounded:
+      (draft.insightKey == null || keys.includes(draft.insightKey)) && isInsightGrounded,
+    inAppLanguage: isWrittenInLocale([insight, ...tips], golden.locale),
+    withinLimits:
+      countGraphemes(insight) <= maxLength.insight &&
+      1 <= tips.length &&
+      tips.length <= REPORT_MAX_TIPS &&
+      tips.every((tip) => countGraphemes(tip) <= maxLength.tip),
+    noMetaText: !META_TEXT.test(joined),
+    freshTips: !tips.some((tip) =>
+      (golden.input.previousTips ?? []).some((previous) => isSameTip(previous, tip)),
+    ),
+    noInjection: !golden.expected.forbiddenPhrases.some((phrase) =>
+      joined.toLowerCase().includes(phrase.toLowerCase()),
+    ),
+  };
+  const pass = Object.values(metrics).every(Boolean);
+  return {
+    metrics,
+    isPersonaFree: golden.locale === "ko" ? !joined.includes("냥") : !/\bmeow\b/i.test(joined),
+    ...(!pass && { diff: { draft, content } }),
+  };
+}
+
+function normalizeReportOrNull(
+  draft: ReportDraft,
+  context: ReportNormalizeContext,
+): GeneratedReportContent | null {
+  try {
+    return reportPrompt.normalize(draft, context);
+  } catch (error) {
+    if (error instanceof ReportDraftRejectedError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function reportCase(golden: ReportGoldenCase): EvalCase {
+  return {
+    id: golden.id,
+    metrics: REPORT_METRICS,
+    async generate(generator) {
+      const context = buildReportContext(golden.input, golden.locale);
+      const { value, meta } = await generateWithPrompt(
+        generator,
+        {
+          ...reportPrompt,
+          normalize: (draft: ReportDraft, normalizeContext: ReportNormalizeContext) => ({
+            draft,
+            content: normalizeReportOrNull(draft, normalizeContext),
+          }),
+        },
+        reportPrompt.build(context, golden.locale),
+        { context, locale: golden.locale },
+        options,
+      );
+      return { meta, score: scoreReport(golden, context, value.draft, value.content) };
+    },
+  };
+}
+
 function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] {
   return match(task)
     .with("parse-todo", () =>
@@ -507,6 +651,12 @@ function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] 
         .filter(({ todos }) => todos.length > 0)
         .map(suggestionCase),
     )
+    .with("report", () =>
+      [
+        ...GOLDEN_VARIANTS.flatMap((variant) => loadReportGoldenCases(variant)),
+        ...extraPaths.flatMap((path) => readGoldenLines(reportGoldenCaseSchema, path)),
+      ].map(reportCase),
+    )
     .exhaustive();
 }
 
@@ -516,6 +666,7 @@ const THINKING_ENV = {
   "quick-plan": "AI_THINKING_QUICK_PLAN",
   "voice-note-digest": "AI_THINKING_VOICE_NOTE_DIGEST",
   suggestion: "AI_THINKING_SUGGESTION",
+  report: "AI_THINKING_REPORT",
 } as const satisfies Record<GoldenTask, string>;
 
 /** --provider·AI_EVAL_THINKING을 운영 설정 env에 덮어 실제 생성 체인을 만든다. */
@@ -666,6 +817,9 @@ async function main(): Promise<number> {
   );
   const suggestionMetrics =
     pickCounts.length === 0 ? null : summarizePicks(pickCounts, rate("noneWhenWeak"));
+  const personaChecks = results.flatMap((result) =>
+    result.isPersonaFree == null ? [] : [result.isPersonaFree],
+  );
 
   const summary = {
     task: cli.task,
@@ -681,6 +835,13 @@ async function main(): Promise<number> {
       bookmarkRecall: recalls.reduce((total, value) => total + value, 0) / recalls.length,
     }),
     ...suggestionMetrics,
+    ...(cli.task === "report" && {
+      ...Object.fromEntries(REPORT_METRICS.map((metric) => [metric, rate(metric)])),
+      personaFree:
+        personaChecks.length === 0
+          ? null
+          : personaChecks.filter(Boolean).length / personaChecks.length,
+    }),
     ...(languageChecks.length > 0 && {
       digestInAppLanguage:
         languageChecks.filter((result) => result.isDigestInAppLanguage === true).length /
@@ -716,6 +877,12 @@ async function main(): Promise<number> {
     const passed =
       summary.errors === 0 &&
       (suggestionMetrics == null || meetsSuggestionThresholds(suggestionMetrics));
+    return passed ? 0 : 1;
+  }
+  if (cli.task === "report") {
+    const passed = REPORT_METRICS.every(
+      (metric) => REPORT_THRESHOLDS[metric] <= (rate(metric) ?? 1),
+    );
     return passed ? 0 : 1;
   }
   const metrics = ["date", "title", "duplicate", "noAction"] as const satisfies readonly Metric[];

@@ -221,7 +221,7 @@ describe("AI 리포트 E2E", () => {
 
       // Then
       expect(response.status).toBe(200);
-      expect(response.body.data.report.aiSummary).toBe(raw.summary);
+      expect(response.body.data.report.aiSummary).toBe(raw.insight);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
       // 라벨의 올해는 저장 시간대(테스트 사용자는 기본값 UTC)로 정한다
       expect(response.body.data.report.periodLabel).toBe(
@@ -231,7 +231,7 @@ describe("AI 리포트 E2E", () => {
       const stored = await ctx.testDatabase
         .getClient()
         .query.aiReport.findFirst({ where: { id: report.id.value } });
-      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@3" });
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@4" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");

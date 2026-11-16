@@ -187,17 +187,24 @@ describe("업체 공통 구조화 출력 규칙", () => {
 
     it("리포트의 tips와 제안의 picks도 문자열이면 풀어서 받는다", () => {
       // Given
-      const report = { summary: "잘했어요", tips: JSON.stringify(["일찍 시작하기"]) };
+      const report = {
+        insightKey: null,
+        insight: "잘했어요",
+        tips: JSON.stringify(["일찍 시작하기"]),
+      };
       const suggestion = { picks: JSON.stringify([]) };
       // When
       const parsed = [reportPrompt.schema.parse(report), suggestionPrompt.schema.parse(suggestion)];
       // Then
-      expect(parsed).toEqual([{ summary: "잘했어요", tips: ["일찍 시작하기"] }, { picks: [] }]);
+      expect(parsed).toEqual([
+        { insightKey: null, insight: "잘했어요", tips: ["일찍 시작하기"] },
+        { picks: [] },
+      ]);
     });
 
     it("배열 안의 항목만 문자열이어도 풀어서 받는다", () => {
       // Given
-      const item = { summary: "잘했어요", tips: ["일찍 시작하기"] };
+      const item = { insightKey: null, insight: "잘했어요", tips: ["일찍 시작하기"] };
       const schema = llmObject({ reports: z.array(reportPrompt.schema) });
       // When
       const parsed = schema.parse({ reports: [JSON.stringify(item)] });

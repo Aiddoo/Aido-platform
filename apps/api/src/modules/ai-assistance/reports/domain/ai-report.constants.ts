@@ -1,5 +1,14 @@
 import type { AI_REPORT_TYPES, DayOfWeek } from "@aido/api/vocabulary";
 
+import type { SupportedLocale } from "#api/shared/domain/locale";
+
+/** 코치 카드 한 장에 들어가는 글자 수. 넘는 문장은 중간에서 자르지 않고 버린다 */
+export const REPORT_TEXT_MAX_LENGTH = {
+  ko: { insight: 60, tip: 45 },
+  en: { insight: 120, tip: 90 },
+} as const satisfies Record<SupportedLocale, { insight: number; tip: number }>;
+export const REPORT_MAX_TIPS = 2;
+
 export interface ReportStats {
   readonly totalTodos: number;
   readonly completedTodos: number;

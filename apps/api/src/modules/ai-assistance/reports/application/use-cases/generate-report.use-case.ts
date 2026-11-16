@@ -38,7 +38,7 @@ import {
 } from "../../domain/report-period.domain-service.js";
 import { AiReportLogEvent } from "../ai-report.log-events.js";
 import { FALLBACK_CATEGORY_NAMES } from "../messages/report-category.messages.js";
-import { type ReportPromptInput } from "../messages/report-context.messages.js";
+import { buildReportContext, type ReportPromptInput } from "../messages/report-context.messages.js";
 import {
   buildNoAiConsentContent,
   buildFallbackContent,
@@ -355,6 +355,7 @@ export class GenerateReportUseCase {
     }
 
     const definition = reportPrompt;
+    const context = buildReportContext(input, locale);
     const logBase = {
       task: definition.id,
       promptVersion: definition.version,
@@ -366,8 +367,8 @@ export class GenerateReportUseCase {
       const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
         definition,
-        definition.build(input, locale),
-        { input, locale },
+        definition.build(context, locale),
+        { context, locale },
         { agreedConsentVersion: consent.agreedVersion, userId },
       );
       this.#dependencies.logger.log(

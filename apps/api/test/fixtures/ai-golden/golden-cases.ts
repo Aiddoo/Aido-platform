@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 
 import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
-import { AI_SUGGESTION_STATUSES, DAYS_OF_WEEK, TODO_VISIBILITIES } from "@aido/api/vocabulary";
+import {
+  AI_REPORT_TYPES,
+  AI_SUGGESTION_STATUSES,
+  DAYS_OF_WEEK,
+  TODO_VISIBILITIES,
+} from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { memoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-draft.wire";
@@ -10,6 +15,7 @@ import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/parsing/applica
 import { quickPlanDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-draft.wire";
 import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-draft.wire";
 import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
+import { reportDraftSchema } from "#api/modules/ai-assistance/reports/application/messages/report-content.wire";
 import {
   resolvePlanSchedule,
   resolveTodoSchedule,
@@ -30,6 +36,7 @@ export const GOLDEN_TASKS = [
   "quick-plan",
   "voice-note-digest",
   "suggestion",
+  "report",
 ] as const;
 export type GoldenTask = (typeof GOLDEN_TASKS)[number];
 
@@ -165,6 +172,34 @@ export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionCon
   };
 }
 
+const rateItem = { total: z.number().int(), completed: z.number().int(), rate: z.number() };
+
+/** 리포트 golden 한 줄. input은 서버 집계(ReportPromptInput), draft는 이상적인 모델 출력이다. */
+export const reportGoldenCaseSchema = z.object({
+  id: z.string(),
+  locale: z.enum(["ko", "en"]),
+  input: z.object({
+    type: z.enum(AI_REPORT_TYPES),
+    periodLabel: z.string(),
+    period: z.object({ start: z.iso.date(), end: z.iso.date() }),
+    previousTips: z.array(z.string()).nullable(),
+    reportData: z.object({
+      totalTodos: z.number().int(),
+      completedTodos: z.number().int(),
+      completionRate: z.number(),
+      prevCompletionRate: z.number().nullable(),
+      streakDays: z.number().int(),
+      categoryBreakdown: z.array(z.object({ name: z.string(), color: z.string(), ...rateItem })),
+      dayPatterns: z.array(z.object({ day: z.enum(DAYS_OF_WEEK), ...rateItem })),
+      timePatterns: z.array(z.object({ hour: z.number().int(), count: z.number().int() })),
+      hasActivity: z.boolean(),
+    }),
+  }),
+  draft: reportDraftSchema,
+  expected: z.object({ forbiddenPhrases: z.array(z.string()) }),
+});
+export type ReportGoldenCase = z.infer<typeof reportGoldenCaseSchema>;
+
 /** jsonl 한 줄씩 schema로 검증한다. 형식이 틀린 줄이 있으면 실패한다. */
 export function readGoldenLines<S extends z.ZodType>(schema: S, path: string | URL): z.output<S>[] {
   return readFileSync(path, "utf8")
@@ -196,6 +231,10 @@ export function loadVoiceNoteDigestGoldenCases(
 
 export function loadSuggestionGoldenCases(variant: GoldenVariant): SuggestionGoldenCase[] {
   return readGoldenLines(suggestionGoldenCaseSchema, goldenPath("suggestion", variant));
+}
+
+export function loadReportGoldenCases(variant: GoldenVariant): ReportGoldenCase[] {
+  return readGoldenLines(reportGoldenCaseSchema, goldenPath("report", variant));
 }
 
 export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClock) {
