@@ -30046,7 +30046,9 @@ AI_1310: 지금 AI 요청이 너무 많습니다.",
 
 - \`periodLabel\`은 리포트 언어에 맞춘 기간 이름입니다. 주간은 "11월 2주차", 올해가 아닌 주는 "2025년 12월 1주차", 월간은 "2026년 3월"처럼 옵니다.
 - \`categoryBreakdown\`의 지운 카테고리는 리포트 언어의 "기타"(영어 "Other")로 묶입니다.
-- \`aiSummary\`·\`aiTips\`는 리포트를 만든 시점의 언어로 저장된 글입니다.",
+- \`aiSummary\`·\`aiTips\`는 리포트를 만든 시점의 언어로 저장된 글입니다.
+- \`dailyCompletions\`는 기간 첫날부터 마지막 날까지 날마다 할 일 수와 끝낸 수(빈 날은 0)입니다. 1.16.0 전에 만든 리포트는 null입니다.
+- \`aiContentSource\`가 \`AI\`면 모델이 쓴 글이고, \`TEMPLATE\`이면 AI 없이 통계로 채운 글입니다.",
       "operationId": "getAiReportById",
       "parameters": [
         {

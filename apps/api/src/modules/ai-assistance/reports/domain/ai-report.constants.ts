@@ -57,6 +57,11 @@ export interface AggregatedReportData {
   readonly hasActivity: boolean;
 }
 
+/** 프롬프트에 넣지 않고 리포트에만 저장하는 날마다 기록까지 담은 집계 */
+export interface ReportAggregation extends AggregatedReportData {
+  readonly dailyCompletions: DailyCompletionItem[];
+}
+
 /**
  * 데이터 집계 파라미터
  */

@@ -195,7 +195,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       logger,
     });
     const notifications: { userId: string }[] = [];
-    const reportProcessor = new ReportGenerationProcessor(report);
+    const reportProcessor = new ReportGenerationProcessor(report, clock);
     const suggestionProcessor = new SuggestionAnalysisProcessor(
       analyze,
       {

@@ -87,4 +87,20 @@ describe("toAiReportResponse", () => {
     // Then - 영어 기간 라벨 유지
     expect(result.periodLabel).toBe("March 2026");
   });
+
+  it.each([
+    ["AI", "AI"],
+    ["FALLBACK", "TEMPLATE"],
+    ["TEMPLATE", "TEMPLATE"],
+    ["NO_AI_CONSENT", "TEMPLATE"],
+  ] as const)("저장된 출처 %s는 응답에서 %s이다", (contentSource, expected) => {
+    // Given
+    const report = AiReport.reconstitute(makeProps({ contentSource }));
+
+    // When
+    const result = toAiReportResponse(report, LOCAL_TODAY);
+
+    // Then
+    expect(result.aiContentSource).toBe(expected);
+  });
 });

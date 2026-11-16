@@ -25,8 +25,8 @@ import {
 } from "../../../shared/domain/user-calendar.domain-service.js";
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
-  AggregatedReportData,
   AggregateParams,
+  ReportAggregation,
   ReportContent,
   ReportType,
 } from "../../domain/ai-report.constants.js";
@@ -267,7 +267,7 @@ export class GenerateReportUseCase {
     readonly userId: string;
     readonly type: ReportType;
     readonly window: ReportWindow;
-    readonly aggregatedData: AggregatedReportData;
+    readonly aggregatedData: ReportAggregation;
     readonly content: ReportContent;
     readonly locale: SupportedLocale;
   }): Promise<AiReport | null> {
@@ -306,7 +306,7 @@ export class GenerateReportUseCase {
           hasActivity: aggregatedData.hasActivity,
           contentSource: content.contentSource,
           promptVersion: content.promptVersion,
-          dailyCompletions: null,
+          dailyCompletions: aggregatedData.dailyCompletions,
           now: clock.now(),
         });
         await aiReportRepository.save(report);
@@ -323,7 +323,7 @@ export class GenerateReportUseCase {
   async #aggregate(
     params: AggregateParams,
     fallbackCategoryName: string,
-  ): Promise<AggregatedReportData> {
+  ): Promise<ReportAggregation> {
     const inputs = await this.#dependencies.todoStatsReader.fetchAggregationInputs(params);
     return assembleAggregatedData(
       inputs,
@@ -379,6 +379,7 @@ export class GenerateReportUseCase {
       if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
         this.#dependencies.logger.warn({
           event: AiReportLogEvent.PROVIDER_UNAVAILABLE,
+          userId,
           errorType: error.kind,
         });
         return buildFallbackContent(input, locale);

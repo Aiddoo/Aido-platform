@@ -1,5 +1,5 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
-import { groupBy, keyBy, mapValues, orderBy, sumBy } from "es-toolkit";
+import { groupBy, keyBy, mapValues, orderBy, range, sumBy } from "es-toolkit";
 
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
@@ -10,16 +10,17 @@ import {
 } from "../../shared/domain/user-calendar.domain-service.js";
 import type {
   CategoryBreakdownItem,
+  DailyCompletionItem,
   DayPatternItem,
   TimePatternItem,
 } from "./ai-report.constants.js";
 import type {
-  AggregatedReportData,
   AggregationInputs,
   CategoryGroupRow,
   CategoryMetaRow,
   CompletedTodoRow,
   DailyGroupRow,
+  ReportAggregation,
 } from "./ai-report.constants.js";
 
 function sumCountsBy<K extends PropertyKey>(
@@ -107,6 +108,27 @@ export function computeTimePatterns(
     .sort((a, b) => b.count - a.count);
 }
 
+export function computeDailyCompletions(params: {
+  readonly totalGroups: readonly DailyGroupRow[];
+  readonly completedGroups: readonly DailyGroupRow[];
+  readonly period: { readonly firstDay: Temporal.PlainDate; readonly lastDay: Temporal.PlainDate };
+}): DailyCompletionItem[] {
+  const { totalGroups, completedGroups, period } = params;
+  const toDateKey = (group: DailyGroupRow) => plainDateFromDate(group.startDate).toString();
+  const totalByDate = keyBy(totalGroups, toDateKey);
+  const completedByDate = keyBy(completedGroups, toDateKey);
+  const dayCount = period.firstDay.until(period.lastDay, { largestUnit: "days" }).days + 1;
+
+  return range(dayCount).map((offset) => {
+    const date = period.firstDay.add({ days: offset });
+    return {
+      date,
+      total: totalByDate[date.toString()]?._count.id ?? 0,
+      completed: completedByDate[date.toString()]?._count.id ?? 0,
+    };
+  });
+}
+
 /**
  * 연속 달성일 계산 (endDate부터 역순으로)
  *
@@ -164,7 +186,7 @@ export function assembleAggregatedData(
   endDate: Date,
   timezone: string,
   fallbackCategoryName: string,
-): AggregatedReportData {
+): ReportAggregation {
   const {
     dailyTotalGroups,
     dailyCompletedGroups,
@@ -204,6 +226,15 @@ export function assembleAggregatedData(
     timezone,
   );
 
+  const dailyCompletions = computeDailyCompletions({
+    totalGroups: dailyTotalGroups,
+    completedGroups: dailyCompletedGroups,
+    period: {
+      firstDay: localDateAt(startDate, timezone),
+      lastDay: localDateAt(endDate, timezone).subtract({ days: 1 }),
+    },
+  });
+
   const hasActivity = totalTodos > 0;
 
   return {
@@ -215,6 +246,7 @@ export function assembleAggregatedData(
     categoryBreakdown,
     dayPatterns,
     timePatterns,
+    dailyCompletions,
     hasActivity,
   };
 }

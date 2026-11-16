@@ -165,7 +165,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       return new ReportGenerationScheduler(
         createDatabaseTransactionFixture(client).txHost,
         reportQueue,
-        new ReportGenerationProcessor({ execute: async () => null }),
+        new ReportGenerationProcessor({ execute: async () => null }, new DateClock()),
         new DateClock(),
       );
     }

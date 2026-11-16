@@ -553,6 +553,7 @@ describe("GenerateReportUseCase", () => {
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
         expect(f.logger.warn).toHaveBeenCalledWith({
           event: "ai.report.provider.unavailable",
+          userId: f.userId,
           errorType: kind,
         });
         expect(f.logger.error).not.toHaveBeenCalled();

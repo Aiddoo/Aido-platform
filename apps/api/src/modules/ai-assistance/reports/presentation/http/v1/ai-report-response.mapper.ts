@@ -1,11 +1,22 @@
 import type { AiReport as AiReportResponse, ReportStatus } from "@aido/api";
+import { match } from "ts-pattern";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { computePeriodLabel } from "../../../application/messages/report-period-label.messages.js";
 import type { ReportStatusReadModel } from "../../../application/read-models/report-status.read-model.js";
 import type { AiReport } from "../../../domain/ai-report.aggregate.js";
+import type { ReportContentSource } from "../../../domain/ai-report.constants.js";
 import { computeDateRange } from "../../../domain/report-period.domain-service.js";
+
+function toAiContentSource(
+  contentSource: ReportContentSource,
+): NonNullable<AiReportResponse["aiContentSource"]> {
+  return match(contentSource)
+    .with("AI", () => "AI" as const)
+    .with("FALLBACK", "TEMPLATE", "NO_AI_CONSENT", () => "TEMPLATE" as const)
+    .exhaustive();
+}
 
 /** `localToday`는 읽는 사용자 시간대의 오늘이다. 주간 라벨이 다른 해의 주면 연도를 붙인다 */
 export function toAiReportResponse(
@@ -34,6 +45,9 @@ export function toAiReportResponse(
     aiTips: [...primitives.aiTips],
     hasActivity: primitives.hasActivity,
     generatedAt: toIsoString(primitives.generatedAt),
+    dailyCompletions:
+      primitives.dailyCompletions?.map((item) => ({ ...item, date: item.date.toString() })) ?? null,
+    aiContentSource: toAiContentSource(primitives.contentSource ?? "AI"),
   };
 }
 
