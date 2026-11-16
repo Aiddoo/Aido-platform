@@ -1,4 +1,5 @@
 import {
+  isAiPushDisabled,
   isAutomatedEngagementNotification,
   isGeneralRateLimitExemptNotification,
   isMarketingNotification,
@@ -62,6 +63,26 @@ describe("Push 발송 대상 판단 정책", () => {
       const result = isGeneralRateLimitExemptNotification(type);
       // Then
       expect(result).toBe(exempt);
+    },
+  );
+
+  it.each([
+    ["AI_SUGGESTION", true],
+    ["WEEKLY_REPORT", true],
+    ["MONTHLY_REPORT", true],
+    ["WEEKLY_ACHIEVEMENT", false],
+    ["TODO_REMINDER", false],
+    ["WEATHER_MORNING", false],
+    ["FOLLOW_NEW", false],
+    ["WINBACK", false],
+  ] as const)(
+    "AI 제안·리포트 알림을 끄면 AI가 만든 알림 푸시만 건너뛴다(%s → %s)",
+    (type, skippedWhenOff) => {
+      // When
+      const whenOff = isAiPushDisabled(type, { aiPushEnabled: false });
+      const whenOn = isAiPushDisabled(type, { aiPushEnabled: true });
+      // Then
+      expect({ whenOff, whenOn }).toEqual({ whenOff: skippedWhenOff, whenOn: false });
     },
   );
 });

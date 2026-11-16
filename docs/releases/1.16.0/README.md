@@ -18,7 +18,7 @@
 - **AI 제안 프롬프트**: 모델은 후보를 고르기만 한다(`suggestion@4`). 출시 앱이 읽는 `reason`은 서버가 기록 수치로 쓴다. 서버는 띄어쓰기·문장부호·이모지·대소문자·전각 차이만 다른 제목을 한 후보로 묶고, 자모·숫자·기호만인 제목과 이미 반복 중인 할 일을 후보에서 뺀다. 근거(`evidence`)를 저장한다(`[14/18]`). 입력 상한은 36,000자, 응답 이력은 30개다(`[17/18]`).
 - **AI 리포트**: 헤드라인(완료율·변화 칩), 날마다 끝낸 할 일 막대, 주로 끝낸 시간 24칸, 최근 8주 추세선, AI 코치 카드로 바뀐다. 프롬프트는 `report@4`로 숫자를 항목 단위로 검사하고 글 길이는 ko 70·55자, en 120·90자다. 템플릿으로 채운 글은 "AI 코치" 대신 "이번 기간 요약"으로 보인다.
 - **무료**: 이번 주 내 기록 막대를 실제로 그리고 AI 부분만 잠근다. 샘플 리포트를 지운다. 첫 리포트 전 프리미엄도 같은 기록을 보이고 리포트 끝에 제안 미리보기를 둔다(`[10/18]`).
-- **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠지고 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행하는 **서비스 알림**이라 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다.
+- **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠지고 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행하는 **서비스 알림**이라 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다. 설정 > 알림 > 푸시 알림의 "AI 제안·리포트 알림"으로 AI 제안·주간·월간 리포트 푸시만 끌 수 있다(`[18.9/18]`).
 - **버그 수정**: 리포트 도착 시각 표시 08:00 ↔ 푸시 11:30 불일치, 지운 카테고리 이름('기타'가 en에도 하드코딩), en 시작 제안 문구, AI Swagger 설명(`[1/18]`).
 - **용어**: "루틴" 대신 "반복 할 일"(en "repeating to-do")이다. 스토어 검색어에만 "루틴"이 남는다.
 - **라이브러리**: 카카오 SDK 2.4.11 → 3.2.0(`[11/18]`), `react-native-purchases` 10.16.0 → 11.0.2(`[12/18]`).
@@ -34,6 +34,7 @@
 - 차트는 Skia로 그리고 스크린리더에 선택한 값을 읽어 준다. 새 차트 라이브러리는 쓰지 않는다(SDK 58의 Skia 2.14).
 - 문구를 새 화면에 맞췄다. 쓰지 않는 키(제안 paywall 제목·설명)를 지우고 "맞춤 제안이 도착했어요"를 바꿨다. Maestro `30-ai.yaml`이 새 문구·testID를 기다리고 새 흐름 `report/see-weekly-record-free`가 있다(`[13/18]`).
 - 할 일이 많은 사용자(300개·활동 60종)도 제안을 받는다. 입력 상한에 막혀 세 공급자 모두 BAD_REQUEST였던 사례를 고쳤다(`[17/18]`).
+- 푸시 알림 설정의 앱 알림 묶음에 "AI 제안·리포트 알림"(en "AI suggestions & reports") 토글이 생겼다. 끄면 AI 제안·주간·월간 리포트 푸시만 오지 않고 앱의 알림 목록에는 남는다. 기본은 켜짐이고, 푸시 알림을 끄면 야간 토글처럼 흐려진다. 무료 사용자에게도 보인다. 설정은 계정에 남아 체험·구독을 시작하기 전에 꺼 둘 수 있고, 끄는 것은 프리미엄 기능이 아니다(날씨·야간 토글과 같다. 프리미엄 게이트는 바꾸는 것 자체가 프리미엄인 리마인드 시각에만 둔다)(`[18.9/18]`).
 
 ## 의도한 화면 차이
 
@@ -46,18 +47,20 @@
 
 [호환](../../conventions/compatibility.md) 규칙대로 응답 모양은 추가만 한다. 출시 앱(1.15.3 이하)은 새 칸을 버린다.
 
-| 변경                                | 출시 앱                        | 새 앱                          | 서버 롤백                  |
-| ----------------------------------- | ------------------------------ | ------------------------------ | -------------------------- |
-| 목록 `analysis`(optional)           | 버린다                         | 상태 카드                      | 없음 → 버튼 없는 상태      |
-| 제안 `evidence`(nullable)           | 버린다                         | 근거 줄                        | 없음 → 숨김                |
-| 리포트 `dailyCompletions`(nullable) | 버린다                         | 일별 막대                      | 없음 → 숨김                |
-| 리포트 `aiContentSource`(optional)  | 버린다                         | 템플릿이면 AI 코치 표시를 뺀다 | 없음 → AI로 표시           |
-| `report@4`·`suggestion@4`           | 같은 칸에 같은 모양의 글       | 코치 카드·서버 근거 문장       | 옛 버전 글                 |
-| `POST /v1/ai/suggestions/analyses`  | 부르지 않는다                  | [지금 분석 받기]               | 404 → 앱 오류 토스트       |
-| 제안 푸시 분류                      | 광고성 → 서비스(표기 없음)     | 같음                           | 광고성(야간 제한·"(광고)") |
-| 큐 두 번째 worker                   | 큐 이름·job key·payload 그대로 | 같음                           | 두 번째 worker 없음        |
-| 제안 분석 창 07시대 → 09시대        | 같음                           | 같음                           | 07시대                     |
-| 리포트 도착 표시 08:00 → 11:30      | 실제 도착과 맞음               | 같음                           | 08:00                      |
+| 변경                                         | 출시 앱                                          | 새 앱                          | 서버 롤백                                                       |
+| -------------------------------------------- | ------------------------------------------------ | ------------------------------ | --------------------------------------------------------------- |
+| 목록 `analysis`(optional)                    | 버린다                                           | 상태 카드                      | 없음 → 버튼 없는 상태                                           |
+| 제안 `evidence`(nullable)                    | 버린다                                           | 근거 줄                        | 없음 → 숨김                                                     |
+| 리포트 `dailyCompletions`(nullable)          | 버린다                                           | 일별 막대                      | 없음 → 숨김                                                     |
+| 리포트 `aiContentSource`(optional)           | 버린다                                           | 템플릿이면 AI 코치 표시를 뺀다 | 없음 → AI로 표시                                                |
+| `report@4`·`suggestion@4`                    | 같은 칸에 같은 모양의 글                         | 코치 카드·서버 근거 문장       | 옛 버전 글                                                      |
+| `POST /v1/ai/suggestions/analyses`           | 부르지 않는다                                    | [지금 분석 받기]               | 404 → 앱 오류 토스트                                            |
+| 제안 푸시 분류                               | 광고성 → 서비스(표기 없음)                       | 같음                           | 광고성(야간 제한·"(광고)")                                      |
+| 큐 두 번째 worker                            | 큐 이름·job key·payload 그대로                   | 같음                           | 두 번째 worker 없음                                             |
+| 제안 분석 창 07시대 → 09시대                 | 같음                                             | 같음                           | 07시대                                                          |
+| 리포트 도착 표시 08:00 → 11:30               | 실제 도착과 맞음                                 | 같음                           | 08:00                                                           |
+| 설정 `aiPushEnabled`(응답 칸, 요청 optional) | 버린다. 보내지 않으면 값은 그대로                | AI 제안·리포트 알림 토글       | 없음 → 새 앱 설정 조회 실패. 앱 출시 뒤에는 롤백 대신 수정 배포 |
+| `AI_PUSH_DISABLED` 건너뜀 이유               | 계정 설정이라 새 앱에서 끄면 이 기기도 받지 않음 | 끄면 세 종류 푸시만 건너뜀     | 없음 → 꺼도 푸시가 간다                                         |
 
 - 앱은 옛 서버 분기를 두지 않고 optional 계약의 nullish만 정리한다. 서버 배포 → 안정화 → 앱 제출 순서다.
 - 큐 이름·job key·payload는 그대로다. 같은 큐에 두 번째 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`: 1칸·2초·`minPriority` 10)가 붙고 우선순위는 `SCHEDULED` 0, `ON_DEMAND` 10이다. worker 동시성 합은 41에서 42가 된다. 아침 배치·지금 받기 모두 payload에 `weatherGrid: null`을 싣는다. 배포가 겹치는 동안 1.15 worker가 이 칸을 필수로 읽기 때문이고 날씨 문맥만 빠진다. scheduler는 weather `location`을 읽지 않는다. 새 schema에서 `weatherGrid`·`localDate`·`trigger`는 optional이라 옛 job은 `SCHEDULED`·실행 시각 현지 날짜로 읽는다. 지울 시점은 [호환](../../conventions/compatibility.md)에 있다.
@@ -68,7 +71,7 @@
 - `POST /v1/ai/suggestions/analyses`는 202다. 가드는 `AiDataSharingConsentGuard` → 사용자별 throttle(1분 5회)이고 오류는 `AI_1309`·`AI_1311`·429 `SYS_0001`이다. `AI_SUGGESTION_ON_DEMAND_ENABLED`(기본 true)를 끄면 `canRequestNow`가 false다.
 - 요청 분석은 `taskClass` interactive라 배경 자리·배경 중단과 분리된다.
 - 제안 문맥 reader는 최근 기록과 응답 이력만 읽는다. 쓰지 않게 된 활동 reader 메서드 4개, `LatestReportStatsReaderPort`, 날씨 `WeatherForecastReaderPort`·묶음 조회 UseCase를 지웠다.
-- 계약 지문: released fixture(1.7.x·1.8.2)에 옛 schemas 지문을 `preAiSuggestionAnalysis`로 남겼고 paths 지문은 같다. `[16/18]`의 새 경로·DTO도 released 지문은 그대로다.
+- 계약 지문: released fixture(1.7.x·1.8.2)에 옛 schemas 지문을 `preAiSuggestionAnalysis`로 남겼고 paths 지문은 같다. `[16/18]`의 새 경로·DTO도 released 지문은 그대로다. `[18.9/18]`은 설정 응답·요청에 `aiPushEnabled`를 더해 옛 schemas 지문을 `preAiPushPreference`로 남겼고 paths 지문은 같다.
 
 ### 분석 이벤트
 
@@ -81,20 +84,23 @@
 | `ai_suggestion_acted`(변경)                                                                       | `action` 그대로 + `source`(`suggestions_screen`·`report_preview`) |
 | `ai_report_chart_tapped`(추가)                                                                    | `chart`(`daily_completions`·`completion_hours`)                   |
 | `premium_gate_shown`·`premium_gate_cta_tapped`(무료 리포트 잠금 카드·제안 미리보기에서 추가 발송) | inline 노출, `surface`(`report_list`·`suggestions`)               |
+| `settings_changed`(값 추가)                                                                       | `setting=aiPushEnabled`, `value` `true`·`false`(`[18.9/18]`)      |
 
 서버 신호(분석 결과·대기 시간·AI 비용·수락률·리포트 생성 시간)는 측정 계획 3절 표에 있다. 분석 실행 로그는 `ai.suggestion-analysis.finished`(`trigger`·`outcome`·`recentTodoCount`·`createdSuggestionCount`·`queueWaitMs`)와 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`다. 처리 시간은 리포트·제안 모두 job 완료 로그 `ai.job.completed`의 `durationMs` 하나다(제안은 `trigger`도). 공급자 불가 로그에 `userId`를 더했다(`[9/18]`).
 
 ## DB 마이그레이션
 
-둘이다: `20261116120320_suggestion_analysis_run`(추가만)과 `20261116151519_drop_retired_columns`(1.15.2에서 스키마만 뺀 칸 삭제, `[18.1/18]`).
+셋이다: `20261116120320_suggestion_analysis_run`(추가만), `20261116151519_drop_retired_columns`(1.15.2에서 스키마만 뺀 칸 삭제, `[18.1/18]`), `20261116205042_ai_push_preference`(추가만, `[18.9/18]`).
 
-| 내용                                                                                                        | 잠금                                                                 |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `SuggestionAnalysisRun` 테이블 생성(`userId` PK, `User` FK cascade)                                         | 새 테이블                                                            |
-| `AiReport.dailyCompletions` jsonb(nullable)                                                                 | `AiReport` AccessExclusive(칸 추가, 메타데이터만)                    |
-| `RecurringSuggestion.evidenceRecordedCount`·`evidenceCompletedCount`·`evidencePeriodDays` integer(nullable) | `RecurringSuggestion` AccessExclusive(칸 추가), FK가 `User`를 잠근다 |
+| 내용                                                                                                        | 잠금                                                                                             |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `SuggestionAnalysisRun` 테이블 생성(`userId` PK, `User` FK cascade)                                         | 새 테이블                                                                                        |
+| `AiReport.dailyCompletions` jsonb(nullable)                                                                 | `AiReport` AccessExclusive(칸 추가, 메타데이터만)                                                |
+| `RecurringSuggestion.evidenceRecordedCount`·`evidenceCompletedCount`·`evidencePeriodDays` integer(nullable) | `RecurringSuggestion` AccessExclusive(칸 추가), FK가 `User`를 잠근다                             |
+| `UserPreference.aiPushEnabled` boolean `DEFAULT true NOT NULL`                                              | `UserPreference` AccessExclusive(칸 추가). 상수 기본값이라 행을 다시 쓰지 않는다(PostgreSQL 11+) |
 
-- 첫 문장이 `SET LOCAL lock_timeout = '500ms'`라 잠금을 못 잡으면 물러나고 앱 요청이 밀리지 않는다.
+- 첫 문장이 `SET LOCAL lock_timeout = '500ms'`라 잠금을 못 잡으면 물러나고 앱 요청이 밀리지 않는다. `ai_push_preference`도 같다.
+- `aiPushEnabled`의 기존 행은 기본값 true라 배포 직후 동작이 전과 같다. 되돌리기는 코드만 되돌리면 되고 칸은 남겨 둔다.
 - 옛 행은 새 칸이 비어 있고 앱은 숨긴다. 되돌리기는 코드만 되돌리면 되고 칸은 남겨 둔다.
 - `drop_retired_columns`: `User.twoFactorEnabled`·`User.twoFactorSecret`·`Subscription.dataRetentionUntil`을 지운다. 운영 읽기 전용 확인(2026-11-16 15:13 UTC, `ssh aido`, `aido_app`, `transaction_read_only` on): 사용자 424 · 2단계 인증 켬 0 · secret 0, 구독 8 · `dataRetentionUntil` 0. 운영 이미지는 `main`(`0276315`, 앱 1.15.3)이라 롤백 바닥 1.15.2 조건을 만족한다. 값이 생겼으면 guard가 `RAISE EXCEPTION`으로 migrate를 멈추고 API는 바뀌지 않는다. 되돌리기(모양만)는 [1.15.2 기록](../1.15.2/README.md#db-마이그레이션)의 `ADD COLUMN` 세 줄이다.
 
@@ -159,27 +165,28 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 
 레이어 커밋 본문에 적힌 실행 결과만 옮긴다. 로컬 통과이고 CI·머지·운영 배포는 아직이다.
 
-| 레이어                | 실행한 것                                                                                                                                                                                                                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[1/18]`              | vitest unit ai-assistance reports·suggestions 30파일 273개, openapi-contract e2e 8개 통과(스냅샷 갱신, 지문 그대로), typecheck·lint:deps·oxlint 통과                                                                                                                                               |
-| `[2/18]`              | `@aido/api` build·test 216개, e2e openapi-contract 8·ai-suggestion 12·ai-report 11 통과, `@aido/server`·`@aido/mobile` typecheck, knip, oxlint·oxfmt                                                                                                                                               |
-| `[3/18]`              | unit suggestions·reports 33파일 302개, integration 파일별(분석 실행 저장소 7·제안 저장소 4·리포트 저장소 4·ai-generation-consistency 21), e2e ai-suggestion 12·ai-report 11, typecheck·lint:deps·lint:names·knip·oxlint·oxfmt·docs:check·db:check                                                  |
-| `[4/18]`              | unit notification·suggestions 3951개(카피 스냅샷 갱신), ai-dispatch integration 7개, openapi-contract e2e 8개(지문 그대로), typecheck                                                                                                                                                              |
-| `[5/18]`              | mobile typecheck·oxlint·lint:deps·lint:names·check:unused 0건·docs:check, suggestion·todo components·i18n jest 통과                                                                                                                                                                                |
-| `[6/18]`              | vitest unit ai-assistance·weather 91파일 1339건(golden 81건 포함), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check. live eval은 이 커밋에서 **미실행**(`[17/18]`에서 실행). 통합·E2E는 돌리지 않음                                                                                     |
-| `[7/18]`              | vitest unit ai-assistance·weather·grapheme 93파일 1393건(리포트 golden 35건 포함), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check. API 키를 비운 `ai:eval`이 호출 0회로 끝남. 통합·E2E는 돌리지 않음                                                                                  |
-| `[8/18]`              | mobile typecheck·oxlint·lint:deps·lint:names·check:unused 0건·format:check·docs:check, jest 8 suites 126 tests 통과                                                                                                                                                                                |
-| `[9/18]`              | 레이어 단독 기록 없음. 아래 스택 맨 위 검증의 ai-report e2e·unit에 포함                                                                                                                                                                                                                            |
-| `[10/18]`             | mobile jest(report·suggestion·schemas·i18n 171건), typecheck·oxlint·lint:deps·lint:names·knip·docs:check 통과                                                                                                                                                                                      |
-| `[11/18]`             | mobile typecheck, `test:node` 37개, check:unused 통과. prebuild·pod install·EAS dev build·실기기 카카오톡 공유는 **미실행**                                                                                                                                                                        |
-| `[12/18]`             | mobile typecheck, purchases 어댑터 테스트 35개, check:unused 통과. prebuild·EAS dev build·sandbox 구매·복원·체험·Play 결제 막힘 실기기 확인은 **미실행**                                                                                                                                           |
-| `[13/18]`             | 모바일 관련 테스트·typecheck·lint·lint:deps·lint:names·check:unused·docs:check·`test:node` 통과, maestro check-syntax OK(새 흐름·`30-ai`). 기기 실행(`e2e:feature report`)은 **미실행**                                                                                                            |
-| `[14/18]`             | vitest unit ai-assistance·planning 124파일 1684건, integration(`drizzle-repeating-todo-title.reader` 1·`drizzle-suggestion.repository` 4·ai-generation-consistency 20, 파일마다 따로·DB worker 1), e2e ai-suggestion·openapi-contract, tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check |
-| `[15/18]`             | unit ai-assistance·planning·notification·platform/config 280파일 5723건, integration 17파일 135건, e2e ai-suggestion·ai-report·openapi-contract·access-ai-quota 44건, tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check·db:check                                                         |
-| `[16/18]`             | unit 281파일 5733건, integration 18파일 136건, e2e ai-suggestion 17·ai-report·openapi-contract·access-ai-quota 49건(POST 202 두 번 → job 1개, 무료 `AI_1309`, 동의 없음 `AI_1311`, 만료 → `AI_1309` → 재구독 200), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check·db:check            |
-| `[17/18]`             | live eval 재평가(위 AI 평가), vitest unit ai-assistance 1240건·reports 200건, integration ai-generation-consistency 20건, tsc·oxlint·oxfmt·knip·docs:check                                                                                                                                         |
-| `[18/18]`             | `docs:check` 실패 0, `oxfmt --check`, `store:check` 통과                                                                                                                                                                                                                                           |
-| 스택 맨 위(`[16/18]`) | vitest unit ai-assistance·planning·notification·config 5733건, integration AI·dispatch 44건, e2e ai-suggestion·ai-report·openapi-contract 37건 통과. tsc·oxlint·oxfmt·docs:check·knip·lint:deps 통과                                                                                               |
+| 레이어                | 실행한 것                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[1/18]`              | vitest unit ai-assistance reports·suggestions 30파일 273개, openapi-contract e2e 8개 통과(스냅샷 갱신, 지문 그대로), typecheck·lint:deps·oxlint 통과                                                                                                                                                                                                                                                 |
+| `[2/18]`              | `@aido/api` build·test 216개, e2e openapi-contract 8·ai-suggestion 12·ai-report 11 통과, `@aido/server`·`@aido/mobile` typecheck, knip, oxlint·oxfmt                                                                                                                                                                                                                                                 |
+| `[3/18]`              | unit suggestions·reports 33파일 302개, integration 파일별(분석 실행 저장소 7·제안 저장소 4·리포트 저장소 4·ai-generation-consistency 21), e2e ai-suggestion 12·ai-report 11, typecheck·lint:deps·lint:names·knip·oxlint·oxfmt·docs:check·db:check                                                                                                                                                    |
+| `[4/18]`              | unit notification·suggestions 3951개(카피 스냅샷 갱신), ai-dispatch integration 7개, openapi-contract e2e 8개(지문 그대로), typecheck                                                                                                                                                                                                                                                                |
+| `[5/18]`              | mobile typecheck·oxlint·lint:deps·lint:names·check:unused 0건·docs:check, suggestion·todo components·i18n jest 통과                                                                                                                                                                                                                                                                                  |
+| `[6/18]`              | vitest unit ai-assistance·weather 91파일 1339건(golden 81건 포함), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check. live eval은 이 커밋에서 **미실행**(`[17/18]`에서 실행). 통합·E2E는 돌리지 않음                                                                                                                                                                                       |
+| `[7/18]`              | vitest unit ai-assistance·weather·grapheme 93파일 1393건(리포트 golden 35건 포함), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check. API 키를 비운 `ai:eval`이 호출 0회로 끝남. 통합·E2E는 돌리지 않음                                                                                                                                                                                    |
+| `[8/18]`              | mobile typecheck·oxlint·lint:deps·lint:names·check:unused 0건·format:check·docs:check, jest 8 suites 126 tests 통과                                                                                                                                                                                                                                                                                  |
+| `[9/18]`              | 레이어 단독 기록 없음. 아래 스택 맨 위 검증의 ai-report e2e·unit에 포함                                                                                                                                                                                                                                                                                                                              |
+| `[10/18]`             | mobile jest(report·suggestion·schemas·i18n 171건), typecheck·oxlint·lint:deps·lint:names·knip·docs:check 통과                                                                                                                                                                                                                                                                                        |
+| `[11/18]`             | mobile typecheck, `test:node` 37개, check:unused 통과. prebuild·pod install·EAS dev build·실기기 카카오톡 공유는 **미실행**                                                                                                                                                                                                                                                                          |
+| `[12/18]`             | mobile typecheck, purchases 어댑터 테스트 35개, check:unused 통과. prebuild·EAS dev build·sandbox 구매·복원·체험·Play 결제 막힘 실기기 확인은 **미실행**                                                                                                                                                                                                                                             |
+| `[13/18]`             | 모바일 관련 테스트·typecheck·lint·lint:deps·lint:names·check:unused·docs:check·`test:node` 통과, maestro check-syntax OK(새 흐름·`30-ai`). 기기 실행(`e2e:feature report`)은 **미실행**                                                                                                                                                                                                              |
+| `[14/18]`             | vitest unit ai-assistance·planning 124파일 1684건, integration(`drizzle-repeating-todo-title.reader` 1·`drizzle-suggestion.repository` 4·ai-generation-consistency 20, 파일마다 따로·DB worker 1), e2e ai-suggestion·openapi-contract, tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check                                                                                                   |
+| `[15/18]`             | unit ai-assistance·planning·notification·platform/config 280파일 5723건, integration 17파일 135건, e2e ai-suggestion·ai-report·openapi-contract·access-ai-quota 44건, tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check·db:check                                                                                                                                                           |
+| `[16/18]`             | unit 281파일 5733건, integration 18파일 136건, e2e ai-suggestion 17·ai-report·openapi-contract·access-ai-quota 49건(POST 202 두 번 → job 1개, 무료 `AI_1309`, 동의 없음 `AI_1311`, 만료 → `AI_1309` → 재구독 200), tsc·oxlint·oxfmt·ls-lint·dependency-cruiser·knip·docs:check·db:check                                                                                                              |
+| `[17/18]`             | live eval 재평가(위 AI 평가), vitest unit ai-assistance 1240건·reports 200건, integration ai-generation-consistency 20건, tsc·oxlint·oxfmt·knip·docs:check                                                                                                                                                                                                                                           |
+| `[18/18]`             | `docs:check` 실패 0, `oxfmt --check`, `store:check` 통과                                                                                                                                                                                                                                                                                                                                             |
+| `[18.9/18]`           | unit 전체 738파일 9089건(notification·identity preferences 155파일 3928건), integration 8파일 102건(설정 저장소 계약·identity-settings·알림함·push outbox·critical queue·캐시 무효화), e2e openapi-contract 8·user-settings·auth 111건, `@aido/api` test 216건, mobile jest 55 suites 1086건, db:check·tsc(server·mobile·api)·oxlint·oxfmt·docs:check·ls-lint·lint:deps·knip. 기기 확인은 **미실행** |
+| 스택 맨 위(`[16/18]`) | vitest unit ai-assistance·planning·notification·config 5733건, integration AI·dispatch 44건, e2e ai-suggestion·ai-report·openapi-contract 37건 통과. tsc·oxlint·oxfmt·docs:check·knip·lint:deps 통과                                                                                                                                                                                                 |
 
 - 기기 확인(레이아웃 이동 겹쳐 찍기, 다크 대비, 24시간 차트 밀기 대 스크롤, VoiceOver·TalkBack, iPad 라벨, 카카오 공유 실기기, RevenueCat sandbox)은 **미실행**이다. 표는 [사용자 상황 확인표](qa-matrix.md)다.
 - GA DebugView 확인은 **미실행**이다.
@@ -220,6 +227,10 @@ Expo가 관리하는 패키지(react, gesture-handler, Sentry RN, Skia, reanimat
 - 제안 큐 payload의 `weatherGrid`와 옛 job 대체(optional `localDate`·`trigger`, 실행 기록 없는 job)를 지운다(1.17.0, [호환](../../conventions/compatibility.md)).
 - `AI_SUGGESTION_LIMITS.CONTEXT_WEEKS`를 정리한다.
 
+### 알림 채널
+
+- Android 알림 채널을 종류별로 나눈다(AI 제안·리포트, 리마인드, 친구, 광고성). 1.16.0은 서버 설정 `aiPushEnabled`로 끄고 채널은 `default` 하나다. Expo push의 `channelId`는 기기에 그 채널이 없으면 알림을 보이지 않으므로(Expo 문서), 새 채널을 만들지 않는 출시 앱에 보내면 Android 8+에서 알림이 사라진다. 앱이 채널을 만든 버전부터만 `channelId`를 싣게 서버가 `X-App-Version`으로 나눠야 하고, 채널은 만든 뒤 앱이 동작을 바꿀 수 없어(Android 문서) 이름·중요도를 먼저 정한다. iOS `interruptionLevel`(`passive`·`time-sensitive`)도 같은 때 정한다.
+
 ## PR 목록
 
 | PR          | 제목                                                                              |
@@ -244,3 +255,4 @@ Expo가 관리하는 패키지(react, gesture-handler, Sentry RN, Skia, reanimat
 | `[18/18]`   | 1.16.0 버전과 릴리스 기록·스토어 패치 노트를 더한다                               |
 | 예정        | 마이너·패치 의존성 정리(2026-11-21~)                                              |
 | `[18.1/18]` | 1.15.2에서 스키마만 뺀 2단계 인증·데이터 보관 칸을 지운다                         |
+| `[18.9/18]` | AI 제안·리포트 푸시를 종류별로 끌 수 있게 한다                                    |

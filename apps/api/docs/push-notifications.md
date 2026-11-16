@@ -13,6 +13,7 @@
 | 참여 유도 대상   | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `INVITE_QUALIFY_REMINDER`                                                                                                                                   |
 | 광고성 푸시 동의 | 참여 유도 대상은 `marketingPushAgreedAt`이 있어야 함                                                                                                                                                                                                                |
 | 광고성 푸시 표기 | 참여 유도 대상의 푸시는 제목 앞 "(광고) "(en "(Ad) ")와 본문 끝 줄 "수신 거부: 설정 > 알림"을 붙인다. 알림함 기록은 원래 문구다(`marketing-push-label.messages.ts`, `PushNotificationPayloadMapper`)                                                                |
+| AI 제안·리포트   | `aiPushEnabled=false`면 `AI_SUGGESTION`·`WEEKLY_REPORT`·`MONTHLY_REPORT` 푸시만 `AI_PUSH_DISABLED`로 건너뛴다(`isAiPushDisabled`, `pushEnabled` 다음·일반 한도 예약 전). 알림함 기록은 남는다                                                                       |
 | 야간 시간        | 21:00 이상 08:00 미만                                                                                                                                                                                                                                               |
 | 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음                                                                                                                                                                                                                                  |
 | 야간 일반 푸시   | `nightPushEnabled=true`일 때 발송                                                                                                                                                                                                                                   |
@@ -59,6 +60,8 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 ## 알림 타입별 계약
 
 `목적`이 `참여`인 항목만 광고성 푸시 동의와 참여 유도 일일 한도를 적용한다. `서비스`와 `거래`는 일반 시간당 한도와 야간 설정을 적용한다(사용자가 시각을 정한 위 야간 예외는 빼고, `TODO_REMINDER`는 시간당 한도도 빼고).
+
+목적 분류 근거: 정보통신망법 제50조는 영리목적 광고성 정보에 명시적 사전 동의를, 21~08시에는 별도 동의를 요구한다. 「불법스팸 방지를 위한 정보통신망법 안내서」(방송미디어통신위원회·KISA, KISA-GD-2025-0037, 2025.12) 11쪽은 계약·거래 관계로 반드시 전할 정보를 광고성의 예외로 보고, 51쪽 Q&A 01-05는 돈을 내고 받는 정보 제공을 계약에 따른 서비스로 본다. 그래서 프리미엄이 구독한 AI 제안·주간·월간 리포트의 도착 알림은 `서비스`다. 같은 11쪽은 광고가 부수적으로 섞이면 전체를 광고로 보므로 이 문구에 할인·업그레이드 권유를 넣지 않는다. Apple App Review Guidelines 4.5.4와 HIG(Managing notifications)는 광고성 푸시의 명시적 동의와 앱 안 설정을, Android 알림 채널 가이드는 종류마다 채널을 권한다. 서비스 알림도 사용자가 종류별로 끌 수 있게 `aiPushEnabled`를 둔다. Android 채널은 `default` 하나다(분리는 [1.16.0 다음 버전 후보](../../../docs/releases/1.16.0/README.md#다음-버전-후보)).
 
 | 타입                       | 발생 조건/생성 주체                                                                      | 목적         | 기본 이동                              |
 | -------------------------- | ---------------------------------------------------------------------------------------- | ------------ | -------------------------------------- |

@@ -44,6 +44,7 @@ export function createUserSettingsFixture(
     weatherEveningEnabled: false,
     weatherEveningHour: 18,
     weatherEveningMinute: 0,
+    aiPushEnabled: true,
     currentStreak: 0,
     longestStreak: 0,
     lastCompletedDate: null,

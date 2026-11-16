@@ -27,6 +27,7 @@ const COLUMN_DEFAULTS: UserPreferenceRecord = {
   weatherEveningEnabled: true,
   weatherEveningHour: 17,
   weatherEveningMinute: 30,
+  aiPushEnabled: true,
   currentStreak: 0,
   longestStreak: 0,
   lastCompletedDate: null,

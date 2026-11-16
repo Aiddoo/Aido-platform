@@ -27,6 +27,7 @@ const PREFERENCE_SNAPSHOT_SCHEMA = z.looseObject({
   weatherEveningEnabled: z.boolean(),
   weatherEveningHour: z.number(),
   weatherEveningMinute: z.number(),
+  aiPushEnabled: z.boolean(),
 }) satisfies z.ZodType<PreferenceSnapshot>;
 
 @Injectable()

@@ -322,6 +322,60 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     });
   });
 
+  describe("AI 제안·리포트 알림 — 끄면 그 푸시만 건너뛰고 한도를 쓰지 않는다", () => {
+    const suggestion = { ...transactional, type: "AI_SUGGESTION" as const };
+    const weeklyReport = { ...transactional, type: "WEEKLY_REPORT" as const };
+
+    it("단건은 일반 한도를 예약하기 전에 AI 제안을 건너뛰고 소셜 알림은 보낸다", async () => {
+      // Given
+      const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
+      const recipient = {
+        ...(await useCase.loadSingleRecipient("user-1")),
+        preference: createNotificationDeliveryPreferenceFixture({ aiPushEnabled: false }),
+      };
+
+      // When
+      const decisions = await Promise.all(
+        [suggestion, transactional].map((data, index) =>
+          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID + index, false),
+        ),
+      );
+
+      // Then
+      expect(decisions).toEqual([
+        { status: "skipped", candidate: suggestion, reason: "AI_PUSH_DISABLED" },
+        { status: "eligible", candidate: transactional },
+      ]);
+      expect(rateLimiter.generalRequests).toEqual([
+        { dispatchId: RATE_LIMIT_DISPATCH_ID + 1, userId: "user-1" },
+      ]);
+    });
+
+    it("배치는 끈 사용자의 리포트만 건너뛰고 켠 사용자의 리포트는 보낸다", async () => {
+      // Given
+      const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase();
+      userSettings.preferences.set(
+        "off",
+        createNotificationDeliveryPreferenceFixture({ aiPushEnabled: false }),
+      );
+      userSettings.preferences.set("on", createNotificationDeliveryPreferenceFixture());
+      const recipients = await useCase.loadBatchRecipients(["off", "on"]);
+      const offReport = { data: { ...weeklyReport, userId: "off" }, rateLimitDispatchId: 1 };
+      const offSocial = { data: { ...transactional, userId: "off" }, rateLimitDispatchId: 2 };
+      const onReport = { data: { ...weeklyReport, userId: "on" }, rateLimitDispatchId: 3 };
+
+      // When
+      const decisions = useCase.evaluateBatchSettings([offReport, offSocial, onReport], recipients);
+
+      // Then
+      expect(decisions).toEqual([
+        { status: "skipped", candidate: offReport, reason: "AI_PUSH_DISABLED" },
+        { status: "eligible", candidate: offSocial },
+        { status: "eligible", candidate: onReport },
+      ]);
+    });
+  });
+
   describe("야간 경계 — 사용자가 정한 리마인더만 야간 수신을 꺼도 보낸다", () => {
     it.each([
       ["Asia/Seoul", "20:59", false],

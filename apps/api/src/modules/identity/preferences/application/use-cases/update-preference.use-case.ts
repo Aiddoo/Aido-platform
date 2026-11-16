@@ -82,6 +82,7 @@ export class UpdatePreferenceUseCase {
         weatherEveningEnabled: input.weatherEveningEnabled,
         weatherEveningHour: input.weatherEveningHour,
         weatherEveningMinute: input.weatherEveningMinute,
+        aiPushEnabled: input.aiPushEnabled,
       });
       if (timezoneChanged) {
         await todoTimezoneRebase.enqueueRebase(userId, clock.now());

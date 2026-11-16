@@ -29,6 +29,7 @@ function createReader(timezones: Readonly<Record<string, string>>) {
               weatherEveningEnabled: true,
               weatherEveningHour: 17,
               weatherEveningMinute: 30,
+              aiPushEnabled: true,
             },
           ];
         }),

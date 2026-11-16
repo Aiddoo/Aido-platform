@@ -24,6 +24,7 @@ export interface UserPreferenceRecord {
   weatherEveningEnabled: boolean;
   weatherEveningHour: number;
   weatherEveningMinute: number;
+  aiPushEnabled: boolean;
   currentStreak: number;
   longestStreak: number;
   lastCompletedDate: Temporal.PlainDate | null;

@@ -16,6 +16,7 @@ export const preferenceSchema = z.object({
   weatherEveningEnabled: z.boolean(),
   weatherEveningHour: z.int(),
   weatherEveningMinute: z.int(),
+  aiPushEnabled: z.boolean(),
 });
 export type Preference = z.infer<typeof preferenceSchema>;
 

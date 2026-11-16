@@ -65,6 +65,8 @@
     "pushDescription": "Get to-do and billing alerts on every device signed in to this account. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
     "nightPushDescription": "Get offer and friend alerts from 9 PM to 8 AM too. Reminders you set always arrive on time",
+    "aiPushLabel": "AI suggestions & reports",
+    "aiPushDescription": "Get notified when new AI suggestions or weekly and monthly reports are ready. They still show in Notifications when off",
     "marketingLabel": "Marketing communications",
     "marketingDescription": "Receive events, benefits, and promotions",
     "marketingPushLabel": "Promotional push",

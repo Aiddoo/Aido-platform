@@ -24,6 +24,7 @@ export interface PreferenceSnapshot {
   weatherEveningEnabled: boolean;
   weatherEveningHour: number;
   weatherEveningMinute: number;
+  aiPushEnabled: boolean;
 }
 
 /** 앱에 돌려주는 설정 값(locale 제외). 변경 요청은 이 필드 중 일부만 보낸다 */
@@ -45,6 +46,7 @@ const PREFERENCE_RESPONSE_FIELDS = [
   "weatherEveningEnabled",
   "weatherEveningHour",
   "weatherEveningMinute",
+  "aiPushEnabled",
 ] satisfies (keyof PreferenceView)[];
 
 export function buildUpdatedPreferenceView(record: PreferenceSnapshot): PreferenceView {
@@ -67,6 +69,7 @@ export const DEFAULT_PREFERENCE_SNAPSHOT: PreferenceSnapshot = {
   weatherEveningEnabled: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
   weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
   weatherEveningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
+  aiPushEnabled: USER_PREFERENCE_DEFAULTS.AI_PUSH_ENABLED,
 };
 
 export function buildPreferenceView(

@@ -18,5 +18,6 @@ export function toPreference(dto: PreferenceResponse): Preference {
     'weatherEveningEnabled',
     'weatherEveningHour',
     'weatherEveningMinute',
+    'aiPushEnabled',
   ]);
 }

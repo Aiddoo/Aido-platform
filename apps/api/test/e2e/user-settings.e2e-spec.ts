@@ -81,6 +81,39 @@ describe("사용자 설정 E2E", () => {
         expect(response.body.success).toBe(true);
       });
 
+      it("AI 제안·리포트 알림을 끄면 다시 읽어도 꺼져 있고 출시 앱 모양 요청은 그 값을 두고 저장된다", async () => {
+        // Given - 기본값(켜짐)인 사용자
+        const user = await ctx.helpers.createVerifiedUser(
+          "settings-ai-push@example.com",
+          "Test1234!",
+        );
+        const before = await request(ctx.app.getHttpServer())
+          .get("/v1/auth/preference")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(200);
+
+        // When - 새 앱이 끄고, aiPushEnabled를 모르는 출시 앱이 야간 수신만 바꾼다
+        const turnedOff = await request(ctx.app.getHttpServer())
+          .patch("/v1/auth/preference")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({ aiPushEnabled: false })
+          .expect(200);
+        await request(ctx.app.getHttpServer())
+          .patch("/v1/auth/preference")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({ nightPushEnabled: false })
+          .expect(200);
+        const reloaded = await request(ctx.app.getHttpServer())
+          .get("/v1/auth/preference")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(200);
+
+        // Then
+        expect(before.body.data.aiPushEnabled).toBe(USER_PREFERENCE_DEFAULTS.AI_PUSH_ENABLED);
+        expect(turnedOff.body.data.aiPushEnabled).toBe(false);
+        expect(reloaded.body.data).toMatchObject({ aiPushEnabled: false, nightPushEnabled: false });
+      });
+
       it("타임존을 변경한다", async () => {
         // Given - 인증된 사용자
         const user = await ctx.helpers.createVerifiedUser("settings-tz@example.com", "Test1234!");

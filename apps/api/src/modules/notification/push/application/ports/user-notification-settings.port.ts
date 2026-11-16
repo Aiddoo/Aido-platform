@@ -18,6 +18,7 @@ export interface NotificationDeliveryPreference {
   readonly weatherEveningEnabled: boolean;
   readonly weatherEveningHour: number;
   readonly weatherEveningMinute: number;
+  readonly aiPushEnabled: boolean;
 }
 
 export interface NotificationMarketingConsent {

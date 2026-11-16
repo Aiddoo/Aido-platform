@@ -1,7 +1,7 @@
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { BellDuoIcon, MoonDuoIcon, SettingsListGroup } from '@src/shared/ui';
+import { BellDuoIcon, MoonDuoIcon, ReportDuoIcon, SettingsListGroup } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
@@ -62,6 +62,19 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
         onSelectedChange={(enabled) => updateMutation.mutate({ nightPushEnabled: enabled })}
         isDisabled={!preference.pushEnabled || isUpdating}
       />
+      <SettingsListGroup.Separator />
+      <SettingsListGroup.Toggle
+        icon={<SettingsListGroup.Icon Icon={ReportDuoIcon} />}
+        label={t('settings.aiPushLabel')}
+        description={
+          preference.pushEnabled
+            ? t('settings.aiPushDescription')
+            : t('auth:preference.enablePushFirst')
+        }
+        isSelected={preference.aiPushEnabled}
+        onSelectedChange={(enabled) => updateMutation.mutate({ aiPushEnabled: enabled })}
+        isDisabled={!preference.pushEnabled || isUpdating}
+      />
     </SettingsListGroup>
   );
 }
@@ -69,6 +82,8 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
 PushDeliverySettings.Loading = function Loading(props: SettingsSectionProps) {
   return (
     <SettingsListGroup {...props}>
+      <SettingsListGroup.Toggle.Loading hasDescription />
+      <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle.Loading hasDescription />
       <SettingsListGroup.Separator />
       <SettingsListGroup.Toggle.Loading hasDescription />

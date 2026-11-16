@@ -309,6 +309,7 @@ export const userProfile = pgTable(
 export const userPreference = pgTable(
   "UserPreference",
   {
+    aiPushEnabled: boolean().default(true).notNull(),
     currentStreak: integer().default(0).notNull(),
     eveningReminderHour: integer().default(19).notNull(),
     eveningReminderMinute: integer().default(0).notNull(),
