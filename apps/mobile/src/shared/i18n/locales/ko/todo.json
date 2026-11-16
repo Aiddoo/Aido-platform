@@ -230,8 +230,8 @@
   "feed": {
     "loading": "불러오는 중...",
     "suggestionsLoading": "제안을 불러오는 중...",
-    "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요!",
-    "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요",
+    "suggestionsArrived": "자주 하는 할 일 {{count}}개를 찾았어요",
+    "suggestionsRetry": "AI 제안을 불러오지 못했어요. 눌러서 다시 시도해주세요",
     "suggestionFree": "자주 하는 할 일을 반복으로 만들어 드려요",
     "suggestion": {
       "analyzing": "최근 할 일을 살펴보고 있어요",

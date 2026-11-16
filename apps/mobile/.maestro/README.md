@@ -34,6 +34,7 @@
 | `todo/create-complete-delete`          | smoke, todo                                    | 추가 → 완료 → 삭제, 각 단계가 서버에 반영                     |
 | `memo/create-and-edit`                 | smoke, memo                                    | 메모 저장 → 열어 고쳐 저장 → 목록·서버 반영                   |
 | `subscription/paywall-open-close`      | smoke, subscription                            | 페이월 열고 결제 없이 닫기 → 피드, 구독 상태 그대로           |
+| `report/see-weekly-record-free`        | regression, report                             | 무료 리포트: 이번 주 내 기록 + 잠금 카드 → 페이월             |
 | `category/delete-move-todos`           | regression, category                           | 할 일이 있는 카테고리 삭제 시 고른 카테고리로 옮김            |
 | `category/delete-with-todos`           | regression, category                           | 할 일과 함께 삭제 (선택지 testID는 아래 "대기" 참고)          |
 | `notification/inbox-opens-screen-once` | regression, notification, needs-second-account | 친구 요청 알림 → 받은 요청 화면 한 번, 읽음 처리              |

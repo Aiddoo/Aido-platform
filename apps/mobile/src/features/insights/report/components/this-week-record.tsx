@@ -63,7 +63,7 @@ export function ThisWeekRecord() {
   };
 
   return (
-    <VStack gap={16}>
+    <VStack gap={16} testID="report-this-week-record">
       <Text size="b3" weight="semibold" shade={9}>
         {t('report.thisWeek.title')}
       </Text>

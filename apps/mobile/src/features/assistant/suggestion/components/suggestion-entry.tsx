@@ -3,12 +3,11 @@ import {
   EntitlementPolicy,
 } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
-import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense } from 'react';
@@ -21,11 +20,9 @@ import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model
 export function SuggestionEntry() {
   const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
-  const [{ data: me }, { data: canUseSuggestions }] = useSuspenseQueries({
-    queries: [
-      useGetMeQueryOptions(),
-      { ...useGetEntitlementsQueryOptions(), select: selectCanUseSuggestions },
-    ],
+  const { data: canUseSuggestions } = useSuspenseQuery({
+    ...useGetEntitlementsQueryOptions(),
+    select: selectCanUseSuggestions,
   });
 
   if (!canUseSuggestions) {
@@ -41,7 +38,7 @@ export function SuggestionEntry() {
   // 제안만 늦게 오면 "불러오는 중" 대신 제안을 기다린다는 문구를 보인다
   return (
     <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
-      <PremiumSuggestionEntry name={me.name} />
+      <PremiumSuggestionEntry />
     </Suspense>
   );
 }
@@ -68,11 +65,7 @@ SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
   return <InfoCard label={t('todo:feed.suggestionsRetry')} onPress={reset} />;
 };
 
-interface PremiumSuggestionEntryProps {
-  name: string;
-}
-
-function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
+function PremiumSuggestionEntry() {
   const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
   const { data: view } = useSuspenseQuery({
@@ -84,7 +77,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   });
 
   const label = match(view.state)
-    .with('HAS_SUGGESTIONS', () => t('feed.suggestionsArrived', { name, count: view.count }))
+    .with('HAS_SUGGESTIONS', () => t('feed.suggestionsArrived', { count: view.count }))
     .with('ANALYZING', () => t('feed.suggestion.analyzing'))
     .with('DONE_FOR_TODAY', () => t('feed.suggestion.doneForToday'))
     .with('NO_PATTERN_FOUND', () => t('feed.suggestion.noPatternFound'))

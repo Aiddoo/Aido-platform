@@ -15,8 +15,16 @@ onFlowStart:
     env:
       ROUTE: reports
 - extendedWaitUntil:
-    visible: '.*(AI 리포트|AI Reports|나만의 리포트).*'
+    visible: '.*(AI 리포트|AI reports).*'
     timeout: 20000
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE != 'premium'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: report-this-week-record
+          timeout: 20000
 - takeScreenshot: 30_AI_리포트_목록
 - runFlow:
     when:
@@ -27,7 +35,8 @@ onFlowStart:
           env:
             ROUTE: reports/${MAESTRO_SHOT_WEEKLY_REPORT_ID}
       - extendedWaitUntil:
-          visible: '.*(AI 요약|AI summary|AI Summary).*'
+          visible:
+            id: report-summary
           timeout: 20000
       - takeScreenshot: 31_AI_리포트_주간
       - scroll
@@ -38,6 +47,10 @@ onFlowStart:
           file: subflows/open.yaml
           env:
             ROUTE: reports/${MAESTRO_SHOT_MONTHLY_REPORT_ID}
+      - extendedWaitUntil:
+          visible:
+            id: report-summary
+          timeout: 20000
       - waitForAnimationToEnd:
           timeout: 5000
       - takeScreenshot: 33_AI_리포트_월간
@@ -45,6 +58,21 @@ onFlowStart:
     file: subflows/open.yaml
     env:
       ROUTE: suggestions
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: suggestions-status
+          timeout: 20000
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE != 'premium'}
+    commands:
+      - extendedWaitUntil:
+          visible: '.*(구독하고 제안 받기|Subscribe to get suggestions).*'
+          timeout: 20000
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 34_AI_반복_제안

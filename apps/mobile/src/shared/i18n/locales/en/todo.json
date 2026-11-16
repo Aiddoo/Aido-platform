@@ -239,8 +239,8 @@
   "feed": {
     "loading": "Loading...",
     "suggestionsLoading": "Loading suggestions...",
-    "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
-    "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
+    "suggestionsArrived_one": "Found {{count}} to-do you do often",
+    "suggestionsArrived_other": "Found {{count}} to-dos you do often",
     "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again",
     "suggestionFree": "We'll turn your frequent to-dos into repeating ones",
     "suggestion": {

@@ -1,4 +1,6 @@
+import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -247,6 +249,19 @@ ReportList.Free = function Free() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation(['ai', 'subscription']);
   const fontScaledSize = useFontScaledSize();
+  const { trackEvent } = useTrack();
+  const gateParams = {
+    feature: getPremiumGateAnalyticsFeature('AI_REPORT'),
+    surface: 'report_list',
+    presentation: 'inline',
+  } as const;
+
+  useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
+
+  const handleSubscribePress = () => {
+    trackEvent('premium_gate_cta_tapped', gateParams);
+    push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
+  };
 
   return (
     <VStack gap={16}>
@@ -281,10 +296,7 @@ ReportList.Free = function Free() {
           {t('ai:report.list.lockDescription')}
         </Text>
 
-        <Button
-          size="medium"
-          onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } })}
-        >
+        <Button size="medium" testID="report-free-subscribe" onPress={handleSubscribePress}>
           {t('ai:report.list.subscribeCta')}
         </Button>
       </VStack>

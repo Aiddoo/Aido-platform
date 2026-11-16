@@ -92,8 +92,6 @@
     },
     "expiryNotice": "Suggestions go away after 14 days",
     "paywall": {
-      "title": "Let AI suggest your to-dos",
-      "description": "Get personalized to-do suggestions based on your recurring patterns",
       "previewTitle": "Morning stretch",
       "previewDays": "Mon, Tue, Wed, Thu, Fri",
       "previewTime": "7:30 AM",
@@ -104,7 +102,7 @@
       "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
       "retryLater": "Please try again later",
       "accepted": "Made it repeat",
-      "rejected": "Suggestion dismissed."
+      "rejected": "Suggestion cleared"
     },
     "preview": {
       "title": "To-dos worth repeating",

@@ -55,7 +55,7 @@ export function SuggestionStatus() {
   );
 
   return (
-    <SurfaceCard>
+    <SurfaceCard testID="suggestions-status">
       {match(displayState)
         .with('HAS_SUGGESTIONS', () => (
           <SuggestionStatus.HasSuggestions count={list.suggestions.length} />

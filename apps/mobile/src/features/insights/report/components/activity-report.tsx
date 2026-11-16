@@ -72,7 +72,7 @@ export function ActivityReport() {
       </Box>
       <VStack className="px-5 pb-4">
         <Box className="py-4">
-          <VStack gap={16}>
+          <VStack gap={16} testID="report-summary">
             <CompletionRateHeadline report={report} />
 
             <HStack gap={20}>

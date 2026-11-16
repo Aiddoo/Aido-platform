@@ -1,4 +1,6 @@
+import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -168,9 +170,19 @@ SuggestionsList.Item = function Item({
 SuggestionsList.PremiumPreview = function PremiumPreview() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
+  const { trackEvent } = useTrack();
+  const gateParams = {
+    feature: getPremiumGateAnalyticsFeature('AI_SUGGESTION'),
+    surface: 'suggestions',
+    presentation: 'inline',
+  } as const;
 
-  const handleSubscribePress = () =>
+  useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
+
+  const handleSubscribePress = () => {
+    trackEvent('premium_gate_cta_tapped', gateParams);
     push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } });
+  };
 
   return (
     <ScallopedContainer>

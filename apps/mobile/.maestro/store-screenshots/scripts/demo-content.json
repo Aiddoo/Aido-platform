@@ -563,14 +563,14 @@
       "weeklyReportBody": "리포트에서 지난주 흐름을 살펴봐",
       "monthlyReportTitle": "지난달 기록을 돌아볼까? 📈",
       "monthlyReportBody": "리포트에서 지난달 흐름을 살펴봐",
-      "suggestionTitle": "할 일 제안이 도착했어 ✨",
-      "suggestionBody": "내 계획에 맞는 제안인지 살펴봐",
+      "suggestionTitle": "자주 하는 할 일을 찾았어요 ✨",
+      "suggestionBody": "반복으로 만들면 매번 다시 적지 않아도 돼요",
       "grantEndingTitle": "내일 프리미엄이 끝나요",
       "grantEndingBody": "구독하면 끊김 없이 이어져요."
     },
     "fallback": {
       "weeklySummary": "지난주에는 계획한 할 일의 대부분을 해냈어요. 화·목 아침 필라테스를 한 번도 거르지 않았고, 업무 할 일은 오후 2~4시에 가장 많이 끝냈어요.",
-      "monthlySummary": "지난달은 운동 루틴이 자리를 잡은 한 달이었어요. 주말에는 생활 할 일이 늘어나 완료율이 조금 낮았지만, 평일 업무 완료율은 꾸준히 높았어요.",
+      "monthlySummary": "지난달은 운동 습관이 자리를 잡은 한 달이었어요. 주말에는 생활 할 일이 늘어나 완료율이 조금 낮았지만, 평일 업무 완료율은 꾸준히 높았어요.",
       "tips": [
         "수요일 저녁 영어 스터디 전에 30분 쉬는 시간을 넣어 보세요.",
         "주말 할 일은 오전에 하나만 먼저 끝내면 완료율이 올라가요."
@@ -581,14 +581,16 @@
           "days": ["MON", "TUE", "WED", "THU", "FRI"],
           "time": "07:30",
           "category": "fitness",
-          "reason": "평일 아침마다 운동 할 일을 끝낸 기록이 있어요"
+          "reason": "평일 아침마다 운동 할 일을 끝낸 기록이 있어요",
+          "evidence": { "recordedCount": 10, "completedCount": 9 }
         },
         {
           "title": "두부 장난감 놀이 15분",
           "days": ["TUE", "FRI"],
           "time": "21:30",
           "category": "dubu",
-          "reason": "저녁에 두부 할 일을 꾸준히 챙겼어요"
+          "reason": "저녁에 두부 할 일을 꾸준히 챙겼어요",
+          "evidence": { "recordedCount": 6, "completedCount": 5 }
         }
       ]
     }
@@ -1157,14 +1159,14 @@
       "weeklyReportBody": "Explore last week in Reports",
       "monthlyReportTitle": "Review last month’s record? 📈",
       "monthlyReportBody": "Explore last month in Reports",
-      "suggestionTitle": "A to-do suggestion is here ✨",
-      "suggestionBody": "See if it fits your plans",
+      "suggestionTitle": "We found to-dos you do often ✨",
+      "suggestionBody": "Set them to repeat and skip retyping",
       "grantEndingTitle": "Your Premium ends tomorrow",
       "grantEndingBody": "Subscribe to keep Premium going."
     },
     "fallback": {
       "weeklySummary": "You finished most of what you planned last week. You never missed Tuesday or Thursday Pilates, and most work to-dos got done between 2 and 4 PM.",
-      "monthlySummary": "Last month your workout routine really settled in. Weekends had more life errands and a slightly lower rate, but weekday work stayed consistently strong.",
+      "monthlySummary": "Last month your workout habit really settled in. Weekends had more life errands and a slightly lower rate, but weekday work stayed consistently strong.",
       "tips": [
         "Add a 30-minute break before Wednesday's study group.",
         "Finish one weekend to-do in the morning to keep the momentum."
@@ -1175,14 +1177,16 @@
           "days": ["MON", "TUE", "WED", "THU", "FRI"],
           "time": "07:30",
           "category": "fitness",
-          "reason": "You often finish a workout to-do on weekday mornings"
+          "reason": "You often finish a workout to-do on weekday mornings",
+          "evidence": { "recordedCount": 10, "completedCount": 9 }
         },
         {
           "title": "Play time with Mochi",
           "days": ["TUE", "FRI"],
           "time": "21:30",
           "category": "dubu",
-          "reason": "You keep up Mochi to-dos in the evening"
+          "reason": "You keep up Mochi to-dos in the evening",
+          "evidence": { "recordedCount": 6, "completedCount": 5 }
         }
       ]
     }

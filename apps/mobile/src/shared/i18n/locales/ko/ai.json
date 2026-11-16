@@ -87,8 +87,6 @@
     },
     "expiryNotice": "제안은 14일 뒤에 사라져요",
     "paywall": {
-      "title": "AI가 할 일을 제안해드려요",
-      "description": "반복 패턴을 분석해서 맞춤 할 일을 추천받을 수 있어요",
       "previewTitle": "매일 아침 스트레칭",
       "previewDays": "월·화·수·목·금",
       "previewTime": "오전 7:30",
@@ -99,7 +97,7 @@
       "premiumOnly": "AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요",
       "retryLater": "잠시 후 다시 시도해주세요",
       "accepted": "반복으로 만들었어요",
-      "rejected": "제안을 거절했어요."
+      "rejected": "제안을 정리했어요"
     },
     "preview": {
       "title": "반복하면 좋은 할 일",

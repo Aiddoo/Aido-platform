@@ -69,6 +69,14 @@ output.ids = {
   subscription: {
     paywall: 'subscription-paywall',
   },
+  report: {
+    thisWeekRecord: 'report-this-week-record',
+    summary: 'report-summary',
+    freeSubscribe: 'report-free-subscribe',
+  },
+  suggestions: {
+    status: 'suggestions-status',
+  },
 };
 
 output.labels = {
