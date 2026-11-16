@@ -1,12 +1,15 @@
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
+import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
   DashedDivider,
   HStack,
-  LabelChip,
   type QueryErrorFallbackProps,
   ScallopedContainer,
   Spacing,
@@ -15,14 +18,15 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { range, take } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
+import type { AiSuggestionList } from '../domains/suggestion-analysis.model';
 import type { AiSuggestion } from '../domains/suggestion.model';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { formatRepeatDays } from '../utils/suggestion-schedule.view-model';
+import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
 
 const PREVIEW_SUGGESTION_COUNT = 2;
 
@@ -33,9 +37,14 @@ interface SuggestionsPreviewProps {
 export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
   const { t } = useTranslation('ai');
   const push = useSingleTap(router.push);
-  const { data: suggestions } = useSuspenseQuery({
-    ...useGetSuggestionsQueryOptions(),
-    select: (list) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
+  const [{ data: suggestions }, { data: preference }] = useSuspenseQueries({
+    queries: [
+      {
+        ...useGetSuggestionsQueryOptions(),
+        select: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
+      },
+      useGetPreferenceQueryOptions(),
+    ],
   });
 
   if (suggestions.length === 0) {
@@ -58,6 +67,7 @@ export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
             <SuggestionsPreview.Item
               key={suggestion.id}
               suggestion={suggestion}
+              timeFormat={preference.timeFormat}
               isLast={index === suggestions.length - 1}
             />
           ))}
@@ -69,13 +79,24 @@ export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
 
 interface SuggestionsPreviewItemProps {
   suggestion: AiSuggestion;
+  timeFormat: TimeFormat;
   isLast: boolean;
 }
 
-SuggestionsPreview.Item = function Item({ suggestion, isLast }: SuggestionsPreviewItemProps) {
+SuggestionsPreview.Item = function Item({
+  suggestion,
+  timeFormat,
+  isLast,
+}: SuggestionsPreviewItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
+  const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
+    todayKey,
+    timeFormat,
+    dateFormatContext,
+  });
 
   const handleMakePress = () =>
     push({
@@ -85,28 +106,25 @@ SuggestionsPreview.Item = function Item({ suggestion, isLast }: SuggestionsPrevi
 
   return (
     <Box className="py-2">
-      <VStack gap={8}>
-        <Text
-          size="b2"
-          weight="semibold"
-          shade={9}
-          numberOfLines={2}
-          lineBreakStrategyIOS="hangul-word"
-        >
-          {suggestion.title}
-        </Text>
-        <HStack justify="between" align="center" gap={8}>
-          <LabelChip
-            size="sm"
-            color="default"
-            pointerEvents="none"
-            label={formatRepeatDays(suggestion.daysOfWeek, dateFormatContext)}
-          />
-          <Button size="small" display="inline" onPress={handleMakePress}>
-            {t('suggestions.item.make')}
-          </Button>
-        </HStack>
+      <VStack gap={2}>
+        <TodoRow.TitleLine
+          label={
+            <TodoRow.Label isCompleted={false} numberOfLines={2} className="flex-1">
+              {suggestion.title}
+            </TodoRow.Label>
+          }
+          isPrivate={false}
+        />
+        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
       </VStack>
+
+      <Spacing size={12} />
+
+      <HStack justify="end">
+        <Button size="small" display="inline" onPress={handleMakePress}>
+          {t('suggestions.item.make')}
+        </Button>
+      </HStack>
 
       {!isLast && (
         <>
@@ -129,13 +147,14 @@ SuggestionsPreview.Loading = function Loading({ className }: SuggestionsPreviewP
         <Box className="px-4 py-2">
           {range(PREVIEW_SUGGESTION_COUNT).map((index) => (
             <Box key={index} className="py-2">
-              <VStack gap={8}>
-                <TextSkeleton size="b2" className="w-32" />
-                <HStack justify="between" align="center">
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                  <Skeleton className="h-8 w-24 rounded-xl" />
-                </HStack>
+              <VStack gap={2}>
+                <TextSkeleton size="b3" className="w-32" />
+                <TextSkeleton size="e1" className="w-40" />
               </VStack>
+              <Spacing size={12} />
+              <HStack justify="end">
+                <Skeleton className="h-8 w-24 rounded-xl" />
+              </HStack>
               {index < PREVIEW_SUGGESTION_COUNT - 1 && (
                 <>
                   <Spacing size={12} />

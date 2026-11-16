@@ -1,16 +1,18 @@
+import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
   DashedDivider,
   HStack,
-  LabelChip,
   type QueryErrorFallbackProps,
   ScallopedContainer,
   Spacing,
@@ -18,7 +20,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -27,9 +29,13 @@ import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { formatRepeatDays, formatScheduledTime } from '../utils/suggestion-schedule.view-model';
+import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
 
 const SUGGESTION_LOADING_COUNT = 2;
+const PREMIUM_PREVIEW_SCHEDULE: Pick<AiSuggestion, 'daysOfWeek' | 'scheduledTime'> = {
+  daysOfWeek: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+  scheduledTime: '07:30',
+};
 
 interface SuggestionItemProps {
   suggestion: AiSuggestion;
@@ -105,59 +111,52 @@ SuggestionsList.Item = function Item({
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+  const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
+    todayKey,
+    timeFormat,
+    dateFormatContext,
+  });
 
   return (
     <Box className="py-2">
-      <VStack gap={8}>
-        <Text
-          size="b2"
-          weight="semibold"
-          shade={9}
-          numberOfLines={2}
-          lineBreakStrategyIOS="hangul-word"
-        >
-          {suggestion.title}
-        </Text>
-        <HStack gap={6} className="flex-wrap">
-          <LabelChip
-            size="sm"
-            color="default"
-            pointerEvents="none"
-            label={formatRepeatDays(suggestion.daysOfWeek, dateFormatContext)}
-          />
-          {suggestion.scheduledTime != null && (
-            <LabelChip
-              size="sm"
-              color="default"
-              pointerEvents="none"
-              label={formatScheduledTime(suggestion.scheduledTime, timeFormat, dateFormatContext)}
-            />
-          )}
-        </HStack>
+      <VStack gap={2}>
+        <TodoRow.TitleLine
+          label={
+            <TodoRow.Label isCompleted={false} numberOfLines={2} className="flex-1">
+              {suggestion.title}
+            </TodoRow.Label>
+          }
+          isPrivate={false}
+        />
+        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
         {suggestion.evidence != null && (
-          <Text size="b4" shade={6}>
+          <Text size="e1" shade={6}>
             {t('suggestions.item.evidence', {
               total: suggestion.evidence.recordedCount,
               done: suggestion.evidence.completedCount,
             })}
           </Text>
         )}
-        <HStack gap={8} justify="end">
-          <Button
-            size="small"
-            display="inline"
-            variant="weak"
-            color="dark"
-            isLoading={isDismissing}
-            onPress={onDismiss}
-          >
-            {t('suggestions.item.dismiss')}
-          </Button>
-          <Button size="small" display="inline" isDisabled={isDismissing} onPress={onMake}>
-            {t('suggestions.item.make')}
-          </Button>
-        </HStack>
       </VStack>
+
+      <Spacing size={12} />
+
+      <HStack gap={8} justify="end">
+        <Button
+          size="small"
+          display="inline"
+          variant="weak"
+          color="dark"
+          isLoading={isDismissing}
+          onPress={onDismiss}
+        >
+          {t('suggestions.item.dismiss')}
+        </Button>
+        <Button size="small" display="inline" isDisabled={isDismissing} onPress={onMake}>
+          {t('suggestions.item.make')}
+        </Button>
+      </HStack>
 
       {!isLast && (
         <>
@@ -173,6 +172,15 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
+  const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+  // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
+  const { data: preference } = useQuery(useGetPreferenceQueryOptions());
+  const { repeat, timeLabel } = getSuggestionSchedule(PREMIUM_PREVIEW_SCHEDULE, {
+    todayKey,
+    timeFormat: preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+    dateFormatContext,
+  });
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_SUGGESTION'),
     surface: 'suggestions',
@@ -189,25 +197,17 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
   return (
     <ScallopedContainer>
       <Box className="px-4 py-4">
-        <VStack gap={8} className="py-2 opacity-60">
-          <Text size="b2" weight="semibold" shade={9}>
-            {t('suggestions.paywall.previewTitle')}
-          </Text>
-          <HStack gap={6} className="flex-wrap">
-            <LabelChip
-              size="sm"
-              color="default"
-              pointerEvents="none"
-              label={t('suggestions.paywall.previewDays')}
-            />
-            <LabelChip
-              size="sm"
-              color="default"
-              pointerEvents="none"
-              label={t('suggestions.paywall.previewTime')}
-            />
-          </HStack>
-          <Text size="b4" shade={6}>
+        <VStack gap={2} className="py-2 opacity-60">
+          <TodoRow.TitleLine
+            label={
+              <TodoRow.Label isCompleted={false} className="flex-1">
+                {t('suggestions.paywall.previewTitle')}
+              </TodoRow.Label>
+            }
+            isPrivate={false}
+          />
+          <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
+          <Text size="e1" shade={6}>
             {t('suggestions.paywall.previewEvidence')}
           </Text>
         </VStack>
@@ -228,18 +228,16 @@ SuggestionsList.Loading = function Loading() {
       <Box className="px-4 py-2">
         {range(SUGGESTION_LOADING_COUNT).map((index) => (
           <Box key={index} className="py-2">
-            <VStack gap={8}>
-              <TextSkeleton size="b2" className="w-32" />
-              <HStack gap={6}>
-                <Skeleton className="h-6 w-16 rounded-full" />
-                <Skeleton className="h-6 w-16 rounded-full" />
-              </HStack>
-              <TextSkeleton size="b4" className="w-48" />
-              <HStack gap={8} justify="end">
-                <Skeleton className="h-8 w-12 rounded-xl" />
-                <Skeleton className="h-8 w-12 rounded-xl" />
-              </HStack>
+            <VStack gap={2}>
+              <TextSkeleton size="b3" className="w-32" />
+              <TextSkeleton size="e1" className="w-40" />
+              <TextSkeleton size="e1" className="w-48" />
             </VStack>
+            <Spacing size={12} />
+            <HStack gap={8} justify="end">
+              <Skeleton className="h-8 w-12 rounded-xl" />
+              <Skeleton className="h-8 w-12 rounded-xl" />
+            </HStack>
             {index < SUGGESTION_LOADING_COUNT - 1 && (
               <>
                 <Spacing size={12} />

@@ -9,7 +9,7 @@
   "v1_16_0": {
     "release": {
       "title": "AI turns to-dos you do often into repeating ones",
-      "description": "See why from your last 2 weeks, and get a check without waiting for the morning. AI reports now show each day, the hours you finish, and a coach note"
+      "description": "See why from your last 2 weeks, and get a check without waiting for the morning. AI reports now show each day, the hours you finish, and a coach note"
     },
     "intro": {
       "title": "Aido's AI got an upgrade",
@@ -17,19 +17,19 @@
     },
     "suggestion": {
       "title": "AI finds to-dos you do often",
-      "description": "And makes them repeat, based on your last 2 weeks"
+      "description": "It looks at your last 2 weeks and makes them repeat"
     },
     "report": {
       "title": "AI charts your progress",
-      "description": "Each day, each hour, and a coach note"
+      "description": "Daily and hourly charts, plus a coach note"
     },
     "request": {
       "title": "No need to wait for the morning",
-      "description": "Tap Check now and we'll look at your recent to-dos right away. Give it a try"
+      "description": "We'll check your recent to-dos right away when you tap Check now"
     },
     "suggestions": {
       "title": "See why, then make it repeat",
-      "description": "We show how often you finished it in the last 2 weeks, plus the days and time"
+      "description": "We show how often you finished it in the last 2 weeks, plus the days and time"
     },
     "summary": {
       "title": "See your progress at a glance",

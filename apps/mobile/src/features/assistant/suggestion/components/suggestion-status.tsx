@@ -1,5 +1,5 @@
-import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
+import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
@@ -7,8 +7,8 @@ import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import {
   Box,
   Button,
@@ -16,14 +16,14 @@ import {
   Mascot,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  ScallopedContainer,
   Spacing,
-  SurfaceCard,
   Text,
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { router, useIsFocused } from 'expo-router';
+import { useIsFocused } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
@@ -31,10 +31,10 @@ import { match } from 'ts-pattern';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { formatNextAnalysisAt } from '../utils/suggestion-schedule.view-model';
+import { getNextAnalysisLabels } from '../utils/suggestion-schedule.view-model';
 import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
 
-const SUGGESTION_STATUS_MASCOT_SIZE = 100;
+const SUGGESTION_STATUS_MASCOT_SIZE = 64;
 
 export function SuggestionStatus() {
   const isFocused = useIsFocused();
@@ -56,7 +56,7 @@ export function SuggestionStatus() {
   );
 
   return (
-    <SurfaceCard testID="suggestions-status">
+    <ScallopedContainer testID="suggestions-status">
       {match(displayState)
         .with('HAS_SUGGESTIONS', () => (
           <SuggestionStatus.HasSuggestions count={list.suggestions.length} />
@@ -80,7 +80,7 @@ export function SuggestionStatus() {
           />
         ))
         .exhaustive()}
-    </SurfaceCard>
+    </ScallopedContainer>
   );
 }
 
@@ -149,10 +149,11 @@ SuggestionStatus.UnavailableToday = function UnavailableToday({
 
 SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
   const { t } = useTranslation('ai');
-  const todayKey = useTodayKey();
-  const push = useSingleTap(router.push);
+  // 할 일을 쓰는 원래 자리인 오늘 피드에서 시트를 열어 만든 할 일이 바로 뒤에 보이게 한다
+  const leaveToFeed = useSingleTap(dismissToTab);
 
-  const handleAddTodoPress = () => push({ pathname: '/todo/new', params: { date: todayKey } });
+  const handleAddTodoPress = () =>
+    leaveToFeed({ pathname: '/feed', params: { action: 'add-todo' } });
 
   return (
     <SuggestionStatus.Message
@@ -168,6 +169,7 @@ SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
 
 SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
   const { t } = useTranslation('ai');
+  const aiConsent = useAiDataSharingConsentGate();
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
 
   // 동의를 저장하면 안내는 바로 숨고 제안 상태는 다시 받는 중이라 그동안 빈 카드 대신 받는 중 틀을 둔다
@@ -175,7 +177,16 @@ SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
     return <StatusSkeleton />;
   }
 
-  return <AiConsentNotice title={t('consent.notice.suggestions')} />;
+  return (
+    <SuggestionStatus.Message
+      title={t('consent.notice.suggestions')}
+      description={t('suggestions.status.needsAiConsentDescription')}
+    >
+      <Button size="small" display="inline" onPress={() => aiConsent.requestAgreement()}>
+        {t('consent.notice.action')}
+      </Button>
+    </SuggestionStatus.Message>
+  );
 };
 
 SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
@@ -225,7 +236,13 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
         </H4>
       }
       description={
-        <Text size="b4" shade={6} align="center">
+        <Text
+          size="b4"
+          shade={6}
+          align="center"
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
           {description}
         </Text>
       }
@@ -237,9 +254,9 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
 
 SuggestionStatus.Loading = function Loading() {
   return (
-    <SurfaceCard>
+    <ScallopedContainer>
       <StatusSkeleton />
-    </SurfaceCard>
+    </ScallopedContainer>
   );
 };
 
@@ -249,11 +266,11 @@ SuggestionStatus.Error = function ErrorFallback({ error, reset }: QueryErrorFall
   }
 
   return (
-    <SurfaceCard>
+    <ScallopedContainer>
       <Box className="px-5 py-6">
         <QueryErrorFallback reset={reset} />
       </Box>
-    </SurfaceCard>
+    </ScallopedContainer>
   );
 };
 
@@ -298,9 +315,10 @@ function NextAnalysisMessage({ title, nextAnalysisAt, children }: NextAnalysisMe
   const description =
     nextAnalysisAt == null
       ? ''
-      : t('suggestions.status.nextAnalysisAt', {
-          time: formatNextAnalysisAt(nextAnalysisAt, preference.timeFormat, dateFormatContext),
-        });
+      : t(
+          'suggestions.status.nextAnalysisAt',
+          getNextAnalysisLabels(nextAnalysisAt, preference.timeFormat, dateFormatContext),
+        );
 
   return (
     <SuggestionStatus.Message title={title} description={description}>

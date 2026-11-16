@@ -1,6 +1,7 @@
 import { Canvas, Group, Path, type SkRect } from '@shopify/react-native-skia';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
@@ -65,6 +66,7 @@ export function CompletionHourChart({
   const haptics = useHaptics();
   const isAnimationActive = useIsAnimationActive();
   const [layoutSize, handleLabelLayout] = useLayoutSize();
+  const fontScaledSize = useFontScaledSize();
   const trackColor = useResolvedColor('text-gray-3');
   const fillColor = useResolvedColor('text-main/40');
   const selectedColor = useResolvedColor('text-main');
@@ -75,7 +77,9 @@ export function CompletionHourChart({
   const barCount = deferredValues.length;
   const tickStepHours =
     TICK_STEP_CHOICES_HOURS.find(
-      (stepHours) => TICK_LABEL_MIN_WIDTH_PT <= ((layoutSize?.width ?? 0) * stepHours) / barCount,
+      (stepHours) =>
+        fontScaledSize(TICK_LABEL_MIN_WIDTH_PT) <=
+        ((layoutSize?.width ?? 0) * stepHours) / barCount,
     ) ?? WIDEST_TICK_STEP_HOURS;
   // worklet 안의 인라인 콜백은 React Compiler가 worklet이 아닌 _temp로 빼내 UI 스레드에서 멈춘다
   const barValues = deferredValues.map((count) => ({ total: count, completed: count }));

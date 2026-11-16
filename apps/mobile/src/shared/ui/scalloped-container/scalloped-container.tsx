@@ -11,15 +11,16 @@ const SCALLOP_RADIUS = 8;
 
 export interface ScallopedContainerProps {
   children: ReactNode;
+  testID?: string;
 }
 
-export function ScallopedContainer({ children }: ScallopedContainerProps) {
+export function ScallopedContainer({ children, testID }: ScallopedContainerProps) {
   const [size, handleLayout] = useLayoutSize();
   const { backgroundColor: fill } = useResolveClassNames('bg-gray-1');
   const width = size?.width ?? 0;
 
   return (
-    <Box onLayout={handleLayout}>
+    <Box onLayout={handleLayout} testID={testID}>
       {/* 폭을 재기 전에도 물결 자리를 잡아 첫 프레임 뒤에 내용이 밀리지 않게 한다 */}
       <Box style={{ height: SCALLOP_RADIUS }}>
         {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}

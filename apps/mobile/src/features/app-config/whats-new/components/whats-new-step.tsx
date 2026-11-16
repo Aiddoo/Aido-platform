@@ -68,11 +68,18 @@ export function WhatsNewStep({
 
         <Spacing size={24} />
 
-        <H3>{title}</H3>
+        <H3 lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {title}
+        </H3>
 
         <Spacing size={6} />
 
-        <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+        <Text
+          size="b3"
+          shade={6}
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
           {description}
         </Text>
 
@@ -219,7 +226,12 @@ WhatsNewStep.FeatureCard = function FeatureCard({
               className="self-start"
             />
           )}
-          <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+          <Text
+            size="b3"
+            weight="semibold"
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
             {title}
           </Text>
           <WordWrapText size="e1" shade={6}>

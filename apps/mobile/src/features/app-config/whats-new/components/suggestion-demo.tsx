@@ -2,7 +2,7 @@ import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
-import { formatNextAnalysisAt } from '@src/features/assistant/suggestion/utils/suggestion-schedule.view-model';
+import { getNextAnalysisLabels } from '@src/features/assistant/suggestion/utils/suggestion-schedule.view-model';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
@@ -10,7 +10,7 @@ import { toZonedInstant } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, ScallopedContainer, SurfaceCard } from '@src/shared/ui';
+import { Box, Button, ScallopedContainer } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
@@ -36,13 +36,13 @@ export function SuggestionRequestDemo() {
 
   return (
     <WhatsNewStep.Stage>
-      <SurfaceCard>
+      <ScallopedContainer>
         {isRequested ? (
           <RequestedStatus />
         ) : (
           <WaitingStatus onRequest={() => setIsRequested(true)} />
         )}
-      </SurfaceCard>
+      </ScallopedContainer>
     </WhatsNewStep.Stage>
   );
 }
@@ -65,9 +65,10 @@ function WaitingStatus({ onRequest }: { onRequest: () => void }) {
   return (
     <SuggestionStatus.Message
       title={t('suggestions.status.waitingForNextRun')}
-      description={t('suggestions.status.nextAnalysisAt', {
-        time: formatNextAnalysisAt(nextAnalysisAt, timeFormat, dateFormatContext),
-      })}
+      description={t(
+        'suggestions.status.nextAnalysisAt',
+        getNextAnalysisLabels(nextAnalysisAt, timeFormat, dateFormatContext),
+      )}
     >
       <Button size="small" display="inline" onPress={onRequest} testID="whats-new-request-now">
         {t('suggestions.status.requestNow')}

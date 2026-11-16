@@ -17,8 +17,8 @@
     },
     "headline": {
       "noActivity": "No to-dos this period",
-      "improved": "Up {{points}} pts",
-      "declined": "Down {{points}} pts",
+      "improved": "Up {{points}} pts",
+      "declined": "Down {{points}} pts",
       "unchanged": "Same as last time"
     },
     "detail": {
@@ -56,11 +56,11 @@
       "arrivalToday": "Your first {{type}} report arrives today!",
       "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
       "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days",
-      "lockDescription": "AI headline and coach cards are in Premium"
+      "lockDescription": "AI headlines and coach cards come with Premium"
     },
     "unavailable": {
       "title": "Report not found",
-      "description": "This report was removed or is no longer available.",
+      "description": "This report was removed or is no longer available",
       "backToList": "Go to reports"
     },
     "thisWeek": {
@@ -72,36 +72,35 @@
     "item": {
       "make": "Make it repeat",
       "dismiss": "Not needed",
-      "evidence": "Done {{done}} of {{total}} times in the last 2 weeks"
+      "evidence": "Done {{done}} of {{total}} times in the last 2 weeks"
     },
     "status": {
-      "hasSuggestions_one": "Found {{count}} to-do you do often",
-      "hasSuggestions_other": "Found {{count}} to-dos you do often",
-      "hasSuggestionsDescription": "Make them repeat so you don't re-add them",
+      "hasSuggestions_one": "Found {{count}} frequent to-do",
+      "hasSuggestions_other": "Found {{count}} frequent to-dos",
+      "hasSuggestionsDescription": "Make them repeat, no retyping needed",
       "analyzing": "Looking at your recent to-dos",
       "analyzingDescription": "This only takes a moment",
       "doneForToday": "All caught up for today",
       "noPatternFound": "No to-dos worth repeating yet",
       "unavailableToday": "We couldn't check today",
       "needsMoreTodos": "No to-dos to look at yet",
-      "needsMoreTodosDescription": "We look at to-dos from the last 2 weeks",
+      "needsMoreTodosDescription": "We look at to-dos from the last 2 weeks",
+      "needsAiConsentDescription": "You only need to do this once",
       "addTodo": "Add a to-do",
       "waitingForNextRun": "Waiting for the next check",
-      "nextAnalysisAt": "We'll look again {{time}}",
+      "nextAnalysisAt": "We'll look again on {{date}} at {{time}}",
       "requestNow": "Check now"
     },
-    "expiryNotice": "Suggestions go away after 14 days",
+    "expiryNotice": "Suggestions go away after 14 days",
     "paywall": {
       "previewTitle": "Morning stretch",
-      "previewDays": "Mon, Tue, Wed, Thu, Fri",
-      "previewTime": "7:30 AM",
-      "previewEvidence": "Done 8 of 9 times in the last 2 weeks",
+      "previewEvidence": "Done 8 of 9 times in the last 2 weeks",
       "subscribeCta": "Subscribe to get suggestions"
     },
     "toasts": {
       "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
       "retryLater": "Please try again later",
-      "accepted": "Set to repeat on {{days}}",
+      "accepted": "Set to repeat every {{days}}",
       "rejected": "Suggestion cleared"
     },
     "preview": {

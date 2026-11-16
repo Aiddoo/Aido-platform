@@ -239,10 +239,10 @@
   "feed": {
     "loading": "Loading...",
     "suggestionsLoading": "Loading suggestions...",
-    "suggestionsArrived_one": "Found {{count}} to-do you do often",
-    "suggestionsArrived_other": "Found {{count}} to-dos you do often",
-    "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again",
-    "suggestionFree": "We'll turn your frequent to-dos into repeating ones",
+    "suggestionsArrived_one": "Found {{count}} frequent to-do",
+    "suggestionsArrived_other": "Found {{count}} frequent to-dos",
+    "suggestionsRetry": "Couldn't load your suggestions. Tap to try again",
+    "suggestionFree": "Turn frequent to-dos into repeating ones",
     "suggestion": {
       "analyzing": "Looking at your recent to-dos",
       "doneForToday": "All caught up for today",

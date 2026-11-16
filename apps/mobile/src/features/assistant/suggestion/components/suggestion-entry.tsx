@@ -119,6 +119,7 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
               weight: 'medium',
               shade: 8,
               lineBreakStrategyIOS: 'hangul-word',
+              textBreakStrategy: 'highQuality',
             }}
           />
         }

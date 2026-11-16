@@ -232,13 +232,13 @@
     "suggestionsLoading": "제안을 불러오는 중...",
     "suggestionsArrived": "자주 하는 할 일 {{count}}개를 찾았어요",
     "suggestionsRetry": "AI 제안을 불러오지 못했어요. 눌러서 다시 시도해주세요",
-    "suggestionFree": "자주 하는 할 일을 반복으로 만들어 드려요",
+    "suggestionFree": "자주 하는 일을 반복으로 만들어요",
     "suggestion": {
       "analyzing": "최근 할 일을 살펴보고 있어요",
       "doneForToday": "오늘 제안을 모두 정리했어요",
       "noPatternFound": "아직 반복할 만한 할 일이 없어요",
       "unavailableToday": "오늘은 분석하지 못했어요",
-      "needsMoreTodos": "할 일을 적으면 자주 하는 일을 찾아 드려요",
+      "needsMoreTodos": "할 일을 적으면 자주 하는 일을 찾아요",
       "needsAiConsent": "AI 제안을 받으려면 동의가 필요해요",
       "waitingForNextRun": "다음 분석까지 기다리고 있어요"
     }
