@@ -2,17 +2,10 @@ import { Canvas, Group, Path, type SkRect } from '@shopify/react-native-skia';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
+import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
-import {
-  AspectRatio,
-  Box,
-  HStack,
-  Text,
-  TextSkeleton,
-  usePaneSizeClass,
-  VStack,
-} from '@src/shared/ui';
+import { AspectRatio, Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { clamp, range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { useDeferredValue, useEffect } from 'react';
@@ -31,7 +24,6 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { match } from 'ts-pattern';
 
 import {
   CHART_LABEL_GAP_PT,
@@ -45,8 +37,9 @@ const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 // 세로 스크롤과 다투지 않게 가로로 먼저 움직일 때만 밀기로 잡고, 세로로 먼저 움직이면 스크롤에 넘긴다
 const PAN_ACTIVE_OFFSET_X = 8;
 const PAN_FAIL_OFFSET_Y = 12;
-const COMPACT_TICK_STEP_HOURS = 6;
-const WIDE_TICK_STEP_HOURS = 3;
+const TICK_STEP_CHOICES_HOURS = [3, 6];
+const WIDEST_TICK_STEP_HOURS = 12;
+const TICK_LABEL_MIN_WIDTH_PT = 56;
 
 interface CompletionHourChartProps {
   values: readonly number[];
@@ -71,7 +64,7 @@ export function CompletionHourChart({
 }: CompletionHourChartProps) {
   const haptics = useHaptics();
   const isAnimationActive = useIsAnimationActive();
-  const paneSizeClass = usePaneSizeClass();
+  const [layoutSize, handleLabelLayout] = useLayoutSize();
   const trackColor = useResolvedColor('text-gray-3');
   const fillColor = useResolvedColor('text-main/40');
   const selectedColor = useResolvedColor('text-main');
@@ -80,10 +73,10 @@ export function CompletionHourChart({
   const touchedIndex = useSharedValue<number | null>(null);
   const deferredValues = useDeferredValue(values);
   const barCount = deferredValues.length;
-  const tickStepHours = match(paneSizeClass)
-    .with('compact', () => COMPACT_TICK_STEP_HOURS)
-    .with('medium', 'expanded', () => WIDE_TICK_STEP_HOURS)
-    .exhaustive();
+  const tickStepHours =
+    TICK_STEP_CHOICES_HOURS.find(
+      (stepHours) => TICK_LABEL_MIN_WIDTH_PT <= ((layoutSize?.width ?? 0) * stepHours) / barCount,
+    ) ?? WIDEST_TICK_STEP_HOURS;
 
   const bars = useDerivedValue(() => {
     const chartWidth = width.get();
@@ -204,7 +197,7 @@ export function CompletionHourChart({
           </Canvas>
         </AspectRatio>
       </GestureDetector>
-      <HStack>
+      <HStack onLayout={handleLabelLayout}>
         {/* 눈금마다 같은 수의 칸을 묶어 라벨이 그 시각 칸의 왼쪽 끝에 놓인다 */}
         {range(0, labels.length, tickStepHours).map((hour) => (
           <Box key={hour} flex={1}>

@@ -49,7 +49,11 @@ describe('useActOnSuggestionMutationOptions', () => {
 
     // When
     await act(async () =>
-      result.current.act.mutate({ suggestionId: 7, input: { action: 'dismiss' } }),
+      result.current.act.mutate({
+        suggestionId: 7,
+        input: { action: 'dismiss' },
+        source: 'suggestions_screen',
+      }),
     );
 
     // Then
@@ -68,7 +72,11 @@ describe('useActOnSuggestionMutationOptions', () => {
 
     // When
     await act(async () =>
-      result.current.act.mutate({ suggestionId: 7, input: { action: 'dismiss' } }),
+      result.current.act.mutate({
+        suggestionId: 7,
+        input: { action: 'dismiss' },
+        source: 'suggestions_screen',
+      }),
     );
 
     // Then

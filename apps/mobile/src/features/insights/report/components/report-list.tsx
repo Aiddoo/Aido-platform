@@ -2,6 +2,7 @@ import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insi
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -10,6 +11,8 @@ import {
   Button,
   DashedDivider,
   HStack,
+  LabelChip,
+  LockIcon,
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
@@ -29,11 +32,10 @@ import {
 } from '@tanstack/react-query';
 import { orderBy, range, take } from 'es-toolkit';
 import { Link, router } from 'expo-router';
-import { Chip, PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-import { getSampleReport, SAMPLE_REPORT_IDS } from '../constants/sample-reports.constants';
 import { ReportStatusPolicy } from '../domains/report-status.model';
 import type { AiReport } from '../domains/report.model';
 import { useReportType } from '../hooks/use-report-type';
@@ -46,6 +48,7 @@ import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { CompletionTrendLine } from './completion-trend-line';
 import { ReportTypeChip } from './report-type-chip';
+import { ThisWeekRecord } from './this-week-record';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
@@ -157,18 +160,19 @@ ReportList.Latest = function Latest({ report }: { report: AiReport }) {
 
 interface ReportListItemProps {
   report: AiReport;
-  isSample?: boolean;
   isLast?: boolean;
 }
 
-ReportList.Item = function Item({ report, isSample = false, isLast = false }: ReportListItemProps) {
+ReportList.Item = function Item({ report, isLast = false }: ReportListItemProps) {
   const { t } = useTranslation('ai');
   // Link가 navigate로 열어 같은 상세는 한 번만 쌓인다. 안쪽 버튼·메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const reportId = isSample ? SAMPLE_REPORT_IDS[report.type] : String(report.id);
-  const href = { pathname: '/reports/[reportId]', params: { reportId } } as const;
+  const href = {
+    pathname: '/reports/[reportId]',
+    params: { reportId: String(report.id) },
+  } as const;
 
   return (
     <Link href={href} asChild>
@@ -179,14 +183,6 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
             <VStack gap={10}>
               <HStack justify="between" align="center">
                 <HStack align="center" gap={6}>
-                  {/* Chip도 Pressable이라 그대로 두면 칩 자리 탭을 가로채 줄이 눌리지 않는다 */}
-                  {isSample && (
-                    <Chip size="sm" variant="soft" color="warning" pointerEvents="none">
-                      <Text size="e1" weight="medium" tone="warning">
-                        {t('report.sampleBadge')}
-                      </Text>
-                    </Chip>
-                  )}
                   <ReportTypeChip type={report.type} pointerEvents="none" />
                 </HStack>
 
@@ -249,22 +245,49 @@ ReportList.Item = function Item({ report, isSample = false, isLast = false }: Re
 
 ReportList.Free = function Free() {
   const push = useSingleTap(router.push);
-  const { t } = useTranslation('ai');
-  const [reportType] = useReportType();
-  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
+  const { t } = useTranslation(['ai', 'subscription']);
+  const fontScaledSize = useFontScaledSize();
 
   return (
-    <VStack gap={12}>
-      <Box className="opacity-60">
-        <ReportList.Item report={sampleReport} isSample isLast />
-      </Box>
+    <VStack gap={16}>
+      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
+        <Suspense fallback={<ThisWeekRecord.Loading />}>
+          <ThisWeekRecord />
+        </Suspense>
+      </QueryErrorBoundary>
 
-      <Button
-        size="medium"
-        onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } })}
-      >
-        {t('report.list.subscribeCta')}
-      </Button>
+      <VStack gap={12} className="rounded-2xl bg-gray-1 p-4">
+        <HStack align="center" gap={6}>
+          <LabelChip
+            color="accent"
+            label={t('subscription:tier.premium')}
+            labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+            pointerEvents="none"
+          />
+          <LockIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-5"
+          />
+        </HStack>
+
+        <VStack gap={8} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Box className="h-6 w-40 rounded-md bg-gray-3" />
+          <Box className="h-4 w-full rounded-md bg-gray-2" />
+          <Box className="h-4 w-4/5 rounded-md bg-gray-2" />
+        </VStack>
+
+        <Text size="b4" shade={7}>
+          {t('ai:report.list.lockDescription')}
+        </Text>
+
+        <Button
+          size="medium"
+          onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } })}
+        >
+          {t('ai:report.list.subscribeCta')}
+        </Button>
+      </VStack>
     </VStack>
   );
 };
@@ -329,14 +352,15 @@ ReportList.Empty = function Empty() {
   const [reportType] = useReportType();
   // 상태 쿼리의 로딩·오류는 ReportStatusBanner 경계가 맡는다. 여기서 읽으면 한 오류가 두 곳에 뜬다
   const { data: status } = useQuery(useGetReportStatusQueryOptions());
-  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
   const reportLabel = t(getReportTypeLabelKey(reportType));
 
   return (
-    <VStack gap={12}>
-      <Box className="opacity-60">
-        <ReportList.Item report={sampleReport} isSample isLast />
-      </Box>
+    <VStack gap={16}>
+      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
+        <Suspense fallback={<ThisWeekRecord.Loading />}>
+          <ThisWeekRecord />
+        </Suspense>
+      </QueryErrorBoundary>
 
       {status == null ? (
         <TextSkeleton size="b3" className="mx-auto w-48" />
@@ -366,7 +390,7 @@ function RecentCompletionTrend() {
   const lastWeek = recentWeeks.at(-1);
 
   if (firstWeek == null || lastWeek == null) {
-    return null;
+    return <CompletionTrendLine.Empty message={t('report.latest.trendEmpty')} />;
   }
 
   return (

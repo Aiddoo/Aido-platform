@@ -1,10 +1,11 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { useTrack } from '@src/shared/analytics';
+import { useTrack, useTrackView } from '@src/shared/analytics';
 import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
 import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
 import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -21,7 +22,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatPercent } from '@src/shared/utils/number-format';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -35,6 +36,8 @@ import {
   ReportPolicy,
   type ReportType,
 } from '../domains/report.model';
+import { useGetReportDetailQueryOptions } from '../queries/report.queries';
+import { reportParamsSchema } from '../schemas/report-params.schema';
 import {
   getDailyCompletionLabels,
   getHourlyCompletionCounts,
@@ -47,12 +50,18 @@ import { ReportTypeChip } from './report-type-chip';
 
 const LOADING_STAT_COUNT = 3;
 
-interface ActivityReportProps {
-  report: AiReport;
-}
-
-export function ActivityReport({ report }: ActivityReportProps) {
+export function ActivityReport() {
   const { t } = useTranslation('ai');
+  const [{ reportId }] = useRouteParams(reportParamsSchema);
+
+  // 시간대 차트 라벨이 시간 표기 설정을 읽으므로 리포트를 기다리는 동안 함께 받는다
+  usePrefetchQuery(useGetPreferenceQueryOptions());
+  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ reportId }));
+
+  useTrackView('ai_report_viewed', {
+    key: String(reportId),
+    params: { report_id: reportId, report_type: report.type },
+  });
 
   const peakHour = ReportPolicy.getPeakHour(report);
 

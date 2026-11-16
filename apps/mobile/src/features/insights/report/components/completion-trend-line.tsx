@@ -11,7 +11,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
-import { AspectRatio, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { AspectRatio, Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { Skeleton } from 'heroui-native';
 import { useDeferredValue, useEffect } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -155,6 +155,24 @@ CompletionTrendLine.Loading = function Loading({ className }: { className?: stri
         <Skeleton className="flex-1 rounded-xl dark:bg-gray-2" />
       </AspectRatio>
       <TextSkeleton size="e1" />
+    </VStack>
+  );
+};
+
+/** 기록이 없는 주에도 차트와 같은 높이를 남겨 아래 자리가 움직이지 않게 한다 */
+CompletionTrendLine.Empty = function Empty({ message }: { message: string }) {
+  return (
+    <VStack gap={CHART_LABEL_GAP_PT}>
+      <AspectRatio ratio={COMPLETION_TREND_ASPECT_RATIO}>
+        <Box className="flex-1 items-center justify-center rounded-xl bg-gray-1">
+          <Text size="b4" shade={6}>
+            {message}
+          </Text>
+        </Box>
+      </AspectRatio>
+      <Text size="e1" className="opacity-0" accessibilityElementsHidden>
+        {' '}
+      </Text>
     </VStack>
   );
 };

@@ -50,7 +50,11 @@ export function SuggestionsList() {
   }
 
   const handleDismiss = (suggestionId: number) => {
-    dismissSuggestionMutation.mutate({ suggestionId, input: { action: 'dismiss' } });
+    dismissSuggestionMutation.mutate({
+      suggestionId,
+      input: { action: 'dismiss' },
+      source: 'suggestions_screen',
+    });
   };
 
   return (

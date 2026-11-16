@@ -9,6 +9,7 @@ import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import type { SuggestionActionSource } from '../constants/suggestion.events';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { invalidateAiSuggestions, setSuggestionAnalysisInCache } from './suggestion-cache';
 import { SUGGESTION_MUTATION_KEYS } from './suggestion-mutation-keys';
@@ -16,6 +17,7 @@ import { SUGGESTION_MUTATION_KEYS } from './suggestion-mutation-keys';
 interface ActOnSuggestionVariables {
   suggestionId: number;
   input: AiSuggestionActionInput;
+  source: SuggestionActionSource;
 }
 
 export function useActOnSuggestionMutationOptions() {
@@ -31,8 +33,8 @@ export function useActOnSuggestionMutationOptions() {
     networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
       unwrap(await suggestionApi.actOnSuggestion(suggestionId, input)),
-    onSuccess: (_result, { input }) => {
-      trackEvent('ai_suggestion_acted', { action: input.action, source: 'suggestions_screen' });
+    onSuccess: (_result, { input, source }) => {
+      trackEvent('ai_suggestion_acted', { action: input.action, source });
       toast.success(
         input.action === 'accept'
           ? t('ai:suggestions.toasts.accepted')

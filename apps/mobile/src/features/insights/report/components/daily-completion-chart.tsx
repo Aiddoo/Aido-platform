@@ -30,7 +30,7 @@ import { toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
 const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 
 interface DailyCompletionChartProps {
-  values: readonly { total: number; completed: number }[];
+  values: readonly { total: number; completed: number; isUpcoming?: boolean }[];
   labels: readonly string[];
   selectedIndex: number | null;
   onSelectedIndexChange: (index: number) => void;
@@ -53,6 +53,7 @@ export function DailyCompletionChart({
   const haptics = useHaptics();
   const isAnimationActive = useIsAnimationActive();
   const trackColor = useResolvedColor('text-gray-3');
+  const upcomingTrackColor = useResolvedColor('text-gray-2');
   const fillColor = useResolvedColor('text-main/40');
   const selectedColor = useResolvedColor('text-main');
   const width = useSharedValue(0);
@@ -75,8 +76,18 @@ export function DailyCompletionChart({
   };
   const trackPath = useRebuiltPath(readBars, (builder, rects) => {
     'worklet';
-    rects.forEach((bar) => {
-      builder.addRRect(bar.track);
+    rects.forEach((bar, index) => {
+      if (deferredValues[index]?.isUpcoming !== true) {
+        builder.addRRect(bar.track);
+      }
+    });
+  });
+  const upcomingTrackPath = useRebuiltPath(readBars, (builder, rects) => {
+    'worklet';
+    rects.forEach((bar, index) => {
+      if (deferredValues[index]?.isUpcoming === true) {
+        builder.addRRect(bar.track);
+      }
     });
   });
   const fillPath = useRebuiltPath(readBars, (builder, rects) => {
@@ -149,6 +160,7 @@ export function DailyCompletionChart({
           <Canvas style={{ flex: 1 }}>
             <Group clip={revealClip}>
               <Path path={trackPath} color={trackColor} />
+              <Path path={upcomingTrackPath} color={upcomingTrackColor} />
               <Group clip={trackPath}>
                 <Path path={fillPath} color={fillColor} />
                 <Path path={selectedFillPath} color={selectedColor} />
@@ -166,6 +178,7 @@ export function DailyCompletionChart({
               numberOfLines={1}
               className={cn(
                 'w-12 text-center text-gray-5 tabular-nums',
+                values[index]?.isUpcoming === true && 'text-gray-4',
                 index === selectedIndex && 'text-gray-9',
               )}
             >
