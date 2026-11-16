@@ -3,6 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -25,7 +26,7 @@ interface ActOnSuggestionVariables {
 export function useActOnSuggestionMutationOptions() {
   const haptics = useHaptics();
   const suggestionApi = useSuggestionApi();
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const dateFormatContext = useDateFormatContext();
@@ -47,6 +48,10 @@ export function useActOnSuggestionMutationOptions() {
       );
       if (input.action === 'accept') {
         emitTodoCreated();
+        const accountId = getCachedMe(queryClient)?.id;
+        if (accountId != null) {
+          trackAttributedFeatureSuccess({ accountId, feature: 'ai_suggestion' });
+        }
       }
     },
     onError: (error) => {

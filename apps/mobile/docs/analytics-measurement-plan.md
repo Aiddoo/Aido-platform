@@ -21,6 +21,7 @@ GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 �
 | device·app-config  | [activation](../src/features/device/activation/constants/activation.events.ts) · [coachmark](../src/features/device/coachmark/constants/coachmark.events.ts) · [store-review](../src/features/device/store-review/constants/store-review.events.ts) · [widget](../src/features/device/widget/constants/widget.events.ts) · [app-version](../src/features/app-config/app-version/constants/app-version.events.ts) · [whats-new](../src/features/app-config/whats-new/constants/whats-new.events.ts) |
 
 - AI 제안·리포트 이벤트: `ai_suggestions_viewed`(`state`, `suggestion_count`), `ai_suggestion_analysis_requested`(`source`), `ai_suggestion_acted`(`action`, `source`), `ai_report_chart_tapped`(`chart`). 값은 각 `constants/*.events.ts`가 원본이다.
+- 기능 발견(`feature_card_cta` → `feature_action_success`)의 `feature` 값은 [feature-key](../src/shared/analytics/feature-key.ts)가 원본이다. 1.16.0 소개(캠페인 `feature-discovery-1.16.0`)는 `ai_suggestion`(제안을 반복 할 일로 만듦)과 `ai_report`(리포트·이번 주 기록 차트를 처음 누름)를 성공으로 센다.
 - 보내는 곳은 `git grep -n "'<이벤트 이름>'" -- apps/mobile/src`로 찾는다. 전송은 `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`이고, 자동 화면 수집은 꺼 두고(`firebase.json`) `useScreenTracking`이 route 템플릿으로 `screen_view`를 보낸다.
 - 숫자 엔터티 id(`todo_id`·`memo_id` 등)는 개인정보는 아니지만 고카디널리티라 커스텀 측정기준으로 등록하지 않는다([GA 콘솔 설정](./analytics-ga-console.md#b-커스텀-측정기준)).
 

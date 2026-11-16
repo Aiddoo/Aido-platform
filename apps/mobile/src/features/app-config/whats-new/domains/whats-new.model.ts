@@ -7,11 +7,11 @@ import { z } from 'zod';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 
 /** 목록 줄의 route·지표 키(코드의 이름은 constants의 RELEASE_ID). 지운 친구 초대 줄의 1.14.0은 지표 기록에 남아 다시 쓰지 않는다 */
-const releaseIdSchema = z.enum(['1.15.0']);
+const releaseIdSchema = z.enum(['1.16.0', '1.15.0']);
 export type ReleaseId = z.infer<typeof releaseIdSchema>;
 
 /** 여러 단계 소개를 앱에 남긴 출시. 최근 두 출시만이고 최신이 앞이다 */
-const TOUR_RELEASE_IDS = ['1.15.0'] as const satisfies readonly ReleaseId[];
+const TOUR_RELEASE_IDS = ['1.16.0', '1.15.0'] as const satisfies readonly ReleaseId[];
 export const tourReleaseIdSchema = z.enum(TOUR_RELEASE_IDS);
 type TourReleaseId = z.infer<typeof tourReleaseIdSchema>;
 

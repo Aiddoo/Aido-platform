@@ -12,7 +12,7 @@ import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { RELEASE_1_15_0 } from '../constants/releases.constants';
+import { RELEASE_1_16_0 } from '../constants/releases.constants';
 import { RELEASE_ID } from '../constants/whats-new.constants';
 import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';
 import { WHATS_NEW_QUERY_KEYS } from '../queries/whats-new-query-keys';
@@ -38,7 +38,7 @@ async function renderFeed({
   );
   const config: WhatsNewCampaignConfig = {
     enabled: true,
-    campaignId: RELEASE_1_15_0.campaignId,
+    campaignId: RELEASE_1_16_0.campaignId,
     minAppVersion: '1.15.0',
     autoOpen: true,
   };
@@ -88,7 +88,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/whats-new',
-      params: { releaseId: RELEASE_ID.v1_15_0, source: 'auto' },
+      params: { releaseId: RELEASE_ID.v1_16_0, source: 'auto' },
     });
   });
 
@@ -116,11 +116,11 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
 
-  it('1.15.0 앱에서 이미 본 계정은 같은 저장 키를 읽어 업데이트한 뒤에도 다시 열지 않는다', async () => {
+  it('이 캠페인을 이미 본 계정은 저장 키를 읽어 다시 열지 않는다', async () => {
     // Given
     const syncStorage = createMemoryObservableSyncStorage();
     syncStorage.set(
-      `aido_feature_discovery_seen_v1:${USER_ID}:feature-discovery-2026-12`,
+      `aido_feature_discovery_seen_v1:${USER_ID}:${RELEASE_1_16_0.campaignId}`,
       '2026-11-10T09:00:00.000Z',
     );
 

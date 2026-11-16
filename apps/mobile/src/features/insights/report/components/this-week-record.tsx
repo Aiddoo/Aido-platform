@@ -1,3 +1,4 @@
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
@@ -20,13 +21,14 @@ import { DailyCompletionChart } from './daily-completion-chart';
 
 export function ThisWeekRecord() {
   const { t } = useTranslation('ai');
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
   const { data: completionsByDate } = useSuspenseQuery(
     useGetDailyCompletionsQueryOptions(getWeeklyRecordRange(todayKey)),
   );
+  const accountId = useMyAccountId();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const days = getWeeklyRecordDays(completionsByDate, todayKey);
@@ -58,6 +60,9 @@ export function ThisWeekRecord() {
   const handleSelectedIndexChange = (index: number) => {
     if (selectedIndex == null) {
       trackEvent('ai_report_chart_tapped', { chart: 'daily_completions' });
+      if (accountId != null) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
+      }
     }
     setSelectedIndex(index);
   };

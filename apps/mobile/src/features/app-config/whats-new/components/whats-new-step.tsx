@@ -1,8 +1,22 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, H3, HStack, STACK_CLOSE_ICON, Spacing, Text } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  Box,
+  H3,
+  HStack,
+  IconCircle,
+  LabelChip,
+  STACK_CLOSE_ICON,
+  Spacing,
+  type StyledIcon,
+  Text,
+  VStack,
+  WordWrapText,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { Stack } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
@@ -12,6 +26,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 /** 큰 글꼴에서도 예시 화면이 알아볼 만큼 남는 높이. 더 줄면 글이 아니라 스크롤로 넘긴다 */
 const MEDIA_MIN_HEIGHT = 240;
+const FEATURE_ICON_CIRCLE_SIZE = 40;
+const FEATURE_ICON_SIZE = 22;
 
 interface WhatsNewStepProps {
   media: ReactNode;
@@ -143,5 +159,79 @@ WhatsNewStep.Stage = function Stage({ children, className, ...boxProps }: StageP
         </Box>
       </Box>
     </Box>
+  );
+};
+
+interface FeatureCardProps extends Omit<
+  ComponentProps<typeof PressableFeedback>,
+  'children' | 'onPress'
+> {
+  Icon: StyledIcon;
+  title: string;
+  description: string;
+  badge?: string;
+  onPress: () => void;
+}
+
+/** 소개와 마무리가 같은 카드로 이어진다. 바탕은 놓인 면에 따라 쓰는 쪽이 정한다 */
+WhatsNewStep.FeatureCard = function FeatureCard({
+  Icon,
+  title,
+  description,
+  badge,
+  onPress,
+  className,
+  ...pressableProps
+}: FeatureCardProps) {
+  const fontScaledSize = useFontScaledSize();
+  const handlePress = useSingleTap(onPress);
+
+  return (
+    <PressableFeedback
+      accessibilityRole="button"
+      onPress={handlePress}
+      className={cn('rounded-2xl bg-gray-1 p-4', className)}
+      {...pressableProps}
+    >
+      <HStack gap={12} align="center">
+        <IconCircle
+          tone="plain"
+          className="bg-main/10"
+          style={{
+            width: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
+            height: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
+          }}
+          icon={
+            <Icon
+              width={fontScaledSize(FEATURE_ICON_SIZE)}
+              height={fontScaledSize(FEATURE_ICON_SIZE)}
+              colorClassName="text-main"
+            />
+          }
+        />
+        <VStack flex={1} gap={4}>
+          {badge != null && (
+            <LabelChip
+              color="accent"
+              label={badge}
+              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+              pointerEvents="none"
+              className="self-start"
+            />
+          )}
+          <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
+            {title}
+          </Text>
+          <WordWrapText size="e1" shade={6}>
+            {description}
+          </WordWrapText>
+        </VStack>
+        <ArrowRightIcon
+          width={fontScaledSize(16)}
+          height={fontScaledSize(16)}
+          colorClassName="text-gray-5"
+        />
+      </HStack>
+    </PressableFeedback>
   );
 };

@@ -142,9 +142,12 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 ## 배포 순서
 
 1. 서버를 먼저 배포한다. 배포 전 RDS 스냅숏을 뜬다([서버 배포와 롤백](../../../apps/api/docs/deployment.md)).
-2. 서버 안정화를 확인한 뒤 앱을 제출한다. 분석 창이 09시대로 옮겨지므로 03:00~03:40 KST와 아침 리마인더 시각을 피해 배포한다.
-3. 라이브러리 변경(Kakao·RevenueCat)은 네이티브가 바뀌어 OTA 없이 스토어 빌드로만 나간다. 마이너·패치 정리는 **예정**이다.
-4. 스토어 문구는 `apps/mobile/store-metadata/1.16.0/release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
+2. 서버를 배포할 때 운영 env를 1.16.0 소개로 바꾼다([새로운 기능 출시](../../../apps/mobile/docs/whats-new-release.md#자세한-순서) 8단계): `FEATURE_DISCOVERY_CAMPAIGN_ID=feature-discovery-1.16.0`, `FEATURE_DISCOVERY_MIN_APP_VERSION=1.16.0`, `FEATURE_DISCOVERY_LAUNCHED_AT`은 1.16.0 배포 시각(끝이 `Z`인 UTC), `FEATURE_DISCOVERY_AUTO_OPEN=true`. 1.15.x 앱은 이 id를 몰라 소개를 자동으로 열지 않는다.
+3. 앱 빌드 전에 새로운 기능 목록의 `RELEASE_1_16_0.releasedOn`(작성일 2026-11-17로 둠)을 패치 노트에 올릴 날짜로 맞춘다.
+4. 서버 안정화를 확인한 뒤 앱을 제출한다. 분석 창이 09시대로 옮겨지므로 03:00~03:40 KST와 아침 리마인더 시각을 피해 배포한다.
+5. 라이브러리 변경(Kakao·RevenueCat)은 네이티브가 바뀌어 OTA 없이 스토어 빌드로만 나간다. 마이너·패치 정리는 **예정**이다.
+6. 스토어 문구는 `apps/mobile/store-metadata/1.16.0/release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
+7. 스토어에서 1.16.0을 실제로 받을 수 있게 된 뒤 플랫폼마다 관리자 API로 `AppRelease`를 1.16.0으로 올린다. 앱 설정 "버전 정보"의 업데이트 안내가 이 값을 본다. 먼저 올리면 스토어에 "열기"만 보인다([서버 배포](../../../apps/api/docs/deployment.md#공개-버전과-env-반영)).
 
 ## 검증
 

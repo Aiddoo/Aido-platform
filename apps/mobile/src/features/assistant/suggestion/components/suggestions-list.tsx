@@ -1,6 +1,7 @@
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
+import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -32,6 +33,8 @@ const SUGGESTION_LOADING_COUNT = 2;
 
 interface SuggestionItemProps {
   suggestion: AiSuggestion;
+  timeFormat: TimeFormat;
+  onMake: () => void;
   onDismiss: () => void;
   isDismissing?: boolean;
   isLast?: boolean;
@@ -39,17 +42,23 @@ interface SuggestionItemProps {
 
 export function SuggestionsList() {
   const { t } = useTranslation('ai');
+  // useSuspenseQueries는 쿼리마다 subscribed를 받지 않아 가려지면 구독을 끊는 목록과 따로 읽는다
   usePrefetchQuery(useGetPreferenceQueryOptions());
   const isFocused = useIsFocused();
   const { data: list } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
     subscribed: isFocused,
   });
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dismissSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
+  const push = useSingleTap(router.push);
 
   if (list.suggestions.length === 0) {
     return null;
   }
+
+  const handleMake = (suggestionId: number) =>
+    push({ pathname: '/suggestions/[suggestionId]/category', params: { suggestionId } });
 
   const handleDismiss = (suggestionId: number) => {
     dismissSuggestionMutation.mutate({
@@ -67,6 +76,8 @@ export function SuggestionsList() {
             <SuggestionsList.Item
               key={suggestion.id}
               suggestion={suggestion}
+              timeFormat={preference.timeFormat}
+              onMake={() => handleMake(suggestion.id)}
               onDismiss={() => handleDismiss(suggestion.id)}
               isDismissing={
                 dismissSuggestionMutation.isPending &&
@@ -86,20 +97,14 @@ export function SuggestionsList() {
 
 SuggestionsList.Item = function Item({
   suggestion,
+  timeFormat,
+  onMake,
   onDismiss,
   isDismissing = false,
   isLast = false,
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const push = useSingleTap(router.push);
-
-  const handleOpenCategorySheet = () =>
-    push({
-      pathname: '/suggestions/[suggestionId]/category',
-      params: { suggestionId: suggestion.id },
-    });
 
   return (
     <Box className="py-2">
@@ -125,11 +130,7 @@ SuggestionsList.Item = function Item({
               size="sm"
               color="default"
               pointerEvents="none"
-              label={formatScheduledTime(
-                suggestion.scheduledTime,
-                preference.timeFormat,
-                dateFormatContext,
-              )}
+              label={formatScheduledTime(suggestion.scheduledTime, timeFormat, dateFormatContext)}
             />
           )}
         </HStack>
@@ -152,12 +153,7 @@ SuggestionsList.Item = function Item({
           >
             {t('suggestions.item.dismiss')}
           </Button>
-          <Button
-            size="small"
-            display="inline"
-            isDisabled={isDismissing}
-            onPress={handleOpenCategorySheet}
-          >
+          <Button size="small" display="inline" isDisabled={isDismissing} onPress={onMake}>
             {t('suggestions.item.make')}
           </Button>
         </HStack>

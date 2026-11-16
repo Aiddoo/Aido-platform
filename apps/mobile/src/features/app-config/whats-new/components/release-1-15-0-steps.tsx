@@ -1,29 +1,21 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowRightIcon,
   Box,
   Button,
   HStack,
-  IconCircle,
-  LabelChip,
   MicIcon,
   QueryErrorBoundary,
   ReportDuoIcon,
   Spacing,
   Steps,
-  type StyledIcon,
   Text,
   VoiceDuoIcon,
   VStack,
-  WordWrapText,
   Mascot,
 } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { View } from 'react-native';
 import {
   Directions,
@@ -52,8 +44,6 @@ const SCREEN_EDGE_INSET = 24;
 /** 마무리는 고를 카드가 아래에 붙어 있어, 작은 화면·큰 글꼴에서 그림이 먼저 줄고 질문 제목이 보이게 한다 */
 const FINISH_MEDIA_MIN_HEIGHT = 120;
 const FINISH_CAT_SIZE = 140;
-const FEATURE_ICON_CIRCLE_SIZE = 40;
-const FEATURE_ICON_SIZE = 22;
 
 type Release1150Step = (typeof RELEASE_1_15_0_STEPS)[number];
 type Release1150StepMap = Record<Release1150Step, object>;
@@ -206,7 +196,7 @@ export function Release1150Steps() {
       {step === 'finish' ? (
         <>
           <VStack gap={8}>
-            <FeatureCard
+            <WhatsNewStep.FeatureCard
               Icon={VoiceDuoIcon}
               title={t('v1_15_0.finish.voiceTodo')}
               description={t('v1_15_0.voiceTodo.title')}
@@ -216,7 +206,7 @@ export function Release1150Steps() {
               }}
               testID="whats-new-start-voice-todo"
             />
-            <FeatureCard
+            <WhatsNewStep.FeatureCard
               Icon={ReportDuoIcon}
               title={t('v1_15_0.finish.voiceNote')}
               description={t('v1_15_0.voiceNote.title')}
@@ -263,7 +253,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
     <Box flex={1} className="justify-center overflow-hidden rounded-3xl bg-highlight p-3">
       <Mascot name="catHi" size={132} className="absolute -right-2.5 -bottom-6" />
       <VStack gap={8}>
-        <FeatureCard
+        <WhatsNewStep.FeatureCard
           Icon={VoiceDuoIcon}
           title={t('v1_15_0.voiceTodo.title')}
           description={t('v1_15_0.voiceTodo.description')}
@@ -272,7 +262,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
           testID="whats-new-intro-voice-todo"
           className="bg-white"
         />
-        <FeatureCard
+        <WhatsNewStep.FeatureCard
           Icon={ReportDuoIcon}
           title={t('v1_15_0.voiceNote.title')}
           description={t('v1_15_0.voiceNote.description')}
@@ -283,80 +273,6 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1150Chapter) => v
         />
       </VStack>
     </Box>
-  );
-}
-
-interface FeatureCardProps extends Omit<
-  ComponentProps<typeof PressableFeedback>,
-  'children' | 'onPress'
-> {
-  Icon: StyledIcon;
-  title: string;
-  description: string;
-  badge?: string;
-  onPress: () => void;
-}
-
-/** 소개와 마무리가 같은 카드로 이어진다. 바탕은 놓인 면에 따라 쓰는 쪽이 정한다 */
-function FeatureCard({
-  Icon,
-  title,
-  description,
-  badge,
-  onPress,
-  className,
-  ...pressableProps
-}: FeatureCardProps) {
-  const fontScaledSize = useFontScaledSize();
-  const handlePress = useSingleTap(onPress);
-
-  return (
-    <PressableFeedback
-      accessibilityRole="button"
-      onPress={handlePress}
-      className={cn('rounded-2xl bg-gray-1 p-4', className)}
-      {...pressableProps}
-    >
-      <HStack gap={12} align="center">
-        <IconCircle
-          tone="plain"
-          className="bg-main/10"
-          style={{
-            width: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
-            height: fontScaledSize(FEATURE_ICON_CIRCLE_SIZE),
-          }}
-          icon={
-            <Icon
-              width={fontScaledSize(FEATURE_ICON_SIZE)}
-              height={fontScaledSize(FEATURE_ICON_SIZE)}
-              colorClassName="text-main"
-            />
-          }
-        />
-        <VStack flex={1} gap={4}>
-          {badge != null && (
-            <LabelChip
-              color="accent"
-              label={badge}
-              labelProps={{ weight: 'semibold', numberOfLines: 1 }}
-              pointerEvents="none"
-              className="self-start"
-            />
-          )}
-          <Text size="b3" weight="semibold" lineBreakStrategyIOS="hangul-word">
-            {title}
-          </Text>
-          <WordWrapText size="e1" shade={6}>
-            {description}
-          </WordWrapText>
-        </VStack>
-        <ArrowRightIcon
-          width={fontScaledSize(16)}
-          height={fontScaledSize(16)}
-          colorClassName="text-gray-5"
-        />
-      </HStack>
-    </PressableFeedback>
   );
 }
 

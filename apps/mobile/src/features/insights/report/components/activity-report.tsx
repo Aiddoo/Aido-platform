@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
 import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
@@ -142,8 +143,10 @@ ActivityReport.DailyCompletions = function DailyCompletions({
   dailyCompletions,
 }: DailyCompletionsProps) {
   const { t } = useTranslation('ai');
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const dateFormatContext = useDateFormatContext();
+
+  const accountId = useMyAccountId();
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -167,6 +170,9 @@ ActivityReport.DailyCompletions = function DailyCompletions({
   const handleSelectedIndexChange = (index: number) => {
     if (selectedIndex == null) {
       trackEvent('ai_report_chart_tapped', { chart: 'daily_completions' });
+      if (accountId != null) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
+      }
     }
     setSelectedIndex(index);
   };
@@ -204,10 +210,11 @@ ActivityReport.CompletionHours = function CompletionHours({
   peakHour,
 }: CompletionHoursProps) {
   const { t } = useTranslation('ai');
-  const { trackEvent } = useTrack();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const dateFormatContext = useDateFormatContext();
 
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const accountId = useMyAccountId();
 
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
@@ -228,6 +235,9 @@ ActivityReport.CompletionHours = function CompletionHours({
   const handleSelectedHourChange = (hour: number) => {
     if (selectedHour == null) {
       trackEvent('ai_report_chart_tapped', { chart: 'completion_hours' });
+      if (accountId != null) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
+      }
     }
     setSelectedHour(hour);
   };

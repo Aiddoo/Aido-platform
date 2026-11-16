@@ -4,6 +4,7 @@ import type { ReleaseId } from '../domains/whats-new.model';
 
 /** 출시 id를 코드에서 부르는 이름. id 목록과 소개가 있는 출시는 모델이 정한다 */
 export const RELEASE_ID = {
+  v1_16_0: '1.16.0',
   v1_15_0: '1.15.0',
 } as const satisfies Record<string, ReleaseId>;
 

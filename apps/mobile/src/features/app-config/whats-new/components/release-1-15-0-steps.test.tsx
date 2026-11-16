@@ -88,27 +88,21 @@ describe('Release1150Steps', () => {
     jest.mocked(router.push).mockClear();
   });
 
-  it('처음 열면 노출을 남기고 이 계정의 캠페인을 본 것으로 기록한다', async () => {
+  it('캠페인을 뗀 지난 소개는 단계 조회만 남기고 캠페인 노출을 남기지 않는다', async () => {
     // When
-    const { analytics, di } = await renderSteps();
+    const { analytics } = await renderSteps();
 
     // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_impression', {
-      campaign_id: RELEASE_1_15_0.campaignId,
-      source: 'auto',
-    });
     expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_step_viewed', {
       release_id: RELEASE_1_15_0.id,
       step: 'intro',
       index: 0,
       source: 'auto',
     });
-    expect(
-      di.whatsNewRepository.hasSeen({
-        userId: ACCOUNT_ID,
-        campaignId: RELEASE_1_15_0.campaignId,
-      }),
-    ).toBe(true);
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'feature_hub_impression',
+      expect.anything(),
+    );
   });
 
   it('소개에서 말로 메모하기를 고르면 녹음 장면으로 건너뛰고 흐름 안의 자리로 조회를 남긴다', async () => {
@@ -173,11 +167,6 @@ describe('Release1150Steps', () => {
       { pathname: '/feed', params: { action: 'add-voice-todo' } },
       undefined,
     );
-    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
-      campaign_id: RELEASE_1_15_0.campaignId,
-      feature: 'voice_quick',
-      source: 'auto',
-    });
     expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_cta_pressed', {
       release_id: RELEASE_1_15_0.id,
       step: 'finish',

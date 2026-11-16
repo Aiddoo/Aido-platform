@@ -95,7 +95,7 @@ interface WaitingForNextRunProps extends NextAnalysisProps {
 SuggestionStatus.HasSuggestions = function HasSuggestions({ count }: { count: number }) {
   const { t } = useTranslation('ai');
   return (
-    <StatusMessage
+    <SuggestionStatus.Message
       title={t('suggestions.status.hasSuggestions', { count })}
       description={t('suggestions.status.hasSuggestionsDescription')}
     />
@@ -106,12 +106,12 @@ SuggestionStatus.Analyzing = function Analyzing() {
   const { t } = useTranslation('ai');
   const spinnerColor = useResolvedColor('text-main');
   return (
-    <StatusMessage
+    <SuggestionStatus.Message
       title={t('suggestions.status.analyzing')}
       description={t('suggestions.status.analyzingDescription')}
     >
       <Spinner size="sm" color={spinnerColor} />
-    </StatusMessage>
+    </SuggestionStatus.Message>
   );
 };
 
@@ -155,14 +155,14 @@ SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
   const handleAddTodoPress = () => push({ pathname: '/todo/new', params: { date: todayKey } });
 
   return (
-    <StatusMessage
+    <SuggestionStatus.Message
       title={t('suggestions.status.needsMoreTodos')}
       description={t('suggestions.status.needsMoreTodosDescription')}
     >
       <Button size="small" display="inline" onPress={handleAddTodoPress}>
         {t('suggestions.status.addTodo')}
       </Button>
-    </StatusMessage>
+    </SuggestionStatus.Message>
   );
 };
 
@@ -207,6 +207,31 @@ SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
         </Button>
       )}
     </NextAnalysisMessage>
+  );
+};
+
+interface MessageProps {
+  title: string;
+  description: string;
+  children?: ReactNode;
+}
+
+SuggestionStatus.Message = function Message({ title, description, children }: MessageProps) {
+  return (
+    <StatusLayout
+      title={
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {title}
+        </H4>
+      }
+      description={
+        <Text size="b4" shade={6} align="center">
+          {description}
+        </Text>
+      }
+    >
+      {children}
+    </StatusLayout>
   );
 };
 
@@ -261,31 +286,6 @@ function StatusSkeleton() {
   );
 }
 
-interface StatusMessageProps {
-  title: string;
-  description: string;
-  children?: ReactNode;
-}
-
-function StatusMessage({ title, description, children }: StatusMessageProps) {
-  return (
-    <StatusLayout
-      title={
-        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          {title}
-        </H4>
-      }
-      description={
-        <Text size="b4" shade={6} align="center">
-          {description}
-        </Text>
-      }
-    >
-      {children}
-    </StatusLayout>
-  );
-}
-
 interface NextAnalysisMessageProps extends NextAnalysisProps {
   title: string;
   children?: ReactNode;
@@ -303,8 +303,8 @@ function NextAnalysisMessage({ title, nextAnalysisAt, children }: NextAnalysisMe
         });
 
   return (
-    <StatusMessage title={title} description={description}>
+    <SuggestionStatus.Message title={title} description={description}>
       {children}
-    </StatusMessage>
+    </SuggestionStatus.Message>
   );
 }
