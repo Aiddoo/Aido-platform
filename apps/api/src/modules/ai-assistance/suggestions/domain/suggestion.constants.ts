@@ -29,41 +29,6 @@ export interface TodoSummaryForAnalysis {
 }
 
 /**
- * 요일별 완료율
- */
-export interface DayCompletionRate {
-  readonly day: DayOfWeek;
-  readonly total: number;
-  readonly completed: number;
-}
-
-/**
- * 시간대별 완료율
- */
-export interface TimeCompletionRate {
-  readonly morning: { count: number; rate: number };
-  readonly afternoon: { count: number; rate: number };
-}
-
-/**
- * 카테고리별 완료율
- */
-export interface CategoryCompletionRate {
-  readonly name: string;
-  readonly total: number;
-  readonly completed: number;
-  readonly rate: number;
-}
-
-/**
- * 사용자 스트릭 정보
- */
-export interface UserStreakInfo {
-  readonly currentStreak: number;
-  readonly longestStreak: number;
-}
-
-/**
  * 제안 수락/거절 이력 항목
  */
 export interface SuggestionHistoryItem {

@@ -3,7 +3,6 @@ import type { Provider } from "@nestjs/common";
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
-import { WeatherForecastReaderPort } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -13,7 +12,6 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { AiGeneratorPort } from "../generation/application/ports/ai-generator.port.js";
 import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
-import { LatestReportStatsReaderPort } from "../reports/application/ports/latest-report-stats.reader.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
 import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
@@ -36,10 +34,7 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
-    weatherForecastReader: WeatherForecastReaderPort,
-    latestReportStats: LatestReportStatsReaderPort,
     clock: ClockPort,
-    logger: loggerFor(SuggestionContextReader),
   }),
   provideUseCase(AnalyzeAndCreateSuggestionsUseCase, {
     repository: SuggestionRepositoryPort,

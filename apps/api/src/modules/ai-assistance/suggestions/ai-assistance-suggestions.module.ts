@@ -4,10 +4,8 @@ import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.pub
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
-import { WeatherForecastsModule } from "#api/modules/weather/forecasts/weather-forecasts.public";
 
 import { AiAssistanceGenerationModule } from "../generation/ai-assistance-generation.module.js";
-import { AiAssistanceReportsModule } from "../reports/ai-assistance-reports.module.js";
 import { AI_ASSISTANCE_SUGGESTIONS_PROVIDERS } from "./ai-assistance-suggestions.providers.js";
 import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.controller.js";
 
@@ -20,10 +18,8 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
     AccessQuotasModule,
     IdentityUserAccessModule,
     AiAssistanceGenerationModule,
-    AiAssistanceReportsModule,
     NotificationPushModule,
     PlanningTodosModule,
-    WeatherForecastsModule,
   ],
   controllers: [AiSuggestionController],
   providers: [...AI_ASSISTANCE_SUGGESTIONS_PROVIDERS],

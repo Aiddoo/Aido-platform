@@ -1,12 +1,6 @@
-import {
-  AI_SUGGESTION_LIMITS,
-  DAY_OF_WEEK_ORDER,
-  type DayOfWeek,
-  dayIndexToDayOfWeek,
-} from "@aido/api/vocabulary";
+import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { compact, countBy, groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -16,16 +10,11 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import {
   localDateAt,
   localDateTimeAt,
-  sundayBasedDayIndex,
 } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
 import type {
-  CategoryCompletionRate,
-  DayCompletionRate,
   SuggestionHistoryItem,
-  TimeCompletionRate,
   TodoSummaryForAnalysis,
-  UserStreakInfo,
 } from "../../domain/suggestion.constants.js";
 
 // planning Todo.startDate는 달력 날짜 칸이라 같은 현지 날짜를 PlainDate로 비교한다
@@ -37,7 +26,7 @@ function toWallClock(local: Temporal.ZonedDateTime): string {
   return local.toPlainTime().toString({ smallestUnit: "minute" });
 }
 
-/** 제안 분석용 활동 projection. planning·insights 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
+/** 제안 분석용 활동 projection. planning·제안 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
 @Injectable()
 export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPort {
   readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -49,122 +38,6 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
 
   get #db() {
     return this.#txHost.tx;
-  }
-
-  async findDayCompletionRates(
-    userId: UserId,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<DayCompletionRate[]> {
-    const completions = await this.#db.query.dailyCompletion.findMany({
-      columns: { date: true, totalTodos: true, completedTodos: true },
-      where: {
-        userId: userId.value,
-        date: { gte: localDateAt(from, timezone), lte: localDateAt(to, timezone) },
-      },
-    });
-
-    const completionsByDay: Partial<Record<DayOfWeek, typeof completions>> = groupBy(
-      completions,
-      (c) => dayIndexToDayOfWeek(sundayBasedDayIndex(c.date)),
-    );
-
-    return DAY_OF_WEEK_ORDER.map((day) => {
-      const dayCompletions = completionsByDay[day] ?? [];
-      return {
-        day,
-        total: sumBy(dayCompletions, (c) => c.totalTodos),
-        completed: sumBy(dayCompletions, (c) => c.completedTodos),
-      };
-    });
-  }
-
-  async findTimeCompletionRates(
-    userId: UserId,
-    from: Date,
-    to: Date,
-    timezone: string,
-  ): Promise<TimeCompletionRate> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: { completedAt: true },
-      where: {
-        userId: userId.value,
-        completed: true,
-        completedAt: { isNotNull: true },
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
-    });
-
-    const { morning = 0, afternoon = 0 } = countBy(
-      compact(todos.map((t) => t.completedAt)),
-      (completedAt) => (localDateTimeAt(completedAt, timezone).hour < 12 ? "morning" : "afternoon"),
-    );
-
-    const total = morning + afternoon;
-    return {
-      morning: {
-        count: morning,
-        rate: total > 0 ? Math.round((morning / total) * 100) : 0,
-      },
-      afternoon: {
-        count: afternoon,
-        rate: total > 0 ? Math.round((afternoon / total) * 100) : 0,
-      },
-    };
-  }
-
-  async findCategoryCompletionRates(
-    userId: UserId,
-    from: Date,
-    to: Date,
-    timezone = "UTC",
-  ): Promise<CategoryCompletionRate[]> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: { completed: true },
-      with: { category: { columns: { name: true } } },
-      where: {
-        userId: userId.value,
-        startDate: { gte: localDay(from, timezone), lte: localDay(to, timezone) },
-      },
-    });
-
-    const categoryMap = new Map<string, { total: number; completed: number }>();
-
-    for (const t of todos) {
-      const name = requireRecord(t.category).name;
-      const entry = categoryMap.get(name) ?? { total: 0, completed: 0 };
-      entry.total++;
-      if (t.completed) {
-        entry.completed++;
-      }
-      categoryMap.set(name, entry);
-    }
-
-    return [...categoryMap.entries()]
-      .map(([name, stats]) => ({
-        name,
-        total: stats.total,
-        completed: stats.completed,
-        rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
-      }))
-      .sort((a, b) => b.total - a.total);
-  }
-
-  async findUserStreakInfo(userId: UserId): Promise<UserStreakInfo | null> {
-    const pref = await this.#db.query.userPreference.findFirst({
-      columns: { currentStreak: true, longestStreak: true },
-      where: { userId: userId.value },
-    });
-
-    if (pref == null) {
-      return null;
-    }
-
-    return {
-      currentStreak: pref.currentStreak,
-      longestStreak: pref.longestStreak,
-    };
   }
 
   async findRecentTodos(

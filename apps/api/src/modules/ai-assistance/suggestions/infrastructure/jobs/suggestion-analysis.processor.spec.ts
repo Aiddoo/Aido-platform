@@ -48,9 +48,7 @@ describe("SuggestionAnalysisProcessor", () => {
     await processor.process(analyzeJob);
 
     // Then
-    expect(commands).toEqual([
-      { userId: "user-1", timezone: "America/Los_Angeles", weatherGrid: null, locale: "en" },
-    ]);
+    expect(commands).toEqual([{ userId: "user-1", timezone: "America/Los_Angeles", locale: "en" }]);
     expect(publisher.published).toHaveLength(1);
     expect(publisher.published[0]?.data).toMatchObject({
       userId: "user-1",

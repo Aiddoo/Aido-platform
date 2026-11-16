@@ -30,7 +30,7 @@ export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
     data: z.object({
       userId: z.string().min(1),
       timezone: z.string().min(1),
-      /** 날씨 조회용 KMA 격자 좌표 (위치 미설정·해외 위치면 null) */
+      // 배포가 겹치는 동안 옛 worker가 날씨 문맥에 쓴다. 새 worker는 읽지 않는다
       weatherGrid: weatherGridSchema,
     }),
   }),

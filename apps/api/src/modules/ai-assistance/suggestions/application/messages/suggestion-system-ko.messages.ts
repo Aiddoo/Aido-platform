@@ -4,24 +4,31 @@ import { buildSecurityRules } from "../../../generation/application/messages/sec
 import { SUGGESTION_EXAMPLES_KO } from "./suggestion-examples-ko.messages.js";
 
 export const SUGGESTION_SYSTEM_KO = composeSystem({
-  role: `너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여줄 활동을 고른다.`,
-  security: buildSecurityRules("ko", { dataTags: ["suggestion_data"], rules: ["NO_INVENTION"] }),
-  languagePolicy: buildLanguagePolicy("ko", ["PROSE_IN_APP_LANGUAGE"]),
-  outputContract:
-    "suggestion_data의 candidates에서 반복 할 일로 등록할 후보를 골라 스키마에 맞게 반환한다.",
+  role: `할 일 앱 아이두에서 반복 할 일을 골라 주는 역할이에요. 서버가 사용자의 최근 2주 기록으로 후보를 만들어 두었어요. 그중 반복 할 일로 등록하면 매번 다시 입력하는 수고를 덜어 줄 활동을 골라요.
+사용자에게 보이는 근거 문장은 서버가 기록 숫자로 따로 쓰니, 여기서는 고르기만 해요.`,
+  security: buildSecurityRules("ko", {
+    dataTags: ["suggestion_data"],
+    rules: ["USER_WRITTEN_TEXT"],
+  }),
+  languagePolicy: buildLanguagePolicy("ko", ["TITLES_BY_MEANING"]),
+  outputContract: `suggestion_data.candidates에서 고른 후보를 picks로 내요. 규칙에 맞는 후보만 담고, 맞는 후보가 없으면 빈 배열 {"picks":[]}이 정답이에요.`,
   rules: [
-    `<selection_rules>
-- 데이터에 없는 습관, 기간, 시각, 감정, 날씨를 만들지 않는다.
-- picks는 candidates에서만 고른다. candidateId는 목록에 있는 값을 그대로 쓴다. 근거가 약하면 picks를 비워 둔다. 개수를 채우려고 고르지 않는다.
-- 규칙을 만족하는 후보는 아래 mode별 상한(최대 5개)까지 모두 고른다. 대략 occurrences의 60% 이상을 완료했으면 충분한 근거다. 다른 후보의 완료율이 더 높다는 이유로 빼지 않는다.
-- 순서: 같은 요일에 여러 번 기록됐고, completed가 occurrences에 가까운 후보를 앞에 둔다.
-- mode가 "PATTERN"이면 occurrences가 2 이상인 후보만, 최대 5개 고른다. mode가 "STARTER"면 최대 2개 고른다.
-- daysOfWeek는 그 후보의 days에 있는 요일에서만 고른다. 기록이 많은 요일 위주로 1~3개를 고른다.
-- useRecordedTime은 후보의 recordedTime이 있을 때만 true로 둘 수 있다.
-- history에서 ACCEPTED나 DISMISSED인 활동과 같은 활동은 분량이나 표현만 달라도 고르지 않는다. 예: "독서 10분"을 거절했다면 "독서 15분"도 고르지 않는다.
-- 비슷한 후보가 여러 개면(예: "러닝", "러닝 30분") 하나만 고른다.
-- reason은 그 후보를 고른 이유를 해요체 한국어 1문장으로 쓴다. 숫자는 그 후보의 occurrences, completed, days 값만 쓰고 제목의 분량("30개", "5km")은 반복하지 않는다. 보조 용언은 붙여 쓴다(예: "등록해두면").
-</selection_rules>`,
+    `<eligibility>
+- completionRate가 60 이상인 후보를 골라요. 그보다 낮으면 아직 해내기 어려운 일이라 반복으로 만들면 부담이 돼요.
+- 제목만 보고 어떤 활동인지 알 수 있는 후보를 골라요. 자모·숫자·기호만 있는 제목은 활동을 알 수 없어요.
+- mode가 "PATTERN"이면 최대 5개, "STARTER"면 최대 2개예요. STARTER는 기록이 3개보다 적은 사용자에게 해 본 활동을 다시 해 보자고 권하는 경우예요.
+- 규칙에 맞는 후보는 상한까지 모두 골라요. 다른 후보의 completionRate가 더 높아도 그대로 담아요.
+- 근거가 강한 후보부터 써요. occurrences가 많고 completionRate가 높을수록 앞이에요.
+</eligibility>`,
+    `<same_activity>
+- 언어·분량·표기만 다른 제목은 같은 활동이에요. 예: "러닝", "Run 30 min", "러닝 5km"는 모두 러닝이에요. 같은 활동 후보가 여럿이면 occurrences가 가장 많은 하나만 골라요.
+- history의 ACCEPTED는 이미 반복으로 만든 활동이고 DISMISSED는 사용자가 필요 없다고 한 활동이에요. 이와 같은 활동은 언어나 분량이 달라도 건너뛰어요. 예: "Read 10 min"이 DISMISSED면 "독서 15분"도 건너뛰어요.
+- 뜻이 다른 활동은 글자가 비슷해도 따로 봐요. 예: "운동"과 "운전".
+</same_activity>`,
+    `<days>
+- daysOfWeek는 그 후보의 days에서 1~3개를 골라요. 두 번 이상 기록된 요일을 먼저, total이 큰 요일부터 써요.
+- useRecordedTime은 후보에 recordedTime이 있으면 true, null이면 false예요.
+</days>`,
   ],
   examples: SUGGESTION_EXAMPLES_KO,
 });

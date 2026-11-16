@@ -141,7 +141,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
   }
 }
 
-/** 제안의 날씨 문맥은 KMA 격자 예보만 쓰므로 격자 없는 해외 위치는 날씨 없이 분석한다. */
+/** 배포가 겹치는 동안 옛 worker가 읽는 KMA 격자. 격자 없는 해외 위치는 null이다. */
 function toWeatherGrid(
   location: {
     readonly gridX: number | null;

@@ -15,7 +15,6 @@ import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggesti
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
-import { StubLatestReportStatsReader } from "#test/doubles/ai-assistance/stub-latest-report-stats.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -25,7 +24,6 @@ import {
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
   StubAiTodoStatsReader,
-  StubAiWeatherForecastReader,
 } from "#test/mocks/ports/ai-assistance.stub";
 
 import { createReportAiResponse } from "./ai-response.fixture.js";
@@ -83,8 +81,6 @@ export function createAiAssistanceFixture() {
   );
   const reportRepository = new InMemoryAiReportRepository();
   const todoStatsReader = new StubAiTodoStatsReader();
-  const weatherForecastReader = new StubAiWeatherForecastReader();
-  const latestReportStats = new StubLatestReportStatsReader();
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
@@ -95,13 +91,7 @@ export function createAiAssistanceFixture() {
     clientAppVersion,
     clock,
   });
-  const contextBuilder = new SuggestionContextReader({
-    activityReader,
-    weatherForecastReader,
-    latestReportStats,
-    clock,
-    logger,
-  });
+  const contextBuilder = new SuggestionContextReader({ activityReader, clock });
   const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
     generator,
@@ -132,8 +122,6 @@ export function createAiAssistanceFixture() {
     activityReader,
     reportRepository,
     todoStatsReader,
-    weatherForecastReader,
-    latestReportStats,
     generator,
     aiDataSharingConsent,
     clientAppVersion,
@@ -150,7 +138,6 @@ export function createSuggestionPick(overrides: Partial<SuggestionPick> = {}): S
     candidateId: "a1",
     daysOfWeek: ["MON"],
     useRecordedTime: false,
-    reason: "",
     ...overrides,
   };
 }

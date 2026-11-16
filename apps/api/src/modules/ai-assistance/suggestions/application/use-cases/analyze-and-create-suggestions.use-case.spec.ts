@@ -9,12 +9,9 @@ import {
   usePickResponse,
   withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance.fixture";
-import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
 import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
-
-const SEOUL_GRID = { gridX: 60, gridY: 127, lat: 37.5, lon: 127 };
 
 // 고정 기록: "책 읽기 10분"(독서, 카테고리 7)을 2026-03-02·09·16(월) 세 번 완료
 describe("AnalyzeAndCreateSuggestionsUseCase", () => {
@@ -68,11 +65,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
     withAiAssistanceTime(async () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture(), [
-        createSuggestionPick({
-          daysOfWeek: ["MON", "SUN"],
-          useRecordedTime: true,
-          reason: "월요일마다 책 읽기를 3번 모두 끝냈어요.",
-        }),
+        createSuggestionPick({ daysOfWeek: ["MON", "SUN"], useRecordedTime: true }),
       ]);
       // When
       const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
@@ -83,7 +76,8 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         daysOfWeek: ["MON"],
         scheduledTime: null,
         confidence: 0.95,
-        reason: "월요일마다 책 읽기를 3번 모두 끝냈어요.",
+        reason:
+          "최근 '책 읽기 10분' 활동을 3번 기록하고 3번 완료했어요. 월요일에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.",
         matchedTodos: ["책 읽기 10분", "책 읽기 10분", "책 읽기 10분"],
         suggestedCategoryId: 7,
       });
@@ -91,7 +85,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         task: "suggestion",
         taskClass: "background",
         userId: f.userId,
-        promptVersion: "suggestion@3",
+        promptVersion: "suggestion@4",
       });
     }));
 
@@ -285,57 +279,12 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       expect(f.repository.primitivesOf(1)?.status).toBe("PENDING");
     }));
 
-  it("없는 후보 id는 버리고 근거 밖 수치의 사유는 서버 문장으로 바꾼다", () =>
-    withAiAssistanceTime(async () => {
-      // Given
-      const f = usePickResponse(createAiAssistanceFixture(), [
-        createSuggestionPick({ candidateId: "a9", reason: "없음" }),
-        createSuggestionPick({ reason: "10주 연속으로 읽었어요." }),
-      ]);
-      // When
-      await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
-      // Then
-      expect(f.repository.created).toHaveLength(1);
-      expect(f.repository.created[0]?.reason).toBe(
-        "최근 '책 읽기 10분' 활동을 3번 기록하고 3번 완료했어요. 월요일에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.",
-      );
-    }));
-
-  it.each([false, true])(
-    "날씨 예보 조회 가능(%s)과 관계없이 날씨를 근거로 든 사유는 서버 문장으로 바꾼다",
-    (available) =>
-      withAiAssistanceTime(async () => {
-        // Given
-        const f = usePickResponse(createAiAssistanceFixture(), [
-          createSuggestionPick({ reason: "비 오는 날씨에는 실내에서 책을 읽어요." }),
-        ]);
-        if (available) {
-          f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
-        }
-        // When
-        const count = await f.analyze.execute({
-          userId: f.userId,
-          timezone: "Asia/Seoul",
-          weatherGrid: SEOUL_GRID,
-        });
-        // Then
-        expect(count).toBe(1);
-        expect(f.repository.created[0]?.reason).not.toContain("비");
-        expect(f.repository.created[0]?.reason).toContain("3번 기록");
-      }),
-  );
-
   it("후보와 이력만 프롬프트에 넣고 원본 할 일 배열과 날씨는 넣지 않는다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture(), []);
-      f.weatherForecastReader.forecasts.set("60:127", weatherForecastFixture());
       // When
-      await f.analyze.execute({
-        userId: f.userId,
-        timezone: "Asia/Seoul",
-        weatherGrid: SEOUL_GRID,
-      });
+      await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul" });
       // Then
       const prompt = f.generator.getLastPrompt() ?? "";
       expect(prompt).toContain('"candidates"');
@@ -344,23 +293,18 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
     }));
 
   it.each(["ko", "en"] as const)(
-    "%s 월요일 실제 세 기록은 모델의 일요일·시각 주장을 서버 근거로 교정한다",
+    "%s 월요일 실제 세 기록은 모델의 일요일·시각 선택을 서버 근거로 교정한다",
     (locale) =>
       withAiAssistanceTime(async () => {
         // Given
         const f = usePickResponse(createAiAssistanceFixture(), [
-          createSuggestionPick({
-            daysOfWeek: ["SUN"],
-            useRecordedTime: true,
-            reason: "3 Sundays at 08:00",
-          }),
+          createSuggestionPick({ daysOfWeek: ["SUN"], useRecordedTime: true }),
         ]);
         // When
         const count = await f.analyze.execute({
           userId: f.userId,
           timezone: "America/Los_Angeles",
-          weatherGrid: null,
-          locale: locale,
+          locale,
         });
         // Then
         expect(count).toBe(1);
@@ -369,8 +313,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           daysOfWeek: ["MON"],
           scheduledTime: null,
         });
-        expect(f.repository.created[0]?.reason).not.toContain("Sunday");
-        expect(f.repository.created[0]?.reason).not.toContain("08:00");
+        expect(f.repository.created[0]?.reason).toContain(locale === "ko" ? "월요일" : "Monday");
         expect(f.repository.created[0]?.reason).toContain("3");
       }),
   );
@@ -483,12 +426,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ]);
         f.activityReader.todos = [createAnalysisTodo({ title, startDate: "2026-03-18" })];
         // When
-        const count = await f.analyze.execute({
-          userId: f.userId,
-          timezone: "Asia/Seoul",
-          weatherGrid: null,
-          locale: locale,
-        });
+        const count = await f.analyze.execute({ userId: f.userId, timezone: "Asia/Seoul", locale });
         // Then
         expect(count).toBe(1);
         expect(f.repository.created[0]).toMatchObject({

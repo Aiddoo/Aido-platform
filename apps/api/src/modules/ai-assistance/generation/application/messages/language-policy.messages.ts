@@ -8,6 +8,7 @@ const LANGUAGE_POLICY_RULES = [
   "TITLES_AS_SPOKEN",
   "PROSE_IN_APP_LANGUAGE",
   "NAMES_AS_WRITTEN",
+  "TITLES_BY_MEANING",
 ] as const;
 
 export type LanguagePolicyRule = (typeof LANGUAGE_POLICY_RULES)[number];
@@ -21,6 +22,8 @@ const LANGUAGE_POLICY: Readonly<
     PROSE_IN_APP_LANGUAGE:
       "요약, 핵심 포인트, 정리 제목, 이유처럼 설명하는 문장은 앱 언어인 한국어로 쓴다. 입력이 다른 언어여도 같다.",
     NAMES_AS_WRITTEN: "카테고리 이름·고유명사는 데이터에 적힌 그대로 쓰고 번역하지 않는다.",
+    TITLES_BY_MEANING:
+      "제목은 한국어와 영어가 섞여 있다. 어느 언어로 쓰였든 뜻으로 비교하고, 앱 언어와 다른 제목도 똑같이 다룬다.",
   },
   en: {
     TITLES_AS_SPOKEN:
@@ -28,6 +31,8 @@ const LANGUAGE_POLICY: Readonly<
     PROSE_IN_APP_LANGUAGE:
       "Write descriptive text (summaries, key points, digest titles, reasons) in English, the app language, even when the input is in another language.",
     NAMES_AS_WRITTEN: "Keep category names and proper nouns exactly as written in the data.",
+    TITLES_BY_MEANING:
+      "Titles mix Korean and English. Compare them by meaning whatever the language, and treat titles outside the app language the same way.",
   },
 };
 

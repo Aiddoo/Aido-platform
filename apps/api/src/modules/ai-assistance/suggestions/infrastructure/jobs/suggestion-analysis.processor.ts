@@ -65,18 +65,13 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     await this.#analyze(job.data);
   }
 
-  async #analyze({ userId, timezone, weatherGrid }: AiSuggestionAnalyzeData): Promise<void> {
+  async #analyze({ userId, timezone }: AiSuggestionAnalyzeData): Promise<void> {
     const queueName = AI_SUGGESTION_QUEUE.name;
     this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
     const { locale } = await this.#localePreferenceReader.read(UserId.reconstitute(userId));
-    const createdCount = await this.#analyzeSuggestions.execute({
-      userId,
-      timezone,
-      weatherGrid,
-      locale,
-    });
+    const createdCount = await this.#analyzeSuggestions.execute({ userId, timezone, locale });
     if (createdCount === 0) {
       this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName, userId });
       return;

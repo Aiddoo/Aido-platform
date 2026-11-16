@@ -3,7 +3,6 @@ import { orderBy } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
-import type { GridInput } from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -55,8 +54,6 @@ interface AnalyzeAndCreateSuggestionsDependencies {
 export interface AnalyzeAndCreateSuggestionsCommand {
   readonly userId: string;
   readonly timezone: string;
-  /** dispatcher가 미리 조회한 KMA 격자 좌표 (위치 미설정 시 null) */
-  readonly weatherGrid?: GridInput | null;
   readonly locale?: SupportedLocale;
 }
 
@@ -68,7 +65,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
   }
 
   async execute(command: AnalyzeAndCreateSuggestionsCommand): Promise<number> {
-    const { userId, timezone, weatherGrid = null, locale = "ko" } = command;
+    const { userId, timezone, locale = "ko" } = command;
     if (
       !(await this.#dependencies.entitlementReader.canInTx(
         UserId.reconstitute(userId),
@@ -91,12 +88,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       });
       return 0;
     }
-    const context = await this.#dependencies.contextBuilder.build(
-      userId,
-      timezone,
-      weatherGrid ?? null,
-      locale,
-    );
+    const context = await this.#dependencies.contextBuilder.build(userId, timezone);
 
     if (context.todos.length === 0) {
       this.#dependencies.logger.debug({

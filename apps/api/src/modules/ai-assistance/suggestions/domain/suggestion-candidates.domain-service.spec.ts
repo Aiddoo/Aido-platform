@@ -1,6 +1,5 @@
 import {
   buildSuggestionCandidates,
-  isReasonGrounded,
   MAX_SUGGESTION_CANDIDATES,
   resolveSuggestionPicks,
   suggestionConfidence,
@@ -33,9 +32,9 @@ const runs = [
 const groceries = [todo("장보기", "2026-10-10", { categoryName: "생활" })];
 
 describe("buildSuggestionCandidates", () => {
-  it("많이 기록한 활동부터 id를 붙이고 2회 이상 반복된 시각만 기록 시각으로 둔다", () => {
-    // Given / When
-    const candidates = buildSuggestionCandidates([...groceries, ...runs]);
+  it("많이 기록한 활동부터 id를 붙이고 완료율과 2회 이상 반복된 시각을 넣는다", () => {
+    // When
+    const candidates = buildSuggestionCandidates([...groceries, ...runs], "STARTER");
     // Then
     expect(candidates).toEqual([
       {
@@ -43,6 +42,7 @@ describe("buildSuggestionCandidates", () => {
         title: "러닝 5km",
         occurrences: 4,
         completed: 3,
+        completionRate: 75,
         days: [
           { day: "MON", total: 3, completed: 3 },
           { day: "THU", total: 1, completed: 0 },
@@ -54,50 +54,45 @@ describe("buildSuggestionCandidates", () => {
     ]);
   });
 
+  it("PATTERN 모드는 한 번만 기록한 활동을 후보에 넣지 않는다", () => {
+    // When
+    const candidates = buildSuggestionCandidates([...groceries, ...runs], "PATTERN");
+    // Then
+    expect(candidates.map((candidate) => candidate.title)).toEqual(["러닝 5km"]);
+  });
+
   it("후보는 최대 30개다", () => {
     // Given
     const many = Array.from({ length: 40 }, (_, index) => todo(`활동 ${index}`, "2026-10-05"));
     // When / Then
-    expect(buildSuggestionCandidates(many)).toHaveLength(MAX_SUGGESTION_CANDIDATES);
+    expect(buildSuggestionCandidates(many, "STARTER")).toHaveLength(MAX_SUGGESTION_CANDIDATES);
   });
 });
 
 describe("resolveSuggestionPicks", () => {
-  const candidates = buildSuggestionCandidates([...runs, ...groceries]);
+  const candidates = buildSuggestionCandidates([...runs, ...groceries], "STARTER");
 
   it("없는 id·중복 id·이력 활동은 버리고 요일은 기록 요일과의 교집합만 남긴다", () => {
     // Given
     const picks = [
-      { candidateId: "zz", daysOfWeek: ["MON" as const], useRecordedTime: false, reason: "" },
-      {
-        candidateId: "a1",
-        daysOfWeek: ["MON" as const, "SUN" as const],
-        useRecordedTime: true,
-        reason: "r",
-      },
-      { candidateId: "a1", daysOfWeek: ["THU" as const], useRecordedTime: false, reason: "dup" },
-      { candidateId: "a2", daysOfWeek: ["SAT" as const], useRecordedTime: false, reason: "x" },
+      { candidateId: "zz", daysOfWeek: ["MON" as const], useRecordedTime: false },
+      { candidateId: "a1", daysOfWeek: ["MON" as const, "SUN" as const], useRecordedTime: true },
+      { candidateId: "a1", daysOfWeek: ["THU" as const], useRecordedTime: false },
     ];
     // When
     const resolved = resolveSuggestionPicks(picks, candidates, {
       mode: "PATTERN",
       excludedTitles: [],
     });
-    // Then - 장보기는 1회 기록이라 PATTERN에서 제외된다
+    // Then
     expect(resolved).toEqual([
-      expect.objectContaining({
-        daysOfWeek: ["MON"],
-        scheduledTime: "07:00",
-        modelReason: "r",
-      }),
+      expect.objectContaining({ daysOfWeek: ["MON"], scheduledTime: "07:00" }),
     ]);
   });
 
   it("교집합이 비면 기록된 요일로 정하고, 기록 시각이 없으면 시각을 쓰지 않는다", () => {
     // Given
-    const picks = [
-      { candidateId: "a2", daysOfWeek: ["MON" as const], useRecordedTime: true, reason: "" },
-    ];
+    const picks = [{ candidateId: "a2", daysOfWeek: ["MON" as const], useRecordedTime: true }];
     // When
     const [starter] = resolveSuggestionPicks(picks, candidates, {
       mode: "STARTER",
@@ -109,9 +104,7 @@ describe("resolveSuggestionPicks", () => {
 
   it("거절·수락 이력의 활동은 고르지 않는다", () => {
     // Given
-    const picks = [
-      { candidateId: "a1", daysOfWeek: ["MON" as const], useRecordedTime: false, reason: "" },
-    ];
+    const picks = [{ candidateId: "a1", daysOfWeek: ["MON" as const], useRecordedTime: false }];
     // When
     const resolved = resolveSuggestionPicks(picks, candidates, {
       mode: "PATTERN",
@@ -122,70 +115,15 @@ describe("resolveSuggestionPicks", () => {
   });
 });
 
-describe("suggestionConfidence·isReasonGrounded", () => {
-  const [run] = buildSuggestionCandidates(runs);
+describe("suggestionConfidence", () => {
+  const [run] = buildSuggestionCandidates(runs, "PATTERN");
 
   it("3회 이상·완료율 0.6 이상이면 0.8 + 0.15×완료율이다", () => {
-    // Given / When / Then
+    // Then
     if (run == null) {
       throw new Error("candidate missing");
     }
     expect(suggestionConfidence(run, "PATTERN")).toBe(0.91);
     expect(suggestionConfidence({ ...run, occurrences: 2, completed: 2 }, "PATTERN")).toBe(0.65);
-  });
-
-  it("사유의 숫자는 후보 근거에 있는 값만 허용한다", () => {
-    // Given / When / Then
-    if (run == null) {
-      throw new Error("candidate missing");
-    }
-    expect(isReasonGrounded("월요일에 러닝을 3번 모두 끝냈어요.", run)).toBe(true);
-    expect(isReasonGrounded("7시에 4번 기록했어요.", run)).toBe(true);
-    expect(isReasonGrounded("10번 연속 성공했어요.", run)).toBe(false);
-  });
-
-  it("제목에 적힌 분량은 사용자 기록이라 사유에 다시 써도 근거로 본다", () => {
-    // Given - 후보 제목 "러닝 5km"
-    if (run == null) {
-      throw new Error("candidate missing");
-    }
-    // When / Then
-    expect(isReasonGrounded("월요일마다 러닝 5km를 3번 모두 끝냈어요.", run)).toBe(true);
-    expect(isReasonGrounded("월요일마다 러닝 9km를 3번 끝냈어요.", run)).toBe(false);
-  });
-
-  it("제목의 숫자라도 단위가 다르게 쓰이면 근거 밖 수치로 본다", () => {
-    // Given - 제목 "책 읽기 10분"에서 "10주 연속"을 지어냄
-    const reading = buildSuggestionCandidates([
-      todo("책 읽기 10분", "2026-10-05"),
-      todo("책 읽기 10분", "2026-10-12"),
-    ])[0];
-    if (reading == null) {
-      throw new Error("candidate missing");
-    }
-    // When / Then
-    expect(isReasonGrounded("책 읽기 10분을 2번 모두 끝냈어요.", reading)).toBe(true);
-    expect(isReasonGrounded("10주 연속으로 읽었어요.", reading)).toBe(false);
-  });
-
-  it("기록된 요일 수와 카테고리 이름의 숫자는 근거로 본다", () => {
-    // Given - 월·수·금 각 2번씩 6번 끝낸 후보, 카테고리 "PT 12회권"
-    const candidate = {
-      id: "a1",
-      title: "스쿼트",
-      occurrences: 6,
-      completed: 6,
-      days: [
-        { day: "MON", total: 2, completed: 2 },
-        { day: "WED", total: 2, completed: 2 },
-        { day: "FRI", total: 2, completed: 2 },
-      ],
-      recordedTime: null,
-      categoryName: "PT 12회권",
-    } as const;
-    // When / Then
-    expect(isReasonGrounded("주 3일 월·수·금에 6번 모두 끝냈어요.", candidate)).toBe(true);
-    expect(isReasonGrounded("PT 12회권 일정에 맞춰 6번 끝냈어요.", candidate)).toBe(true);
-    expect(isReasonGrounded("주 4일 운동했어요.", candidate)).toBe(false);
   });
 });

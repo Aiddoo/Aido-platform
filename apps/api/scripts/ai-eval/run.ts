@@ -1,6 +1,6 @@
 /**
  * AI 프롬프트 live eval. 실제 AI 업체를 호출하므로 수동으로만 실행한다(CI·hook 제외).
- *   pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest \
+ *   pnpm --filter @aido/server ai:eval --task parse-todo|parse-memo|quick-plan|voice-note-digest|suggestion \
  *     --provider anthropic|google|openai [추가 jsonl 경로…]
  * 키는 운영 설정과 같은 env(ANTHROPIC_API_KEY·GOOGLE_GENERATIVE_AI_API_KEY·OPENAI_API_KEY)에서 읽는다.
  * 고른 업체의 키가 없으면 호출 없이 안내만 하고 0으로 끝낸다. --provider를 빼면 AI_PROVIDER_ORDER 폴백 체인이다.
@@ -11,14 +11,16 @@
  *   AI_EVAL_REPORT       case별 결과 JSON을 쓸 경로(키는 담지 않는다)
  *   AI_EVAL_DELAY_MS     호출 사이 대기(기본 500, 분당 호출 상한 보호)
  * 콘솔에는 case id·통과 여부·지연·토큰·비용만 쓰고 입력 원문·전사·키는 쓰지 않는다.
- * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo). 결과는 apps/api/docs/ai.md에 남긴다.
+ * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo).
+ * 제안: 고른 후보 정확도 0.95, 재현율 0.9, 금지·중복 후보 0, 근거 약하면 빈 배열 1, 생성 오류 0.
+ * 결과는 apps/api/docs/ai.md에 남긴다.
  */
 import { writeFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
 import { AI_DATA_SHARING_CONSENT, AI_PROVIDER_IDS } from "@aido/api/vocabulary";
-import { omit } from "es-toolkit";
+import { omit, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import { aiAssistanceGenerationConfig } from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
@@ -42,6 +44,8 @@ import { parseTodoPrompt } from "#api/modules/ai-assistance/parsing/application/
 import { quickPlanPrompt } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-prompt.messages";
 import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-prompt.messages";
 import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
+import type { SuggestionDraft } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
+import { suggestionPrompt } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-prompt.messages";
 
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
@@ -55,6 +59,7 @@ import {
   loadParseMemoGoldenCases,
   loadParseTodoGoldenCases,
   loadQuickPlanGoldenCases,
+  loadSuggestionGoldenCases,
   loadVoiceNoteDigestGoldenCases,
   type ParseMemoGoldenCase,
   parseMemoGoldenCaseSchema,
@@ -64,15 +69,35 @@ import {
   type QuickPlanGoldenCase,
   quickPlanGoldenCaseSchema,
   readGoldenLines,
+  type SuggestionGoldenCase,
+  suggestionGoldenCaseSchema,
   toPlanExpectation,
+  toSuggestionContext,
   type VoiceNoteDigestGoldenCase,
   voiceNoteDigestGoldenCaseSchema,
 } from "../../test/fixtures/ai-golden/golden-cases.js";
 import { InMemoryUsageMeterAdapter } from "../../test/mocks/in-memory-usage-meter.adapter.js";
 
 const THRESHOLDS = { date: 0.97, title: 0.9, duplicate: 0.9, noAction: 1 } as const;
+const SUGGESTION_THRESHOLDS = {
+  pickPrecision: 0.95,
+  pickRecall: 0.9,
+  forbiddenPickRate: 0,
+  duplicatePickRate: 0,
+  noneWhenWeak: 1,
+} as const;
 
-type Metric = "date" | "title" | "duplicate" | "noAction";
+type Metric = "date" | "title" | "duplicate" | "noAction" | "noneWhenWeak";
+
+interface PickCounts {
+  readonly picks: number;
+  readonly allowedPicks: number;
+  readonly forbiddenPicks: number;
+  readonly duplicatePicks: number;
+  /** 같은 활동 묶음은 하나로 세고 상한(maxPicks)까지만 기대한다 */
+  readonly recallHits: number;
+  readonly recallTargets: number;
+}
 
 interface CaseScore {
   /** 이 case가 해당 지표의 대상이 아니면 없다 */
@@ -80,6 +105,7 @@ interface CaseScore {
   readonly bookmarkRecall?: number;
   /** 녹음 정리의 제목·요약·핵심 포인트가 앱 언어인지 */
   readonly isDigestInAppLanguage?: boolean;
+  readonly pickCounts?: PickCounts;
   readonly diff?: unknown;
 }
 
@@ -347,6 +373,105 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
   };
 }
 
+function scorePicks(golden: SuggestionGoldenCase, picks: SuggestionDraft["picks"]): CaseScore {
+  const { expected } = golden;
+  const ids = uniq(picks.map(({ candidateId }) => candidateId));
+  const activityKey = (id: string) => {
+    const group = expected.atMostOneOf.findIndex((members) => members.includes(id));
+    return group === -1 ? id : `group-${group}`;
+  };
+  const allowedIds = ids.filter((id) => expected.allowedCandidateIds.includes(id));
+  const recallTargets = Math.min(
+    uniq(expected.allowedCandidateIds.map(activityKey)).length,
+    expected.maxPicks,
+  );
+  const pickCounts: PickCounts = {
+    picks: ids.length,
+    allowedPicks: allowedIds.length,
+    forbiddenPicks: ids.filter((id) => expected.forbiddenCandidateIds.includes(id)).length,
+    duplicatePicks: expected.atMostOneOf.reduce(
+      (total, members) => total + Math.max(0, ids.filter((id) => members.includes(id)).length - 1),
+      0,
+    ),
+    recallHits: Math.min(uniq(allowedIds.map(activityKey)).length, recallTargets),
+    recallTargets,
+  };
+  const pass =
+    pickCounts.allowedPicks === pickCounts.picks &&
+    pickCounts.recallHits === recallTargets &&
+    pickCounts.duplicatePicks === 0;
+  return {
+    metrics: expected.expectNone ? { noneWhenWeak: ids.length === 0 } : {},
+    pickCounts,
+    ...(!pass && { diff: { expected, picks: ids } }),
+  };
+}
+
+function suggestionCase(golden: SuggestionGoldenCase): EvalCase {
+  return {
+    id: golden.id,
+    metrics: golden.expected.expectNone ? ["noneWhenWeak"] : [],
+    async generate(generator) {
+      const context = toSuggestionContext(golden);
+      // 서버 정리 전의 모델 선택을 재려고 정규화 없이 받는다
+      const { value, meta } = await generateWithPrompt(
+        generator,
+        { ...suggestionPrompt, normalize: (draft: SuggestionDraft) => draft },
+        suggestionPrompt.build(context, golden.locale),
+        { context, locale: golden.locale },
+        options,
+      );
+      return { meta, score: scorePicks(golden, value.picks) };
+    },
+  };
+}
+
+type SuggestionMetrics = Record<keyof typeof SUGGESTION_THRESHOLDS, number | null>;
+
+/** 비율은 case별 비율의 평균이 아니라 전체 고른 수의 합으로 낸다(많이 고른 case가 더 무겁다). */
+function summarizePicks(
+  counts: readonly PickCounts[],
+  noneWhenWeak: number | null,
+): SuggestionMetrics {
+  const total = (pick: (count: PickCounts) => number) =>
+    counts.reduce((sum, count) => sum + pick(count), 0);
+  const ratio = (numerator: number, denominator: number) =>
+    denominator === 0 ? null : numerator / denominator;
+  const picks = total((count) => count.picks);
+  return {
+    pickPrecision: ratio(
+      total((count) => count.allowedPicks),
+      picks,
+    ),
+    pickRecall: ratio(
+      total((count) => count.recallHits),
+      total((count) => count.recallTargets),
+    ),
+    forbiddenPickRate: ratio(
+      total((count) => count.forbiddenPicks),
+      picks,
+    ),
+    duplicatePickRate: ratio(
+      total((count) => count.duplicatePicks),
+      picks,
+    ),
+    noneWhenWeak,
+  };
+}
+
+/** 대상 case가 없어 null인 지표는 통과로 본다. 금지·중복 비율은 상한, 나머지는 하한이다. */
+function meetsSuggestionThresholds(metrics: SuggestionMetrics): boolean {
+  const atLeast = (value: number | null, min: number) => value == null || min <= value;
+  const atMost = (value: number | null, max: number) => value == null || value <= max;
+  return (
+    atLeast(metrics.pickPrecision, SUGGESTION_THRESHOLDS.pickPrecision) &&
+    atLeast(metrics.pickRecall, SUGGESTION_THRESHOLDS.pickRecall) &&
+    atMost(metrics.forbiddenPickRate, SUGGESTION_THRESHOLDS.forbiddenPickRate) &&
+    atMost(metrics.duplicatePickRate, SUGGESTION_THRESHOLDS.duplicatePickRate) &&
+    atLeast(metrics.noneWhenWeak, SUGGESTION_THRESHOLDS.noneWhenWeak)
+  );
+}
+
 function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] {
   return match(task)
     .with("parse-todo", () =>
@@ -373,6 +498,15 @@ function loadCases(task: GoldenTask, extraPaths: readonly string[]): EvalCase[] 
         ...extraPaths.flatMap((path) => readGoldenLines(voiceNoteDigestGoldenCaseSchema, path)),
       ].map(voiceNoteDigestCase),
     )
+    .with("suggestion", () =>
+      [
+        ...GOLDEN_VARIANTS.flatMap((variant) => loadSuggestionGoldenCases(variant)),
+        ...extraPaths.flatMap((path) => readGoldenLines(suggestionGoldenCaseSchema, path)),
+      ]
+        // 기록이 없으면 서버가 모델을 부르지 않는다(fake model golden이 확인한다)
+        .filter(({ todos }) => todos.length > 0)
+        .map(suggestionCase),
+    )
     .exhaustive();
 }
 
@@ -381,6 +515,7 @@ const THINKING_ENV = {
   "parse-memo": "AI_THINKING_PARSE_MEMO",
   "quick-plan": "AI_THINKING_QUICK_PLAN",
   "voice-note-digest": "AI_THINKING_VOICE_NOTE_DIGEST",
+  suggestion: "AI_THINKING_SUGGESTION",
 } as const satisfies Record<GoldenTask, string>;
 
 /** --provider·AI_EVAL_THINKING을 운영 설정 env에 덮어 실제 생성 체인을 만든다. */
@@ -526,6 +661,11 @@ async function main(): Promise<number> {
   const languageChecks = results.flatMap((result) =>
     result.isDigestInAppLanguage == null ? [] : [result],
   );
+  const pickCounts = results.flatMap((result) =>
+    result.pickCounts == null ? [] : [result.pickCounts],
+  );
+  const suggestionMetrics =
+    pickCounts.length === 0 ? null : summarizePicks(pickCounts, rate("noneWhenWeak"));
 
   const summary = {
     task: cli.task,
@@ -540,6 +680,7 @@ async function main(): Promise<number> {
     ...(recalls.length > 0 && {
       bookmarkRecall: recalls.reduce((total, value) => total + value, 0) / recalls.length,
     }),
+    ...suggestionMetrics,
     ...(languageChecks.length > 0 && {
       digestInAppLanguage:
         languageChecks.filter((result) => result.isDigestInAppLanguage === true).length /
@@ -570,6 +711,12 @@ async function main(): Promise<number> {
   const reportPath = process.env.AI_EVAL_REPORT;
   if (reportPath !== undefined && reportPath !== "") {
     writeFileSync(reportPath, JSON.stringify({ summary, results }, null, 2));
+  }
+  if (cli.task === "suggestion") {
+    const passed =
+      summary.errors === 0 &&
+      (suggestionMetrics == null || meetsSuggestionThresholds(suggestionMetrics));
+    return passed ? 0 : 1;
   }
   const metrics = ["date", "title", "duplicate", "noAction"] as const satisfies readonly Metric[];
   const passed = metrics.every((metric) => (summary[metric] ?? 1) >= THRESHOLDS[metric]);

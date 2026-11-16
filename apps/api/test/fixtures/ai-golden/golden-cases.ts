@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
-import { DAYS_OF_WEEK, TODO_VISIBILITIES } from "@aido/api/vocabulary";
+import { AI_SUGGESTION_STATUSES, DAYS_OF_WEEK, TODO_VISIBILITIES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { memoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-draft.wire";
@@ -15,6 +15,9 @@ import {
   resolveTodoSchedule,
   type ScheduleClock,
 } from "#api/modules/ai-assistance/shared/domain/todo-schedule.domain-service";
+import { suggestionDraftSchema } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
+import type { SuggestionContext } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
+import { SUGGESTION_MODES } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
 
 /** golden 묶음. mixed는 한국어·영어를 섞어 말한 입력이고 locale은 앱 언어다. */
@@ -26,6 +29,7 @@ export const GOLDEN_TASKS = [
   "parse-memo",
   "quick-plan",
   "voice-note-digest",
+  "suggestion",
 ] as const;
 export type GoldenTask = (typeof GOLDEN_TASKS)[number];
 
@@ -119,6 +123,48 @@ export const voiceNoteDigestGoldenCaseSchema = z.object({
 });
 export type VoiceNoteDigestGoldenCase = z.infer<typeof voiceNoteDigestGoldenCaseSchema>;
 
+/**
+ * 제안 golden 한 줄. todos는 최근 2주 기록, draft는 이상적인 모델 출력이다.
+ * 기대 id는 서버가 todos로 만든 후보 id(a1…)이고 atMostOneOf는 같은 활동이라 하나만 골라야 하는 묶음이다.
+ */
+export const suggestionGoldenCaseSchema = z.object({
+  ...goldenBase,
+  todos: z.array(
+    z.object({
+      title: z.string(),
+      startDate: z.iso.date(),
+      completed: z.boolean(),
+      scheduledTime: z.string().nullable(),
+      categoryName: z.string(),
+    }),
+  ),
+  history: z.array(
+    z.object({ title: z.string(), status: z.enum(AI_SUGGESTION_STATUSES).exclude(["PENDING"]) }),
+  ),
+  draft: suggestionDraftSchema,
+  expected: z.object({
+    mode: z.enum(SUGGESTION_MODES),
+    maxPicks: z.number().int(),
+    expectNone: z.boolean(),
+    allowedCandidateIds: z.array(z.string()),
+    forbiddenCandidateIds: z.array(z.string()),
+    atMostOneOf: z.array(z.array(z.string())),
+  }),
+});
+export type SuggestionGoldenCase = z.infer<typeof suggestionGoldenCaseSchema>;
+
+/** 카테고리 id는 이름 순서로 붙인다. 제안 카테고리는 같은 이름의 기록에서 고른다. */
+export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionContext {
+  const categoryNames = [...new Set(golden.todos.map(({ categoryName }) => categoryName))];
+  return {
+    todos: golden.todos.map((todo) => ({
+      ...todo,
+      categoryId: categoryNames.indexOf(todo.categoryName) + 1,
+    })),
+    suggestionHistory: golden.history,
+  };
+}
+
 /** jsonl 한 줄씩 schema로 검증한다. 형식이 틀린 줄이 있으면 실패한다. */
 export function readGoldenLines<S extends z.ZodType>(schema: S, path: string | URL): z.output<S>[] {
   return readFileSync(path, "utf8")
@@ -146,6 +192,10 @@ export function loadVoiceNoteDigestGoldenCases(
   variant: GoldenVariant,
 ): VoiceNoteDigestGoldenCase[] {
   return readGoldenLines(voiceNoteDigestGoldenCaseSchema, goldenPath("voice-note-digest", variant));
+}
+
+export function loadSuggestionGoldenCases(variant: GoldenVariant): SuggestionGoldenCase[] {
+  return readGoldenLines(suggestionGoldenCaseSchema, goldenPath("suggestion", variant));
 }
 
 export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClock) {

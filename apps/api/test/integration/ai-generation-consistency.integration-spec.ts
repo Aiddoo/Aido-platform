@@ -37,7 +37,6 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
 import {
   aiReport,
-  dailyCompletion,
   recurringSuggestion,
   todo,
   todoCategory,
@@ -172,13 +171,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       },
       clock,
     });
-    const contextBuilder = new SuggestionContextReader({
-      activityReader: activity,
-      weatherForecastReader: { readForecasts: async () => new Map() },
-      latestReportStats: { findLatestWeekly: async () => null },
-      clock,
-      logger,
-    });
+    const contextBuilder = new SuggestionContextReader({ activityReader: activity, clock });
     const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
       generator: provider,
@@ -267,31 +260,6 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     await client.update(userTable).set(patch).where(eq(userTable.id, userId));
   }
 
-  it("LA 분석의 DATE 월요일 완료율은 일요일로 이동하지 않는다", async () => {
-    // Given
-    await client.insert(dailyCompletion).values({
-      id: createEntityId(),
-      userId,
-      date: Temporal.PlainDate.from("2026-10-05"),
-      totalTodos: 2,
-      completedTodos: 2,
-      achievedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
-      updatedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
-    });
-
-    // When
-    const rates = await activity.findDayCompletionRates(
-      UserId.reconstitute(userId),
-      new Date("2026-10-01T00:00:00Z"),
-      CURRENT_TIME,
-      "America/Los_Angeles",
-    );
-
-    // Then
-    expect(rates.find((rate) => rate.day === "MON")).toMatchObject({ total: 2, completed: 2 });
-    expect(rates.find((rate) => rate.day === "SUN")).toMatchObject({ total: 0, completed: 0 });
-  });
-
   it.each([
     {
       timezone: "Asia/Seoul",
@@ -323,34 +291,17 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           return row;
         }),
       );
-      await client.insert(dailyCompletion).values(
-        dates.map((date) => ({
-          id: createEntityId(),
-          userId,
-          date: Temporal.PlainDate.from(date),
-          totalTodos: 1,
-          completedTodos: 1,
-          achievedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
-          updatedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
-        })),
-      );
 
       // When
-      const start = new Date(from);
-      const end = new Date(to);
-      const owner = UserId.reconstitute(userId);
-      const [todos, days, times, categories] = await Promise.all([
-        activity.findRecentTodos(owner, start, end, timezone),
-        activity.findDayCompletionRates(owner, start, end, timezone),
-        activity.findTimeCompletionRates(owner, start, end, timezone),
-        activity.findCategoryCompletionRates(owner, start, end, timezone),
-      ]);
+      const todos = await activity.findRecentTodos(
+        UserId.reconstitute(userId),
+        new Date(from),
+        new Date(to),
+        timezone,
+      );
 
       // Then
       expect(todos.map((todo) => todo.title)).toEqual([dates[1]]);
-      expect(days.reduce((sum, day) => sum + day.total, 0)).toBe(1);
-      expect(times.morning.count + times.afternoon.count).toBe(1);
-      expect(categories).toMatchObject([{ total: 1, completed: 1 }]);
     },
   );
 

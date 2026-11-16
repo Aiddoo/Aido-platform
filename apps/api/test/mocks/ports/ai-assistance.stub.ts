@@ -8,10 +8,6 @@ import type {
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
-import type {
-  WeatherForecastReaderPort,
-  WeatherForecast,
-} from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -75,19 +71,6 @@ export class StubAiTodoStatsReader extends TodoStatsReaderPort {
   async fetchAggregationInputs(params: AggregateParams) {
     this.calls.push(structuredClone(params));
     return structuredClone(this.inputs);
-  }
-}
-
-export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
-  forecasts = new Map<string, WeatherForecast>();
-  failure: Error | null = null;
-  calls = 0;
-  async readForecasts() {
-    this.calls += 1;
-    if (this.failure) {
-      throw this.failure;
-    }
-    return this.forecasts;
   }
 }
 

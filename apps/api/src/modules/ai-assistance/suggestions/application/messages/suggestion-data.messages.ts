@@ -1,22 +1,29 @@
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
-import { wrapUntrusted } from "../../../generation/application/messages/untrusted-input.messages.js";
 import {
   buildSuggestionCandidates,
+  type SuggestionCandidate,
+  type SuggestionMode,
   suggestionModeOf,
 } from "../../domain/suggestion-candidates.domain-service.js";
+import type { SuggestionHistoryItem } from "../../domain/suggestion.constants.js";
 import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
 
 /** 프롬프트에 넣는 제목 길이. 저장되는 제목은 원본이다. */
 const PROMPT_TITLE_MAX_LENGTH = 80;
 
-/** 서버가 만든 후보와 응답 이력만 준다. 원본 할 일 배열과 날씨는 넣지 않는다. */
-export function buildSuggestionData(context: SuggestionContext): string {
+export interface SuggestionData {
+  readonly mode: SuggestionMode;
+  readonly candidates: readonly SuggestionCandidate[];
+  readonly history: readonly SuggestionHistoryItem[];
+}
+
+export function buildSuggestionData(context: SuggestionContext): SuggestionData {
   const shorten = (title: string) => truncateGraphemes(title, PROMPT_TITLE_MAX_LENGTH);
-  return wrapUntrusted("suggestion_data", {
-    mode: suggestionModeOf(context.todos.length),
-    today: context.currentDate,
-    candidates: buildSuggestionCandidates(context.todos).map((candidate) => ({
+  const mode = suggestionModeOf(context.todos.length);
+  return {
+    mode,
+    candidates: buildSuggestionCandidates(context.todos, mode).map((candidate) => ({
       ...candidate,
       title: shorten(candidate.title),
       categoryName: shorten(candidate.categoryName),
@@ -25,5 +32,5 @@ export function buildSuggestionData(context: SuggestionContext): string {
       title: shorten(title),
       status,
     })),
-  });
+  };
 }
