@@ -29,6 +29,9 @@ function sumCountsBy<K extends PropertyKey>(
   return mapValues(groupBy(groups, toKey), (rows) => sumBy(rows, (row) => row._count.id));
 }
 
+/** 지운 카테고리의 집계에 쓰는 색. 이름은 리포트 언어에 맞게 호출자가 넘긴다 */
+export const FALLBACK_CATEGORY_COLOR = "#808080";
+
 const toDayOfWeek = (group: DailyGroupRow): DayOfWeek =>
   dayIndexToDayOfWeek(sundayBasedDayIndex(plainDateFromDate(group.startDate)));
 
@@ -39,6 +42,7 @@ export function computeCategoryBreakdown(
   totalGroups: CategoryGroupRow[],
   completedGroups: CategoryGroupRow[],
   categories: CategoryMetaRow[],
+  fallbackCategoryName: string,
 ): CategoryBreakdownItem[] {
   const completedByCategoryId = keyBy(completedGroups, (g) => g.categoryId);
   const categoryById = keyBy(categories, (c) => c.id);
@@ -48,8 +52,8 @@ export function computeCategoryBreakdown(
     const total = g._count.id;
     const completed = completedByCategoryId[g.categoryId]?._count.id ?? 0;
     return {
-      name: category?.name ?? "기타",
-      color: category?.color ?? "#808080",
+      name: category?.name ?? fallbackCategoryName,
+      color: category?.color ?? FALLBACK_CATEGORY_COLOR,
       total,
       completed,
       rate: total > 0 ? Math.round((completed / total) * 100) : 0,
@@ -159,6 +163,7 @@ export function assembleAggregatedData(
   startDate: Date,
   endDate: Date,
   timezone: string,
+  fallbackCategoryName: string,
 ): AggregatedReportData {
   const {
     dailyTotalGroups,
@@ -184,6 +189,7 @@ export function assembleAggregatedData(
     catTotalGroups,
     catCompletedGroups,
     categories,
+    fallbackCategoryName,
   );
 
   const dayPatterns = computeDayPatterns(dailyTotalGroups, dailyCompletedGroups);

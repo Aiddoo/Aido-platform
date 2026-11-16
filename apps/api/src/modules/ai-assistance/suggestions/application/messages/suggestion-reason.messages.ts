@@ -35,6 +35,6 @@ export const suggestionReasonCopy: Readonly<Record<SupportedLocale, SuggestionRe
     repeat: (candidate, days) =>
       `You recorded '${candidate.title}' ${candidate.occurrences} times recently and completed it ${candidate.completed} times. Repeating it on ${dayList("en", days)} saves entering it again each time.`,
     starter: (todoCount, candidate, days) =>
-      `With only ${todoCount} recent records it is too early to call this a pattern, so this suggests trying '${candidate.title}' again on ${dayList("en", days)}.`,
+      `You only have ${todoCount} ${todoCount === 1 ? "record" : "records"} so far, which is too early to call a pattern. Since you've already done '${candidate.title}', here's a suggestion to try it again on ${dayList("en", days)}.`,
   },
 };

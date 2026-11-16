@@ -29,6 +29,27 @@ import {
   ReportStatusResponseDto,
 } from "./ai-report.dto.js";
 
+const REPORT_STATUS_DESCRIPTION = `다음 주간/월간 리포트 도착 시각과 최신 리포트를 줍니다.
+
+- \`nextWeeklyAt\`은 사용자 시간대의 다음 월요일 11:30, \`nextMonthlyAt\`은 다음 달 1일 11:30입니다. 이 시각에 리포트 푸시가 갑니다.
+- 리포트는 월요일(월간은 1일) 00:00~05:59(사용자 시간대) 사이에 직전 주(월~일)·전월 기록으로 만들어집니다. 시간대는 \`X-Timezone\`, 없으면 저장된 사용자 시간대입니다.
+- \`daysUntilWeekly\`·\`daysUntilMonthly\`는 사용자 달력 날짜 기준 남은 일수입니다.
+- \`latestWeekly\`·\`latestMonthly\`가 null이면 아직 만들어진 리포트가 없습니다.
+- 할 일이 없던 주·월에도 리포트가 만들어지며 \`hasActivity\`가 false입니다.
+- 같은 기간의 리포트는 한 번만 만들어집니다.`;
+
+const REPORT_LIST_DESCRIPTION = `주간/월간 AI 리포트를 최신순으로 줍니다.
+
+- \`type\`을 생략하면 주간과 월간을 함께 줍니다.
+- \`limit\`은 1~50, 기본 10입니다.
+- 리포트가 없으면 \`reports\`는 빈 배열입니다.`;
+
+const REPORT_DETAIL_DESCRIPTION = `리포트 하나의 통계와 AI 요약·팁을 줍니다.
+
+- \`periodLabel\`은 리포트 언어에 맞춘 기간 이름입니다. 주간은 "11월 2주차", 올해가 아닌 주는 "2025년 12월 1주차", 월간은 "2026년 3월"처럼 옵니다.
+- \`categoryBreakdown\`의 지운 카테고리는 리포트 언어의 "기타"(영어 "Other")로 묶입니다.
+- \`aiSummary\`·\`aiTips\`는 리포트를 만든 시점의 언어로 저장된 글입니다.`;
+
 /** 유료 사용자의 리포트 조회 HTTP 진입점. */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -48,84 +69,11 @@ export class AiReportController {
     this.#getReportByIdUseCase = getReportByIdUseCase;
   }
 
-  /**
-   * GET /ai/reports/status - 리포트 상태 조회
-   */
   @Get("status")
   @ApiDoc({
     summary: "AI 리포트 상태 조회",
     operationId: "getAiReportStatus",
-    description: `다음 주간/월간 리포트 예정일과 최신 리포트를 반환합니다.
-
-## 📊 응답 필드
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`nextWeeklyAt\` | string | 다음 주간 리포트 생성 예정 시각 (ISO 8601, UTC) |
-| \`nextMonthlyAt\` | string | 다음 월간 리포트 생성 예정 시각 (ISO 8601, UTC) |
-| \`daysUntilWeekly\` | number | 주간 리포트까지 남은 일수 |
-| \`daysUntilMonthly\` | number | 월간 리포트까지 남은 일수 |
-| \`latestWeekly\` | object \\| null | 최근 주간 리포트 (없으면 null) |
-| \`latestMonthly\` | object \\| null | 최근 월간 리포트 (없으면 null) |
-
-## ⏰ 리포트 생성 스케줄 (사용자 시간대 기준)
-
-서버는 매시 5분에 실행하고, 사용자 시간대(저장된 설정)로 새 주·새 달이 시작된 직후(00:00~05:59)인 사용자만 생성합니다.
-
-| 타입 | 생성 시점 | 알림 발송 | 분석 대상 기간 |
-|------|----------|----------|--------------|
-| **주간** | 매주 **월요일 00:05~** (사용자 시간대) | **월요일 08:00** (사용자 시간대) | 직전 주 월~일 (ISO week) |
-| **월간** | 매월 **1일 00:05~** (사용자 시간대) | **1일 08:00** (사용자 시간대) | 전월 1일~말일 |
-
-**생성 조건**: \`subscriptionStatus = ACTIVE\` 또는 \`role = ADMIN\`
-- 할 일이 0개인 주/월도 리포트는 생성됩니다 (\`hasActivity: false\`, 격려 메시지 포함).
-- 같은 기간의 리포트가 이미 존재하면 중복 생성하지 않습니다.
-- 리포트 생성 완료 시 푸시 알림이 즉시 발송됩니다.
-
-## 🔒 중복 방지
-
-### 중복 방지 (2중 방어)
-| 계층 | 메커니즘 | 효과 |
-|------|---------|------|
-| **1. Job 멱등 키** | \`report_{TYPE}_{userId}_{periodId}\` (사용자 시간대 기준 주·월, 7일 보관) | 같은 기간 동일 유저 중복 잡 방지 |
-| **2. DB 중복 체크** | \`exists(userId, type, year, period)\` | 같은 기간 리포트 중복 생성 방지 |
-
-### 서버 재시작 시 동작
-- 이미 큐에 들어간 잡: Redis에서 자동 이어서 처리 (유실 없음)
-- 이미 처리된 주: 완료된 잡이 7일간 Redis에 보관되어 jobId 중복으로 자동 스킵
-- 리포트 중복: 서비스 레벨 \`exists()\` 체크로 같은 기간 리포트 2번 생성 불가
-
-## 🔍 구체적 예시
-
-### 프리미엄 가입 후 첫 리포트는 언제?
-\`\`\`
-2026-03-04 (수) 06:24 KST  → 프리미엄 가입 (시간대 Asia/Seoul)
-
---- 주간 리포트 ---
-2026-03-09 (월) 00:05 KST  → 주간 리포트 생성
-                             → 03-02(월)~03-08(일) 데이터 분석
-2026-03-09 (월) 08:00 KST  → 주간 리포트 알림 발송 (Scheduler Strategy)
-
---- 월간 리포트 ---
-2026-04-01 (수) 00:05 KST  → 월간 리포트 생성
-                             → 3월 전체(03-01~03-31) 데이터 분석
-2026-04-01 (수) 08:00 KST  → 월간 리포트 알림 발송 (Scheduler Strategy)
-
-America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니다.
-\`\`\`
-
-> 프리미엄 가입 이전 데이터도 분석에 포함됩니다 (가입 시점이 아닌 기간 기준).
-> 단, 리포트 **조회**는 프리미엄 상태에서만 가능합니다.
-
-## 📱 클라이언트 통합 가이드
-
-### 폴링 전략
-- \`nextWeeklyAt\` / \`nextMonthlyAt\`를 기준으로 새 리포트 도착 시점을 예측할 수 있습니다.
-- 리포트는 사용자 시간대 기준 월요일(월간은 1일) 새벽에 생성되며, **사용자 시간대 기준 08:00 이후** 호출하면 새 리포트를 확인할 수 있습니다.
-- \`latestWeekly\` / \`latestMonthly\`가 null이면 아직 리포트가 생성된 적 없는 것입니다.
-
-### 비활동 리포트
-할 일을 하나도 만들지 않은 주/월에도 리포트가 생성됩니다.
-\`hasActivity: false\`일 때 AI 요약에는 격려성 메시지가 담기므로, UI에서 별도 분기 없이 그대로 표시해도 됩니다.`,
+    description: REPORT_STATUS_DESCRIPTION,
   })
   @ApiSuccessResponse({ type: ReportStatusResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -142,30 +90,11 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
     return { status: toReportStatusResponse(status) };
   }
 
-  /**
-   * GET /ai/reports - 리포트 목록 조회
-   */
   @Get()
   @ApiDoc({
     summary: "AI 리포트 목록 조회",
     operationId: "getAiReports",
-    description: `주간/월간 AI 분석 리포트 목록을 조회합니다. 최신순으로 정렬됩니다.
-
-## 📋 쿼리 파라미터
-| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
-|---------|------|------|-------|------|
-| \`type\` | string | ❌ | - | \`WEEKLY\` 또는 \`MONTHLY\` (미지정 시 전체) |
-| \`limit\` | number | ❌ | 10 | 최대 조회 수 (1-50) |
-
-## 📱 사용 예시
-\`\`\`
-GET /ai/reports?type=WEEKLY&limit=4   → 최근 주간 리포트 4개
-GET /ai/reports?type=MONTHLY          → 최근 월간 리포트 10개 (기본값)
-GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
-\`\`\`
-
-프리미엄 가입 직후에는 아직 리포트가 없으므로 빈 배열이 반환됩니다.
-첫 주간 리포트는 가입 후 돌아오는 **월요일 08:00**(사용자 시간대) 이후, 첫 월간 리포트는 **다음 달 1일 08:00**(사용자 시간대) 이후 조회 가능합니다.`,
+    description: REPORT_LIST_DESCRIPTION,
   })
   @ApiSuccessResponse({ type: AiReportListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -183,32 +112,11 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     return { reports: reports.map((report) => toAiReportResponse(report, localToday)) };
   }
 
-  /**
-   * GET /ai/reports/:id - 리포트 상세 조회
-   */
   @Get(":id")
   @ApiDoc({
     summary: "AI 리포트 상세 조회",
     operationId: "getAiReportById",
-    description: `특정 AI 분석 리포트의 상세 정보를 조회합니다.
-
-## 📊 리포트 필드
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`id\` | number | 리포트 ID |
-| \`type\` | string | \`WEEKLY\` 또는 \`MONTHLY\` |
-| \`year\` | number | 연도 (예: 2026) |
-| \`period\` | number | 주차(1~53) 또는 월(1~12) |
-| \`periodLabel\` | string | 사람이 읽기 쉬운 기간 (예: "3월 1주차", 올해가 아닌 주는 "2025년 12월 1주차", "2026년 3월") |
-| \`dateRange\` | object | \`{ startDate, endDate }\` — 분석 기간 (YYYY-MM-DD) |
-| \`stats\` | object | 완료율, 이전 기간 완료율, 연속 일수 등 |
-| \`categoryBreakdown\` | array | 카테고리별 \`{ name, color, total, completed, rate }\` |
-| \`dayPatterns\` | array | 요일별 \`{ day, total, completed, rate }\` |
-| \`timePatterns\` | array | 시간대별 \`{ hour, count }\` |
-| \`aiSummary\` | string | AI 요약 (3~5문장, 한국어) |
-| \`aiTips\` | string[] | AI 팁 (1~3개, 한국어) |
-| \`hasActivity\` | boolean | 해당 기간 할 일 존재 여부 |
-| \`generatedAt\` | string | 리포트 생성 시각 (ISO 8601) |`,
+    description: REPORT_DETAIL_DESCRIPTION,
   })
   @ApiSuccessResponse({ type: AiReportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

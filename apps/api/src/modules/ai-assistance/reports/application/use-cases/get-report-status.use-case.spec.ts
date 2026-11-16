@@ -47,7 +47,7 @@ describe("GetReportStatusUseCase", () => {
     expect(status.latestMonthly).toBeNull();
   });
 
-  it("LA 일요일 저녁에는 LA 월요일 08:00을 다음 주간 리포트로 안내한다", async () => {
+  it("LA 일요일 저녁에는 LA 월요일 11:30을 다음 주간 리포트로 안내한다", async () => {
     // Given - LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
     const { useCase } = setup("2026-10-26T01:00:00Z");
 
@@ -55,13 +55,13 @@ describe("GetReportStatusUseCase", () => {
     const status = await useCase.execute({ userId: USER_ID, timezone: "America/Los_Angeles" });
 
     // Then
-    expect(status.nextWeeklyAt.toString()).toBe("2026-10-26T15:00:00Z");
+    expect(status.nextWeeklyAt.toString()).toBe("2026-10-26T18:30:00Z");
     expect(status.daysUntilWeekly).toBe(1);
-    expect(status.nextMonthlyAt.toString()).toBe("2026-11-01T16:00:00Z");
+    expect(status.nextMonthlyAt.toString()).toBe("2026-11-01T19:30:00Z");
     expect(status.daysUntilMonthly).toBe(7);
   });
 
-  it("서머타임이 끝난 뒤의 월요일 08:00은 PST 오프셋으로 계산한다", async () => {
+  it("서머타임이 끝난 뒤의 월요일 11:30은 PST 오프셋으로 계산한다", async () => {
     // Given - LA 2026-11-01(일) 12:00 PST
     const { useCase } = setup("2026-11-01T20:00:00Z");
 
@@ -69,8 +69,8 @@ describe("GetReportStatusUseCase", () => {
     const status = await useCase.execute({ userId: USER_ID, timezone: "America/Los_Angeles" });
 
     // Then
-    expect(status.nextWeeklyAt.toString()).toBe("2026-11-02T16:00:00Z");
-    expect(status.nextMonthlyAt.toString()).toBe("2026-12-01T16:00:00Z");
+    expect(status.nextWeeklyAt.toString()).toBe("2026-11-02T19:30:00Z");
+    expect(status.nextMonthlyAt.toString()).toBe("2026-12-01T19:30:00Z");
   });
 
   it("X-Timezone이 없으면 저장된 사용자 시간대를 쓴다", async () => {
@@ -82,7 +82,7 @@ describe("GetReportStatusUseCase", () => {
     const status = await useCase.execute({ userId: USER_ID, timezone: undefined });
 
     // Then
-    expect(status.nextWeeklyAt.toString()).toBe("2026-10-25T23:00:00Z");
+    expect(status.nextWeeklyAt.toString()).toBe("2026-10-26T02:30:00Z");
     expect(status.daysUntilWeekly).toBe(0);
   });
 });

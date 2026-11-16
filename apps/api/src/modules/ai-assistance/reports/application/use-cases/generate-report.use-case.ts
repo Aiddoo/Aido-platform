@@ -37,6 +37,7 @@ import {
   type ReportPeriod,
 } from "../../domain/report-period.domain-service.js";
 import { AiReportLogEvent } from "../ai-report.log-events.js";
+import { FALLBACK_CATEGORY_NAMES } from "../messages/report-category.messages.js";
 import { type ReportPromptInput } from "../messages/report-context.messages.js";
 import {
   buildNoAiConsentContent,
@@ -210,14 +211,10 @@ export class GenerateReportUseCase {
     const { startDate, endDate, prevStartDate, prevEndDate } = window;
 
     const [aggregatedData, prevReport] = await Promise.all([
-      this.#aggregate({
-        userId,
-        startDate,
-        endDate,
-        prevStartDate,
-        prevEndDate,
-        timezone,
-      }),
+      this.#aggregate(
+        { userId, startDate, endDate, prevStartDate, prevEndDate, timezone },
+        FALLBACK_CATEGORY_NAMES[locale],
+      ),
       this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), type),
     ]);
 
@@ -322,12 +319,18 @@ export class GenerateReportUseCase {
     }
   }
 
-  /**
-   * 데이터 집계: 할 일 통계 읽기 포트로 원시 집계를 조회하고 도메인 서비스로 계산.
-   */
-  async #aggregate(params: AggregateParams): Promise<AggregatedReportData> {
+  async #aggregate(
+    params: AggregateParams,
+    fallbackCategoryName: string,
+  ): Promise<AggregatedReportData> {
     const inputs = await this.#dependencies.todoStatsReader.fetchAggregationInputs(params);
-    return assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone);
+    return assembleAggregatedData(
+      inputs,
+      params.startDate,
+      params.endDate,
+      params.timezone,
+      fallbackCategoryName,
+    );
   }
 
   /**

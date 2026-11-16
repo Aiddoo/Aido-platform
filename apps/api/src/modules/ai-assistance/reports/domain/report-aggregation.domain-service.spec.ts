@@ -3,6 +3,7 @@ import {
   computeDayPatterns,
   computeStreakDays,
   computeTimePatterns,
+  FALLBACK_CATEGORY_COLOR,
 } from "./report-aggregation.domain-service.js";
 
 // 사용자 현지 자정의 순간
@@ -78,13 +79,29 @@ describe("카테고리별 집계", () => {
     ];
 
     // When
-    const breakdown = computeCategoryBreakdown(totalGroups, completedGroups, categories);
+    const breakdown = computeCategoryBreakdown(totalGroups, completedGroups, categories, "기타");
 
     // Then
     expect(breakdown).toEqual([
       { name: "운동", color: "#222222", total: 4, completed: 1, rate: 25 },
       { name: "업무", color: "#111111", total: 2, completed: 0, rate: 0 },
       { name: "기타", color: "#808080", total: 2, completed: 0, rate: 0 },
+    ]);
+  });
+
+  it.each([
+    { language: "ko", fallbackName: "기타" },
+    { language: "en", fallbackName: "Other" },
+  ])("지운 카테고리는 넘긴 $language 라벨과 회색으로 집계한다", ({ fallbackName }) => {
+    // Given
+    const totalGroups = [{ categoryId: 9, _count: { id: 2 } }];
+
+    // When
+    const breakdown = computeCategoryBreakdown(totalGroups, [], [], fallbackName);
+
+    // Then
+    expect(breakdown).toEqual([
+      { name: fallbackName, color: FALLBACK_CATEGORY_COLOR, total: 2, completed: 0, rate: 0 },
     ]);
   });
 });

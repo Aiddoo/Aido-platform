@@ -467,7 +467,12 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
   it.each([
     { title: "러닝", locale: "ko" as const, starter: "기록이 아직 1개", day: "수요일" },
     { title: "러닝 30분", locale: "ko" as const, starter: "기록이 아직 1개", day: "수요일" },
-    { title: "Running", locale: "en" as const, starter: "only 1 recent record", day: "Wednesday" },
+    {
+      title: "Running",
+      locale: "en" as const,
+      starter: "You only have 1 record",
+      day: "Wednesday",
+    },
   ])(
     "$locale 1회 '$title' 기록의 시작 제안은 원본 제목·실제 요일만 쓰고 시각을 만들지 않는다",
     ({ title, locale, starter, day }) =>
