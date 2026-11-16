@@ -2,6 +2,7 @@ import type { Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import { RepeatingTodoTitleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
@@ -34,6 +35,7 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
+    repeatingTitleReader: RepeatingTodoTitleReaderPort,
     clock: ClockPort,
   }),
   provideUseCase(AnalyzeAndCreateSuggestionsUseCase, {

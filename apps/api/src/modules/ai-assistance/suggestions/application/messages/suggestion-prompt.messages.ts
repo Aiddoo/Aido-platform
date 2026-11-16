@@ -36,7 +36,7 @@ function normalizeSuggestions(
   const mode = suggestionModeOf(context.todos.length);
   const resolved = resolveSuggestionPicks(
     draft.picks,
-    buildSuggestionCandidates(context.todos, mode),
+    buildSuggestionCandidates(context.todos, mode, context.repeatingTitles),
     { mode, excludedTitles: context.suggestionHistory.map((history) => history.title) },
   );
   const patterns = resolved.map(({ candidate, daysOfWeek, scheduledTime, confidence }) =>
@@ -48,6 +48,8 @@ function normalizeSuggestions(
         confidence,
         reason: copy.repeat(candidate, daysOfWeek),
         matchedTitles: Array.from({ length: candidate.occurrences }, () => candidate.title),
+        recordedCount: candidate.occurrences,
+        completedCount: candidate.completed,
       }))
       .with("STARTER", () => ({
         title: candidate.title,
@@ -56,6 +58,8 @@ function normalizeSuggestions(
         confidence,
         reason: copy.starter(context.todos.length, candidate, daysOfWeek),
         matchedTitles: [],
+        recordedCount: candidate.occurrences,
+        completedCount: candidate.completed,
       }))
       .exhaustive(),
   );

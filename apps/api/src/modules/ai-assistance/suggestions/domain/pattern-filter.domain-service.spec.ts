@@ -8,6 +8,8 @@ const makePattern = (overrides: Partial<DetectedPattern> = {}): DetectedPattern 
   confidence: 0.8,
   reason: "기본 이유",
   matchedTitles: ["매칭1", "매칭2"],
+  recordedCount: 2,
+  completedCount: 2,
   ...overrides,
 });
 

@@ -61,7 +61,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       }),
   );
 
-  it("모델은 후보 id·요일만 고르고 제목·근거·신뢰도는 서버가 실제 기록으로 정한다", () =>
+  it("모델은 후보 id·요일만 고르고 제목·근거·신뢰도와 근거 수치는 서버가 실제 기록으로 정한다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture(), [
@@ -80,6 +80,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
           "최근 '책 읽기 10분' 활동을 3번 기록하고 3번 완료했어요. 월요일에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.",
         matchedTodos: ["책 읽기 10분", "책 읽기 10분", "책 읽기 10분"],
         suggestedCategoryId: 7,
+        evidence: { recordedCount: 3, completedCount: 3, periodDays: 14 },
       });
       expect(f.generator.getLastRequest()).toMatchObject({
         task: "suggestion",

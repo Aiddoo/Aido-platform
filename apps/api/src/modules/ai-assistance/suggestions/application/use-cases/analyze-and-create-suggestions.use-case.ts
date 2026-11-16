@@ -23,7 +23,9 @@ import { generateWithPrompt } from "../../../generation/application/messages/pro
 import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
 import type { ScheduledAiConsentReader } from "../../../generation/application/scheduled-ai-consent.reader.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
+import { SuggestionEvidence } from "../../domain/suggestion-evidence.vo.js";
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestion.constants.js";
 import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import { suggestionPrompt } from "../messages/suggestion-prompt.messages.js";
 import { type SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
@@ -199,7 +201,11 @@ export class AnalyzeAndCreateSuggestionsUseCase {
                   pattern.matchedTitles,
                   context.todos,
                 ),
-                evidence: null,
+                evidence: SuggestionEvidence.create({
+                  recordedCount: pattern.recordedCount,
+                  completedCount: pattern.completedCount,
+                  periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                }),
                 now,
               }),
             ];

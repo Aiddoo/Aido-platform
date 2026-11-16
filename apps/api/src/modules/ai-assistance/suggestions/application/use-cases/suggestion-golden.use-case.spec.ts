@@ -25,6 +25,7 @@ async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
   const context = toSuggestionContext(golden);
   fixture.activityReader.todos = context.todos;
   fixture.activityReader.history = context.suggestionHistory;
+  fixture.repeatingTitleReader.titles = context.repeatingTitles;
   fixture.generator.setRawResponse({ picks });
   const count = await withAiAssistanceTime(
     () =>
@@ -44,8 +45,8 @@ async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
 }
 
 function buildGoldenCandidates(golden: SuggestionGoldenCase) {
-  const { todos } = toSuggestionContext(golden);
-  return buildSuggestionCandidates(todos, suggestionModeOf(todos.length));
+  const { todos, repeatingTitles } = toSuggestionContext(golden);
+  return buildSuggestionCandidates(todos, suggestionModeOf(todos.length), repeatingTitles);
 }
 
 describe("AnalyzeAndCreateSuggestionsUseCase golden — fake model 출력을 서버가 상한·이력·요일·시각으로 정리한다", () => {
@@ -69,7 +70,32 @@ describe("AnalyzeAndCreateSuggestionsUseCase golden — fake model 출력을 서
     expect(
       cases.some(({ todos }) => todos.some(({ title }) => title.includes("</suggestion_data>"))),
     ).toBe(true);
+    expect(cases.some(({ repeatingTitles }) => repeatingTitles.length > 0)).toBe(true);
+    expect(cases.some(({ expected }) => expected.groupedTitles.length > 0)).toBe(true);
+    expect(cases.some(({ expected }) => expected.excludedTitles.length > 0)).toBe(true);
   });
+
+  it.each(
+    cases.filter(
+      ({ expected }) => expected.groupedTitles.length > 0 || expected.excludedTitles.length > 0,
+    ),
+  )(
+    "$id 표기만 다른 제목은 한 후보로 합쳐 세고 의미 없는 제목·반복 중인 할 일은 후보에서 뺀다",
+    (golden) => {
+      // When
+      const candidates = buildGoldenCandidates(golden);
+      // Then
+      for (const group of golden.expected.groupedTitles) {
+        const grouped = candidates.filter(({ title }) => group.includes(title));
+        const records = golden.todos.filter(({ title }) => group.includes(title));
+        expect(grouped).toHaveLength(1);
+        expect(grouped[0]?.occurrences).toBe(records.length);
+      }
+      expect(
+        candidates.filter(({ title }) => golden.expected.excludedTitles.includes(title)),
+      ).toEqual([]);
+    },
+  );
 
   it.each(cases)("$id 이상적인 출력은 허용 후보만 상한 안에서 저장한다", async (golden) => {
     // Given

@@ -1,9 +1,9 @@
 import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
-import { countBy, maxBy } from "es-toolkit";
 
 import {
   collectRecordedActivities,
   selectRecordedDays,
+  toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
 import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
 
@@ -51,14 +51,21 @@ export function suggestionModeOf(todoCount: number): SuggestionMode {
   return todoCount < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES ? "STARTER" : "PATTERN";
 }
 
-/** 많이 기록하고 많이 끝낸 활동부터 최대 30개다. PATTERN은 한 번뿐인 활동을 모델에 보이지 않는다. */
+/**
+ * 많이 기록하고 많이 끝낸 활동부터 최대 30개다. PATTERN은 한 번뿐인 활동을 모델에 보이지 않고,
+ * 이미 반복 중인 할 일과 같은 활동은 어느 모드에서도 넣지 않는다.
+ */
 export function buildSuggestionCandidates(
   todos: readonly TodoSummaryForAnalysis[],
   mode: SuggestionMode,
+  repeatingTitles: readonly string[],
 ): SuggestionCandidate[] {
   const minOccurrences = mode === "PATTERN" ? AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES : 1;
+  const repeatingKeys = new Set(repeatingTitles.map(toActivityKey));
   return collectRecordedActivities(todos)
-    .filter((activity) => activity.occurrences >= minOccurrences)
+    .filter(
+      (activity) => activity.occurrences >= minOccurrences && !repeatingKeys.has(activity.key),
+    )
     .sort(
       (left, right) =>
         right.occurrences - left.occurrences ||
@@ -66,24 +73,16 @@ export function buildSuggestionCandidates(
         left.title.localeCompare(right.title),
     )
     .slice(0, MAX_SUGGESTION_CANDIDATES)
-    .map((activity, index) => {
-      const records = todos.filter((todo) => todo.title === activity.title);
-      const timeCounts = countBy(
-        records.flatMap((record) => (record.scheduledTime == null ? [] : [record.scheduledTime])),
-        (time) => time,
-      );
-      const topTime = maxBy(Object.entries(timeCounts), ([, count]) => count);
-      return {
-        id: `a${index + 1}`,
-        title: activity.title,
-        occurrences: activity.occurrences,
-        completed: activity.completedOccurrences,
-        completionRate: Math.round((activity.completedOccurrences / activity.occurrences) * 100),
-        days: activity.days,
-        recordedTime: topTime != null && topTime[1] >= 2 ? topTime[0] : null,
-        categoryName: records[0]?.categoryName ?? "",
-      };
-    });
+    .map((activity, index) => ({
+      id: `a${index + 1}`,
+      title: activity.title,
+      occurrences: activity.occurrences,
+      completed: activity.completedOccurrences,
+      completionRate: Math.round((activity.completedOccurrences / activity.occurrences) * 100),
+      days: activity.days,
+      recordedTime: activity.recordedTime,
+      categoryName: activity.categoryName,
+    }));
 }
 
 /** 근거 기반 신뢰도. 같은 활동을 여러 번 끝냈을수록 높다. */
@@ -104,14 +103,18 @@ export function resolveSuggestionPicks(
   options: { readonly mode: SuggestionMode; readonly excludedTitles: readonly string[] },
 ): ResolvedSuggestionPick[] {
   const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-  const excluded = new Set(options.excludedTitles);
+  const excludedKeys = new Set(options.excludedTitles.map(toActivityKey));
   const seen = new Set<string>();
   const maxPicks =
     options.mode === "STARTER" ? MAX_STARTER_PICKS : AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER;
   const resolved: ResolvedSuggestionPick[] = [];
   for (const pick of picks) {
     const candidate = byId.get(pick.candidateId);
-    if (candidate == null || seen.has(candidate.id) || excluded.has(candidate.title)) {
+    if (
+      candidate == null ||
+      seen.has(candidate.id) ||
+      excludedKeys.has(toActivityKey(candidate.title))
+    ) {
       continue;
     }
     seen.add(candidate.id);
@@ -121,16 +124,7 @@ export function resolveSuggestionPicks(
     );
     resolved.push({
       candidate,
-      daysOfWeek:
-        chosen.length > 0
-          ? chosen
-          : selectRecordedDays({
-              title: candidate.title,
-              occurrences: candidate.occurrences,
-              completedOccurrences: candidate.completed,
-              days: candidate.days,
-              recordedTimes: [],
-            }),
+      daysOfWeek: chosen.length > 0 ? chosen : selectRecordedDays(candidate),
       scheduledTime: pick.useRecordedTime ? candidate.recordedTime : null,
       confidence: suggestionConfidence(candidate, options.mode),
     });

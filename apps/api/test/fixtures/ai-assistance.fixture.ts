@@ -15,6 +15,7 @@ import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggesti
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-repeating-todo-title.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -79,6 +80,7 @@ export function createAiAssistanceFixture() {
   activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
   );
+  const repeatingTitleReader = new StubRepeatingTodoTitleReader();
   const reportRepository = new InMemoryAiReportRepository();
   const todoStatsReader = new StubAiTodoStatsReader();
   const generator = new GatedFakeAiGenerator();
@@ -91,7 +93,11 @@ export function createAiAssistanceFixture() {
     clientAppVersion,
     clock,
   });
-  const contextBuilder = new SuggestionContextReader({ activityReader, clock });
+  const contextBuilder = new SuggestionContextReader({
+    activityReader,
+    repeatingTitleReader,
+    clock,
+  });
   const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
     generator,
@@ -120,6 +126,7 @@ export function createAiAssistanceFixture() {
     unitOfWork,
     repository,
     activityReader,
+    repeatingTitleReader,
     reportRepository,
     todoStatsReader,
     generator,

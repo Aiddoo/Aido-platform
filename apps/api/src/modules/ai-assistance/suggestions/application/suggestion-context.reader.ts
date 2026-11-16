@@ -1,9 +1,9 @@
-import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
-
+import type { RepeatingTodoTitleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../domain/suggestion.constants.js";
 import type { SuggestionActivityReaderPort } from "./ports/suggestion-activity.reader.port.js";
 import type { SuggestionContext } from "./read-models/suggestion-context.read-model.js";
 
@@ -15,6 +15,7 @@ interface SuggestionContextReaderDependencies {
     SuggestionActivityReaderPort,
     "findRecentTodos" | "findRecentResponded"
   >;
+  readonly repeatingTitleReader: Pick<RepeatingTodoTitleReaderPort, "listActiveTitles">;
   readonly clock: ClockPort;
 }
 
@@ -30,15 +31,16 @@ export class SuggestionContextReader {
     // UTC 일수라 일광 절약 없이 24시간 단위다
     const daysAgo = (days: number) => instantToDate(now.subtract({ hours: 24 * days }));
     const owner = UserId.reconstitute(userId);
-    const [todos, suggestionHistory] = await Promise.all([
+    const [todos, suggestionHistory, repeatingTitles] = await Promise.all([
       this.#dependencies.activityReader.findRecentTodos(
         owner,
-        daysAgo(7 * AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS),
+        daysAgo(SUGGESTION_ANALYSIS_PERIOD_DAYS),
         instantToDate(now),
         timezone,
       ),
       this.#dependencies.activityReader.findRecentResponded(owner, daysAgo(HISTORY_DAYS)),
+      this.#dependencies.repeatingTitleReader.listActiveTitles(owner),
     ]);
-    return { todos, suggestionHistory };
+    return { todos, suggestionHistory, repeatingTitles };
   }
 }

@@ -1,4 +1,5 @@
 import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/api";
+import { pick } from "es-toolkit";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
@@ -24,6 +25,10 @@ export function toSuggestionResponse(suggestion: Suggestion): RecurringSuggestio
     expiresAt: toIsoString(primitives.expiresAt),
     createdAt: toIsoString(primitives.createdAt),
     suggestedCategoryId: primitives.suggestedCategoryId,
+    evidence:
+      primitives.evidence == null
+        ? null
+        : pick(primitives.evidence, ["recordedCount", "completedCount", "periodDays"]),
   };
 }
 

@@ -24,6 +24,7 @@ const context: SuggestionContext = {
     createAnalysisTodo({ title: "한 번 한 일", startDate: "2026-03-18" }),
   ],
   suggestionHistory: [{ title: injected, status: "DISMISSED" }],
+  repeatingTitles: [],
 };
 
 function readData(prompt: string): SuggestionData {

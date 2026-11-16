@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { AiAssistanceGenerationModule } from "../generation/ai-assistance-generation.module.js";
@@ -19,6 +20,7 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
     IdentityUserAccessModule,
     AiAssistanceGenerationModule,
     NotificationPushModule,
+    PlanningTodoQueriesModule,
     PlanningTodosModule,
   ],
   controllers: [AiSuggestionController],

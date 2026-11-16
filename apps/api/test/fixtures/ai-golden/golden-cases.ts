@@ -131,8 +131,9 @@ export const voiceNoteDigestGoldenCaseSchema = z.object({
 export type VoiceNoteDigestGoldenCase = z.infer<typeof voiceNoteDigestGoldenCaseSchema>;
 
 /**
- * 제안 golden 한 줄. todos는 최근 2주 기록, draft는 이상적인 모델 출력이다.
+ * 제안 golden 한 줄. todos는 최근 2주 기록, repeatingTitles는 진행 중인 반복 할 일, draft는 이상적인 모델 출력이다.
  * 기대 id는 서버가 todos로 만든 후보 id(a1…)이고 atMostOneOf는 같은 활동이라 하나만 골라야 하는 묶음이다.
+ * groupedTitles는 서버가 한 후보로 묶어야 하는 제목들, excludedTitles는 후보가 되면 안 되는 제목이다.
  */
 export const suggestionGoldenCaseSchema = z.object({
   ...goldenBase,
@@ -148,6 +149,7 @@ export const suggestionGoldenCaseSchema = z.object({
   history: z.array(
     z.object({ title: z.string(), status: z.enum(AI_SUGGESTION_STATUSES).exclude(["PENDING"]) }),
   ),
+  repeatingTitles: z.array(z.string()),
   draft: suggestionDraftSchema,
   expected: z.object({
     mode: z.enum(SUGGESTION_MODES),
@@ -156,6 +158,8 @@ export const suggestionGoldenCaseSchema = z.object({
     allowedCandidateIds: z.array(z.string()),
     forbiddenCandidateIds: z.array(z.string()),
     atMostOneOf: z.array(z.array(z.string())),
+    groupedTitles: z.array(z.array(z.string())),
+    excludedTitles: z.array(z.string()),
   }),
 });
 export type SuggestionGoldenCase = z.infer<typeof suggestionGoldenCaseSchema>;
@@ -169,6 +173,7 @@ export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionCon
       categoryId: categoryNames.indexOf(todo.categoryName) + 1,
     })),
     suggestionHistory: golden.history,
+    repeatingTitles: golden.repeatingTitles,
   };
 }
 

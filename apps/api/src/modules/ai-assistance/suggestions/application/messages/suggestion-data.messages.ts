@@ -23,11 +23,13 @@ export function buildSuggestionData(context: SuggestionContext): SuggestionData 
   const mode = suggestionModeOf(context.todos.length);
   return {
     mode,
-    candidates: buildSuggestionCandidates(context.todos, mode).map((candidate) => ({
-      ...candidate,
-      title: shorten(candidate.title),
-      categoryName: shorten(candidate.categoryName),
-    })),
+    candidates: buildSuggestionCandidates(context.todos, mode, context.repeatingTitles).map(
+      (candidate) => ({
+        ...candidate,
+        title: shorten(candidate.title),
+        categoryName: shorten(candidate.categoryName),
+      }),
+    ),
     history: context.suggestionHistory.map(({ title, status }) => ({
       title: shorten(title),
       status,

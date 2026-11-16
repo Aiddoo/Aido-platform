@@ -6,4 +6,5 @@ import type {
 export interface SuggestionContext {
   readonly todos: TodoSummaryForAnalysis[];
   readonly suggestionHistory: SuggestionHistoryItem[];
+  readonly repeatingTitles: string[];
 }

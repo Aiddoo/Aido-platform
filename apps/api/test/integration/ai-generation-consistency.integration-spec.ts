@@ -32,6 +32,7 @@ import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preference
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
+import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-repeating-todo-title.reader";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
@@ -171,7 +172,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       },
       clock,
     });
-    const contextBuilder = new SuggestionContextReader({ activityReader: activity, clock });
+    const contextBuilder = new SuggestionContextReader({
+      activityReader: activity,
+      repeatingTitleReader: new DrizzleRepeatingTodoTitleReader(fixture.txHost),
+      clock,
+    });
     const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
       generator: provider,

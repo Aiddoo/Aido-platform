@@ -34,7 +34,7 @@ const groceries = [todo("장보기", "2026-10-10", { categoryName: "생활" })];
 describe("buildSuggestionCandidates", () => {
   it("많이 기록한 활동부터 id를 붙이고 완료율과 2회 이상 반복된 시각을 넣는다", () => {
     // When
-    const candidates = buildSuggestionCandidates([...groceries, ...runs], "STARTER");
+    const candidates = buildSuggestionCandidates([...groceries, ...runs], "STARTER", []);
     // Then
     expect(candidates).toEqual([
       {
@@ -56,7 +56,7 @@ describe("buildSuggestionCandidates", () => {
 
   it("PATTERN 모드는 한 번만 기록한 활동을 후보에 넣지 않는다", () => {
     // When
-    const candidates = buildSuggestionCandidates([...groceries, ...runs], "PATTERN");
+    const candidates = buildSuggestionCandidates([...groceries, ...runs], "PATTERN", []);
     // Then
     expect(candidates.map((candidate) => candidate.title)).toEqual(["러닝 5km"]);
   });
@@ -65,12 +65,40 @@ describe("buildSuggestionCandidates", () => {
     // Given
     const many = Array.from({ length: 40 }, (_, index) => todo(`활동 ${index}`, "2026-10-05"));
     // When / Then
-    expect(buildSuggestionCandidates(many, "STARTER")).toHaveLength(MAX_SUGGESTION_CANDIDATES);
+    expect(buildSuggestionCandidates(many, "STARTER", [])).toHaveLength(MAX_SUGGESTION_CANDIDATES);
+  });
+
+  it("표시 제목은 묶음에서 가장 많이 쓴 제목이고 기록·완료·요일·시각은 묶음 전체로 센다", () => {
+    // Given - 2026-10-15 목요일
+    const variant = todo("러닝 5KM 🏃", "2026-10-15", { scheduledTime: "07:00" });
+    // When
+    const [candidate] = buildSuggestionCandidates([variant, ...runs], "PATTERN", []);
+    // Then
+    expect(candidate).toMatchObject({
+      id: "a1",
+      title: "러닝 5km",
+      occurrences: 5,
+      completed: 4,
+      days: [
+        { day: "MON", total: 3, completed: 3 },
+        { day: "THU", total: 2, completed: 1 },
+      ],
+      recordedTime: "07:00",
+    });
+  });
+
+  it("진행 중인 반복 할 일과 표기만 다른 활동은 후보에서 빼고 남은 후보에 id를 붙인다", () => {
+    // When
+    const candidates = buildSuggestionCandidates([...runs, ...groceries], "STARTER", ["러닝5km!"]);
+    // Then
+    expect(candidates.map(({ id, title }) => ({ id, title }))).toEqual([
+      { id: "a1", title: "장보기" },
+    ]);
   });
 });
 
 describe("resolveSuggestionPicks", () => {
-  const candidates = buildSuggestionCandidates([...runs, ...groceries], "STARTER");
+  const candidates = buildSuggestionCandidates([...runs, ...groceries], "STARTER", []);
 
   it("없는 id·중복 id·이력 활동은 버리고 요일은 기록 요일과의 교집합만 남긴다", () => {
     // Given
@@ -102,13 +130,13 @@ describe("resolveSuggestionPicks", () => {
     expect(starter).toMatchObject({ daysOfWeek: ["SAT"], scheduledTime: null, confidence: 0.55 });
   });
 
-  it("거절·수락 이력의 활동은 고르지 않는다", () => {
+  it("거절·수락 이력과 표기만 다른 활동도 고르지 않는다", () => {
     // Given
     const picks = [{ candidateId: "a1", daysOfWeek: ["MON" as const], useRecordedTime: false }];
     // When
     const resolved = resolveSuggestionPicks(picks, candidates, {
       mode: "PATTERN",
-      excludedTitles: ["러닝 5km"],
+      excludedTitles: ["러닝 5KM!"],
     });
     // Then
     expect(resolved).toEqual([]);
@@ -116,7 +144,7 @@ describe("resolveSuggestionPicks", () => {
 });
 
 describe("suggestionConfidence", () => {
-  const [run] = buildSuggestionCandidates(runs, "PATTERN");
+  const [run] = buildSuggestionCandidates(runs, "PATTERN", []);
 
   it("3회 이상·완료율 0.6 이상이면 0.8 + 0.15×완료율이다", () => {
     // Then
