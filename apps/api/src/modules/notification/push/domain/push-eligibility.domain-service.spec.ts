@@ -6,17 +6,13 @@ import {
 } from "./push-eligibility.domain-service.js";
 
 describe("Push 발송 대상 판단 정책", () => {
-  it.each([
-    "AI_SUGGESTION",
-    "WINBACK",
-    "SOCIAL_DIGEST",
-    "NUDGE_SUGGEST",
-    "LUNCH_NUDGE",
-    "STREAK_AT_RISK",
-  ] as const)("%s는 별도 광고성 푸시 동의가 필요한 참여 유도 알림이다", (type) => {
-    expect(isMarketingNotification(type)).toBe(true);
-    expect(isAutomatedEngagementNotification(type)).toBe(true);
-  });
+  it.each(["WINBACK", "SOCIAL_DIGEST", "NUDGE_SUGGEST", "LUNCH_NUDGE", "STREAK_AT_RISK"] as const)(
+    "%s는 별도 광고성 푸시 동의가 필요한 참여 유도 알림이다",
+    (type) => {
+      expect(isMarketingNotification(type)).toBe(true);
+      expect(isAutomatedEngagementNotification(type)).toBe(true);
+    },
+  );
 
   it.each([
     "FOLLOW_NEW",
@@ -28,6 +24,7 @@ describe("Push 발송 대상 판단 정책", () => {
     "MORNING_REMINDER",
     "EVENING_REMINDER",
     "WEEKLY_REPORT",
+    "AI_SUGGESTION",
   ] as const)("%s 서비스 알림은 별도 광고성 푸시 동의를 요구하지 않는다", (type) => {
     expect(isMarketingNotification(type)).toBe(false);
     expect(isAutomatedEngagementNotification(type)).toBe(false);

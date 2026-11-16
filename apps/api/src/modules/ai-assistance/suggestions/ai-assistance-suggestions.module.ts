@@ -12,7 +12,7 @@ import { AI_ASSISTANCE_SUGGESTIONS_PROVIDERS } from "./ai-assistance-suggestions
 import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.controller.js";
 
 /**
- * 사용자의 할 일 패턴을 분석해 반복 할 일을 제안한다. 매시 정각 디스패치가 현지 07시대 사용자마다
+ * 사용자의 할 일 패턴을 분석해 반복 할 일을 제안한다. 매시 정각 디스패치가 현지 제안 창(09시대) 사용자마다
  * 분석 작업을 등록하고, 새 제안이 생기면 알림을 보낸다. 수락하면 같은 트랜잭션에 반복 할 일을 만든다.
  */
 @Module({

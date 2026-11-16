@@ -52,7 +52,7 @@ const AI_SUGGESTION_JOB_RETRY = {
 } as const satisfies JobRetryPolicy;
 
 /**
- * 매시 정각에 사용자 현지 07시대인 사용자를 고른다(리포트 디스패치와 같은 방식).
+ * 매시 정각에 사용자 현지 제안 창(09시대)인 사용자를 고른다(리포트 디스패치와 같은 방식).
  * 배포로 빠진 실행은 한 번 보내고(once), 사용자별 현지 날짜 키가 같은 날 두 번째 분석을 막는다.
  */
 export const AI_SUGGESTION_QUEUE = defineQueue({

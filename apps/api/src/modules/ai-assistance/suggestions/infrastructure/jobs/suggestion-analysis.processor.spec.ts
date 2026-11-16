@@ -71,7 +71,7 @@ describe("SuggestionAnalysisProcessor", () => {
     expect(publisher.published).toEqual([]);
   });
 
-  it("디스패치 작업은 현지 07시대 사용자를 고르는 디스패처에 넘긴다", async () => {
+  it("디스패치 작업은 현지 제안 창 사용자를 고르는 디스패처에 넘긴다", async () => {
     // Given
     const { processor, dispatched } = setup(0);
 

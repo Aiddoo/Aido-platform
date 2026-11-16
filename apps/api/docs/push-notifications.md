@@ -10,7 +10,7 @@
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 일반 빈도 제한   | 사용자당 최근 1시간 최대 15회. 사용자가 시각을 정한 `TODO_REMINDER`(60·10분 전, 반복 멈춤 안내)는 막지도 세지도 않는다(`isGeneralRateLimitExemptNotification`). 광고성·소셜은 그대로 센다                                                                           |
 | 참여 유도 제한   | 로컬 날짜 기준 하루 최대 2회, 발송 사이 최소 4시간                                                                                                                                                                                                                  |
-| 참여 유도 대상   | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `AI_SUGGESTION`, `INVITE_QUALIFY_REMINDER`                                                                                                                  |
+| 참여 유도 대상   | `purpose=ENGAGEMENT` 또는 `WINBACK`, `SOCIAL_DIGEST`, `NUDGE_SUGGEST`, `LUNCH_NUDGE`, `STREAK_AT_RISK`, `INVITE_QUALIFY_REMINDER`                                                                                                                                   |
 | 광고성 푸시 동의 | 참여 유도 대상은 `marketingPushAgreedAt`이 있어야 함                                                                                                                                                                                                                |
 | 광고성 푸시 표기 | 참여 유도 대상의 푸시는 제목 앞 "(광고) "(en "(Ad) ")와 본문 끝 줄 "수신 거부: 설정 > 알림"을 붙인다. 알림함 기록은 원래 문구다(`marketing-push-label.messages.ts`, `PushNotificationPayloadMapper`)                                                                |
 | 야간 시간        | 21:00 이상 08:00 미만                                                                                                                                                                                                                                               |
@@ -50,7 +50,7 @@
 
 월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 일일 스케줄은 `notificationDate`나 pg-boss `singletonKey`로 중복 생성·예약을 제한한다.
 
-AI 제안 분석은 매시 정각 dispatch가 사용자 현지 07시대(따라잡기 10시 전까지)인 사용자만 등록하고, 같은 사용자의 같은 현지 날짜는 한 번만 분석한다(`suggestion_<userId>_<현지 날짜>` 키). 배포로 빠진 실행은 한 번만 보정한다(`missed: "once"`). 대상은 활성·미삭제 프리미엄과 관리자(`premiumAccessCondition`)이며 최근 14일에 반복이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTx(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. AI 할 일 만들기의 월간 횟수와 제안·리포트의 premium 권한 검사는 별도 정책이다.
+AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라잡기 12시 전까지)인 사용자만 등록하고(`AI_SUGGESTION`은 구독한 서비스의 결과라 광고성 동의 없이 보내는 서비스 알림이다. 야간 21~08시 수신을 끈 사용자에게도 닿고 08:00 기본 아침 알림과 겹치지 않게 한다), 같은 사용자의 같은 현지 날짜는 한 번만 분석한다(`suggestion_<userId>_<현지 날짜>` 키). 배포로 빠진 실행은 한 번만 보정한다(`missed: "once"`). 대상은 활성·미삭제 프리미엄과 관리자(`premiumAccessCondition`)이며 최근 14일에 반복이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTx(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. AI 할 일 만들기의 월간 횟수와 제안·리포트의 premium 권한 검사는 별도 정책이다.
 
 이 권한 검사는 푸시 동의를 대신하지 않는다. AI 제안은 `purpose=ENGAGEMENT`이므로 마케팅 동의·참여 유도 한도·야간 억제와 공통 발송 조건을 추가로 적용한다. 주간·월간 AI 리포트는 premium 권한 대상의 서비스 알림이며 위 일정의 활동 조건을 따른다.
 
@@ -75,7 +75,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 07시대(따라�
 | `WEEKLY_ACHIEVEMENT`       | 무료 사용자 주간 성취                                                                    | 서비스       | 성취 화면                              |
 | `WEEKLY_REPORT`            | 프리미엄·관리자 주간 리포트                                                              | 서비스       | 리포트 화면                            |
 | `MONTHLY_REPORT`           | 프리미엄·관리자 월간 리포트                                                              | 서비스       | 리포트 화면                            |
-| `AI_SUGGESTION`            | 기록 기반 할 일 제안                                                                     | 참여         | 제안 화면                              |
+| `AI_SUGGESTION`            | 기록 기반 할 일 제안                                                                     | 서비스       | 제안 화면                              |
 | `SYSTEM_NOTICE`            | 온보딩, 결제, 리텐션, 운영 공지                                                          | 생성 시 지정 | `DEEP_LINK` url 앱 경로(아래 표)       |
 | `ADMIN_BROADCAST`          | 관리자 전체·조건 발송                                                                    | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
 | `ADMIN_TARGETED`           | 관리자 특정 사용자 발송                                                                  | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |

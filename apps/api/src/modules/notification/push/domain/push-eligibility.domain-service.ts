@@ -11,10 +11,9 @@ import type { NotificationType } from "../../inbox/domain/notification-type.cons
 /**
  * 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림.
  * 보상·체험 종료와 연간 갱신 안내(PREMIUM_GRANT_ENDING·PREMIUM_TRIAL_ENDING·PREMIUM_RENEWAL_UPCOMING)는
- * 이용 중인 혜택의 거래 정보라 넣지 않는다.
+ * 이용 중인 혜택의 거래 정보라 넣지 않는다. 구독한 AI 제안의 결과(AI_SUGGESTION)도 이용 중인 서비스 정보라 넣지 않는다.
  */
 const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<NotificationType>([
-  "AI_SUGGESTION",
   "WINBACK",
   "SOCIAL_DIGEST",
   "NUDGE_SUGGEST",

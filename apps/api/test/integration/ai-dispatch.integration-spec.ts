@@ -23,8 +23,8 @@ import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-// 서울 2026-10-08(목) 07:00 = UTC 2026-10-07 22:00, LA 2026-10-08 07:00 PDT = UTC 2026-10-08 14:00
-const SEOUL_0700 = Temporal.Instant.from("2026-10-07T22:00:00Z");
+// 서울 2026-10-08(목) 09:00 = UTC 2026-10-08 00:00, LA 2026-10-08 09:00 PDT = UTC 2026-10-08 16:00
+const SEOUL_0900 = Temporal.Instant.from("2026-10-08T00:00:00Z");
 
 describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 PostgreSQL)", () => {
   const database = new TestDatabase();
@@ -41,7 +41,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   beforeEach(async () => {
     suppressLogger();
     await database.cleanup();
-    clock = new FixedClock(SEOUL_0700);
+    clock = new FixedClock(SEOUL_0900);
     queue = new InMemoryJobQueue();
     scheduler = new SuggestionAnalysisScheduler(
       createDatabaseTransactionFixture(client).txHost,
@@ -97,14 +97,14 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       .map((job) => job.options.idempotencyKey);
   }
 
-  it("서울 07시에는 서울 사용자만, LA 07시에는 LA 사용자만 그 현지 날짜 키로 등록한다", async () => {
-    // When - 서울 07:00(LA 전날 15:00)
+  it("서울 09시에는 서울 사용자만, LA 09시에는 LA 사용자만 그 현지 날짜 키로 등록한다", async () => {
+    // When
     await scheduler.dispatchAnalysis();
 
     // Then
     expect(analyzeKeys()).toEqual([`suggestion_${seoulUserId}_2026-10-08`]);
 
-    // When - LA 07:00 PDT(서울 23:00)
+    // When
     clock.advanceBy({ hours: 16 });
     await scheduler.dispatchAnalysis();
 
@@ -115,9 +115,9 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     ]);
   });
 
-  it("따라잡기 창(07~10시)의 매시 디스패치가 다시 돌아도 같은 현지 날짜에는 한 번만 등록한다", async () => {
-    // When - 서울 07·08·09시와 창 밖 10시
-    for (const _hour of [7, 8, 9, 10]) {
+  it("따라잡기 창(09~12시)의 매시 디스패치가 다시 돌아도 같은 현지 날짜에는 한 번만 등록한다", async () => {
+    // When
+    for (const _seoulHour of [9, 10, 11, 12]) {
       await scheduler.dispatchAnalysis();
       clock.advanceBy({ hours: 1 });
     }
@@ -125,7 +125,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     // Then
     expect(analyzeKeys()).toEqual([`suggestion_${seoulUserId}_2026-10-08`]);
 
-    // When - 다음 날 서울 07시
+    // When
     clock.advanceBy({ hours: 20 });
     await scheduler.dispatchAnalysis();
 
@@ -136,9 +136,9 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     ]);
   });
 
-  it("LA 서머타임이 끝난 날에도 현지 07시(PST)에 한 번 등록한다", async () => {
-    // Given - LA 2026-11-01(일) 서머타임 종료, 07:00 PST = UTC 15:00
-    clock = new FixedClock(Temporal.Instant.from("2026-11-01T14:00:00Z"));
+  it("LA 서머타임이 끝난 날에도 현지 09시(PST)에 한 번 등록한다", async () => {
+    // Given
+    clock = new FixedClock(Temporal.Instant.from("2026-11-01T16:00:00Z"));
     scheduler = new SuggestionAnalysisScheduler(
       createDatabaseTransactionFixture(client).txHost,
       queue,
@@ -146,14 +146,14 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     );
     await insertRecentTodo(laUserId, "2026-10-30");
 
-    // When - 06:00 PST, 07:00 PST
+    // When
     await scheduler.dispatchAnalysis();
-    const beforeLocalSeven = analyzeKeys();
+    const beforeLocalNine = analyzeKeys();
     clock.advanceBy({ hours: 1 });
     await scheduler.dispatchAnalysis();
 
     // Then
-    expect(beforeLocalSeven).toEqual([]);
+    expect(beforeLocalNine).toEqual([]);
     expect(analyzeKeys()).toEqual([`suggestion_${laUserId}_2026-11-01`]);
   });
 
