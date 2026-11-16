@@ -201,6 +201,7 @@ export function seedPendingSuggestion(
       expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
       createdAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
       updatedAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+      evidence: null,
     }),
   );
 }

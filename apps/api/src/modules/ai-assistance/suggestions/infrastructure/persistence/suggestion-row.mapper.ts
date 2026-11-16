@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { recurringSuggestion } from "#api/platform/database/schema/ai-assistance.schema";
 
+import type { SuggestionEvidencePrimitives } from "../../domain/suggestion-evidence.vo.js";
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
 
 type SuggestionRow = typeof recurringSuggestion.$inferSelect;
@@ -10,6 +11,19 @@ type SuggestionInsertRow = typeof recurringSuggestion.$inferInsert;
 
 const daysOfWeekSchema = z.array(z.enum(DAYS_OF_WEEK));
 const matchedTodosSchema = z.array(z.string());
+
+// 1.16.0 전 행은 근거 칸이 비어 있다. 셋이 모두 있을 때만 근거로 읽는다
+function toEvidence(row: SuggestionRow): SuggestionEvidencePrimitives | null {
+  const {
+    evidenceRecordedCount: recordedCount,
+    evidenceCompletedCount: completedCount,
+    evidencePeriodDays: periodDays,
+  } = row;
+  if (recordedCount == null || completedCount == null || periodDays == null) {
+    return null;
+  }
+  return { recordedCount, completedCount, periodDays };
+}
 
 export function toSuggestion(row: SuggestionRow): Suggestion {
   const days = daysOfWeekSchema.safeParse(row.daysOfWeek);
@@ -28,14 +42,18 @@ export function toSuggestion(row: SuggestionRow): Suggestion {
     expiresAt: row.expiresAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    evidence: toEvidence(row),
   });
 }
 
 export function toSuggestionRow(suggestion: Suggestion): SuggestionInsertRow {
-  const primitives = suggestion.toPrimitives();
+  const { evidence, ...primitives } = suggestion.toPrimitives();
   return {
     ...primitives,
     daysOfWeek: primitives.daysOfWeek ?? [],
     matchedTodos: [...primitives.matchedTodos],
+    evidenceRecordedCount: evidence?.recordedCount ?? null,
+    evidenceCompletedCount: evidence?.completedCount ?? null,
+    evidencePeriodDays: evidence?.periodDays ?? null,
   };
 }

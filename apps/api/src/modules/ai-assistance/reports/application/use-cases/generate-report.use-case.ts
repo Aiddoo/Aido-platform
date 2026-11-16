@@ -306,6 +306,7 @@ export class GenerateReportUseCase {
           hasActivity: aggregatedData.hasActivity,
           contentSource: content.contentSource,
           promptVersion: content.promptVersion,
+          dailyCompletions: null,
           now: clock.now(),
         });
         await aiReportRepository.save(report);

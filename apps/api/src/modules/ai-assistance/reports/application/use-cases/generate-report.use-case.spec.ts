@@ -598,6 +598,7 @@ describe("GenerateReportUseCase", () => {
           generatedAt: Temporal.Instant.from("2026-01-05T00:00:00Z"),
           contentSource: "AI",
           promptVersion: "report@v2.1",
+          dailyCompletions: null,
         }),
       );
       // When

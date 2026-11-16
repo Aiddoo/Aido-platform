@@ -15,6 +15,7 @@ import { UserLocalePreferenceReaderPort } from "../generation/application/ports/
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
 import { LatestReportStatsReaderPort } from "../reports/application/ports/latest-report-stats.reader.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
+import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
 import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions.use-case.js";
@@ -23,11 +24,16 @@ import { ListPendingSuggestionsUseCase } from "./application/use-cases/list-pend
 import { SuggestionAnalysisProcessor } from "./infrastructure/jobs/suggestion-analysis.processor.js";
 import { SuggestionAnalysisScheduler } from "./infrastructure/jobs/suggestion-analysis.scheduler.js";
 import { DrizzleSuggestionActivityReader } from "./infrastructure/persistence/drizzle-suggestion-activity.reader.js";
+import { DrizzleSuggestionAnalysisRunRepository } from "./infrastructure/persistence/drizzle-suggestion-analysis-run.repository.js";
 import { DrizzleSuggestionRepository } from "./infrastructure/persistence/drizzle-suggestion.repository.js";
 
 export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   { provide: SuggestionRepositoryPort, useClass: DrizzleSuggestionRepository },
   { provide: SuggestionActivityReaderPort, useClass: DrizzleSuggestionActivityReader },
+  {
+    provide: SuggestionAnalysisRunRepositoryPort,
+    useClass: DrizzleSuggestionAnalysisRunRepository,
+  },
   provideUseCase(SuggestionContextReader, {
     activityReader: SuggestionActivityReaderPort,
     weatherForecastReader: WeatherForecastReaderPort,

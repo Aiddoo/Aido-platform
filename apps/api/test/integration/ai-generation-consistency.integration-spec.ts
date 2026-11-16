@@ -256,6 +256,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           status: "PENDING",
           createdAt: now,
           updatedAt: now,
+          evidence: null,
         }),
       ),
     );

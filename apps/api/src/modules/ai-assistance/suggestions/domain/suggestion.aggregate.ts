@@ -3,6 +3,7 @@ import type { AI_SUGGESTION_STATUSES, DayOfWeek } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { SuggestionEvidence, type SuggestionEvidencePrimitives } from "./suggestion-evidence.vo.js";
 import { SuggestionId } from "./suggestion-id.vo.js";
 import { suggestionAlreadyHandled, suggestionExpired } from "./suggestions.errors.js";
 
@@ -24,12 +25,18 @@ export interface SuggestionPrimitives {
   readonly expiresAt: Temporal.Instant;
   readonly createdAt: Temporal.Instant;
   readonly updatedAt: Temporal.Instant;
+  /** 1.16.0 전에 만든 제안은 근거를 남기지 않아 null이다 */
+  readonly evidence: SuggestionEvidencePrimitives | null;
 }
 
-type SuggestionProps = Omit<SuggestionPrimitives, "id" | "userId" | "status" | "updatedAt"> & {
+type SuggestionProps = Omit<
+  SuggestionPrimitives,
+  "id" | "userId" | "status" | "updatedAt" | "evidence"
+> & {
   readonly userId: UserId;
   status: SuggestionStatus;
   updatedAt: Temporal.Instant;
+  readonly evidence: SuggestionEvidence | null;
 };
 
 export interface CreateSuggestionParams {
@@ -43,6 +50,7 @@ export interface CreateSuggestionParams {
   readonly matchedTodos: readonly string[];
   readonly suggestedCategoryId: number | null;
   readonly expiresAt: Temporal.Instant;
+  readonly evidence: SuggestionEvidence | null;
   readonly now: Temporal.Instant;
 }
 
@@ -70,6 +78,7 @@ export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
       userId: UserId.reconstitute(userId),
       daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
       matchedTodos: [...rest.matchedTodos],
+      evidence: rest.evidence == null ? null : SuggestionEvidence.reconstitute(rest.evidence),
     });
   }
 
@@ -113,13 +122,14 @@ export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
   }
 
   toPrimitives(): SuggestionPrimitives {
-    const { userId, ...rest } = this.props;
+    const { userId, evidence, ...rest } = this.props;
     return {
       ...rest,
       id: this.id.value,
       userId: userId.value,
       daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
       matchedTodos: [...rest.matchedTodos],
+      evidence: evidence?.toPrimitives() ?? null,
     };
   }
 

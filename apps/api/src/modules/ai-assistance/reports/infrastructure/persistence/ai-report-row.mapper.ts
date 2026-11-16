@@ -1,5 +1,6 @@
 import {
   categoryBreakdownItemSchema,
+  dailyCompletionItemSchema,
   dayPatternItemSchema,
   reportStatsSchema,
   timePatternItemSchema,
@@ -10,7 +11,10 @@ import type { aiReport } from "#api/platform/database/schema/ai-assistance.schem
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { AiReport } from "../../domain/ai-report.aggregate.js";
-import { REPORT_CONTENT_SOURCES } from "../../domain/ai-report.constants.js";
+import {
+  type DailyCompletionItem,
+  REPORT_CONTENT_SOURCES,
+} from "../../domain/ai-report.constants.js";
 
 type AiReportRow = typeof aiReport.$inferSelect;
 type AiReportInsertRow = typeof aiReport.$inferInsert;
@@ -24,11 +28,21 @@ const DEFAULT_STATS = {
 } as const;
 
 const contentSourceSchema = z.enum(REPORT_CONTENT_SOURCES);
+const dailyCompletionsSchema = z.array(dailyCompletionItemSchema);
 
 // jsonb 칸이 계약 모양과 다르면 옛 행도 읽히도록 빈 값으로 둔다
 function parseArray<T>(schema: z.ZodType<T[]>, raw: unknown): T[] {
   const result = schema.safeParse(raw);
   return result.success ? result.data : [];
+}
+
+// 1.16.0 전 행은 칸이 비어 있고, 모양이 다르면 차트를 숨기도록 날짜별 값 없음으로 읽는다
+function parseDailyCompletions(raw: unknown): DailyCompletionItem[] | null {
+  const result = dailyCompletionsSchema.safeParse(raw);
+  if (!result.success) {
+    return null;
+  }
+  return result.data.map((item) => ({ ...item, date: Temporal.PlainDate.from(item.date) }));
 }
 
 export function toAiReport(row: AiReportRow): AiReport {
@@ -51,9 +65,15 @@ export function toAiReport(row: AiReportRow): AiReport {
     generatedAt: row.generatedAt,
     contentSource: contentSource.success ? contentSource.data : null,
     promptVersion: row.promptVersion,
+    dailyCompletions: parseDailyCompletions(row.dailyCompletions),
   });
 }
 
 export function toAiReportRow(report: AiReport): AiReportInsertRow {
-  return report.toPrimitives();
+  const { dailyCompletions, ...primitives } = report.toPrimitives();
+  return {
+    ...primitives,
+    dailyCompletions:
+      dailyCompletions?.map((item) => ({ ...item, date: item.date.toString() })) ?? null,
+  };
 }

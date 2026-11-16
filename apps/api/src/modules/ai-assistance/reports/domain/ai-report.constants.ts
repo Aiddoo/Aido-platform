@@ -24,6 +24,11 @@ export interface TimePatternItem {
   readonly hour: number;
   readonly count: number;
 }
+export interface DailyCompletionItem {
+  readonly date: Temporal.PlainDate;
+  readonly total: number;
+  readonly completed: number;
+}
 
 /** 리포트 타입. DB ReportType enum과 같은 vocabulary 튜플에서 유도한다 */
 export type ReportType = (typeof AI_REPORT_TYPES)[number];

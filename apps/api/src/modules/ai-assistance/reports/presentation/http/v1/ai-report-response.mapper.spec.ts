@@ -25,6 +25,7 @@ function makeProps(overrides?: Partial<AiReportPrimitives>): AiReportPrimitives 
     generatedAt: Temporal.Instant.from("2026-03-09T07:00:00.000Z"),
     contentSource: "AI",
     promptVersion: "report@1",
+    dailyCompletions: null,
     ...overrides,
   };
 }

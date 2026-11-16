@@ -207,6 +207,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
                   pattern.matchedTitles,
                   context.todos,
                 ),
+                evidence: null,
                 now,
               }),
             ];
