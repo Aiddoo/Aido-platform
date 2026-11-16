@@ -51,8 +51,7 @@
       "freeDescription": "프리미엄으로 매주·매월 AI 리포트를 받아보세요",
       "subscribeCta": "구독하고 리포트 받기",
       "arrivalToday": "오늘 첫 번째 {{type}} 리포트가 도착해요!",
-      "arrivalInDays": "{{count}}일 뒤에 첫 번째 {{type}} 리포트가 도착해요",
-      "lockDescription": "AI 헤드라인과 코치 카드는 프리미엄에서 볼 수 있어요"
+      "arrivalInDays": "{{count}}일 뒤에 첫 번째 {{type}} 리포트가 도착해요"
     },
     "unavailable": {
       "title": "리포트를 찾을 수 없어요",
@@ -62,6 +61,37 @@
     "thisWeek": {
       "title": "이번 주 내 기록",
       "dayUpcoming": "{{date}} · 아직 오지 않은 날이에요"
+    },
+    "sample": {
+      "title": "예시 리포트",
+      "badge": "예시 데이터",
+      "listDescription": "구독하면 내 할 일로 만든 리포트가 매주·매월 이렇게 쌓여요",
+      "noticeTitle": "구독하면 이렇게 받아요",
+      "noticeDescription": "숫자와 글은 예시예요. 구독하면 내 할 일로 매주·매월 만들어 드려요",
+      "categories": {
+        "work": "업무",
+        "study": "공부",
+        "workout": "운동"
+      },
+      "weekly": {
+        "summary": "출근 전에 할 일을 하나 끝낸 날은 그날 할 일을 모두 끝낸 경우가 많았어요. 아침 7시대에 가장 많이 끝냈고 업무는 거의 빠짐없이 챙겼어요. 다만 운동은 주 중반에 자주 밀렸어요.",
+        "tips": {
+          "workout": "운동은 아침 7시 할 일 바로 뒤에 붙여 두면 덜 밀려요.",
+          "midweek": "주 중반에는 할 일을 4개 안쪽으로 잡아 보세요."
+        }
+      },
+      "monthly": {
+        "summary": "아침에 할 일을 먼저 끝낸 날일수록 그날 끝낸 할 일이 많았어요. 아침 7시대에 가장 많이 끝냈고, 업무는 꾸준히 챙기고 주말은 가볍게 잡았어요. 운동은 끝낸 비율이 가장 낮았어요.",
+        "tips": {
+          "repeat": "운동을 요일과 시각을 정한 반복 할 일로 만들어 보세요.",
+          "morning": "다음 달에는 업무 하나를 아침에 가장 먼저 끝내 보세요."
+        }
+      }
+    },
+    "teaser": {
+      "hiddenLabel": "프리미엄에서 볼 수 있어요",
+      "hiddenCategory": "프리미엄에서 볼 수 있는 카테고리",
+      "coachHint": "프리미엄에서 코치 글을 모두 볼 수 있어요"
     }
   },
   "suggestions": {

@@ -10,7 +10,8 @@ describe('ReportList.Item', () => {
   it('자세히 보기를 누르면 Link와 같은 navigate로 상세를 한 번 연다', async () => {
     // Given
     const report = createAiReport({ id: 42 });
-    await renderScreen(<ReportList.Item report={report} isLast />, {
+    const href = { pathname: '/reports/[reportId]', params: { reportId: '42' } } as const;
+    await renderScreen(<ReportList.Item report={report} href={href} visibility="full" isLast />, {
       withLocalDate: true,
     });
 
@@ -20,10 +21,7 @@ describe('ReportList.Item', () => {
 
     // Then
     expect(router.navigate).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith({
-      pathname: '/reports/[reportId]',
-      params: { reportId: '42' },
-    });
+    expect(router.navigate).toHaveBeenCalledWith(href);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

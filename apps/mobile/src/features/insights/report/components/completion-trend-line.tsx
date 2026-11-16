@@ -78,7 +78,8 @@ export function CompletionTrendLine({
     }
   });
   const endPoint = useDerivedValue(() => {
-    const scale = readScale();
+    // 매퍼는 바로 품은 shared value만 입력으로 잡아 readScale을 거치면 폭을 잰 뒤에도 끝점이 (0, 0)에 남는다
+    const scale = width.get() / COMPLETION_TREND_VIEW.width;
     return { x: (trend?.end.x ?? 0) * scale, y: (trend?.end.y ?? 0) * scale };
   });
   const revealClip = useDerivedValue((): SkRect => {

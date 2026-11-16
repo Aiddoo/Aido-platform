@@ -20,7 +20,8 @@ export type EntitlementGateSurface =
   | 'app_icon_settings'
   | 'reminder_settings'
   | 'voice_note'
-  | 'report_list';
+  | 'report_list'
+  | 'report_sample';
 
 /** inline은 화면 안에 늘 보이는 잠금 카드다 */
 type PremiumGatePresentation = UpsellPresentation | 'inline';

@@ -55,8 +55,7 @@
       "subscribeCta": "Subscribe to get reports",
       "arrivalToday": "Your first {{type}} report arrives today!",
       "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
-      "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days",
-      "lockDescription": "AI headlines and coach cards come with Premium"
+      "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days"
     },
     "unavailable": {
       "title": "Report not found",
@@ -66,6 +65,37 @@
     "thisWeek": {
       "title": "My record this week",
       "dayUpcoming": "{{date}} · Not here yet"
+    },
+    "sample": {
+      "title": "Sample report",
+      "badge": "Sample data",
+      "listDescription": "With Premium, reports from your own to-dos stack up like this every week and month",
+      "noticeTitle": "Here's what you'll get",
+      "noticeDescription": "The numbers and notes are samples. Subscribe and we'll build them from your own to-dos every week and month",
+      "categories": {
+        "work": "Work",
+        "study": "Study",
+        "workout": "Workout"
+      },
+      "weekly": {
+        "summary": "On days you finished a to-do before work, you were more likely to clear the whole day. You finished the most around 7 AM and kept up with work almost every day. Workouts often slipped midweek, though.",
+        "tips": {
+          "workout": "Put your workout right after your 7 AM to-do so it slips less.",
+          "midweek": "Midweek, try keeping it to four to-dos or fewer."
+        }
+      },
+      "monthly": {
+        "summary": "The earlier you started with a to-do, the more you got done that day. You finished the most around 7 AM, kept up with work steadily, and kept weekends light. Workouts had the lowest completion rate.",
+        "tips": {
+          "repeat": "Make your workout a repeating to-do with a set day and time.",
+          "morning": "Next month, try finishing one work to-do first thing in the morning."
+        }
+      }
+    },
+    "teaser": {
+      "hiddenLabel": "Available with Premium",
+      "hiddenCategory": "Category available with Premium",
+      "coachHint": "See the full coach notes with Premium"
     }
   },
   "suggestions": {

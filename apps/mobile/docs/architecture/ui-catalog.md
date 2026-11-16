@@ -32,6 +32,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 토스트·안내         | `useAppToast`, `InlineAlert`, `OfflineBanner`, **`QueryErrorFallback.Inline`**                                                                 | 흐름 안 배너는 `InlineAlert` 하나                                                             |
 | 오류·빈 상태        | `QueryErrorBoundary`, `Result` + `shared/ui/illustration`의 그림                                                                               | 톤은 [design](../design.md#일러스트와-캐릭터)                                                 |
 | 스켈레톤·스피너     | heroui `Skeleton`·`Spinner`, `TextSkeleton`(`Omit<ComponentProps<typeof Skeleton>, …>`)                                                        | 스피너 색은 `useResolvedColor`                                                                |
+| 결제 전 가림        | **`RedactedText`**                                                                                                                             | 블러 대신 움직이지 않는 둥근 막대. 무료 예시 리포트의 AI 글·카테고리                          |
 | 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, **`ScrollFade`**                  | 실선 구분선은 토큰 하나                                                                       |
 | 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, **`Mascot`**                                                                                           | 비율을 직접 계산하지 않는다                                                                   |
 | 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                                                 |
@@ -39,6 +40,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 일별 완료 막대      | `DailyCompletionChart` + `.Loading`(`insights/report`, 누르기)                                                                                 | 리포트 모델을 모르는 controlled 차트. 무료 이번 주·리포트 상세가 함께 쓴다                    |
 | 시간대 완료 막대    | `CompletionHourChart` + `.Loading`(`insights/report`, 가로로 밀기·누르기)                                                                      | 24칸. 눈금은 compact 6시간, 그 밖 3시간 간격                                                  |
 | 주별 완료율 추세    | `CompletionTrendLine` + `.Loading`(`insights/report`)                                                                                          | 끝점만 강조한다. 차트 비율은 `report-chart.constants.ts` 하나를 `.Loading`과 함께 쓴다        |
+| 리포트 영수증       | `ActivityReport.Receipt`(`insights/report`, `AiReport`·`visibility`)                                                                           | 실제 상세와 무료 예시가 같은 부품. 차이는 `getReportVisibility`가 정한 `full`·`teaser` 하나   |
 
 ## 새 공용 부품의 인터페이스
 
@@ -51,6 +53,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 - **`TimeSpinner`**(있음): `value`·`onChange`(`TimeOfDay`), `timeFormat`, `minimum`, `maximum`. iOS 휠이고 Android 시스템 피커는 `openAndroidTimePicker({ value, timeFormat })`(`Promise<TimeOfDay | null>`)다.
 - **`RouteBottomSheet`**(있음): `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
 - **`useOpenSheet()`**(있음): `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄우고 고른 값을 돌려준다(취소는 `undefined`). 폼이 `footer`를 가진 입력 시트는 `useOpenKeyboardSheet()`다([overlay](../../src/shared/ui/overlay/overlay.md)).
+- **`RedactedText`**(있음): `size`(`TextSize`), `lineCount`, `accessibilityLabel`(필수), `className`, `testID`. 결제하면 보이는 글자를 줄 모양만 남겨 가린다. `TextSkeleton`과 같은 면이고 `variant="none"`이라 움직이지 않아 불러오는 중과 다르다. 줄 묶음이 접근성 요소 하나이고, 가린 이유는 쓰는 쪽이 근처 글자로 보인다.
 - **`QueryErrorFallback.Inline`**(있음): 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
 
 ## 직접 만든 부품을 둔 이유

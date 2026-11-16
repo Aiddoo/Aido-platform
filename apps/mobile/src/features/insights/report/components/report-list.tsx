@@ -1,10 +1,10 @@
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
+import { type DateKey, getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,10 +14,10 @@ import {
   DashedDivider,
   HStack,
   LabelChip,
-  LockIcon,
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  RedactedText,
   Text,
   TextButton,
   TextSkeleton,
@@ -33,11 +33,13 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { orderBy, range, take } from 'es-toolkit';
-import { Link, router } from 'expo-router';
+import { type Href, Link, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
 import { match } from 'ts-pattern';
 
+import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
+import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
 import { ReportStatusPolicy } from '../domains/report-status.model';
 import type { AiReport } from '../domains/report.model';
 import { useReportType } from '../hooks/use-report-type';
@@ -47,6 +49,8 @@ import {
 } from '../queries/report.queries';
 import { getReportTypeLabelKey } from '../utils/report-label.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
+import type { ReportVisibility } from '../utils/report-visibility.view-model';
+import { createSampleReport, getSampleTrendWeeks } from '../utils/sample-report.view-model';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { CompletionTrendLine } from './completion-trend-line';
 import { ReportTypeChip } from './report-type-chip';
@@ -56,7 +60,8 @@ const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
 /** 서버 기본 페이지 크기와 같다. 목록에는 더 보기가 없어 개수가 이 값으로 묶인다 */
 const REPORT_LIST_LIMIT = 10;
-const TREND_WEEK_COUNT = 8;
+/** 예시 목록 맨 위 최근 리포트 카드는 지난주·지난달이다 */
+const LATEST_SAMPLE_PERIODS_AGO = 1;
 
 export function ReportList() {
   const { t } = useTranslation('ai');
@@ -79,7 +84,17 @@ export function ReportList() {
 
   return (
     <VStack gap={20}>
-      <ReportList.Latest report={latestReport} />
+      <ReportList.Latest
+        report={latestReport}
+        href={{ pathname: '/reports/[reportId]', params: { reportId: String(latestReport.id) } }}
+        trend={
+          <QueryErrorBoundary fallback={RecentCompletionTrend.Error}>
+            <Suspense fallback={<RecentCompletionTrend.Loading />}>
+              <RecentCompletionTrend />
+            </Suspense>
+          </QueryErrorBoundary>
+        }
+      />
 
       {pastReports.length > 0 && (
         <VStack className="gap-1">
@@ -90,6 +105,9 @@ export function ReportList() {
             <ReportList.Item
               key={report.id}
               report={report}
+              href={{ pathname: '/reports/[reportId]', params: { reportId: String(report.id) } }}
+              // 서버가 AI_REPORT 권한을 확인하고 준 리포트라 모두 보인다
+              visibility="full"
               isLast={index === pastReports.length - 1}
             />
           ))}
@@ -99,22 +117,25 @@ export function ReportList() {
   );
 }
 
-ReportList.Latest = function Latest({ report }: { report: AiReport }) {
+interface ReportListLatestProps {
+  report: AiReport;
+  href: Href;
+  /** 최근 주별 완료율 추세. 실제 목록은 주간 성취로 그린 추세를, 예시는 예시 추세를 넘긴다 */
+  trend: ReactNode;
+  testID?: string;
+}
+
+ReportList.Latest = function Latest({ report, href, trend, testID }: ReportListLatestProps) {
   const { t } = useTranslation('ai');
   // Item과 같은 이유로 Link와 같은 navigate를 쓴다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
-  const href = {
-    pathname: '/reports/[reportId]',
-    params: { reportId: String(report.id) },
-  } as const;
-
   return (
     <Link href={href} asChild>
       <Link.Trigger>
-        <PressableFeedback className="rounded-2xl">
+        <PressableFeedback className="rounded-2xl" testID={testID}>
           <PressableFeedback.Highlight className="rounded-2xl" />
           <VStack className="gap-4 rounded-2xl bg-white p-4">
             <HStack align="center" gap={8} className="flex-wrap">
@@ -136,11 +157,7 @@ ReportList.Latest = function Latest({ report }: { report: AiReport }) {
 
             <CompletionRateHeadline report={report} />
 
-            <QueryErrorBoundary fallback={RecentCompletionTrend.Error}>
-              <Suspense fallback={<RecentCompletionTrend.Loading />}>
-                <RecentCompletionTrend />
-              </Suspense>
-            </QueryErrorBoundary>
+            {trend}
 
             <Box className="items-end">
               <TextButton size="small" variant="arrow" onPress={() => navigate(href)}>
@@ -162,19 +179,17 @@ ReportList.Latest = function Latest({ report }: { report: AiReport }) {
 
 interface ReportListItemProps {
   report: AiReport;
+  href: Href;
+  visibility: ReportVisibility;
   isLast?: boolean;
 }
 
-ReportList.Item = function Item({ report, isLast = false }: ReportListItemProps) {
+ReportList.Item = function Item({ report, href, visibility, isLast = false }: ReportListItemProps) {
   const { t } = useTranslation('ai');
   // Link가 navigate로 열어 같은 상세는 한 번만 쌓인다. 안쪽 버튼·메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const href = {
-    pathname: '/reports/[reportId]',
-    params: { reportId: String(report.id) },
-  } as const;
 
   return (
     <Link href={href} asChild>
@@ -218,11 +233,22 @@ ReportList.Item = function Item({ report, isLast = false }: ReportListItemProps)
                 />
               </HStack>
 
-              {report.hasActivity && report.aiSummary.length > 0 && (
-                <Text size="b4" shade={7} numberOfLines={2}>
-                  {report.aiSummary}
-                </Text>
-              )}
+              {report.hasActivity &&
+                report.aiSummary.length > 0 &&
+                match(visibility)
+                  .with('full', () => (
+                    <Text size="b4" shade={7} numberOfLines={2}>
+                      {report.aiSummary}
+                    </Text>
+                  ))
+                  .with('teaser', () => (
+                    <RedactedText
+                      size="b4"
+                      lineCount={2}
+                      accessibilityLabel={t('report.teaser.hiddenLabel')}
+                    />
+                  ))
+                  .exhaustive()}
 
               <Box className="items-end">
                 <TextButton size="small" variant="arrow" onPress={() => navigate(href)}>
@@ -245,11 +271,18 @@ ReportList.Item = function Item({ report, isLast = false }: ReportListItemProps)
   );
 };
 
-ReportList.Free = function Free() {
-  const push = useSingleTap(router.push);
-  const { t } = useTranslation(['ai', 'subscription']);
-  const fontScaledSize = useFontScaledSize();
+interface ReportListFreeProps {
+  visibility: ReportVisibility;
+}
+
+/** 무료는 실제 이번 주 기록 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 보인다 */
+ReportList.Free = function Free({ visibility }: ReportListFreeProps) {
+  const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
+  const push = useSingleTap(router.push);
+  const { language } = useLocaleContext();
+  const [reportType] = useReportType();
+  const todayKey = useTodayKey();
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_REPORT'),
     surface: 'report_list',
@@ -264,42 +297,63 @@ ReportList.Free = function Free() {
   };
 
   return (
-    <VStack gap={16}>
+    <VStack gap={20}>
       <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
         <Suspense fallback={<ThisWeekRecord.Loading />}>
           <ThisWeekRecord />
         </Suspense>
       </QueryErrorBoundary>
 
-      <VStack gap={12} className="rounded-2xl bg-gray-1 p-4">
+      <DashedDivider />
+
+      <VStack className="gap-1">
         <HStack align="center" gap={6}>
+          <Text size="b3" weight="semibold" shade={9}>
+            {t('report.sample.title')}
+          </Text>
           <LabelChip
-            color="accent"
-            label={t('subscription:tier.premium')}
-            labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+            color="warning"
+            label={t('report.sample.badge')}
+            labelProps={{ numberOfLines: 1 }}
             pointerEvents="none"
           />
-          <LockIcon
-            width={fontScaledSize(16)}
-            height={fontScaledSize(16)}
-            colorClassName="text-gray-5"
-          />
         </HStack>
-
-        <VStack gap={8} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Box className="h-6 w-40 rounded-md bg-gray-3" />
-          <Box className="h-4 w-full rounded-md bg-gray-2" />
-          <Box className="h-4 w-4/5 rounded-md bg-gray-2" />
-        </VStack>
-
-        <Text size="b4" shade={7}>
-          {t('ai:report.list.lockDescription')}
+        <Text size="b4" shade={6}>
+          {t('report.sample.listDescription')}
         </Text>
-
-        <Button size="medium" testID="report-free-subscribe" onPress={handleSubscribePress}>
-          {t('ai:report.list.subscribeCta')}
-        </Button>
       </VStack>
+
+      <ReportList.Latest
+        report={createSampleReport(reportType, LATEST_SAMPLE_PERIODS_AGO, { todayKey, language })}
+        href={{
+          pathname: '/reports/sample',
+          params: { type: reportType, periodsAgo: String(LATEST_SAMPLE_PERIODS_AGO) },
+        }}
+        trend={<CompletionTrend weeks={getSampleTrendWeeks(todayKey)} />}
+        testID="report-sample-latest"
+      />
+
+      <VStack className="gap-1">
+        <Text size="b3" weight="semibold" shade={9}>
+          {t('report.list.pastReports')}
+        </Text>
+        {range(LATEST_SAMPLE_PERIODS_AGO + 1, SAMPLE_REPORT_COUNT + 1).map((periodsAgo) => (
+          <ReportList.Item
+            key={periodsAgo}
+            report={createSampleReport(reportType, periodsAgo, { todayKey, language })}
+            href={{
+              pathname: '/reports/sample',
+              params: { type: reportType, periodsAgo: String(periodsAgo) },
+            }}
+            visibility={visibility}
+            isLast={periodsAgo === SAMPLE_REPORT_COUNT}
+          />
+        ))}
+      </VStack>
+
+      <Button size="medium" testID="report-free-subscribe" onPress={handleSubscribePress}>
+        {t('report.list.subscribeCta')}
+      </Button>
     </VStack>
   );
 };
@@ -388,8 +442,6 @@ ReportList.Empty = function Empty() {
 };
 
 function RecentCompletionTrend() {
-  const { t } = useTranslation('ai');
-  const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
   const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
@@ -398,29 +450,14 @@ function RecentCompletionTrend() {
 
   // 목록은 최근 주부터 오므로 앞에서 자른 뒤 오래된 주부터 그린다
   const recentWeeks = orderBy(take(weeklyAchievements.items, TREND_WEEK_COUNT), ['week'], ['asc']);
-  const firstWeek = recentWeeks[0];
-  const lastWeek = recentWeeks.at(-1);
-
-  if (firstWeek == null || lastWeek == null) {
-    return <CompletionTrendLine.Empty message={t('report.latest.trendEmpty')} />;
-  }
 
   return (
-    <VStack gap={8}>
-      <Text size="b4" shade={6}>
-        {t('report.latest.trendTitle')}
-      </Text>
-      <CompletionTrendLine
-        values={recentWeeks.map((week) => week.completionRate)}
-        startLabel={formatIsoWeekLabel(firstWeek.dateRange.startDate, todayKey, dateFormatContext)}
-        endLabel={formatIsoWeekLabel(lastWeek.dateRange.startDate, todayKey, dateFormatContext)}
-        accessibilityLabel={t('report.latest.trendLabel', {
-          count: recentWeeks.length,
-          start: formatPercent(firstWeek.completionRate, dateFormatContext.locale),
-          end: formatPercent(lastWeek.completionRate, dateFormatContext.locale),
-        })}
-      />
-    </VStack>
+    <CompletionTrend
+      weeks={recentWeeks.map((week) => ({
+        startDate: week.dateRange.startDate,
+        completionRate: week.completionRate,
+      }))}
+    />
   );
 }
 
@@ -442,6 +479,42 @@ RecentCompletionTrend.Error = function ErrorFallback({ reset }: QueryErrorFallba
 
   return <QueryErrorFallback.Inline message={t('errorBoundary.title')} reset={reset} />;
 };
+
+interface CompletionTrendProps {
+  /** 오래된 주부터 온다 */
+  weeks: { startDate: DateKey; completionRate: number }[];
+}
+
+function CompletionTrend({ weeks }: CompletionTrendProps) {
+  const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+
+  const firstWeek = weeks[0];
+  const lastWeek = weeks.at(-1);
+
+  if (firstWeek == null || lastWeek == null) {
+    return <CompletionTrendLine.Empty message={t('report.latest.trendEmpty')} />;
+  }
+
+  return (
+    <VStack gap={8}>
+      <Text size="b4" shade={6}>
+        {t('report.latest.trendTitle')}
+      </Text>
+      <CompletionTrendLine
+        values={weeks.map((week) => week.completionRate)}
+        startLabel={formatIsoWeekLabel(firstWeek.startDate, todayKey, dateFormatContext)}
+        endLabel={formatIsoWeekLabel(lastWeek.startDate, todayKey, dateFormatContext)}
+        accessibilityLabel={t('report.latest.trendLabel', {
+          count: weeks.length,
+          start: formatPercent(firstWeek.completionRate, dateFormatContext.locale),
+          end: formatPercent(lastWeek.completionRate, dateFormatContext.locale),
+        })}
+      />
+    </VStack>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (

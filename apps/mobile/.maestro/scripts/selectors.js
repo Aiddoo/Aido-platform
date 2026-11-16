@@ -75,6 +75,9 @@ output.ids = {
     dailyChart: 'report-daily-chart',
     hourChart: 'report-hour-chart',
     freeSubscribe: 'report-free-subscribe',
+    sampleLatest: 'report-sample-latest',
+    sampleNotice: 'report-sample-notice',
+    sampleSubscribe: 'report-sample-subscribe',
   },
   suggestions: {
     status: 'suggestions-status',

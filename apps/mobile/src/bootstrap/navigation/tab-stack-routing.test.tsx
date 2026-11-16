@@ -243,12 +243,12 @@ function findRouteFiles(directory: string): string[] {
   );
 }
 
-/** route 파일 이름을 그 화면을 여는 URL로 바꾼다(`reports/[reportId]` → `/reports/sample`) */
+/** route 파일 이름을 그 화면을 여는 URL로 바꾼다(`reports/[reportId]` → `/reports/1`). 동적 칸은 같은 자리의 고정 경로(`reports/sample`)와 겹치지 않는 값으로 채운다 */
 function toSampleUrl(routeName: string) {
   const segments = routeName
     .split('/')
     .filter((segment) => segment !== 'index')
-    .map((segment) => segment.replace(/^\[.+\]$/, 'sample'));
+    .map((segment) => segment.replace(/^\[.+\]$/, '1'));
   return `/${segments.join('/')}`;
 }
 

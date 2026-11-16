@@ -7,6 +7,7 @@ import { useReportType } from '@src/features/insights/report/hooks/use-report-ty
 import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { getReportTypeLabelKey } from '@src/features/insights/report/utils/report-label.view-model';
+import { getReportVisibility } from '@src/features/insights/report/utils/report-visibility.view-model';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -100,7 +101,7 @@ export default function ReportsScreen() {
                 </ScallopedContainer>
               </VStack>
             ))
-            .with('free', () => (
+            .with('free', (status) => (
               <ScallopedContainer>
                 <Intro
                   title={t('report.list.freeTitle')}
@@ -114,7 +115,7 @@ export default function ReportsScreen() {
                 <Spacing size={8} />
 
                 <Box className="px-4">
-                  <ReportList.Free />
+                  <ReportList.Free visibility={getReportVisibility(status)} />
                 </Box>
 
                 <Spacing size={16} />

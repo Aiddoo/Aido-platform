@@ -17,7 +17,7 @@
 - **AI 제안**: 빈 화면 대신 서버가 정한 분석 상태 8가지(`HAS_SUGGESTIONS`·`NEEDS_AI_CONSENT`·`NEEDS_MORE_TODOS`·`ANALYZING`·`DONE_FOR_TODAY`·`NO_PATTERN_FOUND`·`UNAVAILABLE_TODAY`·`WAITING_FOR_NEXT_RUN`)를 같은 틀의 영수증 모양 상태 카드로 보인다. 제안 줄은 만들어질 반복 할 일과 같은 모양(시각 · ⟲ 반복 규칙, `TodoRow.TitleLine`·`ScheduleLine`)에 최근 2주 기록 근거 한 줄을 더하고 버튼은 [반복으로 만들기]·[필요 없어요]다. [할 일 적으러 가기]는 오늘 피드로 가서 할 일 추가 시트를 연다. 분석 중에는 3초마다 다시 읽는다. 서버가 분석 실행을 기록하고 목록에 `analysis`를 담으며(`[15/18]`), [지금 분석 받기]는 `POST /v1/ai/suggestions/analyses`와 전용 worker로 받는다(`[16/18]`).
 - **AI 제안 프롬프트**: 모델은 후보를 고르기만 한다(`suggestion@4`). 출시 앱이 읽는 `reason`은 서버가 기록 수치로 쓴다. 서버는 띄어쓰기·문장부호·이모지·대소문자·전각 차이만 다른 제목을 한 후보로 묶고, 자모·숫자·기호만인 제목과 이미 반복 중인 할 일을 후보에서 뺀다. 근거(`evidence`)를 저장한다(`[14/18]`). 입력 상한은 36,000자, 응답 이력은 30개다(`[17/18]`).
 - **AI 리포트**: 헤드라인(완료율·변화 칩), 날마다 끝낸 할 일 막대, 주로 끝낸 시간 24칸, 최근 8주 추세선, AI 코치 카드로 바뀐다. 프롬프트는 `report@4`로 숫자를 항목 단위로 검사하고 글 길이는 ko 70·55자, en 120·90자다. 템플릿으로 채운 글은 "AI 코치" 대신 "이번 기간 요약"으로 보인다.
-- **무료**: 이번 주 내 기록 막대를 실제로 그리고 AI 부분만 잠근다. 샘플 리포트를 지운다. 첫 리포트 전 프리미엄도 같은 기록을 보이고 리포트 끝에 제안 미리보기를 둔다(`[10/18]`).
+- **무료**: 이번 주 내 기록 막대를 실제로 그리고(`[10/18]`), 그 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 "예시 데이터"로 표시해 보인다. 예시를 누르면 실제 리포트와 같은 상세가 열리고 숫자 모양은 보이되 AI 코치 글·팁, 주로 끝낸 시간 해석, 두 번째부터의 카테고리는 가린다(`[18.10/18]`). 첫 리포트 전 프리미엄도 같은 기록을 보이고 리포트 끝에 제안 미리보기를 둔다(`[10/18]`).
 - **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠지고 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행하는 **서비스 알림**이라 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다. 설정 > 알림 > 푸시 알림의 "AI 제안·리포트 알림"으로 AI 제안·주간·월간 리포트 푸시만 끌 수 있다(`[18.9/18]`).
 - **버그 수정**: 리포트 도착 시각 표시 08:00 ↔ 푸시 11:30 불일치, 지운 카테고리 이름('기타'가 en에도 하드코딩), en 시작 제안 문구, AI Swagger 설명(`[1/18]`).
 - **용어**: "루틴" 대신 "반복 할 일"(en "repeating to-do")이다. 스토어 검색어에만 "루틴"이 남는다.
@@ -30,7 +30,7 @@
 - [지금 분석 받기]로 분석을 바로 받는다. 같은 날 다시 눌러도 job은 하나이고 하루 한 번 LLM 호출 상한은 그대로다.
 - AI 리포트 상세는 한눈에 무엇이 나아졌는지 보이게 헤드라인 → 완료·모두 끝낸 날·이 기간 연속 → 일별 막대 → 시간대 차트 → 카테고리 → AI 코치 카드 순이다. 옛 리포트는 일별 막대만 숨긴다.
 - 리포트 목록은 최근 리포트 카드(완료율·변화 칩·최근 8주 추세선) 아래에 지난 리포트가 나온다. 상태 배너는 다음 리포트 D-day와 요일·시각 한 줄이다.
-- 무료 리포트는 이번 ISO 주 일별 완료를 보이고 오지 않은 날은 "아직"으로 구분한다. 잠금 카드와 무료 제안 미리보기가 `premium_gate_shown`·`premium_gate_cta_tapped`를 보낸다(`[10/18]`·`[13/18]`).
+- 무료 리포트는 이번 ISO 주 일별 완료를 보이고 오지 않은 날은 "아직"으로 구분한다(`[10/18]`). 그 아래 예시 리포트는 고른 탭(주간·월간)마다 지난주·지난달부터 4회가 최근 리포트 카드(달성률·변화 칩·8주 추세)와 지난 리포트로 쌓인 모양이고, 날짜는 오늘 기준이다. 예시 상세(`/reports/sample`)는 위에 예시 안내, 맨 아래 [구독하고 리포트 받기]가 있다. 목록·예시 상세·무료 제안 미리보기가 `premium_gate_shown`·`premium_gate_cta_tapped`를 보낸다(`[13/18]`·`[18.10/18]`).
 - 차트는 Skia로 그리고 스크린리더에 선택한 값을 읽어 준다. 새 차트 라이브러리는 쓰지 않는다(SDK 58의 Skia 2.14).
 - 문구를 새 화면에 맞췄다. 쓰지 않는 키(제안 paywall 제목·설명)를 지우고 "맞춤 제안이 도착했어요"를 바꿨다. Maestro `30-ai.yaml`이 새 문구·testID를 기다리고 새 흐름 `report/see-weekly-record-free`가 있다(`[13/18]`).
 - 할 일이 많은 사용자(300개·활동 60종)도 제안을 받는다. 입력 상한에 막혀 세 공급자 모두 BAD_REQUEST였던 사례를 고쳤다(`[17/18]`).
@@ -41,7 +41,7 @@
 - 제안 카드의 신뢰도·사유·만료 표시를 앱이 더 읽지 않는다(서버는 계속 준다).
 - 템플릿 리포트의 요약 제목이 "이번 기간 요약"으로 바뀐다.
 - 리포트 상세의 통계 3칸·요일 점·상위 3시간 목록은 위 차트로 대체된다.
-- 무료 사용자는 샘플 리포트 대신 이번 주 내 기록을 본다.
+- 무료 사용자는 1.15.x의 흐린 샘플 카드 한 장(누르면 2026년 3월 고정 날짜 상세) 대신 이번 주 내 기록과 오늘 기준 예시 리포트 목록을 본다. 예시 상세는 실제 리포트와 같은 부품(`ActivityReport.Receipt`)이고 가린 자리는 움직이지 않는 둥근 막대(`RedactedText`)다. `[10/18]`의 잠금 카드(프리미엄 칩·회색 막대)는 예시 목록으로 바뀌었다.
 
 ## 서버 변경과 호환
 
@@ -77,14 +77,14 @@
 
 값은 각 `constants/*.events.ts`가 원본이다([분석 측정 계획](../../../apps/mobile/docs/analytics-measurement-plan.md)).
 
-| 이벤트                                                                                            | 파라미터                                                          |
-| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `ai_suggestions_viewed`(추가)                                                                     | `state`(분석 상태 8가지), `suggestion_count`                      |
-| `ai_suggestion_analysis_requested`(추가)                                                          | `source`(`suggestions_screen`·`feed_entry`)                       |
-| `ai_suggestion_acted`(변경)                                                                       | `action` 그대로 + `source`(`suggestions_screen`·`report_preview`) |
-| `ai_report_chart_tapped`(추가)                                                                    | `chart`(`daily_completions`·`completion_hours`)                   |
-| `premium_gate_shown`·`premium_gate_cta_tapped`(무료 리포트 잠금 카드·제안 미리보기에서 추가 발송) | inline 노출, `surface`(`report_list`·`suggestions`)               |
-| `settings_changed`(값 추가)                                                                       | `setting=aiPushEnabled`, `value` `true`·`false`(`[18.9/18]`)      |
+| 이벤트                                                                                                 | 파라미터                                                                     |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `ai_suggestions_viewed`(추가)                                                                          | `state`(분석 상태 8가지), `suggestion_count`                                 |
+| `ai_suggestion_analysis_requested`(추가)                                                               | `source`(`suggestions_screen`·`feed_entry`)                                  |
+| `ai_suggestion_acted`(변경)                                                                            | `action` 그대로 + `source`(`suggestions_screen`·`report_preview`)            |
+| `ai_report_chart_tapped`(추가)                                                                         | `chart`(`daily_completions`·`completion_hours`). 예시 리포트는 보내지 않는다 |
+| `premium_gate_shown`·`premium_gate_cta_tapped`(무료 리포트 목록·예시 상세·제안 미리보기에서 추가 발송) | inline 노출, `surface`(`report_list`·`report_sample`·`suggestions`)          |
+| `settings_changed`(값 추가)                                                                            | `setting=aiPushEnabled`, `value` `true`·`false`(`[18.9/18]`)                 |
 
 서버 신호(분석 결과·대기 시간·AI 비용·수락률·리포트 생성 시간)는 측정 계획 3절 표에 있다. 분석 실행 로그는 `ai.suggestion-analysis.finished`(`trigger`·`outcome`·`recentTodoCount`·`createdSuggestionCount`·`queueWaitMs`)와 `ai.suggestion-analysis.requested`·`deduplicated`·`disabled`다. 처리 시간은 리포트·제안 모두 job 완료 로그 `ai.job.completed`의 `durationMs` 하나다(제안은 `trigger`도). 공급자 불가 로그에 `userId`를 더했다(`[9/18]`).
 
@@ -204,7 +204,7 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 
 ### 1.15.2 후보 가운데 해결한 것
 
-- 샘플 칩 tone: 샘플 리포트를 지워 해결했다(`[10/18]`).
+- 샘플 칩 tone: 예시 표시를 `LabelChip`(warning) 하나로 맞춰 해결했다(`[18.10/18]`).
 - `insights/report`의 `.Loading` → `.Empty` 높이 튐: 상세 `.Loading`이 차트 `.Loading`을 같은 자리에 써서 해결한다(`[8/18]`). 기기에서 겹쳐 찍어 확인한다.
 
 ### 라이브러리 보류

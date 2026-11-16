@@ -2,7 +2,11 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
-import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
+import {
+  formatDateKeyLabel,
+  formatHourLabel,
+  type TimeFormat,
+} from '@src/shared/date/format/date-format';
 import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -14,8 +18,10 @@ import {
   Box,
   DashedDivider,
   HStack,
+  LockIcon,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  RedactedText,
   Result,
   ScallopedContainer,
   Text,
@@ -23,13 +29,14 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatPercent } from '@src/shared/utils/number-format';
-import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { match, P } from 'ts-pattern';
 
+import type { ReportChart } from '../constants/report.events';
 import { isReportUnavailableError } from '../domains/report.error';
 import {
   type AiReport,
@@ -44,25 +51,66 @@ import {
   getHourlyCompletionCounts,
 } from '../utils/report-chart.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
+import type { ReportVisibility } from '../utils/report-visibility.view-model';
 import { CompletionHourChart } from './completion-hour-chart';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { DailyCompletionChart } from './daily-completion-chart';
 import { ReportTypeChip } from './report-type-chip';
 
 const LOADING_STAT_COUNT = 3;
+/** 무료 예시에서 가림 막대 없이 보이는 카테고리 수 */
+const TEASER_CATEGORY_COUNT = 1;
+const LOCK_ICON_SIZE = 14;
 
 export function ActivityReport() {
-  const { t } = useTranslation('ai');
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const [{ reportId }] = useRouteParams(reportParamsSchema);
 
-  // 시간대 차트 라벨이 시간 표기 설정을 읽으므로 리포트를 기다리는 동안 함께 받는다
-  usePrefetchQuery(useGetPreferenceQueryOptions());
-  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ reportId }));
+  // 시간대 차트 라벨이 시간 표기 설정을 읽으므로 리포트와 함께 받는다
+  const [{ data: report }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetReportDetailQueryOptions({ reportId }), useGetPreferenceQueryOptions()],
+  });
+  const accountId = useMyAccountId();
 
   useTrackView('ai_report_viewed', {
     key: String(reportId),
     params: { report_id: reportId, report_type: report.type },
   });
+
+  const handleFirstChartTap = (chart: ReportChart) => {
+    trackEvent('ai_report_chart_tapped', { chart });
+    if (accountId != null) {
+      trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
+    }
+  };
+
+  return (
+    <ActivityReport.Receipt
+      report={report}
+      // 서버가 AI_REPORT 권한을 확인하고 준 리포트라 모두 보인다
+      visibility="full"
+      timeFormat={preference.timeFormat}
+      onFirstChartTap={handleFirstChartTap}
+    />
+  );
+}
+
+interface ActivityReportReceiptProps {
+  report: AiReport;
+  visibility: ReportVisibility;
+  timeFormat: TimeFormat;
+  /** 차트마다 처음 누를 때 한 번 부른다. 예시 리포트는 넘기지 않아 지표를 남기지 않는다 */
+  onFirstChartTap?: (chart: ReportChart) => void;
+}
+
+/** 실제 리포트와 무료 예시가 함께 쓰는 리포트 영수증. 둘의 차이는 visibility 하나다 */
+ActivityReport.Receipt = function Receipt({
+  report,
+  visibility,
+  timeFormat,
+  onFirstChartTap,
+}: ActivityReportReceiptProps) {
+  const { t } = useTranslation('ai');
 
   const peakHour = ReportPolicy.getPeakHour(report);
 
@@ -103,6 +151,7 @@ export function ActivityReport() {
               <ActivityReport.DailyCompletions
                 reportType={report.type}
                 dailyCompletions={report.dailyCompletions}
+                onFirstTap={() => onFirstChartTap?.('daily_completions')}
               />
             </Box>
           </>
@@ -111,7 +160,13 @@ export function ActivityReport() {
           <>
             <DashedDivider />
             <Box className="py-4">
-              <ActivityReport.CompletionHours report={report} peakHour={peakHour} />
+              <ActivityReport.CompletionHours
+                report={report}
+                peakHour={peakHour}
+                timeFormat={timeFormat}
+                visibility={visibility}
+                onFirstTap={() => onFirstChartTap?.('completion_hours')}
+              />
             </Box>
           </>
         )}
@@ -119,34 +174,33 @@ export function ActivityReport() {
           <>
             <DashedDivider />
             <Box className="py-4">
-              <CategoryBreakdown items={report.categoryBreakdown} />
+              <CategoryBreakdown items={report.categoryBreakdown} visibility={visibility} />
             </Box>
           </>
         )}
         {(report.aiSummary.length > 0 || report.aiTips.length > 0) && (
           <Box className="py-4">
-            <ActivityReport.Coach report={report} />
+            <ActivityReport.Coach report={report} visibility={visibility} />
           </Box>
         )}
       </VStack>
     </ScallopedContainer>
   );
-}
+};
 
 interface DailyCompletionsProps {
   reportType: ReportType;
   dailyCompletions: DailyCompletion[];
+  onFirstTap?: () => void;
 }
 
 ActivityReport.DailyCompletions = function DailyCompletions({
   reportType,
   dailyCompletions,
+  onFirstTap,
 }: DailyCompletionsProps) {
   const { t } = useTranslation('ai');
-  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const dateFormatContext = useDateFormatContext();
-
-  const accountId = useMyAccountId();
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -169,10 +223,7 @@ ActivityReport.DailyCompletions = function DailyCompletions({
 
   const handleSelectedIndexChange = (index: number) => {
     if (selectedIndex == null) {
-      trackEvent('ai_report_chart_tapped', { chart: 'daily_completions' });
-      if (accountId != null) {
-        trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
-      }
+      onFirstTap?.();
     }
     setSelectedIndex(index);
   };
@@ -203,41 +254,42 @@ ActivityReport.DailyCompletions = function DailyCompletions({
 interface CompletionHoursProps {
   report: AiReport;
   peakHour: number;
+  timeFormat: TimeFormat;
+  visibility: ReportVisibility;
+  onFirstTap?: () => void;
 }
 
 ActivityReport.CompletionHours = function CompletionHours({
   report,
   peakHour,
+  timeFormat,
+  visibility,
+  onFirstTap,
 }: CompletionHoursProps) {
   const { t } = useTranslation('ai');
-  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const dateFormatContext = useDateFormatContext();
-
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const accountId = useMyAccountId();
 
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
   const hourlyCounts = getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>
-    formatHourLabel(hour, preference.timeFormat, dateFormatContext),
+    formatHourLabel(hour, timeFormat, dateFormatContext),
   );
   const valueLine =
     selectedHour == null
       ? t('report.detail.peakHour', {
-          hour: formatHourLabel(peakHour, preference.timeFormat, dateFormatContext),
+          hour: formatHourLabel(peakHour, timeFormat, dateFormatContext),
         })
       : t('report.detail.hourCompletions', {
-          hour: formatHourLabel(selectedHour, preference.timeFormat, dateFormatContext),
+          hour: formatHourLabel(selectedHour, timeFormat, dateFormatContext),
           count: hourlyCounts[selectedHour] ?? 0,
         });
+  // 무료 예시는 차트 모양과 누른 칸의 수만 보이고 가장 많이 끝낸 시간이라는 해석을 가린다
+  const isPeakHourHidden = visibility === 'teaser' && selectedHour == null;
 
   const handleSelectedHourChange = (hour: number) => {
     if (selectedHour == null) {
-      trackEvent('ai_report_chart_tapped', { chart: 'completion_hours' });
-      if (accountId != null) {
-        trackAttributedFeatureSuccess({ accountId, feature: 'ai_report' });
-      }
+      onFirstTap?.();
     }
     setSelectedHour(hour);
   };
@@ -254,18 +306,33 @@ ActivityReport.CompletionHours = function CompletionHours({
           selectedIndex={selectedHour}
           onSelectedIndexChange={handleSelectedHourChange}
           accessibilityLabel={t('report.detail.completionHours')}
-          accessibilityValue={{ text: valueLine }}
+          accessibilityValue={{
+            text: isPeakHourHidden ? t('report.teaser.hiddenLabel') : valueLine,
+          }}
           testID="report-hour-chart"
         />
-        <Text size="b4" shade={7} className="tabular-nums">
-          {valueLine}
-        </Text>
+        {isPeakHourHidden ? (
+          <RedactedText
+            size="b4"
+            className="w-48"
+            accessibilityLabel={t('report.teaser.hiddenLabel')}
+          />
+        ) : (
+          <Text size="b4" shade={7} className="tabular-nums">
+            {valueLine}
+          </Text>
+        )}
       </VStack>
     </VStack>
   );
 };
 
-ActivityReport.Coach = function Coach({ report }: { report: AiReport }) {
+interface CoachProps {
+  report: AiReport;
+  visibility: ReportVisibility;
+}
+
+ActivityReport.Coach = function Coach({ report, visibility }: CoachProps) {
   const { t } = useTranslation('ai');
   const fontScaledSize = useFontScaledSize();
 
@@ -291,21 +358,66 @@ ActivityReport.Coach = function Coach({ report }: { report: AiReport }) {
           </HStack>
         ))
         .exhaustive()}
-      {report.aiSummary.length > 0 && (
-        <Text size="b4" shade={8} className="leading-5">
-          {report.aiSummary}
-        </Text>
-      )}
-      {report.aiTips.map((tip, index) => (
-        <HStack key={tip} gap={8} className="items-start">
-          <Text size="b4" weight="bold" tone="brand">
-            {index + 1}.
-          </Text>
-          <Text size="b4" shade={7} className="flex-1 leading-5">
-            {tip}
-          </Text>
-        </HStack>
-      ))}
+      {match(visibility)
+        .with('full', () => (
+          <>
+            {report.aiSummary.length > 0 && (
+              <Text size="b4" shade={8} className="leading-5">
+                {report.aiSummary}
+              </Text>
+            )}
+            {report.aiTips.map((tip, index) => (
+              <HStack key={tip} gap={8} className="items-start">
+                <Text size="b4" weight="bold" tone="brand">
+                  {index + 1}.
+                </Text>
+                <Text size="b4" shade={7} className="flex-1 leading-5">
+                  {tip}
+                </Text>
+              </HStack>
+            ))}
+          </>
+        ))
+        // 첫 줄로 어떤 글인지 보이고 나머지 해석과 팁은 가린다
+        .with('teaser', () => (
+          <>
+            {report.aiSummary.length > 0 && (
+              <VStack>
+                <Text size="b4" shade={8} numberOfLines={1}>
+                  {report.aiSummary}
+                </Text>
+                <RedactedText
+                  size="b4"
+                  lineCount={2}
+                  accessibilityLabel={t('report.teaser.hiddenLabel')}
+                />
+              </VStack>
+            )}
+            {report.aiTips.map((tip, index) => (
+              <HStack key={tip} gap={8} className="items-start">
+                <Text size="b4" weight="bold" tone="brand">
+                  {index + 1}.
+                </Text>
+                <RedactedText
+                  size="b4"
+                  className="flex-1"
+                  accessibilityLabel={t('report.teaser.hiddenLabel')}
+                />
+              </HStack>
+            ))}
+            <HStack align="center" gap={4}>
+              <LockIcon
+                width={fontScaledSize(LOCK_ICON_SIZE)}
+                height={fontScaledSize(LOCK_ICON_SIZE)}
+                colorClassName="text-gray-6"
+              />
+              <Text size="e1" shade={6} className="flex-1">
+                {t('report.teaser.coachHint')}
+              </Text>
+            </HStack>
+          </>
+        ))
+        .exhaustive()}
     </VStack>
   );
 };
@@ -424,35 +536,84 @@ Stat.Loading = function Loading() {
   );
 };
 
-function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) {
+interface CategoryBreakdownProps {
+  items: AiReport['categoryBreakdown'];
+  visibility: ReportVisibility;
+}
+
+function CategoryBreakdown({ items, visibility }: CategoryBreakdownProps) {
   const { t } = useTranslation('ai');
-  const { locale } = useDateFormatContext();
+
   return (
     <VStack gap={16}>
       <Text size="b3" weight="semibold" shade={9}>
         {t('report.detail.categoryBreakdown')}
       </Text>
-      {items.map((item) => (
-        <VStack key={item.name} gap={4}>
-          <HStack justify="between" align="center">
-            <HStack align="center" gap={6}>
-              <Box className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-              <Text size="b4" shade={8}>
-                {item.name}
-              </Text>
-            </HStack>
-            <Text size="b4" shade={6}>
-              {item.completed}/{item.total} ({formatPercent(item.rate, locale)})
-            </Text>
-          </HStack>
-          <Box className="h-2 overflow-hidden rounded-full bg-gray-3">
-            <Box
-              className="h-full rounded-full"
-              style={{ width: `${item.rate}%`, backgroundColor: item.color }}
-            />
-          </Box>
-        </VStack>
-      ))}
+      {items.map((item, index) =>
+        visibility === 'teaser' && TEASER_CATEGORY_COUNT <= index ? (
+          <HiddenCategoryRow key={item.name} item={item} />
+        ) : (
+          <CategoryRow key={item.name} item={item} />
+        ),
+      )}
     </VStack>
+  );
+}
+
+function CategoryRow({ item }: { item: AiReport['categoryBreakdown'][number] }) {
+  const { locale } = useDateFormatContext();
+
+  return (
+    <VStack gap={4}>
+      <HStack justify="between" align="center">
+        <HStack align="center" gap={6}>
+          <Box className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+          <Text size="b4" shade={8}>
+            {item.name}
+          </Text>
+        </HStack>
+        <Text size="b4" shade={6}>
+          {item.completed}/{item.total} ({formatPercent(item.rate, locale)})
+        </Text>
+      </HStack>
+      <CategoryRateBar item={item} />
+    </VStack>
+  );
+}
+
+/** 이름과 수는 가리고 색과 막대 모양만 남겨 카테고리가 몇 개 더 있는지 보인다 */
+function HiddenCategoryRow({ item }: { item: AiReport['categoryBreakdown'][number] }) {
+  const { t } = useTranslation('ai');
+
+  return (
+    <VStack gap={4} accessible accessibilityLabel={t('report.teaser.hiddenCategory')}>
+      <HStack justify="between" align="center">
+        <HStack align="center" gap={6}>
+          <Box className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+          <RedactedText
+            size="b4"
+            className="w-16"
+            accessibilityLabel={t('report.teaser.hiddenCategory')}
+          />
+        </HStack>
+        <RedactedText
+          size="b4"
+          className="w-20"
+          accessibilityLabel={t('report.teaser.hiddenCategory')}
+        />
+      </HStack>
+      <CategoryRateBar item={item} />
+    </VStack>
+  );
+}
+
+function CategoryRateBar({ item }: { item: AiReport['categoryBreakdown'][number] }) {
+  return (
+    <Box className="h-2 overflow-hidden rounded-full bg-gray-3">
+      <Box
+        className="h-full rounded-full"
+        style={{ width: `${item.rate}%`, backgroundColor: item.color }}
+      />
+    </Box>
   );
 }

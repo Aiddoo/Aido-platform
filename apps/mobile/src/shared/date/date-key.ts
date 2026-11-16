@@ -220,6 +220,18 @@ export function getIsoWeekYear(dateKey: DateKey): number {
   return fromEpochDay(epochDay - getDaysSinceMonday(epochDay) + WEEK_MIDDLE_DAY_OFFSET).year;
 }
 
+/** 그 날이 속한 ISO 주의 번호(1~53). 서버 리포트의 주간 period와 같다 (2027-01-01 → 2026년 53주) */
+export function getIsoWeekNumber(dateKey: DateKey): number {
+  const epochDay = toEpochDay(dateKey);
+  const thursdayEpochDay = epochDay - getDaysSinceMonday(epochDay) + WEEK_MIDDLE_DAY_OFFSET;
+  const newYearsDay = formatDateKey({
+    year: fromEpochDay(thursdayEpochDay).year,
+    month: 1,
+    day: 1,
+  });
+  return Math.floor((thursdayEpochDay - toEpochDay(newYearsDay)) / DAYS_PER_WEEK) + 1;
+}
+
 export function getDaysInDateKeyMonth(dateKey: DateKey): number {
   const date = toCivilDate(dateKey);
   return getDaysInMonth(date.year, date.month);

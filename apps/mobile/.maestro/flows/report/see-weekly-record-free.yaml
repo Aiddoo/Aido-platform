@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 무료 계정은 리포트 화면에서 이번 주 내 기록을 보고 잠금 카드로 페이월에 간다
+name: 무료 계정은 리포트 화면에서 이번 주 내 기록과 예시 리포트를 보고 예시 상세에서 페이월에 간다
 tags:
   - regression
   - report
@@ -24,25 +24,45 @@ onFlowComplete:
 
 # When: 리포트 화면을 연다
 - openLink: ${output.config.appScheme}://reports
-# Then: 이번 주 내 기록과 잠금 카드의 구독 버튼이 보인다
+# Then: 이번 주 내 기록과 예시 리포트, 목록의 구독 버튼이 보인다
 - extendedWaitUntil:
     visible:
       id: ${output.ids.report.thisWeekRecord}
     timeout: 20000
-- extendedWaitUntil:
-    visible:
-      id: ${output.ids.report.freeSubscribe}
-    timeout: 10000
 # 막대 차트 worklet 오류는 개발 빌드에서 오류 창이 덮을 뿐 뒤 요소는 그대로 보인다. 창은 1초까지 늦게 떠 기다린 뒤 본다
 - extendedWaitUntil:
     visible: ${output.labels.devErrorOverlay}
     timeout: 3000
     optional: true
 - assertNotVisible: ${output.labels.devErrorOverlay}
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.report.sampleLatest}
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.report.freeSubscribe}
 
-# When: 잠금 카드의 구독 버튼을 누른다
+# When: 맨 위 예시 리포트 카드를 누른다
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.report.sampleLatest}
+    direction: UP
 - tapOn:
-    id: ${output.ids.report.freeSubscribe}
+    id: ${output.ids.report.sampleLatest}
+# Then: 예시 안내와 실제 리포트와 같은 요약이 보인다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.report.sampleNotice}
+    timeout: 10000
+- assertVisible:
+    id: ${output.ids.report.summary}
+
+# When: 예시 상세 맨 아래 구독 버튼을 누른다
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.report.sampleSubscribe}
+- tapOn:
+    id: ${output.ids.report.sampleSubscribe}
 # Then: 페이월이 열린다
 - extendedWaitUntil:
     visible:

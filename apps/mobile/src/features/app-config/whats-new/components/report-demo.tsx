@@ -14,18 +14,8 @@ import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  Box,
-  DashedDivider,
-  HStack,
-  LabelChip,
-  LockIcon,
-  ScallopedContainer,
-  Text,
-  VStack,
-} from '@src/shared/ui';
+import { Box, DashedDivider, ScallopedContainer, Text, VStack } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { useState } from 'react';
@@ -34,8 +24,6 @@ import { match } from 'ts-pattern';
 import { DEMO_REPORT, DEMO_SCRIPT_MS, DEMO_THIS_WEEK } from '../constants/release-1-16-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
-
-const LOCK_ICON_SIZE = 16;
 
 const DEMO_REPORT_DAYS: readonly WeeklyRecordDay[] = DEMO_REPORT.dailyCompletions.map(
   (day, offset) => ({
@@ -85,7 +73,7 @@ export function ReportHoursDemo() {
             </Box>
           )}
           <Box className="py-4">
-            <ActivityReport.Coach report={report} />
+            <ActivityReport.Coach report={report} visibility="full" />
           </Box>
         </VStack>
       </ScallopedContainer>
@@ -93,46 +81,22 @@ export function ReportHoursDemo() {
   );
 }
 
+/** 무료 사용자가 예시 리포트에서 보는 것과 같은 가린 코치 카드를 이번 주 기록 아래에 둔다 */
 export function FreeRecordDemo() {
-  const { t } = useTranslation(['ai', 'subscription']);
-  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('ai');
+
+  const report = useDemoReport();
 
   return (
     <WhatsNewStep.Stage>
       <ScallopedContainer>
         <VStack gap={16} className="px-4 py-2">
           <DemoDailyCompletions
-            title={t('ai:report.thisWeek.title')}
+            title={t('report.thisWeek.title')}
             days={getWeeklyRecordDays(DEMO_THIS_WEEK.completionsByDate, DEMO_THIS_WEEK.todayKey)}
           />
 
-          <VStack gap={12} className="rounded-2xl bg-gray-1 p-4">
-            <HStack align="center" gap={6}>
-              <LabelChip
-                color="accent"
-                label={t('subscription:tier.premium')}
-                labelProps={{ weight: 'semibold', numberOfLines: 1 }}
-                pointerEvents="none"
-              />
-              <LockIcon
-                width={fontScaledSize(LOCK_ICON_SIZE)}
-                height={fontScaledSize(LOCK_ICON_SIZE)}
-                colorClassName="text-gray-5"
-              />
-            </HStack>
-            <VStack
-              gap={8}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              <Box className="h-6 w-40 rounded-md bg-gray-3" />
-              <Box className="h-4 w-full rounded-md bg-gray-2" />
-              <Box className="h-4 w-4/5 rounded-md bg-gray-2" />
-            </VStack>
-            <Text size="b4" shade={7}>
-              {t('ai:report.list.lockDescription')}
-            </Text>
-          </VStack>
+          <ActivityReport.Coach report={report} visibility="teaser" />
         </VStack>
       </ScallopedContainer>
     </WhatsNewStep.Stage>
