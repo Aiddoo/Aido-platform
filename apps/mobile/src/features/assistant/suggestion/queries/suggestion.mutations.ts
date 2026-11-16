@@ -14,7 +14,11 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import type { SuggestionActionSource } from '../constants/suggestion.events';
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
 import { formatRepeatDays } from '../utils/suggestion-schedule.view-model';
-import { invalidateAiSuggestions, setSuggestionAnalysisInCache } from './suggestion-cache';
+import {
+  cancelAiSuggestionList,
+  invalidateAiSuggestions,
+  setSuggestionAnalysisInCache,
+} from './suggestion-cache';
 import { SUGGESTION_MUTATION_KEYS } from './suggestion-mutation-keys';
 
 interface ActOnSuggestionVariables {
@@ -90,16 +94,16 @@ export function useRequestSuggestionAnalysisMutationOptions() {
     networkMode: 'always',
     mutationKey: SUGGESTION_MUTATION_KEYS.requestAnalysis(),
     mutationFn: async () => unwrap(await suggestionApi.requestAnalysis()),
+    onMutate: () => cancelAiSuggestionList(queryClient),
+    // 응답이 분석 상태를 모두 담고, 결과는 분석 중 상태의 refetchInterval이 받아 다시 받지 않는다
     onSuccess: (analysis) => {
       setSuggestionAnalysisInCache(queryClient, analysis);
     },
-    onSettled: async (_analysis, error) => {
+    onSettled: (_analysis, error) => {
       // 서버에 닿지 않은 실패는 다시 받기도 재시도·연결 대기로 길어진다. 기다리지 않아야 버튼을 바로 다시 누른다
       if (error != null) {
         invalidateAiSuggestions(queryClient);
-        return;
       }
-      await invalidateAiSuggestions(queryClient);
     },
     meta: { errorFeedback: { feature: 'ai', fallbackKey: 'ai:suggestions.toasts.retryLater' } },
   });

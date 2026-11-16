@@ -13,7 +13,6 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { useCallback } from 'react';
 import { View } from 'react-native';
 import {
   Directions,
@@ -35,7 +34,6 @@ import { WhatsNewStep } from './whats-new-step';
 const SCREEN_EDGE_INSET = 24;
 /** 마무리는 고를 카드가 아래에 붙어 있어, 작은 화면·큰 글꼴에서 그림이 먼저 줄고 질문 제목이 보이게 한다 */
 const FINISH_MEDIA_MIN_HEIGHT = 120;
-const FINISH_CAT_SIZE = 140;
 const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
@@ -69,12 +67,12 @@ export function Release1160Steps() {
   const { step, history } = stepper;
   const position = getStepPosition(step);
 
-  const goNext = useCallback(() => {
+  const goNext = () => {
     const next = findNextStep(step);
     if (next != null) {
       history.push(next, {});
     }
-  }, [step, history]);
+  };
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
   const flingNext = useFlingGesture({
     direction: Directions.LEFT,
@@ -273,10 +271,7 @@ function FinishMedia() {
             {t('v1_16_0.finish.bubble')}
           </Text>
         </HStack>
-        <Mascot
-          name="catSuggestion"
-          style={{ height: FINISH_CAT_SIZE, aspectRatio: 1, flexShrink: 1, minHeight: 0 }}
-        />
+        <Mascot name="catSuggestion" className="aspect-square h-35 min-h-0 shrink" />
       </VStack>
     </Box>
   );

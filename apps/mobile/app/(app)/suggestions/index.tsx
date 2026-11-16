@@ -7,6 +7,7 @@ import {
   QueryErrorBoundary,
   ReadableContent,
   SafeAreaScrollView,
+  ScallopedContainer,
   Spacing,
   TintedRefreshControl,
 } from '@src/shared/ui';
@@ -34,31 +35,17 @@ export default function SuggestionsScreen() {
 
         {match(featureAccess.status)
           .with('premium', () => (
-            <>
-              <QueryErrorBoundary fallback={SuggestionStatus.Error}>
-                <Suspense fallback={<SuggestionStatus.Loading />}>
+            // 상태 머리와 제안 줄이 같은 목록 쿼리를 읽어 경계 하나로 묶는다. 실패하면 다시 시도 하나가 둘을 함께 다시 받는다
+            <QueryErrorBoundary fallback={SuggestionsList.Error}>
+              <Suspense fallback={<SuggestionStatus.Loading />}>
+                <ScallopedContainer testID="suggestions-status">
                   <SuggestionStatus />
-                </Suspense>
-              </QueryErrorBoundary>
-
-              <Spacing size={12} />
-
-              <QueryErrorBoundary fallback={SuggestionsList.Error}>
-                <Suspense fallback={<SuggestionsList.Loading />}>
                   <SuggestionsList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </>
+                </ScallopedContainer>
+              </Suspense>
+            </QueryErrorBoundary>
           ))
-          .with('free', () => (
-            <>
-              <SuggestionStatus.Free />
-
-              <Spacing size={12} />
-
-              <SuggestionsList.Free />
-            </>
-          ))
+          .with('free', () => <SuggestionsList.Free />)
           .with('error', () => (
             <SuggestionStatus.Error
               error={featureAccess.error}

@@ -12,6 +12,11 @@ export function refreshAiSuggestions(queryClient: QueryClient) {
   return queryClient.refetchQueries({ queryKey: SUGGESTION_QUERY_KEYS.all, type: 'active' });
 }
 
+/** 분석 요청 응답을 쓰기 전에 함께 받던 목록이 그 응답을 옛 상태로 덮지 않게 멈춘다 */
+export function cancelAiSuggestionList(queryClient: QueryClient) {
+  return queryClient.cancelQueries({ queryKey: SUGGESTION_QUERY_KEYS.list(), exact: true });
+}
+
 export function setSuggestionAnalysisInCache(
   queryClient: QueryClient,
   analysis: SuggestionAnalysis,

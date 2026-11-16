@@ -1,4 +1,5 @@
 import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api/vocabulary';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 
@@ -130,6 +131,15 @@ export function formatRelativeTimeLabel(
     },
     context,
   );
+}
+
+/** 일수를 기간으로 쓴다. 주로 나누어떨어지면 주로 읽는다(14 → ko "2주", en "2 weeks", 10 → "10일") */
+export function formatDayCountLabel(days: number, context: DateFormatContext): string {
+  const lng = toLanguageOfIntlLocale(context.locale);
+  if (days % DAYS_PER_WEEK === 0) {
+    return t('common:dayCount.weeks', { lng, count: days / DAYS_PER_WEEK });
+  }
+  return t('common:dayCount.days', { lng, count: days });
 }
 
 /** 기간의 두 끝을 잇는다. 구분자는 언어마다 카탈로그 하나(ko "~", en "–")이고 날짜·시각 어느 끝이든 쓴다 */

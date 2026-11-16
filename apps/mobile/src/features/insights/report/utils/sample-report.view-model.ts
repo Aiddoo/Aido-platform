@@ -15,7 +15,7 @@ import {
 } from '@src/shared/date/date-key';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
 import { t } from '@src/shared/i18n';
-import { range, sumBy, takeRightWhile } from 'es-toolkit';
+import { orderBy, range, sumBy, take, takeRightWhile } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
@@ -27,11 +27,7 @@ import {
   SAMPLE_TRAILING_PERFECT_DAYS,
 } from '../constants/sample-report.constants';
 import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
-
-interface SampleTrendWeek {
-  startDate: DateKey;
-  completionRate: number;
-}
+import type { TrendWeek } from './report-chart.view-model';
 
 interface SampleReportContext {
   todayKey: DateKey;
@@ -67,10 +63,7 @@ export function createSampleReport(
     categoryBreakdown: createSampleCategories(totalTodos, completedTodos, language),
     timePatterns: createSampleTimePatterns(completedTodos),
     dailyCompletions,
-    aiSummary: match(type)
-      .with('WEEKLY', () => t('ai:report.sample.weekly.summary', { lng: language }))
-      .with('MONTHLY', () => t('ai:report.sample.monthly.summary', { lng: language }))
-      .exhaustive(),
+    aiSummary: t(getSampleSummaryKey(type, periodsAgo), { lng: language }),
     aiTips: match(type)
       .with('WEEKLY', () => [
         t('ai:report.sample.weekly.tips.workout', { lng: language }),
@@ -89,7 +82,7 @@ export function createSampleReport(
 }
 
 /** 예시 최근 리포트 카드의 주별 완료율 추세. 오래된 주부터 온다 */
-export function getSampleTrendWeeks(todayKey: DateKey): SampleTrendWeek[] {
+export function getSampleTrendWeeks(todayKey: DateKey): TrendWeek[] {
   return range(TREND_WEEK_COUNT, 0, -1).map((weeksAgo) => ({
     startDate: getSamplePeriod('WEEKLY', weeksAgo, todayKey).startDate,
     completionRate: getSampleCompletionRate('WEEKLY', weeksAgo, todayKey),
@@ -194,15 +187,46 @@ function createSampleCategory(
 
 function createSampleTimePatterns(completedTodos: number): AiReport['timePatterns'] {
   const weightSum = sumBy(SAMPLE_COMPLETION_HOUR_WEIGHTS, (item) => item.weight);
-  const patterns = SAMPLE_COMPLETION_HOUR_WEIGHTS.map(({ hour, weight }) => ({
-    hour,
-    count: Math.floor((completedTodos * weight) / weightSum),
-  }));
-  // 나눠 떨어지지 않은 몫은 가장 많이 끝낸 첫 시각에 더해 합이 끝낸 할 일 수와 같다
-  const remainder = completedTodos - sumBy(patterns, (pattern) => pattern.count);
-  return patterns.map((pattern, index) =>
-    index === 0 ? { ...pattern, count: pattern.count + remainder } : pattern,
+  const shares = SAMPLE_COMPLETION_HOUR_WEIGHTS.map(({ hour, weight }) => {
+    const exact = (completedTodos * weight) / weightSum;
+    return { hour, count: Math.floor(exact), fraction: exact - Math.floor(exact) };
+  });
+  // 나눠 떨어지지 않은 몫은 소수점 아래가 큰 시각부터 하나씩 더해(최대 나머지 방식) 합이 끝낸 할 일 수와 같고 비중을 따른다
+  const remainder = completedTodos - sumBy(shares, (share) => share.count);
+  const roundedUpHours = new Set(
+    take(orderBy(shares, ['fraction'], ['desc']), remainder).map((share) => share.hour),
   );
+  return shares.map(({ hour, count }) => ({
+    hour,
+    count: roundedUpHours.has(hour) ? count + 1 : count,
+  }));
+}
+
+/** 목록 카드가 같은 글을 되풀이하지 않게 기간마다 다른 코치 글이다. 글 속 숫자는 그 기간 예시 기록과 같다 */
+function getSampleSummaryKey(type: ReportType, periodsAgo: number) {
+  const keys = match(type)
+    .with(
+      'WEEKLY',
+      () =>
+        [
+          'ai:report.sample.weekly.summaries.lastWeek',
+          'ai:report.sample.weekly.summaries.twoWeeksAgo',
+          'ai:report.sample.weekly.summaries.threeWeeksAgo',
+          'ai:report.sample.weekly.summaries.fourWeeksAgo',
+        ] as const,
+    )
+    .with(
+      'MONTHLY',
+      () =>
+        [
+          'ai:report.sample.monthly.summaries.lastMonth',
+          'ai:report.sample.monthly.summaries.twoMonthsAgo',
+          'ai:report.sample.monthly.summaries.threeMonthsAgo',
+          'ai:report.sample.monthly.summaries.fourMonthsAgo',
+        ] as const,
+    )
+    .exhaustive();
+  return keys[periodsAgo - 1] ?? keys[0];
 }
 
 function getSamplePeriodYear(type: ReportType, startDate: DateKey): number {

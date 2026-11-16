@@ -8,7 +8,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense } from 'react';
 import { match } from 'ts-pattern';
@@ -68,12 +68,15 @@ SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
 function PremiumSuggestionEntry() {
   const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
+  // 분석 중 polling이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다
+  const isFocused = useIsFocused();
   const { data: view } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
     select: (list) => ({
       state: getSuggestionDisplayState(list),
       count: list.suggestions.length,
     }),
+    subscribed: isFocused,
   });
 
   const label = match(view.state)

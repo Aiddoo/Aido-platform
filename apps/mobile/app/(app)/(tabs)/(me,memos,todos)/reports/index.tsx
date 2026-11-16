@@ -7,10 +7,7 @@ import { useReportType } from '@src/features/insights/report/hooks/use-report-ty
 import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { getReportTypeLabelKey } from '@src/features/insights/report/utils/report-label.view-model';
-import { getReportVisibility } from '@src/features/insights/report/utils/report-visibility.view-model';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -41,12 +38,8 @@ export default function ReportsScreen() {
   const queryClient = useQueryClient();
   const featureAccess = useFeatureAccess('AI_REPORT');
   const [reportType] = useReportType();
-  const todayKey = useTodayKey();
   const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([
-      refreshReports(queryClient),
-      refreshWeeklyAchievements(queryClient, { year: getIsoWeekYear(todayKey) }),
-    ]),
+    Promise.all([refreshReports(queryClient), refreshWeeklyAchievements(queryClient)]),
   );
 
   return (
@@ -101,7 +94,7 @@ export default function ReportsScreen() {
                 </ScallopedContainer>
               </VStack>
             ))
-            .with('free', (status) => (
+            .with('free', () => (
               <ScallopedContainer>
                 <Intro
                   title={t('report.list.freeTitle')}
@@ -115,7 +108,7 @@ export default function ReportsScreen() {
                 <Spacing size={8} />
 
                 <Box className="px-4">
-                  <ReportList.Free visibility={getReportVisibility(status)} />
+                  <ReportList.Free />
                 </Box>
 
                 <Spacing size={16} />
@@ -182,7 +175,7 @@ interface IntroProps {
 function Intro({ title, description }: IntroProps) {
   return (
     <Box className="items-center px-5 pt-4">
-      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+      <Intro.CatTile />
 
       <Spacing size={8} />
 
@@ -196,10 +189,19 @@ function Intro({ title, description }: IntroProps) {
   );
 }
 
+/** 몸 아래가 잘린 그림이라 띄워 두면 잘려 보인다. 제안 화면 머리와 같이 칸 바닥에 앉힌다 */
+Intro.CatTile = function CatTile() {
+  return (
+    <Box className="h-18 w-24 items-center justify-end overflow-hidden rounded-2xl bg-highlight">
+      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+    </Box>
+  );
+};
+
 Intro.Loading = function Loading() {
   return (
     <Box className="items-center px-5 pt-4">
-      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+      <Intro.CatTile />
 
       <Spacing size={8} />
 
@@ -213,7 +215,7 @@ Intro.Loading = function Loading() {
 Intro.Error = function ErrorFallback() {
   return (
     <Box className="items-center px-5 pt-4">
-      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+      <Intro.CatTile />
 
       <Spacing size={8} />
     </Box>

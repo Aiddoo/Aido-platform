@@ -22,6 +22,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import {
   CHART_LABEL_GAP_PT,
   CHART_REVEAL_EASING,
+  CHART_TAP_MAX_DISTANCE_PT,
   DAILY_CHART_ASPECT_RATIO,
   DAILY_CHART_BAR,
 } from '../constants/report-chart.constants';
@@ -129,6 +130,7 @@ export function DailyCompletionChart({
   };
 
   const tap = useTapGesture({
+    maxDistance: CHART_TAP_MAX_DISTANCE_PT,
     onActivate: (event) => {
       'worklet';
       scheduleOnRN(handleSelect, toBarIndex(event.x, width.get(), barCount));

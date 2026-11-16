@@ -3,9 +3,9 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
+import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { dismissToTab } from '@src/shared/navigation/open-entry-href';
@@ -28,7 +28,7 @@ import { Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getNextAnalysisLabels } from '../utils/suggestion-schedule.view-model';
@@ -36,6 +36,7 @@ import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model
 
 const SUGGESTION_STATUS_MASCOT_SIZE = 64;
 
+/** 제안 영수증의 머리. 영수증 틀(ScallopedContainer)과 아래 제안 줄은 스크린이 잇는다 */
 export function SuggestionStatus() {
   const isFocused = useIsFocused();
   const { data: list } = useSuspenseQuery({
@@ -55,33 +56,29 @@ export function SuggestionStatus() {
       : null,
   );
 
-  return (
-    <ScallopedContainer testID="suggestions-status">
-      {match(displayState)
-        .with('HAS_SUGGESTIONS', () => (
-          <SuggestionStatus.HasSuggestions count={list.suggestions.length} />
-        ))
-        .with('ANALYZING', () => <SuggestionStatus.Analyzing />)
-        .with('DONE_FOR_TODAY', () => (
-          <SuggestionStatus.DoneForToday nextAnalysisAt={analysis?.nextAnalysisAt} />
-        ))
-        .with('NO_PATTERN_FOUND', () => (
-          <SuggestionStatus.NoPatternFound nextAnalysisAt={analysis?.nextAnalysisAt} />
-        ))
-        .with('UNAVAILABLE_TODAY', () => (
-          <SuggestionStatus.UnavailableToday nextAnalysisAt={analysis?.nextAnalysisAt} />
-        ))
-        .with('NEEDS_MORE_TODOS', () => <SuggestionStatus.NeedsMoreTodos />)
-        .with('NEEDS_AI_CONSENT', () => <SuggestionStatus.NeedsAiConsent />)
-        .with('WAITING_FOR_NEXT_RUN', () => (
-          <SuggestionStatus.WaitingForNextRun
-            canRequestNow={analysis?.canRequestNow ?? false}
-            nextAnalysisAt={analysis?.nextAnalysisAt}
-          />
-        ))
-        .exhaustive()}
-    </ScallopedContainer>
-  );
+  return match(displayState)
+    .with('HAS_SUGGESTIONS', () => (
+      <SuggestionStatus.HasSuggestions count={list.suggestions.length} />
+    ))
+    .with('ANALYZING', () => <SuggestionStatus.Analyzing />)
+    .with('DONE_FOR_TODAY', () => (
+      <SuggestionStatus.DoneForToday nextAnalysisAt={analysis?.nextAnalysisAt} />
+    ))
+    .with('NO_PATTERN_FOUND', () => (
+      <SuggestionStatus.NoPatternFound nextAnalysisAt={analysis?.nextAnalysisAt} />
+    ))
+    .with('UNAVAILABLE_TODAY', () => (
+      <SuggestionStatus.UnavailableToday nextAnalysisAt={analysis?.nextAnalysisAt} />
+    ))
+    .with('NEEDS_MORE_TODOS', () => <SuggestionStatus.NeedsMoreTodos />)
+    .with('NEEDS_AI_CONSENT', () => <SuggestionStatus.NeedsAiConsent />)
+    .with('WAITING_FOR_NEXT_RUN', () => (
+      <SuggestionStatus.WaitingForNextRun
+        canRequestNow={analysis?.canRequestNow ?? false}
+        nextAnalysisAt={analysis?.nextAnalysisAt}
+      />
+    ))
+    .exhaustive();
 }
 
 interface NextAnalysisProps {
@@ -92,6 +89,7 @@ interface WaitingForNextRunProps extends NextAnalysisProps {
   canRequestNow: boolean;
 }
 
+/** 제안 줄이 바로 아래 이어져 행동 줄 자리를 두지 않는다 */
 SuggestionStatus.HasSuggestions = function HasSuggestions({ count }: { count: number }) {
   const { t } = useTranslation('ai');
   return (
@@ -104,13 +102,14 @@ SuggestionStatus.HasSuggestions = function HasSuggestions({ count }: { count: nu
 
 SuggestionStatus.Analyzing = function Analyzing() {
   const { t } = useTranslation('ai');
-  const spinnerColor = useResolvedColor('text-main');
   return (
     <SuggestionStatus.Message
       title={t('suggestions.status.analyzing')}
       description={t('suggestions.status.analyzingDescription')}
     >
-      <Spinner size="sm" color={spinnerColor} />
+      <SuggestionStatus.ActionRow>
+        <Spinner size="sm" color="accent" />
+      </SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );
 };
@@ -149,6 +148,7 @@ SuggestionStatus.UnavailableToday = function UnavailableToday({
 
 SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
   // 할 일을 쓰는 원래 자리인 오늘 피드에서 시트를 열어 만든 할 일이 바로 뒤에 보이게 한다
   const leaveToFeed = useSingleTap(dismissToTab);
 
@@ -158,11 +158,15 @@ SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
   return (
     <SuggestionStatus.Message
       title={t('suggestions.status.needsMoreTodos')}
-      description={t('suggestions.status.needsMoreTodosDescription')}
+      description={t('suggestions.status.needsMoreTodosDescription', {
+        period: formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext),
+      })}
     >
-      <Button size="small" display="inline" onPress={handleAddTodoPress}>
-        {t('suggestions.status.addTodo')}
-      </Button>
+      <SuggestionStatus.ActionRow>
+        <Button size="small" display="inline" onPress={handleAddTodoPress}>
+          {t('suggestions.status.addTodo')}
+        </Button>
+      </SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );
 };
@@ -172,7 +176,7 @@ SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
   const aiConsent = useAiDataSharingConsentGate();
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
 
-  // 동의를 저장하면 안내는 바로 숨고 제안 상태는 다시 받는 중이라 그동안 빈 카드 대신 받는 중 틀을 둔다
+  // 동의를 저장하면 안내는 바로 숨고 제안 상태는 다시 받는 중이라 그동안 빈 머리 대신 받는 중 틀을 둔다
   if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
     return <StatusSkeleton />;
   }
@@ -182,9 +186,11 @@ SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
       title={t('consent.notice.suggestions')}
       description={t('suggestions.status.needsAiConsentDescription')}
     >
-      <Button size="small" display="inline" onPress={() => aiConsent.requestAgreement()}>
-        {t('consent.notice.action')}
-      </Button>
+      <SuggestionStatus.ActionRow>
+        <Button size="small" display="inline" onPress={() => aiConsent.requestAgreement()}>
+          {t('consent.notice.action')}
+        </Button>
+      </SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );
 };
@@ -252,15 +258,26 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
   );
 };
 
+/**
+ * 버튼·스피너 자리. 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다.
+ * 제안 줄이 이어지는 상태(HasSuggestions·무료 예시)는 목록이 아래를 채워 두지 않는다
+ */
+SuggestionStatus.ActionRow = function ActionRow({ children }: { children?: ReactNode }) {
+  return (
+    <>
+      <Spacing size={12} />
+      <Box className="h-8 items-center justify-center">{children}</Box>
+    </>
+  );
+};
+
 SuggestionStatus.Free = function Free() {
   const { t } = useTranslation('ai');
   return (
-    <ScallopedContainer testID="suggestions-status">
-      <SuggestionStatus.Message
-        title={t('suggestions.paywall.title')}
-        description={t('suggestions.paywall.description')}
-      />
-    </ScallopedContainer>
+    <SuggestionStatus.Message
+      title={t('suggestions.paywall.title')}
+      description={t('suggestions.paywall.description')}
+    />
   );
 };
 
@@ -272,11 +289,7 @@ SuggestionStatus.Loading = function Loading() {
   );
 };
 
-SuggestionStatus.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
-  if (isSuggestionsPremiumRequiredError(error)) {
-    return <SuggestionStatus.Free />;
-  }
-
+SuggestionStatus.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return (
     <ScallopedContainer>
       <Box className="px-5 py-6">
@@ -294,14 +307,16 @@ interface StatusLayoutProps {
 
 function StatusLayout({ title, description, children }: StatusLayoutProps) {
   return (
-    <VStack align="center" className="px-5 pt-4 pb-5">
-      <Mascot name="catSuggestion" size={SUGGESTION_STATUS_MASCOT_SIZE} />
+    <VStack align="center" className="px-5 pt-5 pb-5">
+      {/* 몸 아래가 잘린 그림이라 띄워 두면 잘려 보인다. 새 기능 소개·초대 카드처럼 칸 바닥에 앉힌다 */}
+      <Box className="h-18 w-24 items-center justify-end overflow-hidden rounded-2xl bg-highlight">
+        <Mascot name="catSuggestion" size={SUGGESTION_STATUS_MASCOT_SIZE} />
+      </Box>
       <Spacing size={8} />
       {title}
       <Spacing size={4} />
       {description}
-      <Spacing size={12} />
-      <Box className="h-8 items-center justify-center">{children}</Box>
+      {children}
     </VStack>
   );
 }
@@ -311,7 +326,9 @@ function StatusSkeleton() {
     <StatusLayout
       title={<TextSkeleton size="t3" className="w-48" />}
       description={<TextSkeleton size="b4" className="w-56" />}
-    />
+    >
+      <SuggestionStatus.ActionRow />
+    </StatusLayout>
   );
 }
 
@@ -334,7 +351,7 @@ function NextAnalysisMessage({ title, nextAnalysisAt, children }: NextAnalysisMe
 
   return (
     <SuggestionStatus.Message title={title} description={description}>
-      {children}
+      <SuggestionStatus.ActionRow>{children}</SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );
 }

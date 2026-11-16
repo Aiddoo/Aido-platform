@@ -1,12 +1,12 @@
-import { DAYS_OF_WEEK, USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
+import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK, USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
+import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -18,25 +18,21 @@ import {
   ScallopedContainer,
   Spacing,
   Text,
-  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
 import { router, useIsFocused } from 'expo-router';
-import { Skeleton } from 'heroui-native';
-import { match } from 'ts-pattern';
 
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
-
-const SUGGESTION_LOADING_COUNT = 2;
+import { SuggestionStatus } from './suggestion-status';
 
 interface SuggestionItemProps {
-  suggestion: AiSuggestion;
+  suggestion: Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime' | 'evidence'>;
   timeFormat: TimeFormat;
   onMake: () => void;
   onDismiss: () => void;
@@ -44,16 +40,10 @@ interface SuggestionItemProps {
   isLast?: boolean;
 }
 
-interface ExampleItemProps extends Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime'> {
-  evidence: Pick<NonNullable<AiSuggestion['evidence']>, 'recordedCount' | 'completedCount'>;
-  timeFormat: TimeFormat;
-  /** teaser는 제목만 가리고 일정·근거는 보여 구독하면 무엇을 받는지 남긴다 */
-  visibility: 'full' | 'teaser';
-  isLast?: boolean;
-}
-
+/** 제안 영수증에서 상태 머리 아래 이어지는 제안 줄. 제안이 없으면 머리만 남는다 */
 export function SuggestionsList() {
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
   // useSuspenseQueries는 쿼리마다 subscribed를 받지 않아 가려지면 구독을 끊는 목록과 따로 읽는다
   usePrefetchQuery(useGetPreferenceQueryOptions());
   const isFocused = useIsFocused();
@@ -81,29 +71,33 @@ export function SuggestionsList() {
   };
 
   return (
-    <VStack gap={8}>
-      <ScallopedContainer>
-        <Box className="px-4 py-2">
-          {list.suggestions.map((suggestion, index) => (
-            <SuggestionsList.Item
-              key={suggestion.id}
-              suggestion={suggestion}
-              timeFormat={preference.timeFormat}
-              onMake={() => handleMake(suggestion.id)}
-              onDismiss={() => handleDismiss(suggestion.id)}
-              isDismissing={
-                dismissSuggestionMutation.isPending &&
-                dismissSuggestionMutation.variables?.suggestionId === suggestion.id
-              }
-              isLast={index === list.suggestions.length - 1}
-            />
-          ))}
-        </Box>
-      </ScallopedContainer>
-      <Text size="e1" shade={5} align="center">
-        {t('suggestions.expiryNotice')}
+    <>
+      <DashedDivider className="mx-5" />
+      <Box className="px-5 pt-1">
+        {list.suggestions.map((suggestion, index) => (
+          <SuggestionsList.Item
+            key={suggestion.id}
+            suggestion={suggestion}
+            timeFormat={preference.timeFormat}
+            onMake={() => handleMake(suggestion.id)}
+            onDismiss={() => handleDismiss(suggestion.id)}
+            isDismissing={
+              dismissSuggestionMutation.isPending &&
+              dismissSuggestionMutation.variables?.suggestionId === suggestion.id
+            }
+            isLast={index === list.suggestions.length - 1}
+          />
+        ))}
+      </Box>
+      <Text size="e1" shade={5} align="center" className="px-5 pb-5">
+        {t('suggestions.expiryNotice', {
+          period: formatDayCountLabel(
+            AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS,
+            dateFormatContext,
+          ),
+        })}
       </Text>
-    </VStack>
+    </>
   );
 }
 
@@ -117,15 +111,13 @@ SuggestionsList.Item = function Item({
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
   const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
-    todayKey,
     timeFormat,
     dateFormatContext,
   });
 
   return (
-    <Box className="py-2">
+    <Box className="py-3">
       <VStack gap={2}>
         <TodoRow.TitleLine
           label={
@@ -139,6 +131,7 @@ SuggestionsList.Item = function Item({
         {suggestion.evidence != null && (
           <Text size="e1" shade={6}>
             {t('suggestions.item.evidence', {
+              period: formatDayCountLabel(suggestion.evidence.periodDays, dateFormatContext),
               total: suggestion.evidence.recordedCount,
               done: suggestion.evidence.completedCount,
             })}
@@ -174,6 +167,7 @@ SuggestionsList.Item = function Item({
   );
 };
 
+/** 무료는 실제 제안 화면과 같은 영수증에 예시 제안을 그린다. 줄의 버튼과 아래 버튼은 모두 결제 화면으로 간다 */
 SuggestionsList.Free = function Free() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
@@ -196,47 +190,77 @@ SuggestionsList.Free = function Free() {
 
   return (
     <VStack gap={16}>
-      <ScallopedContainer>
-        <Box className="px-4 py-2">
-          <Box className="items-start pt-2">
+      <ScallopedContainer testID="suggestions-status">
+        <SuggestionStatus.Free />
+        <DashedDivider className="mx-5" />
+        <Box className="px-5 pt-4 pb-2">
+          <Box className="items-start">
             <LabelChip
-              color="default"
+              color="warning"
               label={t('suggestions.paywall.exampleBadge')}
-              className="bg-gray-3 dark:bg-gray-2"
+              labelProps={{ numberOfLines: 1 }}
               pointerEvents="none"
             />
           </Box>
-          <SuggestionsList.ExampleItem
-            title={t('suggestions.paywall.examples.vitamins')}
-            daysOfWeek={[...DAYS_OF_WEEK]}
-            scheduledTime="08:30"
-            evidence={{ recordedCount: 14, completedCount: 13 }}
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.vitamins'),
+              daysOfWeek: [...DAYS_OF_WEEK],
+              scheduledTime: '08:30',
+              evidence: {
+                recordedCount: 14,
+                completedCount: 13,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
             timeFormat={timeFormat}
-            visibility="full"
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
           />
-          <SuggestionsList.ExampleItem
-            title={t('suggestions.paywall.examples.gym')}
-            daysOfWeek={['MON', 'WED', 'FRI']}
-            scheduledTime="19:00"
-            evidence={{ recordedCount: 6, completedCount: 5 }}
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.gym'),
+              daysOfWeek: ['MON', 'WED', 'FRI'],
+              scheduledTime: '19:00',
+              evidence: {
+                recordedCount: 6,
+                completedCount: 5,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
             timeFormat={timeFormat}
-            visibility="teaser"
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
           />
-          <SuggestionsList.ExampleItem
-            title={t('suggestions.paywall.examples.recycling')}
-            daysOfWeek={['TUE', 'THU']}
-            scheduledTime="21:00"
-            evidence={{ recordedCount: 4, completedCount: 3 }}
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.recycling'),
+              daysOfWeek: ['TUE', 'THU'],
+              scheduledTime: '21:00',
+              evidence: {
+                recordedCount: 4,
+                completedCount: 3,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
             timeFormat={timeFormat}
-            visibility="teaser"
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
           />
-          <SuggestionsList.ExampleItem
-            title={t('suggestions.paywall.examples.weeklyReview')}
-            daysOfWeek={['SUN']}
-            scheduledTime={null}
-            evidence={{ recordedCount: 2, completedCount: 2 }}
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.weeklyReview'),
+              daysOfWeek: ['SUN'],
+              scheduledTime: null,
+              evidence: {
+                recordedCount: 2,
+                completedCount: 2,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
             timeFormat={timeFormat}
-            visibility="teaser"
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
             isLast
           />
         </Box>
@@ -249,102 +273,11 @@ SuggestionsList.Free = function Free() {
   );
 };
 
-SuggestionsList.ExampleItem = function ExampleItem({
-  title,
-  daysOfWeek,
-  scheduledTime,
-  evidence,
-  timeFormat,
-  visibility,
-  isLast = false,
-}: ExampleItemProps) {
-  const { t } = useTranslation('ai');
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const { repeat, timeLabel } = getSuggestionSchedule(
-    { daysOfWeek, scheduledTime },
-    { todayKey, timeFormat, dateFormatContext },
-  );
-
-  return (
-    <Box className="py-2">
-      <VStack gap={2}>
-        {match(visibility)
-          .with('full', () => (
-            <TodoRow.TitleLine
-              label={
-                <TodoRow.Label isCompleted={false} numberOfLines={2} className="flex-1">
-                  {title}
-                </TodoRow.Label>
-              }
-              isPrivate={false}
-            />
-          ))
-          .with('teaser', () => (
-            // 가린 막대가 제목 길이·글꼴 단계만큼 자리를 잡도록 글자를 투명하게 그린다
-            <Box
-              accessible
-              accessibilityLabel={t('suggestions.paywall.hiddenTitle')}
-              className="self-start rounded-md bg-gray-3 dark:bg-gray-2"
-            >
-              <TodoRow.Label isCompleted={false} numberOfLines={1} className="opacity-0">
-                {title}
-              </TodoRow.Label>
-            </Box>
-          ))
-          .exhaustive()}
-        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
-        <Text size="e1" shade={6}>
-          {t('suggestions.item.evidence', {
-            total: evidence.recordedCount,
-            done: evidence.completedCount,
-          })}
-        </Text>
-      </VStack>
-
-      {!isLast && (
-        <>
-          <Spacing size={12} />
-          <DashedDivider />
-        </>
-      )}
-    </Box>
-  );
-};
-
-SuggestionsList.Loading = function Loading() {
-  return (
-    <ScallopedContainer>
-      <Box className="px-4 py-2">
-        {range(SUGGESTION_LOADING_COUNT).map((index) => (
-          <Box key={index} className="py-2">
-            <VStack gap={2}>
-              <TextSkeleton size="b3" className="w-32" />
-              <TextSkeleton size="e1" className="w-40" />
-              <TextSkeleton size="e1" className="w-48" />
-            </VStack>
-            <Spacing size={12} />
-            <HStack gap={8} justify="end">
-              <Skeleton className="h-8 w-12 rounded-xl" />
-              <Skeleton className="h-8 w-12 rounded-xl" />
-            </HStack>
-            {index < SUGGESTION_LOADING_COUNT - 1 && (
-              <>
-                <Spacing size={12} />
-                <DashedDivider />
-              </>
-            )}
-          </Box>
-        ))}
-      </Box>
-    </ScallopedContainer>
-  );
-};
-
-SuggestionsList.Error = function ErrorFallback({ error }: QueryErrorFallbackProps) {
-  if (isSuggestionsPremiumRequiredError(error)) {
+SuggestionsList.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
+  // 한도 스냅샷이 늦어 프리미엄으로 물었지만 서버가 거절했다. 구독 상태를 다시 받는 동안 무료 화면과 같은 구성을 보인다
+  if (isSuggestionsPremiumRequiredError(props.error)) {
     return <SuggestionsList.Free />;
   }
 
-  return null;
+  return <SuggestionStatus.Error {...props} />;
 };

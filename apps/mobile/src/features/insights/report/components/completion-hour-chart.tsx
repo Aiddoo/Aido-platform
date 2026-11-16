@@ -28,16 +28,16 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import {
   CHART_LABEL_GAP_PT,
+  CHART_PAN_ACTIVE_OFFSET_X_PT,
+  CHART_PAN_FAIL_OFFSET_Y_PT,
   CHART_REVEAL_EASING,
+  CHART_TAP_MAX_DISTANCE_PT,
   HOUR_CHART_ASPECT_RATIO,
   HOUR_CHART_BAR,
 } from '../constants/report-chart.constants';
 import { toBarIndex, toBarRects } from '../utils/bar-chart.geometry';
 
 const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
-// 세로 스크롤과 다투지 않게 가로로 먼저 움직일 때만 밀기로 잡고, 세로로 먼저 움직이면 스크롤에 넘긴다
-const PAN_ACTIVE_OFFSET_X = 8;
-const PAN_FAIL_OFFSET_Y = 12;
 const TICK_STEP_CHOICES_HOURS = [3, 6];
 const WIDEST_TICK_STEP_HOURS = 12;
 const TICK_LABEL_MIN_WIDTH_PT = 56;
@@ -142,8 +142,8 @@ export function CompletionHourChart({
     },
   );
   const pan = usePanGesture({
-    activeOffsetX: [-PAN_ACTIVE_OFFSET_X, PAN_ACTIVE_OFFSET_X],
-    failOffsetY: [-PAN_FAIL_OFFSET_Y, PAN_FAIL_OFFSET_Y],
+    activeOffsetX: [-CHART_PAN_ACTIVE_OFFSET_X_PT, CHART_PAN_ACTIVE_OFFSET_X_PT],
+    failOffsetY: [-CHART_PAN_FAIL_OFFSET_Y_PT, CHART_PAN_FAIL_OFFSET_Y_PT],
     onActivate: (event) => {
       'worklet';
       touchedIndex.set(toBarIndex(event.x, width.get(), barCount));
@@ -158,6 +158,7 @@ export function CompletionHourChart({
     },
   });
   const tap = useTapGesture({
+    maxDistance: CHART_TAP_MAX_DISTANCE_PT,
     onActivate: (event) => {
       'worklet';
       scheduleOnRN(handleSelect, toBarIndex(event.x, width.get(), barCount));

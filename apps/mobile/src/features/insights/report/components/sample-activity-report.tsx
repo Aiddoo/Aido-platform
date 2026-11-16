@@ -11,16 +11,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { sampleReportParamsSchema } from '../schemas/report-params.schema';
-import type { ReportVisibility } from '../utils/report-visibility.view-model';
 import { createSampleReport } from '../utils/sample-report.view-model';
 import { ActivityReport } from './activity-report';
 
-interface SampleActivityReportProps {
-  visibility: ReportVisibility;
-}
-
 /** 예시 값을 실제 리포트와 같은 영수증에 그린다. 예시라 차트를 눌러도 지표를 남기지 않는다 */
-export function SampleActivityReport({ visibility }: SampleActivityReportProps) {
+export function SampleActivityReport() {
   const { language } = useLocaleContext();
   const [{ type, periodsAgo }] = useRouteParams(sampleReportParamsSchema);
 
@@ -30,13 +25,12 @@ export function SampleActivityReport({ visibility }: SampleActivityReportProps) 
   return (
     <ActivityReport.Receipt
       report={createSampleReport(type, periodsAgo, { todayKey, language })}
-      visibility={visibility}
       timeFormat={preference.timeFormat}
     />
   );
 }
 
-/** 가린 예시 아래의 결제 버튼. 보이면 premium_gate_shown, 누르면 premium_gate_cta_tapped를 남기고 페이월을 연다 */
+/** 예시 아래의 결제 버튼. 보이면 premium_gate_shown, 누르면 premium_gate_cta_tapped를 남기고 페이월을 연다 */
 SampleActivityReport.SubscribeButton = function SubscribeButton() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();

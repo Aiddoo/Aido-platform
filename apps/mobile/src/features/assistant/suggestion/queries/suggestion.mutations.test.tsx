@@ -88,22 +88,17 @@ describe('useActOnSuggestionMutationOptions', () => {
 });
 
 describe('useRequestSuggestionAnalysisMutationOptions', () => {
-  it('요청이 성공하면 목록 캐시를 분석 중으로 바꾸고 목록을 다시 받는다', async () => {
+  it('요청 전부터 받던 목록이 늦게 와도 응답으로 쓴 분석 중 상태를 덮지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const refetched = createPendingResponse(
-      ok(
-        createSuggestionListDto({
-          suggestions: [],
-          analysis: createSuggestionAnalysisDto({ state: 'ANALYZING', canRequestNow: false }),
-        }),
-      ),
-    );
-    httpClient.get.mockImplementation(async () =>
-      httpClient.post.mock.calls.length === 0
-        ? ok(createSuggestionListDto({ suggestions: [] }))
-        : refetched.response,
-    );
+    const waiting = createSuggestionListDto({
+      suggestions: [],
+      analysis: createSuggestionAnalysisDto({ state: 'WAITING_FOR_NEXT_RUN', canRequestNow: true }),
+    });
+    const staleRefetch = createPendingResponse(ok(waiting));
+    httpClient.get
+      .mockResolvedValueOnce(ok(waiting))
+      .mockImplementation(async () => staleRefetch.response);
     httpClient.post.mockResolvedValue(
       ok({ analysis: createSuggestionAnalysisDto({ state: 'ANALYZING', canRequestNow: false }) }),
     );
@@ -115,15 +110,19 @@ describe('useRequestSuggestionAnalysisMutationOptions', () => {
       { di: createTestDi({ ports: { httpClient } }), withOverlay: true, withLocalDate: true },
     );
     await waitFor(() => expect(result.current.suggestions.isSuccess).toBe(true));
+    await act(async () => {
+      result.current.suggestions.refetch().catch(() => null);
+    });
 
     // When
     await act(async () => result.current.request.mutate());
+    await waitFor(() => expect(result.current.request.isSuccess).toBe(true));
+    await act(async () => staleRefetch.settle());
 
     // Then
-    await waitFor(() => expect(result.current.suggestions.data?.analysis?.state).toBe('ANALYZING'));
+    await waitFor(() => expect(result.current.suggestions.isFetching).toBe(false));
     expect(httpClient.post).toHaveBeenCalledWith('v1/ai/suggestions/analyses');
-    await waitFor(() => expect(result.current.suggestions.isFetching).toBe(true));
-    await act(async () => refetched.settle());
+    expect(result.current.suggestions.data?.analysis?.state).toBe('ANALYZING');
   });
 
   it('서버에 닿지 않으면 알리고 목록 다시 받기를 기다리지 않아 버튼을 바로 다시 누를 수 있다', async () => {

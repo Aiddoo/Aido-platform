@@ -3,7 +3,6 @@ import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -18,9 +17,9 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range, take } from 'es-toolkit';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import type { AiSuggestionList } from '../domains/suggestion-analysis.model';
@@ -37,15 +36,15 @@ interface SuggestionsPreviewProps {
 export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
   const { t } = useTranslation('ai');
   const push = useSingleTap(router.push);
-  const [{ data: suggestions }, { data: preference }] = useSuspenseQueries({
-    queries: [
-      {
-        ...useGetSuggestionsQueryOptions(),
-        select: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
-      },
-      useGetPreferenceQueryOptions(),
-    ],
+  // 분석 중 polling이 다른 탭에서 돌지 않게 가려지면 구독을 끊는다. useSuspenseQueries는 subscribed를 받지 않아 따로 읽는다
+  usePrefetchQuery(useGetPreferenceQueryOptions());
+  const isFocused = useIsFocused();
+  const { data: suggestions } = useSuspenseQuery({
+    ...useGetSuggestionsQueryOptions(),
+    select: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
+    subscribed: isFocused,
   });
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
 
   if (suggestions.length === 0) {
     return null;
@@ -90,10 +89,8 @@ SuggestionsPreview.Item = function Item({
 }: SuggestionsPreviewItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
   const push = useSingleTap(router.push);
   const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
-    todayKey,
     timeFormat,
     dateFormatContext,
   });

@@ -42,13 +42,15 @@ onFlowComplete:
     element:
       id: ${output.ids.report.freeSubscribe}
 
-# When: 맨 위 예시 리포트 카드를 누른다
+# When: 맨 위 예시 리포트 카드의 자세히 보기를 누른다(카드 가운데는 누르면 주를 고르는 추세 차트다)
 - scrollUntilVisible:
     element:
       id: ${output.ids.report.sampleLatest}
     direction: UP
 - tapOn:
-    id: ${output.ids.report.sampleLatest}
+    text: ${output.labels.viewDetail}
+    childOf:
+      id: ${output.ids.report.sampleLatest}
 # Then: 예시 안내와 실제 리포트와 같은 요약이 보인다
 - extendedWaitUntil:
     visible:

@@ -168,7 +168,6 @@ export type { QueryErrorFallbackProps } from './query-error-boundary/query-error
 export { QueryErrorBoundary } from './query-error-boundary/query-error-boundary';
 export { QueryErrorFallback } from './query-error-boundary/query-error-fallback';
 export { READABLE_CONTENT_MAX_WIDTH, ReadableContent } from './readable-content/readable-content';
-export { RedactedText } from './redacted-text/redacted-text';
 export { Result } from './result/result';
 export {
   RouteBottomSheet,

@@ -8,18 +8,19 @@ export const SAMPLE_DAILY_TODO_COUNTS = [5, 6, 4, 5, 6, 3, 3] as const;
 
 /**
  * 예시 기간마다 요일별로 못 끝낸 할 일 수(월~일). 첫 줄이 지난주·지난달이다.
- * 주간은 최근 8주 추세까지, 월간은 맨 아래 예시의 지난번 비교까지 읽어 개수보다 길다
+ * 주간은 최근 8주 추세까지, 월간은 맨 아래 예시의 지난번 비교까지 읽어 개수보다 길다.
+ * 주간 달성률은 오래된 주부터 59·63·59·66·69·66·72·78%로 오르내리며 좋아진다. 코치 글(ai.report.sample.weekly)의 숫자가 이 표에서 나온다
  */
 export const SAMPLE_MISSED_TODO_COUNTS = {
   WEEKLY: [
     [2, 1, 2, 2, 0, 0, 0],
-    [2, 2, 1, 2, 2, 2, 0],
-    [1, 2, 2, 1, 3, 0, 0],
-    [2, 2, 2, 2, 2, 2, 0],
-    [2, 2, 2, 2, 2, 2, 1],
-    [1, 2, 1, 2, 2, 1, 1],
-    [2, 2, 2, 2, 3, 2, 1],
-    [2, 2, 2, 2, 2, 2, 1],
+    [2, 1, 2, 2, 1, 1, 0],
+    [2, 2, 2, 2, 3, 0, 0],
+    [2, 2, 1, 2, 2, 1, 0],
+    [2, 2, 2, 2, 2, 0, 1],
+    [2, 2, 2, 2, 3, 1, 1],
+    [2, 2, 2, 2, 2, 1, 1],
+    [2, 3, 2, 2, 2, 1, 1],
   ],
   MONTHLY: [
     [2, 1, 2, 1, 1, 1, 0],
@@ -36,16 +37,25 @@ export const SAMPLE_TRAILING_PERFECT_DAYS = {
   MONTHLY: [5, 2, 3, 1, 0],
 } as const;
 
-/** 예시로 끝낸 시각의 비중. 코치 글이 말하는 아침 7시가 가장 많고 나머지는 이 시각에 더한다 */
+/**
+ * 예시로 끝낸 시각의 비중. 아침 출근 전과 저녁 9시대에 봉우리가 있고 낮에는 점심 무렵만 조금 끝낸다.
+ * 코치 글이 말하는 아침 7시가 가장 많다
+ */
 export const SAMPLE_COMPLETION_HOUR_WEIGHTS = [
-  { hour: 7, weight: 6 },
-  { hour: 8, weight: 4 },
+  { hour: 6, weight: 1 },
+  { hour: 7, weight: 7 },
+  { hour: 8, weight: 5 },
   { hour: 9, weight: 2 },
-  { hour: 12, weight: 3 },
+  { hour: 10, weight: 1 },
+  { hour: 12, weight: 2 },
   { hour: 13, weight: 1 },
+  { hour: 15, weight: 1 },
   { hour: 18, weight: 2 },
+  { hour: 19, weight: 1 },
+  { hour: 20, weight: 3 },
   { hour: 21, weight: 5 },
-  { hour: 22, weight: 2 },
+  { hour: 22, weight: 3 },
+  { hour: 23, weight: 1 },
 ] as const;
 
 /** 예시 카테고리의 할 일·못 끝낸 할 일 몫. 코치 글처럼 업무가 가장 꾸준하고 운동이 가장 자주 밀린다. 운동은 남은 몫이다 */

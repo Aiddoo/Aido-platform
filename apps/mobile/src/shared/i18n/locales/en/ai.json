@@ -44,6 +44,7 @@
       "trendTitle": "Recent weekly completion",
       "trendLabel_one": "Completion over the last {{count}} week, from {{start}} to {{end}}",
       "trendLabel_other": "Completion over the last {{count}} weeks, from {{start}} to {{end}}",
+      "trendWeek": "{{week}}: {{rate}} completed",
       "trendEmpty": "No completion history yet"
     },
     "list": {
@@ -70,39 +71,44 @@
       "title": "Sample report",
       "badge": "Sample data",
       "listDescription": "With Premium, reports from your own to-dos stack up like this every week and month",
-      "noticeTitle": "Here's what you'll get",
-      "noticeDescription": "The numbers and notes are samples. Subscribe and we'll build them from your own to-dos every week and month",
+      "noticeTitle": "This is a sample report",
+      "noticeDescription": "Subscribe and we'll analyze your own to-dos like this every week and month",
       "categories": {
         "work": "Work",
         "study": "Study",
         "workout": "Workout"
       },
       "weekly": {
-        "summary": "On days you finished a to-do before work, you were more likely to clear the whole day. You finished the most around 7 AM and kept up with work almost every day. Workouts often slipped midweek, though.",
+        "summaries": {
+          "lastWeek": "You left 2 of 4 on Wednesday, then cleared every to-do three days straight from Friday to Sunday. You finished the most around 7 AM and got 13 of 14 work to-dos done. Workouts slipped the most, with 4 of 8 done.",
+          "twoWeeksAgo": "You left one or two each weekday but cleared everything on Sunday. Finishing 5 of 6 on Friday gave the week a strong finish. You got 4 of 8 workouts done.",
+          "threeWeeksAgo": "You planned 6 on Friday and left half, but cleared everything over the weekend. You got 12 of 14 work to-dos done. Workouts slipped the most, with 3 of 8 done.",
+          "fourWeeksAgo": "Finishing 3 of 4 on Wednesday got you through midweek. You cleared everything on Sunday and got 12 of 14 work to-dos done. Study slipped a little, with 6 of 10 done."
+        },
         "tips": {
-          "workout": "Put your workout right after your 7 AM to-do so it slips less.",
+          "workout": "Put your workout right after your 7 AM to-do so it slips less.",
           "midweek": "Midweek, try keeping it to four to-dos or fewer."
         }
       },
       "monthly": {
-        "summary": "The earlier you started with a to-do, the more you got done that day. You finished the most around 7 AM, kept up with work steadily, and kept weekends light. Workouts had the lowest completion rate.",
+        "summaries": {
+          "lastMonth": "You cleared every to-do over the last 5 days of the month to finish strong. You finished the most around 7 AM and kept up with work steadily. Workouts had the lowest completion rate.",
+          "twoMonthsAgo": "The earlier you started with a to-do, the more you got done that day. You cleared every to-do over the last 2 days of the month. Workouts had the lowest completion rate.",
+          "threeMonthsAgo": "You kept up with work steadily and cleared every to-do over the last 3 days of the month. You finished the most around 7 AM. Study slipped more often than work, and workouts had the lowest completion rate.",
+          "fourMonthsAgo": "You kept weekends light at 3 to-dos a day and did most of it on weekdays. You finished the most around 7 AM and cleared everything on the last day of the month. Workouts had the lowest completion rate."
+        },
         "tips": {
           "repeat": "Make your workout a repeating to-do with a set day and time.",
           "morning": "Next month, try finishing one work to-do first thing in the morning."
         }
       }
-    },
-    "teaser": {
-      "hiddenLabel": "Available with Premium",
-      "hiddenCategory": "Category available with Premium",
-      "coachHint": "See the full coach notes with Premium"
     }
   },
   "suggestions": {
     "item": {
       "make": "Make it repeat",
       "dismiss": "Not needed",
-      "evidence": "Done {{done}} of {{total}} times in the last 2 weeks"
+      "evidence": "Done {{done}} of {{total}} times in the last {{period}}"
     },
     "status": {
       "hasSuggestions_one": "Found {{count}} frequent to-do",
@@ -114,19 +120,18 @@
       "noPatternFound": "No to-dos worth repeating yet",
       "unavailableToday": "We couldn't check today",
       "needsMoreTodos": "No to-dos to look at yet",
-      "needsMoreTodosDescription": "We look at to-dos from the last 2 weeks",
+      "needsMoreTodosDescription": "We look at to-dos from the last {{period}}",
       "needsAiConsentDescription": "You only need to do this once",
       "addTodo": "Add a to-do",
       "waitingForNextRun": "Waiting for the next check",
       "nextAnalysisAt": "We'll look again on {{date}} at {{time}}",
       "requestNow": "Check now"
     },
-    "expiryNotice": "Suggestions go away after 14 days",
+    "expiryNotice": "Suggestions go away after {{period}}",
     "paywall": {
       "title": "We'll find to-dos you do often",
-      "description": "Suggestions like these, from your last 2 weeks",
+      "description": "Subscribe to get these from your own to-dos",
       "exampleBadge": "Examples",
-      "hiddenTitle": "Available with Premium",
       "examples": {
         "vitamins": "Take vitamins",
         "gym": "Go to the gym",

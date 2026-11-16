@@ -5,7 +5,10 @@ import { CompletionHourChart } from '@src/features/insights/report/components/co
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
 import { DailyCompletionChart } from '@src/features/insights/report/components/daily-completion-chart';
 import { type AiReport, ReportPolicy } from '@src/features/insights/report/domains/report.model';
-import { getHourlyCompletionCounts } from '@src/features/insights/report/utils/report-chart.view-model';
+import {
+  formatDailyValueLine,
+  getHourlyCompletionCounts,
+} from '@src/features/insights/report/utils/report-chart.view-model';
 import {
   getWeeklyRecordDays,
   type WeeklyRecordDay,
@@ -19,7 +22,6 @@ import { Box, DashedDivider, ScallopedContainer, Text, VStack } from '@src/share
 import { useQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { useState } from 'react';
-import { match } from 'ts-pattern';
 
 import { DEMO_REPORT, DEMO_SCRIPT_MS, DEMO_THIS_WEEK } from '../constants/release-1-16-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
@@ -73,7 +75,7 @@ export function ReportHoursDemo() {
             </Box>
           )}
           <Box className="py-4">
-            <ActivityReport.Coach report={report} visibility="full" />
+            <ActivityReport.Coach report={report} />
           </Box>
         </VStack>
       </ScallopedContainer>
@@ -81,23 +83,19 @@ export function ReportHoursDemo() {
   );
 }
 
-/** 무료 사용자가 예시 리포트에서 보는 것과 같은 가린 코치 카드를 이번 주 기록 아래에 둔다 */
+/** 무료 사용자도 보는 이번 주 기록이다. AI 분석은 프리미엄이라는 설명은 장면 문구가 한다 */
 export function FreeRecordDemo() {
   const { t } = useTranslation('ai');
-
-  const report = useDemoReport();
 
   return (
     <WhatsNewStep.Stage>
       <ScallopedContainer>
-        <VStack gap={16} className="px-4 py-2">
+        <Box className="px-4 py-2">
           <DemoDailyCompletions
             title={t('report.thisWeek.title')}
             days={getWeeklyRecordDays(DEMO_THIS_WEEK.completionsByDate, DEMO_THIS_WEEK.todayKey)}
           />
-
-          <ActivityReport.Coach report={report} visibility="teaser" />
-        </VStack>
+        </Box>
       </ScallopedContainer>
     </WhatsNewStep.Stage>
   );
@@ -110,35 +108,14 @@ interface DemoDailyCompletionsProps {
 
 /** 리포트의 날마다 끝낸 할 일·무료 이번 주 기록과 같은 모양이다. 예시라 막대를 눌러도 지표를 남기지 않는다 */
 function DemoDailyCompletions({ title, days }: DemoDailyCompletionsProps) {
-  const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const selectedDay = selectedIndex == null ? null : days[selectedIndex];
-  const valueLine = match(selectedDay)
-    .with(undefined, null, () => t('report.detail.dailyHint'))
-    .when(
-      (day) => day.isUpcoming,
-      (day) =>
-        t('report.thisWeek.dayUpcoming', {
-          date: formatDateKeyLabel(day.date, 'monthDay', dateFormatContext),
-        }),
-    )
-    .when(
-      (day) => day.total === 0,
-      (day) =>
-        t('report.detail.dayEmpty', {
-          date: formatDateKeyLabel(day.date, 'monthDay', dateFormatContext),
-        }),
-    )
-    .otherwise((day) =>
-      t('report.detail.dayCompletions', {
-        date: formatDateKeyLabel(day.date, 'monthDay', dateFormatContext),
-        completed: day.completed,
-        total: day.total,
-      }),
-    );
+  const valueLine = formatDailyValueLine(
+    selectedIndex == null ? null : (days[selectedIndex] ?? null),
+    dateFormatContext,
+  );
 
   return (
     <VStack gap={16}>

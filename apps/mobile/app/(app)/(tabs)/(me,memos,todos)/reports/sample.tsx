@@ -1,9 +1,7 @@
-import { SuggestionsPreview } from '@src/features/assistant/suggestion/components/suggestions-preview';
 import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { SampleActivityReport } from '@src/features/insights/report/components/sample-activity-report';
 import { sampleReportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
-import { getReportVisibility } from '@src/features/insights/report/utils/report-visibility.view-model';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,7 +12,7 @@ import {
   SafeAreaScrollView,
   Spacing,
 } from '@src/shared/ui';
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
@@ -52,33 +50,21 @@ function SampleReportScreen() {
           <Spacing size={12} />
 
           {match(featureAccess.status)
-            .with('premium', 'free', (status) => {
-              const visibility = getReportVisibility(status);
+            .with('free', () => (
+              <>
+                <QueryErrorBoundary fallback={SampleActivityReport.Error}>
+                  <Suspense fallback={<ActivityReport.Loading />}>
+                    <SampleActivityReport />
+                  </Suspense>
+                </QueryErrorBoundary>
 
-              return (
-                <>
-                  <QueryErrorBoundary fallback={SampleActivityReport.Error}>
-                    <Suspense fallback={<ActivityReport.Loading />}>
-                      <SampleActivityReport visibility={visibility} />
-                    </Suspense>
-                  </QueryErrorBoundary>
+                <Spacing size={24} />
 
-                  <QueryErrorBoundary fallback={SuggestionsPreview.Error}>
-                    <Suspense fallback={<SuggestionsPreview.Loading className="mt-3" />}>
-                      <SuggestionsPreview className="mt-3" />
-                    </Suspense>
-                  </QueryErrorBoundary>
-
-                  {visibility === 'teaser' && (
-                    <>
-                      <Spacing size={24} />
-
-                      <SampleActivityReport.SubscribeButton />
-                    </>
-                  )}
-                </>
-              );
-            })
+                <SampleActivityReport.SubscribeButton />
+              </>
+            ))
+            // 예시는 무료 화면에서만 연다. 결제하고 돌아오거나 링크로 온 프리미엄은 내 리포트 목록으로 보낸다
+            .with('premium', () => <Redirect href="/reports" />)
             .with('loading', () => <ActivityReport.Loading />)
             .with('error', () => (
               <SampleActivityReport.Error

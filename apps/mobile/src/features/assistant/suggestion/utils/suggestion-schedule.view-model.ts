@@ -1,7 +1,4 @@
-import { AI_SUGGESTION_LIMITS } from '@aido/api/vocabulary';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
-import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import {
   type DateFormatContext,
   formatClockTime,
@@ -27,28 +24,16 @@ export function formatRepeatDays(
   return formatDaysOfWeek(daysOfWeek, toLanguageOfIntlLocale(context.locale));
 }
 
-/** 수락하면 서버가 오늘부터 정해진 주 수 동안 고른 요일마다 반복하는 할 일을 만든다 */
+/** 수락하면 서버가 고른 요일마다 반복하는 할 일을 만든다. 일정 줄은 주기만 그려 끝나는 날은 두지 않는다 */
 export function getSuggestionSchedule(
   { daysOfWeek, scheduledTime }: Pick<AiSuggestion, 'daysOfWeek' | 'scheduledTime'>,
   {
-    todayKey,
     timeFormat,
     dateFormatContext,
-  }: { todayKey: DateKey; timeFormat: TimeFormat; dateFormatContext: DateFormatContext },
+  }: { timeFormat: TimeFormat; dateFormatContext: DateFormatContext },
 ): SuggestionSchedule {
   return {
-    repeat: {
-      frequency: 'WEEKLY',
-      interval: 1,
-      weekdays: daysOfWeek,
-      end: {
-        type: 'UNTIL',
-        date: addDaysToDateKey(
-          todayKey,
-          AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS * DAYS_PER_WEEK,
-        ),
-      },
-    },
+    repeat: { frequency: 'WEEKLY', interval: 1, weekdays: daysOfWeek, end: { type: 'NEVER' } },
     timeLabel:
       scheduledTime == null ? null : formatHHmmTime(scheduledTime, timeFormat, dateFormatContext),
   };

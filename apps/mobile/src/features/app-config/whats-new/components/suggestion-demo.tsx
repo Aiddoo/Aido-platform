@@ -70,14 +70,17 @@ function WaitingStatus({ onRequest }: { onRequest: () => void }) {
         getNextAnalysisLabels(nextAnalysisAt, timeFormat, dateFormatContext),
       )}
     >
-      <Button size="small" display="inline" onPress={onRequest} testID="whats-new-request-now">
-        {t('suggestions.status.requestNow')}
-      </Button>
+      <SuggestionStatus.ActionRow>
+        <Button size="small" display="inline" onPress={onRequest} testID="whats-new-request-now">
+          {t('suggestions.status.requestNow')}
+        </Button>
+      </SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );
 }
 
 function RequestedStatus() {
+  const { t } = useTranslation('ai');
   const foundCount = useDemoScript({
     frameCount: 1,
     frameMs: 0,
@@ -88,7 +91,15 @@ function RequestedStatus() {
     return <SuggestionStatus.Analyzing />;
   }
 
-  return <SuggestionStatus.HasSuggestions count={DEMO_SUGGESTIONS.length} />;
+  // 소개 장면은 아래에 제안 줄이 없어 분석 중과 같은 높이를 남겨 카드가 줄어들지 않게 한다
+  return (
+    <SuggestionStatus.Message
+      title={t('suggestions.status.hasSuggestions', { count: DEMO_SUGGESTIONS.length })}
+      description={t('suggestions.status.hasSuggestionsDescription')}
+    >
+      <SuggestionStatus.ActionRow />
+    </SuggestionStatus.Message>
+  );
 }
 
 interface SuggestionListDemoProps {
@@ -122,10 +133,10 @@ export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
               {shownSuggestions.map((suggestion, index) => (
                 <Animated.View key={suggestion.id} entering={ROW_ENTERING} layout={ROW_LAYOUT}>
                   <SuggestionsList.Item
-                    suggestion={toAiSuggestion(suggestion, {
-                      id: index,
-                      title: t(`v1_16_0.demo.suggestions.${suggestion.id}`),
-                    })}
+                    suggestion={toDemoSuggestion(
+                      suggestion,
+                      t(`v1_16_0.demo.suggestions.${suggestion.id}`),
+                    )}
                     timeFormat={timeFormat}
                     onMake={onMake}
                     onDismiss={() => setDismissedIds((current) => [...current, suggestion.id])}
@@ -141,16 +152,9 @@ export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
   );
 }
 
-function toAiSuggestion(
+function toDemoSuggestion(
   { daysOfWeek, scheduledTime, evidence }: DemoSuggestion,
-  { id, title }: Pick<AiSuggestion, 'id' | 'title'>,
-): AiSuggestion {
-  return {
-    id,
-    title,
-    daysOfWeek: [...daysOfWeek],
-    scheduledTime,
-    suggestedCategoryId: null,
-    evidence,
-  };
+  title: string,
+): Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime' | 'evidence'> {
+  return { title, daysOfWeek: [...daysOfWeek], scheduledTime, evidence };
 }

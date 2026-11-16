@@ -11,7 +11,7 @@ describe('ReportList.Item', () => {
     // Given
     const report = createAiReport({ id: 42 });
     const href = { pathname: '/reports/[reportId]', params: { reportId: '42' } } as const;
-    await renderScreen(<ReportList.Item report={report} href={href} visibility="full" isLast />, {
+    await renderScreen(<ReportList.Item report={report} href={href} isLast />, {
       withLocalDate: true,
     });
 

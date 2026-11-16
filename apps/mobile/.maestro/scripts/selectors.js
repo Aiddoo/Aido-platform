@@ -91,4 +91,5 @@ output.labels = {
   savePasswordNotNow: '지금 안 함|Not Now',
   // 개발 빌드의 오류 창(LogBox) 제목. 창이 화면을 덮어도 뒤 요소가 보여 id 확인만으로는 오류를 놓친다
   devErrorOverlay: 'Uncaught Error|Render Error',
+  viewDetail: '자세히 보기|View details',
 };

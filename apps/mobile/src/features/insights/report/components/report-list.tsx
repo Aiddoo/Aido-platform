@@ -1,7 +1,6 @@
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
-import { type DateKey, getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
@@ -17,7 +16,6 @@ import {
   QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
-  RedactedText,
   Text,
   TextButton,
   TextSkeleton,
@@ -32,13 +30,12 @@ import {
   useSuspenseInfiniteQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { orderBy, range, take } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { type Href, Link, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense } from 'react';
+import { type ReactNode, Suspense, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
 import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
 import { ReportStatusPolicy } from '../domains/report-status.model';
 import type { AiReport } from '../domains/report.model';
@@ -47,9 +44,13 @@ import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,
 } from '../queries/report.queries';
+import {
+  getRecentTrendWeeks,
+  getTrendIsoWeekYears,
+  type TrendWeek,
+} from '../utils/report-chart.view-model';
 import { getReportTypeLabelKey } from '../utils/report-label.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
-import type { ReportVisibility } from '../utils/report-visibility.view-model';
 import { createSampleReport, getSampleTrendWeeks } from '../utils/sample-report.view-model';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { CompletionTrendLine } from './completion-trend-line';
@@ -67,10 +68,16 @@ export function ReportList() {
   const { t } = useTranslation('ai');
 
   const [reportType] = useReportType();
+  const todayKey = useTodayKey();
+  // 프리페치가 추세가 걸친 해를 알아야 해 파생 값을 쿼리보다 먼저 둔다
+  const trendYears = getTrendIsoWeekYears(todayKey);
   usePrefetchQuery(useGetReportStatusQueryOptions());
   // 최근 리포트의 추세가 목록을 받은 뒤에야 조회를 시작하지 않게 함께 건다
   usePrefetchInfiniteQuery(
-    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(useTodayKey()) }),
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: trendYears.endYear }),
+  );
+  usePrefetchInfiniteQuery(
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: trendYears.startYear }),
   );
   const { data: reports } = useSuspenseQuery(
     useGetReportsQueryOptions({ type: reportType, limit: REPORT_LIST_LIMIT }),
@@ -106,8 +113,6 @@ export function ReportList() {
               key={report.id}
               report={report}
               href={{ pathname: '/reports/[reportId]', params: { reportId: String(report.id) } }}
-              // 서버가 AI_REPORT 권한을 확인하고 준 리포트라 모두 보인다
-              visibility="full"
               isLast={index === pastReports.length - 1}
             />
           ))}
@@ -180,11 +185,10 @@ ReportList.Latest = function Latest({ report, href, trend, testID }: ReportListL
 interface ReportListItemProps {
   report: AiReport;
   href: Href;
-  visibility: ReportVisibility;
   isLast?: boolean;
 }
 
-ReportList.Item = function Item({ report, href, visibility, isLast = false }: ReportListItemProps) {
+ReportList.Item = function Item({ report, href, isLast = false }: ReportListItemProps) {
   const { t } = useTranslation('ai');
   // Link가 navigate로 열어 같은 상세는 한 번만 쌓인다. 안쪽 버튼·메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
@@ -233,22 +237,17 @@ ReportList.Item = function Item({ report, href, visibility, isLast = false }: Re
                 />
               </HStack>
 
-              {report.hasActivity &&
-                report.aiSummary.length > 0 &&
-                match(visibility)
-                  .with('full', () => (
-                    <Text size="b4" shade={7} numberOfLines={2}>
-                      {report.aiSummary}
-                    </Text>
-                  ))
-                  .with('teaser', () => (
-                    <RedactedText
-                      size="b4"
-                      lineCount={2}
-                      accessibilityLabel={t('report.teaser.hiddenLabel')}
-                    />
-                  ))
-                  .exhaustive()}
+              {report.hasActivity && report.aiSummary.length > 0 && (
+                <Text
+                  size="b4"
+                  shade={7}
+                  numberOfLines={2}
+                  lineBreakStrategyIOS="hangul-word"
+                  textBreakStrategy="highQuality"
+                >
+                  {report.aiSummary}
+                </Text>
+              )}
 
               <Box className="items-end">
                 <TextButton size="small" variant="arrow" onPress={() => navigate(href)}>
@@ -271,12 +270,8 @@ ReportList.Item = function Item({ report, href, visibility, isLast = false }: Re
   );
 };
 
-interface ReportListFreeProps {
-  visibility: ReportVisibility;
-}
-
 /** 무료는 실제 이번 주 기록 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 보인다 */
-ReportList.Free = function Free({ visibility }: ReportListFreeProps) {
+ReportList.Free = function Free() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const push = useSingleTap(router.push);
@@ -345,7 +340,6 @@ ReportList.Free = function Free({ visibility }: ReportListFreeProps) {
               pathname: '/reports/sample',
               params: { type: reportType, periodsAgo: String(periodsAgo) },
             }}
-            visibility={visibility}
             isLast={periodsAgo === SAMPLE_REPORT_COUNT}
           />
         ))}
@@ -442,21 +436,29 @@ ReportList.Empty = function Empty() {
 };
 
 function RecentCompletionTrend() {
+  const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
+  const { startYear, endYear } = getTrendIsoWeekYears(todayKey);
 
-  const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
-    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(todayKey) }),
+  // 두 해는 ReportList가 함께 미리 받기 시작해 차례로 읽어도 기다림이 겹치지 않는다. 같은 해면 같은 쿼리다
+  const { data: endYearWeeks } = useSuspenseInfiniteQuery(
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: endYear }),
+  );
+  const { data: startYearWeeks } = useSuspenseInfiniteQuery(
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: startYear }),
   );
 
-  // 목록은 최근 주부터 오므로 앞에서 자른 뒤 오래된 주부터 그린다
-  const recentWeeks = orderBy(take(weeklyAchievements.items, TREND_WEEK_COUNT), ['week'], ['asc']);
+  const recentWeeks = getRecentTrendWeeks(
+    [...endYearWeeks.items, ...startYearWeeks.items].map((week) => ({
+      startDate: week.dateRange.startDate,
+      completionRate: week.completionRate,
+    })),
+  );
 
   return (
     <CompletionTrend
-      weeks={recentWeeks.map((week) => ({
-        startDate: week.dateRange.startDate,
-        completionRate: week.completionRate,
-      }))}
+      weeks={recentWeeks}
+      onFirstTap={() => trackEvent('ai_report_chart_tapped', { chart: 'completion_trend' })}
     />
   );
 }
@@ -482,13 +484,17 @@ RecentCompletionTrend.Error = function ErrorFallback({ reset }: QueryErrorFallba
 
 interface CompletionTrendProps {
   /** 오래된 주부터 온다 */
-  weeks: { startDate: DateKey; completionRate: number }[];
+  weeks: TrendWeek[];
+  /** 처음 누를 때 한 번 부른다. 예시 추세는 넘기지 않아 지표를 남기지 않는다 */
+  onFirstTap?: () => void;
 }
 
-function CompletionTrend({ weeks }: CompletionTrendProps) {
+function CompletionTrend({ weeks, onFirstTap }: CompletionTrendProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
+
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const firstWeek = weeks[0];
   const lastWeek = weeks.at(-1);
@@ -497,6 +503,13 @@ function CompletionTrend({ weeks }: CompletionTrendProps) {
     return <CompletionTrendLine.Empty message={t('report.latest.trendEmpty')} />;
   }
 
+  const handleSelectedIndexChange = (index: number) => {
+    if (selectedIndex == null) {
+      onFirstTap?.();
+    }
+    setSelectedIndex(index);
+  };
+
   return (
     <VStack gap={8}>
       <Text size="b4" shade={6}>
@@ -504,8 +517,11 @@ function CompletionTrend({ weeks }: CompletionTrendProps) {
       </Text>
       <CompletionTrendLine
         values={weeks.map((week) => week.completionRate)}
-        startLabel={formatIsoWeekLabel(firstWeek.startDate, todayKey, dateFormatContext)}
-        endLabel={formatIsoWeekLabel(lastWeek.startDate, todayKey, dateFormatContext)}
+        labels={weeks.map((week) =>
+          formatIsoWeekLabel(week.startDate, todayKey, dateFormatContext),
+        )}
+        selectedIndex={selectedIndex}
+        onSelectedIndexChange={handleSelectedIndexChange}
         accessibilityLabel={t('report.latest.trendLabel', {
           count: weeks.length,
           start: formatPercent(firstWeek.completionRate, dateFormatContext.locale),
