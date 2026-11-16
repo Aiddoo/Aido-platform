@@ -17,7 +17,7 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 
 | 위치                           | 책임                                                                   |
 | ------------------------------ | ---------------------------------------------------------------------- |
-| schemas                        | snapshot v2 Zod 계약(v1 읽기 포함), props, 탐색 명령, 저장 값 정의(키) |
+| schemas                        | snapshot v2 Zod 계약, props, 탐색 명령, 저장 값 정의(키)               |
 | domains                        | day 선택 Policy(`WidgetSnapshotPolicy.getDay`), 탐색 명령 유효성(5분)  |
 | utils                          | 첫 동기화 전 props, 탐색 링크 변환(번들이 별칭을 못 풀어 상대 경로)    |
 | constants                      | Android 위젯 정의·탐색 action                                          |
@@ -51,7 +51,7 @@ useWidgetSnapshotSync(authState)
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 저장 값(`aido_widget_headless_failure_v1`)에 남겼다가 다음 앱 시작 때 동기화 훅이 읽어 `ErrorReporter`로 보낸다. 서비스는 Sentry를 부르지 않는다([관측](./observability.md#event-captureexception-capturemessage)).
 - 공식 `requestWidgetUpdate`의 완료는 launcher가 bitmap을 표시한 시점까지 보장하지 않는다. 실제 갱신은 native QA에서 확인한다.
-- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 저장된 v1 JSON은 `widgetSnapshotStorageSchema`(`legacyWidgetSnapshotV1Schema`)가 하루짜리 v2로 읽는다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
+- 저장 키 `aido_widget_snapshot_v1`을 그대로 쓴다. 값은 v2 JSON이고 `widgetSnapshotSchema`가 읽는다. v1 JSON은 읽지 않아 앱이 다시 쓸 때까지 첫 화면이다. snapshot이 없거나 소유자를 알 수 없으면 개인 목록을 추측하지 않고 앱 열기 안내를 보이고, 앱이 현재 계정 요약을 동기화한 뒤 정상 표시한다.
 
 ## 위젯 목록과 identity
 
@@ -118,7 +118,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 ## 검증과 관측
 
-테스트는 모델·mapper·저장 값·sync·entry hook·handler·renderer·timeline에서 손상 JSON, 이전 v1, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 본다([테스트](./testing.md)).
+테스트는 모델·mapper·저장 값·sync·entry hook·handler·renderer·timeline에서 손상 JSON, 자정 직전/정각 day 선택, 계정 전환, 로그아웃 경합, 최신 탭, TTL, unmount cleanup을 본다([테스트](./testing.md)).
 
 ```sh
 pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/bootstrap/hooks/use-widget-app-entry.test.tsx src/bootstrap/navigation/auth-gate-layout.widget-entry.flow.test.tsx

@@ -14,7 +14,6 @@ import {
 
 // 초안만 담는 인스턴스로 분리해 로그아웃 시 다른 설정을 건드리지 않고 한 번에 비운다.
 const DRAFT_STORAGE_ID = 'aido.drafts.encrypted';
-// 암호화 이전 평문 인스턴스. 내용을 옮긴 뒤 파일째 삭제한다.
 const LEGACY_DRAFT_STORAGE_ID = 'aido.drafts';
 // 오프라인 복원용 조회 캐시. 초안과 같은 키를 쓰되 인스턴스를 나눠 초안 정리가 캐시를 건드리지 않게 한다.
 const QUERY_CACHE_STORAGE_ID = 'aido.query-cache.encrypted';
@@ -108,22 +107,9 @@ function toEncryptedSyncStorage(mmkv: ReturnType<typeof createMMKV>): EncryptedS
   };
 }
 
-/** 암호화 전 평문 MMKV `aido.drafts`의 초안을 옮기고 그 저장소를 지운다. 1.16.0에서 지운다(compatibility.md) */
-function migrateLegacyDrafts(target: EnumerableSyncStorage) {
-  if (!existsMMKV(LEGACY_DRAFT_STORAGE_ID)) {
-    return;
-  }
-
-  try {
-    const legacy = createMMKV({ id: LEGACY_DRAFT_STORAGE_ID });
-    for (const key of legacy.getAllKeys()) {
-      const value = legacy.getString(key);
-      if (value != null) {
-        target.set(key, value);
-      }
-    }
-  } finally {
-    // 복사에 실패해도 평문 저장소는 지운다. 옮기지 못한 초안보다 평문 초안을 기기에 남기지 않는 쪽이 우선이다
+/** 암호화 전 평문 MMKV `aido.drafts`를 읽지 않고 지운다. 1.15.x 이하 설치가 0이 된 뒤 지운다(compatibility.md) */
+function deleteLegacyDrafts() {
+  if (existsMMKV(LEGACY_DRAFT_STORAGE_ID)) {
     deleteMMKV(LEGACY_DRAFT_STORAGE_ID);
   }
 }
@@ -143,10 +129,12 @@ export async function openEncryptedStorage(
       deleteMMKV(QUERY_CACHE_STORAGE_ID);
     }
 
-    const draftStorage = openEncryptedMmkv(DRAFT_STORAGE_ID, key);
-    migrateLegacyDrafts(draftStorage);
+    deleteLegacyDrafts();
 
-    return { draftStorage, queryCacheStorage: openEncryptedMmkv(QUERY_CACHE_STORAGE_ID, key) };
+    return {
+      draftStorage: openEncryptedMmkv(DRAFT_STORAGE_ID, key),
+      queryCacheStorage: openEncryptedMmkv(QUERY_CACHE_STORAGE_ID, key),
+    };
   } catch (failure) {
     return { draftStorage: createSessionDraftStorage(), queryCacheStorage: null, failure };
   }
