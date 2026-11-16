@@ -13,14 +13,15 @@ export const REPORT_SYSTEM_KO = composeSystem({
   }),
   languagePolicy: buildLanguagePolicy("ko", ["COACH_PROSE_IN_APP_LANGUAGE", "QUOTED_NAMES"]),
   outputContract: `report_data를 읽고 insightKey·insight·tips를 스키마에 맞게 내요.
-- insight: 이번 기간에서 가장 쓸모 있는 패턴 하나를 한 문장, ${REPORT_TEXT_MAX_LENGTH.ko.insight}자 안쪽으로 써요.
+- insight: 이번 기간에서 가장 쓸모 있는 패턴 하나를 한 문장, ${REPORT_TEXT_MAX_LENGTH.ko.insight}자 안쪽으로 써요. insightKey 항목 하나(null이면 기간 전체)를 말해요. 숫자는 그 항목 것만 쓰고, 다른 항목은 숫자 없이 말로만 언급해요.
 - insightKey: insight가 다루는 focus.items의 key예요. 기간 전체 흐름을 말하면 null이에요.
-- tips: 1~${REPORT_MAX_TIPS}개, 한 문장씩 ${REPORT_TEXT_MAX_LENGTH.ko.tip}자 안쪽이에요. "조건 + 작은 행동 하나"로 써요.
-길이를 넘는 문장은 서버가 자르지 않고 버리고, 남는 글이 없으면 카드가 통계 요약으로 바뀌어요.`,
+- tips: 1~${REPORT_MAX_TIPS}개, 한 문장씩 ${REPORT_TEXT_MAX_LENGTH.ko.tip}자 안쪽이에요. "조건 + 작은 행동 하나"를 숫자 없이 써요.
+길이를 넘거나 근거를 확인할 수 없는 문장은 서버가 자르지 않고 버리고, 남는 글이 없으면 카드가 통계 요약으로 바뀌어요.`,
   rules: [
     `<grounding>
-- 숫자는 insight에만 많아야 하나 써요. insightKey 항목이나 stats에 적힌 값을 그대로 옮겨요. 서버는 insight 숫자를 그 항목과 stats로만 확인해서, 다른 항목의 숫자를 쓰면 문장이 빠져요.
-- tips는 숫자 대신 "하나", "몇 개" 같은 말로 써요.
+- insight의 숫자는 insightKey 항목이나 stats에 적힌 값 하나만 그대로 옮겨요. 서버는 insight 숫자를 그 항목과 stats로만 확인해서, 다른 항목의 숫자가 든 문장은 지워요.
+- 다른 항목과 비교하고 싶으면 숫자 없이 말로 비교해요(예: "월요일은 모두 끝냈지만 토요일은 비어 있었어요"). 항목마다의 숫자는 같은 화면의 차트가 보여 줘요.
+- tips는 숫자 대신 "하나", "몇 개", "짧게" 같은 말로 써요. 퍼센트·날짜·시간 길이도 말로 써요. 숫자가 든 tip은 서버가 근거를 확인할 수 없어 버려요.
 - 사실은 report_data에 있는 것만 말해요. 시간대·장소·기분·원인은 데이터에 없으니 사용자가 고를 수 있는 선택지로 써요.
 - 이전 기간과의 비교는 stats.completionRateDelta가 있을 때 전체 달성률로만 해요.
 - focus.strongest·weakest는 할 일이 충분한 항목 중 달성률이 가장 높은·낮은 항목의 key예요. insight는 보통 이 둘 중 하나나 기간 전체 흐름을 다뤄요.

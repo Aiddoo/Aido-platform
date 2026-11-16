@@ -78,9 +78,9 @@ const EXAMPLES: readonly ReportExample[] = [
       },
     },
     output: {
-      insightKey: "MON",
-      insight: "Monday was your most reliable day, with 80% done.",
-      tips: ["This month, add a to-do like your Monday ones on another weekday."],
+      insightKey: "SAT",
+      insight: "Mondays mostly got done, but most Saturday to-dos stayed open.",
+      tips: ["This month, give Saturdays one quick to-do like the ones you finish on Mondays."],
     },
   },
   {

@@ -76,9 +76,9 @@ const EXAMPLES: readonly ReportExample[] = [
       },
     },
     output: {
-      insightKey: "MON",
-      insight: "월요일에는 80%를 끝내 한 달 중 가장 꾸준했어요.",
-      tips: ["이번 달에는 월요일에 끝낸 일과 비슷한 일을 다른 평일에도 하나 등록해보세요."],
+      insightKey: "SAT",
+      insight: "월요일은 대부분 끝냈지만 토요일에는 할 일이 거의 그대로 남았어요.",
+      tips: ["이번 달 토요일에는 월요일처럼 금방 끝낼 일 하나만 등록해보세요."],
     },
   },
   {

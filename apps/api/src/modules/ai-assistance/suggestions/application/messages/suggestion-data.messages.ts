@@ -1,5 +1,8 @@
+import { uniqBy } from "es-toolkit";
+
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
+import { toActivityKey } from "../../domain/recorded-activity-evidence.domain-service.js";
 import {
   buildSuggestionCandidates,
   type SuggestionCandidate,
@@ -11,6 +14,8 @@ import type { SuggestionContext } from "../read-models/suggestion-context.read-m
 
 /** 프롬프트에 넣는 제목 길이. 저장되는 제목은 원본이다. */
 const PROMPT_TITLE_MAX_LENGTH = 80;
+/** 모델에 보내는 최근 응답 이력 수. 키가 같은 활동은 서버가 전체 이력으로 다시 거른다 */
+export const MAX_SUGGESTION_HISTORY_ITEMS = 30;
 
 export interface SuggestionData {
   readonly mode: SuggestionMode;
@@ -30,9 +35,8 @@ export function buildSuggestionData(context: SuggestionContext): SuggestionData 
         categoryName: shorten(candidate.categoryName),
       }),
     ),
-    history: context.suggestionHistory.map(({ title, status }) => ({
-      title: shorten(title),
-      status,
-    })),
+    history: uniqBy(context.suggestionHistory, ({ title }) => toActivityKey(title))
+      .slice(0, MAX_SUGGESTION_HISTORY_ITEMS)
+      .map(({ title, status }) => ({ title: shorten(title), status })),
   };
 }

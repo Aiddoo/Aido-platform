@@ -87,6 +87,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
         status: { in: ["ACCEPTED", "DISMISSED"] },
         updatedAt: { gte: instantFromDate(since) },
       },
+      orderBy: { updatedAt: "desc" },
     });
 
     return rows.map((row) => ({

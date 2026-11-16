@@ -76,7 +76,8 @@ export const suggestionPrompt: PromptDefinition<
   id: "suggestion",
   version: "suggestion@4",
   taskClass: "background",
-  maxInputChars: 16_000,
+  // 후보 30개(제목 80·카테고리 50자, 요일 7개)와 이력 30개(제목 80자)의 최대 user 턴이 약 33,700자다.
+  maxInputChars: 36_000,
   schema: suggestionDraftSchema,
   build: (context, locale) => ({
     system: SYSTEM[locale],

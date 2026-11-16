@@ -7,7 +7,11 @@ import {
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
-import type { AggregatedReportData } from "../../domain/ai-report.constants.js";
+import { numbersIn } from "../../../shared/domain/grounded-numbers.domain-service.js";
+import {
+  type AggregatedReportData,
+  REPORT_TEXT_MAX_LENGTH,
+} from "../../domain/ai-report.constants.js";
 import { reportDraftSchema } from "./report-content.wire.js";
 import {
   buildReportContext,
@@ -100,6 +104,12 @@ describe("리포트 프롬프트", () => {
       expect(
         examples.some(({ output }) => reportDraftSchema.parse(output).insightKey == null),
       ).toBe(true);
+      expect(
+        examples.some(({ output }) => {
+          const draft = reportDraftSchema.parse(output);
+          return draft.insightKey != null && numbersIn(draft.insight).length === 0;
+        }),
+      ).toBe(true);
     },
   );
 
@@ -146,13 +156,16 @@ describe("리포트 프롬프트", () => {
   });
 
   it.each([
-    { locale: "ko" as const, fits: "가".repeat(60), over: "가".repeat(61), tip: "가".repeat(46) },
-    { locale: "en" as const, fits: "a".repeat(120), over: "a".repeat(121), tip: "a".repeat(91) },
+    { locale: "ko" as const, letter: "가" },
+    { locale: "en" as const, letter: "a" },
   ])(
     "$locale 길이를 넘는 문장은 자르지 않고 버리고 팁은 2개까지 남긴다",
-    async ({ locale, fits, over, tip }) => {
+    async ({ locale, letter }) => {
       // Given
-      const tips = ["  ", "첫 팁", tip, "둘째 팁", "셋째 팁"];
+      const maxLength = REPORT_TEXT_MAX_LENGTH[locale];
+      const fits = letter.repeat(maxLength.insight);
+      const over = letter.repeat(maxLength.insight + 1);
+      const tips = ["  ", "첫 팁", letter.repeat(maxLength.tip + 1), "둘째 팁", "셋째 팁"];
       // When
       const { value } = await generate({ insightKey: null, insight: ` ${fits} `, tips }, locale);
       const rejected = generate({ insightKey: null, insight: over, tips }, locale);

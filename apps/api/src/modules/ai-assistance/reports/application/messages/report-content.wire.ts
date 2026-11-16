@@ -11,7 +11,7 @@ export const reportDraftSchema = llmObject({
   insight: z
     .string()
     .describe(
-      "One sentence in the app language: the single most useful pattern, not a recap of the charts. At most one number, copied exactly.",
+      "One sentence in the app language about the insightKey item: the single most useful pattern, not a recap of the charts. At most one number, copied exactly from that item or stats; compare other items in words.",
     ),
   tips: z
     .array(z.string())

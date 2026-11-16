@@ -13,5 +13,6 @@ export abstract class SuggestionActivityReaderPort {
     to: Date,
     timezone: string,
   ): Promise<TodoSummaryForAnalysis[]>;
+  /** 최근에 응답한 것부터. 프롬프트는 같은 활동의 가장 최근 응답만 남긴다 */
   abstract findRecentResponded(userId: UserId, since: Date): Promise<SuggestionHistoryItem[]>;
 }
