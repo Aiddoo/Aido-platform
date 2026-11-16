@@ -39,11 +39,11 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
 }) {
   const { t } = useTranslation('ai');
   const [{ suggestionId }] = useRouteParams(suggestionParamsSchema);
-  const [{ data: suggestions }, { data: categoriesData }] = useSuspenseQueries({
+  const [{ data: list }, { data: categoriesData }] = useSuspenseQueries({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });
   const suggestion = useRetainedValue(
-    suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
+    list.suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
   );
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesData.categories,
@@ -70,7 +70,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
           { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
         )
       }
-      submitLabel={t('suggestions.category.submit')}
+      submitLabel={t('suggestions.item.make')}
       isLoading={actOnSuggestionMutation.isPending}
     />
   );

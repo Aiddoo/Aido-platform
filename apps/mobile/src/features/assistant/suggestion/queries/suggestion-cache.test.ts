@@ -14,7 +14,7 @@ describe('invalidateAiSuggestions', () => {
 
   it('추천 목록만 다시 불러오고 리포트 상태는 그대로 둔다', async () => {
     // Given
-    queryClient.setQueryData(SUGGESTION_QUERY_KEYS.list(), []);
+    queryClient.setQueryData(SUGGESTION_QUERY_KEYS.list(), { suggestions: [], analysis: null });
     queryClient.setQueryData(REPORT_QUERY_KEYS.status(), {
       daysUntilWeekly: 1,
       daysUntilMonthly: 1,

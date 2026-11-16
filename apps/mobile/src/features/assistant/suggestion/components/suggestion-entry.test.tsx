@@ -94,7 +94,10 @@ describe('SuggestionEntry', () => {
 
   it('프리미엄으로 알았지만 서버가 제안을 거절하면 다시 시도 대신 결제 안내를 보인다', async () => {
     // When
-    await renderFeedEntry({ isPremiumCached: true }, new ApiError('AI_1309', '프리미엄 전용', 403));
+    await renderFeedEntry(
+      { isPremiumCached: true },
+      new ApiError(ErrorCode.AI_1309, '프리미엄 전용', HttpStatus.FORBIDDEN),
+    );
 
     // Then
     expect(await screen.findByText(PREMIUM_ONLY_LABEL)).toBeTruthy();

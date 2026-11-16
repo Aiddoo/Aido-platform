@@ -10,7 +10,8 @@ import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
-import { invalidateAiSuggestions } from './suggestion-cache';
+import { invalidateAiSuggestions, setSuggestionAnalysisInCache } from './suggestion-cache';
+import { SUGGESTION_MUTATION_KEYS } from './suggestion-mutation-keys';
 
 interface ActOnSuggestionVariables {
   suggestionId: number;
@@ -31,7 +32,7 @@ export function useActOnSuggestionMutationOptions() {
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
       unwrap(await suggestionApi.actOnSuggestion(suggestionId, input)),
     onSuccess: (_result, { input }) => {
-      trackEvent('ai_suggestion_acted', { action: input.action });
+      trackEvent('ai_suggestion_acted', { action: input.action, source: 'suggestions_screen' });
       toast.success(
         input.action === 'accept'
           ? t('ai:suggestions.toasts.accepted')
@@ -65,5 +66,20 @@ export function useActOnSuggestionMutationOptions() {
         isHandledByFeature: isLimitedFeatureError,
       },
     },
+  });
+}
+
+export function useRequestSuggestionAnalysisMutationOptions() {
+  const suggestionApi = useSuggestionApi();
+  const queryClient = useQueryClient();
+
+  return mutationOptions({
+    mutationKey: SUGGESTION_MUTATION_KEYS.requestAnalysis(),
+    mutationFn: async () => unwrap(await suggestionApi.requestAnalysis()),
+    onSuccess: (analysis) => {
+      setSuggestionAnalysisInCache(queryClient, analysis);
+    },
+    onSettled: () => invalidateAiSuggestions(queryClient),
+    meta: { errorFeedback: { feature: 'ai', fallbackKey: 'ai:suggestions.toasts.retryLater' } },
   });
 }

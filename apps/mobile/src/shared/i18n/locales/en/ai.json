@@ -56,36 +56,41 @@
     }
   },
   "suggestions": {
-    "list": {
-      "emptyNoHistory": "No suggestions yet",
-      "emptyNoHistoryDescription": "As your to-do history grows, AI will spot recurring patterns and suggest them here",
-      "emptyNoPending": "Nothing to suggest right now",
-      "emptyNoPendingDescription": "New recurring patterns will show up here as soon as we find them",
-      "header_one": "{{count}} suggestion has arrived",
-      "header_other": "{{count}} suggestions have arrived",
-      "headerDescription": "We analyze your recurring patterns and suggest them back",
-      "allDay": "All day",
-      "confidence": "Confidence {{value}}",
-      "expires": "Expires {{date}}",
-      "reject": "Dismiss",
-      "accept": "Accept"
+    "item": {
+      "make": "Make it repeat",
+      "dismiss": "Not needed",
+      "evidence": "Done {{done}} of {{total}} times in the last 2 weeks"
     },
+    "status": {
+      "hasSuggestions_one": "Found {{count}} to-do you do often",
+      "hasSuggestions_other": "Found {{count}} to-dos you do often",
+      "hasSuggestionsDescription": "Make them repeat so you don't have to add them each time",
+      "analyzing": "Looking at your recent to-dos",
+      "analyzingDescription": "This only takes a moment",
+      "doneForToday": "You've gone through today's suggestions",
+      "noPatternFound": "No repeating to-dos found yet",
+      "unavailableToday": "We couldn't check today",
+      "needsMoreTodos": "Add to-dos and we'll find the ones you do often",
+      "needsMoreTodosDescription": "We'll look at the to-dos from the last 2 weeks",
+      "addTodo": "Add a to-do",
+      "waitingForNextRun": "Waiting for the next check",
+      "nextAnalysisAt": "We'll look again {{time}}",
+      "requestNow": "Check now"
+    },
+    "expiryNotice": "Suggestions go away after 14 days",
     "paywall": {
       "title": "Let AI suggest your to-dos",
       "description": "Get personalized to-do suggestions based on your recurring patterns",
-      "sampleTitle": "Morning stretch every day",
-      "sampleConfidence": "Confidence 92%",
-      "sampleSchedule": "Mon, Tue, Wed, Thu, Fri · 07:30",
-      "sampleReason": "We spotted a morning workout pattern over the last 2 weeks",
+      "previewTitle": "Morning stretch",
+      "previewDays": "Mon, Tue, Wed, Thu, Fri",
+      "previewTime": "7:30 AM",
+      "previewEvidence": "Done 8 of 9 times in the last 2 weeks",
       "subscribeCta": "Subscribe to get suggestions"
-    },
-    "category": {
-      "submit": "Create"
     },
     "toasts": {
       "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
       "retryLater": "Please try again later",
-      "accepted": "Suggestion accepted — your repeating to-do is ready.",
+      "accepted": "Made it repeat",
       "rejected": "Suggestion dismissed."
     }
   },

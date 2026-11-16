@@ -12,9 +12,11 @@ import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, Suspense } from 'react';
+import { match } from 'ts-pattern';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
+import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
 
 export function SuggestionEntry() {
   const { t } = useTranslation('todo');
@@ -29,7 +31,7 @@ export function SuggestionEntry() {
   if (!canUseSuggestions) {
     return (
       <InfoCard
-        label={t('feed.routineSuggestion')}
+        label={t('feed.suggestionFree')}
         isPremiumOnly
         onPress={() => push('/suggestions')}
       />
@@ -73,15 +75,24 @@ interface PremiumSuggestionEntryProps {
 function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
   const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
-  const { data: suggestionCount } = useSuspenseQuery({
+  const { data: view } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
-    select: (suggestions) => suggestions.length,
+    select: (list) => ({
+      state: getSuggestionDisplayState(list),
+      count: list.suggestions.length,
+    }),
   });
 
-  const label =
-    suggestionCount > 0
-      ? t('feed.suggestionsArrived', { name, count: suggestionCount })
-      : t('feed.preparing');
+  const label = match(view.state)
+    .with('HAS_SUGGESTIONS', () => t('feed.suggestionsArrived', { name, count: view.count }))
+    .with('ANALYZING', () => t('feed.suggestion.analyzing'))
+    .with('DONE_FOR_TODAY', () => t('feed.suggestion.doneForToday'))
+    .with('NO_PATTERN_FOUND', () => t('feed.suggestion.noPatternFound'))
+    .with('UNAVAILABLE_TODAY', () => t('feed.suggestion.unavailableToday'))
+    .with('NEEDS_MORE_TODOS', () => t('feed.suggestion.needsMoreTodos'))
+    .with('NEEDS_AI_CONSENT', () => t('feed.suggestion.needsAiConsent'))
+    .with('WAITING_FOR_NEXT_RUN', () => t('feed.suggestion.waitingForNextRun'))
+    .exhaustive();
 
   return <InfoCard label={label} onPress={() => push('/suggestions')} />;
 }

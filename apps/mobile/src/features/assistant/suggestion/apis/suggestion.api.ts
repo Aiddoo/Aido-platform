@@ -1,9 +1,13 @@
-import { suggestionActionResponseSchema, suggestionListResponseSchema } from '@aido/api';
+import {
+  suggestionActionResponseSchema,
+  suggestionAnalysisResponseSchema,
+  suggestionListResponseSchema,
+} from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import type { AiSuggestionActionInput } from '../schemas/suggestion-action-request.schema';
-import { toAiSuggestion } from './suggestion.mapper';
+import { toAiSuggestion, toAiSuggestionList, toSuggestionAnalysis } from './suggestion.mapper';
 
 export class SuggestionApi {
   readonly #httpClient: HttpClient;
@@ -16,8 +20,16 @@ export class SuggestionApi {
     parseApiResponse(
       await this.#httpClient.get('v1/ai/suggestions', { signal }),
       suggestionListResponseSchema,
-      (dto) => dto.suggestions.map(toAiSuggestion),
+      toAiSuggestionList,
       '[SuggestionApi] Invalid getSuggestions response',
+    );
+
+  requestAnalysis = async () =>
+    parseApiResponse(
+      await this.#httpClient.post('v1/ai/suggestions/analyses'),
+      suggestionAnalysisResponseSchema,
+      (dto) => toSuggestionAnalysis(dto.analysis),
+      '[SuggestionApi] Invalid requestAnalysis response',
     );
 
   actOnSuggestion = async (suggestionId: number, input: AiSuggestionActionInput) =>
