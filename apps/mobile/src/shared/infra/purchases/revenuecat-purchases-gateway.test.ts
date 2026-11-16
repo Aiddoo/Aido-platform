@@ -192,6 +192,12 @@ describe('toPurchasesGatewayError', () => {
       '2',
     ],
     [
+      '기기에서 Play 스토어가 막혀 결제할 수 없으면',
+      sdkError(PURCHASES_ERROR_CODE.PURCHASE_NOT_ALLOWED_ERROR),
+      'store-problem',
+      '3',
+    ],
+    [
       '사용자가 결제를 취소하면',
       sdkError(PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR),
       'cancelled',
