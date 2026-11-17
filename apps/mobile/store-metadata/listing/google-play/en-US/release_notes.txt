@@ -1,7 +1,14 @@
-AI suggestions and reports are clearer, with reasons and charts.
+New
+- AI suggestions (Premium) find to-dos you repeat and say why. Check now gets them instantly.
+- AI reports (Premium) chart your days, with tips from your AI coach.
+- Preview AI features and this week's record for free.
+- Turn off just AI alerts in Settings.
 
-- AI suggestions show why, and you get an analysis right away without waiting for the morning.
-- To-dos that differ only in spacing or emoji group together.
-- AI reports show daily progress, hourly charts, and a coach note.
-- Free plan shows your record for this week and sample AI suggestions and reports.
-- Suggestion alerts arrive at 9 AM, and you can turn off AI alerts on their own in Settings.
+Improvements
+- To-dos differing only in spacing or emoji count as one.
+- Repeating to-dos aren't suggested again.
+- TalkBack reads charts aloud.
+
+Bug fixes
+- Fixed the shown report arrival time.
+- Fixed suggestions with many to-dos.
