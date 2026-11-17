@@ -1,18 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import {
-  and,
-  asc,
-  eq,
-  exists,
-  gt,
-  ilike,
-  isNull,
-  notInArray,
-  or,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { and, asc, eq, exists, gt, ilike, isNull, ne, or, sql, type SQL } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userProfile } from "#api/platform/database/schema/index";
@@ -23,9 +11,10 @@ import type {
   UserSearchReaderPort,
 } from "../../application/ports/user-search.reader.port.js";
 import type { UserSearchMatchReadModel } from "../../application/read-models/user-brief.read-model.js";
+import type { UserExclusionCondition } from "./user-conditions.query-fragment.js";
 
 @Injectable()
-export class DrizzleUserSearchReader implements UserSearchReaderPort {
+export class DrizzleUserSearchReader implements UserSearchReaderPort<UserExclusionCondition> {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
@@ -33,7 +22,7 @@ export class DrizzleUserSearchReader implements UserSearchReaderPort {
   }
 
   async searchActiveUsers(params: {
-    readonly criteria: UserSearchCriteria;
+    readonly criteria: UserSearchCriteria<UserExclusionCondition>;
     readonly after: { readonly rank: number; readonly userId: UserId } | null;
     readonly limit: number;
   }): Promise<UserSearchMatchReadModel[]> {
@@ -90,7 +79,7 @@ export class DrizzleUserSearchReader implements UserSearchReaderPort {
     }));
   }
 
-  countActiveUsers(criteria: UserSearchCriteria): Promise<number> {
+  countActiveUsers(criteria: UserSearchCriteria<UserExclusionCondition>): Promise<number> {
     return this.#db.$count(
       user,
       and(
@@ -110,16 +99,12 @@ export class DrizzleUserSearchReader implements UserSearchReaderPort {
     );
   }
 
-  #isSearchable(criteria: UserSearchCriteria): SQL | undefined {
+  #isSearchable(criteria: UserSearchCriteria<UserExclusionCondition>): SQL | undefined {
     return and(
+      ne(user.id, criteria.searcherId.value),
       isNull(user.deletedAt),
       eq(user.status, "ACTIVE"),
-      criteria.excludedUserIds.length === 0
-        ? undefined
-        : notInArray(
-            user.id,
-            criteria.excludedUserIds.map((userId) => userId.value),
-          ),
+      criteria.exclusion(user.id),
     );
   }
 

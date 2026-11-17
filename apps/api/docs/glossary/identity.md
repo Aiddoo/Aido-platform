@@ -22,7 +22,7 @@
 | 사용자 잠금  | `UserMutationLockPort.lockById`                      | User 행 잠금. 로그인 수단·비밀번호를 바꾸는 요청과 다른 Context의 차감·보상이 같은 잠금을 잡는다. 사용자가 없으면 `false`                         |
 | AI 사용량 칸 | `UserAiUsageCounterPort`                             | 출시 앱 `/v1/ai/usage`·`/me`가 읽는 `User.aiUsageCount`·`aiUsageResetAt`. access 원장이 사용자 잠금 안에서 읽고 조건부로 바꾸는 유일한 문이다     |
 | 사용자 요약  | `UserBriefReaderPort`, `UserBriefReadModel`          | social이 사람을 확인·표시하는 문. id 묶음으로 태그·이름·프로필 이미지·탈퇴 대기를 한 번에 읽고, 활성 여부·태그 조회·가입 신원(로그인 수단)을 준다 |
-| 사용자 검색  | `UserSearchReaderPort`                               | ACTIVE이고 탈퇴 대기가 아닌 사람을 Aido ID·이름으로 찾는다. 순위는 태그 정확·태그 앞부분·이름 앞부분·부분 일치다. 뺄 사람은 부르는 쪽이 넘긴다    |
+| 사용자 검색  | `UserSearchReaderPort`, `UserExclusionCondition`     | ACTIVE이고 탈퇴 대기가 아닌 사람을 Aido ID·이름으로 찾는다. 순위는 태그 정확·태그 앞부분·이름 앞부분·부분 일치다. 뺄 사람은 부르는 쪽 조건이다    |
 | 사용자 조건  | `undeletedUserCondition`, `userTagContainsCondition` | 다른 Context가 사람 id 칸으로 페이지를 고를 때 붙이는 SQL 조건. 사용자 테이블을 직접 읽지 않게 identity가 연다                                    |
 
 ## sessions

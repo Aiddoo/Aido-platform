@@ -3,5 +3,5 @@ export {
   UserBlockReaderPort,
   type UserBlockRelation,
 } from "./application/ports/user-block.reader.port.js";
-export { hasNoBlockWith } from "./infrastructure/persistence/drizzle-user-block.reader.js";
+export { hasNoBlockWith } from "./infrastructure/persistence/user-blocks.query-fragment.js";
 export { SocialUserBlocksQueriesModule } from "./social-user-blocks-queries.module.js";

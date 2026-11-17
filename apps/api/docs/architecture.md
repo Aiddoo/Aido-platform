@@ -99,7 +99,7 @@ presentation → application → domain        infrastructure → application(po
 | 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지      | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`        |
 
 - 규칙은 모든 Context에 같은 세기로 걸린다. 예외 목록이나 "옮긴 Context만" 같은 단계 구분을 두지 않는다.
-- 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todo-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)).
+- 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todo-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.
 - 포트가 abstract class라 런타임 import가 생긴다. ESM에서는 순환이 부팅 실패로 드러나므로 앱 부팅 E2E(Health)로 확인한다.
 

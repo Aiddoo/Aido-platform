@@ -24,4 +24,4 @@ export {
   freeAccessCondition,
   premiumAccessCondition,
   validStoreEntitlementCondition,
-} from "./infrastructure/persistence/premium-access-condition.reader.js";
+} from "./infrastructure/persistence/premium-access-conditions.query-fragment.js";

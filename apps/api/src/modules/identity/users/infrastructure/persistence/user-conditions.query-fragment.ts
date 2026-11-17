@@ -24,3 +24,6 @@ export function userTagContainsCondition(userIdColumn: AnyPgColumn, fragment: st
       .where(and(eq(user.id, userIdColumn), ilike(user.userTag, pattern))),
   );
 }
+
+// 거꾸로 다른 Context가 자기 테이블로 만들어 넘기는 조건이다. 사용자 검색 SQL이 사용자 id 칸에 붙여 결과에서 뺀다
+export type UserExclusionCondition = (userIdColumn: AnyPgColumn) => SQL;

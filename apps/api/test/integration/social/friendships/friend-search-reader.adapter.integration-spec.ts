@@ -6,8 +6,7 @@ import { UserSearchTerm } from "#api/modules/social/friendships/domain/user-sear
 import { FriendSearchReaderAdapter } from "#api/modules/social/friendships/infrastructure/adapters/friend-search-reader.adapter";
 import { DrizzleFriendReader } from "#api/modules/social/friendships/infrastructure/persistence/drizzle-friend.reader";
 import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/infrastructure/persistence/drizzle-friendship.repository";
-import { DrizzleUserBlockReader } from "#api/modules/social/user-blocks/infrastructure/persistence/drizzle-user-block.reader";
-import { user, userProfile } from "#api/platform/database/schema/index";
+import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserFixture } from "#test/fixtures/index";
 import { createFriendshipFixture } from "#test/fixtures/social/friendship.fixture";
@@ -54,7 +53,6 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
     friendshipRepository = new DrizzleFriendshipRepository(transactionHost);
     searchReader = new FriendSearchReaderAdapter(
       new DrizzleUserSearchReader(transactionHost),
-      new DrizzleUserBlockReader(transactionHost),
       new DrizzleFriendReader(transactionHost, new DrizzleUserBriefReader(transactionHost)),
     );
   });
@@ -112,6 +110,30 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
 
     // Then
     expect(results.map((result) => result.user.id)).toEqual([CONTAINS_SECOND]);
+  });
+
+  it("어느 쪽이든 차단 관계인 사람은 결과와 개수에서 빠진다", async () => {
+    // Given
+    await client.insert(userBlock).values([
+      { blockerId: VIEWER, blockedId: EXACT_TAG },
+      { blockerId: TAG_PREFIX, blockedId: VIEWER },
+    ]);
+    const viewerId = UserId.reconstitute(VIEWER);
+    const term = UserSearchTerm.create("kim");
+
+    // When
+    const [results, count] = await Promise.all([
+      searchReader.searchUsers({ viewerId, term, after: null, limit: 10 }),
+      searchReader.countUsers({ viewerId, term }),
+    ]);
+
+    // Then
+    expect(results.map((result) => result.user.id)).toEqual([
+      NAME_PREFIX,
+      CONTAINS_FIRST,
+      CONTAINS_SECOND,
+    ]);
+    expect(count).toBe(3);
   });
 
   it("관계 표시는 검색한 사람 기준의 팔로우·팔로워·친구·보낸 요청이다", async () => {

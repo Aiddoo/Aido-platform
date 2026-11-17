@@ -110,7 +110,6 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     );
     friendSearchReader = new FriendSearchReaderAdapter(
       new DrizzleUserSearchReader(transactionHost),
-      new DrizzleUserBlockReader(transactionHost),
       new DrizzleFriendReader(transactionHost, new DrizzleUserBriefReader(transactionHost)),
     );
     const blockRepository = new DrizzleUserBlockRepository(transactionHost);

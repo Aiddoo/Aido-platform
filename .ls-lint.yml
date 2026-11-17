@@ -71,6 +71,9 @@ ls:
     .reader.ts: kebab-case
     .reader.spec.ts: kebab-case
     .reader.integration-spec.ts: kebab-case
+    .query-fragment.ts: kebab-case
+    .query-fragment.spec.ts: kebab-case
+    .query-fragment.integration-spec.ts: kebab-case
     .mapper.ts: kebab-case
     .mapper.spec.ts: kebab-case
     .mapper.integration-spec.ts: kebab-case

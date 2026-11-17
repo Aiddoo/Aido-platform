@@ -1,31 +1,15 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, inArray, notExists, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
-import { QueryBuilder } from "drizzle-orm/pg-core";
+import { and, eq, inArray, or } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { userBlock } from "#api/platform/database/schema/index";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   UserBlockReaderPort,
   UserBlockRelation,
 } from "../../application/ports/user-block.reader.port.js";
-
-// 콕·응원 기록처럼 상대가 정해진 행을 고를 때 붙여 차단 관계를 행마다 따로 읽지 않고 한 SQL의 NOT EXISTS로 거른다
-export function hasNoBlockWith(userId: AnyColumn, viewerId: string): SQL {
-  return notExists(
-    new QueryBuilder()
-      .select({ one: sql`1` })
-      .from(userBlock)
-      .where(
-        or(
-          and(eq(userBlock.blockerId, userId), eq(userBlock.blockedId, viewerId)),
-          and(eq(userBlock.blockerId, viewerId), eq(userBlock.blockedId, userId)),
-        ),
-      ),
-  );
-}
 
 @Injectable()
 export class DrizzleUserBlockReader implements UserBlockReaderPort {
@@ -73,17 +57,6 @@ export class DrizzleUserBlockReader implements UserBlockReaderPort {
     return new Set(
       rows.map((row) => (row.blockerId === viewerId.value ? row.blockedId : row.blockerId)),
     );
-  }
-
-  async listCounterpartIds(userId: UserId): Promise<UserId[]> {
-    const rows = await this.#db
-      .select({ blockerId: userBlock.blockerId, blockedId: userBlock.blockedId })
-      .from(userBlock)
-      .where(or(eq(userBlock.blockerId, userId.value), eq(userBlock.blockedId, userId.value)));
-    const counterpartIds = new Set(
-      rows.map((row) => (row.blockerId === userId.value ? row.blockedId : row.blockerId)),
-    );
-    return [...counterpartIds].map((counterpartId) => UserId.reconstitute(counterpartId));
   }
 
   get #db() {

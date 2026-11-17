@@ -120,7 +120,6 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
       otherUserId,
       UserId.reconstitute(SUSPENDED_USER_ID),
     ]);
-    const allCounterparts = await reader.listCounterpartIds(BLOCKER_ID);
 
     // Then
     expect(relations).toEqual([
@@ -129,9 +128,6 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
       { isBlocking: false, isBlockedBy: false },
     ]);
     expect([...counterparts].toSorted()).toEqual(
-      [USER_BLOCK_FIXTURE_BLOCKED_ID, USER_BLOCK_FIXTURE_OTHER_USER_ID].toSorted(),
-    );
-    expect(allCounterparts.map((userId) => userId.value).toSorted()).toEqual(
       [USER_BLOCK_FIXTURE_BLOCKED_ID, USER_BLOCK_FIXTURE_OTHER_USER_ID].toSorted(),
     );
   });

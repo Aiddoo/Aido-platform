@@ -20,6 +20,4 @@ export abstract class UserBlockReaderPort {
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>>;
-  // userId와 어느 방향으로든 차단 관계인 모든 사용자다
-  abstract listCounterpartIds(userId: UserId): Promise<UserId[]>;
 }

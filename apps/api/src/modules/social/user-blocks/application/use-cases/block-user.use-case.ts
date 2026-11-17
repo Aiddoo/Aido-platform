@@ -79,7 +79,7 @@ export class BlockUserUseCase {
       if (existing == null) {
         await userBlockRepository.save(created);
       }
-      // 친구 관계 캐시는 friends가 커밋 뒤 비운다
+      // 친구 관계 캐시는 friendships가 커밋 뒤 비운다
       const removedFriendshipCount = await friendshipSeverance.severBetween(blockerId, blockedId);
       return {
         block: existing ?? created,
