@@ -1,8 +1,12 @@
 import '@src/shared/i18n/init';
+import { NIGHT_TIME_CONFIG, type SupportedLocale } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { toPreference } from '@src/features/identity/preference/apis/preference.mapper';
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
+import { formatHourLabel, type TimeFormat } from '@src/shared/date/format/date-format';
+import { i18n } from '@src/shared/i18n';
+import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -84,4 +88,28 @@ describe('PushDeliverySettings', () => {
     expect(pushNotification.requestPermission).not.toHaveBeenCalled();
     expect(getPushPermissionEvents()).toEqual([]);
   });
+});
+
+describe('야간 알림 설명', () => {
+  it.each([
+    ['ko', 'TWELVE_HOUR', '오후 9시부터 오전 8시까지도'],
+    ['ko', 'TWENTY_FOUR_HOUR', '21시부터 8시까지도'],
+    ['en', 'TWELVE_HOUR', 'from 9 PM to 8 AM'],
+  ] as const satisfies readonly (readonly [SupportedLocale, TimeFormat, string])[])(
+    '%s %s는 야간 시각을 "%s"로 쓴다',
+    (locale, timeFormat, expected) => {
+      // Given
+      const context = { locale: APP_LOCALES[locale].intlLocale, timeZone: 'Asia/Seoul' };
+      const t = i18n.getFixedT(locale, 'notification');
+
+      // When
+      const description = t('settings.nightPushDescription', {
+        start: formatHourLabel(NIGHT_TIME_CONFIG.START_HOUR, timeFormat, context),
+        end: formatHourLabel(NIGHT_TIME_CONFIG.END_HOUR, timeFormat, context),
+      });
+
+      // Then
+      expect(description.replaceAll('\u00A0', ' ')).toContain(expected);
+    },
+  );
 });
