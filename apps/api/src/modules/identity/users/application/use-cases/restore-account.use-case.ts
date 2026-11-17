@@ -15,7 +15,7 @@ export interface RestoreAccountCommand {
 }
 
 interface RestoreAccountDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "saveAccountStatus">;
+  readonly userRepository: Pick<UserRepositoryPort, "save">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
 }
 
@@ -32,7 +32,7 @@ export class RestoreAccountUseCase {
     if (!input.user.restore(input.at)) {
       return;
     }
-    await this.#dependencies.userRepository.saveAccountStatus(input.user);
+    await this.#dependencies.userRepository.save(input.user);
     await this.#dependencies.securityLogRepository.create({
       userId: input.user.id,
       event: SECURITY_EVENT.ACCOUNT_RESTORED,

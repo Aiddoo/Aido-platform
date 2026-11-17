@@ -27,10 +27,7 @@ export interface VerifyEmailCommand {
 }
 
 interface VerifyEmailDependencies {
-  readonly userRepository: Pick<
-    UserRepositoryPort,
-    "findByEmail" | "markEmailVerified" | "findByIdWithProfile"
-  >;
+  readonly userRepository: Pick<UserRepositoryPort, "findByEmail" | "save" | "findByIdWithProfile">;
   readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "activateNewUser">;
   readonly sessionService: Pick<CreateSessionUseCase, "execute">;
@@ -76,10 +73,9 @@ export class VerifyEmailUseCase {
         type: "EMAIL_VERIFY",
       });
 
-      await this.#dependencies.userRepository.markEmailVerified(
-        user.id,
-        this.#dependencies.clock.now(),
-      );
+      if (user.markEmailVerified(this.#dependencies.clock.now())) {
+        await this.#dependencies.userRepository.save(user);
+      }
 
       await this.#dependencies.retentionEnroller.activateNewUser(user.id);
 

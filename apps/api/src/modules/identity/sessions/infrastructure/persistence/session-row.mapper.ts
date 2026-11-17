@@ -20,6 +20,7 @@ export function toSession(row: SessionRow): Session {
     updatedAt: row.updatedAt,
     expiresAt: row.expiresAt,
     revokedAt: row.revokedAt,
+    revokedReason: row.revokedReason,
   });
 }
 

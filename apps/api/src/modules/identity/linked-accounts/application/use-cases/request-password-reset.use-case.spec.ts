@@ -57,7 +57,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       if (state === "탈퇴한") {
         const user = createUserFixture(fixture.user);
         user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.saveAccountStatus(user);
+        await fixture.userRepository.save(user);
       }
       const useCase = new RequestPasswordResetUseCase(fixture);
 

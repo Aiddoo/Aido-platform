@@ -42,6 +42,10 @@ export class ExchangeOAuthCodeUseCase {
       throw this.#invalidCode();
     }
     const { accessToken, refreshToken, userId } = exchange;
+    // 저장한 토큰을 먼저 꺼낸 뒤 소비한다. 소비하면 토큰 칸을 비운다
+    if (!state.consume(at)) {
+      throw this.#invalidCode();
+    }
     const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
       id: state.id,
       exchangeCode: input.code,
@@ -51,7 +55,6 @@ export class ExchangeOAuthCodeUseCase {
     if (!consumed) {
       throw this.#invalidCode();
     }
-    state.consume(at);
     this.#dependencies.logger.debug({ event: OAuthStateLogEvent.OAUTH_EXCHANGE_CONSUMED, userId });
     // 웹 콜백은 시스템 브라우저 요청이라 앱 버전·기기가 없다. 코드는 일회용이라 알림도 한 번만 나간다.
     if (state.isNewUser === true) {

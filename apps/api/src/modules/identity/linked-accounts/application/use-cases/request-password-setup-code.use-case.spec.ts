@@ -46,7 +46,7 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
       if (state === "탈퇴한") {
         const user = createUserFixture(fixture.user);
         user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.saveAccountStatus(user);
+        await fixture.userRepository.save(user);
       }
       const useCase = new RequestPasswordSetupCodeUseCase(fixture);
       const errorCode =

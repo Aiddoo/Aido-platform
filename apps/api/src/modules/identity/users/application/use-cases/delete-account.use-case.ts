@@ -29,7 +29,7 @@ export interface DeleteAccountCommand {
 }
 
 interface DeleteAccountDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "findById" | "saveAccountStatus">;
+  readonly userRepository: Pick<UserRepositoryPort, "findById" | "save">;
   readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findAllByUserId">;
   readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
   readonly passwordService: Pick<PasswordHasherPort, "verify">;
@@ -81,7 +81,7 @@ export class DeleteAccountUseCase {
     const identityUser = user;
     identityUser.requestDeletion(deletedAt);
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.saveAccountStatus(identityUser);
+      await this.#dependencies.userRepository.save(identityUser);
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
         userId: identityUser.id,
         reason: REVOKE_REASON.ACCOUNT_DELETION,

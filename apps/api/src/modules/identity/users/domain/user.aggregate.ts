@@ -74,6 +74,18 @@ export class User extends AggregateRoot<UserId, UserProps> {
     throw accountDeleted(this.id.value);
   }
 
+  // 메일 인증 전 가입만 ACTIVE로 바꾼다. 정지·잠금 상태는 인증 시각만 남기고 그대로 둔다
+  markEmailVerified(now: Temporal.Instant): boolean {
+    if (this.props.emailVerifiedAt != null) {
+      return false;
+    }
+    this.props.emailVerifiedAt = now;
+    if (this.props.status === "PENDING_VERIFY") {
+      this.props.status = "ACTIVE";
+    }
+    return true;
+  }
+
   requestDeletion(now: Temporal.Instant): void {
     if (this.props.deletedAt != null) {
       throw accountDeleted(this.id.value);

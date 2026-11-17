@@ -81,9 +81,7 @@ async function saveUserStatus(
   status: UserStatus,
   deletedAt: Temporal.Instant | null = null,
 ): Promise<void> {
-  await fixture.userRepository.saveAccountStatus(
-    createUserFixture({ ...fixture.user, status, deletedAt }),
-  );
+  await fixture.userRepository.save(createUserFixture({ ...fixture.user, status, deletedAt }));
 }
 
 function daysBeforeNow(days: number): Temporal.Instant {

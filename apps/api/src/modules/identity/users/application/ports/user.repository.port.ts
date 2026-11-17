@@ -45,13 +45,12 @@ export abstract class UserRepositoryPort {
     userId: UserId,
     data: { name?: string; profileImage?: string },
   ): Promise<void>;
-  abstract markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void>;
   abstract updateProfile(
     userId: UserId,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<{ name: string | null; profileImage: string | null }>;
-  /** 탈퇴 요청·복구로 바뀐 상태(status·deletedAt)만 저장한다 */
-  abstract saveAccountStatus(user: User): Promise<void>;
+  /** 계정 상태 칸(status·emailVerifiedAt·deletedAt)만 저장한다. 구독·사용량 칸은 다른 Context가 쓴다 */
+  abstract save(user: User): Promise<void>;
   /** 계정 변경을 직렬화하려고 사용자 행을 잠그고 읽는다(FOR NO KEY UPDATE) */
   abstract findByIdForUpdate(id: UserId): Promise<User | null>;
   /** 탈퇴 유예가 지난 사용자를 id 순으로 limit명까지 */

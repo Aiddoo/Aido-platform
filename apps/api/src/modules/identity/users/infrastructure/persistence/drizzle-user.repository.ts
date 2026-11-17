@@ -151,10 +151,6 @@ export class DrizzleUserRepository
     throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
   }
 
-  async markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void> {
-    await this.#update(id.value, { emailVerifiedAt: now, status: "ACTIVE", updatedAt: now });
-  }
-
   async findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
     if (userIds.length === 0) {
       return [];
@@ -273,10 +269,11 @@ export class DrizzleUserRepository
     return requireRecord(profile);
   }
 
-  async saveAccountStatus(identityUser: User): Promise<void> {
-    const { status, deletedAt } = identityUser.toPrimitives();
+  async save(identityUser: User): Promise<void> {
+    const { status, emailVerifiedAt, deletedAt } = identityUser.toPrimitives();
     await this.#update(identityUser.id.value, {
       status,
+      emailVerifiedAt,
       deletedAt,
       updatedAt: this.#clock.now(),
     });

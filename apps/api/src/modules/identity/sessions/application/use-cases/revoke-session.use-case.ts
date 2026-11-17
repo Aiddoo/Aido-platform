@@ -21,7 +21,7 @@ export interface RevokeSessionCommand {
 }
 
 interface RevokeSessionDependencies {
-  readonly sessionRepository: Pick<SessionRepositoryPort, "findById" | "revoke">;
+  readonly sessionRepository: Pick<SessionRepositoryPort, "findById" | "save">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
@@ -44,11 +44,11 @@ export class RevokeSessionUseCase {
       throw sessionNotFound();
     }
 
-    await this.#dependencies.sessionRepository.revoke(
-      sessionId,
-      REVOKE_REASON.USER_REVOKE,
-      this.#dependencies.clock.now(),
-    );
+    // 이미 끊긴 세션은 처음 폐기 시각을 두고 같은 응답을 준다
+    const revoked = authSession.revoke(REVOKE_REASON.USER_REVOKE, this.#dependencies.clock.now());
+    if (!revoked || !(await this.#dependencies.sessionRepository.save(authSession))) {
+      return { message: "세션이 종료되었습니다." };
+    }
     await this.#dependencies.cacheService.invalidateSession(sessionId);
     await this.#dependencies.pushDevices.releaseSessions([sessionId]);
     await this.#dependencies.securityLogRepository.create({

@@ -100,7 +100,7 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
         socialOnly: state === "소셜 전용",
       });
       if (state === "탈퇴한") {
-        await fixture.userRepository.saveAccountStatus(
+        await fixture.userRepository.save(
           createUserFixture({
             ...fixture.user,
             status: "SUSPENDED",

@@ -17,9 +17,15 @@ export interface VerificationPrimitives {
   readonly createdAt: Temporal.Instant;
 }
 
-type VerificationProps = Omit<VerificationPrimitives, "id" | "userId"> & {
+interface VerificationProps {
   readonly userId: UserId;
-};
+  readonly type: VerificationType;
+  readonly tokenHash: string;
+  readonly expiresAt: Temporal.Instant;
+  attempts: number;
+  usedAt: Temporal.Instant | null;
+  readonly createdAt: Temporal.Instant;
+}
 
 export type VerificationValidity = (typeof VERIFICATION_VALIDITIES)[number];
 
@@ -83,6 +89,24 @@ export class Verification extends AggregateRoot<VerificationId, VerificationProp
 
   matches(tokenHash: string): boolean {
     return this.props.tokenHash === tokenHash;
+  }
+
+  // 쓸 수 있는 코드만 소비한다. 이미 썼거나 만료·소진이면 false다
+  consume(now: Temporal.Instant): boolean {
+    if (this.validityAt(now) !== "valid") {
+      return false;
+    }
+    this.props.usedAt = now;
+    return true;
+  }
+
+  // 쓸 수 있는 코드에 틀린 값을 넣었을 때만 시도로 센다
+  recordFailedAttempt(now: Temporal.Instant): boolean {
+    if (this.validityAt(now) !== "valid") {
+      return false;
+    }
+    this.props.attempts += 1;
+    return true;
   }
 
   toPrimitives(): VerificationPrimitives {

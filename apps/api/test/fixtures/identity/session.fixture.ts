@@ -25,6 +25,7 @@ export function createSessionFixture(overrides: Partial<SessionPrimitives> = {})
     updatedAt: AUTH_FIXTURE_NOW,
     expiresAt: AUTH_FIXTURE_NOW.add({ hours: 24 * 7 }),
     revokedAt: null,
+    revokedReason: null,
     ...overrides,
   });
 }

@@ -52,7 +52,7 @@ export class LinkOAuthAccountWithCodeUseCase {
         throw this.#invalidCode();
       }
       const providerAccountId = state.linkedProviderAccountId();
-      if (providerAccountId == null) {
+      if (providerAccountId == null || !state.consume(at)) {
         throw this.#invalidCode();
       }
       const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
@@ -65,7 +65,6 @@ export class LinkOAuthAccountWithCodeUseCase {
       if (!consumed) {
         throw this.#invalidCode();
       }
-      state.consume(at);
       return this.#dependencies.linkOAuthIdentity.execute({
         userId: input.userId,
         provider: state.provider,

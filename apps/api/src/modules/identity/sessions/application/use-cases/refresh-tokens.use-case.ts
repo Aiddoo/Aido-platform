@@ -39,7 +39,7 @@ export interface RefreshTokensCommand {
 interface RefreshTokensDependencies {
   readonly sessionRepository: Pick<
     SessionRepositoryPort,
-    "findByRefreshTokenHash" | "findById" | "rotateToken" | "revokeByTokenFamily"
+    "findByRefreshTokenHash" | "findById" | "save" | "revokeByTokenFamily"
   >;
   readonly tokenService: Pick<
     TokenIssuerPort,
@@ -155,15 +155,12 @@ export class RefreshTokensUseCase {
     const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(tokens.refreshToken);
     const refreshExpiresInSeconds =
       this.#dependencies.tokenService.getRefreshTokenExpiresInSeconds();
-    const rotation = session.planRotation(
+    session.rotate({
       refreshTokenHash,
-      now.add({ seconds: refreshExpiresInSeconds }),
-    );
-    const isRotated = await this.#dependencies.sessionRepository.rotateToken(
-      session.id,
-      rotation,
+      expiresAt: now.add({ seconds: refreshExpiresInSeconds }),
       now,
-    );
+    });
+    const isRotated = await this.#dependencies.sessionRepository.save(session);
     if (!isRotated) {
       this.#dependencies.logger.warn({
         event: SessionLogEvent.SESSION_ROTATION_CONFLICT,

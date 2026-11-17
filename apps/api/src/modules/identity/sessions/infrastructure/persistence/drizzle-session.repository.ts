@@ -5,10 +5,7 @@ import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
-import type {
-  Session,
-  SessionRotation,
-} from "#api/modules/identity/sessions/domain/session.aggregate";
+import type { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { session } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -51,58 +48,38 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
     return rows.map(toSession);
   }
 
-  async save(authSession: Session): Promise<void> {
-    const row = toSessionRow(authSession);
-    await this.#db
-      .insert(session)
-      .values(row)
-      .onConflictDoUpdate({
-        target: session.id,
-        set: {
+  async save(entity: Session): Promise<boolean> {
+    const row = toSessionRow(entity);
+    const persistedTokenVersion = entity.persistedTokenVersion;
+    const rotated = entity.hasRotatedSinceLoad();
+    // 폐기만 했으면 폐기 칸만 쓴다. 그 사이 회전한 세션도 폐기하고, 처음 폐기 시각은 덮지 않는다
+    const changes: Partial<typeof session.$inferInsert> = rotated
+      ? {
           refreshTokenHash: row.refreshTokenHash,
           previousTokenHash: row.previousTokenHash,
           tokenVersion: row.tokenVersion,
           lastUsedAt: row.lastUsedAt,
           expiresAt: row.expiresAt,
           revokedAt: row.revokedAt,
+          revokedReason: row.revokedReason,
           updatedAt: row.updatedAt,
-        },
-      });
-  }
-
-  // 단건 update의 PK 선조회 대신 version·revoked 조건을 실제 UPDATE에 유지한다.
-  async rotateToken(
-    sessionId: SessionId,
-    rotation: SessionRotation,
-    now: Temporal.Instant,
-  ): Promise<boolean> {
-    const rotated = await this.#db
-      .update(session)
-      .set({
-        refreshTokenHash: rotation.refreshTokenHash,
-        tokenVersion: rotation.tokenVersion,
-        previousTokenHash: rotation.previousTokenHash,
-        expiresAt: rotation.expiresAt,
-        lastUsedAt: now,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(session.id, sessionId.value),
-          eq(session.tokenVersion, rotation.expectedTokenVersion),
+        }
+      : { revokedAt: row.revokedAt, revokedReason: row.revokedReason, updatedAt: row.updatedAt };
+    const saved = await this.#db
+      .insert(session)
+      .values(row)
+      .onConflictDoUpdate({
+        target: session.id,
+        set: changes,
+        setWhere: and(
           isNull(session.revokedAt),
+          rotated && persistedTokenVersion != null
+            ? eq(session.tokenVersion, persistedTokenVersion)
+            : undefined,
         ),
-      )
+      })
       .returning({ id: session.id });
-    return rotated.length > 0;
-  }
-
-  // revokedReason은 읽는 곳이 없지만 폐기 사유 감사용으로 남긴다
-  async revoke(sessionId: SessionId, reason: RevokeReason, now: Temporal.Instant): Promise<void> {
-    await this.#db
-      .update(session)
-      .set({ revokedAt: now, revokedReason: reason, updatedAt: now })
-      .where(eq(session.id, sessionId.value));
+    return saved.length > 0;
   }
 
   async revokeByTokenFamily(

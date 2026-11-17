@@ -91,3 +91,70 @@ describe("computeEffectiveStreak", () => {
     expect(r).toEqual({ streak: 5, isAtRisk: false });
   });
 });
+
+describe("computeEffectiveStreak — 시간대 이동과 달력 경계", () => {
+  const plainDate = (iso: string) => Temporal.PlainDate.from(iso);
+  const allCompleted = { todosCompleted: 3, todosTotal: 3 };
+
+  it("서쪽으로 이동해 오늘이 마지막 완료일보다 앞서면 현재 스트릭을 그대로 준다", () => {
+    // When
+    const result = computeEffectiveStreak({
+      ...allCompleted,
+      currentStreak: 4,
+      lastCompletedDate: plainDate("2027-01-01"),
+      today: plainDate("2026-12-31"),
+    });
+
+    // Then
+    expect(result).toEqual({ streak: 4, isAtRisk: false });
+  });
+
+  it("동쪽으로 이동해 하루를 건너뛰면 1부터 다시 센다", () => {
+    // When
+    const result = computeEffectiveStreak({
+      ...allCompleted,
+      currentStreak: 4,
+      lastCompletedDate: plainDate("2027-01-01"),
+      today: plainDate("2027-01-03"),
+    });
+
+    // Then
+    expect(result).toEqual({ streak: 1, isAtRisk: false });
+  });
+
+  it("12월 31일 완료 뒤 1월 1일 전체 완료는 연속으로 센다", () => {
+    // When
+    const result = computeEffectiveStreak({
+      ...allCompleted,
+      currentStreak: 2,
+      lastCompletedDate: plainDate("2026-12-31"),
+      today: plainDate("2027-01-01"),
+    });
+
+    // Then
+    expect(result).toEqual({ streak: 3, isAtRisk: false });
+  });
+
+  it("윤년 2월 29일 완료 뒤 3월 1일은 연속이고 덜 끝냈으면 위기다", () => {
+    // When
+    const completed = computeEffectiveStreak({
+      ...allCompleted,
+      currentStreak: 2,
+      lastCompletedDate: plainDate("2028-02-29"),
+      today: plainDate("2028-03-01"),
+    });
+    const atRisk = computeEffectiveStreak({
+      todosCompleted: 1,
+      todosTotal: 3,
+      currentStreak: 2,
+      lastCompletedDate: plainDate("2028-02-29"),
+      today: plainDate("2028-03-01"),
+    });
+
+    // Then
+    expect({ completed, atRisk }).toEqual({
+      completed: { streak: 3, isAtRisk: false },
+      atRisk: { streak: 2, isAtRisk: true },
+    });
+  });
+});

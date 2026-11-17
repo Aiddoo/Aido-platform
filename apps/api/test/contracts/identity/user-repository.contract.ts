@@ -119,13 +119,14 @@ export function describeUserRepositoryContract(
       expect(profile).toEqual({ name: "처음", profileImage: null });
     });
 
-    it("이메일 인증은 상태를 ACTIVE로 바꾸고 인증 시각을 남긴다", async () => {
+    it("이메일 인증한 사용자를 저장하면 ACTIVE와 인증 시각을 남긴다", async () => {
       // Given
       const repository = await createRepository();
       const created = await createUser(repository);
+      created.markEmailVerified(AUTH_FIXTURE_NOW);
 
       // When
-      await repository.markEmailVerified(created.id, AUTH_FIXTURE_NOW);
+      await repository.save(created);
       const found = await repository.findById(created.id);
 
       // Then
@@ -142,10 +143,10 @@ export function describeUserRepositoryContract(
       created.requestDeletion(AUTH_FIXTURE_NOW);
 
       // When
-      await repository.saveAccountStatus(created);
+      await repository.save(created);
       const deleted = (await repository.findById(created.id))?.toPrimitives();
       created.restore(AUTH_FIXTURE_NOW.add({ hours: 1 }));
-      await repository.saveAccountStatus(created);
+      await repository.save(created);
       const restored = (await repository.findById(created.id))?.toPrimitives();
 
       // Then
@@ -163,8 +164,8 @@ export function describeUserRepositoryContract(
         AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD).subtract({ milliseconds: 1 }),
       );
       atBoundary.requestDeletion(AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD));
-      await repository.saveAccountStatus(expired);
-      await repository.saveAccountStatus(atBoundary);
+      await repository.save(expired);
+      await repository.save(atBoundary);
 
       // When
       const eligible = await repository.listPurgeEligible({
@@ -188,7 +189,7 @@ export function describeUserRepositoryContract(
       ];
       for (const user of users) {
         user.requestDeletion(deletedAt);
-        await repository.saveAccountStatus(user);
+        await repository.save(user);
       }
 
       // When

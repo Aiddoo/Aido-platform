@@ -5,14 +5,11 @@ import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import {
   Session,
   type SessionPrimitives,
-  type SessionRotation,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class InMemorySessionRepository extends SessionRepositoryPort {
   readonly #sessions = new Map<string, SessionPrimitives>();
-  // Drizzle 저장소가 감사용 revokedReason 칸에 남기는 값. 포트로는 읽지 않는다
-  readonly revocationReasons = new Map<string, RevokeReason>();
   #sequence = 0;
 
   constructor(sessions: readonly Session[] = []) {
@@ -24,6 +21,15 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
 
   get all(): readonly SessionPrimitives[] {
     return [...this.#sessions.values()];
+  }
+
+  // Drizzle 저장소가 감사용 revokedReason 칸에 남기는 값. 포트로는 읽지 않는다
+  get revocationReasons(): ReadonlyMap<string, string> {
+    return new Map(
+      this.all.flatMap((session) =>
+        session.revokedReason == null ? [] : [[session.id, session.revokedReason] as const],
+      ),
+    );
   }
 
   stored(sessionId: string): SessionPrimitives | undefined {
@@ -57,59 +63,39 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
       .map((session) => Session.reconstitute(session));
   }
 
-  async save(session: Session): Promise<void> {
+  // Drizzle 저장소와 같은 조건이다. 폐기된 행은 바꾸지 않고, 회전은 읽을 때의 버전일 때만 쓴다
+  async save(session: Session): Promise<boolean> {
     const saved = session.toPrimitives();
     const prior = this.#sessions.get(saved.id);
-    // Drizzle 저장소처럼 다시 저장해도 소유자·기기·생성 시각은 처음 값을 둔다
-    this.#sessions.set(
-      saved.id,
-      prior == null
-        ? saved
-        : {
-            ...prior,
-            refreshTokenHash: saved.refreshTokenHash,
-            previousTokenHash: saved.previousTokenHash,
-            tokenVersion: saved.tokenVersion,
-            lastUsedAt: saved.lastUsedAt,
-            expiresAt: saved.expiresAt,
-            revokedAt: saved.revokedAt,
-            updatedAt: saved.updatedAt,
-          },
-    );
-  }
-
-  async rotateToken(
-    sessionId: SessionId,
-    rotation: SessionRotation,
-    now: Temporal.Instant,
-  ): Promise<boolean> {
-    const session = this.#sessions.get(sessionId.value);
-    if (
-      session == null ||
-      session.revokedAt != null ||
-      session.tokenVersion !== rotation.expectedTokenVersion
-    ) {
+    if (session.persistedTokenVersion == null || prior == null) {
+      this.#sessions.set(saved.id, saved);
+      return true;
+    }
+    if (prior.revokedAt != null) {
       return false;
     }
-    this.#sessions.set(sessionId.value, {
-      ...session,
-      refreshTokenHash: rotation.refreshTokenHash,
-      previousTokenHash: rotation.previousTokenHash,
-      tokenVersion: rotation.tokenVersion,
-      expiresAt: rotation.expiresAt,
-      lastUsedAt: now,
-      updatedAt: now,
+    const revocation = {
+      revokedAt: saved.revokedAt,
+      revokedReason: saved.revokedReason,
+      updatedAt: saved.updatedAt,
+    };
+    if (!session.hasRotatedSinceLoad()) {
+      this.#sessions.set(saved.id, { ...prior, ...revocation });
+      return true;
+    }
+    if (prior.tokenVersion !== session.persistedTokenVersion) {
+      return false;
+    }
+    this.#sessions.set(saved.id, {
+      ...prior,
+      ...revocation,
+      refreshTokenHash: saved.refreshTokenHash,
+      previousTokenHash: saved.previousTokenHash,
+      tokenVersion: saved.tokenVersion,
+      lastUsedAt: saved.lastUsedAt,
+      expiresAt: saved.expiresAt,
     });
     return true;
-  }
-
-  async revoke(sessionId: SessionId, reason: RevokeReason, now: Temporal.Instant): Promise<void> {
-    const session = this.#sessions.get(sessionId.value);
-    if (session == null) {
-      return;
-    }
-    this.#sessions.set(sessionId.value, { ...session, revokedAt: now, updatedAt: now });
-    this.revocationReasons.set(sessionId.value, reason);
   }
 
   async revokeByTokenFamily(
@@ -138,14 +124,19 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
     );
   }
 
-  async #revokeWhere(
+  #revokeWhere(
     predicate: (session: SessionPrimitives) => boolean,
     reason: RevokeReason,
     now: Temporal.Instant,
-  ): Promise<readonly SessionId[]> {
+  ): readonly SessionId[] {
     const targets = this.all.filter((session) => session.revokedAt == null && predicate(session));
     for (const session of targets) {
-      await this.revoke(SessionId.reconstitute(session.id), reason, now);
+      this.#sessions.set(session.id, {
+        ...session,
+        revokedAt: now,
+        revokedReason: reason,
+        updatedAt: now,
+      });
     }
     return targets.map((session) => SessionId.reconstitute(session.id));
   }

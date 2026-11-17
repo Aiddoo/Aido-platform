@@ -46,7 +46,7 @@ export class ConsumeVerificationCodeUseCase {
     const judgement = judgeVerificationAttempt({ verification, tokenHash, now });
 
     if (!judgement.ok) {
-      if (judgement.reason === "mismatch" && verification != null) {
+      if (judgement.reason === "mismatch" && verification?.recordFailedAttempt(now) === true) {
         await verificationRepository.incrementAttempts(verification.id);
         logger.warn({
           event: VerificationLogEvent.VERIFICATION_FAILED,
@@ -60,6 +60,9 @@ export class ConsumeVerificationCodeUseCase {
         .exhaustive();
     }
 
+    if (!judgement.verification.consume(now)) {
+      throw invalidVerificationCode();
+    }
     const consumed = await verificationRepository.consume({
       id: judgement.verification.id,
       userId,

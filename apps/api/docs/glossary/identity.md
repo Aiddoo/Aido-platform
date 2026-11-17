@@ -36,23 +36,23 @@
 | 로그인           | `IssueLoginUseCase`, `LoginWithPasswordUseCase`, `LoginWithOAuthTokenUseCase` | 이메일·소셜 로그인이 모두 `IssueLoginUseCase`로 모여 세션과 토큰 한 쌍을 만들고 로그인 성공·보안 로그를 남긴다. 모바일 SDK 토큰은 `LoginWithMobileOAuthTokenUseCase`다 |
 | 로그인 실패 잠금 | `LOGIN_ATTEMPT`, `LOGIN_FAILURE_REASON`, `LoginAttempt`                       | 같은 이메일의 비밀번호 로그인이 15분 안에 5번째 실패하면 `USER_0607`. 사용자 상태(`LOCKED`)를 바꾸지 않는다. 계정 유무와 상관없이 실패는 `USER_0602`다                 |
 | 세션 확인        | `AuthenticateSessionUseCase`, `JwtAuthGuard`                                  | 서명이 맞는 access 토큰의 세션이 살아 있는지 30초 캐시로 본다. 세션이 유효해도 잠금 `USER_0607`, 정지·탈퇴 대기 `USER_0605`로 거절한다                                 |
-| 토큰 갱신(회전)  | `RefreshTokensUseCase`, `planRotation`                                        | 갱신마다 새 refresh 토큰을 주고 버전을 1 올린다. 지금 hash를 직전 hash로 남긴다. 역할은 DB 값으로 다시 발급해 강등된 ADMIN이 남지 않는다                               |
+| 토큰 갱신(회전)  | `RefreshTokensUseCase`, `Session.rotate`                                      | 갱신마다 새 refresh 토큰을 주고 버전을 1 올린다. 지금 hash를 직전 hash로 남긴다. 역할은 DB 값으로 다시 발급해 강등된 ADMIN이 남지 않는다                               |
 | 재시도 grace     | `isRetryWithin`, `TOKEN_REUSE_GRACE_PERIOD_MS`                                | 직전 토큰이 마지막 사용 뒤 10초 안에 다시 오면 응답을 못 받은 앱의 재시도로 보고 한 번 더 회전한다                                                                     |
 | 토큰 재사용      | `wasPreviouslyIssued`, `revokeByTokenFamily`                                  | grace를 넘긴 직전 토큰은 유출로 본다. 같은 묶음 세션을 폐기하고 `SESSION_0704`, 경보 `identity.session.refresh-token.reused`                                           |
-| 폐기             | `revoke`·`revokeAllByUserId`(저장소), `REVOKE_REASON`                         | 세션을 끊는다. 사유(감사용)와 함께 세션 캐시를 비우고 그 세션의 푸시 기기를 놓는다                                                                                     |
+| 폐기             | `Session.revoke`, `revokeAllByUserId`(저장소), `REVOKE_REASON`                | 세션을 끊는다. 사유(감사용)와 함께 세션 캐시를 비우고 그 세션의 푸시 기기를 놓는다                                                                                     |
 | 로그아웃         | `LogoutUseCase`, `LogoutAllUseCase`                                           | 지금 세션, 또는 내 폐기 전 세션 모두를 폐기한다. 모두 로그아웃은 끊은 수를 준다                                                                                        |
 | 세션 종료        | `RevokeSessionUseCase`                                                        | 세션 목록에서 고른 세션을 끊는다. 내 세션이 아니거나 없으면 `SESSION_0701`                                                                                             |
 | 세션 목록        | `ListActiveSessionsUseCase`                                                   | 폐기 전·만료 전 세션을 최근 사용 순으로 준다. 기기 이름·종류는 저장하지 않아 `null`, 현재 세션 표시는 늘 `false`다(출시 계약)                                          |
 | 기기 지문        | `deviceFingerprint`                                                           | 비밀번호 로그인의 `deviceName`, 없으면 User-Agent. 64자로 자르고 신뢰 판단에 쓰지 않는다                                                                               |
 
-세션 Aggregate에는 상태를 바꾸는 메서드가 없다. `validityAt`(`valid`·`revoked`·`expired`, 폐기가 만료보다 먼저)·`isRetryWithin`·`planRotation`으로 판단만 하고, 회전·폐기는 저장소의 조건부 갱신이 한다. 만료 시각과 같은 순간까지 유효하다.
+회전은 `Session.rotate`, 폐기는 `Session.revoke`(이미 폐기면 `false`, 처음 폐기 시각·사유를 둔다)다. `save`는 폐기 전 행만 바꾸고 회전은 읽을 때의 버전일 때만 쓴다. 경합에 지면 `false`다. 만료 시각과 같은 순간까지 유효하다.
 
 | 상태    | 행동                                                    | 다음                            | 다시·금지                                                              |
 | ------- | ------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
 | 없음    | `Session.create`(`CreateSessionUseCase`)                | valid, 버전 1                   | —                                                                      |
-| valid   | `planRotation` → `rotateToken`(`RefreshTokensUseCase`)  | valid, 버전 +1, 만료 다시 계산  | 버전이 바뀌었거나 폐기면 `false` → `SESSION_0702`                      |
+| valid   | `rotate` → `save`(`RefreshTokensUseCase`)               | valid, 버전 +1, 만료 다시 계산  | 버전이 바뀌었거나 폐기면 `save`가 `false` → `SESSION_0702`             |
 | valid   | grace 밖 직전 토큰 갱신                                 | revoked(`TOKEN_REUSE_DETECTED`) | `SESSION_0704`                                                         |
-| valid   | `revoke`(로그아웃·세션 종료)                            | revoked                         | 이미 폐기면 로그아웃 `SESSION_0702`, 세션 종료는 폐기 시각을 다시 쓴다 |
+| valid   | `revoke`(로그아웃·세션 종료)                            | revoked                         | 이미 폐기면 `false`. 로그아웃 `SESSION_0702`, 세션 종료는 같은 응답    |
 | valid   | `revokeAllByUserId`(모두 로그아웃·비밀번호 재설정·탈퇴) | revoked                         | 폐기 전 세션만. 비밀번호 변경은 지금 세션을 남긴다(`PASSWORD_CHANGED`) |
 | valid   | 만료 시각 지남                                          | expired                         | 갱신·인증 `SESSION_0702`                                               |
 | revoked | 갱신·인증                                               | —                               | `SESSION_0703`                                                         |
@@ -66,7 +66,7 @@
 | 코드 발급        | `IssueVerificationCodeUseCase`, `SendVerificationCodeUseCase`    | 같은 종류의 남은 코드를 지금 만료시키고 새 코드를 만든다. 메일은 커밋 뒤 발송 큐에 담고, 담지 못하면 예외 없이 다시 보내게 안내한다          |
 | 다시 보내기 대기 | `resendCooldownStartsAt`, `resendCooldownRemainingSeconds`       | 같은 종류를 60초 안에 다시 요청하면 `VERIFY_0753`. details `remainingSeconds`는 1초 밑도 1초로 올려 앱 타이머가 0에서 멈추지 않게 한다       |
 | 코드 확인        | `ConsumeVerificationCodeUseCase`, `judgeVerificationAttempt`     | 쓸 수 있는 코드일 때만 hash를 비교한다. 거절 사유는 missing·used·expired·exhausted·mismatch이고 소진만 `VERIFY_0754`, 나머지는 `VERIFY_0751` |
-| 틀린 시도        | `incrementAttempts`                                              | 틀리면 시도를 1 올린다. 호출자 트랜잭션이 롤백돼도 남는다                                                                                    |
+| 틀린 시도        | `recordFailedAttempt`, `incrementAttempts`                       | 틀리면 시도를 1 올린다. 저장은 호출자 트랜잭션 밖이라 롤백돼도 남는다                                                                        |
 | 이메일 인증      | `VerifyEmailUseCase`, `ResendVerificationUseCase`                | `EMAIL_VERIFY` 코드로 PENDING_VERIFY 사용자를 ACTIVE로 바꾼다. 없는 이메일 `EMAIL_0502`, 이미 인증 `USER_0604`, 탈퇴 `USER_0606`             |
 
 | 상태         | 행동                                                  | 다음                       | 다시·금지                                       |
@@ -74,11 +74,11 @@
 | 없음         | `Verification.create`(`IssueVerificationCodeUseCase`) | valid, 시도 0, 발급 + 10분 | 같은 종류 60초 안이면 만들지 않고 `VERIFY_0753` |
 | valid        | 같은 종류 새 발급(`invalidateAllByUserIdAndType`)     | expired(만료 = 지금)       | —                                               |
 | valid        | 틀린 코드(`incrementAttempts`)                        | valid, 시도 +1             | `VERIFY_0751`. 시도 5부터 exhausted             |
-| valid        | 맞는 코드(저장소 `consume`)                           | used                       | 경합에 지면 `false` → `VERIFY_0751`             |
+| valid        | 맞는 코드(`consume` → 저장소 조건부 소비)             | used                       | 경합에 지면 `false` → `VERIFY_0751`             |
 | used·expired | 확인                                                  | —                          | `VERIFY_0751`                                   |
 | exhausted    | 확인                                                  | —                          | `VERIFY_0754`. 맞는 코드여도 시도로 세지 않는다 |
 
-`validityAt`은 사용 → 만료 → 소진 순으로 판단하고 만료 시각과 같은 순간부터 만료다. 세션처럼 전이 메서드가 없고 사용·시도는 저장소 조건부 갱신이 한다.
+`validityAt`은 사용 → 만료 → 소진 순으로 판단하고 만료 시각과 같은 순간부터 만료다. `consume`·`recordFailedAttempt`는 쓸 수 있는 코드에만 `true`이고, 저장소의 조건부 소비·원자적 증가가 경합을 막는다.
 
 ## oauth-states
 
@@ -96,7 +96,7 @@
 | ----------------- | ------------------------------------------------------ | ------------------------- | ----------------------------------------------------------- |
 | 없음              | 저장소 `create`(`StartOAuthAuthorizationUseCase`)      | valid, 시작 + 10분        | —                                                           |
 | valid             | 콜백 `saveExchangeData`(login)·`saveLinkingData`(link) | valid, 교환 코드          | state가 없거나 만료면 `USER_0602`                           |
-| valid, 교환 코드  | `consumeExchangeCode` 뒤 `consume(now)`                | exchanged, 저장 토큰 지움 | 이미 교환·만료·다른 사용자의 연결이면 `false` → `USER_0602` |
+| valid, 교환 코드  | `consume(now)` 뒤 저장소 `consumeExchangeCode`         | exchanged, 저장 토큰 지움 | 이미 교환·만료·다른 사용자의 연결이면 `false` → `USER_0602` |
 | exchanged·expired | 교환                                                   | —                         | `USER_0602`                                                 |
 
 `validityAt`은 `valid`·`expired`·`exchanged`이고 교환이 만료보다 먼저다. 만료 시각과 같은 순간부터 만료다.
@@ -144,15 +144,15 @@
 | 대상 사용자 조각 | `userAudience`                                      | 다른 Context가 사람을 id 순서로 한 SQL에 고를 때 쓰는 사용자 테이블·칸·탈퇴·상태·로그인 조건. 부르는 쪽은 자기 조건만 `refine`으로 붙인다                                                                                                                       |
 | 지표 정의        | `GROWTH_METRIC_DEFINITIONS`, `GrowthCohortMetric`   | 운영 문서와 같은 문장. 비율은 %(소수 둘째 자리)이고 측정 전이거나 대상 cohort가 없으면 리텐션은 `null`이다                                                                                                                                                      |
 
-| 상태            | 행동                                    | 다음                      | 다시·금지                                       |
-| --------------- | --------------------------------------- | ------------------------- | ----------------------------------------------- |
-| 없음            | 이메일 가입(`RegisterUseCase`)          | PENDING_VERIFY, 인증 코드 | 같은 이메일(인증 전 포함) `EMAIL_0501`          |
-| 없음            | 소셜 가입(`ProvisionUserUseCase`)       | ACTIVE, 이메일 인증 시각  | 동시에 같은 이메일이 먼저 커밋되면 `EMAIL_0501` |
-| PENDING_VERIFY  | 이메일 인증(저장소 `markEmailVerified`) | ACTIVE                    | 이미 인증 `USER_0604`                           |
-| 탈퇴 전         | `requestDeletion(now)`                  | SUSPENDED, 탈퇴 시각      | 이미 탈퇴면 `USER_0606`. 결과를 돌려주지 않는다 |
-| 탈퇴, 유예 안   | `restore(now)`                          | ACTIVE, 탈퇴 시각 지움    | 탈퇴 전이면 `false`                             |
-| 탈퇴, 유예 지남 | `restore`·로그인                        | —                         | `USER_0606`                                     |
-| 탈퇴, 유예 지남 | `isPurgeEligibleAt` → `hardDelete`      | 없음                      | 잠근 뒤 복구됐으면 건너뛴다                     |
+| 상태            | 행동                                      | 다음                      | 다시·금지                                       |
+| --------------- | ----------------------------------------- | ------------------------- | ----------------------------------------------- |
+| 없음            | 이메일 가입(`RegisterUseCase`)            | PENDING_VERIFY, 인증 코드 | 같은 이메일(인증 전 포함) `EMAIL_0501`          |
+| 없음            | 소셜 가입(`ProvisionUserUseCase`)         | ACTIVE, 이메일 인증 시각  | 동시에 같은 이메일이 먼저 커밋되면 `EMAIL_0501` |
+| PENDING_VERIFY  | 이메일 인증(`markEmailVerified` → `save`) | ACTIVE                    | 이미 인증 `USER_0604`, 다시 부르면 `false`      |
+| 탈퇴 전         | `requestDeletion(now)`                    | SUSPENDED, 탈퇴 시각      | 이미 탈퇴면 `USER_0606`. 결과를 돌려주지 않는다 |
+| 탈퇴, 유예 안   | `restore(now)`                            | ACTIVE, 탈퇴 시각 지움    | 탈퇴 전이면 `false`                             |
+| 탈퇴, 유예 지남 | `restore`·로그인                          | —                         | `USER_0606`                                     |
+| 탈퇴, 유예 지남 | `isPurgeEligibleAt` → `hardDelete`        | 없음                      | 잠근 뒤 복구됐으면 건너뛴다                     |
 
 ## user-preferences
 
@@ -174,7 +174,7 @@
 | 발송 설정 조각      | `userDeliveryPreference`, `userMarketingPushConsent`                                          | 다른 Context가 사람 id 칸 옆에 시간대·언어·푸시·야간 설정과 광고성 푸시 동의 시각을 한 SQL로 붙이는 하위 질의. PG가 펼쳐 실행 계획은 테이블 조인과 같다         |
 | 리마인더 설정 조각  | `userReminderPreference`                                                                      | 사람 id 칸 옆에 시간대·언어·연속 기록·아침·저녁 리마인더 시각을 붙이는 하위 질의                                                                                |
 
-연속 완료는 Aggregate가 다음 상태 계획을 주고(`planTodoCompletion`·`planTodoUncompletion`) 저장소가 조건부로 쓴다. 바꿀 것이 없으면 `null`이다. 설정·동의 값은 Aggregate를 거치지 않고 저장소 upsert로 바꾼다.
+연속 완료는 Aggregate가 다음 상태 계획을 주고(`planTodoCompletion`·`planTodoUncompletion`) 저장소가 조건부로 쓴다. 바꿀 것이 없으면 `null`이다. 요청 시간대의 오늘이 마지막 완료일과 같거나 앞서면(서쪽 이동) 이미 센 날로 보고 완료일을 뒤로 돌리지 않는다. 설정·동의 값은 Aggregate를 거치지 않고 저장소 upsert로 바꾼다.
 
 | 상태                      | 행동                                 | 다음                              | 다시·금지 |
 | ------------------------- | ------------------------------------ | --------------------------------- | --------- |

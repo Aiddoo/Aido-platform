@@ -94,6 +94,10 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   it("같은 버전의 동시 회전 두 요청 중 하나만 성공하고 승자의 해시를 저장한다", async () => {
     // Given
     const session = await givenSession({ refreshTokenHash: "current-hash", tokenVersion: 1 });
+    const contenders = await Promise.all([
+      repository.findById(SessionId.reconstitute(session.id)),
+      repository.findById(SessionId.reconstitute(session.id)),
+    ]);
     const locked = createDeferred();
     const release = createDeferred();
     const holdingLock = client.transaction(async (transaction) => {
@@ -107,19 +111,14 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
       throw new Error("두 회전 요청을 시작하기 전에 세션 lock이 해제되었습니다.");
     });
     await Promise.race([locked.promise, lockReady]);
-    const rotations = ["first-hash", "second-hash"].map((hash) =>
-      repository.rotateToken(
-        UserId.reconstitute(session.id),
-        {
-          refreshTokenHash: hash,
-          previousTokenHash: "current-hash",
-          tokenVersion: 2,
-          expectedTokenVersion: 1,
-          expiresAt,
-        },
-        rotatedAt,
-      ),
-    );
+    const rotations = ["first-hash", "second-hash"].map(async (hash, index) => {
+      const contender = contenders[index];
+      if (contender == null) {
+        return false;
+      }
+      contender.rotate({ refreshTokenHash: hash, expiresAt, now: rotatedAt });
+      return repository.save(contender);
+    });
 
     // When
     try {
@@ -153,20 +152,18 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   it("폐기한 세션은 버전이 일치해도 회전하거나 새 해시를 저장할 수 없다", async () => {
     // Given
     const session = await givenSession({ refreshTokenHash: "revoked-hash", tokenVersion: 1 });
-    await repository.revoke(SessionId.reconstitute(session.id), REVOKE_REASON.USER_LOGOUT, now);
+    const [logout, refresh] = await Promise.all([
+      repository.findById(SessionId.reconstitute(session.id)),
+      repository.findById(SessionId.reconstitute(session.id)),
+    ]);
+    logout?.revoke(REVOKE_REASON.USER_LOGOUT, now);
+    if (logout != null) {
+      await repository.save(logout);
+    }
+    refresh?.rotate({ refreshTokenHash: "unauthorized-hash", expiresAt, now: rotatedAt });
 
     // When
-    const result = await repository.rotateToken(
-      UserId.reconstitute(session.id),
-      {
-        refreshTokenHash: "unauthorized-hash",
-        previousTokenHash: "revoked-hash",
-        tokenVersion: 2,
-        expectedTokenVersion: 1,
-        expiresAt,
-      },
-      rotatedAt,
-    );
+    const result = refresh == null ? false : await repository.save(refresh);
 
     // Then
     expect(result).toBe(false);

@@ -97,7 +97,7 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
       if (state === "탈퇴한") {
         const user = createUserFixture(fixture.user);
         user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.saveAccountStatus(user);
+        await fixture.userRepository.save(user);
       }
       const errorCode =
         state === "존재하지 않는"

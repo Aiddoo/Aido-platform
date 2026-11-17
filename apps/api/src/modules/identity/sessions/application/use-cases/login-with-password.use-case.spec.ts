@@ -86,7 +86,7 @@ class ClockAdvancingUnitOfWork extends ImmediateUnitOfWork {
 const FREE_ACCESS_WHILE_DELETED = { status: null, isAdmin: false, resourceBonuses: {} };
 
 async function markDeleted(fixture: CredentialFixture, deletedAt: Temporal.Instant) {
-  await fixture.userRepository.saveAccountStatus(
+  await fixture.userRepository.save(
     createUserFixture({ ...fixture.user, status: "SUSPENDED", deletedAt }),
   );
 }
@@ -219,9 +219,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     async ({ status, errorCode }) => {
       // Given
       const fixture = given({ pending: status === "PENDING_VERIFY" });
-      await fixture.userRepository.saveAccountStatus(
-        createUserFixture({ ...fixture.user, status }),
-      );
+      await fixture.userRepository.save(createUserFixture({ ...fixture.user, status }));
 
       // When
       const pending = fixture.useCase.execute({

@@ -21,7 +21,7 @@ export interface LogoutCommand {
 }
 
 interface LogoutDependencies {
-  readonly sessionRepository: Pick<SessionRepositoryPort, "findById" | "revoke">;
+  readonly sessionRepository: Pick<SessionRepositoryPort, "findById" | "save">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
@@ -44,15 +44,11 @@ export class LogoutUseCase {
       throw sessionNotFound();
     }
 
-    if (authSession.isRevoked()) {
+    // 이미 폐기됐거나 그 사이 다른 요청이 폐기했으면 출시 앱이 아는 만료 응답이다
+    const revoked = authSession.revoke(REVOKE_REASON.USER_LOGOUT, this.#dependencies.clock.now());
+    if (!revoked || !(await this.#dependencies.sessionRepository.save(authSession))) {
       throw sessionExpired();
     }
-
-    await this.#dependencies.sessionRepository.revoke(
-      sessionId,
-      REVOKE_REASON.USER_LOGOUT,
-      this.#dependencies.clock.now(),
-    );
     await this.#dependencies.cacheService.invalidateSession(sessionId);
     await this.#dependencies.pushDevices.releaseSessions([sessionId]);
     await this.#dependencies.securityLogRepository.create({

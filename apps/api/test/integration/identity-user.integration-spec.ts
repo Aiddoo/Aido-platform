@@ -68,7 +68,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
 
     // When
     if (user != null) {
-      await repository.saveAccountStatus(user);
+      await repository.save(user);
     }
     const persisted = await repository.findByIdWithProfile(UserId.reconstitute(fixture.id));
 
@@ -111,7 +111,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
 
     // When
     if (user != null) {
-      await repository.saveAccountStatus(user);
+      await repository.save(user);
     }
 
     // Then

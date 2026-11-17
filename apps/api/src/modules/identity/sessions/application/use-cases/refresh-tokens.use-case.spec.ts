@@ -1,11 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type {
   Session,
   SessionPrimitives,
-  SessionRotation,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
@@ -55,13 +53,17 @@ function sessionWith(overrides: Partial<SessionPrimitives> = {}): Session {
 
 // 조회와 조건부 쓰기 사이에 같은 토큰으로 온 다른 요청이 먼저 회전한 경합을 만든다
 class RotationRaceSessionRepository extends InMemorySessionRepository {
-  override async rotateToken(
-    id: SessionId,
-    rotation: SessionRotation,
-    now: Temporal.Instant,
-  ): Promise<boolean> {
-    await super.rotateToken(id, { ...rotation, refreshTokenHash: "digest:winner-token" }, now);
-    return super.rotateToken(id, rotation, now);
+  override async save(session: Session): Promise<boolean> {
+    const winner = await this.findById(session.id);
+    if (winner != null && session.hasRotatedSinceLoad()) {
+      winner.rotate({
+        refreshTokenHash: "digest:winner-token",
+        expiresAt: session.expiresAt,
+        now: session.lastUsedAt,
+      });
+      await super.save(winner);
+    }
+    return super.save(session);
   }
 }
 

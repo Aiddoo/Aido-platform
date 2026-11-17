@@ -92,7 +92,7 @@ describe("VerifyEmail — 이메일 인증과 첫 세션 발급", () => {
       if (state === "deleted") {
         const user = createUserFixture(fixture.user);
         user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.saveAccountStatus(user);
+        await fixture.userRepository.save(user);
       }
       const expected =
         state === "missing"

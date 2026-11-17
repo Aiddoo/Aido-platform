@@ -31,6 +31,14 @@ async function saveSession(
   return session;
 }
 
+async function loadSession(repository: SessionRepositoryPort, id: SessionId): Promise<Session> {
+  const found = await repository.findById(id);
+  if (found == null) {
+    throw new Error(`session ${id.value} was not saved`);
+  }
+  return found;
+}
+
 export function describeSessionRepositoryContract(
   createRepository: () => Promise<SessionRepositoryPort>,
 ): void {
@@ -76,33 +84,34 @@ export function describeSessionRepositoryContract(
       expect({ byId, byHash }).toEqual({ byId: null, byHash: null });
     });
 
-    it("다시 저장하면 회전·폐기 칸만 바꾸고 소유자·기기·생성 시각은 둔다", async () => {
+    it("회전·폐기한 세션을 저장하면 그 칸만 바꾸고 소유자·기기·생성 시각은 둔다", async () => {
       // Given
       const repository = await createRepository();
       const saved = await saveSession(repository);
-      const changed = createSessionFixture({
-        ...saved.toPrimitives(),
-        userId: AUTH_FIXTURE_OTHER_USER_ID,
-        deviceFingerprint: "other-device",
-        createdAt: LATER,
+      const changed = await loadSession(repository, saved.id);
+      changed.rotate({
         refreshTokenHash: "rotated-hash",
-        previousTokenHash: saved.refreshTokenHash,
-        tokenVersion: 2,
-        lastUsedAt: LATER,
         expiresAt: LATER.add({ hours: 24 }),
-        revokedAt: LATER,
+        now: LATER,
       });
+      changed.revoke(REVOKE_REASON.USER_LOGOUT, LATER);
 
       // When
-      await repository.save(changed);
+      const result = await repository.save(changed);
       const found = await repository.findById(saved.id);
 
       // Then
+      expect(result).toBe(true);
       expect(found?.toPrimitives()).toEqual({
-        ...changed.toPrimitives(),
-        userId: AUTH_FIXTURE_USER_ID,
-        deviceFingerprint: saved.toPrimitives().deviceFingerprint,
-        createdAt: saved.toPrimitives().createdAt,
+        ...saved.toPrimitives(),
+        refreshTokenHash: "rotated-hash",
+        previousTokenHash: saved.refreshTokenHash,
+        tokenVersion: saved.tokenVersion + 1,
+        lastUsedAt: LATER,
+        updatedAt: LATER,
+        expiresAt: LATER.add({ hours: 24 }),
+        revokedAt: LATER,
+        revokedReason: REVOKE_REASON.USER_LOGOUT,
       });
     });
 
@@ -125,19 +134,30 @@ export function describeSessionRepositoryContract(
       expect(active.map((session) => session.id.value)).toEqual([newer.id.value, older.id.value]);
     });
 
-    it("회전은 기대한 버전이고 폐기되지 않았을 때 한 번만 성공한다", async () => {
+    it("회전은 읽을 때의 버전이고 폐기되지 않았을 때 한 번만 성공한다", async () => {
       // Given
       const repository = await createRepository();
       const saved = await saveSession(repository);
-      const rotation = saved.planRotation("rotated-hash", LATER.add({ hours: 24 }));
+      const winner = await loadSession(repository, saved.id);
+      const stale = await loadSession(repository, saved.id);
+      winner.rotate({
+        refreshTokenHash: "rotated-hash",
+        expiresAt: LATER.add({ hours: 24 }),
+        now: LATER,
+      });
+      stale.rotate({
+        refreshTokenHash: "stale-hash",
+        expiresAt: LATER.add({ hours: 24 }),
+        now: LATER,
+      });
 
       // When
-      const first = await repository.rotateToken(saved.id, rotation, LATER);
-      const stale = await repository.rotateToken(saved.id, rotation, LATER);
+      const first = await repository.save(winner);
+      const second = await repository.save(stale);
       const found = await repository.findById(saved.id);
 
       // Then
-      expect({ first, stale }).toEqual({ first: true, stale: false });
+      expect({ first, second }).toEqual({ first: true, second: false });
       expect(found?.toPrimitives()).toMatchObject({
         refreshTokenHash: "rotated-hash",
         previousTokenHash: saved.refreshTokenHash,
@@ -151,20 +171,73 @@ export function describeSessionRepositoryContract(
       // Given
       const repository = await createRepository();
       const saved = await saveSession(repository);
-      await repository.revoke(saved.id, REVOKE_REASON.USER_LOGOUT, LATER);
+      const logout = await loadSession(repository, saved.id);
+      const refresh = await loadSession(repository, saved.id);
+      logout.revoke(REVOKE_REASON.USER_LOGOUT, LATER);
+      await repository.save(logout);
+      refresh.rotate({
+        refreshTokenHash: "rotated-hash",
+        expiresAt: LATER.add({ hours: 24 }),
+        now: LATER,
+      });
 
       // When
-      const rotated = await repository.rotateToken(
-        saved.id,
-        saved.planRotation("rotated-hash", LATER.add({ hours: 24 })),
-        LATER,
-      );
+      const rotated = await repository.save(refresh);
       const found = await repository.findById(saved.id);
 
       // Then
       expect(rotated).toBe(false);
       expect(found?.toPrimitives()).toMatchObject({
         refreshTokenHash: saved.refreshTokenHash,
+        revokedAt: LATER,
+      });
+    });
+
+    it("두 번째 폐기 저장은 false이고 처음 폐기 시각과 사유를 덮지 않는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const saved = await saveSession(repository);
+      const logout = await loadSession(repository, saved.id);
+      const revokeFromList = await loadSession(repository, saved.id);
+      logout.revoke(REVOKE_REASON.USER_LOGOUT, LATER);
+      revokeFromList.revoke(REVOKE_REASON.USER_REVOKE, LATER.add({ minutes: 5 }));
+
+      // When
+      const first = await repository.save(logout);
+      const second = await repository.save(revokeFromList);
+      const found = await repository.findById(saved.id);
+
+      // Then
+      expect({ first, second }).toEqual({ first: true, second: false });
+      expect(found?.toPrimitives()).toMatchObject({
+        revokedAt: LATER,
+        revokedReason: REVOKE_REASON.USER_LOGOUT,
+      });
+    });
+
+    it("그 사이 회전한 세션도 폐기하고 회전한 토큰 칸은 덮지 않는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const saved = await saveSession(repository);
+      const refresh = await loadSession(repository, saved.id);
+      const logout = await loadSession(repository, saved.id);
+      refresh.rotate({
+        refreshTokenHash: "rotated-hash",
+        expiresAt: LATER.add({ hours: 24 }),
+        now: LATER,
+      });
+      await repository.save(refresh);
+      logout.revoke(REVOKE_REASON.USER_LOGOUT, LATER);
+
+      // When
+      const revoked = await repository.save(logout);
+      const found = await repository.findById(saved.id);
+
+      // Then
+      expect(revoked).toBe(true);
+      expect(found?.toPrimitives()).toMatchObject({
+        refreshTokenHash: "rotated-hash",
+        tokenVersion: saved.tokenVersion + 1,
         revokedAt: LATER,
       });
     });

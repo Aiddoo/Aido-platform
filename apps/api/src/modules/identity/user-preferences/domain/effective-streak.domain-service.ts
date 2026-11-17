@@ -21,8 +21,8 @@ export function computeEffectiveStreak(params: {
 
   // 전체 완료 시: streak 갱신 여부 판별
   if (todosCompleted === todosTotal && todosTotal > 0) {
-    // StreakService에서 이미 DB 반영된 경우
-    if (lastCompletedDate?.equals(today) === true) {
+    // 이미 반영됐거나, 서쪽으로 이동해 오늘이 마지막 완료일보다 앞선 경우(Streak.isCountedThrough와 같은 규칙)
+    if (lastCompletedDate != null && Temporal.PlainDate.compare(lastCompletedDate, today) >= 0) {
       return { streak: currentStreak, isAtRisk: false };
     }
     // 아직 미반영: 어제 완료 → 연속, 아니면 새 시작

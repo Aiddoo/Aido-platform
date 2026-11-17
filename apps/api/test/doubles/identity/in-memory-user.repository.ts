@@ -122,11 +122,6 @@ export class InMemoryUserRepository extends UserRepositoryPort {
     });
   }
 
-  async markEmailVerified(id: UserId, now: Temporal.Instant): Promise<void> {
-    const user = this.#require(id.value);
-    this.#users.set(id.value, { ...user, status: "ACTIVE", emailVerifiedAt: now });
-  }
-
   async updateProfile(
     userId: UserId,
     data: { name?: string | null; profileImage?: string | null },
@@ -141,10 +136,10 @@ export class InMemoryUserRepository extends UserRepositoryPort {
     return profile;
   }
 
-  async saveAccountStatus(user: User): Promise<void> {
+  async save(user: User): Promise<void> {
     const stored = this.#require(user.id.value);
-    const { status, deletedAt } = user.toPrimitives();
-    this.#users.set(stored.id, { ...stored, status, deletedAt });
+    const { status, emailVerifiedAt, deletedAt } = user.toPrimitives();
+    this.#users.set(stored.id, { ...stored, status, emailVerifiedAt, deletedAt });
   }
 
   async listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<User[]> {

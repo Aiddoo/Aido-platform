@@ -46,12 +46,15 @@ export class Streak extends ValueObject<StreakState> {
     return this.value.lastCompletedDate?.equals(today) ?? false;
   }
 
-  /**
-   * 오늘 전체 완료 → 스트릭 증가 계획을 반환한다.
-   * 이미 오늘 반영되었으면 null(무변경).
-   */
+  // 서쪽으로 이동해 요청 시간대의 오늘이 마지막 완료일보다 앞서면 이미 센 날로 본다. 완료일을 뒤로 돌리지 않는다
+  isCountedThrough(today: Temporal.PlainDate): boolean {
+    const last = this.value.lastCompletedDate;
+    return last != null && Temporal.PlainDate.compare(last, today) >= 0;
+  }
+
+  /** 오늘 전체 완료 → 스트릭 증가 계획. 이미 센 날이면 null(무변경) */
   planCompletion(today: Temporal.PlainDate): StreakCompletionPlan | null {
-    if (this.isCompletedOn(today)) {
+    if (this.isCountedThrough(today)) {
       return null;
     }
 

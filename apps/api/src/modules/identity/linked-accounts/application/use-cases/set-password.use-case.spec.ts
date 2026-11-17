@@ -34,7 +34,7 @@ class InterleavedUnitOfWork extends UnitOfWorkPort {
 async function withdraw(fixture: CredentialFixture): Promise<void> {
   const user = createUserFixture(fixture.user);
   user.requestDeletion(AUTH_CREDENTIAL_NOW);
-  await fixture.userRepository.saveAccountStatus(user);
+  await fixture.userRepository.save(user);
 }
 
 describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가", () => {

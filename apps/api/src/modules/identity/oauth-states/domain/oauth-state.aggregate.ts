@@ -115,11 +115,14 @@ export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
     return this.props.userId ? this.props.userId : null;
   }
 
+  // 교환한 뒤에는 저장한 토큰을 남기지 않는다
   consume(now: Temporal.Instant): boolean {
     if (this.validityAt(now) !== "valid") {
       return false;
     }
     this.props.exchangedAt = now;
+    this.props.accessToken = null;
+    this.props.refreshToken = null;
     return true;
   }
 
