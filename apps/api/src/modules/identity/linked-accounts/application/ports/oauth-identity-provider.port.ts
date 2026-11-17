@@ -2,10 +2,11 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { OAuthMode } from "../../../oauth-states/domain/oauth-states.constants.js";
 import type { AccountProvider } from "../../domain/linked-accounts.constants.js";
+import type { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 
 /** 공급자 토큰을 검증해 얻은 프로필. 공급자 응답 모양은 어댑터의 wire schema가 안다 */
 export interface VerifiedProfile {
-  id: string;
+  id: ProviderAccountId;
   email?: string | null;
   emailVerified: boolean;
   name?: string;

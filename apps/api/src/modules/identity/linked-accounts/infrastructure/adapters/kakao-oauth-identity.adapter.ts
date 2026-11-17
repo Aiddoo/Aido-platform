@@ -20,6 +20,7 @@ import {
   type SocialLoginOptions,
   type VerifiedProfile,
 } from "../../application/ports/oauth-identity-provider.port.js";
+import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { identityLinkedAccountsConfig } from "../../identity-linked-accounts.config.js";
 import { kakaoTokenResponseSchema, kakaoUserInfoSchema } from "./kakao.wire.js";
 import { KAKAO_OAUTH_POLICY } from "./oauth-outbound.policy.js";
@@ -142,7 +143,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       }
       const kakaoAccount = parsed.data.kakao_account;
       return {
-        id: String(parsed.data.id),
+        id: ProviderAccountId.reconstitute(String(parsed.data.id)),
         email: kakaoAccount?.email ?? null,
         emailVerified: kakaoAccount?.is_email_verified ?? false,
         name: kakaoAccount?.profile?.nickname ?? undefined,

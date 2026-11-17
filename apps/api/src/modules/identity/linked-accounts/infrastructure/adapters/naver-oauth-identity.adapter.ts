@@ -20,6 +20,7 @@ import {
   type SocialLoginOptions,
   type VerifiedProfile,
 } from "../../application/ports/oauth-identity-provider.port.js";
+import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { identityLinkedAccountsConfig } from "../../identity-linked-accounts.config.js";
 import { naverTokenResponseSchema, naverUserInfoSchema } from "./naver.wire.js";
 import { NAVER_OAUTH_POLICY } from "./oauth-outbound.policy.js";
@@ -144,7 +145,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       const naverUser = parsed.data.response;
       // 네이버는 이메일 인증 여부를 주지 않아 자동 연동하지 않고 수동 연동으로 보낸다
       return {
-        id: naverUser.id,
+        id: ProviderAccountId.reconstitute(naverUser.id),
         email: naverUser.email ?? null,
         emailVerified: false,
         name: naverUser.name || (naverUser.nickname ?? undefined),

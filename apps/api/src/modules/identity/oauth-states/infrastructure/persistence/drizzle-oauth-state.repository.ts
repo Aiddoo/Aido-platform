@@ -69,7 +69,7 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
         exchangeCode: data.exchangeCode,
         accessToken: this.#encryptionService.encrypt(data.accessToken),
         refreshToken: this.#encryptionService.encrypt(data.refreshToken),
-        userId: data.userId,
+        userId: data.userId.value,
         userName: data.userName,
         profileImage: data.profileImage,
         accountRestored: data.accountRestored,
@@ -85,7 +85,7 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
         exchangeCode: data.exchangeCode,
         provider: data.provider,
         // 연결 교환은 공급자 계정 id를 userId 칸에 저장해 왔다
-        userId: data.providerAccountId,
+        userId: data.providerAccountId.value,
       })
       .where(eq(oAuthState.id, oauthStateId.value));
   }

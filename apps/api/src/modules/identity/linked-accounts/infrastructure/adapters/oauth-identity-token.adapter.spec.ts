@@ -10,6 +10,7 @@ import { vi } from "vitest";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
+import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { AppleOAuthIdentityAdapter } from "./apple-oauth-identity.adapter.js";
 import { GoogleOAuthIdentityAdapter } from "./google-oauth-identity.adapter.js";
 import { KakaoOAuthIdentityAdapter } from "./kakao-oauth-identity.adapter.js";
@@ -169,7 +170,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
       // Then
       expect(result).toEqual({
-        id: "google-user-123",
+        id: ProviderAccountId.reconstitute("google-user-123"),
         email: "test@gmail.com",
         emailVerified: true,
         name: "홍길동",
@@ -191,7 +192,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
       // Then
       expect(result).toEqual({
-        id: "google-user-456",
+        id: ProviderAccountId.reconstitute("google-user-456"),
         email: null,
         emailVerified: false,
         name: undefined,
@@ -290,7 +291,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
       // Then
       expect(result).toEqual({
-        id: "12345678",
+        id: ProviderAccountId.reconstitute("12345678"),
         email: "test@kakao.com",
         emailVerified: true,
         name: "카카오유저",
@@ -379,7 +380,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
         expect(failure).toMatchObject({ errorCode: ErrorCode.SOCIAL_0202 });
       }
       expect(providerFetch.requests).toHaveLength(7);
-      expect(profile.id).toBe(String(kakaoUser.id));
+      expect(profile.id.value).toBe(String(kakaoUser.id));
     });
   });
 
@@ -405,7 +406,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
       // Then
       expect(result).toEqual({
-        id: "naver-user-123",
+        id: ProviderAccountId.reconstitute("naver-user-123"),
         email: "test@naver.com",
         emailVerified: false,
         name: "네이버유저",
@@ -595,7 +596,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
 
       // Then
       expect(result).toEqual({
-        id: "apple-user-1",
+        id: ProviderAccountId.reconstitute("apple-user-1"),
         email: "apple-user-1@example.com",
         emailVerified: true,
       });
@@ -622,7 +623,9 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
     it("캐시된 kid가 교체되면 JWKS를 다시 조회하고 새 키를 검증한다", async () => {
       // Given
       const firstToken = await signAppleToken("first", keyIds.first);
-      await expect(apple.verifyToken(firstToken)).resolves.toMatchObject({ id: "apple-user-1" });
+      await expect(apple.verifyToken(firstToken)).resolves.toMatchObject({
+        id: ProviderAccountId.reconstitute("apple-user-1"),
+      });
       activeJwks = [publicJwks.second];
       const rotatedToken = await signAppleToken("second", keyIds.second);
 
@@ -630,7 +633,7 @@ describe("OAuth 공급자 어댑터 — 앱이 보낸 공급자 토큰 검증", 
       const result = await apple.verifyToken(rotatedToken);
 
       // Then
-      expect(result).toMatchObject({ id: "apple-user-2" });
+      expect(result).toMatchObject({ id: ProviderAccountId.reconstitute("apple-user-2") });
       expect(requestCount).toBe(2);
     });
 

@@ -1,6 +1,7 @@
 import type { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
@@ -92,8 +93,14 @@ export function describeLinkedAccountsRepositoryContract(
       await link(repository, OWNER, { provider: "GOOGLE", providerAccountId: "google-account" });
 
       // When
-      const owner = await repository.findUserIdByProviderAccountId("GOOGLE", "google-account");
-      const nobody = await repository.findUserIdByProviderAccountId("KAKAO", "google-account");
+      const owner = await repository.findUserIdByProviderAccountId(
+        "GOOGLE",
+        ProviderAccountId.reconstitute("google-account"),
+      );
+      const nobody = await repository.findUserIdByProviderAccountId(
+        "KAKAO",
+        ProviderAccountId.reconstitute("google-account"),
+      );
 
       // Then
       expect(owner?.value).toBe(AUTH_FIXTURE_USER_ID);
@@ -140,7 +147,12 @@ export function describeLinkedAccountsRepositoryContract(
 
       // Then
       expect({ firstSaved, secondSaved }).toEqual({ firstSaved: true, secondSaved: false });
-      expect(await repository.findUserIdByProviderAccountId("KAKAO", "kakao-2")).toBeNull();
+      expect(
+        await repository.findUserIdByProviderAccountId(
+          "KAKAO",
+          ProviderAccountId.reconstitute("kakao-2"),
+        ),
+      ).toBeNull();
     });
 
     it("이메일 계정을 동시에 더하면 나중 저장이 false이고 먼저 저장한 hash가 남는다", async () => {
@@ -177,7 +189,12 @@ export function describeLinkedAccountsRepositoryContract(
       // Then
       expect({ firstSaved, staleSaved }).toEqual({ firstSaved: true, staleSaved: false });
       expect(await providersOf(repository, OWNER)).toEqual(["CREDENTIAL"]);
-      expect(await repository.findUserIdByProviderAccountId("NAVER", "naver-account")).toBeNull();
+      expect(
+        await repository.findUserIdByProviderAccountId(
+          "NAVER",
+          ProviderAccountId.reconstitute("naver-account"),
+        ),
+      ).toBeNull();
     });
 
     it("비밀번호는 읽은 hash가 그대로일 때만 바꿔 늦은 변경이 먼저 저장된 비밀번호를 덮지 않는다", async () => {

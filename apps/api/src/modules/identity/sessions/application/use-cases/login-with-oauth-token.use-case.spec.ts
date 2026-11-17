@@ -16,6 +16,7 @@ import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 import { createSessionFixture, createUserFixture } from "#test/fixtures/identity/session.fixture";
 
 import { GetCurrentUserUseCase } from "../../../users/application/use-cases/get-current-user.use-case.js";
+import { AutoLinkOAuthAccountUseCase } from "./auto-link-oauth-account.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";
 
 const providers = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] satisfies Array<
@@ -507,14 +508,17 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const storageError = new Error("연결 저장 실패");
       const useCase = new LoginWithOAuthTokenUseCase({
         ...fixture,
-        accountRepository: {
-          findUserIdByProviderAccountId: async () => null,
-          findByUserId: (userId) => fixture.accountRepository.findByUserId(userId),
-          nextId: () => fixture.accountRepository.nextId(),
-          save: async () => {
-            throw storageError;
+        accountRepository: { findUserIdByProviderAccountId: async () => null },
+        autoLinkOAuthAccount: new AutoLinkOAuthAccountUseCase({
+          ...fixture,
+          accountRepository: {
+            findByUserId: (userId) => fixture.accountRepository.findByUserId(userId),
+            nextId: () => fixture.accountRepository.nextId(),
+            save: async () => {
+              throw storageError;
+            },
           },
-        },
+        }),
       });
       // When
       const pending = useCase.execute({ provider: "GOOGLE", token: "token" });

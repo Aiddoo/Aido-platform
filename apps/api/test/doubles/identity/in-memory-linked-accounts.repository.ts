@@ -3,6 +3,7 @@ import { LinkedAccountId } from "#api/modules/identity/linked-accounts/domain/li
 import type { LinkedAccount } from "#api/modules/identity/linked-accounts/domain/linked-account.entity";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import type { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
@@ -88,11 +89,11 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
 
   async findUserIdByProviderAccountId(
     provider: AccountProvider,
-    providerAccountId: string,
+    providerAccountId: ProviderAccountId,
   ): Promise<UserId | null> {
     const row = this.all.find(
       (candidate) =>
-        candidate.provider === provider && candidate.providerAccountId === providerAccountId,
+        candidate.provider === provider && candidate.providerAccountId === providerAccountId.value,
     );
     return row == null ? null : UserId.reconstitute(row.userId);
   }

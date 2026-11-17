@@ -20,6 +20,7 @@ import {
   type SocialLoginOptions,
   type VerifiedProfile,
 } from "../../application/ports/oauth-identity-provider.port.js";
+import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { identityLinkedAccountsConfig } from "../../identity-linked-accounts.config.js";
 import { googleIdTokenPayloadSchema, googleTokenResponseSchema } from "./google.wire.js";
 import { GOOGLE_OAUTH_POLICY, OAUTH_PROVIDER_TIMEOUT_MS } from "./oauth-outbound.policy.js";
@@ -134,7 +135,7 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         throw invalidSocialToken("GOOGLE");
       }
       return {
-        id: payload.sub ?? "",
+        id: ProviderAccountId.reconstitute(payload.sub ?? ""),
         email: payload.email ?? null,
         emailVerified: payload.email_verified ?? false,
         name: payload.name,

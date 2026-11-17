@@ -1,6 +1,7 @@
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
 import { oAuthState } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeOAuthStateRepositoryContract } from "#test/contracts/identity/oauth-state-repository.contract";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/session.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -54,7 +55,7 @@ describe("DrizzleOAuthStateRepository (실제 PostgreSQL)", () => {
       exchangeCode: "exchange-code",
       accessToken: "plain-access",
       refreshToken: "plain-refresh",
-      userId: "user-id",
+      userId: UserId.reconstitute("user-id"),
       isNewUser: false,
     });
     const [row] = await client.select().from(oAuthState);

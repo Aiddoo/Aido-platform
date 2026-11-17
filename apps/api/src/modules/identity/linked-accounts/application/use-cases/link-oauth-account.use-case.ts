@@ -55,7 +55,7 @@ export class LinkOAuthAccountUseCase {
       return this.#dependencies.linkOAuthIdentity.execute({
         userId: input.userId,
         provider: input.provider,
-        providerAccountId: profile.id,
+        providerAccountId: profile.id.value,
         metadata: input.metadata,
       });
     });

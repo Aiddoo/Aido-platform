@@ -9,7 +9,9 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { VerifiedProfile } from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
 import { ApplicationException } from "#api/shared/application/application.exception";
+import { type TestVerifiedProfile, toVerifiedProfile } from "#test/mocks/ports/auth-oauth.stub";
 
 /**
  * 테스트용 OAuth 토큰 검증 서비스
@@ -40,7 +42,7 @@ export class FakeOAuthTokenVerifierService {
    */
   #createDefaultProfile(provider: string, providerAccountId: string): VerifiedProfile {
     return {
-      id: `${provider.toLowerCase()}-${providerAccountId}`,
+      id: ProviderAccountId.reconstitute(`${provider.toLowerCase()}-${providerAccountId}`),
       email: `test-${provider.toLowerCase()}-${providerAccountId}@example.com`,
       emailVerified: true,
       name: `Test ${provider} User`,
@@ -127,9 +129,9 @@ export class FakeOAuthTokenVerifierService {
   setCustomProfile(
     provider: "apple" | "google" | "kakao" | "naver",
     token: string,
-    profile: VerifiedProfile,
+    profile: TestVerifiedProfile,
   ): void {
-    this.#customProfiles.set(`${provider}:${token}`, profile);
+    this.#customProfiles.set(`${provider}:${token}`, toVerifiedProfile(profile));
   }
 
   /**

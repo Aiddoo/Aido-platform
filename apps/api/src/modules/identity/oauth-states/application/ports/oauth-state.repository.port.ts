@@ -1,6 +1,7 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
+import type { ProviderAccountId } from "../../../linked-accounts/domain/provider-account-id.vo.js";
 import type { OAuthStateId } from "../../domain/oauth-state-id.vo.js";
 import type { OAuthState } from "../../domain/oauth-state.aggregate.js";
 import type { OAuthMode } from "../../domain/oauth-states.constants.js";
@@ -18,7 +19,7 @@ export interface OAuthLoginExchangeData {
   readonly exchangeCode: string;
   readonly accessToken: string;
   readonly refreshToken: string;
-  readonly userId: string;
+  readonly userId: UserId;
   readonly userName?: string;
   readonly profileImage?: string;
   readonly accountRestored?: boolean;
@@ -28,7 +29,7 @@ export interface OAuthLoginExchangeData {
 export interface OAuthLinkingData {
   readonly exchangeCode: string;
   readonly provider: AccountProvider;
-  readonly providerAccountId: string;
+  readonly providerAccountId: ProviderAccountId;
 }
 
 export abstract class OAuthStateRepositoryPort {

@@ -14,6 +14,7 @@ import {
   type SocialLoginOptions,
   type VerifiedProfile,
 } from "../../application/ports/oauth-identity-provider.port.js";
+import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { identityLinkedAccountsConfig } from "../../identity-linked-accounts.config.js";
 import { APPLE_ISSUER, APPLE_JWKS_URL, appleIdTokenClaimsSchema } from "./apple.wire.js";
 import { logOAuthTokenVerifyFailed } from "./oauth-provider-error.wire.js";
@@ -68,7 +69,7 @@ export class AppleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       }
 
       return {
-        id: claims.sub,
+        id: ProviderAccountId.reconstitute(claims.sub),
         email: claims.email ?? null,
         emailVerified: claims.email_verified === true || claims.email_verified === "true",
       };

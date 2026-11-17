@@ -2,6 +2,7 @@ import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { unsupportedOAuthProvider } from "../../../linked-accounts/application/linked-accounts.errors.js";
 import type { OAuthIdentityProviderRegistryPort } from "../../../linked-accounts/application/ports/oauth-identity-provider.port.js";
@@ -81,7 +82,7 @@ export class CompleteOAuthAuthorizationUseCase {
         mode: "link",
         provider: authorization.provider,
       });
-      return { exchangeCode, redirectUri, userId: profile.id };
+      return { exchangeCode, redirectUri, userId: profile.id.value };
     }
     const loginResult = await this.#dependencies.loginWithOAuthToken.execute({
       provider,
@@ -93,7 +94,7 @@ export class CompleteOAuthAuthorizationUseCase {
       exchangeCode,
       accessToken: loginResult.tokens.accessToken,
       refreshToken: loginResult.tokens.refreshToken,
-      userId: loginResult.userId,
+      userId: UserId.reconstitute(loginResult.userId),
       userName: loginResult.name ?? undefined,
       profileImage: loginResult.profileImage ?? undefined,
       accountRestored: loginResult.accountRestored,

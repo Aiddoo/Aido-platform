@@ -84,7 +84,7 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
       exchangeCode: data.exchangeCode,
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
-      userId: data.userId,
+      userId: data.userId.value,
       userName: data.userName ?? state.userName,
       profileImage: data.profileImage ?? state.profileImage,
       accountRestored: data.accountRestored ?? state.accountRestored,
@@ -101,7 +101,7 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
       ...state,
       exchangeCode: data.exchangeCode,
       provider: data.provider,
-      userId: data.providerAccountId,
+      userId: data.providerAccountId.value,
     });
   }
 

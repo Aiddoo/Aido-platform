@@ -25,6 +25,7 @@ import { SessionRepositoryPort } from "./application/ports/session.repository.po
 import { TokenIssuerPort } from "./application/ports/token-issuer.port.js";
 import { TokenVerifierPort } from "./application/ports/token-verifier.port.js";
 import { AuthenticateSessionUseCase } from "./application/use-cases/authenticate-session.use-case.js";
+import { AutoLinkOAuthAccountUseCase } from "./application/use-cases/auto-link-oauth-account.use-case.js";
 import { CreateSessionUseCase } from "./application/use-cases/create-session.use-case.js";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login.use-case.js";
 import { ListActiveSessionsUseCase } from "./application/use-cases/list-active-sessions.use-case.js";
@@ -34,6 +35,7 @@ import { LoginWithPasswordUseCase } from "./application/use-cases/login-with-pas
 import { LogoutAllUseCase } from "./application/use-cases/logout-all.use-case.js";
 import { LogoutUseCase } from "./application/use-cases/logout.use-case.js";
 import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use-case.js";
+import { RegisterSocialUserUseCase } from "./application/use-cases/register-social-user.use-case.js";
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
@@ -83,10 +85,23 @@ export const loginWithPasswordProvider = provideUseCase(LoginWithPasswordUseCase
   logger: loggerFor(LoginWithPasswordUseCase),
 });
 
+const registerSocialUserProvider = provideUseCase(RegisterSocialUserUseCase, {
+  unitOfWork: UnitOfWorkPort,
+  provisionUserUseCase: ProvisionUserUseCase,
+  securityLogRepository: SecurityLogRepositoryPort,
+  clock: ClockPort,
+});
+
+const autoLinkOAuthAccountProvider = provideUseCase(AutoLinkOAuthAccountUseCase, {
+  accountRepository: LinkedAccountsRepositoryPort,
+  userMutationLock: UserMutationLockPort,
+  securityLogRepository: SecurityLogRepositoryPort,
+  clock: ClockPort,
+});
+
 export const loginWithOAuthTokenProvider = provideUseCase(LoginWithOAuthTokenUseCase, {
   registry: OAuthIdentityProviderRegistryPort,
   userRepository: UserRepositoryPort,
-  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   securityLogRepository: SecurityLogRepositoryPort,
   loginAttemptRepository: LoginAttemptRepositoryPort,
@@ -94,7 +109,8 @@ export const loginWithOAuthTokenProvider = provideUseCase(LoginWithOAuthTokenUse
   cacheService: UserProfileInvalidatorPort,
   entitlementCache: EntitlementCacheInvalidatorPort,
   issueLoginUseCase: IssueLoginUseCase,
-  provisionUserUseCase: ProvisionUserUseCase,
+  registerSocialUser: RegisterSocialUserUseCase,
+  autoLinkOAuthAccount: AutoLinkOAuthAccountUseCase,
   restoreAccount: RestoreAccountUseCase,
   clock: ClockPort,
   logger: loggerFor(LoginWithOAuthTokenUseCase),
@@ -165,6 +181,8 @@ export const IDENTITY_SESSIONS_PROVIDERS = [
   listActiveSessionsProvider,
   issueLoginProvider,
   loginWithPasswordProvider,
+  registerSocialUserProvider,
+  autoLinkOAuthAccountProvider,
   loginWithOAuthTokenProvider,
   loginWithMobileOAuthTokenProvider,
   verifyEmailProvider,

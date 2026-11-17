@@ -3,6 +3,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { LinkedAccountId } from "../../domain/linked-account-id.vo.js";
 import type { LinkedAccounts } from "../../domain/linked-accounts.aggregate.js";
 import type { AccountProvider } from "../../domain/linked-accounts.constants.js";
+import type { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 
 export abstract class LinkedAccountsRepositoryPort {
   abstract nextId(): Promise<LinkedAccountId>;
@@ -10,7 +11,7 @@ export abstract class LinkedAccountsRepositoryPort {
   abstract findByUserId(userId: UserId): Promise<LinkedAccounts | null>;
   abstract findUserIdByProviderAccountId(
     provider: AccountProvider,
-    providerAccountId: string,
+    providerAccountId: ProviderAccountId,
   ): Promise<UserId | null>;
   /**
    * 읽은 뒤 바뀐 계정만 쓴다. 넣을 계정이 유일 제약에 걸리거나(이미 누군가 연결), 뺄 계정이 이미 없거나,

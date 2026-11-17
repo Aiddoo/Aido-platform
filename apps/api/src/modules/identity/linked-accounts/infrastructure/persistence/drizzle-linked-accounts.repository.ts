@@ -12,6 +12,7 @@ import { linkedAccount } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { toLinkedAccountRow, toLinkedAccounts } from "./linked-accounts-row.mapper.js";
 
 @Injectable()
@@ -45,11 +46,11 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
 
   async findUserIdByProviderAccountId(
     provider: AccountProvider,
-    providerAccountId: string,
+    providerAccountId: ProviderAccountId,
   ): Promise<UserId | null> {
     const row = await this.#db.query.linkedAccount.findFirst({
       columns: { userId: true },
-      where: { provider, providerAccountId },
+      where: { provider, providerAccountId: providerAccountId.value },
     });
     return row == null ? null : UserId.reconstitute(row.userId);
   }

@@ -1,3 +1,4 @@
+import { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
 import type {
   OAuthStateRepositoryPort,
   NewOAuthState,
@@ -42,7 +43,7 @@ async function saveLoginExchange(
     exchangeCode,
     accessToken: "access-token",
     refreshToken: "refresh-token",
-    userId: AUTH_FIXTURE_USER_ID,
+    userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
     userName: "아이도",
     accountRestored: false,
     isNewUser: true,
@@ -183,7 +184,7 @@ export function describeOAuthStateRepositoryContract(
       await repository.saveLinkingData(created.id, {
         exchangeCode,
         provider: "NAVER",
-        providerAccountId: "naver-account",
+        providerAccountId: ProviderAccountId.reconstitute("naver-account"),
       });
 
       // When
@@ -206,7 +207,10 @@ export function describeOAuthStateRepositoryContract(
       const login = await createState(repository, { mode: "login" });
       const legacyCode = repository.generateExchangeCode();
       const loginCode = repository.generateExchangeCode();
-      const linking = { provider: "GOOGLE", providerAccountId: "google-account" } as const;
+      const linking = {
+        provider: "GOOGLE",
+        providerAccountId: ProviderAccountId.reconstitute("google-account"),
+      } as const;
       await repository.saveLinkingData(legacyLink.id, { ...linking, exchangeCode: legacyCode });
       await repository.saveLinkingData(login.id, { ...linking, exchangeCode: loginCode });
 

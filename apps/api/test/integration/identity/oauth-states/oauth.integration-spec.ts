@@ -22,6 +22,7 @@ import { session as sessionTable, user as userTable } from "#api/platform/databa
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { FakeOAuthProviderRegistry } from "#test/mocks/fake-oauth-provider-registry";
 import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
@@ -752,7 +753,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
-        userId: loginResult.userId,
+        userId: UserId.reconstitute(loginResult.userId),
         userName: loginResult.name ?? undefined,
         isNewUser: loginResult.isNewUser,
       });
@@ -798,7 +799,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       await oauthStateRepository.saveExchangeData(oauthState.id, {
         exchangeCode,
         ...loginResult.tokens,
-        userId: loginResult.userId,
+        userId: UserId.reconstitute(loginResult.userId),
         isNewUser: loginResult.isNewUser,
       });
 
