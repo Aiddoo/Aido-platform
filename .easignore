@@ -26,6 +26,15 @@ coverage/
 # Mobile: 스토어 문구·그림은 빌드에 들어가지 않는다
 /apps/mobile/store-metadata/
 
+# Server workspace: 앱 빌드는 서버 코드를 쓰지 않는다. pnpm install·turbo가 읽는 manifest만 올린다
+/apps/api/*
+!/apps/api/package.json
+!/apps/api/turbo.json
+
+# Shared package tests: 앱 빌드는 packages/api의 src만 빌드한다
+/packages/api/test/
+/packages/api/test-fixtures/
+
 # Environment & secrets
 .env*
 !.env*.example
@@ -73,6 +82,8 @@ coverage/
 .worktrees/
 .claude/
 /apps/mobile/.agents/
+/apps/mobile/.heroui-docs/
+/turbo/generators/
 /myDocs/
 
 # Editors & OS

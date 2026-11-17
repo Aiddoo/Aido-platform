@@ -44,6 +44,10 @@
 **/.vitest/
 **/coverage/
 apps/api/scripts/ai-eval/
+apps/api/scripts/email-preview.ts
+apps/api/tmp/
+**/*.test.mjs
+**/test-fixtures/
 apps/api/vitest.config.ts
 packages/api/vitest.config.ts
 
