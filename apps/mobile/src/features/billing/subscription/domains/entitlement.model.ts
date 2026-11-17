@@ -6,8 +6,9 @@ import {
   type Plan,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
-import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
+import { minBy } from 'es-toolkit';
 import { z } from 'zod';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
@@ -131,7 +132,7 @@ function getMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeatur
   return findFeatureQuota(snapshot, feature)?.perUse?.maxSeconds ?? null;
 }
 
-/** 다 쓴 상태라도 초기화 시각이 이미 지난 스냅샷은 믿지 않는다(실제로는 다시 쓸 수 있다) */
+/** 초기화 시각이 지난 스냅샷은 남은 횟수가 몇이든 믿지 않는다. 그 사이 횟수가 다시 찼다 */
 function getQuotaStatus(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
@@ -147,7 +148,7 @@ function getQuotaStatus(
   ) {
     return { type: 'untracked' };
   }
-  if (quota.remaining === 0 && quota.resetsAt != null && hasInstantPassed(quota.resetsAt, now)) {
+  if (quota.resetsAt != null && hasInstantPassed(quota.resetsAt, now)) {
     return { type: 'untracked' };
   }
   return quota.remaining === 0
@@ -171,6 +172,14 @@ function getResetNotice(
     return { type: 'today' };
   }
   return daysLeft === 1 ? { type: 'tomorrow' } : { type: 'date', date: quota.resetsAt };
+}
+
+/** 가장 먼저 오는 기능 초기화 순간. 그때 남은 횟수가 바뀌므로 다시 받는다. 초기화가 없으면 null이다 */
+function findEarliestResetAt(snapshot: EntitlementSnapshot): Instant | null {
+  const resetInstants = Object.values(snapshot.features).flatMap((quota) =>
+    quota?.resetsAt == null ? [] : [quota.resetsAt],
+  );
+  return minBy(resetInstants, toEpochMs) ?? null;
 }
 
 /** 요금제의 집행 한도. null은 무제한이다 */
@@ -229,6 +238,7 @@ export const EntitlementPolicy = {
   getMaxSeconds,
   getQuotaStatus,
   getResetNotice,
+  findEarliestResetAt,
   withFeatureQuota,
   shouldOfferPremium,
   getFreeLimit,

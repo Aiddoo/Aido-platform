@@ -48,7 +48,7 @@ describe('toAiReport', () => {
 });
 
 describe('toReportStatus', () => {
-  it('다음 리포트까지 남은 날짜와 도착 시각을 앱 모델로 옮긴다', () => {
+  it('다음 리포트 도착 순간만 앱 모델로 옮긴다. 남은 날은 앱이 기기 달력으로 센다', () => {
     // Given
     const { status } = reportStatusResponseSchema.parse({
       status: {
@@ -69,8 +69,6 @@ describe('toReportStatus', () => {
     expect(reportStatus).toEqual({
       nextWeeklyAt: '2026-03-09T00:00:00.000Z',
       nextMonthlyAt: '2026-04-01T00:00:00.000Z',
-      daysUntilWeekly: 2,
-      daysUntilMonthly: 23,
     });
   });
 });

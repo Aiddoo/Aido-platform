@@ -1,6 +1,7 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { formatClockTime, formatDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import {
   QueryErrorFallback,
@@ -18,6 +19,7 @@ import { useGetReportStatusQueryOptions } from '../queries/report.queries';
 export function ReportStatusBanner() {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
+  const now = useMinuteNow();
 
   const [reportType] = useReportType();
   const [{ data: status }, { data: preference }] = useSuspenseQueries({
@@ -38,7 +40,12 @@ export function ReportStatusBanner() {
 
   return (
     <Text size="e1" shade={6} numberOfLines={1} className="tabular-nums">
-      {match(ReportStatusPolicy.getDaysUntilReport(status, reportType))
+      {match(
+        ReportStatusPolicy.getDaysUntilReport(status, reportType, {
+          now,
+          timeZone: dateFormatContext.timeZone,
+        }),
+      )
         .with(0, () => t('report.statusBanner.nextToday', { time }))
         .otherwise((count) => t('report.statusBanner.nextInDays', { count, date, time }))}
     </Text>

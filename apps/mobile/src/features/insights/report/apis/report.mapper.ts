@@ -40,7 +40,6 @@ export function toAiReport(dto: AiReportDto): AiReport {
 
 export function toReportStatus(dto: ReportStatusDto): ReportStatus {
   return {
-    ...pick(dto, ['daysUntilWeekly', 'daysUntilMonthly']),
     nextWeeklyAt: toInstant(dto.nextWeeklyAt),
     nextMonthlyAt: toInstant(dto.nextMonthlyAt),
   };

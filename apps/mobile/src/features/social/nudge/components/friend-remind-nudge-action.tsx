@@ -1,5 +1,6 @@
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useNow } from '@src/shared/hooks/use-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Result, Text } from '@src/shared/ui';
@@ -7,9 +8,10 @@ import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
+import { NudgeCooldownPolicy } from '../domains/todo-nudge.model';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.queries';
 
-/** 오늘 할 일이 없는 친구에게 독촉 시트를 여는 버튼. 쿨다운 중이면 눌러지지 않는다 */
+/** 오늘 할 일이 없는 친구에게 독촉 시트를 여는 버튼. 쿨다운 중이면 눌러지지 않고, 쿨다운이 끝나는 순간 다시 눌린다 */
 export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
   const { t } = useTranslation(['todo', 'friend']);
   const fontScaledSize = useFontScaledSize();
@@ -17,7 +19,9 @@ export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
     useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
   );
   const push = useSingleTap(router.push);
-  const canNudge = cooldownInfo?.canNudge ?? true;
+  const now = useNow({ until: cooldownInfo?.cooldownEndsAt ?? null });
+  const canNudge =
+    cooldownInfo == null || NudgeCooldownPolicy.canNudgeAfterCooldown(cooldownInfo, now);
 
   const openRemindNudgeSheet = () =>
     push({

@@ -1,7 +1,7 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import type { DateKey } from '@src/shared/date/date-key';
-import { instantSchema } from '@src/shared/date/instant';
+import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 export const nudgeCooldownInfoSchema = z.object({
@@ -41,4 +41,16 @@ export function canNudgeTodoOnDate(todo: Todo, targetDateKey: DateKey, todayKey:
 
 export const TodoNudgePolicy = {
   canNudgeTodoOnDate,
+} as const;
+
+// 서버는 쿨다운 중일 때만 canNudge가 false다. 받은 쿨다운 끝 순간이 지나면 다시 묻지 않아도 찌를 수 있다
+export function canNudgeAfterCooldown(cooldown: NudgeCooldownInfo, now: Instant): boolean {
+  return (
+    cooldown.canNudge ||
+    (cooldown.cooldownEndsAt != null && hasInstantPassed(cooldown.cooldownEndsAt, now))
+  );
+}
+
+export const NudgeCooldownPolicy = {
+  canNudgeAfterCooldown,
 } as const;
