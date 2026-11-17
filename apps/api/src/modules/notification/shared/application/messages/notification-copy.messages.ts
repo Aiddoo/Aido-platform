@@ -4,7 +4,10 @@ import type { z } from "zod";
 
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
-import { notificationCopyNotRenderable } from "../notification-copy.errors.js";
+import {
+  notificationCopyNotRenderable,
+  notificationCopyTooLong,
+} from "../notification-copy.errors.js";
 import { EN_NOTIFICATION_GRAMMAR } from "./locales/en/notification-grammar.messages.js";
 import { KO_NOTIFICATION_GRAMMAR } from "./locales/ko/notification-grammar.messages.js";
 import {
@@ -81,7 +84,7 @@ export function toNameFact(name: string | null, locale: SupportedLocale): string
 }
 
 /** 푸시를 만드는 순간에만 쓰는 표시 함수. 저장한 사실로 다시 렌더링할 때는 사실 값으로 직접 만든다. */
-export interface NotificationCopyOverrides {
+interface NotificationCopyOverrides {
   readonly formatTime?: (instant: Date) => string;
 }
 
@@ -145,6 +148,11 @@ export interface StoredNotificationCopyTemplate {
   ): NotificationCopy | null;
 }
 
+interface NotificationCopyRendering {
+  readonly locale: SupportedLocale;
+  readonly overrides?: NotificationCopyOverrides;
+}
+
 export interface NotificationCopyTemplate<
   TFacts extends NotificationCopyFacts,
 > extends StoredNotificationCopyTemplate {
@@ -152,8 +160,7 @@ export interface NotificationCopyTemplate<
   render(
     variantName: string,
     facts: TFacts,
-    locale: SupportedLocale,
-    overrides?: NotificationCopyOverrides,
+    rendering: NotificationCopyRendering,
   ): NotificationCopy | null;
 }
 
@@ -174,8 +181,7 @@ export function defineNotificationCopy<TFacts extends NotificationCopyFacts, TVa
   const render: NotificationCopyTemplate<TFacts>["render"] = (
     variantName,
     facts,
-    locale,
-    overrides = {},
+    { locale, overrides = {} },
   ) => {
     const variants = definition.variants(NOTIFICATION_COPY_CATALOG[locale]);
     const variant = Object.hasOwn(variants, variantName) ? variants[variantName] : undefined;
@@ -192,30 +198,30 @@ export function defineNotificationCopy<TFacts extends NotificationCopyFacts, TVa
       if (!parsedFacts.success) {
         return null;
       }
-      const copy = render(variantName, parsedFacts.data, locale);
+      const copy = render(variantName, parsedFacts.data, { locale });
       return copy == null ? null : toNotificationContent(copy);
     },
   };
 }
 
+interface NotificationVariantRendering<TFacts> extends NotificationCopyRendering {
+  readonly index: number;
+  readonly facts: TFacts;
+}
+
 /** 기준 언어 variant 순서의 index번째 variant를 렌더링한다. 어느 variant를 고를지는 호출자가 정한다. */
 export function renderNotificationVariant<TFacts extends NotificationCopyFacts>(
   template: NotificationCopyTemplate<TFacts>,
-  index: number,
-  facts: TFacts,
-  locale: SupportedLocale,
-  overrides?: NotificationCopyOverrides,
+  { index, facts, locale, overrides }: NotificationVariantRendering<TFacts>,
 ): Omit<NotificationMessage, "variantId"> {
   const variantName = template.variantNames[index] ?? template.variantNames[0] ?? "default";
-  const copy = template.render(variantName, facts, locale, overrides);
+  const copy = template.render(variantName, facts, { locale, overrides });
   if (copy == null) {
     throw notificationCopyNotRenderable(template.key, variantName);
   }
   const content = toNotificationContent(copy);
   if (content == null) {
-    throw new RangeError(
-      `Notification copy ${template.key}.${variantName} exceeds the notification length limits`,
-    );
+    throw notificationCopyTooLong(template.key, variantName);
   }
   return {
     ...content,
@@ -251,7 +257,7 @@ export function renderNotificationTemplate<TFacts extends NotificationCopyFacts>
 
   if (template.variantNames[0] === "default") {
     return {
-      ...renderNotificationVariant(template, 0, facts, locale, overrides),
+      ...renderNotificationVariant(template, { index: 0, facts, locale, overrides }),
       variantId: variantNamespace ? `${variantNamespace}.default` : "default",
     };
   }
@@ -263,7 +269,7 @@ export function renderNotificationTemplate<TFacts extends NotificationCopyFacts>
       )
     : 0;
   return {
-    ...renderNotificationVariant(template, index, facts, locale, overrides),
+    ...renderNotificationVariant(template, { index, facts, locale, overrides }),
     variantId: variantNamespace ? `${variantNamespace}.v${index + 1}` : `v${index + 1}`,
   };
 }

@@ -170,7 +170,7 @@ describe("완료 수와 기간을 실제 입력으로 안내한다", () => {
     ["친구", "친구와"],
   ])("닉네임 %s에는 님을 붙이고 이름을 모르는 친구에는 붙이지 않는다", (senderName, expected) => {
     // When
-    const message = SOCIAL_COPY.FOLLOW_ACCEPTED.render("v2", { senderName }, "ko");
+    const message = SOCIAL_COPY.FOLLOW_ACCEPTED.render("v2", { senderName }, { locale: "ko" });
 
     // Then
     expect(message?.title).toBe(`${expected} 친구가 됐어요 🎉`);
@@ -180,7 +180,7 @@ describe("완료 수와 기간을 실제 입력으로 안내한다", () => {
     // Given
     const friendName = getNotificationFriendFallback("en");
     // When
-    const message = SOCIAL_COPY.NUDGE_SUGGEST.render("v1", { friendName }, "en");
+    const message = SOCIAL_COPY.NUDGE_SUGGEST.render("v1", { friendName }, { locale: "en" });
     // Then
     expect(message?.title).toBe("Check in on your friend?");
   });

@@ -2,3 +2,14 @@
 export function notificationCopyNotRenderable(templateKey: string, variantName: string): Error {
   return new Error(`Notification copy ${templateKey}.${variantName} cannot render its facts`);
 }
+
+// 문구가 알림 길이 한도를 넘으면 카탈로그가 어긋난 것이다
+export function notificationCopyTooLong(templateKey: string, variantName: string): RangeError {
+  return new RangeError(
+    `Notification copy ${templateKey}.${variantName} exceeds the notification length limits`,
+  );
+}
+
+export function notificationCommentCountInvalid(): RangeError {
+  return new RangeError("commentCount must be a positive safe integer");
+}

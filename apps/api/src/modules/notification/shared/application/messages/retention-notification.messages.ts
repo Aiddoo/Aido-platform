@@ -31,7 +31,7 @@ export function createRetentionNotificationMessage(
   );
 
   return {
-    ...renderNotificationVariant(template, index, {}, locale),
+    ...renderNotificationVariant(template, { index, facts: {}, locale }),
     variantId: `${input.copyKey}.v${index + 1}`,
   };
 }

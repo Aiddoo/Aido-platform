@@ -4,6 +4,7 @@ import {
   type TodoCommentKind,
 } from "@aido/api/vocabulary";
 
+import { notificationCommentCountInvalid } from "../notification-copy.errors.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,
@@ -321,7 +322,7 @@ export function createTodoCommentNotificationMessage(
     });
   }
   if (!Number.isSafeInteger(input.commentCount) || input.commentCount < 1) {
-    throw new RangeError("commentCount must be a positive safe integer");
+    throw notificationCommentCountInvalid();
   }
 
   const isChain = input.commentCount > 1;

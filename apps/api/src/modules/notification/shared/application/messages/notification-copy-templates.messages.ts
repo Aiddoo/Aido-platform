@@ -56,16 +56,21 @@ function weatherTime(
     : formatWeatherNotificationTime(at, { locale: context.locale, timezone });
 }
 
-function todoWeatherCopy(
-  variant: StaticVariant,
-  facts: {
+function todoWeatherCopy({
+  variant,
+  facts,
+  context,
+  values = {},
+}: {
+  readonly variant: StaticVariant;
+  readonly facts: {
     readonly scheduledAt: string;
     readonly timezone: string | null;
     readonly todoTitle: string;
-  },
-  context: NotificationCopyContext,
-  values: Readonly<Record<string, string | number>> = {},
-): NotificationCopy | null {
+  };
+  readonly context: NotificationCopyContext;
+  readonly values?: Readonly<Record<string, string | number>>;
+}): NotificationCopy | null {
   const time = weatherTime(context, facts.scheduledAt, facts.timezone);
   return time == null
     ? null
@@ -203,34 +208,39 @@ export const WEATHER_COPY = {
     variants: (catalog) => catalog.weather.MORNING_TODO_RAIN,
     facts: todoWeatherFacts.extend({ precipChance: z.number(), otherCount: z.number() }),
     render: (variant, facts, context) =>
-      todoWeatherCopy(
-        {
+      todoWeatherCopy({
+        variant: {
           title: variant.title,
           body: facts.otherCount > 0 ? variant.bodyWithOthers : variant.body,
         },
         facts,
         context,
-        { precipChance: facts.precipChance, count: facts.otherCount },
-      ),
+        values: { precipChance: facts.precipChance, count: facts.otherCount },
+      }),
   }),
   MORNING_TODO_STORM: defineNotificationCopy({
     key: "weather.MORNING_TODO_STORM",
     variants: (catalog) => catalog.weather.MORNING_TODO_STORM,
     facts: todoWeatherFacts,
-    render: (variant, facts, context) => todoWeatherCopy(variant, facts, context),
+    render: (variant, facts, context) => todoWeatherCopy({ variant, facts, context }),
   }),
   MORNING_TODO_SNOW: defineNotificationCopy({
     key: "weather.MORNING_TODO_SNOW",
     variants: (catalog) => catalog.weather.MORNING_TODO_SNOW,
     facts: todoWeatherFacts,
-    render: (variant, facts, context) => todoWeatherCopy(variant, facts, context),
+    render: (variant, facts, context) => todoWeatherCopy({ variant, facts, context }),
   }),
   MORNING_TODO_HEAT: defineNotificationCopy({
     key: "weather.MORNING_TODO_HEAT",
     variants: (catalog) => catalog.weather.MORNING_TODO_HEAT,
     facts: todoWeatherFacts.extend({ apparentTemp: z.number() }),
     render: (variant, facts, context) =>
-      todoWeatherCopy(variant, facts, context, { apparentTemp: facts.apparentTemp }),
+      todoWeatherCopy({
+        variant,
+        facts,
+        context,
+        values: { apparentTemp: facts.apparentTemp },
+      }),
   }),
   MORNING_RAIN_LATER: defineNotificationCopy({
     key: "weather.MORNING_RAIN_LATER",
