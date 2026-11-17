@@ -7357,8 +7357,8 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           },
           {
             "categoryColors": [
-              "#FF6B43",
               "#4A90D9",
+              "#FF6B43",
             ],
             "completedTodos": 2,
             "completionRate": 50,
@@ -7389,8 +7389,8 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "items": {
             "example": {
               "categoryColors": [
-                "#FF6B43",
                 "#4A90D9",
+                "#FF6B43",
               ],
               "completedTodos": 5,
               "completionRate": 100,
@@ -7400,7 +7400,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             },
             "properties": {
               "categoryColors": {
-                "description": "해당 날짜 투두의 카테고리 색상 배열 (HEX, 중복 제거)",
+                "description": "해당 날짜 할 일의 카테고리 색상 (HEX, 중복 제거, 오름차순)",
                 "items": {
                   "type": "string",
                 },
@@ -7413,7 +7413,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "integer",
               },
               "completionRate": {
-                "description": "완료율 (0-100%, 소수점 포함 가능)",
+                "description": "완료율(0~100 정수). 다 끝냈을 때만 100, 하나라도 끝냈으면 1 이상",
                 "maximum": 100,
                 "minimum": 0,
                 "type": "number",
@@ -41014,46 +41014,6 @@ SYS_0002: 잘못된 파라미터입니다.",
 \`\`\`
 GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 \`\`\`
-
-### 응답 구조
-\`\`\`json
-{
-  "completions": [
-    {
-      "date": "2026-01-15",
-      "totalTodos": 3,
-      "completedTodos": 3,
-      "isComplete": true,
-      "completionRate": 100,
-      "categoryColors": ["#FF6B43", "#4A90D9"]
-    },
-    {
-      "date": "2026-01-16",
-      "totalTodos": 4,
-      "completedTodos": 2,
-      "isComplete": false,
-      "completionRate": 50,
-      "categoryColors": ["#FF6B43"]
-    }
-  ],
-  "totalCompleteDays": 1,
-  "dateRange": {
-    "startDate": "2026-01-01",
-    "endDate": "2026-01-31"
-  }
-}
-\`\`\`
-
-### 응답 필드 설명
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`completions[].date\` | string | 날짜 (YYYY-MM-DD) |
-| \`completions[].totalTodos\` | number | 해당 날짜의 총 할 일 수 |
-| \`completions[].completedTodos\` | number | 완료한 할 일 수 |
-| \`completions[].isComplete\` | boolean | 100% 완료 여부 (물고기 표시) |
-| \`completions[].completionRate\` | number | 완료율 (0-100) |
-| \`completions[].categoryColors\` | string[] | 해당 날짜 투두의 카테고리 색상 (HEX, 중복 제거) |
-| \`totalCompleteDays\` | number | 100% 완료한 날 수 (물고기 개수) |
 
 ### 캘린더 UI 매핑
 - \`isComplete: true\` → 물고기 아이콘 표시

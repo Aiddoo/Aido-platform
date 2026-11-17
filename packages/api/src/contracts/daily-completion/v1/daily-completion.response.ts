@@ -10,10 +10,10 @@ export const dailyCompletionSummarySchema = z
       .number()
       .min(0)
       .max(100)
-      .meta({ description: "완료율 (0-100%, 소수점 포함 가능)" }),
+      .meta({ description: "완료율(0~100 정수). 다 끝냈을 때만 100, 하나라도 끝냈으면 1 이상" }),
     categoryColors: z
       .array(z.string())
-      .meta({ description: "해당 날짜 투두의 카테고리 색상 배열 (HEX, 중복 제거)" }),
+      .meta({ description: "해당 날짜 할 일의 카테고리 색상 (HEX, 중복 제거, 오름차순)" }),
   })
   .meta({
     example: {
@@ -22,7 +22,7 @@ export const dailyCompletionSummarySchema = z
       completedTodos: 5,
       isComplete: true,
       completionRate: 100,
-      categoryColors: ["#FF6B43", "#4A90D9"],
+      categoryColors: ["#4A90D9", "#FF6B43"],
     },
   });
 
@@ -69,7 +69,7 @@ export const dailyCompletionsRangeResponseSchema = z
           completedTodos: 2,
           isComplete: false,
           completionRate: 50,
-          categoryColors: ["#FF6B43", "#4A90D9"],
+          categoryColors: ["#4A90D9", "#FF6B43"],
         },
         {
           date: "2026-01-17",
