@@ -23,6 +23,7 @@ import { MaterializeTodoOccurrencesUseCase } from "./application/use-cases/mater
 import { MaterializeTodoSeriesUseCase } from "./application/use-cases/materialize-todo-series.use-case.js";
 import { PublishTodoCreationUseCase } from "./application/use-cases/publish-todo-creation.use-case.js";
 import { PublishTodoSeriesEditUseCase } from "./application/use-cases/publish-todo-series-edit.use-case.js";
+import { RemapFollowingOccurrencesUseCase } from "./application/use-cases/remap-following-occurrences.use-case.js";
 import { StartSeriesFromTodoUseCase } from "./application/use-cases/start-series-from-todo.use-case.js";
 import { StopTodoSeriesUseCase } from "./application/use-cases/stop-todo-series.use-case.js";
 import { UpdateFollowingTodosUseCase } from "./application/use-cases/update-following-todos.use-case.js";
@@ -91,10 +92,12 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     effects: PublishTodoCreationUseCase,
     mutationLock: MutationLockPort,
   }),
+  provideUseCase(RemapFollowingOccurrencesUseCase, { occurrenceWriter: TodoOccurrenceWriterPort }),
   provideUseCase(UpdateFollowingTodosUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     occurrenceWriter: TodoOccurrenceWriterPort,
+    remapOccurrences: RemapFollowingOccurrencesUseCase,
     todoReadRepository: TodoReadRepositoryPort,
     seriesRepository: TodoSeriesRepositoryPort,
     categoryOwnership: CategoryOwnershipPort,

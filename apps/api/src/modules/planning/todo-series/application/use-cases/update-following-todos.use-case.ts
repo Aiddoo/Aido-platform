@@ -1,5 +1,5 @@
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
-import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
+import { isEqual, uniq, uniqBy } from "es-toolkit";
 
 import {
   TodoCategoryLockKeys,
@@ -27,12 +27,10 @@ import type {
   TodoReminderSchedule,
 } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
-import type { TodoOccurrenceReadModel } from "../../../todos/application/read-models/todo-occurrence.read-model.js";
 import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
-import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
@@ -48,6 +46,7 @@ import {
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
+import type { RemapFollowingOccurrencesUseCase } from "./remap-following-occurrences.use-case.js";
 
 export interface UpdateFollowingTodosInput {
   readonly id: number;
@@ -76,13 +75,9 @@ interface UpdateFollowingTodosDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "countCategoryUsage">;
   readonly occurrenceWriter: Pick<
     TodoOccurrenceWriterPort,
-    | "findOccurrencesFrom"
-    | "updateFollowingOccurrences"
-    | "updateOccurrenceTimes"
-    | "reassignOccurrences"
-    | "moveOccurrence"
-    | "deleteMany"
+    "findOccurrencesFrom" | "updateFollowingOccurrences" | "updateOccurrenceTimes"
   >;
+  readonly remapOccurrences: Pick<RemapFollowingOccurrencesUseCase, "execute">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly seriesRepository: Pick<
     TodoSeriesRepositoryPort,
@@ -248,7 +243,14 @@ export class UpdateFollowingTodosUseCase {
     }
 
     if (ruleChanged || split) {
-      const remapped = await this.#remapRows(input.id, series, following, target, pivot, now);
+      const remapped = await this.#dependencies.remapOccurrences.execute({
+        pivotTodoId: input.id,
+        source: series,
+        following,
+        target,
+        pivot,
+        now,
+      });
       cancelledTodoIds.push(...remapped.deletedTodoIds, ...remapped.movedTodoIds);
       const deleted = new Set(remapped.deletedTodoIds);
       reminders = [
@@ -313,88 +315,6 @@ export class UpdateFollowingTodosUseCase {
       : this.#rescheduleRows(segment, pivot, changes.scheduledLocalTime);
   }
 
-  /**
-   * 규칙이 바뀌면 이후 회차를 새 날짜에 맞춘다. 맞는 행은 id를 유지해 옮기고(댓글·진행 보존),
-   * 맞지 않는 미완료 행은 지운다. 기준 회차만은 지우지 않고 첫 날짜로 옮긴다.
-   * 뒤 구간의 행도 같은 기준으로 합친다. 완료 행은 맞지 않아도 기록으로 원래 구간에 남는다.
-   */
-  async #remapRows(
-    pivotTodoId: number,
-    source: TodoSeries,
-    following: readonly TodoSeries[],
-    target: TodoSeries,
-    pivot: string,
-    now: Temporal.Instant,
-  ) {
-    const { occurrenceWriter } = this.#dependencies;
-    const rows = await occurrenceWriter.findOccurrencesFrom(
-      [source, ...following].map((segment) => segment.id),
-      pivot,
-    );
-    const lastRowDate = rows.at(-1)?.occurrenceDate ?? pivot;
-    const horizon = occurrenceHorizon(target.timezone, now);
-    const through = lastRowDate > horizon ? lastRowDate : horizon;
-    const dates = target.rule.occurrencesBetween(target.startDate, pivot, through, 0);
-    const dateSet = new Set(dates);
-    const firstDate = dates.at(0);
-
-    const keep = pickOccurrencePerDate(
-      rows.filter((row) => dateSet.has(row.occurrenceDate)),
-      source.id.value,
-    );
-    const keptTodoIds = new Set(keep.map((row) => row.todoId));
-    const deletedTodoIds = new Set(
-      rows.filter((row) => !keptTodoIds.has(row.todoId) && !row.completed).map((row) => row.todoId),
-    );
-    let responseTodoId = pivotTodoId;
-    let pivotMoveDate: string | null = null;
-
-    if (deletedTodoIds.has(pivotTodoId) && firstDate != null) {
-      const occupant = keep.find((row) => row.occurrenceDate === firstDate);
-      if (occupant?.completed === true) {
-        // 첫 날짜를 이미 완료했으면 기록을 지키고 그 회차를 돌려준다.
-        responseTodoId = occupant.todoId;
-      } else {
-        deletedTodoIds.delete(pivotTodoId);
-        if (occupant != null) {
-          deletedTodoIds.add(occupant.todoId);
-        }
-        pivotMoveDate = firstDate;
-      }
-    }
-    // 유니크 인덱스 때문에 자리를 비운 뒤 기준 회차를 옮긴다.
-    await occurrenceWriter.deleteMany(
-      [...deletedTodoIds].map((todoId) => TodoId.reconstitute(todoId)),
-    );
-
-    const movedTodoIds: number[] = [];
-    const reminders: TodoReminderSchedule[] = [];
-    if (pivotMoveDate != null) {
-      const localTime = target.scheduledLocalTime;
-      const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.timezone);
-      await occurrenceWriter.moveOccurrence(TodoId.reconstitute(pivotTodoId), {
-        occurrenceDate: pivotMoveDate,
-        scheduledLocalTime: localTime,
-        scheduledTime,
-      });
-      movedTodoIds.push(pivotTodoId);
-      if (scheduledTime != null) {
-        reminders.push({ todoId: pivotTodoId, scheduledTime, userId: target.userId.value });
-      }
-    }
-
-    const reassigned = keep
-      .filter((row) => row.seriesId !== target.id.value && !deletedTodoIds.has(row.todoId))
-      .map((row) => row.todoId);
-    await occurrenceWriter.reassignOccurrences(
-      (target === source ? reassigned : [...reassigned, ...movedTodoIds]).map((todoId) =>
-        TodoId.reconstitute(todoId),
-      ),
-      target.id,
-    );
-    return { deletedTodoIds: [...deletedTodoIds], movedTodoIds, reminders, responseTodoId };
-  }
-
   /** DST로 오프셋이 달라지므로 회차의 실제 날짜마다 규칙 시간대로 다시 해석한다. */
   async #rescheduleRows(
     target: TodoSeries,
@@ -430,21 +350,6 @@ export class UpdateFollowingTodosUseCase {
       throw todoSeriesLimitReached(activeCount);
     }
   }
-}
-
-/**
- * 유니크 인덱스 때문에 합치는 규칙에는 날짜마다 한 행만 들어간다.
- * 완료 기록을 먼저 지키고, 그다음은 이미 기준 규칙에 있던 행이다.
- */
-function pickOccurrencePerDate(
-  rows: readonly TodoOccurrenceReadModel[],
-  sourceSeriesId: string,
-): readonly TodoOccurrenceReadModel[] {
-  const ranked = sortBy(rows, [
-    (row) => (row.completed ? 0 : 1),
-    (row) => (row.seriesId === sourceSeriesId ? 0 : 1),
-  ]);
-  return uniqBy(ranked, (row) => row.occurrenceDate);
 }
 
 function toReminders(

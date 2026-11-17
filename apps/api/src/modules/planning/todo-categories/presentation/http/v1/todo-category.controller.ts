@@ -40,7 +40,12 @@ import { GetTodoCategoryUseCase } from "../../../application/use-cases/get-todo-
 import { ListTodoCategoriesUseCase } from "../../../application/use-cases/list-todo-categories.use-case.js";
 import { ReorderTodoCategoryUseCase } from "../../../application/use-cases/reorder-todo-category.use-case.js";
 import { UpdateTodoCategoryUseCase } from "../../../application/use-cases/update-todo-category.use-case.js";
-import { TodoCategoryMapper } from "./todo-category-response.mapper.js";
+import {
+  toTodoCategoryDeletionPreviewResponse,
+  toTodoCategoryDeletionResponse,
+  toTodoCategoryResponse,
+  toTodoCategoryWithCountResponse,
+} from "./todo-category-response.mapper.js";
 import {
   CreateTodoCategoryDto,
   CreateTodoCategoryResponseDto,
@@ -140,7 +145,7 @@ export class TodoCategoryController {
 
     return {
       message: "카테고리가 생성되었습니다.",
-      category: TodoCategoryMapper.toResponse(category),
+      category: toTodoCategoryResponse(category),
     };
   }
 
@@ -165,7 +170,7 @@ export class TodoCategoryController {
     const categories = await this.#getTodoCategoriesUseCase.execute({ userId: user.userId });
 
     return {
-      items: TodoCategoryMapper.toManyResponseWithCount(categories),
+      items: categories.map(toTodoCategoryWithCountResponse),
     };
   }
 
@@ -192,7 +197,7 @@ export class TodoCategoryController {
     });
 
     return {
-      category: TodoCategoryMapper.toResponseWithCount(category),
+      category: toTodoCategoryWithCountResponse(category),
     };
   }
 
@@ -221,7 +226,7 @@ export class TodoCategoryController {
       categoryId: params.id,
     });
 
-    return TodoCategoryMapper.toDeletionPreview(preview);
+    return toTodoCategoryDeletionPreviewResponse(preview);
   }
 
   @Patch(":id")
@@ -257,7 +262,7 @@ export class TodoCategoryController {
 
     return {
       message: "카테고리가 수정되었습니다.",
-      category: TodoCategoryMapper.toResponse(category),
+      category: toTodoCategoryResponse(category),
     };
   }
 
@@ -312,7 +317,7 @@ export class TodoCategoryController {
 
     return {
       message: "카테고리 순서가 변경되었습니다.",
-      category: TodoCategoryMapper.toResponse(category),
+      category: toTodoCategoryResponse(category),
     };
   }
 
@@ -373,7 +378,7 @@ DELETE /todo-categories/3?todoHandling=delete
 
     return {
       message: "카테고리가 삭제되었습니다.",
-      result: TodoCategoryMapper.toDeletionResult(deletion),
+      result: toTodoCategoryDeletionResponse(deletion),
     };
   }
 }

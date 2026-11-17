@@ -1,4 +1,5 @@
 import { TODO_ITEM_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
+import { isUndefined, omitBy, pick } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
@@ -62,11 +63,6 @@ export interface TodoDetailsPatch {
   readonly scheduledLocalTime?: string | null;
   readonly isAllDay?: boolean;
   readonly visibility?: TodoVisibility;
-  readonly completed?: boolean;
-}
-
-export interface TodoItemChange {
-  readonly title?: string;
   readonly completed?: boolean;
 }
 
@@ -377,7 +373,11 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
   }
 
   // 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다
-  updateItem(itemId: TodoItemId, change: TodoItemChange, now: Temporal.Instant): boolean {
+  updateItem(
+    itemId: TodoItemId,
+    change: { readonly title?: string; readonly completed?: boolean },
+    now: Temporal.Instant,
+  ): boolean {
     const item = this.#requireItem(itemId);
     const title = change.title == null ? null : TodoTitle.create(change.title);
     const renamed = title != null && item.rename(title, now);
@@ -461,15 +461,10 @@ function isSameInstant(left: Temporal.Instant | null, right: Temporal.Instant | 
   return left == null || right == null ? left === right : left.equals(right);
 }
 
+// null은 지우기라 남기고 보내지 않은 칸(undefined)만 뺀다
 function toSchedulePatch(patch: TodoDetailsPatch): TodoSchedulePatch {
-  return {
-    ...(patch.startDate == null ? {} : { startDate: patch.startDate }),
-    // oxlint-disable-next-line aido/no-strict-nullish -- endDate null은 종료일 지우기다
-    ...(patch.endDate === undefined ? {} : { endDate: patch.endDate }),
-    // oxlint-disable-next-line aido/no-strict-nullish -- 벽시계 null은 시간 지우기다
-    ...(patch.scheduledLocalTime === undefined
-      ? {}
-      : { scheduledLocalTime: patch.scheduledLocalTime }),
-    ...(patch.isAllDay == null ? {} : { isAllDay: patch.isAllDay }),
-  };
+  return omitBy(
+    pick(patch, ["startDate", "endDate", "scheduledLocalTime", "isAllDay"]),
+    isUndefined,
+  );
 }

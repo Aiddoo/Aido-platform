@@ -1,9 +1,12 @@
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 
 import type { TodoCategoryWithCountReadModel } from "../../../application/read-models/todo-category-with-count.read-model.js";
-import { TodoCategoryMapper } from "./todo-category-response.mapper.js";
+import {
+  toTodoCategoryResponse,
+  toTodoCategoryWithCountResponse,
+} from "./todo-category-response.mapper.js";
 
-describe("TodoCategoryMapper", () => {
+describe("카테고리 응답 매퍼", () => {
   it("toResponse: 시각을 ms 3자리 UTC 문자열로 직렬화한다", () => {
     // Given
     const category = createTodoCategoryFixture({
@@ -14,7 +17,7 @@ describe("TodoCategoryMapper", () => {
     });
 
     // When
-    const response = TodoCategoryMapper.toResponse(category);
+    const response = toTodoCategoryResponse(category);
 
     // Then
     expect(response).toEqual({
@@ -42,7 +45,7 @@ describe("TodoCategoryMapper", () => {
     };
 
     // When
-    const response = TodoCategoryMapper.toResponseWithCount(view);
+    const response = toTodoCategoryWithCountResponse(view);
 
     // Then
     expect(response).toEqual({

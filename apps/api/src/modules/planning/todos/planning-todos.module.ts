@@ -12,6 +12,9 @@ import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cach
 import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
 import { PlanningTodoPortsModule } from "./planning-todo-ports.module.js";
 import { PLANNING_TODOS_PROVIDERS } from "./planning-todos.providers.js";
+import { TodoFieldController } from "./presentation/http/v1/todo-field.controller.js";
+import { TodoItemController } from "./presentation/http/v1/todo-item.controller.js";
+import { TodoQueryController } from "./presentation/http/v1/todo-query.controller.js";
 import { TodoController } from "./presentation/http/v1/todo.controller.js";
 
 @Module({
@@ -23,7 +26,8 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     IdentitySettingsModule,
     AccessFeatureGrantsQueriesModule,
   ],
-  controllers: [TodoController],
+  // 고정 경로 GET(summary·overview·resource-limit)이 GET :id보다 먼저 등록되게 조회 Controller를 맨 앞에 둔다
+  controllers: [TodoQueryController, TodoController, TodoFieldController, TodoItemController],
   providers: [...PLANNING_TODOS_PROVIDERS],
   exports: [
     PlanningTodoPortsModule,
