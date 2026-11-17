@@ -1,13 +1,13 @@
 import type {
-  FollowPair,
-  FriendWithTodos,
-  NudgeSuggestFollow,
-  OnboardingCandidate,
-  SocialDigestCandidate,
-  UserIdRow,
-  UserTodoCount,
-  UserWithTodosAndStreak,
-  WinbackUser,
+  FollowPairReadModel,
+  FriendWithTodosReadModel,
+  NudgeSuggestFollowReadModel,
+  OnboardingCandidateReadModel,
+  SocialDigestCandidateReadModel,
+  UserIdReadModel,
+  UserTodoCountReadModel,
+  UserWithTodosAndStreakReadModel,
+  WinbackUserReadModel,
 } from "../read-models/scheduler.read-model.js";
 
 export interface InactiveWindowParams {
@@ -30,29 +30,31 @@ export interface SocialDigestCandidateParams extends TodayRangeParams {
 // Win-back·온보딩·넛지 추천·소셜 다이제스트·스트릭 위기 대상 조회
 export abstract class ReEngagementReaderPort {
   /** 3~30일 미접속 사용자 */
-  abstract findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]>;
+  abstract findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]>;
   abstract findOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
-  }): Promise<OnboardingCandidate[]>;
-  abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]>;
-  abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]>;
+  }): Promise<OnboardingCandidateReadModel[]>;
+  abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]>;
+  abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]>;
   /** candidate들의 비활성 맞팔 친구 관계 */
   abstract findNudgeSuggestFollows(params: {
     candidateIds: string[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
-  }): Promise<NudgeSuggestFollow[]>;
+  }): Promise<NudgeSuggestFollowReadModel[]>;
   /** 오늘 미완료 할 일이 있는 사용자 */
   abstract findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
-  ): Promise<SocialDigestCandidate[]>;
-  abstract findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]>;
+  ): Promise<SocialDigestCandidateReadModel[]>;
+  abstract findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]>;
   abstract findFriendsWithTodayTodos(params: {
     friendIds: string[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
-  }): Promise<FriendWithTodos[]>;
+  }): Promise<FriendWithTodosReadModel[]>;
   /** 연속 기록 3일 이상이고 오늘 미완료 할 일이 있는 사용자 */
-  abstract findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]>;
+  abstract findStreakAtRiskUsers(
+    params: TodayRangeParams,
+  ): Promise<UserWithTodosAndStreakReadModel[]>;
 }

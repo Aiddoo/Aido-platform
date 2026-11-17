@@ -14,8 +14,8 @@ import {
   type PushProviderTiming,
   type PushReceiptResult,
   type PushResult,
-  RetryablePushProviderTransportError,
 } from "../../application/ports/push-provider.port.js";
+import { retryablePushProviderTransport } from "../../application/push-dispatches.errors.js";
 import {
   PUSH_FAILURE_KIND,
   type PushFailureKind,
@@ -177,7 +177,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
         this.#expo.sendPushNotificationsAsync(batch.map(({ message }) => message)),
       );
     } catch (error) {
-      const transportError = new RetryablePushProviderTransportError(
+      const transportError = retryablePushProviderTransport(
         {
           providerName: this.name,
           resolvedPayloadCountBeforeFailure: progress.resolved,
@@ -185,7 +185,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
           unconfirmedPayloadCount: batch.length,
           unattemptedPayloadCount: Math.max(progress.total - progress.resolved - batch.length, 0),
         },
-        { cause: error },
+        error,
       );
       this.#logger.error({
         event: PushProviderLogEvent.TRANSPORT_FAILED,

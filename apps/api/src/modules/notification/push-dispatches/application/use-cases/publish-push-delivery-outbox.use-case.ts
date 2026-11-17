@@ -13,9 +13,9 @@ import { type PushDeliveryJobEnqueuerPort } from "../ports/push-delivery-job-enq
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
 import {
-  type ClaimedPushDeliveryPublication,
+  type ClaimedPushDeliveryPublicationReadModel,
   PUSH_DELIVERY_JOB_MAX_PUBLICATIONS,
-  type PushDeliveryPublication,
+  type PushDeliveryPublicationReadModel,
 } from "../read-models/push-delivery.read-model.js";
 
 export type PublishPushDeliveryOutboxInput =
@@ -67,7 +67,7 @@ export class PublishPushDeliveryOutboxUseCase {
     return publishedCount;
   }
 
-  async #publish(claimed: readonly ClaimedPushDeliveryPublication[]): Promise<number> {
+  async #publish(claimed: readonly ClaimedPushDeliveryPublicationReadModel[]): Promise<number> {
     // 한 작업에 차선을 섞지 않아야 거래성 전용 worker가 마케팅 작업을 집어 가지 않는다
     const byLane = groupBy(claimed, (publication) => publication.lane);
     let publishedCount = 0;
@@ -82,7 +82,7 @@ export class PublishPushDeliveryOutboxUseCase {
   }
 
   async #publishLane(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     lane: PushDeliveryLane,
   ): Promise<number> {
     if (publications.length === 0) {

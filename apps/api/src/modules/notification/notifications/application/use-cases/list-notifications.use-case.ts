@@ -11,7 +11,7 @@ import {
 import { NotificationId } from "../../domain/notification-id.vo.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import type { NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
-import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
+import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 
 export interface ListNotificationsQuery {
   readonly userId: string;
@@ -34,7 +34,9 @@ export class ListNotificationsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: ListNotificationsQuery): Promise<CursorPage<InboxNotification, number>> {
+  async execute(
+    query: ListNotificationsQuery,
+  ): Promise<CursorPage<InboxNotificationReadModel, number>> {
     const { notificationInboxReader, logger } = this.#dependencies;
     const size = clampPageSize(query.size);
     const categoryTypes =

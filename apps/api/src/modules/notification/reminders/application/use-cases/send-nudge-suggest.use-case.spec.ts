@@ -8,7 +8,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { NudgeSuggestFollow } from "../read-models/scheduler.read-model.js";
+import type { NudgeSuggestFollowReadModel } from "../read-models/scheduler.read-model.js";
 import { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
 
 describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
@@ -27,7 +27,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
   const follow = (
     userId: string,
     friend: { id: string; name: string | null; lastActive: string },
-  ): NudgeSuggestFollow => ({
+  ): NudgeSuggestFollowReadModel => ({
     followerId: userId,
     followingId: friend.id,
     follower: {
@@ -51,7 +51,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     strategy = new SendNudgeSuggestUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       schedulerDedup: dedup,
       logger: new SilentLogger(),

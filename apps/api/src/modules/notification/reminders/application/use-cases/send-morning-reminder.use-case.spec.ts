@@ -11,7 +11,7 @@ import {
   createMorningReminderNotificationMessage,
 } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 
 describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
@@ -37,7 +37,7 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
     history = new StubNotificationHistoryReader();
     strategy = new SendMorningReminderUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

@@ -30,31 +30,6 @@ export type PushReceiptResult =
   | { readonly ticketId: string; readonly status: "delivered" }
   | { readonly ticketId: string; readonly status: "failed"; readonly failure: PushFailure };
 
-/**
- * `acceptedTicketCountBeforeFailure`가 1 이상이면 앞선 청크가 이미 공급자에 수락됐다.
- * 호출자는 논리 배치 전체를 다시 시도하므로 그 알림은 at-least-once로 중복 전달될 수 있다.
- */
-export interface RetryablePushProviderTransportErrorMetadata {
-  readonly providerName: string;
-  readonly resolvedPayloadCountBeforeFailure: number;
-  readonly acceptedTicketCountBeforeFailure: number;
-  readonly unconfirmedPayloadCount: number;
-  readonly unattemptedPayloadCount: number;
-}
-
-export class RetryablePushProviderTransportError extends Error {
-  readonly metadata: RetryablePushProviderTransportErrorMetadata;
-
-  constructor(metadata: RetryablePushProviderTransportErrorMetadata, options?: ErrorOptions) {
-    super(
-      `Retryable push provider transport failure: provider=${metadata.providerName}, resolved=${metadata.resolvedPayloadCountBeforeFailure}, accepted=${metadata.acceptedTicketCountBeforeFailure}, unconfirmed=${metadata.unconfirmedPayloadCount}, unattempted=${metadata.unattemptedPayloadCount}`,
-      options,
-    );
-    this.name = RetryablePushProviderTransportError.name;
-    this.metadata = metadata;
-  }
-}
-
 /** 공급자가 정하는 시간. receipt 확인 구간과 처리 lease가 공급자 이름 없이 이 값을 쓴다. */
 export interface PushProviderTiming {
   readonly receipt: PushReceiptTiming;

@@ -1,6 +1,6 @@
 import {
   NotificationDedupPort,
-  type NotificationDedupRecord,
+  type NotificationDedupEntry,
 } from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 
@@ -13,7 +13,7 @@ export class InMemoryNotificationDedup extends NotificationDedupPort {
   readonly #notifiedByKey = new Map<string, Set<string>>();
   failWarmUp = false;
 
-  async recordNotifiedUsers(records: NotificationDedupRecord[]): Promise<void> {
+  async recordNotifiedUsers(records: NotificationDedupEntry[]): Promise<void> {
     for (const record of records) {
       this.#add(keyOf(record.type, record.notificationDate), [record.userId]);
     }

@@ -5,7 +5,7 @@ import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type {
   NotificationDedupPort,
-  NotificationDedupRecord,
+  NotificationDedupEntry,
 } from "../../application/ports/notification-dedup.port.js";
 import {
   NOTIFICATION_DEDUP_SENTINEL,
@@ -21,7 +21,7 @@ export class NotificationDedupAdapter implements NotificationDedupPort {
     this.#dedupProvider = dedupProvider;
   }
 
-  async recordNotifiedUsers(records: NotificationDedupRecord[]): Promise<void> {
+  async recordNotifiedUsers(records: NotificationDedupEntry[]): Promise<void> {
     const groups = new Map<string, string[]>();
     for (const record of records) {
       const key = notificationDedupKey(record.type, record.notificationDate);

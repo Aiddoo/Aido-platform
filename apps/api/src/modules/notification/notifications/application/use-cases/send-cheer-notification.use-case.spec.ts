@@ -9,7 +9,7 @@ describe("SendCheerNotificationUseCase — 응원 알림", () => {
     // Given
     const notificationPublisher = new RecordingNotificationPublisher();
     const useCase = new SendCheerNotificationUseCase({
-      notificationPublisher,
+      notificationPublisher: notificationPublisher.deduplicated,
       recipientLocaleReader: { getLocale: async () => "ko" },
       logger: new SilentLogger(),
     });
@@ -26,7 +26,7 @@ describe("SendCheerNotificationUseCase — 응원 알림", () => {
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publishWithDeduplication",
+        mode: "deduplicated",
         data: expect.objectContaining({
           userId: "u2",
           type: "CHEER_RECEIVED",

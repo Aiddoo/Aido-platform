@@ -30,7 +30,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     strategy = new SendWinbackUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       schedulerDedup: dedup,
       logger: new SilentLogger(),

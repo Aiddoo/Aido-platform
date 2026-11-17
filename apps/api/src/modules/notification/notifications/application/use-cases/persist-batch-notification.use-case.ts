@@ -1,7 +1,7 @@
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import type {
-  PersistedBatchNotificationResult,
+  PersistedBatchNotificationResultReadModel,
   PublishPushDeliveryAfterCommitUseCase,
   PushDeliveryMode,
   PushDispatchStagingRepositoryPort,
@@ -43,7 +43,7 @@ export class PersistBatchNotificationUseCase {
   async execute(
     dataList: CreateNotificationData[],
     options: BatchNotificationOptions = {},
-  ): Promise<PersistedBatchNotificationResult> {
+  ): Promise<PersistedBatchNotificationResultReadModel> {
     if (dataList.length === 0) {
       return { count: 0, sourceData: [] };
     }
@@ -56,7 +56,7 @@ export class PersistBatchNotificationUseCase {
   async #persist(
     dataList: CreateNotificationData[],
     deliveryMode: PushDeliveryMode,
-  ): Promise<PersistedBatchNotificationResult> {
+  ): Promise<PersistedBatchNotificationResultReadModel> {
     const created =
       await this.#dependencies.notificationRepository.createManyNotificationsAndReturn(
         dataList.map(withNotificationCopyRevision),

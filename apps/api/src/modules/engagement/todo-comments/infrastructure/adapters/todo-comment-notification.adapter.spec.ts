@@ -12,7 +12,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
-type PublishedNotification = Parameters<PublishNotificationUseCase["publish"]>[0];
+type PublishedNotification = Parameters<PublishNotificationUseCase["execute"]>[0];
 
 /** 실제 발행기를 쓰고 저장 단계만 기록용으로 바꾼다 */
 function createRecordingPublisher(published: PublishedNotification[]): PublishNotificationUseCase {
@@ -23,8 +23,6 @@ function createRecordingPublisher(published: PublishedNotification[]): PublishNo
         return null;
       },
     },
-    sendNotificationWithDeduplication: { execute: async () => null },
-    sendBatchNotification: { execute: async () => ({ count: 0 }) },
     todoTargetReader: { findTodoTargets: async () => new Map() },
   });
 }

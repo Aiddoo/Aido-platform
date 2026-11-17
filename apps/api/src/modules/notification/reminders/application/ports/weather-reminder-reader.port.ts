@@ -1,8 +1,8 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  WeatherFallbackUser,
-  WeatherReminderUser,
+  WeatherFallbackUserReadModel,
+  WeatherReminderUserReadModel,
 } from "../read-models/scheduler.read-model.js";
 
 export interface WeatherReminderParams {
@@ -17,14 +17,14 @@ export interface WeatherReminderParams {
 export abstract class WeatherReminderReaderPort {
   abstract findWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
-  ): Promise<WeatherReminderUser[]>;
+  ): Promise<WeatherReminderUserReadModel[]>;
   abstract findWeatherMorningFallbackUsers(
     params: WeatherReminderParams,
-  ): Promise<WeatherFallbackUser[]>;
+  ): Promise<WeatherFallbackUserReadModel[]>;
   abstract findWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
-  ): Promise<WeatherReminderUser[]>;
+  ): Promise<WeatherReminderUserReadModel[]>;
   abstract findWeatherEveningFallbackUsers(
     params: WeatherReminderParams,
-  ): Promise<WeatherFallbackUser[]>;
+  ): Promise<WeatherFallbackUserReadModel[]>;
 }

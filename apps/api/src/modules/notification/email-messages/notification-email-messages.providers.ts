@@ -12,7 +12,10 @@ import { EmailDeliveryQueuePort } from "./application/ports/email-delivery-queue
 import { EmailSenderPort } from "./application/ports/email-sender.port.js";
 import { EmailTemplateRendererPort } from "./application/ports/email-template-renderer.port.js";
 import { DeliverEmailUseCase } from "./application/use-cases/deliver-email.use-case.js";
-import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
+import { QueueEmailMessageUseCase } from "./application/use-cases/queue-email-message.use-case.js";
+import { SendCodeEmailUseCase } from "./application/use-cases/send-code-email.use-case.js";
+import { SendInquiryEmailUseCase } from "./application/use-cases/send-inquiry-email.use-case.js";
+import { SendUserReportEmailUseCase } from "./application/use-cases/send-user-report-email.use-case.js";
 import { selectEmailSender } from "./infrastructure/adapters/email-sender-factory.adapter.js";
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
 import { NestMailEmailSenderAdapter } from "./infrastructure/adapters/nest-mail-email-sender.adapter.js";
@@ -65,12 +68,24 @@ const NOTIFICATION_EMAIL_MESSAGES_EXTERNAL_PROVIDERS = [
 ] satisfies Provider[];
 
 const NOTIFICATION_EMAIL_MESSAGES_USE_CASE_PROVIDERS = [
-  provideUseCase(SendTransactionalEmailUseCase, {
+  provideUseCase(QueueEmailMessageUseCase, {
     queue: EmailDeliveryQueuePort,
+    budget: EmailBudgetPort,
+    logger: loggerFor(QueueEmailMessageUseCase),
+  }),
+  provideUseCase(SendCodeEmailUseCase, {
+    renderer: EmailTemplateRendererPort,
+    queueEmailMessage: QueueEmailMessageUseCase,
+  }),
+  provideUseCase(SendUserReportEmailUseCase, {
+    renderer: EmailTemplateRendererPort,
+    queueEmailMessage: QueueEmailMessageUseCase,
+  }),
+  provideUseCase(SendInquiryEmailUseCase, {
     sender: EmailSenderPort,
     budget: EmailBudgetPort,
     renderer: EmailTemplateRendererPort,
-    logger: loggerFor(SendTransactionalEmailUseCase),
+    logger: loggerFor(SendInquiryEmailUseCase),
   }),
   provideUseCase(DeliverEmailUseCase, {
     sender: EmailSenderPort,

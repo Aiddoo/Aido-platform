@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { SendInquiryEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
 
 import {
   type InquiryDeliveryResult,
@@ -14,25 +14,28 @@ import {
 
 @Injectable()
 export class EmailInquiryMailerAdapter extends InquiryMailerPort {
-  readonly #emailSender: Pick<SendTransactionalEmailUseCase, "sendInquiry">;
+  readonly #sendInquiryEmail: Pick<SendInquiryEmailUseCase, "execute">;
   readonly #supportEmail: string;
 
   constructor(
-    emailSender: SendTransactionalEmailUseCase,
+    sendInquiryEmail: SendInquiryEmailUseCase,
     @Inject(supportInquiriesConfig.KEY) config: SupportInquiriesConfig,
   ) {
     super();
-    this.#emailSender = emailSender;
+    this.#sendInquiryEmail = sendInquiryEmail;
     this.#supportEmail = config.supportEmail;
   }
 
   deliver(submission: InquirySubmissionReadModel): Promise<InquiryDeliveryResult> {
-    return this.#emailSender.sendInquiry(this.#supportEmail, {
-      userEmail: submission.userEmail,
-      category: submission.category,
-      categoryLabel: submission.categoryLabel,
-      content: submission.content,
-      submittedAt: submission.submittedAt,
+    return this.#sendInquiryEmail.execute({
+      to: this.#supportEmail,
+      templateData: {
+        userEmail: submission.userEmail,
+        category: submission.category,
+        categoryLabel: submission.categoryLabel,
+        content: submission.content,
+        submittedAt: submission.submittedAt,
+      },
     });
   }
 }

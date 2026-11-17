@@ -1,6 +1,6 @@
 import type {
-  ClaimedPushDeliveryPublication,
-  PushDeliveryPublication,
+  ClaimedPushDeliveryPublicationReadModel,
+  PushDeliveryPublicationReadModel,
 } from "../read-models/push-delivery.read-model.js";
 
 export interface ClaimPushDeliveryOutboxInput {
@@ -9,7 +9,7 @@ export interface ClaimPushDeliveryOutboxInput {
 }
 
 export interface DeferPushDeliveryPublicationsInput {
-  readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
   readonly availableAt: Temporal.Instant;
   readonly error: string;
 }
@@ -19,12 +19,12 @@ export abstract class PushDeliveryOutboxRepositoryPort {
   abstract claimByDispatchIds(
     dispatchIds: readonly number[],
     lockedAt: Temporal.Instant,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]>;
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]>;
   abstract claimAvailable(
     input: ClaimPushDeliveryOutboxInput,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]>;
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]>;
   abstract markPublished(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     publishedAt: Temporal.Instant,
   ): Promise<number>;
   abstract defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;

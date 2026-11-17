@@ -5,14 +5,14 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
   createWeatherEveningUnavailableNotificationMessage,
 } from "../../../shared/application/messages/weather-notification.messages.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
@@ -33,7 +33,7 @@ interface WeatherEveningStrategyDependencies {
     WeatherReminderReaderPort,
     "findWeatherEveningFallbackUsers" | "findWeatherEveningUsersWithLocation"
   >;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
@@ -135,7 +135,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
       });
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     return { sent: notifications.length, unavailable };
   }
 

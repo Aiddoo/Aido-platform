@@ -5,7 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import {
   createMorningNoTodoNotificationMessage,
@@ -13,10 +13,10 @@ import {
 } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import type { ReminderCountUser } from "../read-models/scheduler.read-model.js";
+import type { ReminderCountUserReadModel } from "../read-models/scheduler.read-model.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface MorningReminderStrategyDependencies {
@@ -24,7 +24,7 @@ interface MorningReminderStrategyDependencies {
     ScheduledReminderReaderPort,
     "findFreeMorningReminderUsers" | "findPremiumMorningReminderUsers"
   >;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -54,7 +54,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     const defaultMinute = USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE;
     const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
 
-    let freeUsers: ReminderCountUser[] = [];
+    let freeUsers: ReminderCountUserReadModel[] = [];
     if (!userId && isFreeReminderTime) {
       freeUsers = await this.#dependencies.reader.findFreeMorningReminderUsers({
         timezones,
@@ -113,7 +113,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
       };
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
       event: ReminderLogEvent.MORNING_REMINDER_SENT,
       timezones,

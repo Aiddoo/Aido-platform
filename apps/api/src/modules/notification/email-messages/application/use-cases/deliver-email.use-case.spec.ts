@@ -1,8 +1,9 @@
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createEmailMessageFixture } from "#test/fixtures/notification/email-message.fixture";
 
+import { EmailDeliveryRetryableError } from "../email-messages.errors.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
-import { DeliverEmailUseCase, EmailDeliveryRetryableError } from "./deliver-email.use-case.js";
+import { DeliverEmailUseCase } from "./deliver-email.use-case.js";
 
 class StubSender {
   sent = 0;

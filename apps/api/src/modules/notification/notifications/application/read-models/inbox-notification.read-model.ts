@@ -3,7 +3,7 @@ import type { NOTIFICATION_PURPOSES, NotificationActionType } from "@aido/api/vo
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 
 // Notification 행이 그대로 이 모양을 만족한다. metadata·copyFacts는 알림마다 모양이 달라 unknown이다
-export interface InboxNotification {
+export interface InboxNotificationReadModel {
   readonly id: number;
   readonly userId: string;
   readonly type: NotificationType;

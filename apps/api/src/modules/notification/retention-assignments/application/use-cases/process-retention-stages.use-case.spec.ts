@@ -5,7 +5,7 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createRetentionStageCandidateFixture as candidate } from "#test/fixtures/notification/retention-stage-candidate.fixture";
 
-import type { RetentionStageCandidate } from "../read-models/retention-stage-candidate.read-model.js";
+import type { RetentionStageCandidateReadModel } from "../read-models/retention-stage-candidate.read-model.js";
 import {
   ProcessRetentionStagesUseCase,
   RETENTION_STAGE_SWEEP,
@@ -13,14 +13,14 @@ import {
 
 const NOW = Temporal.Instant.from("2026-07-16T10:30:00Z");
 
-function setup(stages: readonly RetentionStageCandidate[]) {
+function setup(stages: readonly RetentionStageCandidateReadModel[]) {
   const repository = new InMemoryRetentionRepository(stages);
   const publisher = new RecordingNotificationPublisher();
   const clock = new FixedClock(NOW);
   const logger = new SilentLogger();
   const useCase = new ProcessRetentionStagesUseCase({
     repository,
-    notificationPublisher: publisher,
+    notificationPublisher: publisher.single,
     config: { enabled: true },
     unitOfWork: new ImmediateUnitOfWork(),
     clock,
@@ -29,7 +29,7 @@ function setup(stages: readonly RetentionStageCandidate[]) {
   return { useCase, repository, publisher, clock, logger };
 }
 
-function dueD1Stages(count: number): RetentionStageCandidate[] {
+function dueD1Stages(count: number): RetentionStageCandidateReadModel[] {
   return Array.from({ length: count }, (_, index) =>
     candidate({
       stageId: `stage-${String(index).padStart(4, "0")}`,

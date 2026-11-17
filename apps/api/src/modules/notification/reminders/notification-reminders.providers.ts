@@ -9,7 +9,7 @@ import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port
 import { WeatherReportReaderPort } from "../../weather/weather-reports/weather-weather-reports.public.js";
 import {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../notifications/notification-notifications.public.js";
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";
 import { ReminderWeatherReportReaderPort } from "./application/ports/reminder-weather-report.reader.port.js";
@@ -87,41 +87,41 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
 export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendMorningReminderUseCase, {
     reader: ScheduledReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendMorningReminderUseCase),
   }),
   provideUseCase(SendEveningReminderUseCase, {
     reader: ScheduledReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendEveningReminderUseCase),
   }),
   provideUseCase(SendLunchNudgeUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendLunchNudgeUseCase),
   }),
   provideUseCase(SendWeeklyReportUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendWeeklyReportUseCase),
   }),
   provideUseCase(SendMonthlyReportUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendMonthlyReportUseCase),
   }),
   provideUseCase(SendWeeklyAchievementUseCase, {
     reader: WeeklyAchievementStatsReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weeklyAchievementWriter: WeeklyAchievementWriterPort,
     logger: loggerFor(SendWeeklyAchievementUseCase),
@@ -129,7 +129,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendWinbackUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     schedulerDedup: SchedulerDedupPort,
     logger: loggerFor(SendWinbackUseCase),
@@ -137,7 +137,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendNudgeSuggestUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     schedulerDedup: SchedulerDedupPort,
     logger: loggerFor(SendNudgeSuggestUseCase),
@@ -145,27 +145,27 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendOnboardingUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendOnboardingUseCase),
   }),
   provideUseCase(SendSocialDigestUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendSocialDigestUseCase),
   }),
   provideUseCase(SendStreakAtRiskUseCase, {
     reader: ReEngagementReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendStreakAtRiskUseCase),
   }),
   provideUseCase(SendWeatherMorningUseCase, {
     reader: WeatherReminderReaderPort,
     todoReader: WeatherBriefingTodoReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weatherReportReader: ReminderWeatherReportReaderPort,
     clock: ClockPort,
@@ -173,7 +173,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendWeatherEveningUseCase, {
     reader: WeatherReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weatherReportReader: ReminderWeatherReportReaderPort,
     clock: ClockPort,

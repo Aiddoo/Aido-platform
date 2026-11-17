@@ -20,13 +20,13 @@ import type {
   BatchPushNotificationPayload,
   PushNotificationPayloadPort,
 } from "../ports/push-notification-payload.port.js";
-import {
-  type PushPayload,
-  RetryablePushProviderTransportError,
-} from "../ports/push-provider.port.js";
+import { type PushPayload } from "../ports/push-provider.port.js";
 import type { PushRateLimiterPort } from "../ports/push-rate-limiter.port.js";
-import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
-import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
+import {
+  PushDeliveryRateLimitReservationConflictError,
+  RetryablePushProviderTransportError,
+} from "../push-dispatches.errors.js";
+import type { DeliverPushNotificationsCommand } from "./deliver-push-notifications.use-case.js";
 import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case.js";
 import type {
   BatchPushNotificationDeliveryResult,
@@ -94,7 +94,7 @@ function createClaimedDelivery(input: {
 
 function createExecutionInput(
   claimed: readonly ClaimedPushDelivery[],
-): DeliverPushNotificationsInput {
+): DeliverPushNotificationsCommand {
   return {
     processingJobId: PROCESSING_JOB_ID,
     processingJobAttempt: 1,
@@ -393,7 +393,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
       delivery,
       expectPersistenceInsideUnitOfWork,
     } = createDeliverPushNotificationsUseCase();
-    const input: DeliverPushNotificationsInput = {
+    const input: DeliverPushNotificationsCommand = {
       processingJobId: PROCESSING_JOB_ID,
       processingJobAttempt: 1,
       publications: [{ dispatchId: 1, publishAttempt: 1 }],

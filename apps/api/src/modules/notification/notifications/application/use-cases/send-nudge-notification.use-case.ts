@@ -8,7 +8,7 @@ import {
 } from "../../../shared/application/messages/social-notification.messages.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
-import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+import type { PublishDeduplicatedNotificationUseCase } from "./publish-deduplicated-notification.use-case.js";
 
 export interface SendNudgeNotificationInput {
   readonly nudgeId: number;
@@ -21,7 +21,7 @@ export interface SendNudgeNotificationInput {
 }
 
 interface SendNudgeNotificationDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishDeduplicatedNotificationUseCase, "execute">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -57,7 +57,7 @@ export class SendNudgeNotificationUseCase {
           variantContext,
         });
 
-    await this.#dependencies.notificationPublisher.publishWithDeduplication({
+    await this.#dependencies.notificationPublisher.execute({
       userId: input.receiverId,
       type: "NUDGE_RECEIVED",
       title: message.title,

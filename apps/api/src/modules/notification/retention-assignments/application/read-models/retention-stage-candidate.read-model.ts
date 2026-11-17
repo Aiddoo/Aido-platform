@@ -5,7 +5,7 @@ import type {
   RetentionVariant,
 } from "../../domain/retention-assignments.constants.js";
 
-export interface RetentionStageCandidate {
+export interface RetentionStageCandidateReadModel {
   readonly assignmentId: string;
   readonly stageId: string;
   readonly stageCreatedAt: Temporal.Instant;
@@ -27,7 +27,7 @@ export interface RetentionStageCandidate {
 }
 
 // 한 실행 안에서 다음 묶음을 이어 읽는 위치(단계 생성 순서)
-export interface RetentionStageCursor {
+export interface RetentionStageCursorReadModel {
   readonly createdAt: Temporal.Instant;
   readonly stageId: string;
 }

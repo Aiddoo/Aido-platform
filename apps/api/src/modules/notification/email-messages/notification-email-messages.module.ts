@@ -2,7 +2,9 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { MailModule } from "@nestjs/mail";
 
-import { SendTransactionalEmailUseCase } from "./application/use-cases/send-transactional-email.use-case.js";
+import { SendCodeEmailUseCase } from "./application/use-cases/send-code-email.use-case.js";
+import { SendInquiryEmailUseCase } from "./application/use-cases/send-inquiry-email.use-case.js";
+import { SendUserReportEmailUseCase } from "./application/use-cases/send-user-report-email.use-case.js";
 import { createMailModuleOptions } from "./infrastructure/adapters/nest-mail-module.config.js";
 import { EmailDeliveryQueueProcessor } from "./infrastructure/jobs/email-delivery-queue.processor.js";
 import { notificationEmailMessagesConfig } from "./notification-email-messages.config.js";
@@ -21,6 +23,6 @@ import { NOTIFICATION_EMAIL_MESSAGES_PROVIDERS } from "./notification-email-mess
     }),
   ],
   providers: [...NOTIFICATION_EMAIL_MESSAGES_PROVIDERS, EmailDeliveryQueueProcessor],
-  exports: [SendTransactionalEmailUseCase],
+  exports: [SendCodeEmailUseCase, SendInquiryEmailUseCase, SendUserReportEmailUseCase],
 })
 export class NotificationEmailMessagesModule {}

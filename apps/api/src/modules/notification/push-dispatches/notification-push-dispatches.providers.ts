@@ -132,7 +132,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     pushDeviceRepository: PushDeviceRepositoryPort,
     pushProvider: PushProviderPort,
     activePushTokenReader: ActivePushTokenReaderPort,
-    notificationCache: PushTokenCachePort,
+    pushTokenCache: PushTokenCachePort,
     clock: ClockPort,
     logger: loggerFor(DispatchPushNotificationUseCase),
   }),

@@ -6,6 +6,7 @@ import {
   type CreateNotificationData,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
+  PublishNotificationBatchUseCase,
   PublishNotificationUseCase,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
@@ -22,17 +23,20 @@ import {
 export class NudgeNotifierAdapter extends NudgeNotifierPort {
   readonly #notificationQueue: NotificationQueueAdapter;
   readonly #notificationPublisher: PublishNotificationUseCase;
+  readonly #notificationBatchPublisher: PublishNotificationBatchUseCase;
   readonly #notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
     notificationQueue: NotificationQueueAdapter,
     notificationPublisher: PublishNotificationUseCase,
+    notificationBatchPublisher: PublishNotificationBatchUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {
     super();
     this.#notificationQueue = notificationQueue;
     this.#notificationPublisher = notificationPublisher;
+    this.#notificationBatchPublisher = notificationBatchPublisher;
     this.#notificationRecipientLocaleReader = notificationRecipientLocaleReader;
   }
 
@@ -52,7 +56,7 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
     const locale = await this.#notificationRecipientLocaleReader.getLocale(
       notification.recipientId,
     );
-    await this.#notificationPublisher.publish(this.#toNotificationData(notification, locale));
+    await this.#notificationPublisher.execute(this.#toNotificationData(notification, locale));
   }
 
   async recordInteractions(notifications: readonly NudgeInteractionNotification[]): Promise<void> {
@@ -62,7 +66,7 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
     const locales = await this.#notificationRecipientLocaleReader.getLocales(
       notifications.map((notification) => notification.recipientId),
     );
-    await this.#notificationPublisher.publishBatch(
+    await this.#notificationBatchPublisher.execute(
       notifications.map((notification) =>
         this.#toNotificationData(
           notification,

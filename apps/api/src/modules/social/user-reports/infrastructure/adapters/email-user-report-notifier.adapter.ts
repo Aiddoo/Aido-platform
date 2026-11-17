@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { SendUserReportEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 
 import type {
@@ -26,26 +26,29 @@ const ADMIN_DOCS_PATH = "/api/admin/docs";
  */
 @Injectable()
 export class EmailUserReportNotifierAdapter implements UserReportNotifierPort {
-  readonly #sendTransactionalEmail: SendTransactionalEmailUseCase;
+  readonly #sendUserReportEmail: SendUserReportEmailUseCase;
   readonly #config: SocialUserReportsConfig;
 
   constructor(
-    sendTransactionalEmail: SendTransactionalEmailUseCase,
+    sendUserReportEmail: SendUserReportEmailUseCase,
     @Inject(socialUserReportsConfig.KEY) config: SocialUserReportsConfig,
   ) {
-    this.#sendTransactionalEmail = sendTransactionalEmail;
+    this.#sendUserReportEmail = sendUserReportEmail;
     this.#config = config;
   }
 
   notifyOperators(submission: UserReportSubmissionReadModel): Promise<UserReportDeliveryResult> {
     const { apiPublicUrl, supportEmail } = this.#config;
-    return this.#sendTransactionalEmail.sendUserReport(supportEmail, {
-      ...toUserReportEmailContent(submission),
-      resolutionEndpoint: `POST ${resolveUserReportPath(submission.reportId)}`,
-      resolutionDocsUrl:
-        apiPublicUrl == null
-          ? null
-          : `${apiPublicUrl}${ADMIN_DOCS_PATH}#/${encodeURIComponent(SWAGGER_TAGS.ADMIN_REPORTS)}/${RESOLVE_USER_REPORT_OPERATION_ID}`,
+    return this.#sendUserReportEmail.execute({
+      to: supportEmail,
+      templateData: {
+        ...toUserReportEmailContent(submission),
+        resolutionEndpoint: `POST ${resolveUserReportPath(submission.reportId)}`,
+        resolutionDocsUrl:
+          apiPublicUrl == null
+            ? null
+            : `${apiPublicUrl}${ADMIN_DOCS_PATH}#/${encodeURIComponent(SWAGGER_TAGS.ADMIN_REPORTS)}/${RESOLVE_USER_REPORT_OPERATION_ID}`,
+      },
     });
   }
 }

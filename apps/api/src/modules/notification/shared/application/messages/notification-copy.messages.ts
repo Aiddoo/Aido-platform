@@ -5,6 +5,7 @@ import type { z } from "zod";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
+import { notificationCopyNotRenderable } from "../notification-copy.errors.js";
 import { EN_NOTIFICATION_GRAMMAR } from "./locales/en.messages.js";
 import { KO_NOTIFICATION_GRAMMAR } from "./locales/ko.messages.js";
 import {
@@ -210,7 +211,7 @@ export function renderNotificationVariant<TFacts extends NotificationCopyFacts>(
   const variantName = template.variantNames[index] ?? template.variantNames[0] ?? "default";
   const copy = template.render(variantName, facts, locale, overrides);
   if (copy == null) {
-    throw new Error(`Notification copy ${template.key}.${variantName} cannot render its facts`);
+    throw notificationCopyNotRenderable(template.key, variantName);
   }
   const content = toNotificationContent(copy);
   if (content == null) {

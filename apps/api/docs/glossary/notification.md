@@ -4,22 +4,22 @@
 
 사용자에게 가는 알림을 기록하고 채널(푸시·이메일)로 내보낸다. 무엇을 언제 누구에게 보내는지는 [푸시 알림](../push-notifications.md), delivery·receipt·기기·큐 운영은 [푸시 발송](../push-delivery.md), 차선·방해 금지·지표는 [알림 발송 설계](../notifications.md)에 있고 여기서는 되풀이하지 않는다. 관리자 브로드캐스트는 [operations](operations.md)가 소유하고 이 Context의 알림 발행으로 보낸다.
 
-| 용어        | 코드                                                                                           | 뜻                                                                                                                                                                     |
-| ----------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 알림 종류   | `NotificationType`, `NOTIFICATION_TYPES`                                                       | 알림이 무엇 때문에 왔는지. 앱 계약 값에 서버 전용 `PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`을 더하고 앱에는 `SYSTEM_NOTICE`로 보낸다(`toWireNotificationType`) |
-| 알림 목적   | `purpose`(`NOTIFICATION_PURPOSES`)                                                             | `TRANSACTIONAL`(사용자 행동의 결과, 기본)·`SCHEDULED_SERVICE`(설정·구독한 정기 알림)·`ENGAGEMENT`(재방문 유도). 발송 정책과 분석이 이 값으로 나뉜다                    |
-| 광고성 알림 | `isMarketingNotification`                                                                      | 광고성 수신 동의가 필요한 종류. 야간에는 동의와 상관없이 보내지 않고 푸시 문구에 광고 표기를 붙인다                                                                    |
-| 알림 발행   | `PublishNotificationUseCase`(`publish`·`publishWithDeduplication`·`publishBatch`)              | 모든 Context가 알림을 만드는 문. 알림과 푸시 발송을 한 트랜잭션에 쓰고, 할 일 알림에는 그 할 일의 주인·날짜를 더한다                                                   |
-| 알림 재료   | `CreateNotificationData`                                                                       | 받는 사람·종류·제목·본문과 이동 재료(`friendId`·`todoId`·`nudgeId`·`cheerId`), 중복 방지 날짜(`notificationDate`)                                                      |
-| 알림 동작   | `NotificationAction`(`DEEP_LINK`·`BROWSER`·`WEBVIEW`·`NONE`)                                   | 알림을 눌렀을 때 할 일. 기본은 앱 안 이동이고 갈 곳은 종류와 재료로 정한다(`resolveNotificationDestination`)                                                           |
-| 문구 키     | `copyKey`·`copyFacts`                                                                          | 알림함을 요청 언어로 다시 그릴 카탈로그 키와 재료. 없으면 저장한 제목·본문을 그대로 보인다                                                                             |
-| 캠페인 키   | `campaignKey`·`variantId`, `SCHEDULER_CAMPAIGN_KEY`, `TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY` | 문구 성과를 나눠 보는 키. 문구 묶음이나 대상이 바뀌면 그 키의 버전만 올리고 작업 key·중복 방지 key는 그대로 둔다                                                       |
-| 수신자 언어 | `resolveRecipientLocale`                                                                       | 저장한 앱 언어 → 마지막 요청 언어 → ko. 지원하지 않는 언어는 en이다                                                                                                    |
-| 야간        | `PUSH_QUIET_HOURS_WINDOW`, `isWithinQuietHours`                                                | 수신자 현지 21시~8시. 광고성은 보내지 않고 일반 알림은 야간 수신 설정을 따른다                                                                                         |
-| 알림 작업   | `NotificationQueueAdapter`, `notification.v1`                                                  | 다른 Context가 상태를 바꾼 트랜잭션 안에서 넣는 소셜·결제·마일스톤 알림 작업. 같은 원인은 결정적 job key로 한 번만 저장된다                                            |
-| 마일스톤    | `NOTIFICATION_MILESTONES`, `SendMilestoneNotificationUseCase`                                  | 첫 완료·완료 10·50·100개·3일 연속·첫 친구. 사용자마다 단계별 한 번이다                                                                                                 |
-| 수신 거부   | `OptOutMarketingPushUseCase`                                                                   | 광고성 푸시의 거부 링크 토큰이 맞으면 광고성 동의를 끈다. 토큰이 틀려도 같은 결과 화면을 준다                                                                          |
-| 동의 재확인 | `ReconfirmMarketingConsentsUseCase`                                                            | 광고성 동의(또는 마지막 재확인) 뒤 2년이 지난 사용자에게 거래 알림으로 한 번 알린다. 현지 야간이면 낮 실행이 보낸다                                                    |
+| 용어        | 코드                                                                                                    | 뜻                                                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 알림 종류   | `NotificationType`, `NOTIFICATION_TYPES`                                                                | 알림이 무엇 때문에 왔는지. 앱 계약 값에 서버 전용 `PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`을 더하고 앱에는 `SYSTEM_NOTICE`로 보낸다(`toWireNotificationType`) |
+| 알림 목적   | `purpose`(`NOTIFICATION_PURPOSES`)                                                                      | `TRANSACTIONAL`(사용자 행동의 결과, 기본)·`SCHEDULED_SERVICE`(설정·구독한 정기 알림)·`ENGAGEMENT`(재방문 유도). 발송 정책과 분석이 이 값으로 나뉜다                    |
+| 광고성 알림 | `isMarketingNotification`                                                                               | 광고성 수신 동의가 필요한 종류. 야간에는 동의와 상관없이 보내지 않고 푸시 문구에 광고 표기를 붙인다                                                                    |
+| 알림 발행   | `PublishNotificationUseCase`·`PublishDeduplicatedNotificationUseCase`·`PublishNotificationBatchUseCase` | 모든 Context가 알림을 만드는 문. 알림과 푸시 발송을 한 트랜잭션에 쓰고, 할 일 알림에는 그 할 일의 주인·날짜를 더한다                                                   |
+| 알림 재료   | `CreateNotificationData`                                                                                | 받는 사람·종류·제목·본문과 이동 재료(`friendId`·`todoId`·`nudgeId`·`cheerId`), 중복 방지 날짜(`notificationDate`)                                                      |
+| 알림 동작   | `NotificationAction`(`DEEP_LINK`·`BROWSER`·`WEBVIEW`·`NONE`)                                            | 알림을 눌렀을 때 할 일. 기본은 앱 안 이동이고 갈 곳은 종류와 재료로 정한다(`resolveNotificationDestination`)                                                           |
+| 문구 키     | `copyKey`·`copyFacts`                                                                                   | 알림함을 요청 언어로 다시 그릴 카탈로그 키와 재료. 없으면 저장한 제목·본문을 그대로 보인다                                                                             |
+| 캠페인 키   | `campaignKey`·`variantId`, `SCHEDULER_CAMPAIGN_KEY`, `TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY`          | 문구 성과를 나눠 보는 키. 문구 묶음이나 대상이 바뀌면 그 키의 버전만 올리고 작업 key·중복 방지 key는 그대로 둔다                                                       |
+| 수신자 언어 | `resolveRecipientLocale`                                                                                | 저장한 앱 언어 → 마지막 요청 언어 → ko. 지원하지 않는 언어는 en이다                                                                                                    |
+| 야간        | `PUSH_QUIET_HOURS_WINDOW`, `isWithinQuietHours`                                                         | 수신자 현지 21시~8시. 광고성은 보내지 않고 일반 알림은 야간 수신 설정을 따른다                                                                                         |
+| 알림 작업   | `NotificationQueueAdapter`, `notification.v1`                                                           | 다른 Context가 상태를 바꾼 트랜잭션 안에서 넣는 소셜·결제·마일스톤 알림 작업. 같은 원인은 결정적 job key로 한 번만 저장된다                                            |
+| 마일스톤    | `NOTIFICATION_MILESTONES`, `SendMilestoneNotificationUseCase`                                           | 첫 완료·완료 10·50·100개·3일 연속·첫 친구. 사용자마다 단계별 한 번이다                                                                                                 |
+| 수신 거부   | `OptOutMarketingPushUseCase`                                                                            | 광고성 푸시의 거부 링크 토큰이 맞으면 광고성 동의를 끈다. 토큰이 틀려도 같은 결과 화면을 준다                                                                          |
+| 동의 재확인 | `ReconfirmMarketingConsentsUseCase`                                                                     | 광고성 동의(또는 마지막 재확인) 뒤 2년이 지난 사용자에게 거래 알림으로 한 번 알린다. 현지 야간이면 낮 실행이 보낸다                                                    |
 
 다른 Context는 아래 공개 면으로만 들어온다. notification은 다른 Context 테이블을 읽지 않고 그쪽이 구현한 포트로 설정·동의·할 일을 읽는다.
 
@@ -30,7 +30,7 @@
 | `notification-push-devices.public`          | `SessionPushDeviceReleasePort`, `ClientAppVersionReaderPort`, `hasPushTokenCondition`                        | identity 세션 폐기, ai-assistance 앱 버전, operations 브로드캐스트 대상                  |
 | `notification-push-dispatches.public`       | `NotificationRecipientLocaleReaderPort`·`NotificationRecipientTimezoneReaderPort`·`PushQuietHoursReaderPort` | 수신자 언어·시간대·야간을 묻는 쪽(초대·결제·운영 등)                                     |
 | `notification-push-dispatches.public`       | `PushCampaignOutcomeReaderPort`                                                                              | operations 캠페인 결과 집계                                                              |
-| `notification-email-messages.public`        | `SendTransactionalEmailUseCase`                                                                              | identity 코드 메일, support 문의, social 신고                                            |
+| `notification-email-messages.public`        | `SendCodeEmailUseCase`·`SendInquiryEmailUseCase`·`SendUserReportEmailUseCase`                                | identity 코드 메일, support 문의, social 신고                                            |
 | `notification-reminders.public`             | `TodoReminderSchedulerPort`, `NOTIFICATION_SCHEDULE`                                                         | planning 할 일 리마인더 예약                                                             |
 | `notification-reminders-jobs.public`        | `TimezoneReminderEnqueuerPort`, `ReminderTimezoneCachePort`                                                  | identity 설정(시간대·알림 시각 변경). 기능 Module을 끌어오면 파일이 순환한다             |
 | `notification-retention-assignments.public` | `RetentionEnrollmentPort`                                                                                    | identity 가입·첫 인증                                                                    |
@@ -42,7 +42,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 용어           | 코드                                                               | 뜻                                                                                                                                     |
 | -------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 알림           | `Notification`(Aggregate, `notifications` slice), `NotificationId` | 한 사용자의 알림함 항목 하나. 푸시가 막혀도 알림함 기록은 남는다                                                                       |
-| 알림함         | `ListNotificationsUseCase`, `InboxNotification`(Read Model)        | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
+| 알림함         | `ListNotificationsUseCase`, `InboxNotificationReadModel`           | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
 | 안 읽은 수     | `GetUnreadNotificationCountUseCase`, `NotificationInboxScope`      | 배지 숫자. 앱 버전 범위마다 따로 캐시하고 읽음·발행이 바뀌면 비운다                                                                    |
 | 읽음           | `markRead`, `MarkNotificationReadUseCase`                          | 받은 사람만 읽음으로 바꾼다                                                                                                            |
 | 모두 읽기      | `MarkAllNotificationsReadUseCase`                                  | 이 앱 버전이 보는 종류만 읽음으로 바꾼다. 새 앱으로 올리면 못 보던 알림은 안 읽음으로 보인다                                           |
@@ -122,17 +122,17 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 ## email-messages
 
-| 용어        | 코드                                                           | 뜻                                                                                                                                     |
-| ----------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 이메일      | `EmailMessage`(Aggregate, `email-messages` slice)              | 렌더한 메일 한 통(받는 사람·제목·HTML·텍스트·태그). 만들기만 하고 저장하지 않으며 큐에 실어 보낸다. 받는 사람·제목이 비면 `SYS_0002`   |
-| 메일 종류   | `EmailKind`(`EMAIL_KINDS`)                                     | `verification`·`password-reset`·`password-setup`(사용자가 기다리는 코드), `inquiry`·`user-report`(운영자에게 가는 문의·신고)           |
-| 중요도      | `EmailPriority`(`critical`·`standard`), `resolveEmailPriority` | 코드 메일은 `critical`, 문의·신고는 `standard`. `standard`는 한도보다 먼저 멈춰 `critical` 몫을 남긴다                                 |
-| 발송 예산   | `EmailBudgetPort`, `EmailSendBudget`                           | 공급자 무료 한도를 넘지 않게 세는 일·월 건수. 담을 때 예약하고 못 보낸 채 끝나면 돌려준다. 계량이 실패하면 예약된 것으로 본다          |
-| 발송 요청   | `SendTransactionalEmailUseCase`, `EmailDispatch`               | 받는 사람 언어로 템플릿을 렌더해 `email-delivery.v1`에 담는다. 결과는 `queued` 또는 `rejected`(`budget_exhausted`·`queue_unavailable`) |
-| 문의 메일   | `sendInquiry`, `EmailSendResult`                               | 문의는 DB에 남지 않아 큐 없이 요청 안에서 한 번 보내고, 실패를 돌려줘 사용자가 다시 보내게 한다                                        |
-| 전달        | `DeliverEmailUseCase`, `deliveryId`                            | 큐에서 꺼낸 한 통을 공급자로 보낸다. `deliveryId`가 공급자 멱등 키이고 재시도는 큐가 한다                                              |
-| 메일 공급자 | `EmailSenderPort`, `EmailTemplateRendererPort`                 | 공급자를 바꾸는 자리. 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다                                                              |
-| 메일 템플릿 | `EmailTemplateMail`, `<이름>.email.tsx`                        | React Email로 만든 제목·HTML·텍스트. `@nestjs/mail` 메일 클래스로 렌더하고 문구는 `email.json`이다                                     |
+| 용어        | 코드                                                                                             | 뜻                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 이메일      | `EmailMessage`(Aggregate, `email-messages` slice)                                                | 렌더한 메일 한 통(받는 사람·제목·HTML·텍스트·태그). 만들기만 하고 저장하지 않으며 큐에 실어 보낸다. 받는 사람·제목이 비면 `SYS_0002`   |
+| 메일 종류   | `EmailKind`(`EMAIL_KINDS`)                                                                       | `verification`·`password-reset`·`password-setup`(사용자가 기다리는 코드), `inquiry`·`user-report`(운영자에게 가는 문의·신고)           |
+| 중요도      | `EmailPriority`(`critical`·`standard`), `resolveEmailPriority`                                   | 코드 메일은 `critical`, 문의·신고는 `standard`. `standard`는 한도보다 먼저 멈춰 `critical` 몫을 남긴다                                 |
+| 발송 예산   | `EmailBudgetPort`, `EmailSendBudget`                                                             | 공급자 무료 한도를 넘지 않게 세는 일·월 건수. 담을 때 예약하고 못 보낸 채 끝나면 돌려준다. 계량이 실패하면 예약된 것으로 본다          |
+| 발송 요청   | `SendCodeEmailUseCase`·`SendUserReportEmailUseCase`, `QueueEmailMessageUseCase`, `EmailDispatch` | 받는 사람 언어로 템플릿을 렌더해 `email-delivery.v1`에 담는다. 결과는 `queued` 또는 `rejected`(`budget_exhausted`·`queue_unavailable`) |
+| 문의 메일   | `SendInquiryEmailUseCase`, `EmailSendResult`                                                     | 문의는 DB에 남지 않아 큐 없이 요청 안에서 한 번 보내고, 실패를 돌려줘 사용자가 다시 보내게 한다                                        |
+| 전달        | `DeliverEmailUseCase`, `deliveryId`                                                              | 큐에서 꺼낸 한 통을 공급자로 보낸다. `deliveryId`가 공급자 멱등 키이고 재시도는 큐가 한다                                              |
+| 메일 공급자 | `EmailSenderPort`, `EmailTemplateRendererPort`                                                   | 공급자를 바꾸는 자리. 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다                                                              |
+| 메일 템플릿 | `EmailTemplateMail`, `<이름>.email.tsx`                                                          | React Email로 만든 제목·HTML·텍스트. `@nestjs/mail` 메일 클래스로 렌더하고 문구는 `email.json`이다                                     |
 
 이메일은 저장하지 않아 상태 전이가 없다. 같은 `deliveryId`는 큐에 한 번만 담기고(`duplicate`면 예약을 돌려준다) 공급자에도 같은 멱등 키로 나간다.
 

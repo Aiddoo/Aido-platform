@@ -7,7 +7,7 @@ import { SendNudgeNotificationUseCase } from "./send-nudge-notification.use-case
 function setup() {
   const notificationPublisher = new RecordingNotificationPublisher();
   const useCase = new SendNudgeNotificationUseCase({
-    notificationPublisher,
+    notificationPublisher: notificationPublisher.deduplicated,
     recipientLocaleReader: { getLocale: async () => "ko" },
     logger: new SilentLogger(),
   });
@@ -33,7 +33,7 @@ describe("SendNudgeNotificationUseCase — 콕 찌르기 알림", () => {
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publishWithDeduplication",
+        mode: "deduplicated",
         data: expect.objectContaining({
           userId: "u2",
           type: "NUDGE_RECEIVED",
@@ -57,7 +57,7 @@ describe("SendNudgeNotificationUseCase — 콕 찌르기 알림", () => {
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publishWithDeduplication",
+        mode: "deduplicated",
         data: expect.objectContaining({ todoId: undefined, metadata: undefined }),
       },
     ]);

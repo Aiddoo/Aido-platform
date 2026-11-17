@@ -52,7 +52,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
         occurrenceKey: notification.redemptionId.value,
       },
     });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId: notification.inviterId.value,
       type: "INVITE_JOINED",
       title: message.title,
@@ -75,7 +75,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
         occurrenceKey: notification.redemptionId.value,
       },
     });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId: notification.recipientId.value,
       type: "INVITE_REWARDED",
       title: message.title,
@@ -97,7 +97,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
         occurrenceKey: notification.redemptionId.value,
       },
     });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId: notification.inviterId.value,
       type: "INVITE_PROGRESS",
       title: message.title,
@@ -119,7 +119,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
         occurrenceKey: notification.redemptionId.value,
       },
     });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId: notification.inviteeId.value,
       type: "INVITE_QUALIFY_REMINDER",
       title: message.title,

@@ -1,5 +1,5 @@
 import { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
-import type { UserLocaleMap } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import type { UserLocaleMapReadModel } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
 import { resolveRecipientLocale } from "#api/modules/notification/shared/domain/recipient-locale.domain-service";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
@@ -30,7 +30,7 @@ export class InMemorySchedulerPreferenceReader extends SchedulerPreferenceReader
     return [...timezones].filter((timezone) => normalizeIanaTimezone(timezone) != null);
   }
 
-  async findUserLocales(userIds: string[]): Promise<UserLocaleMap> {
+  async findUserLocales(userIds: string[]): Promise<UserLocaleMapReadModel> {
     return new Map(
       userIds.flatMap((userId) => {
         const preference = this.#preferences.get(userId);

@@ -36,7 +36,7 @@ function setup(outcome: SuggestionAnalysisOutcome = "SUGGESTIONS_CREATED") {
         };
       },
     },
-    publisher,
+    publisher.single,
     localePreferenceReader,
     {
       dispatchAnalysis: async () => {

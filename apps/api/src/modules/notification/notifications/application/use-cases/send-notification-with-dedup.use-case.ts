@@ -12,7 +12,7 @@ import {
 import { NotificationLockKeys } from "../notifications.lock-keys.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
-import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
+import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 interface SendNotificationWithDedupDependencies {
@@ -35,7 +35,7 @@ export class SendNotificationWithDedupUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(data: CreateNotificationData): Promise<InboxNotification | null> {
+  async execute(data: CreateNotificationData): Promise<InboxNotificationReadModel | null> {
     const strategy = resolveDedupStrategy(data.type);
 
     if (strategy == null) {

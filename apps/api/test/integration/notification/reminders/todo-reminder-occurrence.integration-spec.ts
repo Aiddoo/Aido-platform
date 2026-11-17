@@ -9,6 +9,7 @@ import { PgBoss } from "pg-boss";
 import { z } from "zod";
 
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
@@ -171,7 +172,9 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         afterCommitPublisher: { register: () => undefined },
         logger: silentLogger,
       }),
-      sendNotificationWithDeduplication: { execute: async () => null },
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
+    });
+    const batchPublisher = new PublishNotificationBatchUseCase({
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(transactionHost),
@@ -204,6 +207,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       readerModule.get(DrizzleSchedulerReader),
       new StubTodoSeriesOwnerDormancy(),
       publisher,
+      batchPublisher,
       new StubNotificationRecipientLocaleReader(),
       jobQueue,
       new DateClock(),

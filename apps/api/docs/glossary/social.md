@@ -67,7 +67,7 @@
 | 신고 대상   | `UserReportTarget`(VO)                                          | PROFILE은 콘텐츠 id가 없고 TODO·NUDGE_MESSAGE·CHEER_MESSAGE는 양의 정수, COMMENT는 엔티티 id다. 틀리면 자기 신고보다 먼저 `REPORT_2253` |
 | 중복 신고   | `duplicateReportWindowStart`                                    | 같은 신고자가 같은 대상을 24시간 안에 다시 신고하면 처음 신고를 돌려주고 운영자에게 다시 알리지 않는다                                  |
 | 하루 한도   | `dailyReportWindowStart`, `hasReachedDailyReportLimit`          | 지금부터 거꾸로 24시간 동안 20건. 넘으면 `REPORT_2254`                                                                                  |
-| 운영자 알림 | `UserReportNotifierPort`, `UserReportSubmissionReadModel`       | 커밋 뒤 고객센터 메일(`SendTransactionalEmailUseCase`)로 보낸다. 태그는 identity에서 읽고, 실패해도 신고는 남는다                       |
+| 운영자 알림 | `UserReportNotifierPort`, `UserReportSubmissionReadModel`       | 커밋 뒤 고객센터 메일(`SendUserReportEmailUseCase`)로 보낸다. 태그는 identity에서 읽고, 실패해도 신고는 남는다                          |
 | 처리        | `resolve`, `ResolveUserReportUseCase`, `saveIfUnchanged`        | 운영자가 조치 메모를 남겨 RESOLVED로 바꾼다. 읽은 뒤 다른 운영자가 먼저 처리했으면 그 첫 처리 기록을 돌려준다                           |
 
 | 상태     | 행동                              | 다음     | 다시·금지                                                                         |

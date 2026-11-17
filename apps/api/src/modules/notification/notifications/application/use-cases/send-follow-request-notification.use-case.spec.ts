@@ -8,7 +8,7 @@ import { SendFollowRequestNotificationUseCase } from "./send-follow-request-noti
 function setup() {
   const notificationPublisher = new RecordingNotificationPublisher();
   const useCase = new SendFollowRequestNotificationUseCase({
-    notificationPublisher,
+    notificationPublisher: notificationPublisher.deduplicated,
     recipientLocaleReader: { getLocale: async () => "ko" },
     logger: new SilentLogger(),
   });
@@ -37,7 +37,7 @@ describe("SendFollowRequestNotificationUseCase — 친구 요청 알림", () => 
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publishWithDeduplication",
+        mode: "deduplicated",
         data: {
           userId: "u2",
           type: "FOLLOW_NEW",

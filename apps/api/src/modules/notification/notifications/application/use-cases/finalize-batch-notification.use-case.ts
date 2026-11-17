@@ -3,7 +3,7 @@ import { forEachAsync, uniq } from "es-toolkit";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { PersistedBatchNotificationResult } from "../../../push-dispatches/notification-push-dispatches.public.js";
+import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationCachePort } from "../ports/notification-cache.port.js";
 import { type NotificationDedupPort } from "../ports/notification-dedup.port.js";
@@ -24,7 +24,7 @@ export class FinalizeBatchNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: PersistedBatchNotificationResult): Promise<{ count: number }> {
+  async execute(input: PersistedBatchNotificationResultReadModel): Promise<{ count: number }> {
     if (input.count === 0) {
       return { count: 0 };
     }

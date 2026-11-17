@@ -3,7 +3,7 @@ import type { PushDevicePlatform } from "@aido/api/vocabulary";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
-import type { PushTokenRecord } from "../read-models/push-token.read-model.js";
+import type { PushTokenReadModel } from "../read-models/push-token.read-model.js";
 
 export interface FindPushTokensParams {
   readonly userId: UserId;
@@ -30,14 +30,6 @@ export interface KeepPushTokenData {
   readonly keptAt: Temporal.Instant;
 }
 
-// 같은 토큰이 동시에 등록돼 다른 트랜잭션이 먼저 그 토큰을 가져갔다. 원인 DB 오류는 cause로 남긴다
-export class PushTokenRegistrationConflictError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("Push token registered concurrently", options);
-    this.name = "PushTokenRegistrationConflictError";
-  }
-}
-
 // Expo 등록 토큰의 생명주기를 저장한다
 export abstract class PushTokenRepositoryPort {
   // 이 기기나 이 토큰을 다른 사용자·기기가 가진 등록을 지우고 그 사용자 ID를 돌려준다(해제 실패 기기에 새 사용자가 로그인했을 때 unique 충돌·잘못된 수신 방지)
@@ -46,11 +38,11 @@ export abstract class PushTokenRepositoryPort {
     readonly deviceId: PushDeviceId;
     readonly token: string | null;
   }): Promise<{ readonly userIds: readonly string[] }>;
-  abstract registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord>;
+  abstract registerPushToken(data: RegisterPushTokenData): Promise<PushTokenReadModel>;
   // 토큰 없이 온 허용 보고에서 이 기기의 기존 토큰을 그대로 두고 세션·앱 버전만 이번 보고로 맞춘다. 로그아웃 정리가 세션으로 찾기 때문이다
   abstract keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }>;
-  abstract findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]>;
-  abstract findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenRecord[]>;
+  abstract findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]>;
+  abstract findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]>;
   abstract deletePushTokensByDevice(
     userId: UserId,
     deviceId: PushDeviceId,

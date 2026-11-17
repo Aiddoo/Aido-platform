@@ -9,13 +9,11 @@ import type {
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
+import { DuplicateNotificationError } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import {
-  DuplicateNotificationError,
-  type NotificationRepositoryPort,
-} from "../ports/notification.repository.port.js";
-import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
+import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
+import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 
 /** 알림과 일반 push outbox를 한 transaction으로 만들고 부수효과는 commit 뒤 시작한다. */
 interface SendNotificationDependencies {
@@ -35,7 +33,7 @@ export class SendNotificationUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(data: CreateNotificationData): Promise<InboxNotification | null> {
+  async execute(data: CreateNotificationData): Promise<InboxNotificationReadModel | null> {
     try {
       return await this.#dependencies.unitOfWork.run(async () => {
         const notification = await this.#dependencies.notificationRepository.createNotification(

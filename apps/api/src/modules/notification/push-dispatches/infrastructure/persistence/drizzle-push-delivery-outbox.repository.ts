@@ -17,8 +17,8 @@ import type {
   PushDeliveryOutboxRepositoryPort,
 } from "../../application/ports/push-delivery-outbox.repository.port.js";
 import type {
-  ClaimedPushDeliveryPublication,
-  PushDeliveryPublication,
+  ClaimedPushDeliveryPublicationReadModel,
+  PushDeliveryPublicationReadModel,
 } from "../../application/read-models/push-delivery.read-model.js";
 import { pushDeliveryLaneOf } from "../../domain/push-delivery-lane.domain-service.js";
 import type { PushDispatchStatus } from "../../domain/push-delivery-status.constants.js";
@@ -50,7 +50,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   claimByDispatchIds(
     dispatchIds: readonly number[],
     lockedAt: Temporal.Instant,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     if (dispatchIds.length === 0) {
       return Promise.resolve([]);
     }
@@ -63,7 +63,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
 
   claimAvailable(
     input: ClaimPushDeliveryOutboxInput,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     if (input.limit <= 0) {
       return Promise.resolve([]);
     }
@@ -71,7 +71,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   }
 
   async markPublished(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     publishedAt: Temporal.Instant,
   ): Promise<number> {
     if (publications.length === 0) {
@@ -114,7 +114,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
 
   /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
   async #lockProcessingGenerations(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
   ): Promise<void> {
     await this.#db
       .select({ dispatchId: pushDispatchOutbox.dispatchId })
@@ -125,7 +125,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   }
 
   /** 발행 세대와 PROCESSING 상태를 UPDATE 술어에 남겨 다른 worker가 재claim한 행을 덮어쓰지 않는다. */
-  #processingGenerations(publications: readonly PushDeliveryPublication[]) {
+  #processingGenerations(publications: readonly PushDeliveryPublicationReadModel[]) {
     return and(
       matchesPublicationGeneration(publications),
       eq(pushDispatchOutbox.status, "PROCESSING"),
@@ -189,7 +189,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     readonly limit: number;
     readonly lockedAt: Temporal.Instant;
     readonly dispatchFilter?: SQL;
-  }): Promise<readonly ClaimedPushDeliveryPublication[]> {
+  }): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     const candidates = this.#db
       .select({ dispatchId: candidate.dispatchId })
       .from(candidate)
@@ -224,8 +224,8 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   }
 
   async #withLanes(
-    publications: readonly PushDeliveryPublication[],
-  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+    publications: readonly PushDeliveryPublicationReadModel[],
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     if (publications.length === 0) {
       return [];
     }

@@ -14,12 +14,14 @@ import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferenc
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
 import { NotificationDedupPort } from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/notifications/application/use-cases/get-unread-notification-count.use-case";
 import { ListNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/list-notifications.use-case";
 import { MarkAllNotificationsReadUseCase } from "#api/modules/notification/notifications/application/use-cases/mark-all-notifications-read.use-case";
 import { MarkNotificationOpenedUseCase } from "#api/modules/notification/notifications/application/use-cases/mark-notification-opened.use-case";
 import { MarkNotificationReadUseCase } from "#api/modules/notification/notifications/application/use-cases/mark-notification-read.use-case";
+import { PublishDeduplicatedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-deduplicated-notification.use-case";
+import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationWithDedupUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-dedup.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
@@ -79,11 +81,18 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 import type { UserPreference } from "#test/types/database-rows";
 
 function buildNotificationTestApi(module: TestingModule) {
+  const todoTargetReader = { findTodoTargets: () => Promise.resolve(new Map()) };
   const publisher = new PublishNotificationUseCase({
     sendNotification: module.get(SendNotificationUseCase),
+    todoTargetReader,
+  });
+  const deduplicatedPublisher = new PublishDeduplicatedNotificationUseCase({
     sendNotificationWithDeduplication: module.get(SendNotificationWithDedupUseCase),
+    todoTargetReader,
+  });
+  const batchPublisher = new PublishNotificationBatchUseCase({
     sendBatchNotification: module.get(SendBatchNotificationUseCase),
-    todoTargetReader: { findTodoTargets: () => Promise.resolve(new Map()) },
+    todoTargetReader,
   });
   const getNotificationsUseCase = module.get(ListNotificationsUseCase);
   const getUnreadCountUseCase = module.get(GetUnreadNotificationCountUseCase);
@@ -94,9 +103,9 @@ function buildNotificationTestApi(module: TestingModule) {
   const optOutMarketingPushUseCase = module.get(OptOutMarketingPushUseCase);
 
   return {
-    publish: publisher.publish.bind(publisher),
-    publishWithDeduplication: publisher.publishWithDeduplication.bind(publisher),
-    publishBatch: publisher.publishBatch.bind(publisher),
+    publish: publisher.execute.bind(publisher),
+    publishWithDeduplication: deduplicatedPublisher.execute.bind(deduplicatedPublisher),
+    publishBatch: batchPublisher.execute.bind(batchPublisher),
     reportPushDevice: reportPushDeviceUseCase.execute.bind(reportPushDeviceUseCase),
     getNotifications: getNotificationsUseCase.execute.bind(getNotificationsUseCase),
     getUnreadCount: (userId: string, appVersion?: string) =>
@@ -310,7 +319,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     );
   });
 
-  async function seedNotifications(rows: InboxNotification[]) {
+  async function seedNotifications(rows: InboxNotificationReadModel[]) {
     const inserted = [];
     for (const row of rows) {
       const { id: _id, ...values } = row;

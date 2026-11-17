@@ -1,3 +1,5 @@
+import { nonIsoCalendarDate } from "./reminders.errors.js";
+
 const DAY_MS = 24 * 60 * 60_000;
 
 // 리마인더 대상 구간은 사용자 현지 오늘을 UTC 자정 순간으로 둔 옛 기준을 그대로 쓴다
@@ -16,7 +18,7 @@ export function elapsedDaysUntil(today: Temporal.PlainDate, since: Temporal.Inst
 function isoWeekOf(date: Temporal.PlainDate): { readonly year: number; readonly week: number } {
   const { yearOfWeek, weekOfYear } = date;
   if (yearOfWeek == null || weekOfYear == null) {
-    throw new Error(`ISO 달력 날짜가 아니다: ${date.toString()}`);
+    throw nonIsoCalendarDate(date);
   }
   return { year: yearOfWeek, week: weekOfYear };
 }

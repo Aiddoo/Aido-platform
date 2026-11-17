@@ -2,10 +2,10 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
-import type { PushDeliveryPublication } from "../read-models/push-delivery.read-model.js";
+import type { PushDeliveryPublicationReadModel } from "../read-models/push-delivery.read-model.js";
 
 interface RecoverFailedPushDeliveriesInput {
-  readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
 }
 
 interface RecoverFailedPushDeliveriesDependencies {

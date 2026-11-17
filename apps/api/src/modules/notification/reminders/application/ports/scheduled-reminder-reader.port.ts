@@ -1,9 +1,9 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  EveningReminderUser,
-  ReminderCountUser,
-  UserIdRow,
+  EveningReminderUserReadModel,
+  ReminderCountUserReadModel,
+  UserIdReadModel,
 } from "../read-models/scheduler.read-model.js";
 
 export interface CustomTimeReminderParams {
@@ -33,20 +33,20 @@ export interface PeriodReportParams {
 export abstract class ScheduledReminderReaderPort {
   abstract findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<ReminderCountUser[]>;
+  ): Promise<ReminderCountUserReadModel[]>;
   abstract findFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<ReminderCountUser[]>;
+  ): Promise<ReminderCountUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
   abstract findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<EveningReminderUser[]>;
+  ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
   abstract findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<EveningReminderUser[]>;
+  ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있지만 하나도 끝내지 않은 사용자 */
-  abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]>;
-  abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]>;
-  abstract findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]>;
+  abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]>;
+  abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
+  abstract findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
 }

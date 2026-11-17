@@ -20,8 +20,7 @@ import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.deco
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 
 import { toRequestMetadata } from "./auth-request.mapper.js";
-import { RevokeSessionDto } from "./auth.dto.js";
-import { MessageResponseDto, SessionListDto } from "./auth.dto.js";
+import { MessageResponseDto, RevokeSessionDto, SessionListDto } from "./auth.dto.js";
 
 /**
  * Session API 컨트롤러

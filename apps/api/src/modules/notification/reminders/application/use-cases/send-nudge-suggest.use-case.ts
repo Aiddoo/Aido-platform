@@ -3,18 +3,18 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   elapsedDaysUntil,
   isoWeekIdOf,
   utcStartOf,
 } from "../../domain/reminder-day.domain-service.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
@@ -27,7 +27,7 @@ interface NudgeSuggestStrategyDependencies {
     "findActiveUsersInTimezones" | "findNudgeSuggestFollows"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDedup: Pick<SchedulerDedupPort, "findSentNudgePairs" | "recordNudgePairs">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -165,7 +165,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
     // DB 성공 후 Redis 기록 (순서 보장)
     if (notifications.length > 0) {
-      await this.#dependencies.notificationPublisher.publishBatch(notifications);
+      await this.#dependencies.notificationPublisher.execute(notifications);
 
       const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
       void this.#dependencies.schedulerDedup.recordNudgePairs(weekId, members);

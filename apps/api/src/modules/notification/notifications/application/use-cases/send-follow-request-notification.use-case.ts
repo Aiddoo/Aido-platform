@@ -5,7 +5,7 @@ import type { NotificationRecipientLocaleReaderPort } from "../../../push-dispat
 import { createFollowRequestNotificationMessage } from "../../../shared/application/messages/social-notification.messages.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
-import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+import type { PublishDeduplicatedNotificationUseCase } from "./publish-deduplicated-notification.use-case.js";
 
 export interface SendFollowRequestNotificationInput {
   readonly followerId: string;
@@ -14,7 +14,7 @@ export interface SendFollowRequestNotificationInput {
 }
 
 interface SendFollowRequestNotificationDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishDeduplicatedNotificationUseCase, "execute">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -41,7 +41,7 @@ export class SendFollowRequestNotificationUseCase {
       variantContext,
     });
 
-    await this.#dependencies.notificationPublisher.publishWithDeduplication({
+    await this.#dependencies.notificationPublisher.execute({
       userId: input.followingId,
       type: "FOLLOW_NEW",
       title: message.title,

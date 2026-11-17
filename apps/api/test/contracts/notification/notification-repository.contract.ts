@@ -1,10 +1,8 @@
+import { DuplicateNotificationError } from "#api/modules/notification/notifications/application/notifications.errors";
 import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
-import {
-  DuplicateNotificationError,
-  type NotificationRepositoryPort,
-} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -29,11 +27,11 @@ const LATER = NOTIFICATION_FIXTURE_NOW.add({ minutes: 1 });
 async function create(
   repository: NotificationRepositoryPort,
   overrides: Partial<CreateNotificationData> = {},
-): Promise<InboxNotification> {
+): Promise<InboxNotificationReadModel> {
   return repository.createNotification(createNotificationDraftFixture(overrides));
 }
 
-function idsOf(rows: readonly InboxNotification[]): number[] {
+function idsOf(rows: readonly InboxNotificationReadModel[]): number[] {
   return rows.map((row) => row.id);
 }
 

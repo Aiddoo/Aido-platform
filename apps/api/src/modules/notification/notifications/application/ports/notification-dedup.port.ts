@@ -1,6 +1,6 @@
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 
-export interface NotificationDedupRecord {
+export interface NotificationDedupEntry {
   readonly userId: string;
   readonly type: NotificationType;
   readonly notificationDate: Temporal.PlainDate;
@@ -8,7 +8,7 @@ export interface NotificationDedupRecord {
 
 // 날짜별 발송 중복 방지 기록
 export abstract class NotificationDedupPort {
-  abstract recordNotifiedUsers(records: NotificationDedupRecord[]): Promise<void>;
+  abstract recordNotifiedUsers(records: NotificationDedupEntry[]): Promise<void>;
   abstract readKnownRecipients(
     type: NotificationType,
     notificationDate: Temporal.PlainDate,

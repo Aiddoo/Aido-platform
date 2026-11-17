@@ -46,21 +46,21 @@ import type {
   WeeklyStatsParams,
 } from "../../application/ports/weekly-achievement-stats-reader.port.js";
 import type {
-  ActiveTodo,
-  EveningReminderUser,
-  FollowPair,
-  FriendWithTodos,
-  NudgeSuggestFollow,
-  OnboardingCandidate,
-  ReminderCountUser,
-  SocialDigestCandidate,
-  UserIdRow,
-  UserLocaleMap,
-  UserTodoCount,
-  UserWithTodosAndStreak,
-  WeatherFallbackUser,
-  WeatherReminderUser,
-  WinbackUser,
+  ActiveTodoReadModel,
+  EveningReminderUserReadModel,
+  FollowPairReadModel,
+  FriendWithTodosReadModel,
+  NudgeSuggestFollowReadModel,
+  OnboardingCandidateReadModel,
+  ReminderCountUserReadModel,
+  SocialDigestCandidateReadModel,
+  UserIdReadModel,
+  UserLocaleMapReadModel,
+  UserTodoCountReadModel,
+  UserWithTodosAndStreakReadModel,
+  WeatherFallbackUserReadModel,
+  WeatherReminderUserReadModel,
+  WinbackUserReadModel,
 } from "../../application/read-models/scheduler.read-model.js";
 
 /**
@@ -114,7 +114,7 @@ export class DrizzleSchedulerReader
 
   async findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<ReminderCountUser[]> {
+  ): Promise<ReminderCountUserReadModel[]> {
     const { timezones, hour, minute, today, tomorrow, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -135,7 +135,7 @@ export class DrizzleSchedulerReader
 
   async findFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<ReminderCountUser[]> {
+  ): Promise<ReminderCountUserReadModel[]> {
     const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -151,7 +151,7 @@ export class DrizzleSchedulerReader
 
   async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<EveningReminderUser[]> {
+  ): Promise<EveningReminderUserReadModel[]> {
     const { timezones, hour, minute, today, tomorrow, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -180,7 +180,7 @@ export class DrizzleSchedulerReader
 
   async findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<EveningReminderUser[]> {
+  ): Promise<EveningReminderUserReadModel[]> {
     const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -202,7 +202,7 @@ export class DrizzleSchedulerReader
     return withPreferenceTimezone(rows);
   }
 
-  findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]> {
+  findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
     const { timezones, today, tomorrow } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -228,15 +228,15 @@ export class DrizzleSchedulerReader
     });
   }
 
-  findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
+  findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     return this.#findPeriodReportRecipients(params);
   }
 
-  findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
+  findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     return this.#findPeriodReportRecipients(params);
   }
 
-  #findPeriodReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]> {
+  #findPeriodReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     const { timezones, periodStart, periodEnd } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -252,7 +252,7 @@ export class DrizzleSchedulerReader
 
   // ReEngagementReaderPort — winback·온보딩·넛지추천·소셜다이제스트·스트릭
 
-  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
+  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
     const { timezones, inactiveSince, inactiveUntil } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true, lastActiveAt: true },
@@ -275,7 +275,7 @@ export class DrizzleSchedulerReader
   async findOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
-  }): Promise<OnboardingCandidate[]> {
+  }): Promise<OnboardingCandidateReadModel[]> {
     const { timezones, createdSince } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true, createdAt: true },
@@ -290,7 +290,7 @@ export class DrizzleSchedulerReader
     return rows;
   }
 
-  countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
+  countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
     return this.#db
       .select({ userId: todo.userId, count: count() })
       .from(todo)
@@ -298,7 +298,7 @@ export class DrizzleSchedulerReader
       .groupBy(todo.userId);
   }
 
-  findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]> {
+  findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]> {
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -315,7 +315,7 @@ export class DrizzleSchedulerReader
     candidateIds: string[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
-  }): Promise<NudgeSuggestFollow[]> {
+  }): Promise<NudgeSuggestFollowReadModel[]> {
     const { candidateIds, activeSince, activeUntil } = params;
     const activeWindow = {
       lastActiveAt: { gte: activeSince, lte: activeUntil },
@@ -344,7 +344,7 @@ export class DrizzleSchedulerReader
 
   findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
-  ): Promise<SocialDigestCandidate[]> {
+  ): Promise<SocialDigestCandidateReadModel[]> {
     const { timezones, today, tomorrow, recipientUserIds } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -370,7 +370,7 @@ export class DrizzleSchedulerReader
     });
   }
 
-  findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]> {
+  findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
     return this.#db.query.friendship.findMany({
       columns: { followerId: true, followingId: true },
       where: {
@@ -386,7 +386,7 @@ export class DrizzleSchedulerReader
     friendIds: string[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
-  }): Promise<FriendWithTodos[]> {
+  }): Promise<FriendWithTodosReadModel[]> {
     const { friendIds, today, tomorrow } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -404,7 +404,9 @@ export class DrizzleSchedulerReader
     });
   }
 
-  async findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
+  async findStreakAtRiskUsers(
+    params: TodayRangeParams,
+  ): Promise<UserWithTodosAndStreakReadModel[]> {
     const { timezones, today, tomorrow } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -435,7 +437,7 @@ export class DrizzleSchedulerReader
 
   async findWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
-  ): Promise<WeatherReminderUser[]> {
+  ): Promise<WeatherReminderUserReadModel[]> {
     const { timezones, hour, minute, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -459,7 +461,9 @@ export class DrizzleSchedulerReader
     return withPreferenceTimezone(rows);
   }
 
-  findWeatherMorningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]> {
+  findWeatherMorningFallbackUsers(
+    params: WeatherReminderParams,
+  ): Promise<WeatherFallbackUserReadModel[]> {
     const { timezones, hour, minute, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -481,7 +485,7 @@ export class DrizzleSchedulerReader
 
   async findWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
-  ): Promise<WeatherReminderUser[]> {
+  ): Promise<WeatherReminderUserReadModel[]> {
     const { timezones, hour, minute, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
@@ -505,7 +509,9 @@ export class DrizzleSchedulerReader
     return withPreferenceTimezone(rows);
   }
 
-  findWeatherEveningFallbackUsers(params: WeatherReminderParams): Promise<WeatherFallbackUser[]> {
+  findWeatherEveningFallbackUsers(
+    params: WeatherReminderParams,
+  ): Promise<WeatherFallbackUserReadModel[]> {
     const { timezones, hour, minute, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
@@ -527,16 +533,16 @@ export class DrizzleSchedulerReader
 
   // WeeklyAchievementStatsReaderPort — 주간 달성 집계
 
-  groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
+  groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
     return this.#countTodoDaysByUser(params);
   }
 
-  groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
+  groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
     return this.#countTodoDaysByUser(params, eq(todo.completed, true));
   }
 
   // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
-  #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCount[]> {
+  #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCountReadModel[]> {
     const { timezones, periodStart, periodEnd } = params;
     const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
     const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
@@ -572,7 +578,9 @@ export class DrizzleSchedulerReader
 
   // TodoReminderReaderPort — 지연 잡 처리용
 
-  async findActiveTodos(todoIds: readonly TodoId[]): Promise<ReadonlyMap<number, ActiveTodo>> {
+  async findActiveTodos(
+    todoIds: readonly TodoId[],
+  ): Promise<ReadonlyMap<number, ActiveTodoReadModel>> {
     if (todoIds.length === 0) {
       return new Map();
     }
@@ -613,7 +621,7 @@ export class DrizzleSchedulerReader
     );
   }
 
-  async findUserLocales(userIds: string[]): Promise<UserLocaleMap> {
+  async findUserLocales(userIds: string[]): Promise<UserLocaleMapReadModel> {
     if (userIds.length === 0) {
       return new Map();
     }

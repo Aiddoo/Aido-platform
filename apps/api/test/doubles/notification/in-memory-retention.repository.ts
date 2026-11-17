@@ -1,8 +1,8 @@
 import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
 import type {
-  RetentionStageCandidate,
-  RetentionStageCursor,
+  RetentionStageCandidateReadModel,
+  RetentionStageCursorReadModel,
 } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
 import {
   RETENTION_STAGE_NAMES,
@@ -16,7 +16,7 @@ import { createRetentionStageCandidateFixture } from "#test/fixtures/notificatio
 type StageStatus = (typeof retentionExperimentStageStatus.enumValues)[number];
 
 export interface StoredRetentionStage {
-  readonly candidate: RetentionStageCandidate;
+  readonly candidate: RetentionStageCandidateReadModel;
   status: StageStatus;
   skipReason: string | null;
   processedAt: Temporal.Instant | null;
@@ -35,7 +35,10 @@ interface D7Result {
   readonly measuredAt: Temporal.Instant;
 }
 
-function isAfter(candidate: RetentionStageCandidate, cursor: RetentionStageCursor): boolean {
+function isAfter(
+  candidate: RetentionStageCandidateReadModel,
+  cursor: RetentionStageCursorReadModel,
+): boolean {
   const order = Temporal.Instant.compare(candidate.stageCreatedAt, cursor.createdAt);
   return order > 0 || (order === 0 && candidate.stageId > cursor.stageId);
 }
@@ -50,7 +53,7 @@ function byCreation(left: StoredRetentionStage, right: StoredRetentionStage): nu
 
 export type RetentionUserProfile = Partial<
   Omit<
-    RetentionStageCandidate,
+    RetentionStageCandidateReadModel,
     "assignmentId" | "stageId" | "stageCreatedAt" | "userId" | "variant" | "stage" | "startedAt"
   >
 >;
@@ -70,7 +73,7 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
   #sequence = 0;
 
   constructor(
-    candidates: readonly RetentionStageCandidate[] = [],
+    candidates: readonly RetentionStageCandidateReadModel[] = [],
     now: () => Temporal.Instant = () => Temporal.Instant.fromEpochMilliseconds(Date.now()),
   ) {
     super();
@@ -118,9 +121,9 @@ export class InMemoryRetentionRepository extends RetentionRepositoryPort {
 
   async findDueStages(params: {
     readonly dueAt: Temporal.Instant;
-    readonly after?: RetentionStageCursor;
+    readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;
-  }): Promise<RetentionStageCandidate[]> {
+  }): Promise<RetentionStageCandidateReadModel[]> {
     this.dueQueries.push(params.dueAt);
     const { after } = params;
     return this.stages

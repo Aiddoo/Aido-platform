@@ -4,12 +4,12 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createWeeklyAchievementNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { previousIsoWeekOf } from "../../domain/reminder-day.domain-service.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeeklyAchievementStatsReaderPort } from "../ports/weekly-achievement-stats-reader.port.js";
@@ -22,7 +22,7 @@ interface WeeklyAchievementStrategyDependencies {
     "findFreeRecipientIds" | "groupCompletedTodosByUser" | "groupTotalTodosByUser"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -131,7 +131,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       };
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
 
     this.#dependencies.logger.log({
       event: ReminderLogEvent.WEEKLY_ACHIEVEMENT_SENT,

@@ -7,7 +7,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createStreakAtRiskNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
+import type { UserWithTodosAndStreakReadModel } from "../read-models/scheduler.read-model.js";
 import { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
 
 describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
@@ -21,7 +21,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   const sent = () => publisher.published.map(({ data }) => data);
 
   /** 어제까지 이어 왔고 오늘 미완료 1개 → 위기 */
-  const atRiskUser = (id: string, streak = 5, locale = "ko"): UserWithTodosAndStreak => ({
+  const atRiskUser = (id: string, streak = 5, locale = "ko"): UserWithTodosAndStreakReadModel => ({
     id,
     todos: [{ completed: false }],
     preference: { currentStreak: streak, lastCompletedDate: YESTERDAY, locale },
@@ -44,7 +44,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     history = new StubNotificationHistoryReader();
     strategy = new SendStreakAtRiskUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

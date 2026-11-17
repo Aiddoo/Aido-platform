@@ -28,7 +28,7 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
     strategy = new SendMonthlyReportUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

@@ -7,6 +7,7 @@ import { NotificationPushDispatchesModule } from "../push-dispatches/notificatio
 import { NotificationHistoryReader } from "./application/notification-history.reader.js";
 import { NotificationRepositoryPort } from "./application/ports/notification.repository.port.js";
 import { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
+import { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
 import { MarketingConsentReconfirmProcessor } from "./infrastructure/jobs/marketing-consent-reconfirm.processor.js";
 import { MarketingConsentReconfirmScheduler } from "./infrastructure/jobs/marketing-consent-reconfirm.scheduler.js";
@@ -33,6 +34,7 @@ import { NotificationController } from "./presentation/http/v1/notification.cont
   ],
   exports: [
     PublishNotificationUseCase,
+    PublishNotificationBatchUseCase,
     NotificationHistoryReader,
     NotificationRepositoryPort,
     DeleteActorNotificationsUseCase,

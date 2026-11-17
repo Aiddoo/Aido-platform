@@ -1,9 +1,9 @@
 import {
-  PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
   type RegisterPushTokenData,
 } from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import { PushTokenRegistrationConflictError } from "#api/modules/notification/push-devices/application/push-devices.errors";
+import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
 import { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -24,11 +24,11 @@ const LATER = PUSH_TOKEN_FIXTURE_NOW.add({ minutes: 1 });
 function register(
   repository: PushTokenRepositoryPort,
   overrides: Partial<RegisterPushTokenData> = {},
-): Promise<PushTokenRecord> {
+): Promise<PushTokenReadModel> {
   return repository.registerPushToken(createRegisterPushTokenDataFixture(overrides));
 }
 
-function summaryOf(records: readonly PushTokenRecord[]) {
+function summaryOf(records: readonly PushTokenReadModel[]) {
   return records.map(({ userId, deviceId, token, isActive }) => ({
     userId,
     deviceId,

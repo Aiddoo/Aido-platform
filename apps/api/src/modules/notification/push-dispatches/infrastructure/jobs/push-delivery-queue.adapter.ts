@@ -4,7 +4,7 @@ import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import type { PushDeliveryJobEnqueuerPort } from "../../application/ports/push-delivery-job-enqueuer.port.js";
-import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
+import type { PushDeliveryPublicationReadModel } from "../../application/read-models/push-delivery.read-model.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 import { pushDeliveryJobKey } from "./push-delivery-job-keys.constants.js";
 import {
@@ -34,7 +34,7 @@ export class PushDeliveryQueueAdapter implements PushDeliveryJobEnqueuerPort, On
   }
 
   async enqueueDeliveries(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     lane: PushDeliveryLane,
   ): Promise<void> {
     // strict payload schema가 받는 필드만 싣는다

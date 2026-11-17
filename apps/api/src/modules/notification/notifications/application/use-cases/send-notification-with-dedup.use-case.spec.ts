@@ -11,7 +11,7 @@ import {
 } from "#test/fixtures/notification/notification.fixture";
 
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
-import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
+import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
 import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
@@ -23,13 +23,13 @@ const nudgeData = createNotificationDraftFixture({ type: "NUDGE_RECEIVED", nudge
 class RecordingSendNotification implements Pick<SendNotificationUseCase, "execute"> {
   readonly sent: CreateNotificationData[] = [];
 
-  async execute(data: CreateNotificationData): Promise<InboxNotification | null> {
+  async execute(data: CreateNotificationData): Promise<InboxNotificationReadModel | null> {
     this.sent.push(data);
     return null;
   }
 }
 
-function setup(history: readonly InboxNotification[] = []) {
+function setup(history: readonly InboxNotificationReadModel[] = []) {
   const sendNotification = new RecordingSendNotification();
   const unitOfWork = new ImmediateUnitOfWork();
   const mutationLock = new RecordingMutationLock();

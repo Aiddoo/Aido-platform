@@ -86,7 +86,7 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
       threadRootId: input.threadRootId.value,
       activityKind: activity.activityKind,
     });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId: input.recipientId.value,
       type: "TODO_SHARED",
       title: copy.title,

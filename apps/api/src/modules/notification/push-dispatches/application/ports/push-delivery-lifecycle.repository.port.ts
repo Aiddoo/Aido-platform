@@ -2,8 +2,8 @@ import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
 import type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
 import type {
-  PushDeliveryItem,
-  PushDeliveryPublication,
+  PushDeliveryItemReadModel,
+  PushDeliveryPublicationReadModel,
 } from "../read-models/push-delivery.read-model.js";
 import type { PushResult } from "./push-provider.port.js";
 
@@ -19,7 +19,7 @@ export interface ClaimedPushDelivery {
   readonly deliveryMode: PushDeliveryMode;
   readonly force: boolean;
   readonly rateLimitReservation: { readonly status: "pending" } | { readonly status: "reserved" };
-  readonly item: PushDeliveryItem;
+  readonly item: PushDeliveryItemReadModel;
 }
 
 export interface PushDeliveryContext {
@@ -28,14 +28,14 @@ export interface PushDeliveryContext {
 }
 
 export interface ClaimPushDeliveriesInput {
-  readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
   readonly processingJobId: string;
   readonly processingJobAttempt: number;
   readonly startedAt: Temporal.Instant;
 }
 
 export interface ReopenPushDeliveriesAfterClaimFailureInput {
-  readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
   readonly availableAt: Temporal.Instant;
   readonly error: string;
 }

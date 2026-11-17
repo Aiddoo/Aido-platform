@@ -16,7 +16,7 @@ import {
 } from "../../../../push-dispatches/notification-push-dispatches.public.js";
 import { renderNotificationCopy } from "../../../../shared/application/messages/notification-copy-render.messages.js";
 import { toWireNotificationType } from "../../../../shared/domain/notification-client-capability.domain-service.js";
-import type { InboxNotification } from "../../../application/read-models/inbox-notification.read-model.js";
+import type { InboxNotificationReadModel } from "../../../application/read-models/inbox-notification.read-model.js";
 
 // 출시 앱이 표시하지는 않지만 계약 필드라 문구를 그대로 둔다
 export const NOTIFICATION_RESPONSE_MESSAGES = {
@@ -51,7 +51,9 @@ export function renderInboxCopy(
   );
 }
 
-function toNotificationContext(notification: InboxNotification): NotificationContext | undefined {
+function toNotificationContext(
+  notification: InboxNotificationReadModel,
+): NotificationContext | undefined {
   const context: NotificationContext = {};
   if (notification.todoId != null) {
     context.todoId = notification.todoId;
@@ -74,7 +76,7 @@ function toNotificationMetadata(metadata: unknown): NotificationMetadata {
 }
 
 export function toNotificationResponse(
-  notification: InboxNotification,
+  notification: InboxNotificationReadModel,
   locale: SupportedLocale | null,
 ): NotificationInboxItem {
   const context = toNotificationContext(notification);
@@ -110,7 +112,7 @@ export function toNotificationResponse(
 }
 
 export function toNotificationInboxResponse(
-  page: CursorPage<InboxNotification, number>,
+  page: CursorPage<InboxNotificationReadModel, number>,
   unreadCount: number,
   locale: SupportedLocale | null,
 ): NotificationInboxResponse {

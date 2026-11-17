@@ -50,7 +50,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     strategy = new SendWeeklyAchievementUseCase({
       reader: stats,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       weeklyAchievementWriter: writer,
       logger: new SilentLogger(),

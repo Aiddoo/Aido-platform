@@ -213,7 +213,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const suggestionProcessor = new SuggestionAnalysisProcessor(
       analyze,
       {
-        publish: async (notification) => {
+        execute: async (notification) => {
           notifications.push(notification);
           return null;
         },

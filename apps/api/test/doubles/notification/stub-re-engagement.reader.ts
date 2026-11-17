@@ -5,15 +5,15 @@ import {
   type TodayRangeParams,
 } from "#api/modules/notification/reminders/application/ports/re-engagement-reader.port";
 import type {
-  FollowPair,
-  FriendWithTodos,
-  NudgeSuggestFollow,
-  OnboardingCandidate,
-  SocialDigestCandidate,
-  UserIdRow,
-  UserTodoCount,
-  UserWithTodosAndStreak,
-  WinbackUser,
+  FollowPairReadModel,
+  FriendWithTodosReadModel,
+  NudgeSuggestFollowReadModel,
+  OnboardingCandidateReadModel,
+  SocialDigestCandidateReadModel,
+  UserIdReadModel,
+  UserTodoCountReadModel,
+  UserWithTodosAndStreakReadModel,
+  WinbackUserReadModel,
 } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
 
 export interface ReEngagementQuery {
@@ -23,18 +23,18 @@ export interface ReEngagementQuery {
 
 // 넣어 둔 대상을 주되 ID로 묻는 조회는 그 ID에 걸린 행만 준다. 기간·시간대 조건은 SQL이 맡는다
 export class StubReEngagementReader extends ReEngagementReaderPort {
-  winbackUsers: WinbackUser[] = [];
-  onboardingCandidates: OnboardingCandidate[] = [];
-  completedTodoCounts: UserTodoCount[] = [];
-  activeUsers: UserIdRow[] = [];
-  nudgeSuggestFollows: NudgeSuggestFollow[] = [];
-  socialDigestCandidates: SocialDigestCandidate[] = [];
-  acceptedFollows: FollowPair[] = [];
-  friendsWithTodayTodos: FriendWithTodos[] = [];
-  streakAtRiskUsers: UserWithTodosAndStreak[] = [];
+  winbackUsers: WinbackUserReadModel[] = [];
+  onboardingCandidates: OnboardingCandidateReadModel[] = [];
+  completedTodoCounts: UserTodoCountReadModel[] = [];
+  activeUsers: UserIdReadModel[] = [];
+  nudgeSuggestFollows: NudgeSuggestFollowReadModel[] = [];
+  socialDigestCandidates: SocialDigestCandidateReadModel[] = [];
+  acceptedFollows: FollowPairReadModel[] = [];
+  friendsWithTodayTodos: FriendWithTodosReadModel[] = [];
+  streakAtRiskUsers: UserWithTodosAndStreakReadModel[] = [];
   readonly queries: ReEngagementQuery[] = [];
 
-  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
+  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
     this.queries.push({ method: "findWinbackUsers", params });
     return this.winbackUsers;
   }
@@ -42,17 +42,17 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   async findOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
-  }): Promise<OnboardingCandidate[]> {
+  }): Promise<OnboardingCandidateReadModel[]> {
     this.queries.push({ method: "findOnboardingCandidates", params });
     return this.onboardingCandidates;
   }
 
-  async countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCount[]> {
+  async countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
     this.queries.push({ method: "countCompletedTodosByUsers", params: [...userIds] });
     return this.completedTodoCounts.filter((row) => userIds.includes(row.userId));
   }
 
-  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdRow[]> {
+  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]> {
     this.queries.push({ method: "findActiveUsersInTimezones", params: [...timezones] });
     return this.activeUsers;
   }
@@ -61,7 +61,7 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     candidateIds: string[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
-  }): Promise<NudgeSuggestFollow[]> {
+  }): Promise<NudgeSuggestFollowReadModel[]> {
     this.queries.push({ method: "findNudgeSuggestFollows", params });
     return this.nudgeSuggestFollows.filter(
       (follow) =>
@@ -72,12 +72,12 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
 
   async findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
-  ): Promise<SocialDigestCandidate[]> {
+  ): Promise<SocialDigestCandidateReadModel[]> {
     this.queries.push({ method: "findSocialDigestCandidates", params });
     return this.socialDigestCandidates.filter((user) => params.recipientUserIds.includes(user.id));
   }
 
-  async findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]> {
+  async findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
     this.queries.push({ method: "findAcceptedFollows", params: [...candidateIds] });
     return this.acceptedFollows.filter(
       (follow) =>
@@ -89,12 +89,14 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     friendIds: string[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
-  }): Promise<FriendWithTodos[]> {
+  }): Promise<FriendWithTodosReadModel[]> {
     this.queries.push({ method: "findFriendsWithTodayTodos", params });
     return this.friendsWithTodayTodos.filter((friend) => params.friendIds.includes(friend.id));
   }
 
-  async findStreakAtRiskUsers(params: TodayRangeParams): Promise<UserWithTodosAndStreak[]> {
+  async findStreakAtRiskUsers(
+    params: TodayRangeParams,
+  ): Promise<UserWithTodosAndStreakReadModel[]> {
     this.queries.push({ method: "findStreakAtRiskUsers", params });
     return this.streakAtRiskUsers;
   }

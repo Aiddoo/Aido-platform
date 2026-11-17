@@ -5,13 +5,13 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createSocialDigestNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -23,7 +23,7 @@ interface SocialDigestStrategyDependencies {
     "findAcceptedFollows" | "findFriendsWithTodayTodos" | "findSocialDigestCandidates"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -174,7 +174,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
     }
 
     if (notifications.length > 0) {
-      await this.#dependencies.notificationPublisher.publishBatch(notifications);
+      await this.#dependencies.notificationPublisher.execute(notifications);
       this.#dependencies.logger.log({
         event: ReminderLogEvent.SOCIAL_DIGEST_SENT,
         timezones,

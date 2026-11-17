@@ -7,8 +7,8 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import type { EveningReminderUserReadModel } from "../read-models/scheduler.read-model.js";
 import { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 
 describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
@@ -29,8 +29,8 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
   const user = (
     id: string,
     todos: readonly boolean[],
-    preference: Partial<NonNullable<EveningReminderUser["preference"]>> = {},
-  ): EveningReminderUser => ({
+    preference: Partial<NonNullable<EveningReminderUserReadModel["preference"]>> = {},
+  ): EveningReminderUserReadModel => ({
     id,
     timezone: "Asia/Seoul",
     todos: todos.map((completed) => ({ completed })),
@@ -45,7 +45,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     history = new StubNotificationHistoryReader();
     strategy = new SendEveningReminderUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

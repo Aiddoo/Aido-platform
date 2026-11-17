@@ -33,7 +33,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
     strategy = new SendOnboardingUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

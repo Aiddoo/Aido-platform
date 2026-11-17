@@ -1,4 +1,4 @@
-import type { TimezoneContext } from "#api/modules/notification/reminders/domain/timezone-context.read-model";
+import type { TimezoneContext } from "#api/modules/notification/reminders/domain/local-clock.domain-service";
 
 /** 서울의 한 날짜(로컬 자정)에서 도는 sweep 분. 요일은 날짜에서 정한다 */
 export function createTimezoneContextFixture(

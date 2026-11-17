@@ -4,10 +4,7 @@ import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import {
-  NotificationEmailMessagesModule,
-  SendTransactionalEmailUseCase,
-} from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { NotificationEmailMessagesModule } from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { NotificationPushDevicesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { NotificationRetentionAssignmentsModule } from "#api/modules/notification/retention-assignments/notification-retention-assignments.public";
 import {
@@ -84,6 +81,7 @@ import {
 import { AppleOAuthIdentityAdapter } from "./infrastructure/adapters/apple-oauth-identity.adapter.js";
 import { Argon2PasswordHasherAdapter } from "./infrastructure/adapters/argon2-password-hasher.adapter.js";
 import { AuthCacheAdapter } from "./infrastructure/adapters/auth-cache.adapter.js";
+import { CodeEmailSenderAdapter } from "./infrastructure/adapters/code-email-sender.adapter.js";
 import { GoogleOAuthIdentityAdapter } from "./infrastructure/adapters/google-oauth-identity.adapter.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { KakaoOAuthIdentityAdapter } from "./infrastructure/adapters/kakao-oauth-identity.adapter.js";
@@ -182,7 +180,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
     { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
     { provide: AuthCachePort, useExisting: AuthCacheAdapter },
-    { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
+    { provide: AuthEmailSenderPort, useClass: CodeEmailSenderAdapter },
     {
       provide: AuthRegistrationNotifierPort,
       useExisting: AdminEventNotifierPort,

@@ -4,21 +4,14 @@ import type { CreateNotificationData } from "../../../shared/application/ports/n
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
-import type { InboxNotification } from "../read-models/inbox-notification.read-model.js";
-
-export class DuplicateNotificationError extends Error {
-  constructor() {
-    super("Notification already exists");
-    this.name = "DuplicateNotificationError";
-  }
-}
+import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 
 export abstract class NotificationRepositoryPort {
   abstract findById(notificationId: NotificationId): Promise<Notification | null>;
-  abstract createNotification(data: CreateNotificationData): Promise<InboxNotification>;
+  abstract createNotification(data: CreateNotificationData): Promise<InboxNotificationReadModel>;
   abstract createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<InboxNotification[]>;
+  ): Promise<InboxNotificationReadModel[]>;
   // 아직 읽지 않은 행에만 읽음을 반영한다. 동시 요청이 먼저 바꿨으면 false다
   abstract markAsRead(notification: Notification): Promise<boolean>;
   // 처음 연 기록만 남기고 읽음도 맞춘다. 남의 알림·없는 알림·이미 연 알림은 false다

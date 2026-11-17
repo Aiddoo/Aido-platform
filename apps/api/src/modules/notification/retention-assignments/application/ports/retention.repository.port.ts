@@ -3,8 +3,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { NotificationId } from "../../../notifications/notification-notifications.public.js";
 import type { RetentionVariant } from "../../domain/retention-assignments.constants.js";
 import type {
-  RetentionStageCandidate,
-  RetentionStageCursor,
+  RetentionStageCandidateReadModel,
+  RetentionStageCursorReadModel,
 } from "../read-models/retention-stage-candidate.read-model.js";
 
 export abstract class RetentionRepositoryPort {
@@ -18,9 +18,9 @@ export abstract class RetentionRepositoryPort {
   // dueAt까지 결정할 때가 된 SCHEDULED 단계를 생성 순서로 읽는다. 처리 시각 구간이 아니라 상태로 고르므로 늦은 실행도 빠뜨리지 않는다
   abstract findDueStages(params: {
     readonly dueAt: Temporal.Instant;
-    readonly after?: RetentionStageCursor;
+    readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;
-  }): Promise<RetentionStageCandidate[]>;
+  }): Promise<RetentionStageCandidateReadModel[]>;
   abstract markStageSkipped(
     stageId: string,
     reason: string,

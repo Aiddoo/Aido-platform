@@ -8,6 +8,7 @@ import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor
 
 import {
   groupTimezonesByLocalClock,
+  type TimezoneContext,
   timezoneContextAt,
 } from "../../domain/local-clock.domain-service.js";
 import {
@@ -18,7 +19,6 @@ import {
   REMINDER_LATE_LIMIT_MINUTES,
   REMINDER_LATE_SKIP_REASON,
 } from "../../domain/notification-schedule.domain-service.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type {
   ReminderHourChangedJobData,

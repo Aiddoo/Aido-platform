@@ -43,7 +43,7 @@ function createReconfirm(
         new Set(users.map((user) => user.value).filter((userId) => quietUserIds.has(userId))),
     },
     notificationPublisher: {
-      publishBatch: async (notices) => {
+      execute: async (notices) => {
         sent.push(...notices);
         return { count: notices.length };
       },

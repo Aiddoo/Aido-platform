@@ -16,11 +16,8 @@ import { PushPermission } from "../../domain/push-permission.vo.js";
 import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
 import type { PushTokenCachePort } from "../ports/push-token-cache.port.js";
 import type { PushTokenFormatPort } from "../ports/push-token-format.port.js";
-import {
-  PushTokenRegistrationConflictError,
-  type PushTokenRepositoryPort,
-} from "../ports/push-token.repository.port.js";
-import { invalidPushToken } from "../push-devices.errors.js";
+import { type PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
+import { invalidPushToken, PushTokenRegistrationConflictError } from "../push-devices.errors.js";
 import { PushDeviceLogEvent } from "../push-devices.log-events.js";
 
 export interface ReportPushDeviceCommand {

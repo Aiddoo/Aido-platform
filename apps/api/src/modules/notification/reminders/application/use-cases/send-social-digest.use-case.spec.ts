@@ -33,7 +33,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     strategy = new SendSocialDigestUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

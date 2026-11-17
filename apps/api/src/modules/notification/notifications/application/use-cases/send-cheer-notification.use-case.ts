@@ -5,7 +5,7 @@ import type { NotificationRecipientLocaleReaderPort } from "../../../push-dispat
 import { createCheerReceivedNotificationMessage } from "../../../shared/application/messages/social-notification.messages.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
-import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+import type { PublishDeduplicatedNotificationUseCase } from "./publish-deduplicated-notification.use-case.js";
 
 export interface SendCheerNotificationInput {
   readonly cheerId: number;
@@ -16,7 +16,7 @@ export interface SendCheerNotificationInput {
 }
 
 interface SendCheerNotificationDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishWithDeduplication">;
+  readonly notificationPublisher: Pick<PublishDeduplicatedNotificationUseCase, "execute">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -44,7 +44,7 @@ export class SendCheerNotificationUseCase {
       variantContext,
     });
 
-    await this.#dependencies.notificationPublisher.publishWithDeduplication({
+    await this.#dependencies.notificationPublisher.execute({
       userId: input.receiverId,
       type: "CHEER_RECEIVED",
       title: message.title,

@@ -3,11 +3,12 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createOnboardingNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   isOnboardingDay,
   ONBOARDING_MAX_DAY,
@@ -15,7 +16,6 @@ import {
   resolveOnboardingDeepLinkPath,
 } from "../../domain/onboarding.domain-service.js";
 import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -27,7 +27,7 @@ interface OnboardingStrategyDependencies {
     "countCompletedTodosByUsers" | "findOnboardingCandidates"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -128,7 +128,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     }
 
     if (notifications.length > 0) {
-      await this.#dependencies.notificationPublisher.publishBatch(notifications);
+      await this.#dependencies.notificationPublisher.execute(notifications);
       this.#dependencies.logger.log({
         event: ReminderLogEvent.ONBOARDING_SENT,
         timezones,

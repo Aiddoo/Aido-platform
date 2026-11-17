@@ -37,7 +37,6 @@ import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infras
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
@@ -173,7 +172,7 @@ export async function createAuthTestModule(
       },
       { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
       { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-      { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
+      { provide: AuthEmailSenderPort, useValue: fakeEmailService },
       AuthCacheAdapter,
       { provide: AuthCachePort, useExisting: AuthCacheAdapter },
       { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
@@ -209,10 +208,6 @@ export async function createAuthTestModule(
           expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
           refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
         },
-      },
-      {
-        provide: SendTransactionalEmailUseCase,
-        useValue: fakeEmailService,
       },
       {
         provide: CacheStorePort,

@@ -3,11 +3,11 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createLunchNudgeNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -22,7 +22,7 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface LunchNudgeStrategyDependencies {
   readonly reader: Pick<ScheduledReminderReaderPort, "findLunchNudgeUsers">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -88,7 +88,7 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
       };
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
       event: ReminderLogEvent.LUNCH_NUDGE_SENT,
       timezones,

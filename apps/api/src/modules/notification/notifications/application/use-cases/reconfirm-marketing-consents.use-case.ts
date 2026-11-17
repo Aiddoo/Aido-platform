@@ -25,7 +25,7 @@ import type {
   MarketingConsentReconfirmPort,
   MarketingReconfirmRecipient,
 } from "../ports/marketing-consent-reconfirm.port.js";
-import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+import type { PublishNotificationBatchUseCase } from "./publish-notification-batch.use-case.js";
 
 const MARKETING_CONSENT_RECONFIRM = {
   BATCH_SIZE: 500,
@@ -49,7 +49,7 @@ interface ReconfirmMarketingConsentsDependencies {
   readonly localeReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly timezoneReader: NotificationRecipientTimezoneReaderPort;
   readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "findUsersInQuietHours">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -129,7 +129,7 @@ export class ReconfirmMarketingConsentsUseCase {
         }),
       );
       if (notices.length > 0) {
-        await this.#dependencies.notificationPublisher.publishBatch(notices);
+        await this.#dependencies.notificationPublisher.execute(notices);
       }
       return notices.length;
     });

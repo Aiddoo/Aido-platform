@@ -13,11 +13,9 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
-import {
-  DuplicateNotificationError,
-  type NotificationRepositoryPort,
-} from "../../application/ports/notification.repository.port.js";
-import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
+import { duplicateNotification } from "../../application/notifications.errors.js";
+import { type NotificationRepositoryPort } from "../../application/ports/notification.repository.port.js";
+import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
 import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
 import { toNotification } from "./notification-row.mapper.js";
@@ -66,7 +64,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     return row == null ? null : toNotification(row);
   }
 
-  async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
+  async createNotification(data: CreateNotificationData): Promise<InboxNotificationReadModel> {
     try {
       const [row] = await this.#db
         .insert(notification)
@@ -75,7 +73,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
       return requireRecord(row);
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw new DuplicateNotificationError();
+        throw duplicateNotification();
       }
       throw error;
     }
@@ -83,7 +81,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<InboxNotification[]> {
+  ): Promise<InboxNotificationReadModel[]> {
     if (dataList.length === 0) {
       return [];
     }
@@ -96,7 +94,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
         .returning();
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw new DuplicateNotificationError();
+        throw duplicateNotification();
       }
       throw error;
     }

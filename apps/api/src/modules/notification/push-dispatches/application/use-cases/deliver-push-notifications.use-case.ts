@@ -14,16 +14,26 @@ import {
 } from "../ports/push-delivery-lifecycle.repository.port.js";
 import type { PushNotificationPayloadPort } from "../ports/push-notification-payload.port.js";
 import type { PushResult } from "../ports/push-provider.port.js";
-import { PushDeliveryClaimRecoveryConflictError } from "../push-delivery-claim-recovery-conflict.errors.js";
-import { PushDeliveryRateLimitReservationConflictError } from "../push-delivery-rate-limit-reservation-conflict.errors.js";
+import {
+  pushDeliveryClaimRecoveryConflict,
+  pushDeliveryRateLimitReservationConflict,
+  pushDeliveryRecipientMissing,
+} from "../push-dispatches.errors.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
-import type { DeliverPushNotificationsInput } from "../read-models/push-delivery.read-model.js";
+import type { PushDeliveryPublicationReadModel } from "../read-models/push-delivery.read-model.js";
 import type { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 import {
   type BatchPushDeliveryRecipient,
   type EvaluatePushDeliveryEligibilityUseCase,
   type PushDeliveryEligibilityDecision,
 } from "./evaluate-push-delivery-eligibility.use-case.js";
+
+export interface DeliverPushNotificationsCommand {
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
+  readonly processingJobId: string;
+  readonly processingJobAttempt: number;
+  readonly isFinalAttempt: boolean;
+}
 
 interface ClaimedBatchCandidate {
   readonly claimed: ClaimedPushDelivery;
@@ -96,7 +106,7 @@ export class DeliverPushNotificationsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeliverPushNotificationsInput): Promise<void> {
+  async execute(input: DeliverPushNotificationsCommand): Promise<void> {
     const claimed = await this.#claim(input);
     if (claimed.length === 0) {
       return;
@@ -256,7 +266,7 @@ export class DeliverPushNotificationsUseCase {
     for (const candidate of candidates) {
       const recipient = recipients.get(candidate.data.userId);
       if (!recipient) {
-        throw new Error(`Push delivery recipient missing: userId=${candidate.data.userId}`);
+        throw pushDeliveryRecipientMissing(candidate.data.userId);
       }
       contexts.set(candidate.dispatchId, this.#context(recipient.timezone, recipient.localDate));
     }
@@ -276,7 +286,7 @@ export class DeliverPushNotificationsUseCase {
       );
       if (reservedDispatchIds.length !== claimedDeliveries.length) {
         const reservedIds = new Set(reservedDispatchIds);
-        throw new PushDeliveryRateLimitReservationConflictError(
+        throw pushDeliveryRateLimitReservationConflict(
           claimedDeliveries
             .map((claimed) => claimed.fence.dispatchId)
             .filter((dispatchId) => !reservedIds.has(dispatchId)),
@@ -287,7 +297,7 @@ export class DeliverPushNotificationsUseCase {
     return new Set(reserved);
   }
 
-  async #claim(input: DeliverPushNotificationsInput): Promise<readonly ClaimedPushDelivery[]> {
+  async #claim(input: DeliverPushNotificationsCommand): Promise<readonly ClaimedPushDelivery[]> {
     try {
       return await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.lifecycle.claim({
@@ -306,7 +316,7 @@ export class DeliverPushNotificationsUseCase {
   }
 
   async #recoverFinalClaimFailure(
-    input: DeliverPushNotificationsInput,
+    input: DeliverPushNotificationsCommand,
     claimError: unknown,
   ): Promise<void> {
     const message = claimError instanceof Error ? claimError.message : String(claimError);
@@ -318,7 +328,7 @@ export class DeliverPushNotificationsUseCase {
           error: message,
         });
         if (recovered !== input.publications.length) {
-          throw new PushDeliveryClaimRecoveryConflictError(input.publications.length, recovered);
+          throw pushDeliveryClaimRecoveryConflict(input.publications.length, recovered);
         }
       });
     } catch {

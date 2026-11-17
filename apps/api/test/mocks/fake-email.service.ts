@@ -6,6 +6,8 @@ import type {
   EmailDispatch,
   EmailSendResult,
   InquiryTemplateData,
+  SendInquiryEmailUseCase,
+  SendUserReportEmailUseCase,
   UserReportTemplateData,
 } from "#api/modules/notification/email-messages/notification-email-messages.public";
 
@@ -35,6 +37,14 @@ export class FakeEmailService implements AuthEmailSenderPort {
   #sentUserReports: SentUserReport[] = [];
   #failureCount = 0;
   #maximumFailures = 0;
+
+  // 문의·신고 메일 UseCase 자리에 끼운다
+  readonly inquiry: Pick<SendInquiryEmailUseCase, "execute"> = {
+    execute: (command) => this.sendInquiry(command.to, command.templateData),
+  };
+  readonly userReport: Pick<SendUserReportEmailUseCase, "execute"> = {
+    execute: (command) => this.sendUserReport(command.to, command.templateData),
+  };
 
   async sendVerificationCode(
     to: string,

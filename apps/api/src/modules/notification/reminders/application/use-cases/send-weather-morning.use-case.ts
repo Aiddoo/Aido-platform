@@ -12,7 +12,7 @@ import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
 import {
@@ -22,14 +22,14 @@ import {
   createWeatherRescheduleAction,
 } from "../../../shared/application/messages/weather-notification.messages.js";
 import type { NotificationAction } from "../../../shared/application/ports/notification-draft.port.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { WeatherBriefingTodoReaderPort } from "../ports/weather-briefing-todo.reader.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
 import type {
-  WeatherReminderTodo,
-  WeatherReminderUser,
+  WeatherReminderTodoReadModel,
+  WeatherReminderUserReadModel,
 } from "../read-models/scheduler.read-model.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import {
@@ -49,7 +49,7 @@ interface WeatherMorningStrategyDependencies {
     "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
   >;
   readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
@@ -170,15 +170,15 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       });
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     return { sent: notifications.length, unavailable };
   }
 
   // 오늘·다음 자정은 시간대마다 정한다. 지금 현지 시각이 같아도 자정 전 서머타임 전환은 다를 수 있다
   async #listTodayTodos(
-    targets: readonly WeatherReminderUser[],
+    targets: readonly WeatherReminderUserReadModel[],
     now: Temporal.Instant,
-  ): Promise<WeatherReminderTodo[]> {
+  ): Promise<WeatherReminderTodoReadModel[]> {
     const targetsByTimezone = groupBy(targets, (user) => user.timezone);
     const todosByTimezone = await Promise.all(
       Object.entries(targetsByTimezone).map(([timezone, users]) => {

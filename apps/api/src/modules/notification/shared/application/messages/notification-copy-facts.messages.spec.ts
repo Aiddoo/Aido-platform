@@ -5,7 +5,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { SendWeeklyAchievementUseCase } from "../../../reminders/application/use-cases/send-weekly-achievement.use-case.js";
-import type { TimezoneContext } from "../../../reminders/domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../../reminders/domain/local-clock.domain-service.js";
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import {
   createEveningReminderNotificationMessage,
@@ -30,7 +30,7 @@ type WeeklyAchievementRecords = Parameters<
   WeeklyAchievementStrategyDependencies["weeklyAchievementWriter"]["execute"]
 >[0]["records"];
 type PublishedBatch = Parameters<
-  WeeklyAchievementStrategyDependencies["notificationPublisher"]["publishBatch"]
+  WeeklyAchievementStrategyDependencies["notificationPublisher"]["execute"]
 >[0];
 
 const locales: SupportedLocale[] = ["ko", "en"];
@@ -103,7 +103,7 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
         },
       },
       notificationPublisher: {
-        publishBatch: async (notifications) => {
+        execute: async (notifications) => {
           publishedBatches.push(notifications);
           return { count: notifications.length };
         },

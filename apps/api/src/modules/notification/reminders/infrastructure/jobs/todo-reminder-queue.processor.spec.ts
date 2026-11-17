@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -13,7 +13,7 @@ import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
+import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
@@ -35,7 +35,7 @@ const TODO_TITLE = "Test Todo";
 // 60분 단계가 막 울릴 시각: 할 일은 한 시간 뒤다
 const NOW = Temporal.Instant.from("2026-11-05T00:00:00Z");
 
-const activeTodo = (overrides: Partial<ActiveTodo> = {}): ActiveTodo => ({
+const activeTodo = (overrides: Partial<ActiveTodoReadModel> = {}): ActiveTodoReadModel => ({
   id: 1,
   title: TODO_TITLE,
   seriesId: null,
@@ -53,11 +53,13 @@ class BatchFailingPublisher extends RecordingNotificationPublisher {
     throw new Error("batch insert failed");
   }
 
-  override async publish(data: CreateNotificationData): Promise<InboxNotification | null> {
+  override async publishSingle(
+    data: CreateNotificationData,
+  ): Promise<InboxNotificationReadModel | null> {
     if (data.todoId != null && this.failingTodoIds.has(data.todoId)) {
       throw new Error(`todo ${data.todoId} failed`);
     }
-    return super.publish(data);
+    return super.publishSingle(data);
   }
 }
 
@@ -109,7 +111,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     processor = new TodoReminderQueueProcessor(
       reader,
       seriesOwnerDormancy,
-      publisher,
+      publisher.single,
+      publisher.batch,
       localeReader,
       jobQueue,
       clock,
@@ -183,7 +186,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         // Then
         expect(publisher.published).toEqual([
           {
-            mode: "publish",
+            mode: "single",
             data: expect.objectContaining({
               userId: USER_ID,
               type: "TODO_REMINDER",
@@ -226,7 +229,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([
         {
-          mode: "publishBatch",
+          mode: "batch",
           data: expect.objectContaining({
             userId: USER_ID,
             type: "TODO_REMINDER",
@@ -385,7 +388,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       await new TodoReminderQueueProcessor(
         reader,
         seriesOwnerDormancy,
-        alreadyNotified,
+        alreadyNotified.single,
+        alreadyNotified.batch,
         localeReader,
         jobQueue,
         clock,
@@ -415,8 +419,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       expect(failures.size).toBe(0);
       expect(reader.readCount).toBe(1);
       expect(publisher.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
-        ["publishBatch", 1],
-        ["publishBatch", 2],
+        ["batch", 1],
+        ["batch", 2],
       ]);
     });
 
@@ -443,7 +447,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       const batchProcessor = new TodoReminderQueueProcessor(
         reader,
         seriesOwnerDormancy,
-        failing,
+        failing.single,
+        failing.batch,
         localeReader,
         jobQueue,
         clock,
@@ -457,7 +462,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect([...failures.keys()]).toEqual(["job-2"]);
       expect(failing.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
-        ["publish", 1],
+        ["single", 1],
       ]);
     });
 

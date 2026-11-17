@@ -5,6 +5,7 @@ import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
@@ -89,7 +90,9 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
         afterCommitPublisher: { register: () => undefined },
         logger: new SilentLogger(),
       }),
-      sendNotificationWithDeduplication: { execute: async () => null },
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
+    });
+    const batchPublisher = new PublishNotificationBatchUseCase({
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(transactionHost),
@@ -115,6 +118,7 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       ),
       new StubTodoSeriesOwnerDormancy(),
       publisher,
+      batchPublisher,
       new StubNotificationRecipientLocaleReader(),
       jobQueue,
       new DateClock(),

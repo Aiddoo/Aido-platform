@@ -87,7 +87,7 @@ interface PushNotificationDeliveryServiceDependencies {
   readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "findPermissionStatusesByUsers">;
   readonly pushProvider: Pick<PushProviderPort, "sendBatch">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId" | "findByUserIds">;
-  readonly notificationCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
+  readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
@@ -117,7 +117,7 @@ export class DispatchPushNotificationUseCase {
         revokedTokens,
         this.#dependencies.clock.now(),
       );
-      await this.#dependencies.notificationCache.invalidatePushTokens(
+      await this.#dependencies.pushTokenCache.invalidatePushTokens(
         UserId.reconstitute(input.data.userId),
       );
       this.#dependencies.logger.warn({
@@ -247,7 +247,7 @@ export class DispatchPushNotificationUseCase {
       );
       await Promise.all(
         prepared.recipientUserIds.map((userId) =>
-          this.#dependencies.notificationCache.invalidatePushTokens(UserId.reconstitute(userId)),
+          this.#dependencies.pushTokenCache.invalidatePushTokens(UserId.reconstitute(userId)),
         ),
       );
       this.#dependencies.logger.warn({

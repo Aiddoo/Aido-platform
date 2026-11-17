@@ -17,7 +17,7 @@ export interface SendMilestoneNotificationInput {
 }
 
 interface SendMilestoneNotificationDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
@@ -62,7 +62,7 @@ export class SendMilestoneNotificationUseCase {
         milestone: input.milestone,
         locale,
       });
-      await this.#dependencies.notificationPublisher.publish({
+      await this.#dependencies.notificationPublisher.execute({
         userId: input.userId,
         type: "WEEKLY_ACHIEVEMENT",
         title: message.title,

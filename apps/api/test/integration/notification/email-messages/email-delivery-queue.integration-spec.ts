@@ -7,7 +7,8 @@ import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email-messages/i
 import { notificationEmailMessagesConfig } from "#api/modules/notification/email-messages/notification-email-messages.config";
 import {
   NotificationEmailMessagesModule,
-  SendTransactionalEmailUseCase,
+  SendCodeEmailUseCase,
+  SendUserReportEmailUseCase,
 } from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
@@ -58,7 +59,8 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let boss: PgBoss;
   let module: TestingModule;
-  let sender: SendTransactionalEmailUseCase;
+  let sendCodeEmail: SendCodeEmailUseCase;
+  let sendUserReportEmail: SendUserReportEmailUseCase;
   let http: StubResendHttp;
   const alerts = new RecordingOperationalAlert();
 
@@ -127,7 +129,8 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
       .useValue(FIXTURE_EMAIL_CONFIG)
       .compile();
     await module.init();
-    sender = module.get(SendTransactionalEmailUseCase);
+    sendCodeEmail = module.get(SendCodeEmailUseCase);
+    sendUserReportEmail = module.get(SendUserReportEmailUseCase);
   });
 
   afterAll(async () => {
@@ -149,11 +152,12 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     vi.stubGlobal("fetch", http.fetch);
 
     // When
-    const dispatch = await sender.sendVerificationCode(
-      recipient,
-      { code, expiryMinutes: 15 },
-      "ko",
-    );
+    const dispatch = await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes: 15 },
+      locale: "ko",
+    });
 
     // Then
     expect(dispatch).toEqual({ status: "queued" });
@@ -178,8 +182,8 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
     // When
     const results = await Promise.all([
-      sender.sendUserReport(recipient, reportOf("delivery-duplicate")),
-      sender.sendUserReport(recipient, reportOf("delivery-duplicate")),
+      sendUserReportEmail.execute({ to: recipient, templateData: reportOf("delivery-duplicate") }),
+      sendUserReportEmail.execute({ to: recipient, templateData: reportOf("delivery-duplicate") }),
     ]);
 
     // Then
@@ -203,7 +207,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     vi.stubGlobal("fetch", http.fetch);
 
     // When
-    await sender.sendUserReport(recipient, reportOf("delivery-retry"));
+    await sendUserReportEmail.execute({ to: recipient, templateData: reportOf("delivery-retry") });
 
     // Then
     await vi.waitFor(async () => {

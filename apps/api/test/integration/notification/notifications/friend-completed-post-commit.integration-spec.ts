@@ -7,7 +7,7 @@ import { NotificationHistoryReader } from "#api/modules/notification/notificatio
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
 import { NotificationDedupPort } from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { FinalizeBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/finalize-batch-notification.use-case";
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
 import { SendFriendCompletionNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/send-friend-completion-notifications.use-case";
@@ -91,7 +91,7 @@ class EventRecordingNotificationRepository extends InMemoryNotificationRepositor
 
   override async createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<InboxNotification[]> {
+  ): Promise<InboxNotificationReadModel[]> {
     this.#onCreateMany();
     return super.createManyNotificationsAndReturn(dataList);
   }

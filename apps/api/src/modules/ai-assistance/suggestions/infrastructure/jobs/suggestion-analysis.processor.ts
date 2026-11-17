@@ -31,7 +31,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisProcessor.name);
 
   readonly #analyzeSuggestions: Pick<AnalyzeAndCreateSuggestionsUseCase, "execute">;
-  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly #localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly #scheduler: Pick<SuggestionAnalysisScheduler, "dispatchAnalysis">;
   readonly #jobQueue: JobQueuePort;
@@ -41,7 +41,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     @Inject(AnalyzeAndCreateSuggestionsUseCase)
     analyzeSuggestions: Pick<AnalyzeAndCreateSuggestionsUseCase, "execute">,
     @Inject(PublishNotificationUseCase)
-    notificationPublisher: Pick<PublishNotificationUseCase, "publish">,
+    notificationPublisher: Pick<PublishNotificationUseCase, "execute">,
     @Inject(UserLocalePreferenceReaderPort)
     localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">,
     @Inject(SuggestionAnalysisScheduler)
@@ -117,7 +117,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 
   async #notify(userId: string, locale: SupportedLocale): Promise<void> {
     const message = createAiSuggestionNotificationMessage({ locale });
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId,
       type: "AI_SUGGESTION",
       purpose: "SCHEDULED_SERVICE",

@@ -17,7 +17,7 @@ import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
 } from "../../application/ports/notification-inbox.reader.port.js";
-import type { InboxNotification } from "../../application/read-models/inbox-notification.read-model.js";
+import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
 
 @Injectable()
 export class DrizzleNotificationReader
@@ -33,7 +33,7 @@ export class DrizzleNotificationReader
     return this.#transactionHost.tx;
   }
 
-  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]> {
+  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {
     const { userId, afterNotificationId, limit, unreadOnly, types } = query;
     const anchor =
       afterNotificationId == null

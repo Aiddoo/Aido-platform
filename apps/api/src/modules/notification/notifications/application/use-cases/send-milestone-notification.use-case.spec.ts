@@ -13,7 +13,7 @@ function setup(history = new InMemoryNotificationRepository()) {
   const notificationPublisher = new RecordingNotificationPublisher();
   const mutationLock = new RecordingMutationLock();
   const useCase = new SendMilestoneNotificationUseCase({
-    notificationPublisher,
+    notificationPublisher: notificationPublisher.single,
     recipientLocaleReader: { getLocale: async () => "ko" },
     notificationHistoryReader: history,
     unitOfWork: new ImmediateUnitOfWork(),
@@ -35,7 +35,7 @@ describe("SendMilestoneNotificationUseCase — 달성 마일스톤 알림", () =
     expect(mutationLock.acquiredKeys).toEqual([[MILESTONE_LOCK_KEY]]);
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publish",
+        mode: "single",
         data: expect.objectContaining({
           userId: "u1",
           type: "WEEKLY_ACHIEVEMENT",

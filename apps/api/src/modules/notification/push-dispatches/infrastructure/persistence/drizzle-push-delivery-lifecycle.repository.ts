@@ -25,7 +25,7 @@ import type {
   ReleasePushDeliveryInput,
   ReopenPushDeliveriesAfterClaimFailureInput,
 } from "../../application/ports/push-delivery-lifecycle.repository.port.js";
-import type { PushDeliveryPublication } from "../../application/read-models/push-delivery.read-model.js";
+import type { PushDeliveryPublicationReadModel } from "../../application/read-models/push-delivery.read-model.js";
 import { toAttemptOutcome } from "./push-delivery-attempt.mapper.js";
 import {
   matchesPublicationGeneration,
@@ -662,7 +662,9 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
   }
 
   /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
-  async #lockClaimedGenerations(publications: readonly PushDeliveryPublication[]): Promise<void> {
+  async #lockClaimedGenerations(
+    publications: readonly PushDeliveryPublicationReadModel[],
+  ): Promise<void> {
     await this.#db
       .select({ dispatchId: pushDispatchOutbox.dispatchId })
       .from(pushDispatchOutbox)
@@ -672,7 +674,7 @@ export class DrizzlePushDeliveryLifecycleRepository implements PushDeliveryLifec
   }
 
   async #markOutboxesTerminal(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     now: Temporal.Instant,
   ): Promise<void> {
     if (publications.length === 0) {

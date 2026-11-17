@@ -4,13 +4,13 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
-import type { PersistedBatchNotificationResult } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
+import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import type { NotificationHistoryReader } from "../notification-history.reader.js";
+import { DuplicateNotificationError } from "../notifications.errors.js";
 import type { FindAlreadyNotifiedUserIdsQuery } from "../ports/notification-history.reader.port.js";
-import { DuplicateNotificationError } from "../ports/notification.repository.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case.js";
@@ -87,7 +87,9 @@ class RecordingPersistBatch implements Pick<PersistBatchNotificationUseCase, "ex
     this.#events = events;
   }
 
-  async execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
+  async execute(
+    dataList: CreateNotificationData[],
+  ): Promise<PersistedBatchNotificationResultReadModel> {
     this.#events.push("persist");
     this.persisted.push(dataList);
     return { count: dataList.length, sourceData: dataList };
@@ -101,7 +103,7 @@ class RecordingFinalizeBatch implements Pick<FinalizeBatchNotificationUseCase, "
     this.#events = events;
   }
 
-  async execute(input: PersistedBatchNotificationResult): Promise<{ count: number }> {
+  async execute(input: PersistedBatchNotificationResultReadModel): Promise<{ count: number }> {
     this.#events.push("finalize-post-commit");
     return { count: input.count };
   }

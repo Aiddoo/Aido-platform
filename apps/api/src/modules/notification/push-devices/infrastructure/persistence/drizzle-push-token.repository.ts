@@ -14,11 +14,11 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   type FindPushTokensParams,
   type KeepPushTokenData,
-  PushTokenRegistrationConflictError,
   type PushTokenRepositoryPort,
   type RegisterPushTokenData,
 } from "../../application/ports/push-token.repository.port.js";
-import type { PushTokenRecord } from "../../application/read-models/push-token.read-model.js";
+import { pushTokenRegistrationConflict } from "../../application/push-devices.errors.js";
+import type { PushTokenReadModel } from "../../application/read-models/push-token.read-model.js";
 import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
 
 const PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT = "PushToken_token_key";
@@ -62,7 +62,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     return { userIds: released.map((row) => row.userId) };
   }
 
-  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
+  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenReadModel> {
     const {
       userId,
       token,
@@ -106,7 +106,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
         isUniqueConstraintViolation(error) &&
         databaseConstraint(error) === PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT
       ) {
-        throw new PushTokenRegistrationConflictError({ cause: error });
+        throw pushTokenRegistrationConflict(error);
       }
       throw error;
     }
@@ -128,7 +128,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     return { hasActiveToken: kept.some((row) => row.isActive) };
   }
 
-  findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
+  findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return this.#db
       .select()
       .from(pushToken)
@@ -141,7 +141,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .orderBy(desc(pushToken.updatedAt));
   }
 
-  findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenRecord[]> {
+  findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]> {
     return this.#db
       .select()
       .from(pushToken)

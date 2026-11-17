@@ -18,9 +18,10 @@ import { decideRetentionStage } from "../../domain/retention-stage.domain-servic
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
 import type {
-  RetentionStageCandidate,
-  RetentionStageCursor,
+  RetentionStageCandidateReadModel,
+  RetentionStageCursorReadModel,
 } from "../read-models/retention-stage-candidate.read-model.js";
+import { invalidRetentionNotificationSelection } from "../retention-assignments.errors.js";
 import { RetentionAssignmentLogEvent } from "../retention-assignments.log-events.js";
 
 export const RETENTION_STAGE_SWEEP = {
@@ -38,7 +39,7 @@ interface ProcessRetentionStagesDependencies {
     | "markStageSkipped"
     | "recordD7Result"
   >;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
@@ -57,7 +58,7 @@ export class ProcessRetentionStagesUseCase {
       return;
     }
     const dueAt = this.#now();
-    let after: RetentionStageCursor | undefined;
+    let after: RetentionStageCursorReadModel | undefined;
     for (let batch = 0; batch < RETENTION_STAGE_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
       const candidates = await this.#dependencies.repository.findDueStages({
         dueAt,
@@ -76,7 +77,7 @@ export class ProcessRetentionStagesUseCase {
     }
   }
 
-  async #processSafely(candidate: RetentionStageCandidate): Promise<void> {
+  async #processSafely(candidate: RetentionStageCandidateReadModel): Promise<void> {
     try {
       await this.#processCandidate(candidate, this.#now());
     } catch {
@@ -93,7 +94,7 @@ export class ProcessRetentionStagesUseCase {
   }
 
   async #processCandidate(
-    candidate: RetentionStageCandidate,
+    candidate: RetentionStageCandidateReadModel,
     now: Temporal.Instant,
   ): Promise<void> {
     const { lastActiveAt, startedAt, timezone } = candidate;
@@ -177,7 +178,7 @@ export class ProcessRetentionStagesUseCase {
       if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId, now))) {
         return;
       }
-      const notification = await this.#dependencies.notificationPublisher.publish({
+      const notification = await this.#dependencies.notificationPublisher.execute({
         userId: candidate.userId,
         type: "SYSTEM_NOTICE",
         title: message.title,
@@ -210,7 +211,7 @@ export class ProcessRetentionStagesUseCase {
 }
 
 function resolveRetentionNotificationSelection(
-  stage: RetentionStageCandidate["stage"],
+  stage: RetentionStageCandidateReadModel["stage"],
   variantId: string,
 ): RetentionNotificationCopySelection {
   if (stage === "D0" && variantId === "d0_no_todo") {
@@ -226,5 +227,5 @@ function resolveRetentionNotificationSelection(
     return { stage, copyKey: variantId };
   }
 
-  throw new Error(`Invalid retention notification selection: ${stage}:${variantId}`);
+  throw invalidRetentionNotificationSelection(stage, variantId);
 }

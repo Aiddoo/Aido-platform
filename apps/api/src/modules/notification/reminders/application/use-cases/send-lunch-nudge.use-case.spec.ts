@@ -32,7 +32,7 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
     strategy = new SendLunchNudgeUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });

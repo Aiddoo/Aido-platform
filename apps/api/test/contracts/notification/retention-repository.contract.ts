@@ -1,6 +1,6 @@
 import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
-import type { RetentionStageCandidate } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
+import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -25,7 +25,10 @@ const D0_ONLY_DUE_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
 const ALL_DUE_AT = Temporal.Instant.from("2026-08-15T00:00:00.000Z");
 const PROCESSED_AT = Temporal.Instant.from("2026-07-15T03:00:00.000Z");
 
-function byCreation(left: RetentionStageCandidate, right: RetentionStageCandidate): number {
+function byCreation(
+  left: RetentionStageCandidateReadModel,
+  right: RetentionStageCandidateReadModel,
+): number {
   return (
     Temporal.Instant.compare(left.stageCreatedAt, right.stageCreatedAt) ||
     left.stageId.localeCompare(right.stageId)
@@ -35,11 +38,11 @@ function byCreation(left: RetentionStageCandidate, right: RetentionStageCandidat
 async function dueStagesOf(
   repository: RetentionRepositoryPort,
   dueAt: Temporal.Instant = ALL_DUE_AT,
-): Promise<RetentionStageCandidate[]> {
+): Promise<RetentionStageCandidateReadModel[]> {
   return repository.findDueStages({ dueAt, limit: 200 });
 }
 
-function stageNamesOf(candidates: readonly RetentionStageCandidate[]): string[] {
+function stageNamesOf(candidates: readonly RetentionStageCandidateReadModel[]): string[] {
   return candidates.map(({ stage }) => stage).toSorted();
 }
 

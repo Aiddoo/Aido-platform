@@ -5,15 +5,15 @@ import { createNotificationDraftFixture } from "#test/fixtures/notification/noti
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import type {
   NotificationDedupPort,
-  NotificationDedupRecord,
+  NotificationDedupEntry,
 } from "../ports/notification-dedup.port.js";
 import { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 
 class RecordingNotificationDedup implements Pick<NotificationDedupPort, "recordNotifiedUsers"> {
-  readonly records: NotificationDedupRecord[] = [];
+  readonly records: NotificationDedupEntry[] = [];
   failure: Error | null = null;
 
-  async recordNotifiedUsers(records: NotificationDedupRecord[]): Promise<void> {
+  async recordNotifiedUsers(records: NotificationDedupEntry[]): Promise<void> {
     if (this.failure != null) {
       throw this.failure;
     }

@@ -135,13 +135,13 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     const publisher = harness.module.get(PublishNotificationUseCase);
 
     // When
-    await publisher.publish({
+    await publisher.execute({
       userId: recipient.id,
       type: "SYSTEM_NOTICE",
       title: "결제 확인",
       body: "결제 수단을 확인해 주세요",
     });
-    await publisher.publish({
+    await publisher.execute({
       userId: recipient.id,
       type: "SYSTEM_NOTICE",
       title: "새 기능",

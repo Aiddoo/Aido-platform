@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumGrantEndingNotificationMessage,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
@@ -13,11 +13,11 @@ import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending
 
 @Injectable()
 export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
-  readonly #notificationPublisher: PublishNotificationUseCase;
+  readonly #notificationPublisher: PublishNotificationBatchUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
   ) {
@@ -30,7 +30,7 @@ export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
       return;
     }
     const locales = await this.#localeReader.getLocales(notices.map((notice) => notice.userId));
-    await this.#notificationPublisher.publishBatch(
+    await this.#notificationPublisher.execute(
       notices.map((notice) => {
         const message = createPremiumGrantEndingNotificationMessage({
           locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,

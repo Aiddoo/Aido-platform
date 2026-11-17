@@ -12,10 +12,10 @@ import { createNotificationDraftFixture } from "#test/fixtures/notification/noti
 import { createPushDeviceFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
-import type { PushTokenRecord } from "../../../push-devices/application/read-models/push-token.read-model.js";
+import type { PushTokenReadModel } from "../../../push-devices/application/read-models/push-token.read-model.js";
 import type { PushDevice } from "../../../push-devices/domain/push-device.aggregate.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
-import { RetryablePushProviderTransportError } from "../ports/push-provider.port.js";
+import { RetryablePushProviderTransportError } from "../push-dispatches.errors.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
@@ -26,7 +26,7 @@ function pushToken(input: {
   token: string;
   payloadVersion: number;
   appVersion: string | null;
-}): PushTokenRecord {
+}): PushTokenReadModel {
   tokenSequence += 1;
   return createPushTokenFixture({
     id: tokenSequence,
@@ -72,24 +72,24 @@ function reportedDevice(input: {
 function createDispatchUseCase(
   options: {
     readonly devices?: readonly PushDevice[];
-    readonly tokens?: readonly PushTokenRecord[];
+    readonly tokens?: readonly PushTokenReadModel[];
     readonly activeTokens?: Iterable<readonly [string, readonly string[]]>;
   } = {},
 ) {
   const pushTokenRepository = new InMemoryPushTokenRepository(options.tokens);
   const activePushTokenReader = new StubActivePushTokenReader(options.activeTokens);
   const pushProvider = new FakePushProvider();
-  const notificationCache = new RecordingPushTokenCache();
+  const pushTokenCache = new RecordingPushTokenCache();
   const service = new DispatchPushNotificationUseCase({
     pushTokenRepository,
     pushDeviceRepository: new InMemoryPushDeviceRepository(options.devices),
     pushProvider,
     activePushTokenReader,
-    notificationCache,
+    pushTokenCache,
     clock: new FixedClock(NOW),
     logger: new SilentLogger(),
   });
-  return { service, pushTokenRepository, activePushTokenReader, pushProvider, notificationCache };
+  return { service, pushTokenRepository, activePushTokenReader, pushProvider, pushTokenCache };
 }
 
 async function activeTokensOf(
@@ -379,19 +379,17 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
 
   it("단건 provider가 invalid token을 반환하면 저장소 비활성화와 해당 사용자 캐시 무효화를 완료한다", async () => {
     // Given
-    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
-      {
-        activeTokens: [["user-1", ["invalid-token"]]],
-        tokens: [
-          pushToken({
-            userId: "user-1",
-            token: "invalid-token",
-            payloadVersion: 2,
-            appVersion: null,
-          }),
-        ],
-      },
-    );
+    const { service, pushTokenRepository, pushProvider, pushTokenCache } = createDispatchUseCase({
+      activeTokens: [["user-1", ["invalid-token"]]],
+      tokens: [
+        pushToken({
+          userId: "user-1",
+          token: "invalid-token",
+          payloadVersion: 2,
+          appVersion: null,
+        }),
+      ],
+    });
     pushProvider.nextResults = async (payloads) =>
       payloads.map((payload) => ({
         token: payload.token,
@@ -423,7 +421,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     ]);
     expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([]);
     expect(pushTokenRepository.tokenOf("user-1", "device-invalid-token")?.updatedAt).toEqual(NOW);
-    expect(notificationCache.invalidatedPushTokenUserIds).toEqual(["user-1"]);
+    expect(pushTokenCache.invalidatedPushTokenUserIds).toEqual(["user-1"]);
   });
 
   it("배치는 generic·feature 토큰을 각 계약으로 선택하고 dispatch별 결과와 skip 이유를 보존한다", async () => {
@@ -499,28 +497,26 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
 
   it("배치 invalid token은 기존 계약대로 배치 수신자 전체 token cache를 무효화한다", async () => {
     // Given
-    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
-      {
-        activeTokens: [
-          ["user-1", ["invalid-token"]],
-          ["user-2", ["valid-token"]],
-        ],
-        tokens: [
-          pushToken({
-            userId: "user-1",
-            token: "invalid-token",
-            payloadVersion: 2,
-            appVersion: null,
-          }),
-          pushToken({
-            userId: "user-2",
-            token: "valid-token",
-            payloadVersion: 2,
-            appVersion: null,
-          }),
-        ],
-      },
-    );
+    const { service, pushTokenRepository, pushProvider, pushTokenCache } = createDispatchUseCase({
+      activeTokens: [
+        ["user-1", ["invalid-token"]],
+        ["user-2", ["valid-token"]],
+      ],
+      tokens: [
+        pushToken({
+          userId: "user-1",
+          token: "invalid-token",
+          payloadVersion: 2,
+          appVersion: null,
+        }),
+        pushToken({
+          userId: "user-2",
+          token: "valid-token",
+          payloadVersion: 2,
+          appVersion: null,
+        }),
+      ],
+    });
     pushProvider.nextResults = async () => [
       { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
       { token: "valid-token", status: "accepted", ticketId: "ticket-valid" },
@@ -540,24 +536,22 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     expect(await activeTokensOf(pushTokenRepository, ["user-1", "user-2"])).toEqual([
       "valid-token",
     ]);
-    expect(notificationCache.invalidatedPushTokenUserIds).toEqual(["user-1", "user-2"]);
+    expect(pushTokenCache.invalidatedPushTokenUserIds).toEqual(["user-1", "user-2"]);
   });
 
   it("배치 provider transport 오류는 token 상태를 변경하지 않고 같은 오류를 재전파한다", async () => {
     // Given
-    const { service, pushTokenRepository, pushProvider, notificationCache } = createDispatchUseCase(
-      {
-        activeTokens: [["user-1", ["ExponentPushToken[user-1]"]]],
-        tokens: [
-          pushToken({
-            userId: "user-1",
-            token: "ExponentPushToken[user-1]",
-            payloadVersion: 2,
-            appVersion: null,
-          }),
-        ],
-      },
-    );
+    const { service, pushTokenRepository, pushProvider, pushTokenCache } = createDispatchUseCase({
+      activeTokens: [["user-1", ["ExponentPushToken[user-1]"]]],
+      tokens: [
+        pushToken({
+          userId: "user-1",
+          token: "ExponentPushToken[user-1]",
+          payloadVersion: 2,
+          appVersion: null,
+        }),
+      ],
+    });
     const prepared = await service.prepareBatchDelivery([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
     ]);
@@ -586,6 +580,6 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([
       "ExponentPushToken[user-1]",
     ]);
-    expect(notificationCache.invalidatedPushTokenUserIds).toEqual([]);
+    expect(pushTokenCache.invalidatedPushTokenUserIds).toEqual([]);
   });
 });

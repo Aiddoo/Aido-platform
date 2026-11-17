@@ -2,25 +2,29 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
-import type { PersistedBatchNotificationResult } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
+import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 import { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";
 
 class StubPersistBatch implements Pick<PersistBatchNotificationUseCase, "execute"> {
-  result: (dataList: CreateNotificationData[]) => Promise<PersistedBatchNotificationResult> =
-    async (dataList) => ({ count: dataList.length, sourceData: dataList });
+  result: (
+    dataList: CreateNotificationData[],
+  ) => Promise<PersistedBatchNotificationResultReadModel> = async (dataList) => ({
+    count: dataList.length,
+    sourceData: dataList,
+  });
 
-  execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
+  execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResultReadModel> {
     return this.result(dataList);
   }
 }
 
 class RecordingFinalizeBatch implements Pick<FinalizeBatchNotificationUseCase, "execute"> {
-  readonly finalized: PersistedBatchNotificationResult[] = [];
+  readonly finalized: PersistedBatchNotificationResultReadModel[] = [];
 
-  async execute(input: PersistedBatchNotificationResult): Promise<{ count: number }> {
+  async execute(input: PersistedBatchNotificationResultReadModel): Promise<{ count: number }> {
     this.finalized.push(input);
     return { count: input.count };
   }

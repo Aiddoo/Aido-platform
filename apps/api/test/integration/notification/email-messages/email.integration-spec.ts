@@ -6,7 +6,10 @@ import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email-mes
 import { EMAIL_DELIVERY_QUEUE } from "#api/modules/notification/email-messages/infrastructure/jobs/email-delivery.queue";
 import { notificationEmailMessagesConfig } from "#api/modules/notification/email-messages/notification-email-messages.config";
 import { NotificationEmailMessagesModule } from "#api/modules/notification/email-messages/notification-email-messages.module";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
+import {
+  SendCodeEmailUseCase,
+  SendInquiryEmailUseCase,
+} from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
@@ -70,7 +73,8 @@ class PlatformStubModule {}
 
 describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMessagesModule 배선 + @nestjs/mail ResendTransport + HTTP fixture", () => {
   let module: TestingModule;
-  let sender: SendTransactionalEmailUseCase;
+  let sendCodeEmail: SendCodeEmailUseCase;
+  let sendInquiryEmail: SendInquiryEmailUseCase;
   let processor: EmailDeliveryQueueProcessor;
   let http: StubResendHttp;
 
@@ -86,7 +90,8 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
       .overrideProvider(notificationEmailMessagesConfig.KEY)
       .useValue(FIXTURE_EMAIL_CONFIG)
       .compile();
-    sender = module.get(SendTransactionalEmailUseCase);
+    sendCodeEmail = module.get(SendCodeEmailUseCase);
+    sendInquiryEmail = module.get(SendInquiryEmailUseCase);
     processor = module.get(EmailDeliveryQueueProcessor);
   });
 
@@ -119,7 +124,12 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
     givenResponses([]);
 
     // When
-    const result = await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
+    const result = await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // Then
     expect(result).toEqual({ status: "queued" });
@@ -133,7 +143,12 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
   it("worker가 설정·인증·메일 클래스로 렌더한 본문을 실제 HTTP 요청에 전달한다", async () => {
     // Given
     givenResponses([success]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
+    await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // When
     await runQueuedJob();
@@ -155,7 +170,12 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
   it("일시 장애는 큐 재시도를 위해 던지고 같은 멱등 키·본문으로 다시 보내 성공한다", async () => {
     // Given
     givenResponses([unavailable, success]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
+    await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // When
     const firstAttempt = runQueuedJob(1);
@@ -174,7 +194,12 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
   it("검증 거절은 재시도 없이 예산을 돌려주고 운영 경보를 올린다", async () => {
     // Given
     givenResponses([resendResponseFixture("send.validation-error.json", 422)]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
+    await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // When
     await runQueuedJob();
@@ -191,7 +216,12 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
   it("재시도를 다 쓴 마지막 시도는 던지지 않고 경보를 올려 잡이 끝난다", async () => {
     // Given
     givenResponses([unavailable]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
+    await sendCodeEmail.execute({
+      to: recipient,
+      kind: "verification",
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // When
     await runQueuedJob(5);
@@ -203,12 +233,17 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
   });
 
   it.each([
-    ["비밀번호 재설정", "sendPasswordResetCode", "[아이두] 비밀번호 재설정 코드"],
-    ["비밀번호 설정", "sendPasswordSetupCode", "[아이두] 비밀번호 설정 인증 코드"],
-  ] as const)("%s 템플릿을 요청에 전달한다", async (_description, method, subject) => {
+    ["비밀번호 재설정", "password-reset", "[아이두] 비밀번호 재설정 코드"],
+    ["비밀번호 설정", "password-setup", "[아이두] 비밀번호 설정 인증 코드"],
+  ] as const)("%s 템플릿을 요청에 전달한다", async (_description, kind, subject) => {
     // Given
     givenResponses([success]);
-    await sender[method](recipient, { code, expiryMinutes }, "ko");
+    await sendCodeEmail.execute({
+      to: recipient,
+      kind,
+      templateData: { code, expiryMinutes },
+      locale: "ko",
+    });
 
     // When
     await runQueuedJob();
@@ -237,7 +272,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
       givenResponses([success]);
 
       // When
-      const result = await sender.sendInquiry("support@example.com", inquiry);
+      const result = await sendInquiryEmail.execute({
+        to: "support@example.com",
+        templateData: inquiry,
+      });
 
       // Then
       expect(result).toEqual({ status: "sent" });
@@ -255,7 +293,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
       givenResponses([unavailable]);
 
       // When
-      const result = await sender.sendInquiry("support@example.com", inquiry);
+      const result = await sendInquiryEmail.execute({
+        to: "support@example.com",
+        templateData: inquiry,
+      });
 
       // Then
       expect(result).toEqual({ status: "rejected", reason: "delivery_failed" });

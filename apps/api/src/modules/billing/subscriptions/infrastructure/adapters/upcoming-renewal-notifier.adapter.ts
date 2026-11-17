@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumRenewalUpcomingNotificationMessage,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
 import {
@@ -19,12 +19,12 @@ import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice
 
 @Injectable()
 export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPort {
-  readonly #notificationPublisher: PublishNotificationUseCase;
+  readonly #notificationPublisher: PublishNotificationBatchUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(NotificationRecipientTimezoneReaderPort)
@@ -44,7 +44,7 @@ export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPo
       this.#localeReader.getLocales(userIds),
       this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
     ]);
-    await this.#notificationPublisher.publishBatch(
+    await this.#notificationPublisher.execute(
       notices.map((notice) => {
         const message = createPremiumRenewalUpcomingNotificationMessage({
           locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,

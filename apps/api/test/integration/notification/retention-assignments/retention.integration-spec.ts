@@ -402,7 +402,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const publisher = new RecordingNotificationPublisher();
     const sweep = new ProcessRetentionStagesUseCase({
       repository,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.single,
       config: { enabled: true },
       unitOfWork,
       clock,

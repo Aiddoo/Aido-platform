@@ -8,7 +8,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
 
 const HOUR_MS = 60 * 60_000;
@@ -63,7 +63,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     weatherReports = new StubReminderWeatherReportReader();
     strategy = new SendWeatherEveningUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
       clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),

@@ -1,9 +1,12 @@
 export { NotificationEmailMessagesModule } from "./notification-email-messages.module.js";
+export type { EmailDispatch } from "./application/use-cases/queue-email-message.use-case.js";
+export { SendCodeEmailUseCase } from "./application/use-cases/send-code-email.use-case.js";
 export {
-  SendTransactionalEmailUseCase,
-  type EmailDispatch,
   type EmailSendResult,
-} from "./application/use-cases/send-transactional-email.use-case.js";
+  SendInquiryEmailUseCase,
+} from "./application/use-cases/send-inquiry-email.use-case.js";
+export { SendUserReportEmailUseCase } from "./application/use-cases/send-user-report-email.use-case.js";
+export type { CodeEmailKind } from "./domain/email-delivery.constants.js";
 export type {
   InquiryTemplateData,
   UserReportTemplateData,

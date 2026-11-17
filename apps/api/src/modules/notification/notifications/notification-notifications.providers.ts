@@ -30,6 +30,8 @@ import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-al
 import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened.use-case.js";
 import { MarkNotificationReadUseCase } from "./application/use-cases/mark-notification-read.use-case.js";
 import { PersistBatchNotificationUseCase } from "./application/use-cases/persist-batch-notification.use-case.js";
+import { PublishDeduplicatedNotificationUseCase } from "./application/use-cases/publish-deduplicated-notification.use-case.js";
+import { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
 import { ReconfirmMarketingConsentsUseCase } from "./application/use-cases/reconfirm-marketing-consents.use-case.js";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification.use-case.js";
@@ -135,27 +137,33 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(PublishNotificationUseCase, {
     sendNotification: SendNotificationUseCase,
+    todoTargetReader: NotificationTodoTargetReaderPort,
+  }),
+  provideUseCase(PublishDeduplicatedNotificationUseCase, {
     sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
+    todoTargetReader: NotificationTodoTargetReaderPort,
+  }),
+  provideUseCase(PublishNotificationBatchUseCase, {
     sendBatchNotification: SendBatchNotificationUseCase,
     todoTargetReader: NotificationTodoTargetReaderPort,
   }),
   provideUseCase(SendFollowRequestNotificationUseCase, {
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishDeduplicatedNotificationUseCase,
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     logger: loggerFor(SendFollowRequestNotificationUseCase),
   }),
   provideUseCase(SendFollowAcceptedNotificationUseCase, {
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishDeduplicatedNotificationUseCase,
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     logger: loggerFor(SendFollowAcceptedNotificationUseCase),
   }),
   provideUseCase(SendNudgeNotificationUseCase, {
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishDeduplicatedNotificationUseCase,
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     logger: loggerFor(SendNudgeNotificationUseCase),
   }),
   provideUseCase(SendCheerNotificationUseCase, {
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishDeduplicatedNotificationUseCase,
     recipientLocaleReader: NotificationRecipientLocaleReaderPort,
     logger: loggerFor(SendCheerNotificationUseCase),
   }),
@@ -186,7 +194,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     localeReader: NotificationRecipientLocaleReaderPort,
     timezoneReader: NotificationRecipientTimezoneReaderPort,
     quietHoursReader: PushQuietHoursReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     unitOfWork: UnitOfWorkPort,
     logger: loggerFor(ReconfirmMarketingConsentsUseCase),
   }),

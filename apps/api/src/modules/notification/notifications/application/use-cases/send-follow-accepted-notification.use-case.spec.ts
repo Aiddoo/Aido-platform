@@ -9,7 +9,7 @@ describe("SendFollowAcceptedNotificationUseCase — 친구 요청 수락 알림"
     // Given
     const notificationPublisher = new RecordingNotificationPublisher();
     const useCase = new SendFollowAcceptedNotificationUseCase({
-      notificationPublisher,
+      notificationPublisher: notificationPublisher.deduplicated,
       recipientLocaleReader: { getLocale: async () => "ko" },
       logger: new SilentLogger(),
     });
@@ -20,7 +20,7 @@ describe("SendFollowAcceptedNotificationUseCase — 친구 요청 수락 알림"
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publishWithDeduplication",
+        mode: "deduplicated",
         data: expect.objectContaining({
           userId: "u1",
           type: "FOLLOW_ACCEPTED",

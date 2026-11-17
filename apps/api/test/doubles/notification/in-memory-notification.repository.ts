@@ -1,5 +1,6 @@
 import { isPlainObject, uniq } from "es-toolkit";
 
+import { duplicateNotification } from "#api/modules/notification/notifications/application/notifications.errors";
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
@@ -9,11 +10,8 @@ import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
 } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
-import {
-  DuplicateNotificationError,
-  NotificationRepositoryPort,
-} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
@@ -23,21 +21,27 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
-function compareListOrder(left: InboxNotification, right: InboxNotification): number {
+function compareListOrder(
+  left: InboxNotificationReadModel,
+  right: InboxNotificationReadModel,
+): number {
   return Temporal.Instant.compare(right.createdAt, left.createdAt) || right.id - left.id;
 }
 
-function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | undefined) {
+function isOfTypes(
+  row: InboxNotificationReadModel,
+  types: readonly NotificationType[] | undefined,
+) {
   return types == null || types.includes(row.type);
 }
 
-function metadataField(row: InboxNotification, key: string): unknown {
+function metadataField(row: InboxNotificationReadModel, key: string): unknown {
   return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
 }
 
 // Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
 function reminderOccurrenceKeyOf(
-  row: InboxNotification,
+  row: InboxNotificationReadModel,
   occurrenceKey: string | null | undefined,
 ): string | null {
   if (row.type !== "TODO_REMINDER" || row.todoId == null) {
@@ -51,12 +55,15 @@ export class InMemoryNotificationRepository
   extends NotificationRepositoryPort
   implements NotificationInboxReaderPort, NotificationHistoryReaderPort
 {
-  readonly #rows = new Map<number, InboxNotification>();
+  readonly #rows = new Map<number, InboxNotificationReadModel>();
   readonly #reminderOccurrenceKeys = new Set<string>();
   readonly #now: () => Date;
   #sequence: number;
 
-  constructor(rows: readonly InboxNotification[] = [], now: () => Date = () => new Date()) {
+  constructor(
+    rows: readonly InboxNotificationReadModel[] = [],
+    now: () => Date = () => new Date(),
+  ) {
     super();
     for (const row of rows) {
       this.#rows.set(row.id, row);
@@ -69,11 +76,11 @@ export class InMemoryNotificationRepository
     return this.#rows.size;
   }
 
-  rowOf(id: number): InboxNotification | undefined {
+  rowOf(id: number): InboxNotificationReadModel | undefined {
     return this.#rows.get(id);
   }
 
-  rows(): InboxNotification[] {
+  rows(): InboxNotificationReadModel[] {
     return [...this.#rows.values()].toSorted((left, right) => left.id - right.id);
   }
 
@@ -97,18 +104,18 @@ export class InMemoryNotificationRepository
     });
   }
 
-  async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
+  async createNotification(data: CreateNotificationData): Promise<InboxNotificationReadModel> {
     const created = this.#insert(data);
     if (created == null) {
-      throw new DuplicateNotificationError();
+      throw duplicateNotification();
     }
     return created;
   }
 
   async createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<InboxNotification[]> {
-    const created: InboxNotification[] = [];
+  ): Promise<InboxNotificationReadModel[]> {
+    const created: InboxNotificationReadModel[] = [];
     for (const data of dataList) {
       const row = this.#insert(data);
       if (row != null) {
@@ -170,7 +177,7 @@ export class InMemoryNotificationRepository
     return { count: deleted.length, affectedUserIds: uniq(deleted.map((row) => row.userId)) };
   }
 
-  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]> {
+  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {
     const visible = [...this.#rows.values()]
       .filter(
         (row) =>
@@ -238,8 +245,8 @@ export class InMemoryNotificationRepository
   }
 
   // 유니크 인덱스에 걸리면 저장하지 않고 null을 준다
-  #insert(data: CreateNotificationData): InboxNotification | null {
-    const row: InboxNotification = {
+  #insert(data: CreateNotificationData): InboxNotificationReadModel | null {
+    const row: InboxNotificationReadModel = {
       id: this.#sequence + 1,
       userId: data.userId,
       type: data.type,

@@ -1,4 +1,4 @@
-import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 
 export const NOTIFICATION_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
@@ -8,8 +8,8 @@ export const NOTIFICATION_FIXTURE_ACTOR_ID = "clz7x5p8k0013qz0z8z8z8z8z";
 
 // 알림함 행(Notification 테이블 한 줄)과 같은 모양이다
 export function createInboxNotificationFixture(
-  overrides: Partial<InboxNotification> = {},
-): InboxNotification {
+  overrides: Partial<InboxNotificationReadModel> = {},
+): InboxNotificationReadModel {
   return {
     id: 1,
     userId: NOTIFICATION_FIXTURE_USER_ID,

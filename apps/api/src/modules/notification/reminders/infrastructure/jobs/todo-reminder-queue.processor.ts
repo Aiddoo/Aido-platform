@@ -14,7 +14,10 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { PublishNotificationUseCase } from "../../../notifications/notification-notifications.public.js";
+import {
+  PublishNotificationBatchUseCase,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
 import { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import {
   createTodoReminderNotificationMessage,
@@ -25,7 +28,7 @@ import type { CreateNotificationData } from "../../../shared/application/ports/n
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
-import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
+import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import { REMINDER_LATE_LIMIT_MINUTES } from "../../domain/notification-schedule.domain-service.js";
@@ -55,7 +58,7 @@ const LATE_SKIP_COUNTER_KEY = "late-skip";
 
 // 묶음 작업이 함께 쓰는 조회 결과. 휴면은 반복 회차가 있을 때만 소유자마다 한 번 묻는다
 interface ReminderBatchContext {
-  readonly todos: ReadonlyMap<number, ActiveTodo>;
+  readonly todos: ReadonlyMap<number, ActiveTodoReadModel>;
   readonly locales: ReadonlyMap<string, SupportedLocale>;
   readonly dormantSince: (userId: string) => Promise<string | null>;
 }
@@ -73,7 +76,8 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
 
   readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodos">;
   readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
-  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "publish" | "publishBatch">;
+  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
+  readonly #notificationBatchPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly #recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">;
   readonly #clock: Pick<ClockPort, "now">;
@@ -84,7 +88,9 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     @Inject(TodoSeriesOwnerDormancyPort)
     seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">,
     @Inject(PublishNotificationUseCase)
-    notificationPublisher: Pick<PublishNotificationUseCase, "publish" | "publishBatch">,
+    notificationPublisher: Pick<PublishNotificationUseCase, "execute">,
+    @Inject(PublishNotificationBatchUseCase)
+    notificationBatchPublisher: Pick<PublishNotificationBatchUseCase, "execute">,
     @Inject(NotificationRecipientLocaleReaderPort)
     recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">,
     @Inject(JobQueuePort) jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">,
@@ -94,6 +100,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     this.#reader = reader;
     this.#seriesOwnerDormancy = seriesOwnerDormancy;
     this.#notificationPublisher = notificationPublisher;
+    this.#notificationBatchPublisher = notificationBatchPublisher;
     this.#recipientLocaleReader = recipientLocaleReader;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
@@ -243,7 +250,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
     try {
       // 알림만 함께 넣고 발송은 단건 경로로 둬 설정 행이 없는 사용자도 단건 publish처럼 기본 설정으로 받는다
-      const { count } = await this.#notificationPublisher.publishBatch(
+      const { count } = await this.#notificationBatchPublisher.execute(
         drafts.map((draft) => draft.notification),
         { deliveryMode: "SINGLE" },
       );
@@ -271,7 +278,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
 
   async #publishOne({ job, notification }: ReminderDraft): Promise<void> {
     const { todoId, userId, stageLabel } = job;
-    const published = await this.#notificationPublisher.publish(notification);
+    const published = await this.#notificationPublisher.execute(notification);
     if (published == null) {
       this.#logger.debug({
         event: NotificationJobLogEvent.JOB_SKIPPED,
@@ -347,7 +354,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       },
     });
     // 리마인더와 같은 종류·목적으로 보내 기존 알림 동의를 그대로 따른다. 탭하면 그 할 일로 간다.
-    await this.#notificationPublisher.publish({
+    await this.#notificationPublisher.execute({
       userId,
       type: "TODO_REMINDER",
       purpose: "SCHEDULED_SERVICE",

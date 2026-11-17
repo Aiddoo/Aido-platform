@@ -1,6 +1,7 @@
 export { NotificationNotificationsModule } from "./notification-notifications.module.js";
 export { NotificationHistoryReader } from "./application/notification-history.reader.js";
 export { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
+export { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 export { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
 export { NotificationId } from "./domain/notification-id.vo.js";
 export type { CreateNotificationData } from "../shared/application/ports/notification-draft.port.js";

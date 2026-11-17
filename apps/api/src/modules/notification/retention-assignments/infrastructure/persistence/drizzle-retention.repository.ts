@@ -30,8 +30,8 @@ import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 import type { NotificationId } from "../../../notifications/notification-notifications.public.js";
 import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
 import type {
-  RetentionStageCandidate,
-  RetentionStageCursor,
+  RetentionStageCandidateReadModel,
+  RetentionStageCursorReadModel,
 } from "../../application/read-models/retention-stage-candidate.read-model.js";
 import {
   RETENTION_EXPERIMENT_KEY,
@@ -154,9 +154,9 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 
   async findDueStages(params: {
     readonly dueAt: Temporal.Instant;
-    readonly after?: RetentionStageCursor;
+    readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;
-  }): Promise<RetentionStageCandidate[]> {
+  }): Promise<RetentionStageCandidateReadModel[]> {
     const dueAt = toIsoString(params.dueAt);
     const d0ReadyBefore = toIsoString(
       params.dueAt.subtract({ milliseconds: RETENTION_STAGE_TIMING.d0MinWaitMs }),

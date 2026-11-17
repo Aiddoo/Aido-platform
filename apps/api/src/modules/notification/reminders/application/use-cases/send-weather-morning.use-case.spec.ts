@@ -17,7 +17,7 @@ import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-pr
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
@@ -86,7 +86,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     strategy = new SendWeatherMorningUseCase({
       reader,
       todoReader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
       clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
@@ -279,7 +279,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     strategy = new SendWeatherMorningUseCase({
       reader,
       todoReader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: weatherReportReaderAt(
         new ReadWeatherReportsUseCase({

@@ -1,19 +1,19 @@
 import {
   type FindPushTokensParams,
   type KeepPushTokenData,
-  PushTokenRegistrationConflictError,
   PushTokenRepositoryPort,
   type RegisterPushTokenData,
 } from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import { pushTokenRegistrationConflict } from "#api/modules/notification/push-devices/application/push-devices.errors";
+import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
 import type { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-interface StoredPushToken extends PushTokenRecord {
+interface StoredPushToken extends PushTokenReadModel {
   readonly sessionId: string | null;
 }
 
-function toRecord({ sessionId: _sessionId, ...record }: StoredPushToken): PushTokenRecord {
+function toRecord({ sessionId: _sessionId, ...record }: StoredPushToken): PushTokenReadModel {
   return record;
 }
 
@@ -29,7 +29,9 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
   #conflictsLeft = 0;
   registerAttempts = 0;
 
-  constructor(tokens: readonly (PushTokenRecord & { readonly sessionId?: string | null })[] = []) {
+  constructor(
+    tokens: readonly (PushTokenReadModel & { readonly sessionId?: string | null })[] = [],
+  ) {
     super();
     for (const token of tokens) {
       this.#tokens.set(token.id, { ...token, sessionId: token.sessionId ?? null });
@@ -46,7 +48,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     this.#conflictsLeft = count;
   }
 
-  tokenOf(userId: string, deviceId: string): PushTokenRecord | undefined {
+  tokenOf(userId: string, deviceId: string): PushTokenReadModel | undefined {
     const stored = this.#find((row) => row.userId === userId && row.deviceId === deviceId);
     return stored == null ? undefined : toRecord(stored);
   }
@@ -73,7 +75,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return { userIds: this.#delete(released) };
   }
 
-  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
+  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenReadModel> {
     this.registerAttempts += 1;
     const existing = this.#find(
       (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
@@ -81,7 +83,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     const tokenHolder = this.#find((row) => row.token === data.token);
     if (this.#conflictsLeft > 0 || (tokenHolder != null && tokenHolder !== existing)) {
       this.#conflictsLeft = Math.max(0, this.#conflictsLeft - 1);
-      throw new PushTokenRegistrationConflictError();
+      throw pushTokenRegistrationConflict();
     }
     const id = existing?.id ?? this.#sequence + 1;
     this.#sequence = Math.max(this.#sequence, id);
@@ -120,14 +122,14 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return { hasActiveToken: existing.isActive };
   }
 
-  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
+  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return [...this.#tokens.values()]
       .filter((row) => row.userId === params.userId.value && (!params.activeOnly || row.isActive))
       .toSorted(compareRecentFirst)
       .map(toRecord);
   }
 
-  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenRecord[]> {
+  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenReadModel[]> {
     const userIds = users.map((user) => user.value);
     return [...this.#tokens.values()]
       .filter((row) => userIds.includes(row.userId) && row.isActive)

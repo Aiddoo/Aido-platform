@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
-import { RetryablePushProviderTransportError } from "../../application/ports/push-provider.port.js";
+import { RetryablePushProviderTransportError } from "../../application/push-dispatches.errors.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.mapper.js";
 import {
   EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS,

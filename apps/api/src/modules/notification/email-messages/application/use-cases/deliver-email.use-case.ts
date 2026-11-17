@@ -1,25 +1,12 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
-import type { EmailKind } from "../../domain/email-delivery.constants.js";
 import type { EmailMessage } from "../../domain/email-message.vo.js";
 import { EmailMessageAlerts } from "../email-messages.alerts.js";
+import { emailDeliveryRetryable } from "../email-messages.errors.js";
 import { EmailMessageLogEvent } from "../email-messages.log-events.js";
 import type { EmailBudgetPort } from "../ports/email-budget.port.js";
 import type { EmailSenderPort } from "../ports/email-sender.port.js";
-
-/** 다시 시도하면 보낼 수 있는 실패. 큐가 backoff로 다시 부른다. */
-export class EmailDeliveryRetryableError extends Error {
-  readonly kind: EmailKind;
-  readonly reason: string;
-
-  constructor(kind: EmailKind, reason: string) {
-    super(`Email delivery failed: ${kind} ${reason}`);
-    this.kind = kind;
-    this.reason = reason;
-    this.name = EmailDeliveryRetryableError.name;
-  }
-}
 
 export interface DeliverEmailInput {
   readonly deliveryId: string;
@@ -72,7 +59,7 @@ export class DeliverEmailUseCase {
         ...fields,
         reason: outcome.reason,
       });
-      throw new EmailDeliveryRetryableError(message.kind, outcome.reason);
+      throw emailDeliveryRetryable(message.kind, outcome.reason);
     }
 
     await this.#dependencies.budget.release();

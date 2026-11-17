@@ -22,6 +22,7 @@ import { ReportGenerationProcessor } from "#api/modules/ai-assistance/ai-reports
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.scheduler";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
+import { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
@@ -35,7 +36,10 @@ import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastruc
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email-messages/infrastructure/jobs/email-delivery-queue.processor";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
+import {
+  SendInquiryEmailUseCase,
+  SendUserReportEmailUseCase,
+} from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
 import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
@@ -205,8 +209,12 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(testDatabase.getClient())
     .overrideProvider(Argon2PasswordHasherAdapter)
     .useClass(FakePasswordHasher)
-    .overrideProvider(SendTransactionalEmailUseCase)
+    .overrideProvider(AuthEmailSenderPort)
     .useValue(fakeEmailService)
+    .overrideProvider(SendInquiryEmailUseCase)
+    .useValue(fakeEmailService.inquiry)
+    .overrideProvider(SendUserReportEmailUseCase)
+    .useValue(fakeEmailService.userReport)
     .overrideProvider(OAuthIdentityProviderRegistryPort)
     .useFactory({
       inject: [

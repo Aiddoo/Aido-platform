@@ -6,7 +6,7 @@ import { SendBillingIssueNotificationUseCase } from "./send-billing-issue-notifi
 function setup() {
   const notificationPublisher = new RecordingNotificationPublisher();
   const useCase = new SendBillingIssueNotificationUseCase({
-    notificationPublisher,
+    notificationPublisher: notificationPublisher.single,
     recipientLocaleReader: { getLocale: async () => "en" },
     logger: new SilentLogger(),
   });
@@ -24,7 +24,7 @@ describe("SendBillingIssueNotificationUseCase — 결제 문제 알림", () => {
     // Then
     expect(notificationPublisher.published).toEqual([
       {
-        mode: "publish",
+        mode: "single",
         data: expect.objectContaining({
           userId: "u1",
           type: "SYSTEM_NOTICE",

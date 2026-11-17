@@ -13,7 +13,7 @@ export interface SendBillingIssueNotificationInput {
 }
 
 interface SendBillingIssueNotificationDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publish">;
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -30,7 +30,7 @@ export class SendBillingIssueNotificationUseCase {
       UserId.reconstitute(input.userId),
     );
     const message = createBillingIssueNotificationMessage({ locale });
-    await this.#dependencies.notificationPublisher.publish({
+    await this.#dependencies.notificationPublisher.execute({
       userId: input.userId,
       type: "SYSTEM_NOTICE",
       title: message.title,

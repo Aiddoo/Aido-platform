@@ -2,7 +2,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
 } from "../../notifications/notification-notifications.public.js";
 import type {
   NotificationMessage,
@@ -15,8 +15,8 @@ import type {
 import { SCHEDULER_CAMPAIGN_KEY } from "../../shared/domain/notification-campaign.constants.js";
 import { resolveRecipientLocale } from "../../shared/domain/recipient-locale.domain-service.js";
 import type {
-  WeatherFallbackUser,
-  WeatherReminderUser,
+  WeatherFallbackUserReadModel,
+  WeatherReminderUserReadModel,
 } from "./read-models/scheduler.read-model.js";
 
 /** 아침·저녁 날씨 알림이 함께 쓰는 수신자 필터·기록 조립·위치 없음 안내 발송. */
@@ -24,7 +24,7 @@ import type {
 export type WeatherNotificationType = "WEATHER_MORNING" | "WEATHER_EVENING";
 
 export interface WeatherReminderDeliveryDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
 }
 
@@ -52,13 +52,13 @@ export function weatherVariantContext(
   };
 }
 
-type LocatedWeatherReminderUser = WeatherReminderUser & {
-  readonly location: NonNullable<WeatherReminderUser["location"]>;
+type LocatedWeatherReminderUser = WeatherReminderUserReadModel & {
+  readonly location: NonNullable<WeatherReminderUserReadModel["location"]>;
 };
 
 /** 1.14.0부터 해외 위치도 저장되며 v2 리포트는 격자 없이 좌표로 읽으므로 위치만 있으면 대상이다. */
 export function withWeatherLocation(
-  rows: readonly WeatherReminderUser[],
+  rows: readonly WeatherReminderUserReadModel[],
 ): LocatedWeatherReminderUser[] {
   return rows.flatMap(({ location, ...user }) => (location == null ? [] : [{ ...user, location }]));
 }
@@ -108,7 +108,7 @@ export function buildWeatherNotification(input: {
 export async function sendWeatherFallbackNotifications(
   dependencies: WeatherReminderDeliveryDependencies,
   input: {
-    readonly users: readonly WeatherFallbackUser[];
+    readonly users: readonly WeatherFallbackUserReadModel[];
     readonly type: WeatherNotificationType;
     readonly today: Temporal.PlainDate;
     readonly createMessage: (input: {
@@ -140,6 +140,6 @@ export async function sendWeatherFallbackNotifications(
       today,
     }),
   );
-  await dependencies.notificationPublisher.publishBatch(notifications);
+  await dependencies.notificationPublisher.execute(notifications);
   return notifications.length;
 }

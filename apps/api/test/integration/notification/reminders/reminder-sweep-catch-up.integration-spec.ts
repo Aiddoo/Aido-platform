@@ -5,6 +5,7 @@ import { vi } from "vitest";
 
 import { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
@@ -18,7 +19,7 @@ import {
   SweepTimezoneRemindersUseCase,
   TIMEZONE_REMINDER_SWEEP_CURSOR_KEY,
 } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
-import type { TimezoneContext } from "#api/modules/notification/reminders/domain/timezone-context.read-model";
+import type { TimezoneContext } from "#api/modules/notification/reminders/domain/local-clock.domain-service";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
@@ -79,6 +80,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
   let transaction: ReturnType<typeof createDatabaseTransactionFixture>;
   let reader: DrizzleSchedulerReader;
   let publisher: PublishNotificationUseCase;
+  let batchPublisher: PublishNotificationBatchUseCase;
   let userId: string;
 
   beforeAll(async () => {
@@ -104,7 +106,9 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         afterCommitPublisher: { register: () => undefined },
         logger: new SilentLogger(),
       }),
-      sendNotificationWithDeduplication: { execute: async () => null },
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
+    });
+    batchPublisher = new PublishNotificationBatchUseCase({
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(transactionHost),
@@ -149,7 +153,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     const sweptMinutes: string[] = [];
     const morningReminder = new SendMorningReminderUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: batchPublisher,
       // Redis가 비어 있는(cold) 상태로 두어 저장된 알림 행만으로 하루 한 번을 판단하게 한다
       notificationHistoryReader: new NotificationHistoryReader({
         notificationDedup: {
@@ -302,6 +306,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           reader,
           new StubTodoSeriesOwnerDormancy(),
           publisher,
+          batchPublisher,
           new StubNotificationRecipientLocaleReader(),
           new InMemoryJobQueue(),
           new FixedClock(now),

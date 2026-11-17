@@ -4,14 +4,14 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-import type { PersistedBatchNotificationResult } from "../../../push-dispatches/notification-push-dispatches.public.js";
+import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { createFriendCompletedNotificationMessage } from "../../../shared/application/messages/social-notification.messages.js";
 import { type UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import type { NotificationHistoryReader } from "../notification-history.reader.js";
+import { DuplicateNotificationError } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
-import { DuplicateNotificationError } from "../ports/notification.repository.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
@@ -105,7 +105,7 @@ export class SendFriendCompletionNotificationsUseCase {
         variantId: message.variantId,
       };
     });
-    let persistedBatch: PersistedBatchNotificationResult;
+    let persistedBatch: PersistedBatchNotificationResultReadModel;
     try {
       persistedBatch = await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.persistBatch.execute(notifications),
