@@ -1,4 +1,3 @@
-import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 import { and, eq, sql } from "drizzle-orm";
 
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
@@ -6,6 +5,7 @@ import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscription
 import { TrialEndingNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
 import type { SubscriptionEventPayloadReadModel } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
 import { NotifyEndingTrialsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-ending-trials.use-case";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import {
   notification,

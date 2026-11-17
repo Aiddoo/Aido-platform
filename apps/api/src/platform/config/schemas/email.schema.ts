@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL_ADDRESS } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import type { AppEnvironment } from "./app.schema.js";
@@ -31,7 +32,7 @@ export const emailSchema = z.object({
   EMAIL_FROM_NAME: z.string().default("Aido"),
 
   /** 문의 수신 이메일 */
-  SUPPORT_EMAIL: z.email().default("support@aido.kr"),
+  SUPPORT_EMAIL: z.email().default(SUPPORT_EMAIL_ADDRESS),
 });
 
 export type EmailConfig = z.infer<typeof emailSchema>;

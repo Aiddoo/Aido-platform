@@ -1,4 +1,10 @@
-import { DAY_OF_WEEK_ORDER, type DayOfWeek, TODO_REPEAT_MONTH_DAY_MAX } from "@aido/api/vocabulary";
+import {
+  DAYS_OF_WEEK,
+  type DayOfWeek,
+  TODO_REPEAT_MONTH_DAY_MAX,
+  WEEKDAYS,
+  WEEKEND_DAYS,
+} from "@aido/api/vocabulary";
 import { range, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
@@ -21,9 +27,6 @@ import type {
 /** 반복 종료를 말하지 않은 반복 일정의 기본 기간 */
 const DEFAULT_RECURRENCE_WEEKS = 4;
 
-const WEEKDAYS: readonly DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI"];
-const WEEKEND: readonly DayOfWeek[] = ["SAT", "SUN"];
-
 /** 요일 + 종료일 recurrence로 나타내는 반복 구간. end가 null이면 말한 끝이나 기본 기간을 쓴다 */
 export interface RecurrenceWindow {
   readonly start: CalendarDay;
@@ -45,7 +48,7 @@ export function resolveRecurrenceWindow(
 ): RecurrenceWindow | null {
   const monday = today.subtract({ days: today.dayOfWeek - 1 });
   const sunday = monday.add({ days: 6 });
-  const everyDay = [...DAY_OF_WEEK_ORDER];
+  const everyDay = [...DAYS_OF_WEEK];
   return match(repeat.pattern)
     .with("NONE", "UNSUPPORTED", "BIWEEKLY_DAYS", "MONTHLY_DAY", () => null)
     .with("WEEKLY_DAYS", () => ({
@@ -55,7 +58,7 @@ export function resolveRecurrenceWindow(
     }))
     .with("DAILY", () => ({ start: resolvedDay, end: null, days: everyDay }))
     .with("WEEKDAYS", () => ({ start: resolvedDay, end: null, days: [...WEEKDAYS] }))
-    .with("WEEKENDS", () => ({ start: resolvedDay, end: null, days: [...WEEKEND] }))
+    .with("WEEKENDS", () => ({ start: resolvedDay, end: null, days: [...WEEKEND_DAYS] }))
     .with("THIS_WEEK", () => ({ start: today, end: sunday, days: daysBetween(today, sunday) }))
     .with("NEXT_WEEK", () => ({
       start: monday.add({ days: 7 }),
@@ -72,13 +75,13 @@ export function resolveRecurrenceWindow(
       return {
         start: isAfter(today, saturday) ? today : saturday,
         end: sunday,
-        days: [...WEEKEND],
+        days: [...WEEKEND_DAYS],
       };
     })
     .with("NEXT_WEEKEND", () => ({
       start: monday.add({ days: 12 }),
       end: sunday.add({ days: 7 }),
-      days: [...WEEKEND],
+      days: [...WEEKEND_DAYS],
     }))
     .with("THIS_WEEKDAYS", () => {
       const friday = monday.add({ days: 4 });
@@ -185,7 +188,7 @@ function daysBetween(from: CalendarDay, to: CalendarDay): DayOfWeek[] {
   const count = from.until(to).days;
   return range(count + 1).map((offset) => {
     const isoDay = from.add({ days: offset }).dayOfWeek;
-    return DAY_OF_WEEK_ORDER[isoDay - 1] ?? "MON";
+    return DAYS_OF_WEEK[isoDay - 1] ?? "MON";
   });
 }
 

@@ -1,10 +1,11 @@
+import type { NudgeDirection } from "@aido/api/vocabulary";
+
 import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import { isNudgeInteractionAvailable } from "../../domain/nudge-interaction.domain-service.js";
-import type { NudgeDirection } from "../../domain/nudges.constants.js";
 import { nudgeInteractionDisabled } from "../nudges.errors.js";
 import type { NudgeInteractionConfigPort } from "../ports/nudge-interaction-config.port.js";
 import type { NudgeReaderPort } from "../ports/nudge.reader.port.js";

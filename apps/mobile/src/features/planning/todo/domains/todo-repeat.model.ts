@@ -5,8 +5,11 @@ import {
   TODO_REPEAT_INTERVALS,
   TODO_REPEAT_MONTH_DAY_CLAMP_FROM,
   TODO_REPEAT_MONTH_DAY_MAX,
+  TODO_REPEAT_OCCURRENCE_SEARCH_DAYS,
   TODO_SERIES_LIMITS,
   TODO_UPDATE_SCOPES,
+  WEEKDAYS,
+  WEEKEND_DAYS,
 } from '@aido/api/vocabulary';
 import {
   addDaysToDateKey,
@@ -33,8 +36,8 @@ export const todoRepeatCountSchema = z.int().min(1).max(TODO_SERIES_LIMITS.MAX_C
 
 /** 평일·주말 반복으로 읽는 요일 묶음. 반복 피커의 평일·주말 칩도 같은 요일을 고른다 */
 const REPEAT_PRESET_DAYS = {
-  WEEKDAYS: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
-  WEEKENDS: ['SAT', 'SUN'],
+  WEEKDAYS,
+  WEEKENDS: WEEKEND_DAYS,
 } as const satisfies Record<'WEEKDAYS' | 'WEEKENDS', readonly DayOfWeek[]>;
 type RepeatPreset = keyof typeof REPEAT_PRESET_DAYS;
 
@@ -278,9 +281,6 @@ function* walkOccurrenceDateKeys(
   }
 }
 
-// 두 회차 사이 최대 간격(격주 2주, 매월 말일 보정 포함)보다 넉넉한 탐색 한도
-const OCCURRENCE_SEARCH_DAYS = 62;
-
 // from~to(포함) 안의 회차 날짜. 시작일 전이거나 종료 조건 뒤는 포함하지 않는다
 export function getRepeatOccurrenceDateKeys(
   repeat: TodoRepeat,
@@ -298,7 +298,7 @@ export function findFirstRepeatOccurrenceDateKey(
   const [first] = walkOccurrenceDateKeys(
     repeat,
     startDate,
-    addDaysToDateKey(startDate, OCCURRENCE_SEARCH_DAYS),
+    addDaysToDateKey(startDate, TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
   );
   return first ?? null;
 }
@@ -311,7 +311,7 @@ export function findLastRepeatOccurrenceDateKey(
     .with({ type: 'NEVER' }, () => null)
     .with({ type: 'UNTIL' }, ({ date }) => date)
     .with({ type: 'COUNT' }, ({ count }) =>
-      addDaysToDateKey(startDate, count * OCCURRENCE_SEARCH_DAYS),
+      addDaysToDateKey(startDate, count * TODO_REPEAT_OCCURRENCE_SEARCH_DAYS),
     )
     .exhaustive();
   if (limit == null) {

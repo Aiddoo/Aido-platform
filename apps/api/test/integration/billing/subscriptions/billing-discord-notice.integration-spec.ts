@@ -2,8 +2,7 @@
  * RevenueCat 웹훅 1건이 결제 채널 관리자 알림(사용자 블록 + 결제 블록)과 Discord embed가 되기까지
  * 실제 PostgreSQL로 확인한다. Discord로는 보내지 않는다(ADMIN_NOTIFIER는 기록용 Fake).
  */
-import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
-
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";

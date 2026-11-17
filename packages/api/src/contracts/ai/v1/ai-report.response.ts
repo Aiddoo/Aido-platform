@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
-import { AI_REPORT_CONTENT_SOURCES, AI_REPORT_TYPES } from "../../../vocabulary/ai.constants.js";
+import {
+  AI_REPORT_CONTENT_SOURCES,
+  AI_REPORT_PAGE_SIZE,
+  AI_REPORT_TYPES,
+} from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
 export const reportStatsSchema = z.object({
@@ -102,9 +106,11 @@ export const getAiReportsQuerySchema = z.object({
     .number()
     .int()
     .positive()
-    .max(50)
-    .default(10)
-    .meta({ description: "페이지 크기 (1-50, 기본값: 10)" }),
+    .max(AI_REPORT_PAGE_SIZE.MAX)
+    .default(AI_REPORT_PAGE_SIZE.DEFAULT)
+    .meta({
+      description: `페이지 크기 (1-${AI_REPORT_PAGE_SIZE.MAX}, 기본값: ${AI_REPORT_PAGE_SIZE.DEFAULT})`,
+    }),
 });
 
 export const aiReportIdParamSchema = z.object({

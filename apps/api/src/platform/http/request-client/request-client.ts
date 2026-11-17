@@ -2,9 +2,11 @@ import type { IncomingHttpHeaders } from "node:http";
 
 import {
   isSemanticVersionAtLeast,
+  DEVICE_NAME_MAX_LENGTH,
   DEVICE_TYPES,
   type DeviceType,
   IDEMPOTENCY_KEY_MAX_LENGTH,
+  OS_VERSION_PATTERN,
   resolveSupportedLocale,
 } from "@aido/api/vocabulary";
 
@@ -29,9 +31,7 @@ export interface RequestClient {
   readonly idempotencyKey: string | null;
 }
 
-const MAX_DEVICE_NAME_LENGTH = 40;
 const MAX_APP_VERSION_LENGTH = 30;
-const OS_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z._-]{0,19}$/;
 const APP_BUILD_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.]{0,19}$/;
 const IDEMPOTENCY_KEY_PATTERN = new RegExp(`^[\\x21-\\x7e]{1,${IDEMPOTENCY_KEY_MAX_LENGTH}}$`);
 
@@ -66,7 +66,7 @@ export function normalizeDeviceName(value: string | undefined): string | null {
       .replaceAll(/\s+/gu, " ")
       .trim(),
   )
-    .slice(0, MAX_DEVICE_NAME_LENGTH)
+    .slice(0, DEVICE_NAME_MAX_LENGTH)
     .join("")
     .trim();
 

@@ -1,16 +1,8 @@
+import { SUBSCRIPTION_ENVIRONMENTS } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { SUBSCRIPTION_ENVIRONMENTS } from "../../../vocabulary/subscription.constants.js";
-
-/**
- * RevenueCat Webhook Event 스키마
- *
- * z.string()으로 type/store를 수용하여 RevenueCat이 새 이벤트/스토어를
- * 추가하더라도 Zod 검증 실패 없이 처리합니다.
- * z.looseObject()로 미지정 필드도 통과시킵니다.
- *
- * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
- */
+// RevenueCat이 이벤트·스토어를 더해도 검증에 실패하지 않게 type·store는 문자열로, 모르는 필드도 받는다.
+// https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
 export const revenueCatEventSchema = z.looseObject({
   id: z.string().optional(),
   type: z.string().min(1),

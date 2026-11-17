@@ -1,9 +1,7 @@
-import { describe, expect, it } from "vitest";
-
 import {
   revenueCatTransferWebhookPayloadSchema,
   revenueCatWebhookPayloadSchema,
-} from "../src/contracts/subscription/v1/index.js";
+} from "./revenuecat-webhook.wire.js";
 
 // RevenueCat 문서 샘플 TRANSFER: 구독자·상품 필드 없이 옮긴 app_user_id 목록만 온다
 const DOCUMENTED_TRANSFER = {

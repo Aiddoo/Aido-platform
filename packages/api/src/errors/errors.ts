@@ -311,6 +311,9 @@ export const ErrorCode = {
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+/** 콕 답장·감사를 쓸 수 없는 404다. 없거나 내 것이 아닌 콕과 서버 설정으로 꺼진 기능이라 다시 시도해도 같다. */
+export const NUDGE_UNAVAILABLE_ERROR_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
+
 export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 시스템/공통 (SYS_0001-0099)
   [ErrorCode.SYS_0001]: {

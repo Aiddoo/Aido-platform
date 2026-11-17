@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
+import { DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type { DateRef, ScheduleWarning } from "./todo-draft.constants.js";
@@ -31,7 +31,7 @@ export function formatDay(day: CalendarDay): string {
 }
 
 export function isoIndex(day: DayOfWeek): number {
-  return DAY_OF_WEEK_ORDER.indexOf(day);
+  return DAYS_OF_WEEK.indexOf(day);
 }
 
 // 모델이 낸 숫자에는 범위 제한이 없다. Temporal 달력 범위(RangeError)나 네 자리 연도를 넘는 날짜는 읽지 못한 날짜다

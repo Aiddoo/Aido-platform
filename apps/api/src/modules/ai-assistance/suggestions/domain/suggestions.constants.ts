@@ -1,14 +1,8 @@
-import {
-  AI_SUGGESTION_LIMITS,
-  type DayOfWeek,
-  type SuggestionActionKind,
-} from "@aido/api/vocabulary";
+import type { DayOfWeek, SuggestionActionKind } from "@aido/api/vocabulary";
 
 import type { SuggestionStatus } from "./suggestion.aggregate.js";
 
 export type SuggestionAction = SuggestionActionKind;
-
-export const SUGGESTION_ANALYSIS_PERIOD_DAYS = 7 * AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS;
 
 /**
  * AI가 감지한 반복 패턴

@@ -1,3 +1,5 @@
+import type { NudgeDirection } from "@aido/api/vocabulary";
+
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import {
   type ListNudgesParams,
@@ -11,7 +13,6 @@ import type {
 import type { NudgeReadModel } from "#api/modules/social/nudges/application/read-models/nudge.read-model";
 import type { NudgeId } from "#api/modules/social/nudges/domain/nudge-id.vo";
 import type { Nudge } from "#api/modules/social/nudges/domain/nudge.aggregate";
-import type { NudgeDirection } from "#api/modules/social/nudges/domain/nudges.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { compareCreatedOrder, type InMemoryNudgeRepository } from "./in-memory-nudge.repository.js";

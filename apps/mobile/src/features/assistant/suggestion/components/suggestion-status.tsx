@@ -1,3 +1,4 @@
+import { AI_SUGGESTION_LIMITS } from '@aido/api/vocabulary';
 import { ConsentPolicy } from '@src/features/identity/consent/domains/consent.model';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
@@ -28,7 +29,6 @@ import { Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { SUGGESTION_QUERY_KEYS } from '../queries/suggestion-query-keys';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
@@ -160,7 +160,7 @@ SuggestionStatus.NeedsMoreTodos = function NeedsMoreTodos() {
     <SuggestionStatus.Message
       title={t('suggestions.status.needsMoreTodos')}
       description={t('suggestions.status.needsMoreTodosDescription', {
-        period: formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext),
+        period: formatDayCountLabel(AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS, dateFormatContext),
       })}
     >
       <SuggestionStatus.ActionRow>

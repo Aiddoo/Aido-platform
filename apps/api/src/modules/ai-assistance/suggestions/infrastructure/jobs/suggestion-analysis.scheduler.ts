@@ -1,3 +1,4 @@
+import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
@@ -16,7 +17,6 @@ import {
   isInSuggestionDispatchWindow,
   resolveSuggestionTimeZone,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestions.constants.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 
 const ENQUEUE_BATCH_SIZE = 50;
@@ -71,7 +71,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
     const atDate = instantToDate(at);
     // planning Todo.startDate는 달력 날짜 칸이라 지금처럼 그 순간의 UTC 날짜와 비교한다
     const recentFrom = at
-      .subtract({ hours: SUGGESTION_ANALYSIS_PERIOD_DAYS * 24 })
+      .subtract({ hours: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS * 24 })
       .toZonedDateTimeISO("UTC")
       .toPlainDate();
     let totalEnqueued = 0;

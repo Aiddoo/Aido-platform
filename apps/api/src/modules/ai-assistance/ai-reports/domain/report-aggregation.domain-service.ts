@@ -1,17 +1,12 @@
-import {
-  completionRate,
-  DAY_OF_WEEK_ORDER,
-  dayIndexToDayOfWeek,
-  type DayOfWeek,
-} from "@aido/api/vocabulary";
+import { completionRate, DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 import { groupBy, keyBy, mapValues, orderBy, range, sumBy } from "es-toolkit";
 
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 
 import {
+  dayOfWeekOf,
   localDateAt,
   localDateTimeAt,
-  sundayBasedDayIndex,
 } from "../../shared/domain/user-calendar.domain-service.js";
 import type {
   CategoryBreakdownItem,
@@ -39,7 +34,7 @@ function sumCountsBy<K extends PropertyKey>(
 export const FALLBACK_CATEGORY_COLOR = "#808080";
 
 const toDayOfWeek = (group: DailyTodoGroup): DayOfWeek =>
-  dayIndexToDayOfWeek(sundayBasedDayIndex(plainDateFromDate(group.startDate)));
+  dayOfWeekOf(plainDateFromDate(group.startDate));
 
 /** 전체·완료 할 일 수 묶음 */
 interface TodoGroups<TGroup> {
@@ -92,7 +87,7 @@ export function computeDayPatterns(
   const totalByDay = sumCountsBy(totalGroups, toDayOfWeek);
   const completedByDay = sumCountsBy(completedGroups, toDayOfWeek);
 
-  return DAY_OF_WEEK_ORDER.map((day) => {
+  return DAYS_OF_WEEK.map((day) => {
     const total = totalByDay[day] ?? 0;
     const completed = completedByDay[day] ?? 0;
     return {

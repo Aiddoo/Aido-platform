@@ -1,10 +1,10 @@
 import { currentUserSchema } from "@aido/api/contracts/auth/v1";
-import { type RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 import request from "supertest";
 
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/domain/store-renewal-grace.domain-service";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import { type RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { subscription } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";

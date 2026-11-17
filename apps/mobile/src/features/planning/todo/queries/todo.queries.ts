@@ -136,7 +136,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSumma
   });
 }
 
-/** 오늘부터 앞으로 알림 시각을 다시 계산하는 기간의 내 할 일. 기기 시간대가 바뀐 순간에만 켜서 부른다 */
+/** 시간대 안내를 띄울지 보려고 오늘부터 읽는 내 할 일. 기기 시간대가 바뀐 순간에만 켜서 부른다 */
 export function useGetUpcomingTodosQueryOptions({ todayKey }: { todayKey: DateKey }) {
   const todoApi = useTodoApi();
   const endDate = addDaysToDateKey(todayKey, UPCOMING_TODO_WINDOW_DAYS);

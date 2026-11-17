@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { AI_REPORT_PAGE_SIZE } from "@aido/api/vocabulary";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -41,7 +42,7 @@ const REPORT_STATUS_DESCRIPTION = `다음 주간/월간 리포트 도착 시각�
 const REPORT_LIST_DESCRIPTION = `주간/월간 AI 리포트를 최신순으로 줍니다.
 
 - \`type\`을 생략하면 주간과 월간을 함께 줍니다.
-- \`limit\`은 1~50, 기본 10입니다.
+- \`limit\`은 1~${AI_REPORT_PAGE_SIZE.MAX}, 기본 ${AI_REPORT_PAGE_SIZE.DEFAULT}입니다.
 - 리포트가 없으면 \`reports\`는 빈 배열입니다.`;
 
 const REPORT_DETAIL_DESCRIPTION = `리포트 하나의 통계와 AI 요약·팁을 줍니다.

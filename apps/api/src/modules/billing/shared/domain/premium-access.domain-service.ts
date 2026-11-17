@@ -3,13 +3,13 @@ import {
   PREMIUM_SOURCE,
   type PremiumGrantStatus,
   type PremiumSource,
-  STORE_PERIOD_TYPE,
   type StorePeriodType,
   type SubscriptionPlanType,
   type SubscriptionStatus,
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
 
+import { STORE_PERIOD_TYPE } from "./store-period-type.domain-service.js";
 import { storeEntitlementEndsAt, storePeriodEndsAt } from "./store-renewal-grace.domain-service.js";
 import { planTypeOfProduct } from "./subscription-plan.domain-service.js";
 

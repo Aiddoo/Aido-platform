@@ -1,3 +1,4 @@
+import type { NudgeDirection } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import {
@@ -43,7 +44,6 @@ import type {
   NudgeUserReadModel,
 } from "../../application/read-models/nudge.read-model.js";
 import { NudgeId } from "../../domain/nudge-id.vo.js";
-import type { NudgeDirection } from "../../domain/nudges.constants.js";
 import { toNudgeInteractionTodoReadModel } from "./nudge-row.mapper.js";
 
 type NudgeRow = typeof nudgeTable.$inferSelect;

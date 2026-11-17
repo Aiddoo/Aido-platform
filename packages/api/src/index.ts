@@ -13,7 +13,6 @@ export * from "./contracts/invite/v1/index.js";
 export * from "./contracts/memo/v1/index.js";
 export * from "./contracts/notification/v1/index.js";
 export * from "./contracts/nudge/v1/index.js";
-export * from "./contracts/subscription/v1/index.js";
 export * from "./contracts/todo/v1/index.js";
 export * from "./contracts/todo-category/v1/index.js";
 export * from "./contracts/todo-comment/v1/index.js";

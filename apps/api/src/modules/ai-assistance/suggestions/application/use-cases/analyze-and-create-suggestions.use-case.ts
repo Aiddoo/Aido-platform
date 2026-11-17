@@ -45,10 +45,7 @@ import {
 } from "../../domain/suggestion-candidates.domain-service.js";
 import { SuggestionEvidence } from "../../domain/suggestion-evidence.vo.js";
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
-import {
-  type DetectedPattern,
-  SUGGESTION_ANALYSIS_PERIOD_DAYS,
-} from "../../domain/suggestions.constants.js";
+import type { DetectedPattern } from "../../domain/suggestions.constants.js";
 import { suggestionPromptFor } from "../messages/suggestion-prompt.messages.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
@@ -276,7 +273,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
                 evidence: SuggestionEvidence.create({
                   recordedCount: pattern.recordedCount,
                   completedCount: pattern.completedCount,
-                  periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                  periodDays: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
                 }),
                 now,
               }),

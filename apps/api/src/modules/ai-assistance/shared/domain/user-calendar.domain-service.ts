@@ -1,3 +1,5 @@
+import { DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
+
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
@@ -19,7 +21,11 @@ export function startOfLocalDate(date: Temporal.PlainDate, timezone: string): Da
   return new Date(date.toZonedDateTime(resolveTimezone(timezone)).epochMilliseconds);
 }
 
-/** `dayIndexToDayOfWeek`가 받는 일요일 0 ~ 토요일 6. Temporal 요일은 월요일 1 ~ 일요일 7이다 */
+/** 일요일부터 적은 요일 이름 표의 칸(일요일 0 ~ 토요일 6). Temporal 요일은 월요일 1 ~ 일요일 7이다 */
 export function sundayBasedDayIndex(date: Temporal.PlainDate): number {
   return date.dayOfWeek % 7;
+}
+
+export function dayOfWeekOf(date: Temporal.PlainDate): DayOfWeek {
+  return DAYS_OF_WEEK[date.dayOfWeek - 1] ?? "MON";
 }

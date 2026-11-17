@@ -1,7 +1,6 @@
-import { STORE_PERIOD_TYPE } from "@aido/api/vocabulary";
-
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
 
+import { STORE_PERIOD_TYPE } from "../../shared/domain/store-period-type.domain-service.js";
 import {
   reconcileWithStoreState,
   type ReconcilableSubscriptionState,

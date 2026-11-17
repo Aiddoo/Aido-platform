@@ -37,25 +37,10 @@ export const STORE_PERIOD_TYPES = ["TRIAL", "INTRO", "NORMAL", "PROMOTIONAL", "P
 
 export type StorePeriodType = (typeof STORE_PERIOD_TYPES)[number];
 
-/** STORE_PERIOD_TYPES의 값을 이름으로 가리킨다. */
-export const STORE_PERIOD_TYPE = {
-  TRIAL: "TRIAL",
-  INTRO: "INTRO",
-  NORMAL: "NORMAL",
-  PROMOTIONAL: "PROMOTIONAL",
-  PREPAID: "PREPAID",
-} as const satisfies Record<StorePeriodType, StorePeriodType>;
-
 /** 요금제 종류. 스토어 상품 ID로 정하고, 모르는 상품이면 서버가 null로 보낸다. */
 export const SUBSCRIPTION_PLAN_TYPES = ["ANNUAL", "MONTHLY"] as const;
 
 export type SubscriptionPlanType = (typeof SUBSCRIPTION_PLAN_TYPES)[number];
-
-/** 스토어 상품 ID → 요금제. Play 구독은 "상품:기본요금제"로 와서 ':' 앞만 본다. */
-export const STORE_SUBSCRIPTION_PRODUCTS = {
-  "com.aido.pro.yearly": "ANNUAL",
-  "com.aido.pro.monthly": "MONTHLY",
-} as const satisfies Record<string, SubscriptionPlanType>;
 
 /** 무료 체험이 끝나기 며칠 전에 한 번 알릴지. 체험이 이보다 짧게 남은 채 시작했으면 알리지 않는다. */
 export const PREMIUM_TRIAL_ENDING_NOTICE_DAYS = 3;

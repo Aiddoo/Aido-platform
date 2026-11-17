@@ -1,4 +1,4 @@
-import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
+import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 
 import {
   collectRecordedActivities,
@@ -119,7 +119,7 @@ export function resolveSuggestionPicks(
     }
     seen.add(candidate.id);
     const recordedDays = new Set(candidate.days.map((day) => day.day));
-    const chosen = DAY_OF_WEEK_ORDER.filter(
+    const chosen = DAYS_OF_WEEK.filter(
       (day) => recordedDays.has(day) && pick.daysOfWeek.includes(day),
     );
     resolved.push({

@@ -1,4 +1,4 @@
-import { ACCOUNT_PROVIDERS, OAUTH_PROVIDERS } from '@aido/api/vocabulary';
+import { ACCOUNT_PROVIDERS, OAUTH_MODES, OAUTH_PROVIDERS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -22,7 +22,7 @@ export type OAuthProviderSlug = z.infer<typeof oauthProviderSlugSchema>;
 
 const oauthStartProviderSchema = oauthProviderSlugSchema.exclude(['apple']);
 export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
-const oauthStartModeSchema = z.enum(['login', 'link']);
+const oauthStartModeSchema = z.enum(OAUTH_MODES);
 export type OAuthStartMode = z.infer<typeof oauthStartModeSchema>;
 
 const linkedAccountSchema = z.object({

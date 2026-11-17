@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
+import { ErrorCode, NUDGE_UNAVAILABLE_ERROR_CODES } from "@aido/api/errors";
 import {
   Body,
   Controller,
@@ -58,8 +58,6 @@ import {
 } from "./nudge-interaction.dto.js";
 import { NudgeIdParamDto } from "./nudge.dto.js";
 
-const DISABLED_NOT_FOUND_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
-
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
 @Controller({ path: "nudges", version: API_VERSION.V1 })
@@ -112,7 +110,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   async getInteractions(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgeInteractionsQueryDto }) query: GetNudgeInteractionsQueryDto,
@@ -138,7 +136,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   async getInteraction(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
@@ -163,7 +161,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   @ApiConflictError(ErrorCode.NUDGE_1109)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async reply(
@@ -191,7 +189,10 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeThanksPreviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ...DISABLED_NOT_FOUND_CODES])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ...NUDGE_UNAVAILABLE_ERROR_CODES,
+  ])
   async getThanksPreview(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
@@ -216,7 +217,10 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: SendNudgeThanksResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ...DISABLED_NOT_FOUND_CODES])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ...NUDGE_UNAVAILABLE_ERROR_CODES,
+  ])
   @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.NUDGE_1109, ErrorCode.NUDGE_1110])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   sendThanks(

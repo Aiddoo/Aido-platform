@@ -1,3 +1,4 @@
+import { AI_REPORT_TYPES } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
@@ -147,7 +148,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
    */
   async #catchUpIfNeeded(): Promise<void> {
     const hourId = toIsoString(this.#clock.now()).slice(0, 13);
-    for (const reportType of ["WEEKLY", "MONTHLY"] as const) {
+    for (const reportType of AI_REPORT_TYPES) {
       this.#logger.log({
         event: AiGenerationLogEvent.JOB_CATCH_UP,
         queueName: AI_REPORT_QUEUE.name,

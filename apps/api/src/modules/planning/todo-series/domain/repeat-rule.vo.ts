@@ -1,7 +1,8 @@
 import {
-  DAY_OF_WEEK_ORDER,
+  DAYS_OF_WEEK,
   TODO_REPEAT_INTERVALS,
   TODO_REPEAT_MONTH_DAY_MAX,
+  TODO_REPEAT_OCCURRENCE_SEARCH_DAYS,
   TODO_SERIES_LIMITS,
   type DayOfWeek,
   type TodoRepeatFrequency,
@@ -38,8 +39,6 @@ export interface RepeatRuleProps {
 }
 
 const DAYS_PER_WEEK = 7;
-/** 어떤 규칙이든 다음 회차가 이 안에 있다(격주는 3주, 매월은 말일 보정 포함 2달). */
-const NEXT_OCCURRENCE_SEARCH_DAYS = 62;
 
 function assertRule(condition: boolean, field: string): void {
   if (!condition) {
@@ -74,7 +73,7 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
     return new RepeatRule({
       frequency: "WEEKLY",
       interval,
-      weekdays: DAY_OF_WEEK_ORDER.filter((weekday) => weekdays.includes(weekday)),
+      weekdays: DAYS_OF_WEEK.filter((weekday) => weekdays.includes(weekday)),
       monthDay: null,
       end,
     });
@@ -156,7 +155,7 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
   /** date 이후(포함) 첫 회차. 끝났으면 null이다. */
   firstOnOrAfter(seriesStart: string, date: string, generatedCount = 0): string | null {
     const lower = date < seriesStart ? seriesStart : date;
-    const window = addDaysToKey(lower, NEXT_OCCURRENCE_SEARCH_DAYS);
+    const window = addDaysToKey(lower, TODO_REPEAT_OCCURRENCE_SEARCH_DAYS);
     return this.occurrencesBetween(seriesStart, lower, window, generatedCount).at(0) ?? null;
   }
 
@@ -221,7 +220,7 @@ function* walkWeekly(
   const last = Temporal.PlainDate.from(upper);
   const anchorMonday = mondayOf(Temporal.PlainDate.from(seriesStart));
   const weeksToLower = Math.trunc(anchorMonday.until(mondayOf(first)).days / DAYS_PER_WEEK);
-  const offsets = weekdays.map((weekday) => DAY_OF_WEEK_ORDER.indexOf(weekday));
+  const offsets = weekdays.map((weekday) => DAYS_OF_WEEK.indexOf(weekday));
   for (
     let week = weeksToLower - (weeksToLower % interval);
     Temporal.PlainDate.compare(anchorMonday.add({ weeks: week }), last) <= 0;

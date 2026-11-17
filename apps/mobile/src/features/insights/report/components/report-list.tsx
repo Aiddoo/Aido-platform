@@ -1,3 +1,4 @@
+import { AI_REPORT_PAGE_SIZE } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
@@ -59,8 +60,6 @@ import { ThisWeekRecord } from './this-week-record';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
-/** 서버 기본 페이지 크기와 같다. 목록에는 더 보기가 없어 개수가 이 값으로 묶인다 */
-const REPORT_LIST_LIMIT = 10;
 /** 예시 목록 맨 위 최근 리포트 카드는 지난주·지난달이다 */
 const LATEST_SAMPLE_PERIODS_AGO = 1;
 
@@ -80,7 +79,7 @@ export function ReportList() {
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: trendYears.startYear }),
   );
   const { data: reports } = useSuspenseQuery(
-    useGetReportsQueryOptions({ type: reportType, limit: REPORT_LIST_LIMIT }),
+    useGetReportsQueryOptions({ type: reportType, limit: AI_REPORT_PAGE_SIZE.DEFAULT }),
   );
 
   const [latestReport, ...pastReports] = reports;

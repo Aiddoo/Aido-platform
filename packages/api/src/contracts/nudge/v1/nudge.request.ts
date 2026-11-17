@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { entityIdSchemaWithMessage } from "../../../common/entity-id.js";
-import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "../../../vocabulary/nudge.constants.js";
+import {
+  NUDGE_DIRECTIONS,
+  NUDGE_LIMITS,
+  REMIND_NUDGE_LIMITS,
+} from "../../../vocabulary/nudge.constants.js";
 import { nudgeReplyKindSchema } from "./nudge.common.js";
 
 export const createNudgeSchema = z.object({
@@ -62,7 +66,7 @@ export const nudgeIdParamSchema = z.object({
 
 export const getNudgeInteractionsQuerySchema = getNudgesQuerySchema.extend({
   direction: z
-    .enum(["received", "sent"])
+    .enum(NUDGE_DIRECTIONS)
     .default("received")
     .meta({ description: "콕을 주고받은 방향" }),
 });

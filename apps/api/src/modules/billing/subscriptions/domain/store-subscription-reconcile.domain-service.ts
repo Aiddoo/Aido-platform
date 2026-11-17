@@ -1,9 +1,6 @@
-import {
-  STORE_PERIOD_TYPE,
-  type StorePeriodType,
-  type SubscriptionStatus,
-} from "@aido/api/vocabulary";
+import { type StorePeriodType, type SubscriptionStatus } from "@aido/api/vocabulary";
 
+import { STORE_PERIOD_TYPE } from "../../shared/domain/store-period-type.domain-service.js";
 import { storeEntitlementEndsAt } from "../../shared/domain/store-renewal-grace.domain-service.js";
 
 type Instant = Temporal.Instant;

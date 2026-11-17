@@ -1,4 +1,3 @@
-import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 
@@ -13,6 +12,7 @@ import { ProviderEventId } from "#api/modules/billing/subscriptions/domain/provi
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { SubscriptionEventReceipt } from "#api/modules/billing/subscriptions/domain/subscription-event-receipt.entity";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { UserSubscriptionProjectionPort } from "#api/modules/identity/users/identity-users.public";
 import { databaseSqlState } from "#api/platform/database/database-error.util";

@@ -1,3 +1,4 @@
+import { AI_SUGGESTION_LIMITS } from '@aido/api/vocabulary';
 import {
   type EntitlementSnapshot,
   EntitlementPolicy,
@@ -23,7 +24,6 @@ import { type ComponentProps, type ComponentRef, type ReactNode, Suspense, useRe
 import type { View } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
@@ -115,7 +115,7 @@ function PremiumSuggestionEntry({ shouldShowHint }: { shouldShowHint: boolean })
   return (
     <AiUpdateCoachmark
       description={t('ai:updateHint.premiumDescription', {
-        period: formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext),
+        period: formatDayCountLabel(AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS, dateFormatContext),
       })}
       shouldShowHint={shouldShowHint}
     >

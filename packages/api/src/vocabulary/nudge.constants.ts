@@ -11,3 +11,7 @@ export const REMIND_NUDGE_LIMITS = {
 export const NUDGE_REPLY_KINDS = ["STARTING", "THANKFUL", "LATER"] as const;
 
 export type NudgeReplyKind = (typeof NUDGE_REPLY_KINDS)[number];
+
+export const NUDGE_DIRECTIONS = ["received", "sent"] as const;
+
+export type NudgeDirection = (typeof NUDGE_DIRECTIONS)[number];

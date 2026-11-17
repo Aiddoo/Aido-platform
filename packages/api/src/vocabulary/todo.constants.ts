@@ -27,6 +27,9 @@ export const TODO_ITEM_LIMITS = {
 /** 매월 반복의 날짜 범위. 없는 날짜의 달은 말일로 당긴다. */
 export const TODO_REPEAT_MONTH_DAY_MAX = 31;
 
+/** 어떤 반복 규칙이든 다음 회차가 이 안에 있다(격주는 3주, 매월은 말일 보정 포함 2달). 서버·앱 회차 계산이 같은 값을 쓴다. */
+export const TODO_REPEAT_OCCURRENCE_SEARCH_DAYS = 62;
+
 export const TODAY_SUMMARY_TOP_TODOS_MAX = 10;
 
 export const TODO_PAGE_SIZE = {

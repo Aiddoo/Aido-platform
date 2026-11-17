@@ -1,5 +1,4 @@
 import {
-  STORE_PERIOD_TYPE,
   type StorePeriodType,
   type SubscriptionEnvironment,
   type SubscriptionPlanType,
@@ -9,6 +8,7 @@ import {
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { STORE_PERIOD_TYPE } from "../../shared/domain/store-period-type.domain-service.js";
 import { planTypeOfProduct } from "../../shared/domain/subscription-plan.domain-service.js";
 import { ProviderEventId } from "./provider-event-id.vo.js";
 import { StoreSubscriptionId } from "./store-subscription-id.vo.js";
