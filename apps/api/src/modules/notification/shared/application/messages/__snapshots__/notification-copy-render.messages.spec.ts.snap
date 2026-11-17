@@ -13,7 +13,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > AI 제안 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 결제 문제 1`] = `
 [
   {
-    "body": "Update payment to keep your plan active.",
+    "body": "Update payment to keep your plan active",
     "title": "Check your payment details",
     "variantId": "default",
   },
@@ -1849,7 +1849,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 리텐션 D0 d0_no_todo 1`] = `
   },
   {
     "body": "Jot down one thing to remember 🐾",
-    "title": "Make a first plan with Aido?",
+    "title": "Your first plan with Aido?",
     "variantId": "d0_no_todo.v2",
   },
   {
@@ -1869,7 +1869,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 리텐션 D1 d1_has_todo_no_complet
   },
   {
     "body": "Choose one to-do from your list",
-    "title": "Start with what you wrote",
+    "title": "Start with what’s on your list",
     "variantId": "d1_has_todo_no_completion.v2",
   },
   {
@@ -1949,7 +1949,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 리텐션 D7 d7_restart 1`] = `
   },
   {
     "body": "One to-do is all it takes",
-    "title": "It’s never too late to restart",
+    "title": "Restart whenever you’re ready",
     "variantId": "d7_restart.v2",
   },
   {
@@ -2014,7 +2014,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 마일스톤 STREAK_3 1`] = `
 [
   {
     "body": "Nice rhythm. Keep it going tomorrow",
-    "title": "3 days in a row 🔥",
+    "title": "3-day streak 🔥",
     "variantId": "default",
   },
 ]
@@ -2039,7 +2039,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 0일 1`] = `
   },
   {
     "body": "One small thing is enough",
-    "title": "Plan today together?",
+    "title": "Want to plan your day?",
     "variantId": "copy_render_v1.winback.day_3.v2",
   },
   {
@@ -2059,7 +2059,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 3일 1`] = `
   },
   {
     "body": "One small thing is enough",
-    "title": "Plan today together?",
+    "title": "Want to plan your day?",
     "variantId": "copy_render_v1.winback.day_3.v2",
   },
   {
@@ -2079,7 +2079,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 6일 1`] = `
   },
   {
     "body": "One small thing is enough",
-    "title": "Plan today together?",
+    "title": "Want to plan your day?",
     "variantId": "copy_render_v1.winback.day_3.v2",
   },
   {
@@ -2183,7 +2183,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 21일 1`] = `
     "variantId": "copy_render_v1.winback.day_21.v2",
   },
   {
-    "body": "Let’s pick up with one small plan",
+    "body": "Let’s start again with one small plan",
     "title": "Aido’s still here 🐾",
     "variantId": "copy_render_v1.winback.day_21.v3",
   },
@@ -2203,7 +2203,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 29일 1`] = `
     "variantId": "copy_render_v1.winback.day_21.v2",
   },
   {
-    "body": "Let’s pick up with one small plan",
+    "body": "Let’s start again with one small plan",
     "title": "Aido’s still here 🐾",
     "variantId": "copy_render_v1.winback.day_21.v3",
   },
@@ -2253,7 +2253,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 복귀 365일 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 나중에 눈 · 2026-07-16T06:00:00.000Z 1`] = `
 [
   {
-    "body": "Roads may be slippery. Dress warm",
+    "body": "Roads may be slippery. Bundle up",
     "title": "Snow from 3 PM today ❄️",
     "variantId": "copy_render_v1.weather.morning.snow_later.default",
   },
@@ -2263,7 +2263,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 나중에 눈 · 2026
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 나중에 눈 · 2026-07-16T06:30:00.000Z 1`] = `
 [
   {
-    "body": "Roads may be slippery. Dress warm",
+    "body": "Roads may be slippery. Bundle up",
     "title": "Snow from 3:30 PM today ❄️",
     "variantId": "copy_render_v1.weather.morning.snow_later.default",
   },
@@ -2513,7 +2513,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 위치 없음 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · emoji 제목 1`] = `
 [
   {
-    "body": "Do it indoors or move the time",
+    "body": "Do it indoors or pick a safer time",
     "title": "Lightning risk at 3 PM for “🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” ⚡",
     "variantId": "copy_render_v1.weather.morning.todo_storm.default",
   },
@@ -2523,7 +2523,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · emo
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "Do it indoors or move the time",
+    "body": "Do it indoors or pick a safer time",
     "title": "Lightning risk at 3 PM for “Write the quart…” ⚡",
     "variantId": "copy_render_v1.weather.morning.todo_storm.default",
   },
@@ -2533,7 +2533,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 긴
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "Do it indoors or move the time",
+    "body": "Do it indoors or pick a safer time",
     "title": "Lightning risk at 3 PM for “긴할일긴할일긴할일긴할일긴할일…” ⚡",
     "variantId": "copy_render_v1.weather.morning.todo_storm.default",
   },
@@ -2543,7 +2543,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 긴
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "Do it indoors or move the time",
+    "body": "Do it indoors or pick a safer time",
     "title": "Lightning risk at 3 PM for “{todoTitle} {{x…” ⚡",
     "variantId": "copy_render_v1.weather.morning.todo_storm.default",
   },
@@ -2553,7 +2553,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 자
 exports[`en 푸시 문구 렌더 스냅샷 > 아침 날씨 할 일 뇌우 · 짧은 제목 1`] = `
 [
   {
-    "body": "Do it indoors or move the time",
+    "body": "Do it indoors or pick a safer time",
     "title": "Lightning risk at 3 PM for “한강 산책” ⚡",
     "variantId": "copy_render_v1.weather.morning.todo_storm.default",
   },
@@ -2783,7 +2783,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 리마인더 1개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "Knock out one and you’re rolling",
+    "body": "Knock one out and you’re rolling",
     "title": "Today’s list: 1 to-do",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
@@ -2813,7 +2813,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 리마인더 2개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "Knock out one and you’re rolling",
+    "body": "Knock one out and you’re rolling",
     "title": "Today’s list: 2 to-dos",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
@@ -2843,7 +2843,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 아침 리마인더 999개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "Knock out one and you’re rolling",
+    "body": "Knock one out and you’re rolling",
     "title": "Today’s list: 999 to-dos",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
@@ -2904,7 +2904,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 연속 기록 위험 1일 1`] = `
 [
   {
     "body": "Check what’s left on your to-do list",
-    "title": "Keep your 1-day streak alive 🔥",
+    "title": "Keep your 1-day streak going 🔥",
     "variantId": "copy_render_v1.v1",
   },
   {
@@ -2924,7 +2924,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 연속 기록 위험 5일 1`] = `
 [
   {
     "body": "Check what’s left on your to-do list",
-    "title": "Keep your 5-day streak alive 🔥",
+    "title": "Keep your 5-day streak going 🔥",
     "variantId": "copy_render_v1.v1",
   },
   {
@@ -2944,7 +2944,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 연속 기록 위험 999일 1`] = `
 [
   {
     "body": "Check what’s left on your to-do list",
-    "title": "Keep your 999-day streak alive 🔥",
+    "title": "Keep your 999-day streak going 🔥",
     "variantId": "copy_render_v1.v1",
   },
   {
@@ -3293,7 +3293,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · afterno
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · afternoon · 쌀쌀함 1`] = `
 [
   {
-    "body": "9°C in the morning. Dress warm and leave early",
+    "body": "9°C in the morning. Bundle up and leave early",
     "title": "Snow starting tomorrow afternoon ❄️",
     "variantId": "copy_render_v1.weather.evening.snow.default",
   },
@@ -3313,7 +3313,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · dawn ·
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · dawn · 쌀쌀함 1`] = `
 [
   {
-    "body": "9°C in the morning. Dress warm and leave early",
+    "body": "9°C in the morning. Bundle up and leave early",
     "title": "Snow starting before dawn tomorrow ❄️",
     "variantId": "copy_render_v1.weather.evening.snow.default",
   },
@@ -3333,7 +3333,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · evening
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · evening · 쌀쌀함 1`] = `
 [
   {
-    "body": "9°C in the morning. Dress warm and leave early",
+    "body": "9°C in the morning. Bundle up and leave early",
     "title": "Snow starting tomorrow evening ❄️",
     "variantId": "copy_render_v1.weather.evening.snow.default",
   },
@@ -3353,7 +3353,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · morning
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · morning · 쌀쌀함 1`] = `
 [
   {
-    "body": "9°C in the morning. Dress warm and leave early",
+    "body": "9°C in the morning. Bundle up and leave early",
     "title": "Snow starting tomorrow morning ❄️",
     "variantId": "copy_render_v1.weather.evening.snow.default",
   },
@@ -3373,7 +3373,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · 시간 
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 눈 · 시간 모름 · 쌀쌀함 1`] = `
 [
   {
-    "body": "9°C in the morning. Dress warm and leave early",
+    "body": "9°C in the morning. Bundle up and leave early",
     "title": "Snow expected tomorrow ❄️",
     "variantId": "copy_render_v1.weather.evening.snow.default",
   },
@@ -3483,7 +3483,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 비 · 시간 
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · CLEAR · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Clear tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3503,7 +3503,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · CLEA
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · CLOUDY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Cloudy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3523,7 +3523,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · CLOU
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · DRIZZLE · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Drizzle tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3543,7 +3543,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · DRIZ
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · FOGGY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Foggy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3563,7 +3563,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · FOGG
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · FRIGID · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Freezing tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3583,7 +3583,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · FRIG
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HAIL · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Hail tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3603,7 +3603,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HAIL
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HAZY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Hazy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3623,7 +3623,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HAZY
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HEAVY_RAIN · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Heavy rain tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3643,7 +3643,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HEAV
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HEAVY_SNOW · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Heavy snow tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3663,7 +3663,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HEAV
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HOT · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Hot tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3683,7 +3683,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · HOT 
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · MOSTLY_CLEAR · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Mostly clear tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3703,7 +3703,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · MOST
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · MOSTLY_CLOUDY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Mostly cloudy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3723,7 +3723,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · MOST
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · PARTLY_CLOUDY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Partly cloudy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3743,7 +3743,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · PART
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · RAIN · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Rain tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3763,7 +3763,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · RAIN
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · SLEET · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Sleet tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3783,7 +3783,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · SLEE
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · SNOW · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Snow tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3803,7 +3803,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · SNOW
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · THUNDERSTORMS · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Thunderstorms tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3823,7 +3823,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · THUN
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 날씨 내일 요약 · WINDY · 보통 1`] = `
 [
   {
-    "body": "Plan your day with it",
+    "body": "Handy for planning tomorrow",
     "title": "Windy tomorrow, -3–29°C 🌙",
     "variantId": "copy_render_v1.weather.evening.summary.default",
   },
@@ -3873,7 +3873,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 완료 없음 1
     "variantId": "copy_render_v1.evening.none.v2",
   },
   {
-    "body": "Start with a 5-minute task",
+    "body": "Pick something that takes 5 minutes",
     "title": "Just one small thing tonight?",
     "variantId": "copy_render_v1.evening.none.v3",
   },
@@ -3923,7 +3923,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
     "variantId": "copy_render_v1.evening.partial.v3",
   },
   {
-    "body": "Do what you can. That’s enough",
+    "body": "Whatever you get done is enough",
     "title": "1 left on today’s list",
     "variantId": "copy_render_v1.evening.partial.v4",
   },
@@ -3933,7 +3933,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 · 1개 남음 · 연속 위험 1`] = `
 [
   {
-    "body": "Finish them all to keep it going",
+    "body": "Wrap up the rest to keep it going",
     "title": "4-day streak, 1 to go",
     "variantId": "copy_render_v1.evening.streak_risk_partial.v1",
   },
@@ -3968,7 +3968,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
     "variantId": "copy_render_v1.evening.partial.v3",
   },
   {
-    "body": "Do what you can. That’s enough",
+    "body": "Whatever you get done is enough",
     "title": "2 left on today’s list",
     "variantId": "copy_render_v1.evening.partial.v4",
   },
@@ -3993,7 +3993,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
     "variantId": "copy_render_v1.evening.partial.v3",
   },
   {
-    "body": "Do what you can. That’s enough",
+    "body": "Whatever you get done is enough",
     "title": "2 left on today’s list",
     "variantId": "copy_render_v1.evening.partial.v4",
   },
@@ -4003,7 +4003,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
 exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 · 연속 위험 1`] = `
 [
   {
-    "body": "Finish them all to keep it going",
+    "body": "Wrap up the rest to keep it going",
     "title": "4-day streak, 2 to go",
     "variantId": "copy_render_v1.evening.streak_risk_partial.v1",
   },
@@ -4113,7 +4113,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 전부 완료 �
     "variantId": "copy_render_v1.evening.complete.v4",
   },
   {
-    "body": "Your finished to-dos filled the day",
+    "body": "You made today count",
     "title": "Nice work today",
     "variantId": "copy_render_v1.evening.complete.v5",
   },
@@ -4133,7 +4133,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 저녁 리마인더 할 일 없음 
     "variantId": "copy_render_v1.evening.none.v2",
   },
   {
-    "body": "Start with a 5-minute task",
+    "body": "Pick something that takes 5 minutes",
     "title": "Just one small thing tonight?",
     "variantId": "copy_render_v1.evening.none.v3",
   },
@@ -4149,7 +4149,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 점심 콕 1`] = `
 [
   {
     "body": "Pick something you can do now",
-    "title": "Post-lunch to-do?",
+    "title": "One to-do after lunch?",
     "variantId": "copy_render_v1.v1",
   },
   {
@@ -4653,7 +4653,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 첫날 · 자리표시자 �
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · emoji 1`] = `
 [
   {
-    "body": "Finish a to-do today and John 🐈 gets a paw print",
+    "body": "John 🐈 gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4663,7 +4663,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · emoji 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 긴 이름 1`] = `
 [
   {
-    "body": "Finish a to-do today and 가나다라마바사아자차카타파하가… gets a paw print",
+    "body": "가나다라마바사아자차카타파하가… gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4673,7 +4673,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 긴 이름 1`]
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 대체 이름 1`] = `
 [
   {
-    "body": "Finish a to-do today and A friend gets a paw print",
+    "body": "A friend gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4683,7 +4683,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 대체 이름 
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 받침 없음 1`] = `
 [
   {
-    "body": "Finish a to-do today and 민재 gets a paw print",
+    "body": "민재 gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4693,7 +4693,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 받침 없음 
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 받침 있음 1`] = `
 [
   {
-    "body": "Finish a to-do today and 민준 gets a paw print",
+    "body": "민준 gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4703,7 +4703,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 받침 있음 
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 영문 1`] = `
 [
   {
-    "body": "Finish a to-do today and Mina gets a paw print",
+    "body": "Mina gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4713,7 +4713,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 영문 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 초대 하루 더 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "Finish a to-do today and {senderName} {{… gets a paw print",
+    "body": "{senderName} {{… gets a paw print when you finish a to-do today",
     "title": "Just one more day 🐾",
     "variantId": "copy_render_v1.invite.qualify-reminder.default",
   },
@@ -4873,7 +4873,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · emoji 1`] = `
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell John 🐈 nice job 🐾",
+    "body": "Tell John 🐈 they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4893,7 +4893,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 긴 이름 1`] = `
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell 가나다라마바사아자차카타파하가나다라마바사아자차카타파하 nice job 🐾",
+    "body": "Tell 가나다라마바사아자차카타파하가나다라마바사아자차카타파하 they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4913,7 +4913,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 대체 이름 1`] 
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell your friend nice job 🐾",
+    "body": "Tell your friend they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4933,7 +4933,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 받침 없음 1`] 
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell 민재 nice job 🐾",
+    "body": "Tell 민재 they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4953,7 +4953,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 받침 있음 1`] 
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell 민준 nice job 🐾",
+    "body": "Tell 민준 they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4973,7 +4973,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 영문 1`] = `
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell Mina nice job 🐾",
+    "body": "Tell Mina they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -4993,7 +4993,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 자리표시자 �
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
-    "body": "Tell {senderName} {{x}} nice job 🐾",
+    "body": "Tell {senderName} {{x}} they did great 🐾",
     "title": "Your friend wrapped up the day",
     "variantId": "copy_render_v1.friend_completed.v3",
   },
@@ -5003,7 +5003,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 · 자리표시자 �
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 1명 1`] = `
 [
   {
-    "body": "Knock out one too and send a cheer?",
+    "body": "Knock one out too, then send a cheer?",
     "title": "1 friend finished today ✨",
     "variantId": "copy_render_v1.social_digest.multi.v1",
   },
@@ -5023,7 +5023,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 1명 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 2명 1`] = `
 [
   {
-    "body": "Knock out one too and send a cheer?",
+    "body": "Knock one out too, then send a cheer?",
     "title": "2 friends finished today ✨",
     "variantId": "copy_render_v1.social_digest.multi.v1",
   },
@@ -5043,7 +5043,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 2명 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 999명 1`] = `
 [
   {
-    "body": "Knock out one too and send a cheer?",
+    "body": "Knock one out too, then send a cheer?",
     "title": "999 friends finished today ✨",
     "variantId": "copy_render_v1.social_digest.multi.v1",
   },
@@ -5063,7 +5063,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 999명 1`] = `
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · emoji 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "John 🐈 is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5083,7 +5083,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · emo
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 긴 이름 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하 is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5103,7 +5103,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 긴
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 대체 이름 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "A friend is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5123,7 +5123,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 대
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 받침 없음 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "민재 is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5143,7 +5143,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 받
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 받침 있음 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "민준 is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5163,7 +5163,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 받
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 영문 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "Mina is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5183,7 +5183,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 영
 exports[`en 푸시 문구 렌더 스냅샷 > 친구 완료 요약 한 명 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "Cheer them on, then knock out one?",
+    "body": "Cheer them on, then knock one out?",
     "title": "{senderName} {{x}} is all done today ✨",
     "variantId": "copy_render_v1.social_digest.single.v1",
   },
@@ -5343,7 +5343,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 요청 · 자리표시자 �
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "John 🐈 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5353,7 +5353,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · emoji 제목
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "John 🐈 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5363,7 +5363,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 긴 영어 �
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "John 🐈 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5373,7 +5373,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 긴 한국�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "John 🐈 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5383,7 +5383,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 자리표시
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "John 🐈 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5393,7 +5393,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · emoji · 짧은 제�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "가나다라마바사아자차카타파하가… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5403,7 +5403,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · emoji �
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "가나다라마바사아자차카타파하가… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5413,7 +5413,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 긴 영
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "가나다라마바사아자차카타파하가… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5423,7 +5423,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 긴 한
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "가나다라마바사아자차카타파하가… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5433,7 +5433,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 자리�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "가나다라마바사아자차카타파하가… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5443,7 +5443,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 긴 이름 · 짧은 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "A friend says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5453,7 +5453,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · emoj
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "A friend says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5463,7 +5463,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "A friend says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5473,7 +5473,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "A friend says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5483,7 +5483,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 자�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "A friend says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5493,7 +5493,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 대체 이름 · 짧�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "민재 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5503,7 +5503,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · emoj
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "민재 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5513,7 +5513,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "민재 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5523,7 +5523,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "민재 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5533,7 +5533,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 자�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "민재 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5543,7 +5543,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 없음 · 짧�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "민준 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5553,7 +5553,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · emoj
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "민준 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5563,7 +5563,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "민준 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5573,7 +5573,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 긴 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "민준 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5583,7 +5583,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 자�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "민준 says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5593,7 +5593,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 받침 있음 · 짧�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "Mina says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5603,7 +5603,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · emoji 제�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "Mina says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5613,7 +5613,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 긴 영어 
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "Mina says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5623,7 +5623,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 긴 한국�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "Mina says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5633,7 +5633,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 자리표�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "Mina says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5643,7 +5643,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 영문 · 짧은 제�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문법 · emoji 제목 1`] = `
 [
   {
-    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your cheer worked!",
+    "body": "“🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…” is done. Your nudge helped",
     "title": "{senderName} {{… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5653,7 +5653,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문법 · 긴 영어 제목 1`] = `
 [
   {
-    "body": "“Write the quart…” is done. Your cheer worked!",
+    "body": "“Write the quart…” is done. Your nudge helped",
     "title": "{senderName} {{… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5663,7 +5663,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문법 · 긴 한국어 제목 1`] = `
 [
   {
-    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your cheer worked!",
+    "body": "“긴할일긴할일긴할일긴할일긴할일…” is done. Your nudge helped",
     "title": "{senderName} {{… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5673,7 +5673,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문법 · 자리표시자 문법 1`] = `
 [
   {
-    "body": "“{todoTitle} {{x…” is done. Your cheer worked!",
+    "body": "“{todoTitle} {{x…” is done. Your nudge helped",
     "title": "{senderName} {{… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5683,7 +5683,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문�
 exports[`en 푸시 문구 렌더 스냅샷 > 콕 감사 · 자리표시자 문법 · 짧은 제목 1`] = `
 [
   {
-    "body": "“한강 산책” is done. Your cheer worked!",
+    "body": "“한강 산책” is done. Your nudge helped",
     "title": "{senderName} {{… says thanks 🐾",
     "variantId": "copy_render_v1.nudge.thanks.default",
   },
@@ -5914,7 +5914,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · emoji · 할 일 없�
   },
   {
     "body": "John 🐈 is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -5944,7 +5944,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 긴 이름 · 할 일
   },
   {
     "body": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하 is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -5974,7 +5974,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 대체 이름 · 할 
   },
   {
     "body": "A friend is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6004,7 +6004,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 받침 없음 · 할 
   },
   {
     "body": "민재 is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6034,7 +6034,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 받침 있음 · 할 
   },
   {
     "body": "민준 is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6064,7 +6064,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 영문 · 할 일 없
   },
   {
     "body": "Mina is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6094,7 +6094,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 자리표시자 문�
   },
   {
     "body": "{senderName} {{x}} is rooting for you today",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6124,7 +6124,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 할 일 emoji 제목 
   },
   {
     "body": "민재 is rooting for “🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…”",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6154,7 +6154,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 할 일 긴 영어 �
   },
   {
     "body": "민재 is rooting for “Write the quart…”",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6184,7 +6184,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 할 일 긴 한국어
   },
   {
     "body": "민재 is rooting for “긴할일긴할일긴할일긴할일긴할일…”",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6214,7 +6214,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 할 일 자리표시�
   },
   {
     "body": "민재 is rooting for “{todoTitle} {{x…”",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6244,7 +6244,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 받음 · 할 일 짧은 제목
   },
   {
     "body": "민재 is rooting for “한강 산책”",
-    "title": "A friend is cheering you on",
+    "title": "You got a nudge",
     "variantId": "copy_render_v1.nudge.standard.v3",
   },
 ]
@@ -6269,7 +6269,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · emoji 1`] = `
   },
   {
     "body": "Say hi to John 🐈 with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6289,7 +6289,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 긴 이름 1`] = `
   },
   {
     "body": "Say hi to 가나다라마바사아자차카타파하가나다라마바사아자차카타파하 with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6309,7 +6309,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 대체 이름 1`] = `
   },
   {
     "body": "Say hi to your friend with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6329,7 +6329,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 받침 없음 1`] = `
   },
   {
     "body": "Say hi to 민재 with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6349,7 +6349,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 받침 있음 1`] = `
   },
   {
     "body": "Say hi to 민준 with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6369,7 +6369,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 영문 1`] = `
   },
   {
     "body": "Say hi to Mina with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6389,7 +6389,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 콕 제안 · 자리표시자 문�
   },
   {
     "body": "Say hi to {senderName} {{x}} with a nudge",
-    "title": "Send a friend some cheer?",
+    "title": "Thinking of a friend?",
     "variantId": "copy_render_v1.v2",
   },
   {
@@ -6614,7 +6614,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · emoji 1`] 
 [
   {
     "body": "Add one to-do for today?",
-    "title": "John 🐈 wants to get started with you 🐾",
+    "title": "John 🐈 says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6624,7 +6624,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · emoji 1`] 
   },
   {
     "body": "John 🐈 sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6644,7 +6644,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 긴 이름
 [
   {
     "body": "Add one to-do for today?",
-    "title": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하 wants to get started with you 🐾",
+    "title": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하 says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6654,7 +6654,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 긴 이름
   },
   {
     "body": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하 sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6674,7 +6674,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 대체 이
 [
   {
     "body": "Add one to-do for today?",
-    "title": "A friend wants to get started with you 🐾",
+    "title": "A friend says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6684,7 +6684,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 대체 이
   },
   {
     "body": "A friend sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6704,7 +6704,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 받침 없
 [
   {
     "body": "Add one to-do for today?",
-    "title": "민재 wants to get started with you 🐾",
+    "title": "민재 says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6714,7 +6714,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 받침 없
   },
   {
     "body": "민재 sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6734,7 +6734,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 받침 있
 [
   {
     "body": "Add one to-do for today?",
-    "title": "민준 wants to get started with you 🐾",
+    "title": "민준 says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6744,7 +6744,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 받침 있
   },
   {
     "body": "민준 sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6764,7 +6764,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 영문 1`]
 [
   {
     "body": "Add one to-do for today?",
-    "title": "Mina wants to get started with you 🐾",
+    "title": "Mina says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6774,7 +6774,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 영문 1`]
   },
   {
     "body": "Mina sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -6794,7 +6794,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 자리표�
 [
   {
     "body": "Add one to-do for today?",
-    "title": "{senderName} {{x}} wants to get started with you 🐾",
+    "title": "{senderName} {{x}} says let’s get started 🐾",
     "variantId": "copy_render_v1.nudge.todo_creation.v1",
   },
   {
@@ -6804,7 +6804,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 자리표�
   },
   {
     "body": "{senderName} {{x}} sent a little check-in",
-    "title": "A friend is cheering you on",
+    "title": "A nudge to start your day",
     "variantId": "copy_render_v1.nudge.todo_creation.v3",
   },
 ]
@@ -9033,7 +9033,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 복귀 29일 1`] = `
 exports[`ko 푸시 문구 렌더 스냅샷 > 복귀 30일 1`] = `
 [
   {
-    "body": "한 달 전 말고, 지금 필요한 일부터요",
+    "body": "큰 계획 말고, 지금 필요한 일부터요",
     "title": "오늘부터 다시 계획해볼까요?",
     "variantId": "copy_render_v1.winback.day_30.v1",
   },
@@ -9053,7 +9053,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 복귀 30일 1`] = `
 exports[`ko 푸시 문구 렌더 스냅샷 > 복귀 365일 1`] = `
 [
   {
-    "body": "한 달 전 말고, 지금 필요한 일부터요",
+    "body": "큰 계획 말고, 지금 필요한 일부터요",
     "title": "오늘부터 다시 계획해볼까요?",
     "variantId": "copy_render_v1.winback.day_30.v1",
   },
@@ -9603,8 +9603,8 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 아침 리마인더 1개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "할 일 1개 중 하나만 끝내도 좋은 출발이에요",
-    "title": "오늘도 같이 시작해요",
+    "body": "하나만 끝내도 좋은 출발이에요",
+    "title": "오늘 할 일 1개, 같이 시작해요",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
 ]
@@ -9633,8 +9633,8 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 아침 리마인더 2개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "할 일 2개 중 하나만 끝내도 좋은 출발이에요",
-    "title": "오늘도 같이 시작해요",
+    "body": "하나만 끝내도 좋은 출발이에요",
+    "title": "오늘 할 일 2개, 같이 시작해요",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
 ]
@@ -9663,8 +9663,8 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 아침 리마인더 999개 1`] = `
     "variantId": "copy_render_v1.morning.has_todo.v4",
   },
   {
-    "body": "할 일 999개 중 하나만 끝내도 좋은 출발이에요",
-    "title": "오늘도 같이 시작해요",
+    "body": "하나만 끝내도 좋은 출발이에요",
+    "title": "오늘 할 일 999개, 같이 시작해요",
     "variantId": "copy_render_v1.morning.has_todo.v5",
   },
 ]
@@ -9793,7 +9793,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 온보딩 0일 1`] = `
 exports[`ko 푸시 문구 렌더 스냅샷 > 온보딩 1일 1`] = `
 [
   {
-    "body": "적고, 끝내고, 체크하면 끝이에요 🐾",
+    "body": "적고, 하고, 체크하면 끝이에요 🐾",
     "title": "오늘 할 일 하나로 시작해요",
     "variantId": "copy_render_v1.onboarding.day_1.default",
   },
@@ -10719,7 +10719,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 완료 없음 �
   },
   {
     "body": "오늘 할 일을 다 끝내면 기록이 이어져요",
-    "title": "4일 동안 잘 해왔어요",
+    "title": "4일 동안 잘해왔어요",
     "variantId": "copy_render_v1.evening.streak_risk_none.v3",
   },
 ]
@@ -10734,7 +10734,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
   },
   {
     "body": "할 일 목록에서 다음 걸 골라봐요",
-    "title": "아직 체크 전인 일 1개",
+    "title": "아직 체크 안 한 할 일 1개",
     "variantId": "copy_render_v1.evening.partial.v2",
   },
   {
@@ -10779,7 +10779,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
   },
   {
     "body": "할 일 목록에서 다음 걸 골라봐요",
-    "title": "아직 체크 전인 일 2개",
+    "title": "아직 체크 안 한 할 일 2개",
     "variantId": "copy_render_v1.evening.partial.v2",
   },
   {
@@ -10804,7 +10804,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 일부 완료 �
   },
   {
     "body": "할 일 목록에서 다음 걸 골라봐요",
-    "title": "아직 체크 전인 일 2개",
+    "title": "아직 체크 안 한 할 일 2개",
     "variantId": "copy_render_v1.evening.partial.v2",
   },
   {
@@ -10873,7 +10873,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 전부 완료 �
 exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 전부 완료 · 연속 14일 1`] = `
 [
   {
-    "body": "14일의 꾸준함, 이제 습관이 됐어요",
+    "body": "꾸준함이 이제 습관이 됐어요",
     "title": "2주 연속 전부 완료 🏆",
     "variantId": "copy_render_v1.evening.streak_14.default",
   },
@@ -10933,7 +10933,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 저녁 리마인더 전부 완료 �
     "variantId": "copy_render_v1.evening.complete.v4",
   },
   {
-    "body": "끝낸 일들이 오늘을 꽉 채웠어요",
+    "body": "오늘 하루를 알차게 보냈어요",
     "title": "오늘 하루 수고 많았어요",
     "variantId": "copy_render_v1.evening.complete.v5",
   },
@@ -10983,7 +10983,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 점심 콕 1`] = `
     "variantId": "copy_render_v1.v3",
   },
   {
-    "body": "하나 끝내면 흐름이 붙어요",
+    "body": "하나 끝내면 속도가 붙어요",
     "title": "오늘 첫 체크는 작게",
     "variantId": "copy_render_v1.v4",
   },
@@ -11074,7 +11074,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 주간 성취 90% 1`] = `
   },
   {
     "body": "잘 해낸 일부터 돌아봐요",
-    "title": "지난주 기록 90% 완료",
+    "title": "지난주 할 일 90% 완료",
     "variantId": "copy_render_v1.weekly_achievement.almost.v3",
   },
 ]
@@ -11094,7 +11094,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 주간 성취 반올림 100% 1`] = 
   },
   {
     "body": "잘 해낸 일부터 돌아봐요",
-    "title": "지난주 기록 99% 완료",
+    "title": "지난주 할 일 99% 완료",
     "variantId": "copy_render_v1.weekly_achievement.almost.v3",
   },
 ]
@@ -11689,7 +11689,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · emoji 1`] = `
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "John 🐈님, 오늘 할 일 전부 완료",
+    "title": "John 🐈님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11709,7 +11709,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 긴 이름 1`] = `
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하님, 오늘 할 일 전부 완료",
+    "title": "가나다라마바사아자차카타파하가나다라마바사아자차카타파하님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11729,7 +11729,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 대체 이름 1`] 
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "친구, 오늘 할 일 전부 완료",
+    "title": "친구의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11749,7 +11749,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 받침 없음 1`] 
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "민재님, 오늘 할 일 전부 완료",
+    "title": "민재님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11769,7 +11769,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 받침 있음 1`] 
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "민준님, 오늘 할 일 전부 완료",
+    "title": "민준님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11789,7 +11789,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 영문 1`] = `
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "Mina님, 오늘 할 일 전부 완료",
+    "title": "Mina님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11809,7 +11809,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 · 자리표시자 �
   },
   {
     "body": "응원 한마디가 큰 힘이 돼요",
-    "title": "{senderName} {{x}}님, 오늘 할 일 전부 완료",
+    "title": "{senderName} {{x}}님의 오늘 할 일 전부 완료",
     "variantId": "copy_render_v1.friend_completed.v2",
   },
   {
@@ -11829,7 +11829,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 요약 1명 1`] = `
   },
   {
     "body": "축하 한마디 건네봐요",
-    "title": "친구 1명이 오늘 완료했어요",
+    "title": "친구 1명이 오늘 할 일을 마쳤어요",
     "variantId": "copy_render_v1.social_digest.multi.v2",
   },
   {
@@ -11849,7 +11849,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 요약 2명 1`] = `
   },
   {
     "body": "축하 한마디 건네봐요",
-    "title": "친구 2명이 오늘 완료했어요",
+    "title": "친구 2명이 오늘 할 일을 마쳤어요",
     "variantId": "copy_render_v1.social_digest.multi.v2",
   },
   {
@@ -11869,7 +11869,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 완료 요약 999명 1`] = `
   },
   {
     "body": "축하 한마디 건네봐요",
-    "title": "친구 999명이 오늘 완료했어요",
+    "title": "친구 999명이 오늘 할 일을 마쳤어요",
     "variantId": "copy_render_v1.social_digest.multi.v2",
   },
   {
@@ -13244,7 +13244,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 할 일 리마인더 10min · emoji
   },
   {
     "body": "10분 뒤 ‘🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️🏃‍♀️…’ 시작이에요",
-    "title": "슬슬 준비해볼까요?",
+    "title": "슬슬 준비해볼까요? 🐾",
     "variantId": "copy_render_v1.v3",
   },
 ]
@@ -13264,7 +13264,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 할 일 리마인더 10min · 긴 �
   },
   {
     "body": "10분 뒤 ‘Write the quarterly rep…’ 시작이에요",
-    "title": "슬슬 준비해볼까요?",
+    "title": "슬슬 준비해볼까요? 🐾",
     "variantId": "copy_render_v1.v3",
   },
 ]
@@ -13284,7 +13284,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 할 일 리마인더 10min · 긴 �
   },
   {
     "body": "10분 뒤 ‘긴할일긴할일긴할일긴할일긴할일긴할일긴할일긴할…’ 시작이에요",
-    "title": "슬슬 준비해볼까요?",
+    "title": "슬슬 준비해볼까요? 🐾",
     "variantId": "copy_render_v1.v3",
   },
 ]
@@ -13304,7 +13304,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 할 일 리마인더 10min · 자�
   },
   {
     "body": "10분 뒤 ‘{todoTitle} {{x}}’ 시작이에요",
-    "title": "슬슬 준비해볼까요?",
+    "title": "슬슬 준비해볼까요? 🐾",
     "variantId": "copy_render_v1.v3",
   },
 ]
@@ -13324,7 +13324,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 할 일 리마인더 10min · 짧�
   },
   {
     "body": "10분 뒤 ‘한강 산책’ 시작이에요",
-    "title": "슬슬 준비해볼까요?",
+    "title": "슬슬 준비해볼까요? 🐾",
     "variantId": "copy_render_v1.v3",
   },
 ]

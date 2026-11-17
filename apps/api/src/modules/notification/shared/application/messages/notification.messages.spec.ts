@@ -337,7 +337,7 @@ describe("알림 문구 생성", () => {
     });
     expect(english).toMatchObject({
       title: "Just one more day 🐾",
-      body: "Finish a to-do today and 매튜 gets a paw print",
+      body: "매튜 gets a paw print when you finish a to-do today",
     });
   });
 
