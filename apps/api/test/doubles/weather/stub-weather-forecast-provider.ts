@@ -1,11 +1,11 @@
+import type { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
 import {
   type ForecastAvailability,
   type ForecastTiming,
   WeatherForecastProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import type { WeatherForecast } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import { resolveKmaForecastAvailability } from "#api/modules/weather/forecasts/infrastructure/adapters/kma-issuance.mapper";
-import type { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
+} from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
+import type { WeatherForecastReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-forecast.read-model";
+import { resolveKmaForecastAvailability } from "#api/modules/weather/weather-reports/infrastructure/adapters/kma-issuance.mapper";
 import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
 
 export interface RecordedForecastCall {
@@ -20,7 +20,7 @@ export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   readonly name = "fixture";
   readonly timeZone: string;
   readonly calls: RecordedForecastCall[] = [];
-  readonly results = new Map<string, WeatherForecast | Error>();
+  readonly results = new Map<string, WeatherForecastReadModel | Error>();
   failure: Error | null = null;
   forecast = weatherForecastFixture();
 
@@ -39,7 +39,7 @@ export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   async getForecast(
     grid: GridCoordinate,
     { target, issuance }: ForecastTiming,
-  ): Promise<WeatherForecast> {
+  ): Promise<WeatherForecastReadModel> {
     this.calls.push({ gridX: grid.gridX, gridY: grid.gridY, target, issuance });
     const result = this.results.get(`${grid.gridX}:${grid.gridY}`) ?? this.failure ?? this.forecast;
     if (result instanceof Error) {

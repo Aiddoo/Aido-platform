@@ -1,4 +1,4 @@
-import type { WeatherBriefingForecast } from "#api/modules/weather/forecasts/weather-forecasts.public";
+import type { WeatherBriefingForecast } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 export interface ReminderWeatherReportRequest {

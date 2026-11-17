@@ -1,11 +1,11 @@
+import type { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
 import type {
   ForecastAvailability,
   ForecastTiming,
   WeatherForecastProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import type { WeatherForecast } from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import { resolveKmaForecastAvailability } from "#api/modules/weather/forecasts/infrastructure/adapters/kma-issuance.mapper";
-import type { GridCoordinate } from "#api/modules/weather/shared/domain/grid-coordinate.vo";
+} from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
+import type { WeatherForecastReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-forecast.read-model";
+import { resolveKmaForecastAvailability } from "#api/modules/weather/weather-reports/infrastructure/adapters/kma-issuance.mapper";
 
 /**
  * 테스트용 FakeWeatherProvider
@@ -24,7 +24,10 @@ export class FakeWeatherProvider implements WeatherForecastProviderPort {
     return resolveKmaForecastAvailability(params);
   }
 
-  async getForecast(grid: GridCoordinate, { target }: ForecastTiming): Promise<WeatherForecast> {
+  async getForecast(
+    grid: GridCoordinate,
+    { target }: ForecastTiming,
+  ): Promise<WeatherForecastReadModel> {
     this.#calls.push({ grid, target });
     return {
       date: target,

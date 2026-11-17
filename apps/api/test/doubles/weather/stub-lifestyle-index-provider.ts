@@ -1,7 +1,7 @@
 import {
   type LifestyleIndex,
   LifestyleIndexProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
+} from "#api/modules/weather/weather-reports/application/ports/lifestyle-index-provider.port";
 
 export class StubLifestyleIndexProvider extends LifestyleIndexProviderPort {
   readonly calls: {

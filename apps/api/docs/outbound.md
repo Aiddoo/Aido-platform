@@ -4,7 +4,7 @@
 
 ## 호출 정책
 
-- 외부 호출은 `OutboundPolicyRegistry.get(spec)`이 주는 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → timeout). 정책 값은 소유 slice infrastructure의 `<vendor>-outbound.policy.ts` 상수다(사례: [weather-outbound.policy.ts](../src/modules/weather/forecasts/infrastructure/adapters/weather-outbound.policy.ts), `ai-provider-`·`expo-`·`email-`·`oauth-`·`discord-`·`revenuecat-outbound.policy.ts`).
+- 외부 호출은 `OutboundPolicyRegistry.get(spec)`이 주는 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → timeout). 정책 값은 소유 slice infrastructure의 `<vendor>-outbound.policy.ts` 상수다(사례: [weather-outbound.policy.ts](../src/modules/weather/weather-reports/infrastructure/adapters/weather-outbound.policy.ts), `ai-provider-`·`expo-`·`email-`·`oauth-`·`discord-`·`revenuecat-outbound.policy.ts`).
 - HTTP는 `@nestjs/http-client` named client(`retry: false`, `throwOnHttpError: false`)로 보내고 JSON은 `requestVendorJson`(`platform/http/request-vendor-json.ts`)이 `success`·`http_failure`로 나눈다. 마감은 `AbortSignal.timeout`이다.
 - 재시도 층은 한 호출에 하나다. 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss다. cockatiel `retry`는 쓰지 않는다.
 - 회로를 다는 기준: 호출마다 돈이 들거나, 요청 경로에서 대기가 쌓이거나, 배치가 많은 호출로 퍼질 때. 회로는 전송 실패와 5xx(`isTransportFailure`·`isServerFailureOutcome`)만 센다. 4xx·응답 형식 오류는 그 요청의 문제다. 상태는 프로세스 메모리다.

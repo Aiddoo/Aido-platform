@@ -8,7 +8,7 @@ import { match } from "ts-pattern";
 import type {
   EveningWeatherBriefing,
   MorningWeatherBriefing,
-} from "#api/modules/weather/forecasts/weather-forecasts.public";
+} from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 

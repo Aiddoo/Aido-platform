@@ -1,7 +1,7 @@
 import {
   type SunTime,
   SunTimeProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
+} from "#api/modules/weather/weather-reports/application/ports/sun-time-provider.port";
 
 export class StubSunTimeProvider extends SunTimeProviderPort {
   readonly calls: { lat: number; lon: number; at: Temporal.Instant }[] = [];

@@ -61,10 +61,10 @@ export const SWAGGER_TAGS = {
   MEMOS: "Memos",
 
   /** 날씨 - 위치 등록, 날씨 예보 조회 */
-  WEATHER_V1: "Weather v1 · Deprecated",
+  WEATHER_DEPRECATED: "Weather v1 · Deprecated",
 
   /** 날씨 v2 - 위치 등록, 전 세계 날씨 리포트 조회 */
-  WEATHER_V2: "Weather v2",
+  WEATHER: "Weather v2",
 
   /** 할 일 댓글 v2 - 댓글 묶음·답글 읽기 */
   TODO_COMMENTS_V2: "Todo Comments v2",
@@ -161,10 +161,10 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.MEMOS]: "빠른 메모 CRUD. 핀 고정, 순서 변경, 할 일 변환 지원. 최대 20개/유저",
 
-  [SWAGGER_TAGS.WEATHER_V1]:
+  [SWAGGER_TAGS.WEATHER_DEPRECATED]:
     "1.13.1 이하 앱 전용. 기상청 단기예보·격자 캐시 기반. 1.14.0부터 앱은 `/v2/weather`를 사용한다.",
 
-  [SWAGGER_TAGS.WEATHER_V2]:
+  [SWAGGER_TAGS.WEATHER]:
     "1.14.0 이상 앱용. 전 세계 좌표의 현재·다음 1시간·시간별·일별 날씨와 특보를 Apple WeatherKit에서 받아 약 5km 칸 단위로 30분(강수 임박 시 10분) 캐시하고, 공급자 장애 때는 6시간 안의 마지막 데이터를 돌려줍니다. 한국 위치는 에어코리아 대기질을 함께 제공합니다.",
 
   [SWAGGER_TAGS.TODO_COMMENTS_V2]:

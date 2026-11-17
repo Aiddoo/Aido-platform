@@ -1,7 +1,7 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import { ReadWeatherReportUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-report.use-case";
-import { ReadWeatherReportsUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-reports.use-case";
-import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
+import { ReadWeatherReportUseCase } from "#api/modules/weather/weather-reports/application/use-cases/read-weather-report.use-case";
+import { ReadWeatherReportsUseCase } from "#api/modules/weather/weather-reports/application/use-cases/read-weather-reports.use-case";
+import { WeatherReportCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -14,7 +14,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
-import { weatherReportFixture } from "#test/fixtures/weather.fixture";
+import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
@@ -47,7 +47,7 @@ function seoulReport(
   },
   timezone = "Asia/Seoul",
 ): ReminderWeatherReport {
-  const report = weatherReportFixture(instantFromDate(NOW));
+  const report = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
   return {
     timezone,
     report: {
@@ -271,7 +271,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     clock = new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime()));
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
-    provider.report = weatherReportFixture(instantFromDate(NOW));
+    provider.report = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
     reader = new StubWeatherReminderReader();
     todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();

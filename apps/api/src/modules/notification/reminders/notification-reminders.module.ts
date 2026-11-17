@@ -7,7 +7,7 @@ import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-a
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
+import { WeatherWeatherReportsModule } from "../../weather/weather-reports/weather-weather-reports.public.js";
 import { NotificationPushModule } from "../push/notification-push.module.js";
 import { notificationRetentionConfig } from "../retention/notification-retention.config.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
@@ -25,7 +25,7 @@ import {
     TimezoneReminderQueueModule,
     DatabaseModule,
     NotificationPushModule,
-    WeatherForecastsModule,
+    WeatherWeatherReportsModule,
     InsightsWeeklyAchievementsModule,
     AccessFeatureGrantsQueriesModule,
     IdentityUserAccessModule,

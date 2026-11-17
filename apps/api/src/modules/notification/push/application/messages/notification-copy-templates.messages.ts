@@ -5,7 +5,7 @@ import {
 } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import type { WeatherDayPart } from "#api/modules/weather/forecasts/weather-forecasts.public";
+import type { WeatherDayPart } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 
 import type {
   NotificationCopy,

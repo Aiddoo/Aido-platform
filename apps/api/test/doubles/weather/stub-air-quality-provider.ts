@@ -1,7 +1,7 @@
 import {
   type AirQuality,
   AirQualityProviderPort,
-} from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
+} from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
 
 export class StubAirQualityProvider extends AirQualityProviderPort {
   readonly calls: { lat: number; lon: number }[] = [];

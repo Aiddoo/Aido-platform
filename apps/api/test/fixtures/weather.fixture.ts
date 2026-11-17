@@ -1,18 +1,12 @@
-import type { ForecastTiming } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
+import type { ForecastTiming } from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
 import type {
-  WeatherConditions,
-  WeatherForecast,
-} from "#api/modules/weather/forecasts/application/read-models/weather-forecast.read-model";
-import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/application/read-models/weather-report-attribution.read-model";
-import {
-  WeatherReport,
-  type WeatherReportDay,
-  type WeatherReportHour,
-  type WeatherReportValue,
-} from "#api/modules/weather/forecasts/domain/weather-report.vo";
+  WeatherConditionsReadModel,
+  WeatherForecastReadModel,
+} from "#api/modules/weather/weather-reports/application/read-models/weather-forecast.read-model";
+import type { WeatherReportAttributionReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-report-attribution.read-model";
 
 /** WeatherKit attribution API처럼 언어별로 다른 상표 로고 경로를 돌려준다. */
-export function weatherAttributionFixture(language = "ko"): WeatherReportAttribution {
+export function weatherAttributionFixture(language = "ko"): WeatherReportAttributionReadModel {
   const logoUrl = (variant: string) =>
     `https://weatherkit.apple.com/assets/branding/${language}/logo-${variant}.png`;
   return {
@@ -34,7 +28,9 @@ export function forecastTimingFixture(
   return { target, issuance };
 }
 
-export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {}): WeatherForecast {
+export function weatherForecastFixture(
+  overrides: Partial<WeatherForecastReadModel> = {},
+): WeatherForecastReadModel {
   const date = overrides.date ?? Temporal.Instant.from("2026-07-23T00:00:00.000Z");
   return {
     skyCondition: "CLEAR",
@@ -68,8 +64,8 @@ export function weatherForecastFixture(overrides: Partial<WeatherForecast> = {})
 }
 
 export function weatherConditionsFixture(
-  overrides: Partial<WeatherConditions> = {},
-): WeatherConditions {
+  overrides: Partial<WeatherConditionsReadModel> = {},
+): WeatherConditionsReadModel {
   return {
     feelsLikeTemperature: 25,
     uvIndex: 0,
@@ -79,77 +75,4 @@ export function weatherConditionsFixture(
     pm25: 0,
     ...overrides,
   };
-}
-
-/** fetchedAt 정각부터 30시간·11일을 담은 서울 기준 공급자 중립 리포트 */
-export function weatherReportFixture(
-  fetchedAt = Temporal.Instant.from("2026-11-02T06:20:00.000Z"),
-  overrides: Partial<WeatherReportValue> = {},
-): WeatherReport {
-  const hourStart = fetchedAt.round({ smallestUnit: "hour", roundingMode: "floor" });
-  const hourly = Array.from({ length: 30 }, (_, index): WeatherReportHour => ({
-    startsAt: hourStart.add({ hours: index }),
-    condition: "CLEAR",
-    isDaylight: true,
-    temperature: 12 + (index % 5),
-    apparentTemperature: 10,
-    humidity: 60,
-    uvIndex: 1,
-    windSpeed: 3.2,
-    windDirection: 270,
-    precipitationChance: 10,
-    precipitationAmount: 0,
-    precipitationType: "NONE",
-  }));
-  const firstDay = fetchedAt.toZonedDateTimeISO("UTC").toPlainDate();
-  const daily = Array.from({ length: 11 }, (_, index): WeatherReportDay => {
-    const utcMidnight = firstDay.add({ days: index }).toZonedDateTime("UTC").toInstant();
-    return {
-      date: firstDay.add({ days: index }),
-      condition: "PARTLY_CLOUDY",
-      temperatureMin: 8,
-      temperatureMax: 16,
-      precipitationChance: 20,
-      precipitationAmount: 0.4,
-      precipitationType: "RAIN",
-      snowfallAmount: 0,
-      uvIndexMax: 3,
-      windSpeedMax: 5.1,
-      windGustMax: null,
-      sunrise: utcMidnight.subtract({ hours: 2 }),
-      sunset: utcMidnight.add({ hours: 8 }),
-      moonPhase: "WANING_CRESCENT",
-      moonrise: null,
-      moonset: utcMidnight.add({ hours: 5 }),
-      restOfDay: null,
-      daytime: null,
-      overnight: null,
-    };
-  });
-  return WeatherReport.reconstitute({
-    current: {
-      observedAt: fetchedAt,
-      condition: "CLEAR",
-      isDaylight: true,
-      temperature: 12.4,
-      apparentTemperature: 10.1,
-      dewPoint: 4.5,
-      humidity: 58,
-      cloudCover: 10,
-      uvIndex: 1,
-      windSpeed: 3.2,
-      windGust: null,
-      windDirection: 270,
-      visibility: 20_000,
-      pressure: 1018.2,
-      pressureTrend: "STEADY",
-      precipitationIntensity: 0,
-    },
-    nextHour: null,
-    hourly,
-    daily,
-    alerts: [],
-    fetchedAt,
-    ...overrides,
-  });
 }

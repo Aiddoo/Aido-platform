@@ -6,7 +6,7 @@ import { StubReminderWeatherReportReader } from "#test/doubles/notification/stub
 import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weather-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { weatherReportFixture } from "#test/fixtures/weather.fixture";
+import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
@@ -31,7 +31,7 @@ function report({
   wetKstHourTomorrow,
   temperatureMin = 12,
 }: { wetKstHourTomorrow?: number; temperatureMin?: number } = {}): ReminderWeatherReport {
-  const fixture = weatherReportFixture(instantFromDate(NOW));
+  const fixture = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
   const wetAt =
     wetKstHourTomorrow == null ? null : NOW.getTime() + (wetKstHourTomorrow + 4) * HOUR_MS;
   return {

@@ -1,4 +1,4 @@
-import type { UserLocationRepositoryPort } from "#api/modules/weather/locations/application/ports/user-location.repository.port";
+import type { UserLocationRepositoryPort } from "#api/modules/weather/user-locations/application/ports/user-location.repository.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createUserLocationFixture,

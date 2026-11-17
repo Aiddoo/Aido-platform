@@ -48,11 +48,11 @@ import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-s
 import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
 import { PlanApplicationCleanupProcessor } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.processor";
 import { PlanApplicationCleanupScheduler } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.scheduler";
-import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
-import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
-import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
-import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import { AirQualityProviderPort } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
+import { LifestyleIndexProviderPort } from "#api/modules/weather/weather-reports/application/ports/lifestyle-index-provider.port";
+import { SunTimeProviderPort } from "#api/modules/weather/weather-reports/application/ports/sun-time-provider.port";
+import { WeatherForecastProviderPort } from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
+import { WeatherReportProviderPort } from "#api/modules/weather/weather-reports/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/database.client";

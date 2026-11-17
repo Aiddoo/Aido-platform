@@ -6,7 +6,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
-import { WeatherReportReaderPort } from "../../weather/forecasts/weather-forecasts.public.js";
+import { WeatherReportReaderPort } from "../../weather/weather-reports/weather-weather-reports.public.js";
 import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
 import { PublishNotificationUseCase } from "../push/application/use-cases/publish-notification.use-case.js";
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";

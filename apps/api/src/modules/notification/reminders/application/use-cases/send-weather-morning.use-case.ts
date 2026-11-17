@@ -3,7 +3,7 @@ import { groupBy } from "es-toolkit";
 import {
   decideMorningWeatherBriefing,
   type MorningWeatherBriefing,
-} from "#api/modules/weather/forecasts/weather-forecasts.public";
+} from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -1,8 +1,8 @@
+import type { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
 import {
   type ResolvedRegion,
   TimezoneResolverPort,
-} from "#api/modules/weather/locations/application/ports/timezone-resolver.port";
-import type { Coordinate } from "#api/modules/weather/shared/domain/coordinate.vo";
+} from "#api/modules/weather/user-locations/application/ports/timezone-resolver.port";
 
 export class StubTimezoneResolver extends TimezoneResolverPort {
   readonly coordinates: Coordinate[] = [];

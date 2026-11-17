@@ -72,7 +72,7 @@ apps/api/src/
 | social        | `friends`, `blocks`, `cheers`, `nudges`, `reminder-nudges`, `invites`, `invite-redemptions`, `reports` (+ `shared/`) |
 | notification  | `inbox`, `push`, `email`, `reminders`, `retention`                                                                   |
 | insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                             |
-| weather       | `forecasts`, `locations` (+ `shared/`)                                                                               |
+| weather       | `weather-reports`, `user-locations` (+ `shared/`)                                                                    |
 | ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`)                                          |
 | voice         | `voice-digests`, `plan-applications`                                                                                 |
 | operations    | `broadcasts`, `admin-notices`, `metrics`                                                                             |
@@ -164,7 +164,7 @@ commit → 캐시 정리
 | `EmailSenderPort`                                         | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                     |
 | `AdminNotifierPort`                                       | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                            |
 | `StoreSubscriptionStatusReaderPort` + 번역기              | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](billing.md#공급자-경계)) |
-| `WeatherReportProviderPort`·`WeatherForecastProviderPort` | WeatherKit, KMA                                     | `weather-forecasts.providers.ts`                                     |
+| `WeatherReportProviderPort`·`WeatherForecastProviderPort` | WeatherKit, KMA                                     | `weather-weather-reports.providers.ts`                               |
 | `AiGeneratorPort`                                         | AI SDK(Anthropic·Google·OpenAI 체인)                | `AI_PROVIDER_ORDER`([AI](ai.md))                                     |
 | `JobQueuePort`                                            | pg-boss                                             | `platform/jobs`                                                      |
 | `DomainEventPublisherPort`                                | 구독자별 pg-boss 작업(`FanOutDomainEventPublisher`) | `platform/events`                                                    |

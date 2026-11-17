@@ -1,4 +1,4 @@
-import { WeatherKitUsageMeterAdapter } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-usage-meter.adapter";
+import { WeatherKitUsageMeterAdapter } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit-usage-meter.adapter";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";

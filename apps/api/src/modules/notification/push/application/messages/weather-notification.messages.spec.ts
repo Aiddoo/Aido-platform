@@ -1,6 +1,6 @@
 import { pushNotificationDataSchema } from "@aido/api";
 
-import type { WeatherBriefingDay } from "#api/modules/weather/forecasts/weather-forecasts.public";
+import type { WeatherBriefingDay } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 
 import { formatWeatherNotificationTime } from "./notification-copy-format.messages.js";
 import {
