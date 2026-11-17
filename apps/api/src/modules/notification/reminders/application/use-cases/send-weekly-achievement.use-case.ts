@@ -20,7 +20,7 @@ interface WeeklyAchievementStrategyDependencies {
     WeeklyAchievementStatsReaderPort,
     "findFreeRecipientIds" | "groupCompletedTodosByUser" | "groupTotalTodosByUser"
   >;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
@@ -102,8 +102,8 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       return { sent: 0 };
     }
 
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      finalRecords.map((r) => r.userId),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      finalRecords.map((r) => UserId.reconstitute(r.userId)),
     );
     const notifications = finalRecords.map((r) => {
       const message = createWeeklyAchievementNotificationMessage({

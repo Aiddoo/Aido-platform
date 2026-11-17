@@ -22,7 +22,7 @@ interface SocialDigestStrategyDependencies {
     ReEngagementReaderPort,
     "findAcceptedFollows" | "findFriendsWithTodayTodos" | "findSocialDigestCandidates"
   >;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -49,7 +49,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
       timezones,
       today,
       tomorrow,
-      recipientUserIds,
+      recipientUserIds: recipientUserIds.map((userId) => UserId.reconstitute(userId)),
     });
 
     // 전체 완료한 유저 제외
@@ -83,7 +83,9 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
 
     const candidateIds = candidates.map((u) => u.id);
 
-    const allFollows = await this.#dependencies.reader.findAcceptedFollows(candidateIds);
+    const allFollows = await this.#dependencies.reader.findAcceptedFollows(
+      candidateIds.map((candidateId) => UserId.reconstitute(candidateId)),
+    );
 
     const candidateIdSet = new Set(candidateIds);
     const friendships = allFollows
@@ -105,7 +107,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
     }
 
     const friendsWithTodos = await this.#dependencies.reader.findFriendsWithTodayTodos({
-      friendIds: [...allFriendIds],
+      friendIds: [...allFriendIds].map((friendId) => UserId.reconstitute(friendId)),
       today,
       tomorrow,
     });
@@ -116,8 +118,8 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
         .map((friend) => [friend.id, { name: friend.profile?.name ?? null }]),
     );
 
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      candidates.map((u) => u.id),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      candidates.map((u) => UserId.reconstitute(u.id)),
     );
 
     const notifications: CreateNotificationData[] = [];

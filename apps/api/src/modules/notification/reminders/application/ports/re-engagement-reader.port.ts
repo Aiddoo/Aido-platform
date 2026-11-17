@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   FollowPairReadModel,
   FriendWithTodosReadModel,
@@ -24,7 +26,7 @@ export interface TodayRangeParams {
 
 export interface SocialDigestCandidateParams extends TodayRangeParams {
   /** 직전 저녁 리마인더를 실제로 받은 사용자만 조회한다. */
-  readonly recipientUserIds: readonly string[];
+  readonly recipientUserIds: readonly UserId[];
 }
 
 // Win-back·온보딩·넛지 추천·소셜 다이제스트·스트릭 위기 대상 조회
@@ -35,11 +37,13 @@ export abstract class ReEngagementReaderPort {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidateReadModel[]>;
-  abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]>;
+  abstract countCompletedTodosByUsers(
+    userIds: readonly UserId[],
+  ): Promise<UserTodoCountReadModel[]>;
   abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]>;
   /** candidate들의 비활성 맞팔 친구 관계 */
   abstract findNudgeSuggestFollows(params: {
-    candidateIds: string[];
+    candidateIds: readonly UserId[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollowReadModel[]>;
@@ -47,9 +51,9 @@ export abstract class ReEngagementReaderPort {
   abstract findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidateReadModel[]>;
-  abstract findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]>;
+  abstract findAcceptedFollows(candidateIds: readonly UserId[]): Promise<FollowPairReadModel[]>;
   abstract findFriendsWithTodayTodos(params: {
-    friendIds: string[];
+    friendIds: readonly UserId[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodosReadModel[]>;

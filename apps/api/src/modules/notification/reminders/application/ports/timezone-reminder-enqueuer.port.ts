@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 /** 사용자가 아침·저녁 리마인더 시간을 바꿨을 때. 바꾼 시각이 지금이면 바로 보낸다 */
 export interface ReminderHourChangedJobData {
   readonly userId: string;
@@ -16,12 +18,13 @@ export interface SocialDigestJobData {
   readonly recipientUserIds?: readonly string[];
 }
 
-export interface TargetedSocialDigestJobData extends SocialDigestJobData {
-  readonly recipientUserIds: readonly string[];
+export interface SocialDigestEnqueueRequest {
+  readonly timezone: string;
+  readonly recipientUserIds: readonly UserId[];
 }
 
 // 등록 실패가 호출자(설정 변경·sweep)를 막지 않게 기다리지 않는다
 export abstract class TimezoneReminderEnqueuerPort {
   abstract enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void;
-  abstract enqueueSocialDigest(payload: TargetedSocialDigestJobData): void;
+  abstract enqueueSocialDigest(request: SocialDigestEnqueueRequest): void;
 }

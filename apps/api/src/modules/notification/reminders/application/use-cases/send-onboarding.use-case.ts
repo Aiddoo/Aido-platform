@@ -26,7 +26,7 @@ interface OnboardingStrategyDependencies {
     ReEngagementReaderPort,
     "countCompletedTodosByUsers" | "findOnboardingCandidates"
   >;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -91,7 +91,9 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
     const completedCountMap = new Map<string, number>();
     if (needsCountUserIds.length > 0) {
-      const counts = await this.#dependencies.reader.countCompletedTodosByUsers(needsCountUserIds);
+      const counts = await this.#dependencies.reader.countCompletedTodosByUsers(
+        needsCountUserIds.map((userId) => UserId.reconstitute(userId)),
+      );
 
       for (const row of counts) {
         completedCountMap.set(row.userId, row.count);
@@ -99,8 +101,8 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 알림 데이터 생성
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      filteredUsers.map(({ user }) => user.id),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      filteredUsers.map(({ user }) => UserId.reconstitute(user.id)),
     );
     const notifications: CreateNotificationData[] = [];
     for (const { user, day } of filteredUsers) {

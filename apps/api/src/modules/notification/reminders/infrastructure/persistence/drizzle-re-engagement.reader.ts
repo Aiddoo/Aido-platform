@@ -19,7 +19,7 @@ import {
 import { acceptedFriendshipsOf } from "#api/modules/social/friendships/social-friendships.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
 import type {
@@ -111,8 +111,8 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
       );
   }
 
-  countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
-    const counts = completedTodoCountsByUser(userIds.map((userId) => UserId.reconstitute(userId)));
+  countCompletedTodosByUsers(userIds: readonly UserId[]): Promise<UserTodoCountReadModel[]> {
+    const counts = completedTodoCountsByUser(userIds);
     return this.#db.select({ userId: counts.userId, count: counts.count }).from(counts);
   }
 
@@ -133,11 +133,12 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
   }
 
   async findNudgeSuggestFollows(params: {
-    candidateIds: string[];
+    candidateIds: readonly UserId[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollowReadModel[]> {
-    const { candidateIds, activeSince, activeUntil } = params;
+    const candidateIds = params.candidateIds.map((candidateId) => candidateId.value);
+    const { activeSince, activeUntil } = params;
     const pairs = acceptedFriendshipsOf(candidateIds);
     const follower = userLastActivityOf(pairs.followerId, "follower_activity");
     const following = userLastActivityOf(pairs.followingId, "following_activity");
@@ -196,7 +197,10 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
       .from(recipients.table)
       .where(
         and(
-          inArray(recipients.userId, [...recipientUserIds]),
+          inArray(
+            recipients.userId,
+            recipientUserIds.map((userId) => userId.value),
+          ),
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
           userInTimezones(recipients.userId, timezones),
           hasTodoBetween(recipients.userId, today, tomorrow, false),
@@ -205,15 +209,15 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     return rows.map(({ id, completions }) => ({ id, todos: toTodoCompletions(completions) }));
   }
 
-  findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
-    const pairs = acceptedFriendshipsOf(candidateIds);
+  findAcceptedFollows(candidateIds: readonly UserId[]): Promise<FollowPairReadModel[]> {
+    const pairs = acceptedFriendshipsOf(candidateIds.map((candidateId) => candidateId.value));
     return this.#db
       .select({ followerId: pairs.followerId, followingId: pairs.followingId })
       .from(pairs);
   }
 
   async findFriendsWithTodayTodos(params: {
-    friendIds: string[];
+    friendIds: readonly UserId[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodosReadModel[]> {
@@ -231,7 +235,10 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
       .leftJoinLateral(profile, sql`true`)
       .where(
         and(
-          inArray(recipients.userId, friendIds),
+          inArray(
+            recipients.userId,
+            friendIds.map((friendId) => friendId.value),
+          ),
           hasTodoBetween(recipients.userId, today, tomorrow),
         ),
       );

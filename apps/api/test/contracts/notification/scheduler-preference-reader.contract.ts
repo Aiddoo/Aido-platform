@@ -1,4 +1,5 @@
 import type { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface SchedulerPreferenceReaderContractSubject {
   readonly reader: SchedulerPreferenceReaderPort;
@@ -42,12 +43,11 @@ export function describeSchedulerPreferenceReaderContract(
       const withoutPreference = await subject.givenUserWithoutPreference();
 
       // When
-      const localeOf = await subject.reader.findUserLocales([
-        korean,
-        regionalEnglish,
-        french,
-        withoutPreference,
-      ]);
+      const localeOf = await subject.reader.getUserLocales(
+        [korean, regionalEnglish, french, withoutPreference].map((userId) =>
+          UserId.reconstitute(userId),
+        ),
+      );
 
       // Then
       expect([korean, regionalEnglish, french, withoutPreference].map(localeOf)).toEqual([

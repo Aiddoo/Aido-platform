@@ -18,7 +18,7 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WinbackStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReader,
@@ -94,8 +94,8 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     const activeChecks = checks.filter(
       ({ userId, stage }) => sentStages.get(userId)?.has(stage) !== true,
     );
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      activeChecks.map((check) => check.userId),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      activeChecks.map((check) => UserId.reconstitute(check.userId)),
     );
 
     const notifications: CreateNotificationData[] = [];

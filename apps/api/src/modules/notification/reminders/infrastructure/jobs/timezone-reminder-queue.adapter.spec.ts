@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TEST_CUID } from "#test/fixtures/index";
@@ -42,7 +43,10 @@ describe("TimezoneReminderQueueAdapter — 리마인더 큐 등록", () => {
 
   it("social digest를 90분 뒤 시작하도록 등록한다", async () => {
     // When
-    service.enqueueSocialDigest({ timezone: "Asia/Seoul", recipientUserIds: [TEST_CUID.USER_1] });
+    service.enqueueSocialDigest({
+      timezone: "Asia/Seoul",
+      recipientUserIds: [UserId.reconstitute(TEST_CUID.USER_1)],
+    });
 
     // Then
     await vi.waitFor(() => {

@@ -10,6 +10,7 @@ import {
   userPreference,
   userProfile,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeSchedulerPreferenceReaderContract } from "#test/contracts/notification/scheduler-preference-reader.contract";
 import {
@@ -198,7 +199,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
         timezones: ["Asia/Seoul"],
         today: TODAY,
         tomorrow: TOMORROW,
-        recipientUserIds: [candidate, done],
+        recipientUserIds: [UserId.reconstitute(candidate), UserId.reconstitute(done)],
       });
 
       // Then
@@ -221,7 +222,11 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
 
       // When
       const friends = await createReader().reEngagement.findFriendsWithTodayTodos({
-        friendIds: [named, withoutProfile, idle],
+        friendIds: [
+          UserId.reconstitute(named),
+          UserId.reconstitute(withoutProfile),
+          UserId.reconstitute(idle),
+        ],
         today: TODAY,
         tomorrow: TOMORROW,
       });
@@ -251,7 +256,10 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       });
 
       // When
-      const counts = await createReader().reEngagement.countCompletedTodosByUsers([busy, idle]);
+      const counts = await createReader().reEngagement.countCompletedTodosByUsers([
+        UserId.reconstitute(busy),
+        UserId.reconstitute(idle),
+      ]);
 
       // Then
       expect(counts).toEqual([{ userId: busy, count: 2 }]);

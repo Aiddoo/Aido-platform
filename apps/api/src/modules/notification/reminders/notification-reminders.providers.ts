@@ -26,6 +26,8 @@ import { WeatherBriefingTodoReaderPort } from "./application/ports/weather-brief
 import { WeatherReminderReaderPort } from "./application/ports/weather-reminder-reader.port.js";
 import { WeeklyAchievementStatsReaderPort } from "./application/ports/weekly-achievement-stats-reader.port.js";
 import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
+import { CatchUpChangedReminderHourUseCase } from "./application/use-cases/catch-up-changed-reminder-hour.use-case.js";
+import { DeliverQueuedSocialDigestUseCase } from "./application/use-cases/deliver-queued-social-digest.use-case.js";
 import { SendEveningReminderUseCase } from "./application/use-cases/send-evening-reminder.use-case.js";
 import { SendLunchNudgeUseCase } from "./application/use-cases/send-lunch-nudge.use-case.js";
 import { SendMonthlyReportUseCase } from "./application/use-cases/send-monthly-report.use-case.js";
@@ -196,6 +198,17 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     logger: loggerFor(SnoozeTodoReminderUseCase),
   }),
   provideSweepTimezoneRemindersUseCase(),
+  provideUseCase(CatchUpChangedReminderHourUseCase, {
+    clock: ClockPort,
+    morningReminder: SendMorningReminderUseCase,
+    eveningReminder: SendEveningReminderUseCase,
+    logger: loggerFor(CatchUpChangedReminderHourUseCase),
+  }),
+  provideUseCase(DeliverQueuedSocialDigestUseCase, {
+    clock: ClockPort,
+    socialDigest: SendSocialDigestUseCase,
+    logger: loggerFor(DeliverQueuedSocialDigestUseCase),
+  }),
 ] satisfies Provider[];
 
 export function provideSweepTimezoneRemindersUseCase() {
@@ -211,7 +224,6 @@ export function provideSweepTimezoneRemindersUseCase() {
     weeklyAchievement: SendWeeklyAchievementUseCase,
     winback: SendWinbackUseCase,
     nudgeSuggest: SendNudgeSuggestUseCase,
-    socialDigest: SendSocialDigestUseCase,
     lunchNudge: SendLunchNudgeUseCase,
     streakAtRisk: SendStreakAtRiskUseCase,
     onboarding: SendOnboardingUseCase,

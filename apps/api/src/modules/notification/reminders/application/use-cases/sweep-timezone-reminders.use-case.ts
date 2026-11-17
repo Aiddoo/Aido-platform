@@ -5,13 +5,12 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { REMINDER_LATE_LIMIT_MINUTES } from "../../../shared/domain/reminder-occurrence.domain-service.js";
 import {
   groupTimezonesByLocalClock,
-  isReminderTimeDue,
   type TimezoneContext,
-  timezoneContextAt,
 } from "../../domain/local-clock.domain-service.js";
 import {
   FIRST_DAY_OF_MONTH,
@@ -21,11 +20,7 @@ import {
   REMINDER_LATE_SKIP_REASON,
 } from "../../domain/notification-schedule.domain-service.js";
 import type { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
-import type {
-  ReminderHourChangedJobData,
-  SocialDigestJobData,
-  TimezoneReminderEnqueuerPort,
-} from "../ports/timezone-reminder-enqueuer.port.js";
+import type { TimezoneReminderEnqueuerPort } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
@@ -34,7 +29,6 @@ import type { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js
 import type { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 import type { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
 import type { SendOnboardingUseCase } from "./send-onboarding.use-case.js";
-import type { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
 import type { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
 import type { SendWeatherEveningUseCase } from "./send-weather-evening.use-case.js";
 import type { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
@@ -57,7 +51,6 @@ interface SweepTimezoneRemindersDependencies {
   readonly weeklyAchievement: Pick<SendWeeklyAchievementUseCase, "execute">;
   readonly winback: Pick<SendWinbackUseCase, "execute">;
   readonly nudgeSuggest: Pick<SendNudgeSuggestUseCase, "execute">;
-  readonly socialDigest: Pick<SendSocialDigestUseCase, "execute">;
   readonly lunchNudge: Pick<SendLunchNudgeUseCase, "execute">;
   readonly streakAtRisk: Pick<SendStreakAtRiskUseCase, "execute">;
   readonly onboarding: Pick<SendOnboardingUseCase, "execute">;
@@ -78,7 +71,7 @@ export class SweepTimezoneRemindersUseCase {
     this.#dependencies = dependencies;
   }
 
-  async handleMinuteSweep(): Promise<void> {
+  async execute(): Promise<void> {
     const { logger, sweepCursor } = this.#dependencies;
     logger.log({ event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED });
 
@@ -125,82 +118,6 @@ export class SweepTimezoneRemindersUseCase {
     }
   }
 
-  /** 바꾼 리마인더 시각이 지금이면 그 사용자에게 바로 보낸다. */
-  async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
-    try {
-      const timezoneContext = timezoneContextAt(
-        this.#dependencies.clock.now(),
-        payload.timezone,
-        payload.userId,
-      );
-      const { localHour, localMinute } = timezoneContext;
-
-      const morningMinute = payload.morningReminderMinute ?? 0;
-      if (
-        payload.morningReminderHour != null &&
-        isReminderTimeDue(timezoneContext, {
-          hour: payload.morningReminderHour,
-          minute: morningMinute,
-        })
-      ) {
-        this.#dependencies.logger.log({
-          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING,
-          userId: payload.userId,
-          localHour,
-          localMinute,
-        });
-        await this.#dependencies.morningReminder.execute(timezoneContext);
-      }
-
-      const eveningMinute = payload.eveningReminderMinute ?? 0;
-      if (
-        payload.eveningReminderHour != null &&
-        isReminderTimeDue(timezoneContext, {
-          hour: payload.eveningReminderHour,
-          minute: eveningMinute,
-        })
-      ) {
-        this.#dependencies.logger.log({
-          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_EVENING,
-          userId: payload.userId,
-          localHour,
-          localMinute,
-        });
-        await this.#dependencies.eveningReminder.execute(timezoneContext);
-      }
-    } catch {
-      this.#dependencies.logger.error({
-        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_FAILED,
-        userId: payload.userId,
-        errorType: "catch-up-execution",
-      });
-    }
-  }
-
-  async handleSocialDigest(payload: SocialDigestJobData): Promise<void> {
-    try {
-      if (!payload.recipientUserIds?.length) {
-        this.#dependencies.logger.warn({
-          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED,
-          timezone: payload.timezone,
-        });
-        return;
-      }
-      const timezoneContext = {
-        ...timezoneContextAt(this.#dependencies.clock.now(), payload.timezone),
-        localHour: 0,
-        localMinute: 0,
-      };
-      await this.#dependencies.socialDigest.execute(timezoneContext, payload.recipientUserIds);
-    } catch {
-      this.#dependencies.logger.error({
-        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_DIGEST_FAILED,
-        timezone: payload.timezone,
-        errorType: "digest-execution",
-      });
-    }
-  }
-
   async #sweepMinute(minute: Temporal.Instant, timezones: readonly string[]): Promise<void> {
     const groups = groupTimezonesByLocalClock(minute, timezones);
     const results = await Promise.allSettled(
@@ -231,7 +148,7 @@ export class SweepTimezoneRemindersUseCase {
     for (const [timezone, recipients] of Object.entries(recipientsByTimezone)) {
       this.#dependencies.enqueuer.enqueueSocialDigest({
         timezone,
-        recipientUserIds: recipients.map(({ userId }) => userId),
+        recipientUserIds: recipients.map(({ userId }) => UserId.reconstitute(userId)),
       });
     }
 

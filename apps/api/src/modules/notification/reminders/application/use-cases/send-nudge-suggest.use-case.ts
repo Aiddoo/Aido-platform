@@ -25,7 +25,7 @@ interface NudgeSuggestStrategyDependencies {
     ReEngagementReaderPort,
     "findActiveUsersInTimezones" | "findNudgeSuggestFollows"
   >;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReader,
@@ -82,7 +82,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
     // 배치 1: 모든 candidate의 비활성 맞팔 친구를 한 번에 조회
     const allFollows = await this.#dependencies.reader.findNudgeSuggestFollows({
-      candidateIds,
+      candidateIds: candidateIds.map((candidateId) => UserId.reconstitute(candidateId)),
       activeSince: range.since,
       activeUntil: range.until,
     });
@@ -116,8 +116,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         end: week.end,
       });
 
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      candidates.map((u) => u.id),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      candidates.map((u) => UserId.reconstitute(u.id)),
     );
 
     // 인메모리 매칭

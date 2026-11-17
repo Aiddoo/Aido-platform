@@ -14,11 +14,13 @@ import {
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import {
-  type TargetedSocialDigestJobData,
+  type SocialDigestEnqueueRequest,
   TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
+import { CatchUpChangedReminderHourUseCase } from "./catch-up-changed-reminder-hour.use-case.js";
+import { DeliverQueuedSocialDigestUseCase } from "./deliver-queued-social-digest.use-case.js";
 import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 import {
   SweepTimezoneRemindersUseCase,
@@ -84,18 +86,21 @@ class StubPreferenceReader extends SchedulerPreferenceReaderPort {
     return this.timezones;
   }
 
-  async findUserLocales(): Promise<RecipientLocaleOf> {
+  async getUserLocales(): Promise<RecipientLocaleOf> {
     return recipientLocaleOf(new Map());
   }
 }
 
 class RecordingEnqueuer extends TimezoneReminderEnqueuerPort {
-  readonly socialDigests: TargetedSocialDigestJobData[] = [];
+  readonly socialDigests: { timezone: string; recipientUserIds: string[] }[] = [];
 
   enqueueReminderHourChanged(): void {}
 
-  enqueueSocialDigest(payload: TargetedSocialDigestJobData): void {
-    this.socialDigests.push(payload);
+  enqueueSocialDigest(request: SocialDigestEnqueueRequest): void {
+    this.socialDigests.push({
+      timezone: request.timezone,
+      recipientUserIds: request.recipientUserIds.map((userId) => userId.value),
+    });
   }
 }
 
@@ -131,6 +136,17 @@ function createHarness(nowIso: string) {
     logger,
     alert,
   });
+  const catchUpReminderHour = new CatchUpChangedReminderHourUseCase({
+    clock,
+    morningReminder: strategies.morningReminder,
+    eveningReminder: strategies.eveningReminder,
+    logger,
+  });
+  const queuedSocialDigest = new DeliverQueuedSocialDigestUseCase({
+    clock,
+    socialDigest: strategies.socialDigest,
+    logger,
+  });
   return {
     clock,
     strategies,
@@ -140,6 +156,8 @@ function createHarness(nowIso: string) {
     logger,
     alert,
     orchestrator,
+    catchUpReminderHour,
+    queuedSocialDigest,
   };
 }
 
@@ -202,15 +220,15 @@ const localTimes = (contexts: readonly TimezoneContext[]) =>
     ({ timezones, localHour, localMinute }) => `${timezones.join(",")} ${localHour}:${localMinute}`,
   );
 
-describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트레이터", () => {
-  describe("handleMinuteSweep", () => {
+describe("타임존 리마인더 — 매분 sweep·시각 변경 따라잡기·지연 소셜 다이제스트", () => {
+  describe("SweepTimezoneRemindersUseCase", () => {
     it("활성 타임존을 조회하고 각 타임존별 Strategy를 호출한다", async () => {
       // Given
       // KST 08:00 (화요일)
       const { orchestrator, strategies } = createHarness("2024-01-16T23:00:00Z");
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(strategies.morningReminder.contexts).toEqual([
@@ -234,7 +252,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       preferenceReader.timezones = ["Asia/Seoul", "America/New_York"];
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(localTimes(strategies.morningReminder.contexts)).toEqual([
@@ -256,7 +274,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       ];
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(localTimes(strategies.morningReminder.contexts)).toEqual([
@@ -283,7 +301,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       });
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       const premiumQueries = reader.queries.filter(
@@ -301,7 +319,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       preferenceReader.timezones = [];
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(strategies.morningReminder.contexts).toEqual([]);
@@ -387,7 +405,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         const { orchestrator, strategies } = createHarness(at);
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(strategies[key].contexts).toHaveLength(calls);
@@ -399,7 +417,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         const { orchestrator, strategies } = createHarness("2024-04-01T02:30:00Z");
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(strategies.monthlyReport.contexts).toHaveLength(1);
@@ -410,12 +428,12 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       it("온보딩은 로컬 10:30에만 실행한다", async () => {
         // Given
         const { orchestrator, strategies, clock } = createHarness("2024-01-16T01:29:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         expect(strategies.onboarding.contexts).toHaveLength(0);
 
         // When
         clock.advanceBy({ minutes: 1 });
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(localTimes(strategies.onboarding.contexts)).toEqual(["Asia/Seoul 10:30"]);
@@ -428,7 +446,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         const { orchestrator, strategies, sweepCursor } = createHarness("2024-01-16T23:00:42Z");
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(localTimes(strategies.morningReminder.contexts)).toEqual(["Asia/Seoul 8:0"]);
@@ -442,11 +460,11 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         // 07:58에 마지막으로 돌고 08:02에 다시 돈다
         const { orchestrator, strategies, sweepCursor, clock } =
           createHarness("2024-01-16T22:58:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         clock.advanceBy({ minutes: 4 });
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(localTimes(strategies.morningReminder.contexts)).toEqual([
@@ -469,11 +487,11 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         // Given
         // KST 23:58에 멈췄다 00:01에 다시 돈다
         const { orchestrator, strategies, clock } = createHarness("2024-01-16T14:58:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         clock.advanceBy({ minutes: 3 });
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(
@@ -492,10 +510,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       it("같은 분에 다시 돌면 아무것도 처리하지 않는다", async () => {
         // Given
         const { orchestrator, strategies } = createHarness("2024-01-16T23:00:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(strategies.morningReminder.contexts).toHaveLength(1);
@@ -506,11 +524,11 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         // 40분 동안 멈췄다
         const { orchestrator, strategies, clock, logger, alert } =
           createHarness("2024-01-16T22:20:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         clock.advanceBy({ minutes: 40 });
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         const caughtUp = localTimes(strategies.morningReminder.contexts).slice(1);
@@ -535,15 +553,15 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         // 07:59는 끝냈고 08:00 실행은 조회 실패로 멈췄다
         const { orchestrator, strategies, preferenceReader, sweepCursor, clock } =
           createHarness("2024-01-16T22:59:00Z");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         clock.advanceBy({ minutes: 1 });
         preferenceReader.failWith = new Error("DB Error");
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
         preferenceReader.failWith = null;
         clock.advanceBy({ minutes: 1 });
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(sweepCursor.marked.map(String)).toEqual([
@@ -571,7 +589,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         ];
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(enqueuer.socialDigests).toEqual([
@@ -595,7 +613,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         ];
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(strategies.eveningReminder.contexts).toHaveLength(1);
@@ -610,7 +628,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         const { orchestrator, enqueuer } = createHarness("2024-01-16T09:00:00Z");
 
         // When
-        await orchestrator.handleMinuteSweep();
+        await orchestrator.execute();
 
         // Then
         expect(enqueuer.socialDigests).toEqual([]);
@@ -624,7 +642,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         preferenceReader.failWith = new Error("DB Error");
 
         // When
-        const result = orchestrator.handleMinuteSweep();
+        const result = orchestrator.execute();
 
         // Then
         await expect(result).resolves.toBeUndefined();
@@ -643,7 +661,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         strategies.morningReminder.failures.push(new Error("Strategy Error"));
 
         // When
-        await expect(orchestrator.handleMinuteSweep()).resolves.toBeUndefined();
+        await expect(orchestrator.execute()).resolves.toBeUndefined();
 
         // Then
         expect(strategies.morningReminder.contexts).toHaveLength(2);
@@ -652,14 +670,14 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
     });
   });
 
-  describe("handleReminderHourChanged", () => {
+  describe("CatchUpChangedReminderHourUseCase", () => {
     it("변경된 아침 리마인더 시간이 현재 시:분과 일치하면 morning Strategy 호출", async () => {
       // Given
       // KST 09:30
-      const { orchestrator, strategies } = createHarness("2024-01-16T00:30:00Z");
+      const { catchUpReminderHour, strategies } = createHarness("2024-01-16T00:30:00Z");
 
       // When
-      await orchestrator.handleReminderHourChanged({
+      await catchUpReminderHour.execute({
         userId: "user-1",
         timezone: "Asia/Seoul",
         morningReminderHour: 9,
@@ -680,10 +698,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
     it("변경된 저녁 리마인더 시간이 현재 시:분과 일치하면 evening Strategy 호출", async () => {
       // Given
       // KST 20:00
-      const { orchestrator, strategies } = createHarness("2024-01-16T11:00:00Z");
+      const { catchUpReminderHour, strategies } = createHarness("2024-01-16T11:00:00Z");
 
       // When
-      await orchestrator.handleReminderHourChanged({
+      await catchUpReminderHour.execute({
         userId: "user-1",
         timezone: "Asia/Seoul",
         eveningReminderHour: 20,
@@ -699,10 +717,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
       { name: "분", at: "2024-01-16T00:15:00Z", hour: 9, minute: 30 },
     ])("변경된 $name이 현재와 불일치하면 Strategy 미호출", async ({ at, hour, minute }) => {
       // Given
-      const { orchestrator, strategies } = createHarness(at);
+      const { catchUpReminderHour, strategies } = createHarness(at);
 
       // When
-      await orchestrator.handleReminderHourChanged({
+      await catchUpReminderHour.execute({
         userId: "user-1",
         timezone: "Asia/Seoul",
         morningReminderHour: hour,
@@ -715,11 +733,11 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
 
     it("에러 발생 시 throw하지 않고 로깅", async () => {
       // Given
-      const { orchestrator, strategies } = createHarness("2024-01-16T00:00:00Z");
+      const { catchUpReminderHour, strategies } = createHarness("2024-01-16T00:00:00Z");
       strategies.morningReminder.failures.push(new Error("fail"));
 
       // When
-      const result = orchestrator.handleReminderHourChanged({
+      const result = catchUpReminderHour.execute({
         userId: "user-1",
         timezone: "Asia/Seoul",
         morningReminderHour: 9,
@@ -731,13 +749,13 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
     });
   });
 
-  describe("handleSocialDigest", () => {
+  describe("DeliverQueuedSocialDigestUseCase", () => {
     it("socialDigest Strategy에 위임한다", async () => {
       // Given
-      const { orchestrator, strategies } = createHarness("2024-01-16T09:00:00Z");
+      const { queuedSocialDigest, strategies } = createHarness("2024-01-16T09:00:00Z");
 
       // When
-      await orchestrator.handleSocialDigest({
+      await queuedSocialDigest.execute({
         timezone: "Asia/Seoul",
         recipientUserIds: [TEST_CUID.USER_1],
       });
@@ -756,10 +774,10 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
 
     it("구버전 큐 페이로드에 대상 목록이 없으면 오발송하지 않는다", async () => {
       // Given
-      const { orchestrator, strategies } = createHarness("2024-01-16T09:00:00Z");
+      const { queuedSocialDigest, strategies } = createHarness("2024-01-16T09:00:00Z");
 
       // When
-      await orchestrator.handleSocialDigest({ timezone: "Asia/Seoul" });
+      await queuedSocialDigest.execute({ timezone: "Asia/Seoul" });
 
       // Then
       expect(strategies.socialDigest.calls).toEqual([]);
@@ -767,11 +785,11 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
 
     it("에러 발생 시 throw하지 않고 로깅", async () => {
       // Given
-      const { orchestrator, strategies } = createHarness("2024-01-16T09:00:00Z");
+      const { queuedSocialDigest, strategies } = createHarness("2024-01-16T09:00:00Z");
       strategies.socialDigest.failWith = new Error("fail");
 
       // When
-      const result = orchestrator.handleSocialDigest({
+      const result = queuedSocialDigest.execute({
         timezone: "Asia/Seoul",
         recipientUserIds: [TEST_CUID.USER_1],
       });

@@ -7,7 +7,7 @@ import { NotificationJobLogEvent } from "../../../shared/application/notificatio
 import { SOCIAL_DIGEST_DELAY_MS } from "../../../shared/domain/notification-campaign.constants.js";
 import {
   type ReminderHourChangedJobData,
-  type TargetedSocialDigestJobData,
+  type SocialDigestEnqueueRequest,
   TimezoneReminderEnqueuerPort,
 } from "../../application/ports/timezone-reminder-enqueuer.port.js";
 import {
@@ -35,11 +35,14 @@ export class TimezoneReminderQueueAdapter extends TimezoneReminderEnqueuerPort {
     });
   }
 
-  enqueueSocialDigest(payload: TargetedSocialDigestJobData): void {
+  enqueueSocialDigest(request: SocialDigestEnqueueRequest): void {
     this.#enqueueInBackground(
       {
         name: TimezoneReminderJobName.SOCIAL_DIGEST,
-        data: { timezone: payload.timezone, recipientUserIds: [...payload.recipientUserIds] },
+        data: {
+          timezone: request.timezone,
+          recipientUserIds: request.recipientUserIds.map((userId) => userId.value),
+        },
       },
       this.#clock.now().add({ milliseconds: SOCIAL_DIGEST_DELAY_MS }),
     );

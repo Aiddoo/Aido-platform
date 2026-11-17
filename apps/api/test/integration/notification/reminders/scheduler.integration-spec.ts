@@ -22,6 +22,7 @@ import { provideSweepTimezoneRemindersUseCase } from "#api/modules/notification/
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -70,7 +71,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
   // ── Port mocks ──────────────────────────────────────────────────────
   const mockPreferenceReader = {
     findActiveTimezones: vi.fn(),
-    findUserLocales: vi.fn(),
+    getUserLocales: vi.fn(),
   };
 
   const mockEnqueuer = {
@@ -141,7 +142,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockMorningReminder.execute).toHaveBeenCalledWith(
@@ -176,7 +177,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       });
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockEveningReminder.execute).toHaveBeenCalledWith(
@@ -194,7 +195,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
           TEST_CUID.USER_3,
           TEST_CUID.USER_4,
           TEST_CUID.USER_5,
-        ],
+        ].map((userId) => UserId.reconstitute(userId)),
       });
     });
 
@@ -204,7 +205,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockWeeklyReport.execute).toHaveBeenCalledWith(
@@ -222,7 +223,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       vi.setSystemTime(new Date("2026-04-01T02:30:00Z"));
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockMonthlyReport.execute).toHaveBeenCalledWith(
@@ -240,7 +241,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
@@ -274,7 +275,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       });
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockMorningReminder.execute).toHaveBeenCalledTimes(2);
@@ -294,7 +295,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       mockPreferenceReader.findActiveTimezones.mockResolvedValue([]);
 
       // When
-      await orchestrator.handleMinuteSweep();
+      await orchestrator.execute();
 
       // Then
       expect(mockMorningReminder.execute).not.toHaveBeenCalled();

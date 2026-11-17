@@ -15,7 +15,7 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface MonthlyReportStrategyDependencies {
   readonly reader: Pick<ScheduledReminderReaderPort, "findMonthlyReportRecipients">;
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -56,8 +56,8 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
-      filteredUsers.map((u) => u.id),
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      filteredUsers.map((u) => UserId.reconstitute(u.id)),
     );
     const notifications = filteredUsers.map((user) => {
       const message = createMonthlyReportNotificationMessage({

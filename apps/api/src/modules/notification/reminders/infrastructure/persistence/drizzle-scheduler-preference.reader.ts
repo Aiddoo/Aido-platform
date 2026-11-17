@@ -6,6 +6,7 @@ import { z } from "zod";
 import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import {
@@ -45,7 +46,7 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
     );
   }
 
-  async findUserLocales(userIds: string[]): Promise<RecipientLocaleOf> {
+  async getUserLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf> {
     if (userIds.length === 0) {
       return recipientLocaleOf(new Map());
     }
@@ -53,7 +54,12 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
     const preferences = await this.#db
       .select({ userId: preference.userId, locale: preference.locale })
       .from(preference)
-      .where(inArray(preference.userId, userIds));
+      .where(
+        inArray(
+          preference.userId,
+          userIds.map((userId) => userId.value),
+        ),
+      );
     return recipientLocaleOf(
       new Map(preferences.map((preference) => [preference.userId, preference.locale])),
     );

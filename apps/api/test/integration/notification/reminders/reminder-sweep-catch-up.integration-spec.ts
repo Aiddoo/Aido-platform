@@ -177,7 +177,6 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       weeklyAchievement: idleStrategy,
       winback: idleStrategy,
       nudgeSuggest: idleStrategy,
-      socialDigest: idleStrategy,
       lunchNudge: idleStrategy,
       streakAtRisk: idleStrategy,
       onboarding: idleStrategy,
@@ -201,13 +200,13 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       // Given
       // 07:56에 돌고 worker가 멈춘다
       const worker = createWorker(BEFORE_MORNING);
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
       expect(worker.sweptMinutes).toEqual(["7:56"]);
 
       // When
       // 08:01에 다시 시작한다
       worker.clock.advanceBy({ minutes: 5 });
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // Then
       expect(worker.sweptMinutes).toEqual(["7:56", "7:57", "7:58", "7:59", "8:00", "8:01"]);
@@ -222,12 +221,12 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     it("같은 시각에 다시 돌면 새로 처리하는 분이 없어 다시 보내지 않는다", async () => {
       // Given
       const worker = createWorker(BEFORE_MORNING);
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
       worker.clock.advanceBy({ minutes: 5 });
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // When
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // Then
       expect(worker.sweptMinutes).toEqual(["7:56", "7:57", "7:58", "7:59", "8:00", "8:01"]);
@@ -238,15 +237,15 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       // Given
       // 07:59까지 끝냈고, 08:00을 보낸 뒤 커서를 쓰기 전에 멈춘다
       const worker = createWorker(BEFORE_MORNING.add({ minutes: 3 }));
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
       worker.clock.advanceBy({ minutes: 1 });
       worker.cursor.failNextMark = true;
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // When
       // 재시작한 worker가 08:00부터 다시 처리한다
       worker.clock.advanceBy({ minutes: 1 });
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // Then
       expect(worker.sweptMinutes).toEqual(["7:59", "8:00", "8:00", "8:01"]);
@@ -257,11 +256,11 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       // Given
       // 07:40에 돌고 40분 동안 멈춘다. 08:00은 버리는 구간에 있다
       const worker = createWorker(BEFORE_MORNING.subtract({ minutes: 16 }));
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // When
       worker.clock.advanceBy({ minutes: 40 });
-      await worker.sweep.handleMinuteSweep();
+      await worker.sweep.execute();
 
       // Then
       const caughtUp = worker.sweptMinutes.slice(1);

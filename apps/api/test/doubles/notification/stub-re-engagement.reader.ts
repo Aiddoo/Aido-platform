@@ -15,6 +15,7 @@ import type {
   UserWithTodosAndStreakReadModel,
   WinbackUserReadModel,
 } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface ReEngagementQuery {
   readonly method: keyof ReEngagementReaderPort;
@@ -47,8 +48,9 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     return this.onboardingCandidates;
   }
 
-  async countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
-    this.queries.push({ method: "countCompletedTodosByUsers", params: [...userIds] });
+  async countCompletedTodosByUsers(users: readonly UserId[]): Promise<UserTodoCountReadModel[]> {
+    const userIds = users.map((userId) => userId.value);
+    this.queries.push({ method: "countCompletedTodosByUsers", params: userIds });
     return this.completedTodoCounts.filter((row) => userIds.includes(row.userId));
   }
 
@@ -58,27 +60,32 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   }
 
   async findNudgeSuggestFollows(params: {
-    candidateIds: string[];
+    candidateIds: readonly UserId[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollowReadModel[]> {
-    this.queries.push({ method: "findNudgeSuggestFollows", params });
+    const candidateIds = params.candidateIds.map((candidateId) => candidateId.value);
+    this.queries.push({ method: "findNudgeSuggestFollows", params: { ...params, candidateIds } });
     return this.nudgeSuggestFollows.filter(
       (follow) =>
-        params.candidateIds.includes(follow.followerId) ||
-        params.candidateIds.includes(follow.followingId),
+        candidateIds.includes(follow.followerId) || candidateIds.includes(follow.followingId),
     );
   }
 
   async findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidateReadModel[]> {
-    this.queries.push({ method: "findSocialDigestCandidates", params });
-    return this.socialDigestCandidates.filter((user) => params.recipientUserIds.includes(user.id));
+    const recipientUserIds = params.recipientUserIds.map((userId) => userId.value);
+    this.queries.push({
+      method: "findSocialDigestCandidates",
+      params: { ...params, recipientUserIds },
+    });
+    return this.socialDigestCandidates.filter((user) => recipientUserIds.includes(user.id));
   }
 
-  async findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
-    this.queries.push({ method: "findAcceptedFollows", params: [...candidateIds] });
+  async findAcceptedFollows(candidates: readonly UserId[]): Promise<FollowPairReadModel[]> {
+    const candidateIds = candidates.map((candidateId) => candidateId.value);
+    this.queries.push({ method: "findAcceptedFollows", params: candidateIds });
     return this.acceptedFollows.filter(
       (follow) =>
         candidateIds.includes(follow.followerId) || candidateIds.includes(follow.followingId),
@@ -86,12 +93,13 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   }
 
   async findFriendsWithTodayTodos(params: {
-    friendIds: string[];
+    friendIds: readonly UserId[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodosReadModel[]> {
-    this.queries.push({ method: "findFriendsWithTodayTodos", params });
-    return this.friendsWithTodayTodos.filter((friend) => params.friendIds.includes(friend.id));
+    const friendIds = params.friendIds.map((friendId) => friendId.value);
+    this.queries.push({ method: "findFriendsWithTodayTodos", params: { ...params, friendIds } });
+    return this.friendsWithTodayTodos.filter((friend) => friendIds.includes(friend.id));
   }
 
   async findStreakAtRiskUsers(

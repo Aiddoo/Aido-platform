@@ -3,6 +3,7 @@ import {
   type RecipientLocaleOf,
   recipientLocaleOf,
 } from "#api/modules/notification/shared/domain/recipient-locale.domain-service";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 interface StoredPreference {
@@ -32,10 +33,10 @@ export class InMemorySchedulerPreferenceReader extends SchedulerPreferenceReader
     return [...timezones].filter((timezone) => normalizeIanaTimezone(timezone) != null);
   }
 
-  async findUserLocales(userIds: string[]): Promise<RecipientLocaleOf> {
+  async getUserLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf> {
     return recipientLocaleOf(
       new Map(
-        userIds.flatMap((userId) => {
+        userIds.flatMap(({ value: userId }) => {
           const preference = this.#preferences.get(userId);
           return preference == null ? [] : [[userId, preference.locale] as const];
         }),
