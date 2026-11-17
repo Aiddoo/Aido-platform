@@ -22,6 +22,8 @@ export interface RetentionRepositoryContractSubject {
     readonly locale: SupportedLocale;
   }): Promise<string>;
   d7ResultOf(assignmentId: string): Promise<StoredD7Result | null>;
+  // 읽은 뒤 단계 행이 사라진 상황을 만든다(배정 삭제 cascade 등)
+  removeStage(stageId: string): Promise<void>;
 }
 
 // 서울 09:00에 시작한 사용자. D0는 2시간 뒤, D1은 다음 날 10:30부터 결정할 때가 된다
@@ -272,6 +274,30 @@ export function describeRetentionAssignmentRepositoryContract(
       expect(
         reloaded.stages.find((item) => item.id.value === stage.stageId)?.toPrimitives(),
       ).toMatchObject({ status: "OUTBOXED", notificationId: 41, processedAt: PROCESSED_AT });
+    });
+
+    it("저장소에 없는 단계에 알림을 이으면 저장이 실패한다", async () => {
+      // Given
+      const { repository, givenUser, removeStage } = await createSubject();
+      const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
+      await enrollRetentionAssignment(repository, {
+        userId,
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
+      const [stage] = await dueStagesOf(repository);
+      if (stage == null) {
+        throw new Error("stage fixture 누락");
+      }
+      const assignment = await retentionAssignmentOf(repository, stage.assignmentId);
+      await removeStage(stage.stageId);
+
+      // When
+      assignment.linkStageNotification(stage.stageId, 41, PROCESSED_AT);
+      const saving = repository.save(assignment);
+
+      // Then
+      await expect(saving).rejects.toThrow();
     });
 
     it("D7 결과는 배정마다 하나로 남고 다시 기록하면 덮어쓴다", async () => {

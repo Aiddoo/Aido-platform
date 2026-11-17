@@ -9,17 +9,14 @@ import type {
 import { createOnboardingNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import {
-  calendarTimezoneOf,
-  type TimezoneContext,
-} from "../../domain/local-clock.domain-service.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   isOnboardingDay,
   ONBOARDING_MAX_DAY,
   requiresCompletedCount,
   resolveOnboardingDeepLinkPath,
 } from "../../domain/onboarding.domain-service.js";
-import { localDaysSince, localStartOf } from "../../domain/reminder-day.domain-service.js";
+import { localDayRangeAcross, localDaysSince } from "../../domain/reminder-day.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -45,16 +42,19 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
     const { timezones, today } = timezoneContext;
-    const calendarTimezone = calendarTimezoneOf(timezoneContext);
-    if (calendarTimezone == null) {
+    const range = localDayRangeAcross(
+      timezones,
+      today.subtract({ days: ONBOARDING_MAX_DAY }),
+      today,
+    );
+    if (range == null) {
       return { sent: 0 };
     }
-    const cutoffDate = localStartOf(today.subtract({ days: ONBOARDING_MAX_DAY }), calendarTimezone);
 
     // 가입 0~7일 + 해당 timezone 유저 조회
     const users = await this.#dependencies.reader.findOnboardingCandidates({
       timezones,
-      createdSince: cutoffDate,
+      createdSince: range.since,
     });
 
     if (users.length === 0) {
@@ -63,7 +63,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
     // 발송 대상 day에 해당하는 유저만 필터
     const eligibleUsers = users.flatMap((user) => {
-      const day = localDaysSince(user.createdAt, today, calendarTimezone);
+      const day = localDaysSince(user.createdAt, today, user.timezone);
       return isOnboardingDay(day) ? [{ user, day }] : [];
     });
 

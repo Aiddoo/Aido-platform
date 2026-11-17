@@ -39,11 +39,13 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
     completedOnly: boolean,
   ): Promise<UserTodoCountReadModel[]> {
     const { timezones, periodStart, periodEnd } = params;
-    const days = todoDaysInPeriodByUser({ periodStart, periodEnd, completedOnly });
-    return this.#db
-      .select({ userId: days.userId, count: days.count })
-      .from(days)
-      .where(userInTimezones(days.userId, timezones));
+    const days = todoDaysInPeriodByUser({
+      periodStart,
+      periodEnd,
+      completedOnly,
+      ownerCondition: (userId) => userInTimezones(userId, timezones),
+    });
+    return this.#db.select({ userId: days.userId, count: days.count }).from(days);
   }
 
   async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {

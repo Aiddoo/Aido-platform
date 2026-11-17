@@ -5,12 +5,12 @@ import {
   type TodayRangeParams,
 } from "#api/modules/notification/reminders/application/ports/re-engagement-reader.port";
 import type {
+  ActiveUserReadModel,
   FollowPairReadModel,
   FriendWithTodosReadModel,
   NudgeSuggestFollowReadModel,
   OnboardingCandidateReadModel,
   SocialDigestCandidateReadModel,
-  UserIdReadModel,
   UserTodoCountReadModel,
   UserWithTodosAndStreakReadModel,
   WinbackUserReadModel,
@@ -26,7 +26,7 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   winbackUsers: WinbackUserReadModel[] = [];
   onboardingCandidates: OnboardingCandidateReadModel[] = [];
   completedTodoCounts: UserTodoCountReadModel[] = [];
-  activeUsers: UserIdReadModel[] = [];
+  activeUsers: ActiveUserReadModel[] = [];
   nudgeSuggestFollows: NudgeSuggestFollowReadModel[] = [];
   socialDigestCandidates: SocialDigestCandidateReadModel[] = [];
   acceptedFollows: FollowPairReadModel[] = [];
@@ -52,7 +52,7 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     return this.completedTodoCounts.filter((row) => userIds.includes(row.userId));
   }
 
-  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]> {
+  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
     this.queries.push({ method: "findActiveUsersInTimezones", params: [...timezones] });
     return this.activeUsers;
   }

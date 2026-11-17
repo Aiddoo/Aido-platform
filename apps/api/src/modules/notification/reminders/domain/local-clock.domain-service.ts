@@ -1,7 +1,5 @@
 import { groupBy } from "es-toolkit";
 
-import { SCHEDULE_GRACE_MINUTES } from "./notification-schedule.domain-service.js";
-
 // 사용자가 고른 리마인더 시:분
 export interface ReminderTime {
   readonly hour: number;
@@ -55,15 +53,10 @@ export function firstOccurrenceOf(
 }
 
 /**
- * 이 분에 울릴 현지 시:분들. 그 날 그 시:분이 처음 오는 순간이 (분 - grace, 분] 안이면 울린다.
- * 고정 캠페인과 같은 grace라 한 분의 실패는 다음 분이 다시 보내고, 같은 날 두 번은 일간 중복 방지가 막는다.
- * 틈 안의 시각은 틈 뒤 첫 분에, 두 번 오는 시각은 앞의 것에만 울린다.
+ * 이 분에 울릴 현지 시:분들. 평소에는 이 분의 시:분 하나다(놓친 분은 sweep의 15분 따라잡기가 다시 처리한다).
+ * 봄 DST 틈에 없는 시각은 틈 바로 뒤 첫 분에 함께 울리고, 가을에 두 번 오는 시각은 앞의 것에만 울린다.
  */
-export function reminderTimesDueAt(
-  minute: Temporal.Instant,
-  timezone: string,
-  graceMinutes: number = SCHEDULE_GRACE_MINUTES,
-): ReminderTime[] {
+export function reminderTimesDueAt(minute: Temporal.Instant, timezone: string): ReminderTime[] {
   const zoned = minute.toZonedDateTimeISO(timezone);
   const minutesSinceMidnight = zoned.hour * 60 + zoned.minute;
   // 이 분이 바로 전환 순간이어도 잡도록 1분 뒤에서 이전 전환을 찾는다
@@ -75,10 +68,10 @@ export function reminderTimesDueAt(
       minute.subtract({ minutes: TRANSITION_LOOKBACK_MINUTES }),
     ) > 0;
   const lookbackMinutes = Math.min(
-    isNearTransition ? TRANSITION_LOOKBACK_MINUTES : graceMinutes - 1,
+    isNearTransition ? TRANSITION_LOOKBACK_MINUTES : 0,
     minutesSinceMidnight,
   );
-  const windowStart = minute.subtract({ minutes: graceMinutes });
+  const previousMinute = minute.subtract({ minutes: 1 });
   const today = zoned.toPlainDate();
   return Array.from({ length: lookbackMinutes + 1 }, (_, back) =>
     zoned.toPlainTime().subtract({ minutes: back }),
@@ -86,19 +79,12 @@ export function reminderTimesDueAt(
     .filter((time) => {
       const first = firstOccurrenceOf(today, time, timezone);
       return (
-        Temporal.Instant.compare(windowStart, first) < 0 &&
+        Temporal.Instant.compare(previousMinute, first) < 0 &&
         Temporal.Instant.compare(first, minute) <= 0
       );
     })
     .map(({ hour, minute: timeMinute }) => ({ hour, minute: timeMinute }))
     .toSorted((left, right) => left.hour * 60 + left.minute - (right.hour * 60 + right.minute));
-}
-
-// 묶음의 시간대들은 지금 현지 날짜·시각이 같다. 며칠 전인지는 그중 첫 시간대의 달력으로 센다
-export function calendarTimezoneOf(
-  timezoneContext: Pick<TimezoneContext, "timezones">,
-): string | null {
-  return timezoneContext.timezones[0] ?? null;
 }
 
 export function isReminderTimeDue(

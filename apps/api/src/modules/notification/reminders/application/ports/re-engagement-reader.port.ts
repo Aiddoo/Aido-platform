@@ -2,9 +2,9 @@ import type {
   FollowPairReadModel,
   FriendWithTodosReadModel,
   NudgeSuggestFollowReadModel,
+  ActiveUserReadModel,
   OnboardingCandidateReadModel,
   SocialDigestCandidateReadModel,
-  UserIdReadModel,
   UserTodoCountReadModel,
   UserWithTodosAndStreakReadModel,
   WinbackUserReadModel,
@@ -36,7 +36,7 @@ export abstract class ReEngagementReaderPort {
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidateReadModel[]>;
   abstract countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]>;
-  abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]>;
+  abstract findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]>;
   /** candidate들의 비활성 맞팔 친구 관계 */
   abstract findNudgeSuggestFollows(params: {
     candidateIds: string[];

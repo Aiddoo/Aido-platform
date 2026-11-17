@@ -66,7 +66,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     async ({ lastActive, inactiveDays, stage }) => {
       // Given
       reader.winbackUsers = [
-        { id: "user-1", lastActiveAt: Temporal.Instant.from(`${lastActive}T00:00:00Z`) },
+        {
+          id: "user-1",
+          lastActiveAt: Temporal.Instant.from(`${lastActive}T00:00:00Z`),
+          timezone: "Asia/Seoul",
+        },
       ];
 
       // When
@@ -106,7 +110,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   it("저장한 언어로 보내고 지원하지 않는 언어는 영어로 보낸다", async () => {
     // Given
     reader.winbackUsers = [
-      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
     ];
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "fr" }, "user-1");
 
@@ -129,9 +137,21 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   it("여러 사용자의 단계 기록을 한 번에 보고 이미 같은 단계를 받은 사용자만 뺀다", async () => {
     // Given
     reader.winbackUsers = [
-      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
-      { id: "user-2", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
-      { id: "user-3", lastActiveAt: Temporal.Instant.from("2024-01-02T00:00:00Z") },
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
+      {
+        id: "user-2",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
+      {
+        id: "user-3",
+        lastActiveAt: Temporal.Instant.from("2024-01-02T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
     ];
     await dedup.recordWinbackStages([
       { userId: "user-1", stage: "day7" },
@@ -152,7 +172,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   it("이미 같은 단계를 보낸 사용자는 건너뛴다", async () => {
     // Given
     reader.winbackUsers = [
-      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
     ];
     await dedup.recordWinbackStages([{ userId: "user-1", stage: "day7" }]);
 
@@ -166,7 +190,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("마지막 접속 기록이 없는 사용자는 단계를 정할 수 없어 보내지 않는다", async () => {
     // Given
-    reader.winbackUsers = [{ id: "user-1", lastActiveAt: null }];
+    reader.winbackUsers = [{ id: "user-1", lastActiveAt: null, timezone: "Asia/Seoul" }];
 
     // When
     const result = await strategy.execute(timezoneContext);
@@ -179,7 +203,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   it("오늘 이미 WINBACK을 받은 사용자는 제외한다", async () => {
     // Given
     reader.winbackUsers = [
-      { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
     ];
     history.notified("WINBACK", ["user-1"], timezoneContext.today);
 

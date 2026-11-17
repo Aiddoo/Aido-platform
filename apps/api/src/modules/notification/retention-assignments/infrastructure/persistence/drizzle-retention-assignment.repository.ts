@@ -122,7 +122,11 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
   }
 
   async save(assignment: RetentionAssignment): Promise<boolean> {
-    for (const change of assignment.pullChanges()) {
+    const changes = assignment.pullChanges();
+    if (changes.length === 0) {
+      return false;
+    }
+    for (const change of changes) {
       const applied = await match(change)
         .with({ kind: "ENROLLED" }, () => this.#insertAssignment(assignment))
         .with({ kind: "ACTIVATED" }, () => this.#startAssignment(assignment))

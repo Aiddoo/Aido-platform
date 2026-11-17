@@ -63,6 +63,19 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
     ]);
   });
 
+  it("후보로 고른 뒤 다른 실행이 먼저 발행해 읽을 때 이미 OUTBOXED이면 다시 발행하지 않는다", async () => {
+    // Given
+    const { useCase, repository, publisher } = setup([candidate()]);
+    repository.stagesOutboxedBeforeLoad = new Set(["stage-1"]);
+
+    // When
+    await useCase.execute();
+
+    // Then
+    expect(publisher.published).toHaveLength(0);
+    expect(repository.stage("stage-1").status).toBe("OUTBOXED");
+  });
+
   it("다른 실행이 먼저 단계를 처리했으면 알림을 만들지 않는다", async () => {
     // Given
     // 후보로 읽은 뒤 표시하기 전에 다른 실행이 먼저 표시했다

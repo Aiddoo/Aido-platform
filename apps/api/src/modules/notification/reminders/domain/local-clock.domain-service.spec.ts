@@ -85,29 +85,29 @@ function sweepMinutesWhenDue(
 }
 
 describe("reminderTimesDueAt", () => {
-  it("평소에는 그 시:분부터 grace(3분) 동안 울린다", () => {
+  it("평소에는 그 시:분에만 울린다", () => {
     // When
     const due = sweepMinutesWhenDue("Asia/Seoul", "2027-03-14", { hour: 2, minute: 30 });
 
     // Then
-    expect(due).toEqual(["02:30+09:00", "02:31+09:00", "02:32+09:00"]);
+    expect(due).toEqual(["02:30+09:00"]);
   });
 
   it.each([
     {
       timezone: "America/New_York",
       date: "2027-03-14",
-      expected: ["03:00-04:00", "03:01-04:00", "03:02-04:00"],
+      expected: ["03:00-04:00"],
       time: { hour: 2, minute: 30 },
     },
     {
       timezone: "Europe/London",
       date: "2027-03-28",
-      expected: ["02:00+01:00", "02:01+01:00", "02:02+01:00"],
+      expected: ["02:00+01:00"],
       time: { hour: 1, minute: 30 },
     },
   ])(
-    "$timezone 봄 DST 틈에 없는 시각은 틈 바로 뒤 첫 분부터 울린다($date)",
+    "$timezone 봄 DST 틈에 없는 시각은 틈 바로 뒤 첫 분에 울린다($date)",
     ({ timezone, date, time, expected }) => {
       // When
       const due = sweepMinutesWhenDue(timezone, date, time);
@@ -121,12 +121,12 @@ describe("reminderTimesDueAt", () => {
     {
       timezone: "America/New_York",
       date: "2027-11-07",
-      expected: ["01:30-04:00", "01:31-04:00", "01:32-04:00"],
+      expected: ["01:30-04:00"],
     },
     {
       timezone: "Europe/London",
       date: "2027-10-31",
-      expected: ["01:30+01:00", "01:31+01:00", "01:32+01:00"],
+      expected: ["01:30+01:00"],
     },
   ])(
     "$timezone 가을 DST로 두 번 오는 시각은 앞의 것에만 울린다($date)",
@@ -153,9 +153,9 @@ describe("reminderTimesDueAt", () => {
     ]);
 
     // Then
-    // grace 안의 01:58·01:59, 틈 안의 02:00~02:59, 지금인 03:00이다
-    expect(due).toHaveLength(63);
-    expect(due.at(0)).toEqual({ hour: 1, minute: 58 });
+    // 틈 안의 02:00~02:59와 지금인 03:00이다
+    expect(due).toHaveLength(61);
+    expect(due.at(0)).toEqual({ hour: 2, minute: 0 });
     expect(due).toContainEqual({ hour: 2, minute: 30 });
     expect(due.at(-1)).toEqual({ hour: 3, minute: 0 });
     expect(groups.map(({ timezones }) => timezones)).toEqual([

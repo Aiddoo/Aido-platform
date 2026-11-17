@@ -14,5 +14,6 @@ describeRetentionAssignmentRepositoryContract(async () => {
       return userId;
     },
     d7ResultOf: async (assignmentId) => repository.d7Results.get(assignmentId) ?? null,
+    removeStage: async (stageId) => repository.removeStage(stageId),
   };
 });

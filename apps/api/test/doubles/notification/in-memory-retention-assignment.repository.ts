@@ -92,6 +92,8 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
   failingStageIds = new Set<string>();
   // 읽은 뒤 저장하기 전에 다른 실행이 먼저 닫은 단계다
   stagesClosedByOtherRun = new Set<string>();
+  // 후보로 고른 뒤 배정을 읽기 전에 다른 실행이 먼저 발행한 단계다(읽으면 OUTBOXED다)
+  stagesOutboxedBeforeLoad = new Set<string>();
   readonly #assignments = new Map<string, RetentionAssignmentPrimitives>();
   readonly #candidates = new Map<string, RetentionStageCandidateReadModel>();
   readonly #profiles = new Map<string, RetentionUserProfile>();
@@ -140,6 +142,13 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
   async findByIds(
     ids: readonly RetentionAssignmentId[],
   ): Promise<ReadonlyMap<string, RetentionAssignment>> {
+    for (const assignment of this.assignments) {
+      for (const stage of assignment.stages) {
+        if (this.stagesOutboxedBeforeLoad.has(stage.id)) {
+          this.#updateStage(assignment.id, { ...stage, status: "OUTBOXED" });
+        }
+      }
+    }
     return new Map(
       ids.flatMap((id) => {
         const stored = this.#assignments.get(id.value);
@@ -150,7 +159,11 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
 
   async save(assignment: RetentionAssignment): Promise<boolean> {
     const next = assignment.toPrimitives();
-    for (const change of assignment.pullChanges()) {
+    const changes = assignment.pullChanges();
+    if (changes.length === 0) {
+      return false;
+    }
+    for (const change of changes) {
       const applied = match(change)
         .with({ kind: "ENROLLED" }, () => this.#enroll(next))
         .with({ kind: "ACTIVATED" }, () => this.#start(next))
@@ -197,6 +210,15 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
       )
       .toSorted(byCreation)
       .slice(0, params.limit);
+  }
+
+  removeStage(stageId: string): void {
+    for (const assignment of this.assignments) {
+      this.#assignments.set(assignment.id, {
+        ...assignment,
+        stages: assignment.stages.filter((stage) => stage.id !== stageId),
+      });
+    }
   }
 
   stage(stageId: string): StoredRetentionStage {

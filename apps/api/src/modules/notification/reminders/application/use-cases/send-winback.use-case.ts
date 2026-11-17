@@ -9,11 +9,8 @@ import type {
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import {
-  calendarTimezoneOf,
-  type TimezoneContext,
-} from "../../domain/local-clock.domain-service.js";
-import { localDaysSince, localStartOf } from "../../domain/reminder-day.domain-service.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import { localDayRangeAcross, localDaysSince } from "../../domain/reminder-day.domain-service.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
@@ -45,25 +42,21 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
     const { timezones, today } = timezoneContext;
-    const calendarTimezone = calendarTimezoneOf(timezoneContext);
-    if (calendarTimezone == null) {
+    // 현지 달력으로 3~30일 전 날에 마지막으로 활동했다. 넓게 읽고 사람마다 날 수로 거른다
+    const range = localDayRangeAcross(
+      timezones,
+      today.subtract({ days: WINBACK_INACTIVE_DAYS.MAX }),
+      today.subtract({ days: WINBACK_INACTIVE_DAYS.MIN - 1 }),
+    );
+    if (range == null) {
       return { sent: 0 };
     }
-    // 현지 달력으로 3~30일 전 날에 마지막으로 활동했다. 끝 경계 순간은 아래에서 날 수로 거른다
-    const cutoffStart = localStartOf(
-      today.subtract({ days: WINBACK_INACTIVE_DAYS.MAX }),
-      calendarTimezone,
-    );
-    const cutoffEnd = localStartOf(
-      today.subtract({ days: WINBACK_INACTIVE_DAYS.MIN - 1 }),
-      calendarTimezone,
-    );
 
     // 3~30일 미접속 유저
     const users = await this.#dependencies.reader.findWinbackUsers({
       timezones,
-      inactiveSince: cutoffStart,
-      inactiveUntil: cutoffEnd,
+      inactiveSince: range.since,
+      inactiveUntil: range.until,
     });
 
     if (users.length === 0) {
@@ -84,11 +77,11 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    const checks = filteredUsers.flatMap(({ id, lastActiveAt }) => {
+    const checks = filteredUsers.flatMap(({ id, lastActiveAt, timezone }) => {
       if (lastActiveAt == null) {
         return [];
       }
-      const inactiveDays = localDaysSince(lastActiveAt, today, calendarTimezone);
+      const inactiveDays = localDaysSince(lastActiveAt, today, timezone);
       if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
         return [];
       }

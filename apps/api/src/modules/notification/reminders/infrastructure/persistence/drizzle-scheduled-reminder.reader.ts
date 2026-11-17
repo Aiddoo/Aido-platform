@@ -56,6 +56,10 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
     const { times, userId } = params;
+    // 빈 times로 or()를 만들면 조건이 사라져 모든 프리미엄 사용자가 맞는다
+    if (times.length === 0) {
+      return [];
+    }
     const recipients = userRecipients();
     return this.#morningReminderUsers(
       params,
@@ -89,6 +93,10 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
     const { times, userId } = params;
+    // 빈 times로 or()를 만들면 조건이 사라져 모든 프리미엄 사용자가 맞는다
+    if (times.length === 0) {
+      return [];
+    }
     const recipients = userRecipients();
     return this.#eveningReminderUsers(
       params,

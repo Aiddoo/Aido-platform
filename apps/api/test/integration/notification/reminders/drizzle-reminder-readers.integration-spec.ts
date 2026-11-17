@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
@@ -7,6 +8,7 @@ import {
   user as userTable,
   userLocation,
   userPreference,
+  userProfile,
 } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeSchedulerPreferenceReaderContract } from "#test/contracts/notification/scheduler-preference-reader.contract";
@@ -78,6 +80,184 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
     }
     return userId;
   }
+
+  describe("재유입 대상 조회", () => {
+    const TODAY = Temporal.PlainDate.from("2026-11-10");
+    const TOMORROW = TODAY.add({ days: 1 });
+    const today = TODAY.toString();
+
+    async function givenReEngagementUser(seed: {
+      readonly timezone: string;
+      readonly lastActiveAt?: string;
+      readonly currentStreak?: number;
+      readonly profileName?: string | null;
+      readonly todos?: readonly { readonly start: string; readonly completed?: boolean }[];
+    }): Promise<string> {
+      const userId = await givenWeeklyStatsUser({
+        timezone: seed.timezone,
+        todos: (seed.todos ?? []).map((span) => ({ ...span, end: null })),
+      });
+      if (seed.lastActiveAt != null) {
+        await client
+          .update(userTable)
+          .set({ lastActiveAt: Temporal.Instant.from(seed.lastActiveAt) })
+          .where(eq(userTable.id, userId));
+      }
+      if (seed.currentStreak != null) {
+        await client
+          .update(userPreference)
+          .set({ currentStreak: seed.currentStreak })
+          .where(eq(userPreference.userId, userId));
+      }
+      if (seed.profileName !== undefined) {
+        await client.insert(userProfile).values({ userId, name: seed.profileName });
+      }
+      return userId;
+    }
+
+    it("윈백 대상은 시간대 묶음과 마지막 활동 구간에 드는 사람이고 각자 시간대를 함께 준다", async () => {
+      // Given
+      const inside = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        lastActiveAt: "2026-11-01T00:00:00Z",
+      });
+      await givenReEngagementUser({ timezone: "Asia/Seoul", lastActiveAt: "2026-11-09T00:00:00Z" });
+      await givenReEngagementUser({
+        timezone: "America/New_York",
+        lastActiveAt: "2026-11-01T00:00:00Z",
+      });
+
+      // When
+      const users = await createReader().reEngagement.findWinbackUsers({
+        timezones: ["Asia/Seoul"],
+        inactiveSince: Temporal.Instant.from("2026-10-10T00:00:00Z"),
+        inactiveUntil: Temporal.Instant.from("2026-11-07T00:00:00Z"),
+      });
+
+      // Then
+      expect(users).toEqual([
+        {
+          id: inside,
+          lastActiveAt: Temporal.Instant.from("2026-11-01T00:00:00Z"),
+          timezone: "Asia/Seoul",
+        },
+      ]);
+    });
+
+    it("연속 기록 위기 대상은 3일 이상 이어 왔고 오늘 끝내지 않은 할 일이 있는 사람이다", async () => {
+      // Given
+      const atRisk = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        currentStreak: 5,
+        todos: [{ start: today }, { start: today, completed: true }],
+      });
+      await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        currentStreak: 2,
+        todos: [{ start: today }],
+      });
+      await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        currentStreak: 5,
+        todos: [{ start: today, completed: true }],
+      });
+
+      // When
+      const users = await createReader().reEngagement.findStreakAtRiskUsers({
+        timezones: ["Asia/Seoul"],
+        today: TODAY,
+        tomorrow: TOMORROW,
+      });
+
+      // Then
+      expect(users).toHaveLength(1);
+      expect(users[0]).toMatchObject({
+        id: atRisk,
+        preference: { currentStreak: 5, lastCompletedDate: null, locale: "ko" },
+      });
+      expect(users[0]?.todos.map(({ completed }) => completed).toSorted()).toEqual([false, true]);
+    });
+
+    it("소셜 다이제스트 후보는 받은 사람 중 오늘 끝내지 않은 할 일이 있는 사람이다", async () => {
+      // Given
+      const candidate = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [{ start: today }],
+      });
+      const done = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [{ start: today, completed: true }],
+      });
+      const notRecipient = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [{ start: today }],
+      });
+
+      // When
+      const users = await createReader().reEngagement.findSocialDigestCandidates({
+        timezones: ["Asia/Seoul"],
+        today: TODAY,
+        tomorrow: TOMORROW,
+        recipientUserIds: [candidate, done],
+      });
+
+      // Then
+      expect(users).toEqual([{ id: candidate, todos: [{ completed: false }] }]);
+      expect(users.map(({ id }) => id)).not.toContain(notRecipient);
+    });
+
+    it("오늘 할 일이 있는 친구는 프로필 이름(없으면 null)과 오늘 할 일 완료 여부를 준다", async () => {
+      // Given
+      const named = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        profileName: "친구",
+        todos: [{ start: today, completed: true }],
+      });
+      const withoutProfile = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [{ start: today }],
+      });
+      const idle = await givenReEngagementUser({ timezone: "Asia/Seoul", profileName: "쉼" });
+
+      // When
+      const friends = await createReader().reEngagement.findFriendsWithTodayTodos({
+        friendIds: [named, withoutProfile, idle],
+        today: TODAY,
+        tomorrow: TOMORROW,
+      });
+
+      // Then
+      expect(friends.toSorted((left, right) => left.id.localeCompare(right.id))).toEqual(
+        [
+          { id: named, profile: { name: "친구" }, todos: [{ completed: true }] },
+          { id: withoutProfile, profile: null, todos: [{ completed: false }] },
+        ].toSorted((left, right) => left.id.localeCompare(right.id)),
+      );
+    });
+
+    it("끝낸 할 일 수는 사람마다 숫자로 주고 끝낸 할 일이 없는 사람은 뺀다", async () => {
+      // Given
+      const busy = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [
+          { start: today, completed: true },
+          { start: "2026-11-01", completed: true },
+          { start: today },
+        ],
+      });
+      const idle = await givenReEngagementUser({
+        timezone: "Asia/Seoul",
+        todos: [{ start: today }],
+      });
+
+      // When
+      const counts = await createReader().reEngagement.countCompletedTodosByUsers([busy, idle]);
+
+      // Then
+      expect(counts).toEqual([{ userId: busy, count: 2 }]);
+      expect(typeof counts[0]?.count).toBe("number");
+    });
+  });
 
   describe("같은 현지 시각 시간대 묶음 조회", () => {
     const TODAY = Temporal.PlainDate.from("2026-11-10");

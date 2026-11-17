@@ -38,12 +38,22 @@ export interface UserIdReadModel {
 export interface WinbackUserReadModel {
   readonly id: string;
   readonly lastActiveAt: Temporal.Instant | null;
+  /** 비활성 일수를 이 사용자의 현지 달력으로 센다 */
+  readonly timezone: string;
 }
 
 /** 온보딩 대상 (가입 시각 포함) */
 export interface OnboardingCandidateReadModel {
   readonly id: string;
   readonly createdAt: Temporal.Instant;
+  /** 가입 뒤 며칠째인지 이 사용자의 현지 달력으로 센다 */
+  readonly timezone: string;
+}
+
+/** 시간대 묶음의 활성 사용자. 친구가 쉰 날을 이 사용자의 현지 달력으로 센다 */
+export interface ActiveUserReadModel {
+  readonly id: string;
+  readonly timezone: string;
 }
 
 /** 유저별 투두 집계 (groupBy 결과) */

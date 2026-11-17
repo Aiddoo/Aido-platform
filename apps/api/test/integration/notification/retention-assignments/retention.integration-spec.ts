@@ -8,7 +8,12 @@ import {
 } from "#api/modules/notification/retention-assignments/infrastructure/cache/retention-cache.keyspace";
 import { DrizzleRetentionAssignmentRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention-assignment.repository";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
+import {
+  retentionExperimentStage,
+  todo,
+  todoCategory,
+  userPreference,
+} from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { describeRetentionAssignmentRepositoryContract } from "#test/contracts/notification/retention-assignment-repository.contract";
@@ -108,6 +113,9 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
             todoActionWithinD7: result.todoActionWithinD7,
             measuredAt: result.measuredAt,
           };
+    },
+    removeStage: async (stageId) => {
+      await db.delete(retentionExperimentStage).where(eq(retentionExperimentStage.id, stageId));
     },
   }));
 

@@ -116,6 +116,11 @@ export class RetentionAssignment extends AggregateRoot<
     this.#changes.push({ kind: "D7_MEASURED", result });
   }
 
+  // 처리가 실패해 저장하지 못한 변경을 버린다
+  discardChanges(): void {
+    this.#changes = [];
+  }
+
   // 저장소만 부른다. 꺼낸 변경은 다시 쓰지 않는다
   pullChanges(): RetentionAssignmentChange[] {
     const changes = this.#changes;

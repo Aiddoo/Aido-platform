@@ -2,7 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
-import { userReminderPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import {
+  userDeliveryPreference,
+  userReminderPreference,
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import {
   userProfileNameOf,
   userRecipients,
@@ -23,12 +26,12 @@ import type {
   TodayRangeParams,
 } from "../../application/ports/re-engagement-reader.port.js";
 import type {
+  ActiveUserReadModel,
   FollowPairReadModel,
   FriendWithTodosReadModel,
   NudgeSuggestFollowReadModel,
   OnboardingCandidateReadModel,
   SocialDigestCandidateReadModel,
-  UserIdReadModel,
   UserTodoCountReadModel,
   UserWithTodosAndStreakReadModel,
   WinbackUserReadModel,
@@ -62,13 +65,19 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
   findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
     const { timezones, inactiveSince, inactiveUntil } = params;
     const recipients = userRecipients();
+    const preference = userDeliveryPreference();
     return this.#db
-      .select({ id: recipients.userId, lastActiveAt: recipients.lastActiveAt })
+      .select({
+        id: recipients.userId,
+        lastActiveAt: recipients.lastActiveAt,
+        timezone: preference.timezone,
+      })
       .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
       .where(
         and(
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
-          userInTimezones(recipients.userId, timezones),
+          inArray(preference.timezone, [...timezones]),
           gte(recipients.lastActiveAt, inactiveSince),
           lte(recipients.lastActiveAt, inactiveUntil),
         ),
@@ -81,14 +90,20 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
   }): Promise<OnboardingCandidateReadModel[]> {
     const { timezones, createdSince } = params;
     const recipients = userRecipients();
+    const preference = userDeliveryPreference();
     return this.#db
-      .select({ id: recipients.userId, createdAt: recipients.createdAt })
+      .select({
+        id: recipients.userId,
+        createdAt: recipients.createdAt,
+        timezone: preference.timezone,
+      })
       .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
       .where(
         and(
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
           gte(recipients.createdAt, createdSince),
-          userInTimezones(recipients.userId, timezones),
+          inArray(preference.timezone, [...timezones]),
         ),
       );
   }
@@ -98,16 +113,18 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     return this.#db.select({ userId: counts.userId, count: counts.count }).from(counts);
   }
 
-  findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]> {
+  findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
     const recipients = userRecipients();
+    const preference = userDeliveryPreference();
     return this.#db
-      .select({ id: recipients.userId })
+      .select({ id: recipients.userId, timezone: preference.timezone })
       .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
       .where(
         and(
           recipients.undeleted,
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
-          userInTimezones(recipients.userId, timezones),
+          inArray(preference.timezone, [...timezones]),
         ),
       );
   }

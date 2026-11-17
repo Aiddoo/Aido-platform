@@ -2,6 +2,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { RetentionAssignmentId } from "./retention-assignment-id.vo.js";
 import { RetentionAssignment } from "./retention-assignment.aggregate.js";
+import { RetentionD7Result } from "./retention-d7-result.vo.js";
 
 const STARTED_AT = Temporal.Instant.from("2026-07-15T00:00:00Z");
 const NOW = Temporal.Instant.from("2026-07-16T02:00:00Z");
@@ -49,6 +50,25 @@ describe("RetentionAssignment", () => {
     expect([skipped, outboxed]).toEqual([true, false]);
     expect(d0.status).toBe("SKIPPED");
     expect(assignment.pullChanges().map((change) => change.kind)).toEqual(["STAGE_CLOSED"]);
+    expect(assignment.pullChanges()).toEqual([]);
+  });
+
+  it("처리가 실패해 버린 변경은 다음 저장에 섞이지 않는다", () => {
+    // Given
+    const assignment = enrolled(STARTED_AT);
+    assignment.pullChanges();
+    assignment.measureD7(
+      RetentionD7Result.create({
+        returnedWithinD7: true,
+        todoActionWithinD7: false,
+        measuredAt: NOW,
+      }),
+    );
+
+    // When
+    assignment.discardChanges();
+
+    // Then
     expect(assignment.pullChanges()).toEqual([]);
   });
 

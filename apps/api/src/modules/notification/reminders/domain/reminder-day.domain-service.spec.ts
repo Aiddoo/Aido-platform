@@ -1,5 +1,6 @@
 import {
   isoWeekIdOf,
+  localDayRangeAcross,
   localDaysSince,
   localStartOf,
   previousIsoWeekOf,
@@ -70,6 +71,22 @@ describe("리마인더 날짜 경계", () => {
 
     // Then
     expect(start).toEqual(Temporal.Instant.from(expected));
+  });
+
+  it("localDayRangeAcross는 묶음의 시간대마다 그 현지 날짜가 되는 순간을 모두 덮는다", () => {
+    // When
+    // 2027-03-27 런던은 GMT(+0), 라고스는 +1이다
+    const range = localDayRangeAcross(
+      ["Europe/London", "Africa/Lagos"],
+      Temporal.PlainDate.from("2027-03-27"),
+      Temporal.PlainDate.from("2027-03-29"),
+    );
+
+    // Then
+    expect(range).toEqual({
+      since: Temporal.Instant.from("2027-03-26T23:00:00Z"),
+      until: Temporal.Instant.from("2027-03-28T23:00:00Z"),
+    });
   });
 
   it.each([

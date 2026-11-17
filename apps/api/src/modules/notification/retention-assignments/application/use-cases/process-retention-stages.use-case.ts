@@ -90,6 +90,8 @@ export class ProcessRetentionStagesUseCase {
     try {
       await this.#processCandidate(candidate, assignment, this.#now());
     } catch {
+      // 롤백된 변경(D7 측정 등)이 같은 배정의 다음 단계 저장에 섞이지 않게 버린다
+      assignment.discardChanges();
       this.#dependencies.logger.error({
         event: RetentionAssignmentLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
         stageId: candidate.stageId,
@@ -183,8 +185,11 @@ export class ProcessRetentionStagesUseCase {
           occurrenceKey: localDateIn(now, candidate.timezone).toString(),
         },
       });
-      assignment.outboxStage(candidate.stageId, now);
-      if (!(await repository.save(assignment))) {
+      // 읽을 때 이미 닫혀 있거나(다른 실행이 먼저 발행) 저장에서 경쟁을 지면 발행하지 않는다.
+      // D7 측정은 그래도 남긴다(옛 기록 순서와 같다)
+      const isClaimed = assignment.outboxStage(candidate.stageId, now);
+      const isSaved = await repository.save(assignment);
+      if (!isClaimed || !isSaved) {
         return;
       }
       const notification = await this.#dependencies.notificationPublisher.execute({

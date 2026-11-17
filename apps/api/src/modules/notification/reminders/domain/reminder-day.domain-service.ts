@@ -18,6 +18,22 @@ export function localStartOf(date: Temporal.PlainDate, timezone: string): Tempor
   return date.toZonedDateTime(timezone).toInstant();
 }
 
+/**
+ * 시간대 묶음의 사람마다 현지 날짜 [firstDay, endDay)가 되는 순간을 모두 덮는 범위다.
+ * 묶음의 시간대는 지금 오프셋이 같아도 그날 오프셋이 다를 수 있어 넓게 읽고, 사람마다 localDaysSince로 거른다.
+ */
+export function localDayRangeAcross(
+  timezones: readonly string[],
+  firstDay: Temporal.PlainDate,
+  endDay: Temporal.PlainDate,
+): { readonly since: Temporal.Instant; readonly until: Temporal.Instant } | null {
+  const starts = timezones.map((timezone) => localStartOf(firstDay, timezone));
+  const ends = timezones.map((timezone) => localStartOf(endDay, timezone));
+  const since = starts.toSorted(Temporal.Instant.compare).at(0);
+  const until = ends.toSorted(Temporal.Instant.compare).at(-1);
+  return since == null || until == null ? null : { since, until };
+}
+
 // 날짜 키로 만든 PlainDate는 ISO 달력이라 주차가 늘 있고 타입만 undefined를 허용한다
 function isoWeekOf(date: Temporal.PlainDate): { readonly year: number; readonly week: number } {
   const { yearOfWeek, weekOfYear } = date;

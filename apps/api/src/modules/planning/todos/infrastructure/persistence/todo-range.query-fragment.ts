@@ -60,11 +60,13 @@ export function completedTodoCountsByUser(userIds: readonly string[]) {
     .as("completed_todo_counts");
 }
 
-// 여러 날 할 일은 기간 [periodStart, periodEnd) 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
+// 여러 날 할 일은 기간 [periodStart, periodEnd) 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다.
+// 부르는 쪽의 사람 조건(ownerCondition)은 집계 전 WHERE에 붙여 고를 사람의 할 일만 센다
 export function todoDaysInPeriodByUser(params: {
   readonly periodStart: Temporal.PlainDate;
   readonly periodEnd: Temporal.PlainDate;
   readonly completedOnly: boolean;
+  readonly ownerCondition: (userIdColumn: AnyPgColumn) => SQL;
 }) {
   const firstDay = sql`${sql.param(params.periodStart, todo.startDate)}::date`;
   const lastDay = sql`(${sql.param(params.periodEnd, todo.startDate)}::date - 1)`;
@@ -78,6 +80,7 @@ export function todoDaysInPeriodByUser(params: {
         sql`${todo.startDate} <= ${lastDay}`,
         sql`${todoLastDay} >= ${firstDay}`,
         params.completedOnly ? eq(todo.completed, true) : undefined,
+        params.ownerCondition(todo.userId),
       ),
     )
     .groupBy(todo.userId)

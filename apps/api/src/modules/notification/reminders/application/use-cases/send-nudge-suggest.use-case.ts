@@ -10,14 +10,11 @@ import { createNudgeSuggestionNotificationMessage } from "../../../shared/applic
 import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
-  calendarTimezoneOf,
-  type TimezoneContext,
-} from "../../domain/local-clock.domain-service.js";
-import {
+  localDayRangeAcross,
   localDaysSince,
   isoWeekIdOf,
-  localStartOf,
 } from "../../domain/reminder-day.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
@@ -40,6 +37,9 @@ interface NudgeSuggestStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
+// 받는 사람 현지 달력으로 이만큼 쉰 맞팔 친구를 찔러보라고 제안한다
+const FRIEND_INACTIVE_DAYS = { MIN: 3, MAX: 7 } as const;
+
 export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: NudgeSuggestStrategyDependencies;
 
@@ -49,12 +49,15 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
     const { timezones, today } = timezoneContext;
-    const calendarTimezone = calendarTimezoneOf(timezoneContext);
-    if (calendarTimezone == null) {
+    // 친구가 현지 달력으로 3~7일 쉬었다. 묶음 전체를 넓게 읽고 받는 사람 달력으로 거른다
+    const range = localDayRangeAcross(
+      timezones,
+      today.subtract({ days: FRIEND_INACTIVE_DAYS.MAX }),
+      today.subtract({ days: FRIEND_INACTIVE_DAYS.MIN - 1 }),
+    );
+    if (range == null) {
       return { sent: 0 };
     }
-    const weekAgo = localStartOf(today.subtract({ days: 7 }), calendarTimezone);
-    const twoDaysAgo = localStartOf(today.subtract({ days: 2 }), calendarTimezone);
 
     // 이 타임존의 활성 유저 목록
     const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezones(timezones);
@@ -83,8 +86,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     // 배치 1: 모든 candidate의 비활성 맞팔 친구를 한 번에 조회
     const allFollows = await this.#dependencies.reader.findNudgeSuggestFollows({
       candidateIds,
-      activeSince: weekAgo,
-      activeUntil: twoDaysAgo,
+      activeSince: range.since,
+      activeUntil: range.until,
     });
 
     // per-user 친구 맵 생성
@@ -139,13 +142,16 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
       const eligibleFriends = friends
         .filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
-        .sort((a, b) => {
-          const daysA =
-            a.lastActiveAt != null ? localDaysSince(a.lastActiveAt, today, calendarTimezone) : 0;
-          const daysB =
-            b.lastActiveAt != null ? localDaysSince(b.lastActiveAt, today, calendarTimezone) : 0;
-          return daysB - daysA;
-        });
+        .flatMap((friend) => {
+          if (friend.lastActiveAt == null) {
+            return [];
+          }
+          const days = localDaysSince(friend.lastActiveAt, today, user.timezone);
+          return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
+            ? [{ ...friend, days }]
+            : [];
+        })
+        .sort((a, b) => b.days - a.days);
 
       const target = eligibleFriends[0];
 

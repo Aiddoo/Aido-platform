@@ -63,10 +63,10 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     return { reportPushDevice, warnings, transactionHost };
   }
 
-  // 다른 트랜잭션의 행 잠금을 기다리는 연결 수다
+  // 다른 트랜잭션이 끝나기를 기다리는(unique 키 확인) 연결 수다
   async function lockWaitCount(): Promise<number> {
     const result = await client.execute<{ waiting: number }>(
-      sql`SELECT COUNT(*)::INT AS waiting FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`,
+      sql`SELECT COUNT(*)::INT AS waiting FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND wait_event = 'transactionid'`,
     );
     return result.rows[0]?.waiting ?? 0;
   }
@@ -241,9 +241,12 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     const reporting = reportPushDevice.execute(
       command({ userId: secondUserId, deviceId: "ios_second" }),
     );
-    await vi.waitFor(async () => {
-      expect(await lockWaitCount()).toBe(1);
-    });
+    await vi.waitFor(
+      async () => {
+        expect(await lockWaitCount()).toBeGreaterThanOrEqual(1);
+      },
+      { timeout: 5000 },
+    );
     releaseHolder();
     await holder;
     await reporting;

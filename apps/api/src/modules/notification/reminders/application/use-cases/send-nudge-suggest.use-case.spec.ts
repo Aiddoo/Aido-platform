@@ -60,7 +60,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("2~7일 쉰 맞팔 친구가 있으면 찔러보기를 제안하고 이번 주 쌍으로 기록한다", async () => {
     // Given
-    reader.activeUsers = [{ id: "user-1" }];
+    reader.activeUsers = [{ id: "user-1", timezone: "Asia/Seoul" }];
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
     ];
@@ -106,7 +106,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("친구가 여럿이면 가장 오래 쉰 친구를 고른다", async () => {
     // Given
-    reader.activeUsers = [{ id: "user-1" }];
+    reader.activeUsers = [{ id: "user-1", timezone: "Asia/Seoul" }];
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
       follow("user-1", { id: "friend-2", name: "친구2", lastActive: "2024-01-10" }),
@@ -121,7 +121,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("이번 주에 이미 같은 친구로 제안했으면 건너뛴다", async () => {
     // Given
-    reader.activeUsers = [{ id: "user-1" }];
+    reader.activeUsers = [{ id: "user-1", timezone: "Asia/Seoul" }];
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
     ];
@@ -137,7 +137,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("오늘 이미 제안을 받은 사용자는 제외한다", async () => {
     // Given
-    reader.activeUsers = [{ id: "user-1" }];
+    reader.activeUsers = [{ id: "user-1", timezone: "Asia/Seoul" }];
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
     ];
@@ -153,7 +153,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("쉬고 있는 친구가 없으면 제안하지 않는다", async () => {
     // Given
-    reader.activeUsers = [{ id: "user-1" }];
+    reader.activeUsers = [{ id: "user-1", timezone: "Asia/Seoul" }];
 
     // When
     const result = await strategy.execute(timezoneContext);
