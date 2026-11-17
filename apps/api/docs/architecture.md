@@ -74,7 +74,7 @@ apps/api/src/
 | insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                             |
 | weather       | `forecasts`, `locations` (+ `shared/`)                                                                               |
 | ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`)                                          |
-| voice         | `voice-notes`, `action-plans`                                                                                        |
+| voice         | `voice-digests`, `plan-applications`                                                                                 |
 | operations    | `broadcasts`, `admin-notices`, `metrics`                                                                             |
 | app-config    | `app-versions`, `feature-discovery` (+ `shared/`)                                                                    |
 | support       | `inquiries`                                                                                                          |

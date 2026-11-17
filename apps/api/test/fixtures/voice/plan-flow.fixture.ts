@@ -1,6 +1,6 @@
 import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsing/infrastructure/adapters/quota-charged-generation.adapter";
 import { AiActionPlanGeneratorAdapter } from "#api/modules/ai-assistance/planning/infrastructure/adapters/ai-action-plan-generator.adapter";
-import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/action-plans/infrastructure/adapters/quota-charged-plan-runner.adapter";
+import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/plan-applications/infrastructure/adapters/quota-charged-plan-runner.adapter";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";

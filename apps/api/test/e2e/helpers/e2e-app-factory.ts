@@ -46,8 +46,8 @@ import { AdminNotificationProcessor } from "#api/modules/operations/admin-notice
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.processor";
 import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
-import { PlanApplicationCleanupProcessor } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.processor";
-import { PlanApplicationCleanupScheduler } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.scheduler";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.processor";
+import { PlanApplicationCleanupScheduler } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.scheduler";
 import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
 import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
 import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
