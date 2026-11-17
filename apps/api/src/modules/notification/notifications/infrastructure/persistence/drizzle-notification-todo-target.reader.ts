@@ -1,7 +1,10 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import {
+  type TodoId,
+  todoOwnerDates,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
 import type {
@@ -24,10 +27,8 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
       return new Map();
     }
 
-    const rows = await this.#transactionHost.tx.query.todo.findMany({
-      columns: { id: true, userId: true, startDate: true },
-      where: { id: { in: todoIds.map((todoId) => todoId.value) } },
-    });
+    const targets = todoOwnerDates(todoIds.map((todoId) => todoId.value));
+    const rows = await this.#transactionHost.tx.select().from(targets);
 
     return new Map(
       rows.map((row) => [row.id, { ownerId: row.userId, date: row.startDate.toString() }]),

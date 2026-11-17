@@ -33,3 +33,8 @@ export {
   userAudience,
 } from "./infrastructure/persistence/user-audience.query-fragment.js";
 export { userLastActivity } from "./infrastructure/persistence/user-activity.query-fragment.js";
+export {
+  type UserRecipients,
+  userProfileNameOf,
+  userRecipients,
+} from "./infrastructure/persistence/user-recipient.query-fragment.js";

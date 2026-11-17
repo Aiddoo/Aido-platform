@@ -13,19 +13,20 @@
 | `users`            | `User`           | `User`·`UserProfile`           | 계정 상태·가입·탈퇴·복구·프로필·활동 기록·성장 요약 |
 | `user-preferences` | `UserPreference` | `UserPreference`·`UserConsent` | 설정·연속 완료·약관·광고·AI 데이터 처리 동의        |
 
-| 용어               | 코드                                                 | 뜻                                                                                                                                                                 |
-| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 로그인 수단        | `AccountProvider`, `ACCOUNT_PROVIDERS`               | `CREDENTIAL`(이메일·비밀번호)·`APPLE`·`GOOGLE`·`KAKAO`·`NAVER`. DB enum 순서는 계약과 달라 `ACCOUNT_PROVIDERS_IN_DB_ORDER`다                                       |
-| 이메일             | `Email`(VO)                                          | 계약 `emailSchema`와 같은 형식, 255자 이하. 틀리면 `SYS_0002`. 정규화(소문자)는 계약이 이미 했다                                                                   |
-| 합성 이메일        | `<provider>_<id>@social.aido.kr`                     | 이메일을 주지 않는 소셜 계정의 가입 이메일. `Email` VO를 거치지 않는다                                                                                             |
-| 보안 로그          | `SECURITY_EVENT`, `SecurityLog`                      | 가입·로그인 성공/실패·토큰 갱신·폐기·연결·탈퇴·복구를 사용자별로 남기는 감사 기록                                                                                  |
-| 사용자 잠금        | `UserMutationLockPort.lockById`                      | User 행 잠금. 로그인 수단·비밀번호를 바꾸는 요청과 다른 Context의 차감·보상이 같은 잠금을 잡는다. 사용자가 없으면 `false`                                          |
-| AI 사용량 칸       | `UserAiUsageCounterPort`                             | 출시 앱 `/v1/ai/usage`·`/me`가 읽는 `User.aiUsageCount`·`aiUsageResetAt`. access 원장이 사용자 잠금 안에서 읽고 조건부로 바꾸는 유일한 문이다                      |
-| 사용자 요약        | `UserBriefReaderPort`, `UserBriefReadModel`          | social이 사람을 확인·표시하는 문. id 묶음으로 태그·이름·프로필 이미지·탈퇴 대기를 한 번에 읽고, 활성 여부·태그 조회·가입 신원(로그인 수단)을 준다                  |
-| 사용자 검색        | `UserSearchReaderPort`, `UserExclusionCondition`     | ACTIVE이고 탈퇴 대기가 아닌 사람을 Aido ID·이름으로 찾는다. 순위는 태그 정확·태그 앞부분·이름 앞부분·부분 일치다. 뺄 사람은 부르는 쪽 조건이다                     |
-| 사용자 조건        | `undeletedUserCondition`, `userTagContainsCondition` | 다른 Context가 사람 id 칸으로 페이지를 고를 때 붙이는 SQL 조건. 사용자 테이블을 직접 읽지 않게 identity가 연다                                                     |
-| 활동 시각 조각     | `userLastActivity`                                   | 다른 Context가 사람 id 칸으로 마지막 활동 시각을 한 SQL에 붙이는 하위 질의. 탈퇴 대기도 담는다                                                                     |
-| 구독 projection 칸 | `UserSubscriptionProjectionPort`                     | 출시 앱 `/me`·권한 SQL이 읽는 `User.subscriptionStatus`·`subscriptionExpiresAt`. billing이 사용자 잠금 안에서 쓰고, 만료 웹훅을 잃은 사용자를 고르는 유일한 문이다 |
+| 용어               | 코드                                                 | 뜻                                                                                                                                                                           |
+| ------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 로그인 수단        | `AccountProvider`, `ACCOUNT_PROVIDERS`               | `CREDENTIAL`(이메일·비밀번호)·`APPLE`·`GOOGLE`·`KAKAO`·`NAVER`. DB enum 순서는 계약과 달라 `ACCOUNT_PROVIDERS_IN_DB_ORDER`다                                                 |
+| 이메일             | `Email`(VO)                                          | 계약 `emailSchema`와 같은 형식, 255자 이하. 틀리면 `SYS_0002`. 정규화(소문자)는 계약이 이미 했다                                                                             |
+| 합성 이메일        | `<provider>_<id>@social.aido.kr`                     | 이메일을 주지 않는 소셜 계정의 가입 이메일. `Email` VO를 거치지 않는다                                                                                                       |
+| 보안 로그          | `SECURITY_EVENT`, `SecurityLog`                      | 가입·로그인 성공/실패·토큰 갱신·폐기·연결·탈퇴·복구를 사용자별로 남기는 감사 기록                                                                                            |
+| 사용자 잠금        | `UserMutationLockPort.lockById`                      | User 행 잠금. 로그인 수단·비밀번호를 바꾸는 요청과 다른 Context의 차감·보상이 같은 잠금을 잡는다. 사용자가 없으면 `false`                                                    |
+| AI 사용량 칸       | `UserAiUsageCounterPort`                             | 출시 앱 `/v1/ai/usage`·`/me`가 읽는 `User.aiUsageCount`·`aiUsageResetAt`. access 원장이 사용자 잠금 안에서 읽고 조건부로 바꾸는 유일한 문이다                                |
+| 사용자 요약        | `UserBriefReaderPort`, `UserBriefReadModel`          | social이 사람을 확인·표시하는 문. id 묶음으로 태그·이름·프로필 이미지·탈퇴 대기를 한 번에 읽고, 활성 여부·태그 조회·가입 신원(로그인 수단)을 준다                            |
+| 사용자 검색        | `UserSearchReaderPort`, `UserExclusionCondition`     | ACTIVE이고 탈퇴 대기가 아닌 사람을 Aido ID·이름으로 찾는다. 순위는 태그 정확·태그 앞부분·이름 앞부분·부분 일치다. 뺄 사람은 부르는 쪽 조건이다                               |
+| 사용자 조건        | `undeletedUserCondition`, `userTagContainsCondition` | 다른 Context가 사람 id 칸으로 페이지를 고를 때 붙이는 SQL 조건. 사용자 테이블을 직접 읽지 않게 identity가 연다                                                               |
+| 활동 시각 조각     | `userLastActivity`                                   | 다른 Context가 사람 id 칸으로 마지막 활동 시각을 한 SQL에 붙이는 하위 질의. 탈퇴 대기도 담는다                                                                               |
+| 받는 사람 조각     | `userRecipients`, `userProfileNameOf`                | 다른 Context가 자기 조건(권한·설정·할 일)으로 받는 사람을 한 SQL에 고를 때 쓰는 사용자 테이블·칸과 프로필 이름 lateral 하위 질의. 탈퇴 대기는 `undeleted`로 부르는 쪽이 뺀다 |
+| 구독 projection 칸 | `UserSubscriptionProjectionPort`                     | 출시 앱 `/me`·권한 SQL이 읽는 `User.subscriptionStatus`·`subscriptionExpiresAt`. billing이 사용자 잠금 안에서 쓰고, 만료 웹훅을 잃은 사용자를 고르는 유일한 문이다           |
 
 ## sessions
 
@@ -171,6 +172,7 @@
 | AI 데이터 처리 동의 | `AiDataSharingConsent`(Entity), `AI_DATA_SHARING_DECISIONS`, `AiDataSharingConsentReaderPort` | 할 일·메모 글자를 AI 처리 업체로 보내도 되는지. AGREED·DECLINED·UNDECIDED. HTTP guard·예약 작업·음성 계획이 같은 판정을 쓴다                                    |
 | 안내 버전           | `AI_DATA_SHARING_CONSENT_VERSIONS`, `allowsAiProcessingAt`                                    | 버전마다 알린 업체가 다르다. 보내려는 업체를 처음 알린 버전 이상에 동의했을 때만 보낸다. 동의 시각이 지금보다 뒤면 아직 동의 전이다                             |
 | 발송 설정 조각      | `userDeliveryPreference`, `userMarketingPushConsent`                                          | 다른 Context가 사람 id 칸 옆에 시간대·언어·푸시·야간 설정과 광고성 푸시 동의 시각을 한 SQL로 붙이는 하위 질의. PG가 펼쳐 실행 계획은 테이블 조인과 같다         |
+| 리마인더 설정 조각  | `userReminderPreference`                                                                      | 사람 id 칸 옆에 시간대·언어·연속 기록·아침·저녁 리마인더 시각을 붙이는 하위 질의                                                                                |
 
 연속 완료는 Aggregate가 다음 상태 계획을 주고(`planTodoCompletion`·`planTodoUncompletion`) 저장소가 조건부로 쓴다. 바꿀 것이 없으면 `null`이다. 설정·동의 값은 Aggregate를 거치지 않고 저장소 upsert로 바꾼다.
 

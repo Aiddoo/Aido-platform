@@ -1,39 +1,25 @@
-import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { ConfigType } from "@nestjs/config";
-import { and, eq, gte, inArray, lt, type AnyColumn } from "drizzle-orm";
+import { and, eq, exists, gte, inArray, not, sql, type SQL } from "drizzle-orm";
+import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { userDeliveryPreference } from "#api/modules/identity/identity-settings.public";
-import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo } from "#api/platform/database/schema/index";
+import { retentionExperimentAssignment } from "#api/platform/database/schema/index";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
 
 // 리마인더 조회 reader들이 함께 쓰는 SQL 조각이다
-type SchedulerDatabase = TransactionHost<DrizzleTransactionalAdapter>["tx"];
 
 export type SchedulerRetentionSettings = Pick<
   ConfigType<typeof notificationRetentionAssignmentsConfig>,
   "onboardingV2"
 >;
 
-export function todayTodoCount(
-  database: SchedulerDatabase,
-  userId: AnyColumn,
-  today: Temporal.PlainDate,
-  tomorrow: Temporal.PlainDate,
-) {
-  return database.$count(
-    todo,
-    and(eq(todo.userId, userId), gte(todo.startDate, today), lt(todo.startDate, tomorrow)),
-  );
-}
-
-export function userInTimezones(database: SchedulerDatabase, timezones: readonly string[]) {
+export function userInTimezones(userIdColumn: AnyPgColumn, timezones: readonly string[]): SQL {
   const preference = userDeliveryPreference();
   return inArray(
-    todo.userId,
-    database
+    userIdColumn,
+    new QueryBuilder()
       .select({ userId: preference.userId })
       .from(preference)
       .where(inArray(preference.timezone, [...timezones])),
@@ -44,19 +30,24 @@ export function userInTimezones(database: SchedulerDatabase, timezones: readonly
 export function recentTreatmentExclusion(
   retention: SchedulerRetentionSettings,
   clock: Pick<ClockPort, "now">,
-) {
+  userIdColumn: AnyPgColumn,
+): SQL | undefined {
   if (!retention.onboardingV2.enabled) {
-    return [];
+    return undefined;
   }
-  return [
-    {
-      NOT: {
-        retentionAssignments: {
-          experimentKey: "onboarding_v2_d7",
-          variant: "TREATMENT" as const,
-          startedAt: { gte: clock.now().subtract({ hours: 8 * 24 }) },
-        },
-      },
-    },
-  ];
+  return not(
+    exists(
+      new QueryBuilder()
+        .select({ one: sql`1` })
+        .from(retentionExperimentAssignment)
+        .where(
+          and(
+            eq(retentionExperimentAssignment.userId, userIdColumn),
+            eq(retentionExperimentAssignment.experimentKey, "onboarding_v2_d7"),
+            eq(retentionExperimentAssignment.variant, "TREATMENT"),
+            gte(retentionExperimentAssignment.startedAt, clock.now().subtract({ hours: 8 * 24 })),
+          ),
+        ),
+    ),
+  );
 }

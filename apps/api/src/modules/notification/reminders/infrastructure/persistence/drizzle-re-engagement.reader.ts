@@ -1,9 +1,18 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
+import { userReminderPreference } from "#api/modules/identity/identity-settings.public";
+import {
+  userProfileNameOf,
+  userRecipients,
+} from "#api/modules/identity/users/identity-users.public";
+import {
+  completedTodoCountsByUser,
+  hasTodoBetween,
+  todoCompletionsBetween,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
@@ -24,10 +33,15 @@ import type {
   UserWithTodosAndStreakReadModel,
   WinbackUserReadModel,
 } from "../../application/read-models/scheduler.read-model.js";
+import { toTodoCompletions } from "./scheduler-row.mapper.js";
 import {
   recentTreatmentExclusion,
   type SchedulerRetentionSettings,
+  userInTimezones,
 } from "./scheduler.query-fragment.js";
+
+// 연속 기록이 이만큼 이어진 사용자만 끊길 위기를 알린다
+const STREAK_AT_RISK_MIN_DAYS = 3;
 
 @Injectable()
 export class DrizzleReEngagementReader implements ReEngagementReaderPort {
@@ -45,63 +59,57 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     this.#clock = clock;
   }
 
-  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
+  findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
     const { timezones, inactiveSince, inactiveUntil } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true, lastActiveAt: true },
-      where: {
-        AND: [
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { preference: { timezone: { in: [...timezones] } } },
-          {
-            lastActiveAt: {
-              gte: inactiveSince,
-              lte: inactiveUntil,
-            },
-          },
-        ],
-      },
-    });
-    return rows;
+    const recipients = userRecipients();
+    return this.#db
+      .select({ id: recipients.userId, lastActiveAt: recipients.lastActiveAt })
+      .from(recipients.table)
+      .where(
+        and(
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          userInTimezones(recipients.userId, timezones),
+          gte(recipients.lastActiveAt, inactiveSince),
+          lte(recipients.lastActiveAt, inactiveUntil),
+        ),
+      );
   }
 
-  async findOnboardingCandidates(params: {
+  findOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidateReadModel[]> {
     const { timezones, createdSince } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true, createdAt: true },
-      where: {
-        AND: [
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { createdAt: { gte: createdSince } },
-          { preference: { timezone: { in: [...timezones] } } },
-        ],
-      },
-    });
-    return rows;
+    const recipients = userRecipients();
+    return this.#db
+      .select({ id: recipients.userId, createdAt: recipients.createdAt })
+      .from(recipients.table)
+      .where(
+        and(
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          gte(recipients.createdAt, createdSince),
+          userInTimezones(recipients.userId, timezones),
+        ),
+      );
   }
 
   countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
-    return this.#db
-      .select({ userId: todo.userId, count: count() })
-      .from(todo)
-      .where(and(inArray(todo.userId, userIds), eq(todo.completed, true)))
-      .groupBy(todo.userId);
+    const counts = completedTodoCountsByUser(userIds);
+    return this.#db.select({ userId: counts.userId, count: counts.count }).from(counts);
   }
 
   findActiveUsersInTimezones(timezones: readonly string[]): Promise<UserIdReadModel[]> {
-    return this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        AND: [
-          { deletedAt: { isNull: true } },
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { preference: { timezone: { in: [...timezones] } } },
-        ],
-      },
-    });
+    const recipients = userRecipients();
+    return this.#db
+      .select({ id: recipients.userId })
+      .from(recipients.table)
+      .where(
+        and(
+          recipients.undeleted,
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          userInTimezones(recipients.userId, timezones),
+        ),
+      );
   }
 
   async findNudgeSuggestFollows(params: {
@@ -135,32 +143,26 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     return rows;
   }
 
-  findSocialDigestCandidates(
+  async findSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidateReadModel[]> {
     const { timezones, today, tomorrow, recipientUserIds } = params;
-    return this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        AND: [
-          { id: { in: [...recipientUserIds] } },
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { preference: { timezone: { in: [...timezones] } } },
-          {
-            todos: {
-              startDate: { gte: today, lt: tomorrow },
-              completed: false,
-            },
-          },
-        ],
-      },
-      with: {
-        todos: {
-          columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
-        },
-      },
-    });
+    const recipients = userRecipients();
+    const rows = await this.#db
+      .select({
+        id: recipients.userId,
+        completions: todoCompletionsBetween(recipients.userId, today, tomorrow),
+      })
+      .from(recipients.table)
+      .where(
+        and(
+          inArray(recipients.userId, [...recipientUserIds]),
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          userInTimezones(recipients.userId, timezones),
+          hasTodoBetween(recipients.userId, today, tomorrow, false),
+        ),
+      );
+    return rows.map(({ id, completions }) => ({ id, todos: toTodoCompletions(completions) }));
   }
 
   findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
@@ -175,55 +177,65 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     });
   }
 
-  findFriendsWithTodayTodos(params: {
+  async findFriendsWithTodayTodos(params: {
     friendIds: string[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodosReadModel[]> {
     const { friendIds, today, tomorrow } = params;
-    return this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        id: { in: friendIds },
-        todos: { startDate: { gte: today, lt: tomorrow } },
-      },
-      with: {
-        profile: { columns: { name: true } },
-        todos: {
-          columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
-        },
-      },
-    });
+    const recipients = userRecipients();
+    const profile = userProfileNameOf(recipients.userId);
+    const rows = await this.#db
+      .select({
+        id: recipients.userId,
+        profileUserId: profile.userId,
+        name: profile.name,
+        completions: todoCompletionsBetween(recipients.userId, today, tomorrow),
+      })
+      .from(recipients.table)
+      .leftJoinLateral(profile, sql`true`)
+      .where(
+        and(
+          inArray(recipients.userId, friendIds),
+          hasTodoBetween(recipients.userId, today, tomorrow),
+        ),
+      );
+    return rows.map(({ id, profileUserId, name, completions }) => ({
+      id,
+      profile: profileUserId == null ? null : { name },
+      todos: toTodoCompletions(completions),
+    }));
   }
 
   async findStreakAtRiskUsers(
     params: TodayRangeParams,
   ): Promise<UserWithTodosAndStreakReadModel[]> {
     const { timezones, today, tomorrow } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        AND: [
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { preference: { timezone: { in: [...timezones] }, currentStreak: { gte: 3 } } },
-          {
-            todos: {
-              startDate: { gte: today, lt: tomorrow },
-              completed: false,
-            },
-          },
-        ],
-      },
-      with: {
-        todos: {
-          columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
-        },
-        preference: { columns: { currentStreak: true, lastCompletedDate: true, locale: true } },
-      },
-    });
-    return rows;
+    const recipients = userRecipients();
+    const preference = userReminderPreference();
+    const rows = await this.#db
+      .select({
+        id: recipients.userId,
+        completions: todoCompletionsBetween(recipients.userId, today, tomorrow),
+        currentStreak: preference.currentStreak,
+        lastCompletedDate: preference.lastCompletedDate,
+        locale: preference.locale,
+      })
+      .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
+      .where(
+        and(
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          inArray(preference.timezone, [...timezones]),
+          gte(preference.currentStreak, STREAK_AT_RISK_MIN_DAYS),
+          hasTodoBetween(recipients.userId, today, tomorrow, false),
+        ),
+      );
+    return rows.map(({ id, completions, ...streak }) => ({
+      id,
+      todos: toTodoCompletions(completions),
+      preference: streak,
+    }));
   }
 
   get #db() {

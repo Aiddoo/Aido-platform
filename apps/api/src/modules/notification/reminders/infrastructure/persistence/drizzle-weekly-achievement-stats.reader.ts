@@ -1,10 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, sql, type SQL } from "drizzle-orm";
+import { and, inArray } from "drizzle-orm";
 
 import { freeAccessCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { userRecipients } from "#api/modules/identity/users/identity-users.public";
+import { todoDaysInPeriodByUser } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -26,45 +27,39 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
   }
 
   groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
-    return this.#countTodoDaysByUser(params);
+    return this.#countTodoDaysByUser(params, false);
   }
 
   groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
-    return this.#countTodoDaysByUser(params, eq(todo.completed, true));
+    return this.#countTodoDaysByUser(params, true);
   }
 
-  // 여러 날 할 일은 기간 안에 걸친 날마다 하나로 센다. 끝없이 긴 할 일도 기간 안의 날만 더한다
-  #countTodoDaysByUser(params: WeeklyStatsParams, extra?: SQL): Promise<UserTodoCountReadModel[]> {
+  #countTodoDaysByUser(
+    params: WeeklyStatsParams,
+    completedOnly: boolean,
+  ): Promise<UserTodoCountReadModel[]> {
     const { timezones, periodStart, periodEnd } = params;
-    const firstDay = sql`${sql.param(periodStart, todo.startDate)}::date`;
-    const lastDay = sql`(${sql.param(periodEnd, todo.startDate)}::date - 1)`;
-    const todoLastDay = sql`coalesce(${todo.endDate}, ${todo.startDate})`;
-    const daysInPeriod = sql<number>`sum(greatest(0, least(${todoLastDay}, ${lastDay}) - greatest(${todo.startDate}, ${firstDay}) + 1))::int`;
+    const days = todoDaysInPeriodByUser({ periodStart, periodEnd, completedOnly });
     return this.#db
-      .select({ userId: todo.userId, count: daysInPeriod })
-      .from(todo)
-      .where(
-        and(
-          sql`${todo.startDate} <= ${lastDay}`,
-          sql`${todoLastDay} >= ${firstDay}`,
-          extra,
-          userInTimezones(this.#db, timezones),
-        ),
-      )
-      .groupBy(todo.userId);
+      .select({ userId: days.userId, count: days.count })
+      .from(days)
+      .where(userInTimezones(days.userId, timezones));
   }
 
   async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
     if (userIds.length === 0) {
       return new Set();
     }
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        id: { in: userIds },
-        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
-      },
-    });
+    const recipients = userRecipients();
+    const rows = await this.#db
+      .select({ id: recipients.userId })
+      .from(recipients.table)
+      .where(
+        and(
+          inArray(recipients.userId, userIds),
+          freeAccessCondition(recipients.table, instantToDate(this.#clock.now())),
+        ),
+      );
     return new Set(rows.map((row) => row.id));
   }
 

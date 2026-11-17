@@ -9,6 +9,7 @@ import {
   userMarketingPushConsent,
 } from "#api/modules/identity/identity-settings.public";
 import { userLastActivity } from "#api/modules/identity/users/identity-users.public";
+import { todoActivityRowsOf } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -21,7 +22,6 @@ import {
   retentionExperimentAssignment,
   retentionExperimentResult,
   retentionExperimentStage,
-  todo,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toSupportedLocale } from "#api/shared/domain/locale";
@@ -251,6 +251,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     const preference = userDeliveryPreference();
     const consent = userMarketingPushConsent();
     const appUser = userLastActivity();
+    const userTodos = todoActivityRowsOf(appUser.userId);
     const afterCursor =
       params.after == null
         ? sql`TRUE`
@@ -342,21 +343,20 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
 			LEFT JOIN LATERAL (
 				SELECT
 					COUNT(*) AS "todoCount",
-					COUNT(*) FILTER (WHERE todo."completed" = TRUE) AS "completedCount",
+					COUNT(*) FILTER (WHERE ${userTodos.completed} = TRUE) AS "completedCount",
 					BOOL_OR(
 						(
-							(todo."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
+							(${userTodos.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
 								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-							AND todo."createdAt" < assignment."startedAt" + INTERVAL '8 days'
+							AND ${userTodos.createdAt} < assignment."startedAt" + INTERVAL '8 days'
 						) OR (
-							todo."completedAt" IS NOT NULL
-							AND (todo."completedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
+							${userTodos.completedAt} IS NOT NULL
+							AND (${userTodos.completedAt} AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
 								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-							AND todo."completedAt" < assignment."startedAt" + INTERVAL '8 days'
+							AND ${userTodos.completedAt} < assignment."startedAt" + INTERVAL '8 days'
 						)
 					) AS "todoActionWithinWindow"
-				FROM ${todo} AS todo
-				WHERE todo."userId" = ${appUser.userId}
+				FROM ${userTodos}
 			) AS todo_metrics ON TRUE
 			ORDER BY due."createdAt" ASC, due."id" ASC
 		`)

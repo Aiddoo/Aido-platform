@@ -20,4 +20,17 @@ export { todoChangedPayloadSchema } from "./application/todo-published-events.co
 export { TODO_CHANGE_EVENT_NAMES } from "./domain/todo-changed.event.js";
 export { TodoTimezoneRebaseQueueService } from "./infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter.js";
 export { TodoId } from "./domain/todo-id.vo.js";
+// 사람 id 칸 옆에 그 사람의 할 일을 붙이는 다른 Context의 한 SQL이 할 일 테이블을 직접 읽지 않게 한다
+export {
+  completedTodoCountsByUser,
+  hasTodoBetween,
+  todoActivityRowsOf,
+  todoCompletionsBetween,
+  todoCountBetween,
+  todoDaysInPeriodByUser,
+} from "./infrastructure/persistence/todo-range.query-fragment.js";
+export {
+  openReminderTodos,
+  todoOwnerDates,
+} from "./infrastructure/persistence/todo-target.query-fragment.js";
 export { PlanningTodosQueriesModule } from "./planning-todos-queries.module.js";

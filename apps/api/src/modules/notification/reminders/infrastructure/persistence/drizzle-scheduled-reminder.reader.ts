@@ -1,10 +1,18 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
+import { and, eq, inArray, not, type SQL } from "drizzle-orm";
 
 import {
   freeAccessCondition,
   premiumAccessCondition,
 } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { userReminderPreference } from "#api/modules/identity/identity-settings.public";
+import { userRecipients } from "#api/modules/identity/users/identity-users.public";
+import {
+  hasTodoBetween,
+  todoCompletionsBetween,
+  todoCountBetween,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { instantToDate } from "#api/shared/domain/time/instant";
@@ -21,11 +29,11 @@ import type {
   ReminderCountUserReadModel,
   UserIdReadModel,
 } from "../../application/read-models/scheduler.read-model.js";
-import { withPreferenceTimezone } from "./scheduler-row.mapper.js";
+import { toEveningReminderUser, toReminderCountUser } from "./scheduler-row.mapper.js";
 import {
-  todayTodoCount,
   recentTreatmentExclusion,
   type SchedulerRetentionSettings,
+  userInTimezones,
 } from "./scheduler.query-fragment.js";
 
 @Injectable()
@@ -47,117 +55,69 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
   async findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
-    const { timezones, hour, minute, today, tomorrow, userId } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        ...(userId != null && { id: userId.value }),
-        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
-        preference: {
-          timezone: { in: [...timezones] },
-          morningReminderHour: hour,
-          morningReminderMinute: minute,
-        },
-      },
-      with: { preference: { columns: { locale: true } } },
-      extras: { todoCount: (user) => todayTodoCount(this.#db, user.id, today, tomorrow) },
-    });
-    return rows.map(({ todoCount, ...row }) => ({ ...row, _count: { todos: todoCount } }));
+    const { hour, minute, userId } = params;
+    const recipients = userRecipients();
+    return this.#morningReminderUsers(
+      params,
+      and(
+        userId == null ? undefined : eq(recipients.userId, userId.value),
+        premiumAccessCondition(recipients.table, this.#now()),
+      ),
+      (preference) =>
+        and(eq(preference.morningReminderHour, hour), eq(preference.morningReminderMinute, minute)),
+    );
   }
 
   async findFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
-    const { timezones, today, tomorrow } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
-        preference: { timezone: { in: [...timezones] } },
-      },
-      with: { preference: { columns: { locale: true } } },
-      extras: { todoCount: (user) => todayTodoCount(this.#db, user.id, today, tomorrow) },
-    });
-    return rows.map(({ todoCount, ...row }) => ({ ...row, _count: { todos: todoCount } }));
+    return this.#morningReminderUsers(
+      params,
+      freeAccessCondition(userRecipients().table, this.#now()),
+      () => undefined,
+    );
   }
 
   async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
-    const { timezones, hour, minute, today, tomorrow, userId } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        ...(userId != null && { id: userId.value }),
-        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
-        preference: {
-          timezone: { in: [...timezones] },
-          eveningReminderHour: hour,
-          eveningReminderMinute: minute,
-        },
-        todos: { startDate: { gte: today, lt: tomorrow } },
-      },
-      with: {
-        todos: {
-          columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
-        },
-        preference: {
-          columns: { currentStreak: true, lastCompletedDate: true, locale: true, timezone: true },
-        },
-      },
-    });
-    return withPreferenceTimezone(rows);
+    const { hour, minute, userId } = params;
+    const recipients = userRecipients();
+    return this.#eveningReminderUsers(
+      params,
+      and(
+        userId == null ? undefined : eq(recipients.userId, userId.value),
+        premiumAccessCondition(recipients.table, this.#now()),
+      ),
+      (preference) =>
+        and(eq(preference.eveningReminderHour, hour), eq(preference.eveningReminderMinute, minute)),
+    );
   }
 
   async findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
-    const { timezones, today, tomorrow } = params;
-    const rows = await this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
-        preference: { timezone: { in: [...timezones] } },
-        todos: { startDate: { gte: today, lt: tomorrow } },
-      },
-      with: {
-        todos: {
-          columns: { completed: true },
-          where: { startDate: { gte: today, lt: tomorrow } },
-        },
-        preference: {
-          columns: { currentStreak: true, lastCompletedDate: true, locale: true, timezone: true },
-        },
-      },
-    });
-    return withPreferenceTimezone(rows);
+    return this.#eveningReminderUsers(
+      params,
+      freeAccessCondition(userRecipients().table, this.#now()),
+      () => undefined,
+    );
   }
 
   findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
     const { timezones, today, tomorrow } = params;
-    return this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        AND: [
-          ...recentTreatmentExclusion(this.#retention, this.#clock),
-          { preference: { timezone: { in: [...timezones] } } },
-          {
-            todos: {
-              startDate: { gte: today, lt: tomorrow },
-            },
-          },
-          {
-            NOT: {
-              todos: {
-                startDate: { gte: today, lt: tomorrow },
-                completed: true,
-              },
-            },
-          },
-        ],
-      },
-    });
+    const recipients = userRecipients();
+    return this.#db
+      .select({ id: recipients.userId })
+      .from(recipients.table)
+      .where(
+        and(
+          recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
+          userInTimezones(recipients.userId, timezones),
+          hasTodoBetween(recipients.userId, today, tomorrow),
+          not(hasTodoBetween(recipients.userId, today, tomorrow, true)),
+        ),
+      );
   }
 
   findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
@@ -170,16 +130,77 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
 
   #findPeriodReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     const { timezones, periodStart, periodEnd } = params;
-    return this.#db.query.user.findMany({
-      columns: { id: true },
-      where: {
-        preference: { timezone: { in: [...timezones] } },
-        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
-        todos: {
-          startDate: { gte: periodStart, lt: periodEnd },
-        },
-      },
-    });
+    const recipients = userRecipients();
+    return this.#db
+      .select({ id: recipients.userId })
+      .from(recipients.table)
+      .where(
+        and(
+          userInTimezones(recipients.userId, timezones),
+          premiumAccessCondition(recipients.table, this.#now()),
+          hasTodoBetween(recipients.userId, periodStart, periodEnd),
+        ),
+      );
+  }
+
+  async #morningReminderUsers(
+    params: FixedTimeReminderParams,
+    recipientCondition: SQL | undefined,
+    reminderTime: (preference: ReturnType<typeof userReminderPreference>) => SQL | undefined,
+  ): Promise<ReminderCountUserReadModel[]> {
+    const { timezones, today, tomorrow } = params;
+    const recipients = userRecipients();
+    const preference = userReminderPreference();
+    const rows = await this.#db
+      .select({
+        id: recipients.userId,
+        locale: preference.locale,
+        todoCount: todoCountBetween(recipients.userId, today, tomorrow),
+      })
+      .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
+      .where(
+        and(
+          recipientCondition,
+          inArray(preference.timezone, [...timezones]),
+          reminderTime(preference),
+        ),
+      );
+    return rows.map(toReminderCountUser);
+  }
+
+  async #eveningReminderUsers(
+    params: FixedTimeReminderParams,
+    recipientCondition: SQL | undefined,
+    reminderTime: (preference: ReturnType<typeof userReminderPreference>) => SQL | undefined,
+  ): Promise<EveningReminderUserReadModel[]> {
+    const { timezones, today, tomorrow } = params;
+    const recipients = userRecipients();
+    const preference = userReminderPreference();
+    const rows = await this.#db
+      .select({
+        id: recipients.userId,
+        completions: todoCompletionsBetween(recipients.userId, today, tomorrow),
+        currentStreak: preference.currentStreak,
+        lastCompletedDate: preference.lastCompletedDate,
+        locale: preference.locale,
+        timezone: preference.timezone,
+      })
+      .from(recipients.table)
+      .innerJoin(preference, eq(preference.userId, recipients.userId))
+      .where(
+        and(
+          recipientCondition,
+          inArray(preference.timezone, [...timezones]),
+          reminderTime(preference),
+          hasTodoBetween(recipients.userId, today, tomorrow),
+        ),
+      );
+    return rows.map(toEveningReminderUser);
+  }
+
+  #now(): Date {
+    return instantToDate(this.#clock.now());
   }
 
   get #db() {

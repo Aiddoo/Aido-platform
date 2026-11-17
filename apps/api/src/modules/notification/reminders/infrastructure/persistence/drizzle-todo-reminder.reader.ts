@@ -2,7 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import {
+  openReminderTodos,
+  type TodoId,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
 import type { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
@@ -22,17 +25,8 @@ export class DrizzleTodoReminderReader implements TodoReminderReaderPort {
     if (todoIds.length === 0) {
       return new Map();
     }
-    const rows = await this.#db.query.todo.findMany({
-      columns: {
-        id: true,
-        title: true,
-        seriesId: true,
-        startDate: true,
-        scheduledLocalTime: true,
-        scheduledTime: true,
-      },
-      where: { id: { in: uniq(todoIds.map((todoId) => todoId.value)) }, completed: false },
-    });
+    const targets = openReminderTodos(uniq(todoIds.map((todoId) => todoId.value)));
+    const rows = await this.#db.select().from(targets);
     return new Map(
       rows.map(({ scheduledTime, ...rest }) => [
         rest.id,
