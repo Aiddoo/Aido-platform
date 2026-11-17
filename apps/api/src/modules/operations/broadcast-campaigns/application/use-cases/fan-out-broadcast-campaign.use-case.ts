@@ -90,6 +90,7 @@ export class FanOutBroadcastCampaignUseCase {
     const lastUserId = userIds.at(-1);
     if (lastUserId != null) {
       const queuedCount = await this.#queuePage(campaign, userIds, now);
+      // 목록은 커밋한 cursor 다음 사용자부터이고 이 페이지와 cursor가 한 트랜잭션이라 같은 페이지가 다시 오지 않는다
       campaign.recordPage({ lastUserId, processedCount: userIds.length, queuedCount }, now);
     }
     const isLastPage = userIds.length < BROADCAST_FAN_OUT_PAGE_SIZE;

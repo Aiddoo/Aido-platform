@@ -165,10 +165,6 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
     return this.props.action;
   }
 
-  get force(): boolean {
-    return this.props.force;
-  }
-
   get delivery(): BroadcastDelivery {
     return this.props.delivery;
   }
@@ -192,6 +188,10 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
   /** 수신자 언어의 문구. 그 언어 문구가 없으면 캠페인 기본 title·body다. */
   contentFor(locale: SupportedLocale): BroadcastContent {
     return this.props.localizedContent.contentFor(locale) ?? this.props.content;
+  }
+
+  isForced(): boolean {
+    return this.props.force;
   }
 
   isTerminal(): boolean {

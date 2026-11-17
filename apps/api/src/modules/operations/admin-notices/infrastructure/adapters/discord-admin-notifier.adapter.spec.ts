@@ -28,7 +28,7 @@ function adapter(
   },
 ) {
   return new DiscordAdminNotifierAdapter(
-    { admin: webhooks.admin, payment: webhooks.payment },
+    { discordWebhookUrls: { admin: webhooks.admin, payment: webhooks.payment } },
     new HttpClient({ retry: { attempts: 3, methods: ["POST"] }, throwOnHttpError: true }),
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
     new FixedClock(NOW),

@@ -1,36 +1,24 @@
-import { type HttpClient } from "@nestjs/http-client";
-
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
-import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { AdminNotifierPort } from "../../application/ports/admin-notifier.port.js";
 import type { OperationsAdminNoticesConfig } from "../../operations-admin-notices.config.js";
-import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
+import type { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";
 import { LogAdminNotifierAdapter } from "./log-admin-notifier.adapter.js";
 
-type AdminNotifierConfig = Pick<OperationsAdminNoticesConfig, "provider" | "discordWebhookUrls">;
+type AdminNotifierConfig = Pick<OperationsAdminNoticesConfig, "provider">;
 
 /** 어댑터를 더하려면 AdminNotifierProviderId와 이 표에 한 줄씩 더한다. */
 const adapters = {
-  discord: (config, http, policies, clock) =>
-    new DiscordAdminNotifierAdapter(config.discordWebhookUrls, http, policies, clock),
+  discord: (discord) => discord,
   log: () => new LogAdminNotifierAdapter(),
 } satisfies Record<
   AdminNotifierProviderId,
-  (
-    config: OperationsAdminNoticesConfig,
-    http: HttpClient,
-    policies: OutboundPolicyRegistry,
-    clock: ClockPort,
-  ) => AdminNotifierPort
+  (discord: DiscordAdminNotifierAdapter) => AdminNotifierPort
 >;
 
 export function selectAdminNotifier(
   config: AdminNotifierConfig,
-  http: HttpClient,
-  policies: OutboundPolicyRegistry,
-  clock: ClockPort,
+  discord: DiscordAdminNotifierAdapter,
 ): AdminNotifierPort {
-  return adapters[config.provider](config, http, policies, clock);
+  return adapters[config.provider](discord);
 }

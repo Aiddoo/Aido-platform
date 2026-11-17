@@ -17,18 +17,15 @@ describe("selectAdminNotifier", () => {
     "ADMIN_NOTIFIER_PROVIDER=%s이면 해당 어댑터를 만든다",
     (provider, adapter) => {
       // Given
-      const config = {
-        provider,
-        discordWebhookUrls: { admin: undefined, payment: undefined },
-      };
-
-      // When
-      const notifier = selectAdminNotifier(
-        config,
+      const discord = new DiscordAdminNotifierAdapter(
+        { discordWebhookUrls: { admin: undefined, payment: undefined } },
         new HttpClient(),
         new OutboundPolicyRegistry(new RecordingOperationalAlert()),
         new FixedClock(Temporal.Instant.from("2026-10-08T00:00:00Z")),
       );
+
+      // When
+      const notifier = selectAdminNotifier({ provider }, discord);
 
       // Then
       expect(notifier).toBeInstanceOf(adapter);

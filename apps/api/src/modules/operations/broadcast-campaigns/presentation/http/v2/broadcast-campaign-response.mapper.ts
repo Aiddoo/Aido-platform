@@ -33,7 +33,7 @@ export function toBroadcastCampaignResponse({
     status: campaign.status,
     title: campaign.title,
     targetFilter: campaign.targetFilter,
-    force: campaign.force,
+    force: campaign.isForced(),
     recipients: { processed: campaign.processedCount, queued: campaign.queuedCount },
     dispatches: {
       pending: dispatches("PENDING"),

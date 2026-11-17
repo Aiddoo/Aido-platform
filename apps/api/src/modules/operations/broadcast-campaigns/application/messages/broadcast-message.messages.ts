@@ -4,11 +4,9 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { BroadcastAction } from "../../domain/broadcast-action.vo.js";
 import type { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";
+import type { AdminBroadcastType } from "../../domain/broadcast-campaigns.constants.js";
 import type { BroadcastContent } from "../../domain/broadcast-content.vo.js";
-import type {
-  BroadcastMessageReadModel,
-  AdminBroadcastType,
-} from "../read-models/broadcast-message.read-model.js";
+import type { BroadcastMessageReadModel } from "../read-models/broadcast-message.read-model.js";
 import type { BroadcastRecipientReadModel } from "../read-models/broadcast-recipient.read-model.js";
 
 interface MessageSource {
@@ -66,7 +64,7 @@ export function buildCampaignMessages(params: {
         content: contentOf(locale),
         type: "ADMIN_BROADCAST",
         action: campaign.action,
-        force: campaign.force,
+        force: campaign.isForced(),
         campaignKey: campaign.campaignKey,
       },
       userId,
