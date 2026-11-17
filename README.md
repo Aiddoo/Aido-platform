@@ -180,7 +180,7 @@ sequenceDiagram
 | social                            | `friendships`·`user-blocks`·`cheers`·`nudges`·`reminder-nudges`·`invites`·`invite-redemptions`·`user-reports`                                               |
 | notification · insights           | `notifications`·`push-devices`·`push-dispatches`·`email-messages`·`reminders`·`retention-assignments` · `daily-completions`·`weekly-achievements`           |
 | ai-assistance · voice · weather   | `ai-generations`·`parsed-drafts`·`action-plan-drafts`·`ai-reports`·`suggestions` · `voice-digests`·`plan-applications` · `weather-reports`·`user-locations` |
-| operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-versions`·`feature-discovery` · `inquiries`                                                                    |
+| operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-releases`·`feature-discovery-campaigns` · `inquiries`                                                          |
 
 ### 트랜잭션 안 작업 enqueue와 도메인 이벤트
 

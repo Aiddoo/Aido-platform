@@ -1,7 +1,7 @@
 import {
   AppRelease,
   type AppReleasePrimitives,
-} from "#api/modules/app-config/app-versions/domain/app-release.aggregate";
+} from "#api/modules/app-config/app-releases/domain/app-release.aggregate";
 
 export const APP_RELEASE_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 

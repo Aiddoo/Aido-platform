@@ -2,7 +2,7 @@ import { ErrorCode, Errors } from "@aido/api/errors";
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
-import { AppConfigAppVersionsAdminModule } from "#api/modules/app-config/app-versions/app-config-app-versions.public";
+import { AppConfigAppReleasesAdminModule } from "#api/modules/app-config/app-releases/app-config-app-releases.public";
 // identity-users.public이 이 Module을 열면 사용자 providers가 access 공개 면을 거쳐 그 public으로 돌아와 순환이 된다
 import { IdentityUsersAdminModule } from "#api/modules/identity/users/identity-users-admin.module";
 import { OperationsBroadcastCampaignsModule } from "#api/modules/operations/broadcast-campaigns/operations-broadcast-campaigns.public";
@@ -186,7 +186,7 @@ ${adminErrorCodeTable()}
 
   const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
     include: [
-      AppConfigAppVersionsAdminModule,
+      AppConfigAppReleasesAdminModule,
       IdentityUsersAdminModule,
       OperationsBroadcastCampaignsModule,
       SocialUserReportsAdminModule,

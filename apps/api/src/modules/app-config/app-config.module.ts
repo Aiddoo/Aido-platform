@@ -1,14 +1,14 @@
 import { Module } from "@nestjs/common";
 
-import { AppConfigAppVersionsAdminModule } from "./app-versions/app-config-app-versions-admin.module.js";
-import { AppConfigAppVersionsModule } from "./app-versions/app-config-app-versions.module.js";
-import { AppConfigFeatureDiscoveryModule } from "./feature-discovery/app-config-feature-discovery.module.js";
+import { AppConfigAppReleasesAdminModule } from "./app-releases/app-config-app-releases-admin.module.js";
+import { AppConfigAppReleasesModule } from "./app-releases/app-config-app-releases.module.js";
+import { AppConfigFeatureDiscoveryCampaignsModule } from "./feature-discovery-campaigns/app-config-feature-discovery-campaigns.module.js";
 
 @Module({
   imports: [
-    AppConfigAppVersionsModule,
-    AppConfigAppVersionsAdminModule,
-    AppConfigFeatureDiscoveryModule,
+    AppConfigAppReleasesModule,
+    AppConfigAppReleasesAdminModule,
+    AppConfigFeatureDiscoveryCampaignsModule,
   ],
 })
 export class AppConfigModule {}

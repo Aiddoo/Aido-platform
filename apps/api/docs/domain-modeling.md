@@ -58,7 +58,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 생성만 하는 Aggregate는 id를 저장·참조·전송할 때만 둔다(캐시 키인 날씨 보고의 칸 `WeatherReportId`). 아무도 읽지 않는 id VO를 만들지 않고 `AggregateRoot<null, Props>`로 `create`가 `null`을 넘긴다(`ParsedDraft`·`ActionPlanDraft`·`AiGeneration`·`VoiceDigest`·`Inquiry`·`DailyCompletion`). id가 없는 Aggregate는 자기 자신과만 같다(`equals`).
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Aggregate id(`TodoId`)는 소유 slice `domain/`에 두고 다른 slice·Context는 그 slice `*.public.ts`로 import한다. Props도 다른 Aggregate를 원시값이 아닌 id VO로 참조한다.
 - 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다. 조회 결과가 없으면 `undefined`가 아닌 `null`이다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
-- 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 앱 릴리스, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
+- 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 기능 소개 캠페인, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
 
 ## 기준 구현: notes/memos
 

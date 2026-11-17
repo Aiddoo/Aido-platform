@@ -1,5 +1,5 @@
-import type { AppReleaseRepositoryPort } from "#api/modules/app-config/app-versions/application/ports/app-release.repository.port";
-import type { AppReleasePrimitives } from "#api/modules/app-config/app-versions/domain/app-release.aggregate";
+import type { AppReleaseRepositoryPort } from "#api/modules/app-config/app-releases/application/ports/app-release.repository.port";
+import type { AppReleasePrimitives } from "#api/modules/app-config/app-releases/domain/app-release.aggregate";
 import {
   APP_RELEASE_FIXTURE_NOW,
   createAppReleaseFixture,

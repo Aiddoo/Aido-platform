@@ -1,0 +1,75 @@
+import { featureDiscoveryResponseSchema } from "@aido/api/contracts/app-config";
+import request from "supertest";
+import { vi } from "vitest";
+
+import { GetFeatureDiscoveryCampaignUseCase } from "#api/modules/app-config/feature-discovery-campaigns/application/use-cases/get-feature-discovery-campaign.use-case";
+import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
+
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+
+describe("기능 발견 설정 (E2E)", () => {
+  let testContext: E2eTestContext;
+
+  beforeAll(async () => {
+    testContext = await createE2eApp();
+  }, 60_000);
+
+  afterAll(async () => {
+    await destroyE2eApp(testContext);
+  });
+
+  beforeEach(async () => {
+    await testContext.reset();
+  });
+
+  it("비활성 기능 설정은 raw로, 일반 endpoint 응답은 기존 envelope로 반환한다", async () => {
+    // When
+    const featureDiscovery = await request(testContext.app.getHttpServer())
+      .get("/v1/app-config/feature-discovery")
+      .expect(200);
+    const root = await request(testContext.app.getHttpServer())
+      .get("/v1/invites/availability")
+      .expect(200);
+
+    // Then
+    // kill switch는 중간 캐시 없이 다음 조회부터 즉시 반영된다
+    expect(featureDiscovery.headers["cache-control"]).toBe("private, no-store");
+    expect(featureDiscovery.body).toEqual({ enabled: false });
+
+    expect(root.body).toMatchObject({ success: true, data: { enabled: expect.any(Boolean) } });
+    expect(root.body.timestamp).toEqual(expect.any(Number));
+  });
+
+  it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
+    // Given
+    // 켜진 캠페인 결과만 바꿔 실제 HTTP·interceptor 경로를 지나게 한다
+    const getFeatureDiscoveryCampaign = testContext.module.get(GetFeatureDiscoveryCampaignUseCase);
+    const response = {
+      enabled: true as const,
+      campaignId: "feature-discovery-2026-08",
+      minAppVersion: "1.8.0",
+      launchedAt: "2026-08-01T00:00:00.000Z",
+      autoOpen: true,
+    };
+    vi.spyOn(getFeatureDiscoveryCampaign, "execute").mockReturnValueOnce(
+      createFeatureDiscoveryCampaignFixture({
+        campaignId: response.campaignId,
+        minAppVersion: response.minAppVersion,
+        launchedAt: Temporal.Instant.from(response.launchedAt),
+        autoOpen: response.autoOpen,
+      }),
+    );
+
+    // When
+    const result = await request(testContext.app.getHttpServer())
+      .get("/v1/app-config/feature-discovery")
+      .expect(200);
+
+    // Then
+    expect(result.body).toEqual(response);
+    expect(featureDiscoveryResponseSchema.safeParse(result.body)).toEqual({
+      success: true,
+      data: response,
+    });
+  });
+});

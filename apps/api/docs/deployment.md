@@ -158,7 +158,7 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
 - **반영**: 관리자 계정(role `ADMIN`)의 access token으로 플랫폼마다 관리자 API를 한 번 부른다. env를 고치거나 서버를 다시 배포하지 않고 다음 조회부터 바뀐다. 버전은 그 release의 실제 공개값(MAJOR.MINOR.PATCH)이다.
 - **되돌리기**: 이전 공개값으로 다시 부른다. 끄는 방법은 두지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
 - **새 DB**: 두 플랫폼 행이 다 있어야 켜진 응답이 나간다. 행이 없는 로컬·개발 DB는 `{ "enabled": false }`로 응답하므로 버전 확인을 보려면 두 플랫폼을 한 번씩 반영한다.
-- **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
+- **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
 ```sh
 # <플랫폼>은 ios 또는 android
