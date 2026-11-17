@@ -5,6 +5,11 @@ export const NotificationLogEvent = {
   MARKETING_CONSENT_RECONFIRM_JOB_FAILED:
     "notification.delivery.marketing-consent-reconfirm.job.failed",
   NOTIFICATION_HISTORY_WARM_UP_FAILED: "notification.delivery.notification-history.warm-up.failed",
+  NOTIFICATION_HISTORY_PURGED: "notification.delivery.notification-history.purged",
+  NOTIFICATION_HISTORY_PURGE_JOB_FAILED:
+    "notification.delivery.notification-history-purge.job.failed",
+  NOTIFICATION_HISTORY_PURGE_SCHEDULER_REGISTERED:
+    "notification.delivery.notification-history-purge.scheduler.registered",
   NOTIFICATION_ACCOUNT_CLEANUP_CACHE_SETTLE_FAILED:
     "notification.delivery.notification-account-cleanup.cache-settle.failed",
   FINALIZE_BATCH_NOTIFICATION_UNREAD_CACHE_FAILED:

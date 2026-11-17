@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 
 import {
@@ -186,5 +186,34 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
       count: deletedRows.length,
       affectedUserIds: uniq(deletedRows.map((row) => row.userId)),
     };
+  }
+
+  async deleteCreatedBefore(query: {
+    readonly createdBefore: Temporal.Instant;
+    readonly createdFrom: Temporal.Instant | null;
+    readonly limit: number;
+  }): Promise<{ readonly deletedCount: number; readonly lastCreatedAt: Temporal.Instant | null }> {
+    const candidates = this.#db
+      .select({ id: notification.id })
+      .from(notification)
+      .where(
+        and(
+          lt(notification.createdAt, query.createdBefore),
+          query.createdFrom == null ? undefined : gte(notification.createdAt, query.createdFrom),
+          // hasMilestoneNotification이 읽는 행이다
+          sql`NOT (${notification.type} = 'WEEKLY_ACHIEVEMENT' AND ${notification.metadata} ->> 'milestone' IS NOT NULL)`,
+        ),
+      )
+      .orderBy(asc(notification.createdAt))
+      .limit(query.limit);
+    const deleted = await this.#db
+      .delete(notification)
+      .where(inArray(notification.id, candidates))
+      .returning({ createdAt: notification.createdAt });
+    const lastCreatedAt = deleted
+      .map(({ createdAt }) => createdAt)
+      .toSorted(Temporal.Instant.compare)
+      .at(-1);
+    return { deletedCount: deleted.length, lastCreatedAt: lastCreatedAt ?? null };
   }
 }

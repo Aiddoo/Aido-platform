@@ -10,6 +10,7 @@ export { PushDispatch } from "./domain/push-dispatch.aggregate.js";
 export { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 export type { PersistedBatchNotificationResultReadModel } from "./application/read-models/push-delivery.read-model.js";
 export { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
+export { PurgePushDeliveryHistoryUseCase } from "./application/use-cases/purge-push-delivery-history.use-case.js";
 export { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
 export type { PushDeliveryMode } from "./domain/push-delivery-status.constants.js";
 export { toNotificationNavigation } from "./infrastructure/adapters/notification-navigation.mapper.js";

@@ -39,6 +39,14 @@ receipt 확인은 5분마다 돈다(Expo 권장대로 수락 15분 뒤부터 묻
 
 receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 한 UoW에서 처리하고 실패 시 함께 rollback한다([ReconcilePushReceipts](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)). commit 뒤 사용자별 token cache 무효화는 allSettled로 실패를 격리해 기록한다.
 
+보관 기간: 매일 03:50 KST `notification.history-purge.v1`이 오래된 기록을 지운다. 문장마다 500행, 한 실행 2분 예산이고 남은 행은 다음 날 이어 지운다. 지우는 순서는 한도 예약 → 끝난 발송 → 알림이고 기기 결과·outbox·한도 예약은 발송·알림의 FK cascade로 함께 지워진다.
+
+| 기록                                                      | 보관                                                          | 예외와 이유                                                                                                                                  |
+| --------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Notification`                                            | 만든 지 180일(사용자가 보는 알림함)                           | 마일스톤(`WEEKLY_ACHIEVEMENT` + `metadata.milestone`)은 남긴다. 한 번뿐인 마일스톤을 다시 보내지 않는 근거(`hasMilestoneNotification`)라서다 |
+| `PushDispatch`·`PushDeliveryAttempt`·`PushDispatchOutbox` | 끝난 상태(`SENT`·`SKIPPED`·`FAILED`·`HOLDOUT`)로 바뀐 지 30일 | `ADMIN_BROADCAST` 발송은 알림과 함께 180일 둔다. 관리자 캠페인 조회(`dispatches`·`deliveries`)가 이 행을 센다                                |
+| `PushRateLimitReservation`                                | 예약 뒤 48시간(`ENGAGEMENT.RETENTION_MS`)                     | 한도 판단은 최근 1시간과 현지 오늘(최대 25시간)만 읽는다                                                                                     |
+
 남는 한계:
 
 - 보호는 이미 저장된 발송 당시 fingerprint와 현재 token 비교에 적용된다. network send 도중 token 회전으로 기존 token 문자열 lookup이 실패하면 attempt가 생략될 수 있다.
@@ -84,6 +92,7 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 | `operations.broadcast-delivery.v1`            | `deliver-group`(수신자 현지 시각 발송, `startAfter`)                                                                   | `broadcast-delivery-<campaignId>-<startAfter>-<첫 사용자>`                                                                                                                               | 5회 재시도 뒤 DLQ가 운영 경보만 올림                              |
 | `retention.v1`                                | `retention-stage-sweep`(매분 예약, `missed: once`)                                                                     | 예약 key                                                                                                                                                                                 | 4회 재시도                                                        |
 | `notification.marketing-consent-reconfirm.v1` | `reconfirm-marketing-consents`(매시 정각 `missed: skip`, 현지 야간 사용자는 다음 낮 실행으로)                          | 예약 key `hourly-marketing-consent-reconfirm-scheduler`                                                                                                                                  | 2회 재시도. 멱등은 `marketingReconfirmedAt` 조건부 UPDATE         |
+| `notification.history-purge.v1`               | `daily-notification-history-purge-scheduler`(03:50 KST, `missed: skip`)                                                | 예약 key                                                                                                                                                                                 | 2회 재시도. 멱등이고 남은 행은 다음 날 이어 지운다                |
 | `todo-reminder.v1`, `timezone-reminder.v1`    | 리마인더(`todo-reminder.v1`은 20건 묶음을 이어 꺼내고 작업마다 끝냄), `send-series-paused-notice`                      | `reminder_<todoId>_<단계>`(`60min`·`10min`), `series-paused_<userId>_<마지막 활동일>`                                                                                                    | 큐 정의의 재시도                                                  |
 
 key builder는 slice마다 `*-job-keys.constants.ts`(`notification-job-keys`·`push-delivery-job-keys`·`reminder-job-keys`)와 각 큐 모듈의 순수 함수다. 다른 Context는 상태를 바꾼 트랜잭션 안에서 `NotificationQueueAdapter`(`notification-notifications-jobs.public.ts`)로 이벤트를 넘기고 기다린다. 작업 행이 그 변경과 함께 커밋되므로(트랜잭셔널 아웃박스) 커밋 직후 프로세스가 멈춰도 알림을 잃지 않고, 저장 실패는 호출자의 트랜잭션을 되돌린다. 사례: 팔로우·친구 성립·응원·넛지·첫 친구 마일스톤.

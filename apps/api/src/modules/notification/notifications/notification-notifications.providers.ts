@@ -10,6 +10,7 @@ import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
   PublishPushDeliveryAfterCommitUseCase,
+  PurgePushDeliveryHistoryUseCase,
   PushDispatchRepositoryPort,
   PushQuietHoursReaderPort,
 } from "../push-dispatches/notification-push-dispatches.public.js";
@@ -33,6 +34,7 @@ import { PersistBatchNotificationUseCase } from "./application/use-cases/persist
 import { PublishDeduplicatedNotificationUseCase } from "./application/use-cases/publish-deduplicated-notification.use-case.js";
 import { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
+import { PurgeNotificationHistoryUseCase } from "./application/use-cases/purge-notification-history.use-case.js";
 import { ReconfirmMarketingConsentsUseCase } from "./application/use-cases/reconfirm-marketing-consents.use-case.js";
 import { SendBatchNotificationUseCase } from "./application/use-cases/send-batch-notification.use-case.js";
 import { SendBillingIssueNotificationUseCase } from "./application/use-cases/send-billing-issue-notification.use-case.js";
@@ -95,6 +97,12 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     repository: NotificationRepositoryPort,
     cache: NotificationCachePort,
     logger: loggerFor(DeleteActorNotificationsUseCase),
+  }),
+  provideUseCase(PurgeNotificationHistoryUseCase, {
+    notificationRepository: NotificationRepositoryPort,
+    purgePushDeliveryHistory: PurgePushDeliveryHistoryUseCase,
+    clock: ClockPort,
+    logger: loggerFor(PurgeNotificationHistoryUseCase),
   }),
   provideUseCase(NotificationHistoryReader, {
     notificationDeduplication: NotificationDeduplicationPort,

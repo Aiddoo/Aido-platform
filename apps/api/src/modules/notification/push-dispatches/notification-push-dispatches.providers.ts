@@ -24,6 +24,7 @@ import { NotificationRecipientTimezoneReaderPort } from "./application/ports/not
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
 import { PushDeliveryClaimRepositoryPort } from "./application/ports/push-delivery-claim.repository.port.js";
 import { PushDeliveryFinalizationRepositoryPort } from "./application/ports/push-delivery-finalization.repository.port.js";
+import { PushDeliveryHistoryRepositoryPort } from "./application/ports/push-delivery-history.repository.port.js";
 import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-job-enqueuer.port.js";
 import { PushDeliveryLeaseRepositoryPort } from "./application/ports/push-delivery-lease.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
@@ -40,6 +41,7 @@ import { EvaluatePushDeliveryEligibilityUseCase } from "./application/use-cases/
 import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push.use-case.js";
 import { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
 import { PublishPushDeliveryOutboxUseCase } from "./application/use-cases/publish-push-delivery-outbox.use-case.js";
+import { PurgePushDeliveryHistoryUseCase } from "./application/use-cases/purge-push-delivery-history.use-case.js";
 import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
 import { RecoverFailedPushDeliveriesUseCase } from "./application/use-cases/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
@@ -52,6 +54,7 @@ import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-qu
 import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/drizzle-push-campaign-outcome.reader.js";
 import { DrizzlePushDeliveryClaimRepository } from "./infrastructure/persistence/drizzle-push-delivery-claim.repository.js";
 import { DrizzlePushDeliveryFinalizationRepository } from "./infrastructure/persistence/drizzle-push-delivery-finalization.repository.js";
+import { DrizzlePushDeliveryHistoryRepository } from "./infrastructure/persistence/drizzle-push-delivery-history.repository.js";
 import { DrizzlePushDeliveryLeaseRepository } from "./infrastructure/persistence/drizzle-push-delivery-lease.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/drizzle-push-delivery-outbox.repository.js";
 import { DrizzlePushDispatchRepository } from "./infrastructure/persistence/drizzle-push-dispatch.repository.js";
@@ -92,6 +95,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
   },
   { provide: PushDeliveryLeaseRepositoryPort, useClass: DrizzlePushDeliveryLeaseRepository },
   { provide: PushCampaignOutcomeReaderPort, useClass: DrizzlePushCampaignOutcomeReader },
+  { provide: PushDeliveryHistoryRepositoryPort, useClass: DrizzlePushDeliveryHistoryRepository },
   { provide: PushDeliveryJobEnqueuerPort, useClass: PushDeliveryQueueAdapter },
   // 캐시한 수신자 설정 하나가 설정·언어·시간대 조회 포트를 함께 맡는다
   CachedNotificationRecipientPreferenceAdapter,
@@ -184,6 +188,11 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     clock: ClockPort,
     logger: loggerFor(ReconcilePushReceiptsUseCase),
     alert: OperationalAlertPort,
+  }),
+  provideUseCase(PurgePushDeliveryHistoryUseCase, {
+    history: PushDeliveryHistoryRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(PurgePushDeliveryHistoryUseCase),
   }),
   provideUseCase(OptOutMarketingPushUseCase, {
     tokens: MarketingPushOptOutTokenPort,

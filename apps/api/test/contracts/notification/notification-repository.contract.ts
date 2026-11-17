@@ -329,6 +329,40 @@ export function describeNotificationRepositoryContract(
       expect(idsOf(remaining)).toEqual([kept.id]);
     });
 
+    it("보관 기간 정리는 기준 시각 전 알림을 만든 순서로 limit개 지우고 마일스톤 알림은 남긴다", async () => {
+      // Given
+      const { repository, historyReader } = await createSubject();
+      const first = await create(repository, { title: "첫째" });
+      await create(repository, { type: "WEEKLY_ACHIEVEMENT", metadata: { milestone: "STREAK_3" } });
+      await create(repository, { title: "둘째" });
+      const farFuture = Temporal.Instant.from("2999-01-01T00:00:00Z");
+
+      // When
+      const firstBatch = await repository.deleteCreatedBefore({
+        createdBefore: farFuture,
+        createdFrom: null,
+        limit: 1,
+      });
+      const rest = await repository.deleteCreatedBefore({
+        createdBefore: farFuture,
+        createdFrom: firstBatch.lastCreatedAt,
+        limit: 10,
+      });
+      const untouched = await repository.deleteCreatedBefore({
+        createdBefore: Temporal.Instant.from("2000-01-01T00:00:00Z"),
+        createdFrom: null,
+        limit: 10,
+      });
+
+      // Then
+      expect(firstBatch).toEqual({ deletedCount: 1, lastCreatedAt: first.createdAt });
+      expect(rest.deletedCount).toBe(1);
+      expect(untouched).toEqual({ deletedCount: 0, lastCreatedAt: null });
+      expect(
+        await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "STREAK_3"),
+      ).toBe(true);
+    });
+
     describe("알림함 조회", () => {
       it("최신순(createdAt·id 내림차순)으로 나열하고 after 알림 뒤부터 이어 준다", async () => {
         // Given

@@ -23,4 +23,5 @@ export const PushDispatchLogEvent = {
   PUBLISH_PUSH_DELIVERY_OUTBOX_PUBLISH_MARK_FAILED:
     "notification.delivery.publish-push-delivery-outbox.publish-mark.failed",
   RECONCILE_PUSH_RECEIPTS_RECONCILED: "notification.delivery.reconcile-push-receipts.reconciled",
+  PUSH_DELIVERY_HISTORY_PURGED: "notification.delivery.push-delivery-history.purged",
 } as const;

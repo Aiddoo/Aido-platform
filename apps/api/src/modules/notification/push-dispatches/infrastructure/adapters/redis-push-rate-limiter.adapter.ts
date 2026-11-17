@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
 import { RedisErrorLogSampler } from "#api/platform/redis/redis-error-log-sampler";
+import { SECOND_MS } from "#api/shared/domain/time/time-units";
 
 import type {
   EngagementPushRateLimitRequest,
@@ -14,6 +15,8 @@ import { PushRateLimiterKeys } from "./push-rate-limiter.keyspace.js";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const RESERVATION_TTL_MS = ENGAGEMENT.RETENTION_MS;
+// Lua가 EXPIRE(초)로 거는 참여 유도 카운터 TTL이다
+const ENGAGEMENT_KEY_TTL_SECONDS = ENGAGEMENT.RETENTION_MS / SECOND_MS;
 
 /**
  * Lua 스크립트: Sorted Set 기반 슬라이딩 윈도우 rate limit
@@ -239,7 +242,7 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
         Date.now(),
         ENGAGEMENT.MIN_INTERVAL_MS,
         ENGAGEMENT.DAILY_MAX,
-        ENGAGEMENT.TTL_SECONDS,
+        ENGAGEMENT_KEY_TTL_SECONDS,
         reservationId,
         RESERVATION_TTL_MS,
       );
@@ -281,7 +284,7 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
         GENERAL.WINDOW_MS,
         ENGAGEMENT.MIN_INTERVAL_MS,
         ENGAGEMENT.DAILY_MAX,
-        ENGAGEMENT.TTL_SECONDS,
+        ENGAGEMENT_KEY_TTL_SECONDS,
         RESERVATION_TTL_MS,
         ...engagementFlags,
         ...reservationIds,

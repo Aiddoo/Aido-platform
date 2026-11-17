@@ -185,6 +185,27 @@ export class InMemoryNotificationRepository
     return { count: deleted.length, affectedUserIds: uniq(deleted.map((row) => row.userId)) };
   }
 
+  async deleteCreatedBefore(query: {
+    readonly createdBefore: Temporal.Instant;
+    readonly createdFrom: Temporal.Instant | null;
+    readonly limit: number;
+  }): Promise<{ readonly deletedCount: number; readonly lastCreatedAt: Temporal.Instant | null }> {
+    const { createdBefore, createdFrom } = query;
+    const deleted = [...this.#rows.values()]
+      .filter(
+        (row) =>
+          Temporal.Instant.compare(row.createdAt, createdBefore) < 0 &&
+          (createdFrom == null || Temporal.Instant.compare(createdFrom, row.createdAt) <= 0) &&
+          !(row.type === "WEEKLY_ACHIEVEMENT" && metadataField(row, "milestone") != null),
+      )
+      .toSorted((left, right) => Temporal.Instant.compare(left.createdAt, right.createdAt))
+      .slice(0, query.limit);
+    for (const row of deleted) {
+      this.#rows.delete(row.id);
+    }
+    return { deletedCount: deleted.length, lastCreatedAt: deleted.at(-1)?.createdAt ?? null };
+  }
+
   async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {
     const visible = [...this.#rows.values()]
       .filter(

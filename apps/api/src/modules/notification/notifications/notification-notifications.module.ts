@@ -12,6 +12,8 @@ import { PublishNotificationBatchUseCase } from "./application/use-cases/publish
 import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
 import { MarketingConsentReconfirmProcessor } from "./infrastructure/jobs/marketing-consent-reconfirm.processor.js";
 import { MarketingConsentReconfirmScheduler } from "./infrastructure/jobs/marketing-consent-reconfirm.scheduler.js";
+import { NotificationHistoryPurgeProcessor } from "./infrastructure/jobs/notification-history-purge.processor.js";
+import { NotificationHistoryPurgeScheduler } from "./infrastructure/jobs/notification-history-purge.scheduler.js";
 import { NotificationQueueModule } from "./infrastructure/jobs/notification-queue.module.js";
 import { NotificationQueueProcessor } from "./infrastructure/jobs/notification-queue.processor.js";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "./notification-notifications.providers.js";
@@ -32,6 +34,8 @@ import { NotificationController } from "./presentation/http/v1/notification.cont
     NotificationQueueProcessor,
     MarketingConsentReconfirmScheduler,
     MarketingConsentReconfirmProcessor,
+    NotificationHistoryPurgeScheduler,
+    NotificationHistoryPurgeProcessor,
   ],
   exports: [
     PublishNotificationUseCase,
