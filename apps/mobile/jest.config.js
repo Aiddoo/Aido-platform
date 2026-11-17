@@ -31,7 +31,9 @@ const base = {
     '^@assets/(.*)$': '<rootDir>/assets/$1',
 
     // Monorepo packages
-    '^@aido/api/(.*)$': '<rootDir>/../../packages/api/src/$1',
+    // package.json exports와 같은 subpath만 푼다(Metro·tsc에서 깨질 import가 jest에서만 통과하지 않게)
+    '^@aido/api/(common|errors|vocabulary)$': '<rootDir>/../../packages/api/src/$1/index.ts',
+    '^@aido/api/contracts/([^/]+/v\\d+)$': '<rootDir>/../../packages/api/src/contracts/$1/index.ts',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/testing/mocks/expo-secure-store.ts',
