@@ -4,7 +4,7 @@ import {
   isSemanticVersionAtLeast,
 } from "@aido/api/vocabulary";
 
-import type { AiDataSharingConsent } from "#api/modules/identity/identity-settings.public";
+import type { AiDataSharingConsent } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 // 어느 안내 버전에 동의했든 그 버전이 허용한 업체로는 보낸다. 업체 범위는 resolveConsentedAiProviders가 정한다
 const ANY_CONSENT_VERSION = AI_DATA_SHARING_CONSENT_VERSIONS[0];

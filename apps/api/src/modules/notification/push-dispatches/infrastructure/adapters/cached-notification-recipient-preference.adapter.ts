@@ -2,7 +2,7 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { uniq } from "es-toolkit";
 
-import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
+import { UserPreferenceReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";

@@ -6,7 +6,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
   Public,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {

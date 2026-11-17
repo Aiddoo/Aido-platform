@@ -3,15 +3,15 @@ import type { TestingModule } from "@nestjs/testing";
 import { sql, TransactionRollbackError } from "drizzle-orm";
 import { vi } from "vitest";
 
-import type { SocialLoginResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
-import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/auth/application/use-cases/exchange-oauth-code.use-case";
-import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/auth/application/use-cases/link-oauth-account-with-code.use-case";
-import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-oauth-token.use-case";
-import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/auth/application/use-cases/unlink-oauth-account.use-case";
-import { OAuthStateId } from "#api/modules/identity/auth/domain/oauth-state-id.vo";
-import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
-import { DrizzleOAuthStateRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-oauth-state.repository";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/unlink-oauth-account.use-case";
+import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
+import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/exchange-oauth-code.use-case";
+import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/link-oauth-account-with-code.use-case";
+import { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
+import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
+import type { SocialLoginResult } from "#api/modules/identity/sessions/application/read-models/login.read-model";
+import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-oauth-token.use-case";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { oAuthState, user as userTable } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -32,7 +32,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let module: TestingModule;
-  let accounts: DrizzleAccountRepository;
+  let accounts: DrizzleLinkedAccountsRepository;
   let states: DrizzleOAuthStateRepository;
   let users: DrizzleUserRepository;
   let securityLogs: DrizzleSecurityLogRepository;
@@ -52,7 +52,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     module = await createAuthTestModule(client, new FakeEmailService(), {
       oauthProviderRegistry: new Map([[provider.provider, provider]]),
     });
-    accounts = module.get(DrizzleAccountRepository);
+    accounts = module.get(DrizzleLinkedAccountsRepository);
     states = module.get(DrizzleOAuthStateRepository);
     users = module.get(DrizzleUserRepository);
     securityLogs = module.get(DrizzleSecurityLogRepository);

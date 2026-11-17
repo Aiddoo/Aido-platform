@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable } from "#api/platform/database/schema/index";
@@ -36,7 +36,7 @@ describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {
       .post("/v1/auth/login")
       .send({ email, password })
       .expect(200);
-    const tokenIssuer = testContext.module.get(AuthTokenIssuerPort);
+    const tokenIssuer = testContext.module.get(TokenIssuerPort);
     const jwt = testContext.module.get<ConfigType<typeof jwtConfig>>(jwtConfig.KEY);
     const client = testContext.testDatabase.getClient();
     const session = requireRecord(

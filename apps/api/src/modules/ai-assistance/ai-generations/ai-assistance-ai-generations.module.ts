@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationPushDevicesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
 
 import { aiAssistanceAiGenerationsConfig } from "./ai-assistance-ai-generations.config.js";
@@ -18,8 +18,8 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
 @Module({
   imports: [
     ConfigModule.forFeature(aiAssistanceAiGenerationsConfig),
-    IdentitySettingsModule,
-    IdentityUserAccessModule,
+    IdentityUserPreferencesModule,
+    IdentityUsersQueriesModule,
     NotificationPushDevicesModule,
   ],
   providers: [...AI_ASSISTANCE_AI_GENERATIONS_PROVIDERS],

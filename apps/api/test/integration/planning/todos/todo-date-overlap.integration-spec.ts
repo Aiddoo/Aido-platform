@@ -1,7 +1,7 @@
 import { and, count, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { omit, sumBy } from "es-toolkit";
 
-import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
+import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
 import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

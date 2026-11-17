@@ -19,7 +19,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
+import { UserStreakAccessPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
 import { StreakPort } from "#api/modules/planning/todos/application/ports/streak.port";
 import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";

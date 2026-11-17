@@ -6,7 +6,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";

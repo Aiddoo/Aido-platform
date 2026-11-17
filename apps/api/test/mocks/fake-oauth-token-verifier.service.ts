@@ -7,8 +7,8 @@
 
 import { ErrorCode } from "@aido/api/errors";
 
-import type { VerifiedProfile } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+import type { VerifiedProfile } from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /**

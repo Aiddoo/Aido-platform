@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { userDeliveryPreference } from "#api/modules/identity/identity-settings.public";
+import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";

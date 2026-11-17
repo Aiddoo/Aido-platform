@@ -3,19 +3,19 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
-import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
-import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import type { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import {
-  type AuthUserProfileRecord,
-  AuthUserRepositoryPort,
-  type PurgeEligibleUsersQuery,
-} from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
+import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
+import type { UserActivityWriterPort } from "#api/modules/identity/users/application/ports/user-activity-writer.port";
 import type {
   UserActivity,
   UserActivityReaderPort,
 } from "#api/modules/identity/users/application/ports/user-activity.reader.port";
 import type { UserAppVersionReaderPort } from "#api/modules/identity/users/application/ports/user-app-version.reader.port";
+import {
+  type UserProfileRecord,
+  UserRepositoryPort,
+  type PurgeEligibleUsersQuery,
+} from "#api/modules/identity/users/application/ports/user.repository.port";
+import { UserLogEvent } from "#api/modules/identity/users/application/users.log-events";
 import { requireRecord, uniqueConstraintTargets } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -28,15 +28,15 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-import type { UserStatus } from "../../../auth/domain/auth.constants.js";
-import { toIdentityUser } from "../../../auth/infrastructure/persistence/auth-row.mapper.js";
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
-import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
+import type { User } from "../../domain/user.aggregate.js";
+import type { UserStatus } from "../../domain/users.constants.js";
+import { toUser } from "./user-row.mapper.js";
 import { generateUserTag } from "./user-tag.adapter.js";
 
 type UserInsert = typeof user.$inferInsert;
 
-export interface UserWithProfile extends AuthUserProfileRecord {
+export interface UserWithProfile extends UserProfileRecord {
   lastLoginAt: Temporal.Instant | null;
 }
 
@@ -49,8 +49,8 @@ const PURGE_GRACE_PERIOD = Temporal.Duration.from({
 // 같은 인스턴스가 활동 기록·앱 버전·활동 조회 포트로도 쓰여(useExisting) implements로 서명을 함께 검사한다
 @Injectable()
 export class DrizzleUserRepository
-  extends AuthUserRepositoryPort
-  implements AuthUserActivityWriterPort, UserAppVersionReaderPort, UserActivityReaderPort
+  extends UserRepositoryPort
+  implements UserActivityWriterPort, UserAppVersionReaderPort, UserActivityReaderPort
 {
   readonly #logger = new Logger(DrizzleUserRepository.name);
 
@@ -67,14 +67,14 @@ export class DrizzleUserRepository
     return this.#transactionHost.tx;
   }
 
-  async findByEmail(email: string): Promise<IdentityUser | null> {
+  async findByEmail(email: string): Promise<User | null> {
     const row = await this.#db.query.user.findFirst({ where: { email } });
-    return row == null ? null : toIdentityUser(row);
+    return row == null ? null : toUser(row);
   }
 
-  async findById(id: UserId): Promise<IdentityUser | null> {
+  async findById(id: UserId): Promise<User | null> {
     const row = await this.#db.query.user.findFirst({ where: { id: id.value } });
-    return row == null ? null : toIdentityUser(row);
+    return row == null ? null : toUser(row);
   }
 
   async findByIdWithProfile(id: UserId): Promise<UserWithProfile | null> {
@@ -105,7 +105,7 @@ export class DrizzleUserRepository
     readonly email: string;
     readonly status: UserStatus;
     readonly emailVerifiedAt?: Temporal.Instant;
-  }): Promise<IdentityUser> {
+  }): Promise<User> {
     const userTag = await this.#generateUniqueUserTag();
 
     try {
@@ -119,11 +119,11 @@ export class DrizzleUserRepository
           updatedAt: this.#clock.now(),
         })
         .returning();
-      return toIdentityUser(requireRecord(row));
+      return toUser(requireRecord(row));
     } catch (error) {
       const targets = uniqueConstraintTargets(error);
       if (targets?.includes("email")) {
-        throw new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS");
+        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
       }
       // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
       if (targets?.includes("userTag")) {
@@ -145,7 +145,7 @@ export class DrizzleUserRepository
         return tag;
       }
 
-      this.#logger.warn({ event: AuthLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
+      this.#logger.warn({ event: UserLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
     }
 
     throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
@@ -190,7 +190,7 @@ export class DrizzleUserRepository
   }
 
   async updateLastActiveAt(
-    activity: Parameters<AuthUserActivityWriterPort["updateLastActiveAt"]>[0],
+    activity: Parameters<UserActivityWriterPort["updateLastActiveAt"]>[0],
   ): Promise<void> {
     const { timezone, appVersion, seenAt } = activity;
     const seen = sql`${sql.param(seenAt, user.lastActiveAt)}::timestamp(3)`;
@@ -273,7 +273,7 @@ export class DrizzleUserRepository
     return requireRecord(profile);
   }
 
-  async saveAccountStatus(identityUser: IdentityUser): Promise<void> {
+  async saveAccountStatus(identityUser: User): Promise<void> {
     const { status, deletedAt } = identityUser.toPrimitives();
     await this.#update(identityUser.id.value, {
       status,
@@ -282,7 +282,7 @@ export class DrizzleUserRepository
     });
   }
 
-  async listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<IdentityUser[]> {
+  async listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<User[]> {
     const cutoff = query.now.subtract(PURGE_GRACE_PERIOD);
     const rows = await this.#db
       .select()
@@ -296,10 +296,10 @@ export class DrizzleUserRepository
       )
       .orderBy(asc(user.id))
       .limit(query.limit);
-    return rows.map(toIdentityUser);
+    return rows.map(toUser);
   }
 
-  async findByIdForUpdate(id: UserId): Promise<IdentityUser | null> {
+  async findByIdForUpdate(id: UserId): Promise<User | null> {
     // FOR NO KEY UPDATE는 계정 변경을 직렬화하면서 이 User를 참조하는 FK 검사는 막지 않는다.
     const [row] = await this.#db
       .select()
@@ -307,7 +307,7 @@ export class DrizzleUserRepository
       .where(eq(user.id, id.value))
       .limit(1)
       .for("no key update");
-    return row == null ? null : toIdentityUser(row);
+    return row == null ? null : toUser(row);
   }
 
   async hardDelete(id: UserId): Promise<void> {

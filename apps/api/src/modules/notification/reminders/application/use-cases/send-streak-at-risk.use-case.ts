@@ -1,4 +1,4 @@
-import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

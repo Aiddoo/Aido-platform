@@ -2,13 +2,13 @@ import type { TestingModule } from "@nestjs/testing";
 import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
-import { ResetPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/reset-password.use-case";
-import { VerificationId } from "#api/modules/identity/auth/domain/verification-id.vo";
-import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
-import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
+import { ResetPasswordUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/reset-password.use-case";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
+import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
+import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
 import { user as userTable, verification } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -32,7 +32,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   let client: TestDatabaseClient;
   let module: TestingModule;
   let repository: DrizzleVerificationRepository;
-  let accountRepository: DrizzleAccountRepository;
+  let accountRepository: DrizzleLinkedAccountsRepository;
   let consumeCode: ConsumeVerificationCodeUseCase;
   let passwordService: Argon2PasswordHasherAdapter;
   let resetPassword: ResetPasswordUseCase;
@@ -45,7 +45,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     client = await database.start();
     module = await createAuthTestModule(client, new FakeEmailService());
     repository = module.get(DrizzleVerificationRepository);
-    accountRepository = module.get(DrizzleAccountRepository);
+    accountRepository = module.get(DrizzleLinkedAccountsRepository);
     consumeCode = module.get(ConsumeVerificationCodeUseCase);
     passwordService = module.get(Argon2PasswordHasherAdapter);
     resetPassword = module.get(ResetPasswordUseCase);

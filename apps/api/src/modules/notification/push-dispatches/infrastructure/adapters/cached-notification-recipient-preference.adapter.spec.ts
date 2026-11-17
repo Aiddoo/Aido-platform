@@ -1,5 +1,5 @@
-import type { PreferenceSnapshot } from "#api/modules/identity/identity-settings.public";
-import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
+import type { PreferenceSnapshot } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 

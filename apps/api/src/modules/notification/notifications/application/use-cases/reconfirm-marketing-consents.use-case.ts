@@ -4,7 +4,7 @@ import { chunk } from "es-toolkit";
 import {
   marketingAgreedSince,
   marketingReconfirmCutoff,
-} from "#api/modules/identity/identity-settings.public";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

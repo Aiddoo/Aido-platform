@@ -12,7 +12,7 @@ import { RequireQuota } from "#api/modules/access/quota-charges/access-quota-cha
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";
 import { Locale } from "#api/platform/http/decorators/locale.decorator";

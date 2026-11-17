@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { AccountProvider } from "../../../auth/domain/auth.constants.js";
+import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
 
 // 다른 Context가 사람을 보여 줄 때 쓰는 프로필 요약이다. 이름이 없으면 null이다
 export interface UserBriefReadModel {

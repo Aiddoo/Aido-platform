@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
@@ -23,7 +23,7 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     PlanningTodoSeriesModule,
     SocialFriendshipsModule,
     NotificationQueueModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     AccessFeatureGrantsQueriesModule,
   ],
   // 고정 경로 GET(summary·overview·resource-limit)이 GET :id보다 먼저 등록되게 조회 Controller를 맨 앞에 둔다

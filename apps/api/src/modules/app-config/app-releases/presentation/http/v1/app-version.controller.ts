@@ -2,7 +2,7 @@ import type { AppVersionResponse } from "@aido/api/contracts/app-config";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { Public } from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { RawResponse } from "#api/platform/http/decorators/raw-response.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";

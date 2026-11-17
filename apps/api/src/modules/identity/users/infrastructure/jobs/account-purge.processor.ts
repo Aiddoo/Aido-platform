@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { UserLogEvent } from "#api/modules/identity/users/application/users.log-events";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
 import { ACCOUNT_PURGE_QUEUE } from "./account-purge.queue.js";
@@ -27,7 +27,7 @@ export class AccountPurgeProcessor implements OnModuleInit {
   }
 
   async process(): Promise<void> {
-    this.#logger.debug({ event: AuthLogEvent.ACCOUNT_PURGE_JOB_STARTED });
+    this.#logger.debug({ event: UserLogEvent.ACCOUNT_PURGE_JOB_STARTED });
     await this.#purgeDeletedAccounts.execute();
   }
 }

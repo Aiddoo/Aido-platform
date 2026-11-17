@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs
 import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 
-import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { Public } from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 
 import { StoreWebhookPort } from "../../../application/ports/store-webhook.port.js";

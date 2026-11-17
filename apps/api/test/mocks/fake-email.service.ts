@@ -1,6 +1,6 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
 
-import type { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
 import type { EmailKind } from "#api/modules/notification/email-messages/domain/email-delivery.constants";
 import type {
   EmailDispatch,
@@ -29,9 +29,9 @@ interface SentUserReport {
   sentAt: Date;
 }
 
-type VerificationEmailData = Parameters<AuthEmailSenderPort["sendVerificationCode"]>[1];
+type VerificationEmailData = Parameters<VerificationCodeEmailSenderPort["sendVerificationCode"]>[1];
 
-export class FakeEmailService implements AuthEmailSenderPort {
+export class FakeEmailService implements VerificationCodeEmailSenderPort {
   readonly #sentEmails = new Map<string, SentEmail>();
   #sentInquiries: SentInquiry[] = [];
   #sentUserReports: SentUserReport[] = [];

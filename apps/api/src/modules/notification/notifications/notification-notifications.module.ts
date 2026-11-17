@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 import { NotificationPushDevicesModule } from "../push-devices/notification-push-devices.public.js";
 import { NotificationPushDispatchesModule } from "../push-dispatches/notification-push-dispatches.public.js";
@@ -21,7 +21,7 @@ import { NotificationController } from "./presentation/http/v1/notification.cont
   // 알림 작업 큐는 identity 설정이 이 Module 없이 넣을 수 있도록 따로 둔 jobs Module이다
   imports: [
     NotificationQueueModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     NotificationPushDevicesModule,
     NotificationPushDispatchesModule,
   ],

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
+import { UserTimezoneReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoOwnerTimezonePort } from "../../application/ports/todo-owner-timezone.port.js";

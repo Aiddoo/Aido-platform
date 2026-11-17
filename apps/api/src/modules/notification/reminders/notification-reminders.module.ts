@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
@@ -30,7 +30,7 @@ import {
     WeatherWeatherReportsModule,
     InsightsWeeklyAchievementsModule,
     AccessFeatureGrantsQueriesModule,
-    IdentityUserAccessModule,
+    IdentityUsersQueriesModule,
     PlanningTodosQueriesModule,
     ConfigModule.forFeature(notificationRetentionAssignmentsConfig),
   ],

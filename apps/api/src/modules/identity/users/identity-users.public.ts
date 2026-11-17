@@ -18,7 +18,7 @@ export {
   UserSubscriptionProjectionPort,
   type UserSubscriptionProjection,
 } from "./application/ports/user-subscription-projection.port.js";
-export { IdentityUserAccessModule } from "./identity-user-access.module.js";
+export { IdentityUsersQueriesModule } from "./identity-users-queries.module.js";
 export { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
 // 사람 id 칸을 가진 다른 Context의 행을 페이지로 고르는 SQL이 사용자 테이블을 직접 읽지 않게 한다
 export {

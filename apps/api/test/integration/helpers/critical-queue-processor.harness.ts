@@ -5,6 +5,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import {
   type UserConsentRecord,
   type UserConsentRecordWithId,
@@ -12,10 +13,9 @@ import {
   type UserPreferenceRecord,
   type UserPreferenceRecordWithId,
   UserSettingsCachePort,
-} from "#api/modules/identity/identity-settings.public";
-import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
-import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-billing-issue-notification.use-case";
 import { SendCheerNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-cheer-notification.use-case";

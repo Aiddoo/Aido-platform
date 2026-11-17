@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   type UserPreferenceCacheInvalidatorPort,
   UserSettingsCachePort,
-} from "#api/modules/identity/identity-settings.public";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

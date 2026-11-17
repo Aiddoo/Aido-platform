@@ -1,5 +1,5 @@
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { describeAuthUserRepositoryContract } from "#test/contracts/identity/auth-user-repository.contract";
+import { describeUserRepositoryContract } from "#test/contracts/identity/user-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -26,5 +26,5 @@ describe("DrizzleUserRepository (실제 PostgreSQL)", () => {
     return new DrizzleUserRepository(transactionHost, new DateClock());
   }
 
-  describeAuthUserRepositoryContract(async () => createRepository());
+  describeUserRepositoryContract(async () => createRepository());
 });

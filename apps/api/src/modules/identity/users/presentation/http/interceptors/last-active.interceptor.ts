@@ -9,8 +9,8 @@ import {
 import { LRUCache } from "lru-cache";
 import type { Observable } from "rxjs";
 
-import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
-import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { UserActivityWriterPort } from "#api/modules/identity/users/application/ports/user-activity-writer.port";
+import { UserLogEvent } from "#api/modules/identity/users/application/users.log-events";
 import type { HttpRequest } from "#api/platform/http/http-request";
 import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { requestTimezoneOrUtc } from "#api/platform/http/request-client/request-timezone";
@@ -38,13 +38,13 @@ export class LastActiveInterceptor implements NestInterceptor {
   /** `${userId}:${localDate}:${appVersion}` → lastUpdatedAt (epoch ms) */
   readonly #throttle: LRUCache<string, number>;
 
-  readonly #userActivityWriter: AuthUserActivityWriterPort;
+  readonly #userActivityWriter: UserActivityWriterPort;
   readonly #requestClientReader: RequestClientReader;
   readonly #clock: ClockPort;
 
   constructor(
-    @Inject(AuthUserActivityWriterPort)
-    userActivityWriter: AuthUserActivityWriterPort,
+    @Inject(UserActivityWriterPort)
+    userActivityWriter: UserActivityWriterPort,
     requestClientReader: RequestClientReader,
     clock: ClockPort,
   ) {
@@ -93,7 +93,7 @@ export class LastActiveInterceptor implements NestInterceptor {
           this.#throttle.delete(throttleKey);
         }
         this.#logger.error({
-          event: AuthLogEvent.LAST_ACTIVE_UPDATE_FAILED,
+          event: UserLogEvent.LAST_ACTIVE_UPDATE_FAILED,
           userId,
           errorType: toErrorType(error),
         });

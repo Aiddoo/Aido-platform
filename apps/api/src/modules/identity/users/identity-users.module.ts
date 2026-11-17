@@ -1,25 +1,45 @@
 import { Module } from "@nestjs/common";
 
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { EngagementTodoCommentsModule } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationRetentionAssignmentsModule } from "#api/modules/notification/retention-assignments/notification-retention-assignments.public";
+import { OperationsAdminNoticesModule } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
-import { IdentityAuthModule } from "../auth/identity-auth.module.js";
-import { IdentityUserAccessModule } from "./identity-user-access.module.js";
+import { IdentityLinkedAccountsModule } from "../linked-accounts/identity-linked-accounts.module.js";
+import { IdentitySessionsQueriesModule } from "../sessions/identity-sessions-queries.module.js";
+import { IdentityUserPreferencesModule } from "../user-preferences/identity-user-preferences.module.js";
+import { IdentityVerificationsModule } from "../verifications/identity-verifications.module.js";
+import { RetentionEnrollerPort } from "./application/ports/retention-enroller.port.js";
+import { NotifyOAuthSignupUseCase } from "./application/use-cases/notify-oauth-signup.use-case.js";
+import { ProvisionUserUseCase } from "./application/use-cases/provision-user.use-case.js";
+import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
+import { IdentityUsersQueriesModule } from "./identity-users-queries.module.js";
 import { IDENTITY_USERS_PROVIDERS } from "./identity-users.providers.js";
 import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
 import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
 import { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
+import { RegistrationController } from "./presentation/http/v1/registration.controller.js";
 import { UserAccountController } from "./presentation/http/v1/user-account.controller.js";
 
-// users → auth 한 방향이다. auth는 이 모듈이 아니라 IdentityUserAccessModule만 import한다
+// 로그인(sessions)과 웹 OAuth(oauth-states)가 가입·복구·가입 알림 UseCase를 쓴다. 세션 폐기는 그 아래층
+// 세션 조회 Module의 포트로 해서 users → sessions 기능 Module 방향의 import가 없다
 @Module({
   imports: [
-    IdentityAuthModule,
-    IdentityUserAccessModule,
+    IdentityUsersQueriesModule,
+    IdentitySessionsQueriesModule,
+    IdentityLinkedAccountsModule,
+    IdentityVerificationsModule,
+    IdentityUserPreferencesModule,
+    PlanningTodoCategoriesQueriesModule,
+    NotificationRetentionAssignmentsModule,
+    OperationsAdminNoticesModule,
+    AccessFeatureGrantsQueriesModule,
     AccessQuotaChargesModule,
     BillingPremiumGrantsModule,
     EngagementTodoCommentsModule,
@@ -27,13 +47,19 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
     SocialCheersModule,
     SocialNudgesModule,
   ],
-  controllers: [UserAccountController],
+  controllers: [RegistrationController, UserAccountController],
   providers: [
     ...IDENTITY_USERS_PROVIDERS,
     AccountPurgeScheduler,
     AccountPurgeProcessor,
     LastActiveInterceptor,
   ],
-  exports: [IdentityUserAccessModule, LastActiveInterceptor],
+  exports: [
+    ProvisionUserUseCase,
+    RestoreAccountUseCase,
+    NotifyOAuthSignupUseCase,
+    RetentionEnrollerPort,
+    LastActiveInterceptor,
+  ],
 })
 export class IdentityUsersModule {}

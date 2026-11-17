@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
+import type { CurrentUserPayload } from "#api/modules/identity/sessions/identity-sessions.public";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";

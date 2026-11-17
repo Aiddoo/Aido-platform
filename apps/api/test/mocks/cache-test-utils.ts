@@ -1,11 +1,11 @@
-import type { AuthCachedUserProfile } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { CachedUserProfile } from "#api/modules/identity/users/application/ports/user-profile-cache.port";
 
 /**
- * 캐시 테스트 헬퍼: 완전한 AuthCachedUserProfile mock 데이터 생성
+ * 캐시 테스트 헬퍼: 완전한 CachedUserProfile mock 데이터 생성
  */
 export function createMockUserProfile(
-  overrides: Partial<AuthCachedUserProfile> = {},
-): AuthCachedUserProfile {
+  overrides: Partial<CachedUserProfile> = {},
+): CachedUserProfile {
   return {
     id: "user-123",
     email: "test@example.com",

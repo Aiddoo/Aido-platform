@@ -6,7 +6,7 @@ import {
   UserNotificationSettingsAccessPort,
   type UserPreferenceRecord,
   type UserPreferenceRecordWithId,
-} from "#api/modules/identity/identity-settings.public";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";

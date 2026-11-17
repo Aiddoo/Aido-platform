@@ -63,7 +63,7 @@ apps/api/src/
 
 | Context       | slice                                                                                                                              |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| identity      | `auth`, `users`, `preferences`                                                                                                     |
+| identity      | `sessions`, `verifications`, `oauth-states`, `linked-accounts`, `users`, `user-preferences` (+ `shared/`)                          |
 | access        | `feature-grants`, `quota-charges` (+ `shared/`)                                                                                    |
 | billing       | `subscriptions`, `premium-grants` (+ `shared/`)                                                                                    |
 | planning      | `todos`, `todo-series`, `todo-categories` (+ `shared/`)                                                                            |

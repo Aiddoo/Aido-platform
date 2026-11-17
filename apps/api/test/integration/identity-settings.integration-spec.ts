@@ -2,16 +2,16 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { StreakMilestoneNotifierPort } from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
-import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
-import { GetPreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/get-preference.use-case";
-import { OnTodoToggledUseCase } from "#api/modules/identity/preferences/application/use-cases/on-todo-toggled.use-case";
-import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
-import { SeedUserSettingsUseCase } from "#api/modules/identity/preferences/application/use-cases/seed-user-settings.use-case";
-import { UpdatePreferenceUseCase } from "#api/modules/identity/preferences/application/use-cases/update-preference.use-case";
-import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { StreakMilestoneNotifierPort } from "#api/modules/identity/user-preferences/application/ports/streak-milestone-notifier.port";
+import { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
+import { GetPreferenceUseCase } from "#api/modules/identity/user-preferences/application/use-cases/get-preference.use-case";
+import { OnTodoToggledUseCase } from "#api/modules/identity/user-preferences/application/use-cases/on-todo-toggled.use-case";
+import { RefreshPushTimezoneUseCase } from "#api/modules/identity/user-preferences/application/use-cases/refresh-push-timezone.use-case";
+import { SeedUserSettingsUseCase } from "#api/modules/identity/user-preferences/application/use-cases/seed-user-settings.use-case";
+import { UpdatePreferenceUseCase } from "#api/modules/identity/user-preferences/application/use-cases/update-preference.use-case";
+import { UpsertPushTimezoneUseCase } from "#api/modules/identity/user-preferences/application/use-cases/upsert-push-timezone.use-case";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {

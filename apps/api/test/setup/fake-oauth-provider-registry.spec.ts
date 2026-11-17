@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { OAuthIdentityProviderPort } from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
+import type { OAuthIdentityProviderPort } from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
 
 import {
   FakeOAuthProviderRegistry,

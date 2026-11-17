@@ -3,14 +3,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import {
   UserPreferenceReaderPort,
   UserSettingsCachePort,
-} from "#api/modules/identity/identity-settings.public";
-import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
-import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
 import { NotificationDeduplicationPort } from "#api/modules/notification/notifications/application/ports/notification-deduplication.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";

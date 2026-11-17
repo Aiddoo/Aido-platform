@@ -3,8 +3,8 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
-import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
+import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
+import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrastructure/persistence/drizzle-session.repository";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";

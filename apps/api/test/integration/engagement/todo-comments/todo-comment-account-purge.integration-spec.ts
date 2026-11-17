@@ -15,10 +15,10 @@ import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comm
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/todo-comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.reader";
-import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
-import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
+import { SecurityLogRepositoryPort } from "#api/modules/identity/users/application/ports/security-log.repository.port";
+import { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
@@ -273,8 +273,8 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: NotificationCachePort, useValue: notificationCache },
         DrizzleUserRepository,
         DrizzleSecurityLogRepository,
-        { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
-        { provide: AuthSecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
+        { provide: UserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: SecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,
         { provide: UsageMeterPort, useClass: DrizzleUsageMeterAdapter },

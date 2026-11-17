@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
-import { userReminderPreference } from "#api/modules/identity/identity-settings.public";
+import { userReminderPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import {
   userProfileNameOf,
   userRecipients,

@@ -6,9 +6,9 @@ import {
   type MarketingReconfirmTarget,
   type UserConsentRecordWithId,
   UserConsentRepositoryPort,
-} from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
-import { AiDataSharingConsent } from "#api/modules/identity/preferences/domain/ai-data-sharing-consent.entity";
-import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+} from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
+import { AiDataSharingConsent } from "#api/modules/identity/user-preferences/domain/ai-data-sharing-consent.entity";
+import type { UserConsentRecord } from "#api/modules/identity/user-preferences/domain/user-consent.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const EMPTY_CONSENT: UserConsentRecord = {

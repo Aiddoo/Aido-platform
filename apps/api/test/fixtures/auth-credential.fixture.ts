@@ -13,25 +13,25 @@ import type {
   PremiumAccessReadModel,
   PremiumAccessReaderPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
-import { CreateSessionUseCase } from "#api/modules/identity/auth/application/use-cases/create-session.use-case";
-import { IssueLoginUseCase } from "#api/modules/identity/auth/application/use-cases/issue-login.use-case";
-import { IssueVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/issue-verification-code.use-case";
-import { ProvisionUserUseCase } from "#api/modules/identity/auth/application/use-cases/provision-user.use-case";
-import { RestoreAccountUseCase } from "#api/modules/identity/auth/application/use-cases/restore-account.use-case";
-import { SendVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/send-verification-code.use-case";
+import { CreateSessionUseCase } from "#api/modules/identity/sessions/application/use-cases/create-session.use-case";
+import { IssueLoginUseCase } from "#api/modules/identity/sessions/application/use-cases/issue-login.use-case";
+import { ProvisionUserUseCase } from "#api/modules/identity/users/application/use-cases/provision-user.use-case";
+import { RestoreAccountUseCase } from "#api/modules/identity/users/application/use-cases/restore-account.use-case";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
+import { IssueVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/issue-verification-code.use-case";
+import { SendVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/send-verification-code.use-case";
 import type {
   DailySendUsage,
   DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
-import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
-import { InMemoryAuthLoginAttemptRepository } from "#test/doubles/identity/in-memory-auth-login-attempt.repository";
-import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
-import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
-import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
-import { InMemoryAuthVerificationRepository } from "#test/doubles/identity/in-memory-auth-verification.repository";
+import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
+import { InMemoryLoginAttemptRepository } from "#test/doubles/identity/in-memory-login-attempt.repository";
+import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
+import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
+import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
+import { InMemoryVerificationRepository } from "#test/doubles/identity/in-memory-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -39,20 +39,20 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
 import {
-  StubAuthPasswordHasher,
-  StubAuthProfileCache,
+  StubPasswordHasher,
+  StubUserProfileCache,
   StubVerificationCodeSecurity,
-  StubAuthRegistrationNotifier,
-  StubAuthRetentionEnroller,
-  StubAuthProvisioningSeeder,
+  StubUserRegistrationNotifier,
+  StubRetentionEnroller,
+  StubUserProvisioningSeeder,
 } from "#test/mocks/ports/auth-credentials.stub";
 import {
   StubSessionPushDeviceReleaser,
-  StubAuthTokenIssuer,
+  StubTokenIssuer,
 } from "#test/mocks/ports/auth-session.stub";
 
-import { createAuthAccountFixture } from "./identity/auth-credential.fixture.js";
-import { AUTH_FIXTURE_NOW, createIdentityUserFixture } from "./identity/auth-session.fixture.js";
+import { createLinkedAccountFixture } from "./identity/auth-credential.fixture.js";
+import { AUTH_FIXTURE_NOW, createUserFixture } from "./identity/session.fixture.js";
 
 export const AUTH_CREDENTIAL_NOW = AUTH_FIXTURE_NOW;
 export const AUTH_CREDENTIAL_PASSWORD = "CorrectPassword1!";
@@ -60,18 +60,18 @@ export const AUTH_CREDENTIAL_PASSWORD = "CorrectPassword1!";
 export function createAuthCredentialFixture(
   input: { socialOnly?: boolean; pending?: boolean; empty?: boolean } = {},
 ) {
-  const user = createIdentityUserFixture({
+  const user = createUserFixture({
     id: "credential-user",
     email: "credential@example.com",
     userTag: "CRED0001",
     status: input.pending ? "PENDING_VERIFY" : "ACTIVE",
     emailVerifiedAt: input.pending ? null : AUTH_CREDENTIAL_NOW,
   }).toPrimitives();
-  const accountRepository = new InMemoryAuthAccountRepository(
+  const accountRepository = new InMemoryLinkedAccountsRepository(
     input.empty
       ? []
       : [
-          createAuthAccountFixture({
+          createLinkedAccountFixture({
             userId: user.id,
             providerAccountId: user.id,
             provider: input.socialOnly ? "GOOGLE" : "CREDENTIAL",
@@ -79,26 +79,23 @@ export function createAuthCredentialFixture(
           }),
         ],
   );
-  const userRepository = new InMemoryAuthUserRepository(
-    input.empty ? [] : [createIdentityUserFixture(user)],
-    {
-      accounts: accountRepository,
-      profiles: new Map(input.empty ? [] : [[user.id, { name: "사용자", profileImage: null }]]),
-    },
-  );
-  const sessionRepository = new InMemoryAuthSessionRepository();
-  const securityLogRepository = new InMemoryAuthSecurityLogRepository();
-  const tokenService = new StubAuthTokenIssuer();
-  const passwordService = new StubAuthPasswordHasher();
-  const loginAttemptRepository = new InMemoryAuthLoginAttemptRepository();
-  const verificationRepository = new InMemoryAuthVerificationRepository();
+  const userRepository = new InMemoryUserRepository(input.empty ? [] : [createUserFixture(user)], {
+    accounts: accountRepository,
+    profiles: new Map(input.empty ? [] : [[user.id, { name: "사용자", profileImage: null }]]),
+  });
+  const sessionRepository = new InMemorySessionRepository();
+  const securityLogRepository = new InMemorySecurityLogRepository();
+  const tokenService = new StubTokenIssuer();
+  const passwordService = new StubPasswordHasher();
+  const loginAttemptRepository = new InMemoryLoginAttemptRepository();
+  const verificationRepository = new InMemoryVerificationRepository();
   const verificationCodeSecurity = new StubVerificationCodeSecurity();
-  const cacheService = new StubAuthProfileCache();
+  const cacheService = new StubUserProfileCache();
   const pushDevices = new StubSessionPushDeviceReleaser();
   const emailSender = new FakeEmailService();
-  const adminEventNotifier = new StubAuthRegistrationNotifier();
-  const retentionEnroller = new StubAuthRetentionEnroller();
-  const seeder = new StubAuthProvisioningSeeder();
+  const adminEventNotifier = new StubUserRegistrationNotifier();
+  const retentionEnroller = new StubRetentionEnroller();
+  const seeder = new StubUserProvisioningSeeder();
   const logger = new SilentLogger();
   const unitOfWork = new ImmediateUnitOfWork();
   const clock = new FixedClock(AUTH_CREDENTIAL_NOW);

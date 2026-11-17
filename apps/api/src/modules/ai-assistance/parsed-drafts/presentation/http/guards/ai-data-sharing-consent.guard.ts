@@ -1,7 +1,7 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 
-import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
+import { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { HttpRequest } from "#api/platform/http/http-request";
 import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

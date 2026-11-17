@@ -8,8 +8,8 @@ import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
-import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
+import type { UserProfileCachePort } from "../ports/user-profile-cache.port.js";
+import type { UserRepositoryPort } from "../ports/user.repository.port.js";
 import type {
   CurrentUserEntitlements,
   CurrentUserResult,
@@ -24,8 +24,8 @@ export interface GetCurrentUserQuery {
 }
 
 interface GetCurrentUserDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
-  readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
+  readonly userRepository: Pick<UserRepositoryPort, "findByIdWithProfile">;
+  readonly cacheService: Pick<UserProfileCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
   readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
@@ -53,7 +53,7 @@ export class GetCurrentUserUseCase {
       async () => {
         const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
         if (user == null) {
-          return undefined;
+          return null;
         }
         // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
         const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);

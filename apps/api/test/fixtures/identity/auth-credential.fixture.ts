@@ -1,19 +1,19 @@
-import type { AuthAccountRecord } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
+import type { LinkedAccountRecord } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import {
-  AuthOAuthState,
-  type AuthOAuthStatePrimitives,
-} from "#api/modules/identity/auth/domain/auth-oauth-state.aggregate";
+  OAuthState,
+  type OAuthStatePrimitives,
+} from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import {
-  AuthVerification,
-  type AuthVerificationPrimitives,
-} from "#api/modules/identity/auth/domain/auth-verification.aggregate";
+  Verification,
+  type VerificationPrimitives,
+} from "#api/modules/identity/verifications/domain/verification.aggregate";
 
-import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "./auth-session.fixture.js";
+import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "./session.fixture.js";
 
-export function createAuthVerificationFixture(
-  overrides: Partial<AuthVerificationPrimitives> = {},
-): AuthVerification {
-  return AuthVerification.reconstitute({
+export function createVerificationFixture(
+  overrides: Partial<VerificationPrimitives> = {},
+): Verification {
+  return Verification.reconstitute({
     id: 1,
     userId: AUTH_FIXTURE_USER_ID,
     type: "EMAIL_VERIFY",
@@ -26,10 +26,8 @@ export function createAuthVerificationFixture(
   });
 }
 
-export function createAuthOAuthStateFixture(
-  overrides: Partial<AuthOAuthStatePrimitives> = {},
-): AuthOAuthState {
-  return AuthOAuthState.reconstitute({
+export function createOAuthStateFixture(overrides: Partial<OAuthStatePrimitives> = {}): OAuthState {
+  return OAuthState.reconstitute({
     id: 1,
     state: "oauth-state",
     provider: "GOOGLE",
@@ -50,9 +48,9 @@ export function createAuthOAuthStateFixture(
   });
 }
 
-export function createAuthAccountFixture(
-  overrides: Partial<AuthAccountRecord> = {},
-): AuthAccountRecord {
+export function createLinkedAccountFixture(
+  overrides: Partial<LinkedAccountRecord> = {},
+): LinkedAccountRecord {
   return {
     id: 1,
     userId: AUTH_FIXTURE_USER_ID,

@@ -1,6 +1,6 @@
-import type { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
-import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
+import type { UserPreferenceRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import type { StreakState } from "#api/modules/identity/user-preferences/domain/streak.vo";
+import type { UserPreferenceRecord } from "#api/modules/identity/user-preferences/domain/user-preference.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   USER_SETTINGS_FIXTURE_OTHER_USER_ID,

@@ -8,44 +8,42 @@ import { vi } from "vitest";
 
 import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { EntitlementCacheAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-cache.adapter";
-import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
-import {
-  AuthCachePort,
-  AuthEmailSenderPort,
-  AuthRegistrationNotifierPort,
-} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import {
-  AuthPasswordHasherPort,
-  AuthTokenIssuerPort,
-} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import { AuthLoginAttemptRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-login-attempt.repository.port";
-import { AuthSecurityLogRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-security-log.repository.port";
-import { AuthSessionRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-session.repository.port";
-import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
-import { AuthVerificationRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-verification.repository.port";
-import { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
-import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
-import { RegisterUseCase } from "#api/modules/identity/auth/application/use-cases/register.use-case";
-import { RequestPasswordResetUseCase } from "#api/modules/identity/auth/application/use-cases/request-password-reset.use-case";
-import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
-import { AuthCacheAdapter } from "#api/modules/identity/auth/infrastructure/adapters/auth-cache.adapter";
-import { JwtTokenIssuerAdapter } from "#api/modules/identity/auth/infrastructure/adapters/jwt-token-issuer.adapter";
-import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/node-verification-code-security.adapter";
-import { DrizzleAccountRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-account.repository";
-import { DrizzleLoginAttemptRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-login-attempt.repository";
-import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
-import { DrizzleSessionRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-session.repository";
-import { DrizzleVerificationRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-verification.repository";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
+import { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import { RequestPasswordResetUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/request-password-reset.use-case";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
+import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
+import { LoginAttemptRepositoryPort } from "#api/modules/identity/sessions/application/ports/login-attempt.repository.port";
+import { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
+import { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
+import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
+import { LoginWithPasswordUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-password.use-case";
+import { JwtTokenIssuerAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/jwt-token-issuer.adapter";
+import { SessionCacheAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/session-cache.adapter";
+import { DrizzleLoginAttemptRepository } from "#api/modules/identity/sessions/infrastructure/persistence/drizzle-login-attempt.repository";
+import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrastructure/persistence/drizzle-session.repository";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "#api/modules/identity/users/application/ports/account-cleanup.port";
+import { SecurityLogRepositoryPort } from "#api/modules/identity/users/application/ports/security-log.repository.port";
+import { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
+import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
+import { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { RegisterUseCase } from "#api/modules/identity/users/application/use-cases/register.use-case";
+import { UserProfileCacheAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-profile-cache.adapter";
+import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
+import { VerificationCodeSecurityPort } from "#api/modules/identity/verifications/application/ports/verification-code-security.port";
+import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/todo-categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
@@ -65,22 +63,26 @@ import { RecordingOperationalAlert } from "#test/doubles/platform/recording-oper
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { requestPasswordResetProvider } from "../../src/modules/identity/linked-accounts/identity-linked-accounts.providers.js";
+import {
+  loginWithPasswordProvider,
+  issueLoginProvider,
+  createSessionProvider,
+} from "../../src/modules/identity/sessions/identity-sessions.providers.js";
 import {
   registerProvider,
-  loginWithPasswordProvider,
   restoreAccountProvider,
-  issueLoginProvider,
-  requestPasswordResetProvider,
   provisionUserProvider,
-  createSessionProvider,
-  issueVerificationCodeProvider,
-  sendVerificationCodeProvider,
-  consumeVerificationCodeProvider,
-} from "../../src/modules/identity/auth/identity-auth.providers.js";
+} from "../../src/modules/identity/users/identity-users.providers.js";
 import {
   deleteAccountProvider,
   purgeDeletedAccountsProvider,
 } from "../../src/modules/identity/users/identity-users.providers.js";
+import {
+  issueVerificationCodeProvider,
+  sendVerificationCodeProvider,
+  consumeVerificationCodeProvider,
+} from "../../src/modules/identity/verifications/identity-verifications.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
@@ -157,35 +159,35 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
             decryptSafe: (value: string) => value,
           },
         },
-        DrizzleAccountRepository,
+        DrizzleLinkedAccountsRepository,
         DrizzleUserRepository,
         DrizzleSessionRepository,
         DrizzleSecurityLogRepository,
         DrizzleLoginAttemptRepository,
         DrizzleVerificationRepository,
-        { provide: AuthUserRepositoryPort, useExisting: DrizzleUserRepository },
-        { provide: AuthAccountRepositoryPort, useExisting: DrizzleAccountRepository },
-        { provide: AuthSessionRepositoryPort, useExisting: DrizzleSessionRepository },
+        { provide: UserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: LinkedAccountsRepositoryPort, useExisting: DrizzleLinkedAccountsRepository },
+        { provide: SessionRepositoryPort, useExisting: DrizzleSessionRepository },
         {
-          provide: AuthVerificationRepositoryPort,
+          provide: VerificationRepositoryPort,
           useExisting: DrizzleVerificationRepository,
         },
         {
-          provide: AuthLoginAttemptRepositoryPort,
+          provide: LoginAttemptRepositoryPort,
           useExisting: DrizzleLoginAttemptRepository,
         },
         {
-          provide: AuthSecurityLogRepositoryPort,
+          provide: SecurityLogRepositoryPort,
           useExisting: DrizzleSecurityLogRepository,
         },
-        { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
-        { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-        { provide: AuthEmailSenderPort, useExisting: FakeEmailService },
-        AuthCacheAdapter,
-        { provide: AuthCachePort, useExisting: AuthCacheAdapter },
+        { provide: PasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
+        { provide: TokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
+        { provide: VerificationCodeEmailSenderPort, useExisting: FakeEmailService },
+        { provide: SessionCachePort, useClass: SessionCacheAdapter },
+        { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },
         { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
-          provide: AuthRegistrationNotifierPort,
+          provide: UserRegistrationNotifierPort,
           useExisting: AdminEventNotifierPort,
         },
         DrizzleUserConsentRepository,

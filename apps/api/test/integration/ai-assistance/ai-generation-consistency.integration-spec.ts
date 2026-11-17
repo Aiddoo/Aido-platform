@@ -32,8 +32,8 @@ import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggesti
 import { DrizzleSuggestionActivityReader } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-activity.reader";
 import { DrizzleSuggestionAnalysisRunRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-analysis-run.repository";
 import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
-import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
-import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/user-preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
+import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-client-app-version.reader";
 import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-repeating-todo-title.reader";

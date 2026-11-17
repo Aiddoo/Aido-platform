@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 import { NotificationPushDevicesModule } from "../push-devices/notification-push-devices.public.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
@@ -19,7 +19,7 @@ import { MarketingPushOptOutController } from "./presentation/http/v1/marketing-
 @Module({
   // 수신자 설정 캐시가 identity 설정 조회 포트를 쓴다
   imports: [
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     NotificationPushDevicesModule,
     ConfigModule.forFeature(notificationPushDispatchesConfig),
   ],

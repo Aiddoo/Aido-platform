@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 import { UserNotificationSettingsPort } from "../shared/application/ports/user-notification-settings.port.js";
 import { ActivePushTokenReaderPort } from "./application/ports/active-push-token.reader.port.js";
@@ -14,7 +14,7 @@ import { PushDeviceController } from "./presentation/http/v1/push-device.control
 
 @Module({
   // 설정 ACL과 토큰 캐시 어댑터가 identity 설정 포트를 쓴다
-  imports: [IdentitySettingsModule],
+  imports: [IdentityUserPreferencesModule],
   controllers: [PushDeviceController],
   providers: [...NOTIFICATION_PUSH_DEVICES_PROVIDERS],
   exports: [

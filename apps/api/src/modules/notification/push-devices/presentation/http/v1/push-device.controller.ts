@@ -18,7 +18,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
   Public,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";
 import { CurrentRequestClient } from "#api/platform/http/request-client/request-client.decorator";

@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { Public } from "#api/modules/identity/identity-auth-http.public";
+import { Public } from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";

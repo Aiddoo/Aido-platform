@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { NotificationRemindersModule } from "#api/modules/notification/reminders/notification-reminders.public";
 import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
@@ -30,7 +30,7 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
   imports: [
     PlanningTodoCategoriesQueriesModule,
     NotificationRemindersModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
   ],
   providers: [
     { provide: TodoRepositoryPort, useClass: DrizzleTodoRepository },

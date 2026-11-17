@@ -12,10 +12,10 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
-import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
-import { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+import { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
+import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
+import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
+import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -897,8 +897,8 @@ describe("인증 E2E", () => {
         .send({ email, password: securityPassword })
         .expect(200);
       const originalRefreshToken: string = login.body.data.refreshToken;
-      const tokenIssuer = testContext.module.get<AuthTokenIssuerPort>(AuthTokenIssuerPort);
-      const authCache = testContext.module.get<AuthCachePort>(AuthCachePort);
+      const tokenIssuer = testContext.module.get<TokenIssuerPort>(TokenIssuerPort);
+      const authCache = testContext.module.get<SessionCachePort>(SessionCachePort);
       const client = testContext.testDatabase.getClient();
       const session = requireRecord(
         await client.query.session.findFirst({
@@ -914,7 +914,7 @@ describe("인증 E2E", () => {
         .get("/v1/auth/me")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeDefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).not.toBeNull();
       await client
         .update(sessionTable)
         .set({
@@ -936,7 +936,7 @@ describe("인증 E2E", () => {
 
       // Then
       expect(reused.body.error.code).toBe("SESSION_0704");
-      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeUndefined();
+      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeNull();
       expect(denied.body.error.code).toBe("AUTH_0101");
       const revoked = requireRecord(
         await client.query.session.findFirst({ where: { id: session.id } }),
@@ -2469,7 +2469,7 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "복구 후에도 유지할 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
-      const authCache = testContext.module.get<AuthCachePort>(AuthCachePort);
+      const authCache = testContext.module.get<SessionCachePort>(SessionCachePort);
       const sessionIds: string[] = [];
       for (const accessToken of accessTokens) {
         const profile = await request(testContext.app.getHttpServer())
@@ -2479,7 +2479,7 @@ describe("인증 E2E", () => {
         sessionIds.push(profile.body.data.sessionId);
         expect(
           await authCache.getSession(SessionId.reconstitute(profile.body.data.sessionId)),
-        ).toBeDefined();
+        ).not.toBeNull();
       }
       expect(new Set(sessionIds).size).toBe(3);
 
@@ -2493,7 +2493,7 @@ describe("인증 E2E", () => {
       // Then
       expect(deletion.body.data.gracePeriodDays).toBe(30);
       for (const sessionId of sessionIds) {
-        expect(await authCache.getSession(SessionId.reconstitute(sessionId))).toBeUndefined();
+        expect(await authCache.getSession(SessionId.reconstitute(sessionId))).toBeNull();
       }
       for (const accessToken of accessTokens) {
         const denied = await request(testContext.app.getHttpServer())

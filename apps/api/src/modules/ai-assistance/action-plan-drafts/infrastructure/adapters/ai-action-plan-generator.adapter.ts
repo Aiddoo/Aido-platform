@@ -1,4 +1,4 @@
-import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
+import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";

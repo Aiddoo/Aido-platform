@@ -4,10 +4,10 @@ import {
   type PreferenceWriteInput,
   type UserPreferenceRecordWithId,
   UserPreferenceRepositoryPort,
-} from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
-import { UserPreference } from "#api/modules/identity/preferences/domain/user-preference.aggregate";
-import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
+} from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import type { StreakState } from "#api/modules/identity/user-preferences/domain/streak.vo";
+import { UserPreference } from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
+import type { UserPreferenceRecord } from "#api/modules/identity/user-preferences/domain/user-preference.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // UserPreference 테이블의 열 기본값과 같다

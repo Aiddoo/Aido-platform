@@ -1,15 +1,15 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
-import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/sessions/application/ports/session-push-device-releaser.port";
 import type {
-  AuthTokenIssuerPort,
+  TokenIssuerPort,
   TokenPair,
-} from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/auth/application/ports/session-push-device-releaser.port";
-import type { SessionId } from "#api/modules/identity/auth/domain/session-id.vo";
+} from "#api/modules/identity/sessions/application/ports/token-issuer.port";
+import type { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export class StubAuthSessionCache implements Pick<AuthCachePort, "invalidateSession"> {
+export class StubSessionCache implements Pick<SessionCachePort, "invalidateSession"> {
   readonly sessionIds: Set<string>;
 
   constructor(sessionIds: readonly string[] = []) {
@@ -30,8 +30,8 @@ export class StubSessionPushDeviceReleaser implements SessionPushDeviceReleaserP
   }
 }
 
-export class StubAuthTokenIssuer implements Pick<
-  AuthTokenIssuerPort,
+export class StubTokenIssuer implements Pick<
+  TokenIssuerPort,
   | "generateTokenFamily"
   | "generateTokenPair"
   | "hashRefreshToken"

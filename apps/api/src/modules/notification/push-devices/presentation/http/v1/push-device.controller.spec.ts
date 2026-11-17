@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
+import type { CurrentUserPayload } from "#api/modules/identity/sessions/identity-sessions.public";
 import { parseRequestClient } from "#api/platform/http/request-client/request-client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";

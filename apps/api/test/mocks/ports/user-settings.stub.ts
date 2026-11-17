@@ -1,18 +1,18 @@
 import type { PremiumFeature } from "@aido/api/vocabulary";
 
-import type { PreferenceEntitlementPort } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
+import type { PreferenceEntitlementPort } from "#api/modules/identity/user-preferences/application/ports/preference-entitlement.port";
 import type {
   ReminderHourChangedPayload,
   ReminderScheduleEnqueuerPort,
-} from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
-import type { StreakMilestoneNotifierPort } from "#api/modules/identity/preferences/application/ports/streak-milestone-notifier.port";
+} from "#api/modules/identity/user-preferences/application/ports/reminder-schedule-enqueuer.port";
+import type { StreakMilestoneNotifierPort } from "#api/modules/identity/user-preferences/application/ports/streak-milestone-notifier.port";
 import type {
   TodoCompletionStats,
   TodoCompletionStatsReaderPort,
-} from "#api/modules/identity/preferences/application/ports/todo-completion-stats.reader.port";
-import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
-import type { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
-import type { PreferenceSnapshot } from "#api/modules/identity/preferences/application/read-models/preference.read-model";
+} from "#api/modules/identity/user-preferences/application/ports/todo-completion-stats.reader.port";
+import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/todo-timezone-rebase-enqueuer.port";
+import type { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
+import type { PreferenceSnapshot } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

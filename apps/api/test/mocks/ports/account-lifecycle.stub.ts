@@ -1,5 +1,5 @@
-import type { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import type { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import type { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
 import type {
   AccountNotificationCleanupPort,
   AccountNotificationCleanupResult,
@@ -7,11 +7,12 @@ import type {
   AccountTodoCommentCleanupResult,
   AccountUsageCleanupPort,
 } from "#api/modules/identity/users/application/ports/account-cleanup.port";
+import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { StubAuthSessionCache } from "./auth-session.stub.js";
+import { StubSessionCache } from "./auth-session.stub.js";
 
-export class StubAccountPasswordVerifier implements Pick<AuthPasswordHasherPort, "verify"> {
+export class StubAccountPasswordVerifier implements Pick<PasswordHasherPort, "verify"> {
   readonly checked: { hash: string; password: string }[] = [];
 
   async verify(hash: string, password: string): Promise<boolean> {
@@ -21,8 +22,8 @@ export class StubAccountPasswordVerifier implements Pick<AuthPasswordHasherPort,
 }
 
 export class StubAccountLifecycleCache
-  extends StubAuthSessionCache
-  implements Pick<AuthCachePort, "invalidateSession" | "invalidateUserProfile">
+  extends StubSessionCache
+  implements Pick<SessionCachePort, "invalidateSession">, UserProfileInvalidatorPort
 {
   readonly userIds: Set<string>;
 

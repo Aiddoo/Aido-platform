@@ -1,7 +1,7 @@
 import request from "supertest";
 
-import { AuthRegistrationNotifierPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import { StubAuthRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
+import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
+import { StubUserRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -18,12 +18,12 @@ const BROWSER_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 27_1 like Mac OS 
 
 describe("소셜 가입 관리자 알림 E2E", () => {
   let testContext: E2eTestContext;
-  const notifier = new StubAuthRegistrationNotifier();
+  const notifier = new StubUserRegistrationNotifier();
 
   beforeAll(async () => {
     testContext = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AuthRegistrationNotifierPort).useValue(notifier),
+        builder.overrideProvider(UserRegistrationNotifierPort).useValue(notifier),
       additionalResetters: [
         () => {
           notifier.notifications.length = 0;

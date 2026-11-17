@@ -7,7 +7,7 @@ import { z } from "zod";
 import {
   userDeliveryPreference,
   userMarketingPushConsent,
-} from "#api/modules/identity/identity-settings.public";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { userLastActivity } from "#api/modules/identity/users/identity-users.public";
 import { todoActivityRowsOf } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";

@@ -6,7 +6,7 @@ import {
   freeAccessCondition,
   premiumAccessCondition,
 } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { userReminderPreference } from "#api/modules/identity/identity-settings.public";
+import { userReminderPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { userRecipients } from "#api/modules/identity/users/identity-users.public";
 import {
   hasTodoBetween,

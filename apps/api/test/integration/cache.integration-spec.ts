@@ -19,9 +19,13 @@ import {
   ENTITLEMENT_CACHE_TTL_MS,
 } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import {
-  IdentityCacheKey,
-  IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
+  SESSION_CACHE_TTL_MS,
+  SessionCacheKey,
+} from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
+import {
+  USER_PROFILE_CACHE_TTL_MS,
+  UserProfileCacheKey,
+} from "#api/modules/identity/users/infrastructure/cache/user-profile-cache.keyspace";
 import {
   FriendshipCacheKey,
   FRIENDSHIP_CACHE_TTL_MS,
@@ -93,22 +97,18 @@ describe("CacheModule 통합 테스트", () => {
         };
 
         // When
-        await cacheService.set(
-          IdentityCacheKey.session(sessionId),
-          session,
-          IDENTITY_CACHE_TTL_MS.SESSION,
-        );
+        await cacheService.set(SessionCacheKey.session(sessionId), session, SESSION_CACHE_TTL_MS);
 
         // Then
-        const cached = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
+        const cached = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
         expect(cached).toEqual(session);
 
         // When
-        await cacheService.del(IdentityCacheKey.session(sessionId));
+        await cacheService.del(SessionCacheKey.session(sessionId));
 
         // Then
         const afterInvalidate = await cacheService.get(
-          IdentityCacheKey.session(sessionId),
+          SessionCacheKey.session(sessionId),
           z.unknown(),
         );
         expect(afterInvalidate).toBeUndefined();
@@ -168,11 +168,11 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         await cacheService.set(
-          IdentityCacheKey.userProfile(userId),
+          UserProfileCacheKey.userProfile(userId),
           profile,
-          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+          USER_PROFILE_CACHE_TTL_MS,
         );
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
 
         // Then
         expect(cached).toEqual(profile);
@@ -188,16 +188,16 @@ describe("CacheModule 통합 테스트", () => {
           userTag: "testuser2#5678",
         });
         await cacheService.set(
-          IdentityCacheKey.userProfile(userId),
+          UserProfileCacheKey.userProfile(userId),
           profile,
-          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+          USER_PROFILE_CACHE_TTL_MS,
         );
 
         // When
-        await cacheService.del(IdentityCacheKey.userProfile(userId));
+        await cacheService.del(UserProfileCacheKey.userProfile(userId));
 
         // Then
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
         expect(cached).toBeUndefined();
       });
     });
@@ -402,10 +402,10 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         const result = await cacheService.wrap(
-          IdentityCacheKey.session(sessionId),
+          SessionCacheKey.session(sessionId),
           z.unknown(),
           factory,
-          IDENTITY_CACHE_TTL_MS.SESSION,
+          SESSION_CACHE_TTL_MS,
         );
 
         // Then
@@ -413,7 +413,7 @@ describe("CacheModule 통합 테스트", () => {
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
+        const cached = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
         expect(cached).toEqual(session);
       });
 
@@ -430,10 +430,10 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         const result = await cacheService.wrap(
-          IdentityCacheKey.userProfile(userId),
+          UserProfileCacheKey.userProfile(userId),
           z.unknown(),
           factory,
-          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+          USER_PROFILE_CACHE_TTL_MS,
         );
 
         // Then
@@ -441,7 +441,7 @@ describe("CacheModule 통합 테스트", () => {
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
         expect(cached).toEqual(profile);
       });
 

@@ -1,19 +1,19 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
+import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
 import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
 
 import { UpdateProfileUseCase } from "./update-profile.use-case.js";
 
 const profileSaveFailure = new Error("프로필 저장 실패");
 
-class FailingProfileUserRepository extends InMemoryAuthUserRepository {
+class FailingProfileUserRepository extends InMemoryUserRepository {
   override async updateProfile(): Promise<never> {
     throw profileSaveFailure;
   }
 }
 
 describe("UpdateProfile — 프로필 변경", () => {
-  function given(userRepository?: InMemoryAuthUserRepository) {
+  function given(userRepository?: InMemoryUserRepository) {
     const fixture = createAuthCredentialFixture();
     const useCase = new UpdateProfileUseCase({
       userRepository: userRepository ?? fixture.userRepository,

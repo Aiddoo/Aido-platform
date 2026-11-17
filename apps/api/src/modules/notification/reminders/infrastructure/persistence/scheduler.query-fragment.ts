@@ -2,7 +2,7 @@ import type { ConfigType } from "@nestjs/config";
 import { and, eq, exists, gte, inArray, not, sql, type SQL } from "drizzle-orm";
 import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
-import { userDeliveryPreference } from "#api/modules/identity/identity-settings.public";
+import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { retentionExperimentAssignment } from "#api/platform/database/schema/index";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 

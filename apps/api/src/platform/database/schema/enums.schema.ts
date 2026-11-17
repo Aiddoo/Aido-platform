@@ -31,7 +31,7 @@ import {
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
-import { ACCOUNT_PROVIDERS_IN_DB_ORDER } from "../../../modules/identity/auth/domain/auth.constants.js";
+import { ACCOUNT_PROVIDERS_IN_DB_ORDER } from "../../../modules/identity/linked-accounts/domain/linked-accounts.constants.js";
 import {
   PUSH_DELIVERY_ATTEMPT_STATUSES,
   PUSH_DELIVERY_MODES,

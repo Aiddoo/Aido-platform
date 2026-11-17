@@ -1,6 +1,6 @@
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
-import { AiDataSharingConsent } from "#api/modules/identity/identity-settings.public";
+import { AiDataSharingConsent } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 import { canShareWithAi } from "./ai-data-sharing-consent.domain-service.js";
 

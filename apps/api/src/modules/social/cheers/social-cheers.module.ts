@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
@@ -13,7 +13,7 @@ import { SOCIAL_CHEERS_PROVIDERS } from "./social-cheers.providers.js";
 @Module({
   imports: [
     AccessFeatureGrantsQueriesModule,
-    IdentityUserAccessModule,
+    IdentityUsersQueriesModule,
     SocialFriendshipsModule,
     NotificationQueueModule,
   ],

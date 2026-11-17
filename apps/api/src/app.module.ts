@@ -13,9 +13,9 @@ import { AiAssistanceModule } from "#api/modules/ai-assistance/ai-assistance.mod
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementModule } from "#api/modules/engagement/engagement.module";
-import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
-import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
 import { IdentityModule } from "#api/modules/identity/identity.module";
+import { JwtAuthGuard } from "#api/modules/identity/sessions/identity-sessions.public";
+import { TimezoneSelfHealInterceptor } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { LastActiveInterceptor } from "#api/modules/identity/users/identity-users.public";
 import { InsightsModule } from "#api/modules/insights/insights.module";
 import { NotesModule } from "#api/modules/notes/notes.module";

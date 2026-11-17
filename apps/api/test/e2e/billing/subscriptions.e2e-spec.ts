@@ -6,7 +6,7 @@ import request from "supertest";
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionLockKeys } from "#api/modules/billing/subscriptions/application/subscriptions.lock-keys";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
-import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -365,7 +365,9 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       durationDays: 1,
     });
     const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const authCache = context.module.get<AuthCachePort>(AuthCachePort, { strict: false });
+    const authCache = context.module.get<UserProfileInvalidatorPort>(UserProfileInvalidatorPort, {
+      strict: false,
+    });
     const meAt = async (time: Date) => {
       vi.setSystemTime(time);
       await authCache.invalidateUserProfile(UserId.reconstitute(user.userId));

@@ -16,9 +16,13 @@ import {
   ENTITLEMENT_CACHE_TTL_MS,
 } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import {
-  IdentityCacheKey,
-  IDENTITY_CACHE_TTL_MS,
-} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
+  SESSION_CACHE_TTL_MS,
+  SessionCacheKey,
+} from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
+import {
+  USER_PROFILE_CACHE_TTL_MS,
+  UserProfileCacheKey,
+} from "#api/modules/identity/users/infrastructure/cache/user-profile-cache.keyspace";
 import {
   FriendshipCacheKey,
   FRIENDSHIP_CACHE_TTL_MS,
@@ -78,24 +82,17 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       };
 
       // When
-      await cacheService.set(
-        IdentityCacheKey.session(sessionId),
-        session,
-        IDENTITY_CACHE_TTL_MS.SESSION,
-      );
+      await cacheService.set(SessionCacheKey.session(sessionId), session, SESSION_CACHE_TTL_MS);
 
       // Then
-      const cachedSession = await cacheService.get(
-        IdentityCacheKey.session(sessionId),
-        z.unknown(),
-      );
+      const cachedSession = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
       expect(cachedSession).toEqual(session);
 
       // When
-      await cacheService.del(IdentityCacheKey.session(sessionId));
+      await cacheService.del(SessionCacheKey.session(sessionId));
 
       // Then
-      const afterLogout = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
+      const afterLogout = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
       expect(afterLogout).toBeUndefined();
     });
 
@@ -134,8 +131,8 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         };
 
         // setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정
-        await shortTtlCache.set(IdentityCacheKey.session(sessionId), session, 50);
-        expect(await shortTtlCache.get(IdentityCacheKey.session(sessionId), z.unknown())).toEqual(
+        await shortTtlCache.set(SessionCacheKey.session(sessionId), session, 50);
+        expect(await shortTtlCache.get(SessionCacheKey.session(sessionId), z.unknown())).toEqual(
           session,
         );
 
@@ -144,7 +141,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
         // Then
         const afterExpiry = await shortTtlCache.get(
-          IdentityCacheKey.session(sessionId),
+          SessionCacheKey.session(sessionId),
           z.unknown(),
         );
         expect(afterExpiry).toBeUndefined();
@@ -166,21 +163,24 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         userTag: "original#1234",
       });
       await cacheService.set(
-        IdentityCacheKey.userProfile(userId),
+        UserProfileCacheKey.userProfile(userId),
         originalProfile,
-        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        USER_PROFILE_CACHE_TTL_MS,
       );
       const cachedProfile = await cacheService.get(
-        IdentityCacheKey.userProfile(userId),
+        UserProfileCacheKey.userProfile(userId),
         z.unknown(),
       );
       expect(cachedProfile).toEqual(originalProfile);
 
       // When
-      await cacheService.del(IdentityCacheKey.userProfile(userId));
+      await cacheService.del(UserProfileCacheKey.userProfile(userId));
 
       // Then
-      const afterUpdate = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
+      const afterUpdate = await cacheService.get(
+        UserProfileCacheKey.userProfile(userId),
+        z.unknown(),
+      );
       expect(afterUpdate).toBeUndefined();
 
       // When
@@ -189,14 +189,14 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         name: "Updated Name",
       });
       await cacheService.set(
-        IdentityCacheKey.userProfile(userId),
+        UserProfileCacheKey.userProfile(userId),
         updatedProfile,
-        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        USER_PROFILE_CACHE_TTL_MS,
       );
 
       // Then
       const newCachedProfile = await cacheService.get(
-        IdentityCacheKey.userProfile(userId),
+        UserProfileCacheKey.userProfile(userId),
         z.unknown(),
       );
       expect(newCachedProfile).toEqual(updatedProfile);
@@ -227,25 +227,25 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
       for (const user of users) {
         await cacheService.set(
-          IdentityCacheKey.userProfile(user.id),
+          UserProfileCacheKey.userProfile(user.id),
           user,
-          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+          USER_PROFILE_CACHE_TTL_MS,
         );
       }
 
       // When
-      await cacheService.del(IdentityCacheKey.userProfile("user_2"));
+      await cacheService.del(UserProfileCacheKey.userProfile("user_2"));
 
       // Then
-      expect(await cacheService.get(IdentityCacheKey.userProfile("user_1"), z.unknown())).toEqual(
-        users[0],
-      );
       expect(
-        await cacheService.get(IdentityCacheKey.userProfile("user_2"), z.unknown()),
+        await cacheService.get(UserProfileCacheKey.userProfile("user_1"), z.unknown()),
+      ).toEqual(users[0]);
+      expect(
+        await cacheService.get(UserProfileCacheKey.userProfile("user_2"), z.unknown()),
       ).toBeUndefined();
-      expect(await cacheService.get(IdentityCacheKey.userProfile("user_3"), z.unknown())).toEqual(
-        users[2],
-      );
+      expect(
+        await cacheService.get(UserProfileCacheKey.userProfile("user_3"), z.unknown()),
+      ).toEqual(users[2]);
     });
   });
 
@@ -385,11 +385,11 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const subscription = { status: "ACTIVE" as const };
 
       // When
-      await cacheService.set(IdentityCacheKey.session(id), session, IDENTITY_CACHE_TTL_MS.SESSION);
+      await cacheService.set(SessionCacheKey.session(id), session, SESSION_CACHE_TTL_MS);
       await cacheService.set(
-        IdentityCacheKey.userProfile(id),
+        UserProfileCacheKey.userProfile(id),
         profile,
-        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        USER_PROFILE_CACHE_TTL_MS,
       );
       await cacheService.set(
         EntitlementCacheKey.subscription(id),
@@ -398,8 +398,8 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       );
 
       // Then
-      expect(await cacheService.get(IdentityCacheKey.session(id), z.unknown())).toEqual(session);
-      expect(await cacheService.get(IdentityCacheKey.userProfile(id), z.unknown())).toEqual(
+      expect(await cacheService.get(SessionCacheKey.session(id), z.unknown())).toEqual(session);
+      expect(await cacheService.get(UserProfileCacheKey.userProfile(id), z.unknown())).toEqual(
         profile,
       );
       expect(await cacheService.get(EntitlementCacheKey.subscription(id), z.unknown())).toEqual(
@@ -407,11 +407,13 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       );
 
       // When
-      await cacheService.del(IdentityCacheKey.userProfile(id));
+      await cacheService.del(UserProfileCacheKey.userProfile(id));
 
       // Then
-      expect(await cacheService.get(IdentityCacheKey.session(id), z.unknown())).toEqual(session);
-      expect(await cacheService.get(IdentityCacheKey.userProfile(id), z.unknown())).toBeUndefined();
+      expect(await cacheService.get(SessionCacheKey.session(id), z.unknown())).toEqual(session);
+      expect(
+        await cacheService.get(UserProfileCacheKey.userProfile(id), z.unknown()),
+      ).toBeUndefined();
       expect(await cacheService.get(EntitlementCacheKey.subscription(id), z.unknown())).toEqual(
         subscription,
       );
@@ -423,8 +425,8 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const targetId = "target_key_test";
 
       // When
-      const sessionKey = IdentityCacheKey.session("sess_123");
-      const userProfileKey = IdentityCacheKey.userProfile(userId);
+      const sessionKey = SessionCacheKey.session("sess_123");
+      const userProfileKey = UserProfileCacheKey.userProfile(userId);
       const subscriptionKey = EntitlementCacheKey.subscription(userId);
       const mutualKey = FriendshipCacheKey.mutual(userId, targetId);
 

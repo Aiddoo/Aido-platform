@@ -1,6 +1,6 @@
-import type { UserConsentRecordWithId } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
-import type { UserPreferenceRecordWithId } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
+import type { UserConsentRecordWithId } from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
+import type { UserPreferenceRecordWithId } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import { InMemoryUserConsentRepository } from "#test/doubles/identity/in-memory-user-consent.repository";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";

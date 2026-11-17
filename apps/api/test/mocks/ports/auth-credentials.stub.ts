@@ -1,13 +1,15 @@
+import type { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import type { RetentionEnrollerPort } from "#api/modules/identity/users/application/ports/retention-enroller.port";
 import type {
-  AuthCachedUserProfile,
-  AuthCachePort,
-  AuthRegistrationNotifierPort,
-  AuthUserRegisteredNotification,
-} from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import type { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
-import type { UserProvisioningSeederPort } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
-import type { VerificationCodeSecurityPort } from "#api/modules/identity/auth/application/ports/verification-code-security.port";
+  CachedUserProfile,
+  UserProfileCachePort,
+} from "#api/modules/identity/users/application/ports/user-profile-cache.port";
+import type { UserProvisioningSeederPort } from "#api/modules/identity/users/application/ports/user-provisioning-seeder.port";
+import type {
+  UserRegistrationNotifierPort,
+  UserRegisteredNotification,
+} from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
+import type { VerificationCodeSecurityPort } from "#api/modules/identity/verifications/application/ports/verification-code-security.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
@@ -15,10 +17,7 @@ import {
   StubAccountPasswordVerifier,
 } from "./account-lifecycle.stub.js";
 
-export class StubAuthPasswordHasher
-  extends StubAccountPasswordVerifier
-  implements AuthPasswordHasherPort
-{
+export class StubPasswordHasher extends StubAccountPasswordVerifier implements PasswordHasherPort {
   readonly hashes: string[] = [];
   readonly outdatedHashes = new Set<string>();
 
@@ -32,11 +31,11 @@ export class StubAuthPasswordHasher
   }
 }
 
-export class StubAuthProfileCache
+export class StubUserProfileCache
   extends StubAccountLifecycleCache
-  implements Pick<AuthCachePort, "wrapUserProfile">
+  implements Pick<UserProfileCachePort, "wrapUserProfile">
 {
-  readonly profiles = new Map<string, AuthCachedUserProfile>();
+  readonly profiles = new Map<string, CachedUserProfile>();
 
   override async invalidateUserProfile(userId: UserId): Promise<void> {
     await super.invalidateUserProfile(userId);
@@ -45,14 +44,14 @@ export class StubAuthProfileCache
 
   async wrapUserProfile(
     userId: UserId,
-    factory: () => Promise<AuthCachedUserProfile | undefined>,
-  ): Promise<AuthCachedUserProfile | undefined> {
+    factory: () => Promise<CachedUserProfile | null>,
+  ): Promise<CachedUserProfile | null> {
     const cached = this.profiles.get(userId.value);
     if (cached !== undefined) {
       return cached;
     }
     const profile = await factory();
-    if (profile !== undefined) {
+    if (profile != null) {
       this.profiles.set(userId.value, profile);
       this.userIds.add(userId.value);
     }
@@ -73,14 +72,14 @@ export class StubVerificationCodeSecurity implements VerificationCodeSecurityPor
   }
 }
 
-export class StubAuthRegistrationNotifier implements AuthRegistrationNotifierPort {
-  readonly notifications: AuthUserRegisteredNotification[] = [];
-  notifyUserRegistered(notification: AuthUserRegisteredNotification): void {
+export class StubUserRegistrationNotifier implements UserRegistrationNotifierPort {
+  readonly notifications: UserRegisteredNotification[] = [];
+  notifyUserRegistered(notification: UserRegisteredNotification): void {
     this.notifications.push(notification);
   }
 }
 
-export class StubAuthRetentionEnroller implements RetentionEnrollerPort {
+export class StubRetentionEnroller implements RetentionEnrollerPort {
   readonly enrollments: { userId: string; activated: boolean }[] = [];
   readonly activatedUserIds: string[] = [];
   async enrollNewUser(userId: UserId, activated: boolean): Promise<void> {
@@ -91,7 +90,7 @@ export class StubAuthRetentionEnroller implements RetentionEnrollerPort {
   }
 }
 
-export class StubAuthProvisioningSeeder implements UserProvisioningSeederPort {
+export class StubUserProvisioningSeeder implements UserProvisioningSeederPort {
   readonly settings: {
     userId: string;
     consent: Parameters<UserProvisioningSeederPort["seedDefaultSettings"]>[1];

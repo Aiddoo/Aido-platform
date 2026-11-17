@@ -1,6 +1,6 @@
 import * as argon2 from "argon2";
 
-import type { AuthPasswordHasherPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
+import type { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
 
 const TEST_HASH_OPTIONS: argon2.HashOptions = {
   type: argon2.argon2id,
@@ -10,7 +10,7 @@ const TEST_HASH_OPTIONS: argon2.HashOptions = {
 };
 
 /** 실제 argon2id 형식을 유지하되 테스트에서는 해시 비용만 낮춘다. */
-export class FakePasswordHasher implements AuthPasswordHasherPort {
+export class FakePasswordHasher implements PasswordHasherPort {
   hash(password: string): Promise<string> {
     return argon2.hash(password, TEST_HASH_OPTIONS);
   }

@@ -4,7 +4,7 @@ import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/acce
 import { AiAssistanceActionPlanDraftsModule } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
 import { AiAssistanceAiGenerationsModule } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { AiAssistanceParsedDraftsModule } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { VoicePlanApplicationsModule } from "#api/modules/voice/plan-applications/voice-plan-applications.public";
 
 import { VoiceNoteController } from "./presentation/http/v1/voice-note.controller.js";
@@ -17,7 +17,7 @@ import { VOICE_VOICE_DIGESTS_PROVIDERS } from "./voice-voice-digests.providers.j
     AiAssistanceAiGenerationsModule,
     AiAssistanceParsedDraftsModule,
     AiAssistanceActionPlanDraftsModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     VoicePlanApplicationsModule,
   ],
   controllers: [VoiceNoteController],

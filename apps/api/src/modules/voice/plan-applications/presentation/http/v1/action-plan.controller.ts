@@ -5,7 +5,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { IdempotencyKey } from "#api/platform/http/decorators/idempotency-key.decorator";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";

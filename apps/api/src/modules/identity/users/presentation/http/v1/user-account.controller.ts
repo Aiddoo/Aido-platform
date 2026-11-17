@@ -3,20 +3,23 @@ import { ErrorCode } from "@aido/api/errors";
 import { Header, Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { CurrentUser } from "#api/modules/identity/sessions/presentation/http/decorators/current-user.decorator";
 import {
   CurrentRequestSource,
   type RequestSource,
-} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
-import { toRequestMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
-import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
+} from "#api/modules/identity/sessions/presentation/http/decorators/request-source.decorator";
+import { toRequestMetadata } from "#api/modules/identity/sessions/presentation/http/v1/request-metadata.mapper";
+import {
+  toCurrentUserResponse,
+  toUpdateProfileResponse,
+} from "#api/modules/identity/users/presentation/http/v1/user-account-response.mapper";
 import {
   CurrentUserDto,
   DeleteAccountDto,
   DeleteAccountResponseDto,
   UpdateProfileDto,
   UpdateProfileResponseDto,
-} from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
+} from "#api/modules/identity/users/presentation/http/v1/user-account.dto";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
@@ -88,7 +91,7 @@ export class UserAccountController {
       sessionId: user.sessionId,
       timezone,
     });
-    return AuthMapper.toCurrentUserResponse(result, appVersion);
+    return toCurrentUserResponse(result, appVersion);
   }
 
   @Patch("profile")
@@ -119,7 +122,7 @@ export class UserAccountController {
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#updateProfileUseCase.execute({ ...dto, userId: user.userId });
-    return AuthMapper.toUpdateProfileResponse(result, appVersion);
+    return toUpdateProfileResponse(result, appVersion);
   }
 
   @Delete("account")

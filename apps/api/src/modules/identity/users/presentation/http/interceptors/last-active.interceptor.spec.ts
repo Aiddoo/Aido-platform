@@ -5,7 +5,7 @@ import { Logger } from "@nestjs/common";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 import { of } from "rxjs";
 
-import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import { UserActivityWriterPort } from "#api/modules/identity/users/application/ports/user-activity-writer.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
@@ -15,7 +15,7 @@ import {
   LastActiveInterceptor,
 } from "./last-active.interceptor.js";
 
-class RecordingActivityWriter extends AuthUserActivityWriterPort {
+class RecordingActivityWriter extends UserActivityWriterPort {
   readonly writes: Array<[userId: string, timezone: string, appVersion: string | undefined]> = [];
   readonly #outcomes: Array<() => Promise<void>> = [];
 

@@ -22,19 +22,19 @@ import { ReportGenerationProcessor } from "#api/modules/ai-assistance/ai-reports
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.scheduler";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
-import { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
-import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
-import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
-import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
-import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
-import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
+} from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
+import { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { AppleOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/apple-oauth-identity.adapter";
+import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
+import { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
 import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email-messages/infrastructure/jobs/email-delivery-queue.processor";
 import {
   SendInquiryEmailUseCase,
@@ -207,9 +207,9 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)
     .useValue(testDatabase.getClient())
-    .overrideProvider(Argon2PasswordHasherAdapter)
+    .overrideProvider(PasswordHasherPort)
     .useClass(FakePasswordHasher)
-    .overrideProvider(AuthEmailSenderPort)
+    .overrideProvider(VerificationCodeEmailSenderPort)
     .useValue(fakeEmailService)
     .overrideProvider(SendInquiryEmailUseCase)
     .useValue(fakeEmailService.inquiry)

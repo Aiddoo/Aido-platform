@@ -1,0 +1,57 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
+import type { OAuthStateId } from "../../domain/oauth-state-id.vo.js";
+import type { OAuthState } from "../../domain/oauth-state.aggregate.js";
+import type { OAuthMode } from "../../domain/oauth-states.constants.js";
+
+export interface NewOAuthState {
+  readonly state: string;
+  readonly provider: AccountProvider;
+  readonly redirectUri: string;
+  readonly mode?: OAuthMode;
+  readonly initiatingUserId?: UserId;
+  readonly expiresAt: Temporal.Instant;
+}
+
+export interface OAuthLoginExchangeData {
+  readonly exchangeCode: string;
+  readonly accessToken: string;
+  readonly refreshToken: string;
+  readonly userId: string;
+  readonly userName?: string;
+  readonly profileImage?: string;
+  readonly accountRestored?: boolean;
+  readonly isNewUser: boolean;
+}
+
+export interface OAuthLinkingData {
+  readonly exchangeCode: string;
+  readonly provider: AccountProvider;
+  readonly providerAccountId: string;
+}
+
+export type ConsumeOAuthStateInput = {
+  readonly id: OAuthStateId;
+  readonly exchangeCode: string;
+  readonly at: Temporal.Instant;
+} & ({ readonly purpose: "login" } | { readonly purpose: "link"; readonly actorUserId: UserId });
+
+export abstract class OAuthStateRepositoryPort {
+  abstract create(input: NewOAuthState): Promise<void>;
+  /** 만료 전 state. 교환을 마쳤어도 준다(콜백 리다이렉트 주소를 찾을 때 쓴다) */
+  abstract findByState(state: string, now: Temporal.Instant): Promise<OAuthState | null>;
+  /** 교환하지 않았고 만료 전인 교환 코드. 저장한 토큰은 평문으로 돌려준다 */
+  abstract findByExchangeCode(
+    exchangeCode: string,
+    now: Temporal.Instant,
+  ): Promise<OAuthState | null>;
+  abstract saveExchangeData(
+    oauthStateId: OAuthStateId,
+    data: OAuthLoginExchangeData,
+  ): Promise<void>;
+  abstract saveLinkingData(oauthStateId: OAuthStateId, data: OAuthLinkingData): Promise<void>;
+  /** 아직 쓸 수 있는 교환 코드만 사용 처리하고 저장한 토큰을 지운다. 경합에 지면 false다 */
+  abstract consumeExchangeCode(input: ConsumeOAuthStateInput): Promise<boolean>;
+  abstract generateExchangeCode(): string;
+}

@@ -4,7 +4,7 @@ import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/acce
 import { AiAssistanceActionPlanDraftsModule } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
 import { AiAssistanceAiGenerationsModule } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { AiAssistanceParsedDraftsModule } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
 import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
@@ -24,7 +24,7 @@ import { VOICE_PLAN_APPLICATIONS_PROVIDERS } from "./voice-plan-applications.pro
     AiAssistanceAiGenerationsModule,
     AiAssistanceParsedDraftsModule,
     AiAssistanceActionPlanDraftsModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     NotesMemosModule,
     PlanningTodoCategoriesQueriesModule,
     PlanningTodosModule,

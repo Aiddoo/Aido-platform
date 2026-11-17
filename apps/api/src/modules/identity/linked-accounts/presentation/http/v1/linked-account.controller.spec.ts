@@ -1,0 +1,54 @@
+import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+
+import { ListLinkedAccountsUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/list-linked-accounts.use-case";
+import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/unlink-oauth-account.use-case";
+import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
+import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createLinkedAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
+
+import { LinkedAccountController } from "./linked-account.controller.js";
+
+function createAccountController(accountRepository: InMemoryLinkedAccountsRepository) {
+  const fixture = { ...createAuthCredentialFixture(), accountRepository };
+  return new LinkedAccountController(
+    new ListLinkedAccountsUseCase(fixture),
+    new UnlinkOAuthAccountUseCase(fixture),
+  );
+}
+
+describe("LinkedAccountController — 계정 컨트롤러", () => {
+  it("연동 계정의 연결 시각은 출시 앱이 받던 ms 3자리 ISO 문자열로 응답한다", async () => {
+    // Given
+    const user: CurrentUserPayload = {
+      userId: AUTH_FIXTURE_USER_ID,
+      email: "user@example.com",
+      sessionId: "session-123",
+      role: "USER",
+    };
+    const controller = createAccountController(
+      new InMemoryLinkedAccountsRepository([
+        createLinkedAccountFixture({ id: 1 }),
+        createLinkedAccountFixture({
+          id: 2,
+          provider: "GOOGLE",
+          providerAccountId: "102938475647382910",
+          password: null,
+          createdAt: Temporal.Instant.from("2026-01-15T10:30:00Z"),
+        }),
+      ]),
+    );
+
+    // When
+    const result = await controller.getLinkedAccounts(user);
+
+    // Then
+    expect(result.accounts.find((account) => account.provider === "GOOGLE")).toEqual({
+      provider: "GOOGLE",
+      linked: true,
+      providerAccountId: "102938475647382910",
+      linkedAt: "2026-01-15T10:30:00.000Z",
+    });
+    expect(result.canUnlink).toBe(true);
+  });
+});

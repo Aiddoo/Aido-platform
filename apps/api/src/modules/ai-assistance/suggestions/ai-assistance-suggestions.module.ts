@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
@@ -22,8 +22,8 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
   imports: [
     ConfigModule.forFeature(aiAssistanceSuggestionsConfig),
     AccessQuotaChargesModule,
-    IdentitySettingsModule,
-    IdentityUserAccessModule,
+    IdentityUserPreferencesModule,
+    IdentityUsersQueriesModule,
     AiAssistanceAiGenerationsModule,
     AiAssistanceParsedDraftsModule,
     NotificationNotificationsModule,

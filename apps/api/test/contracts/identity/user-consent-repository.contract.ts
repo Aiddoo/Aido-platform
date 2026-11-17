@@ -1,7 +1,7 @@
 import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
-import type { UserConsentRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
-import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
+import type { UserConsentRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
+import type { UserConsentRecord } from "#api/modules/identity/user-preferences/domain/user-consent.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   USER_SETTINGS_FIXTURE_DELETED_USER_ID,

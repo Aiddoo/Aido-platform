@@ -1,4 +1,3 @@
-import { invalidCredentials } from "#api/modules/identity/auth/application/auth.errors";
 import {
   type ExchangedToken,
   type GenerateAuthUrlParams,
@@ -6,8 +5,9 @@ import {
   OAuthIdentityProviderRegistryPort,
   type SocialLoginOptions,
   type VerifiedProfile,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
+} from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
+import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { invalidCredentials } from "#api/modules/identity/users/application/users.errors";
 
 export type OAuthIdentityProviders = ReadonlyMap<AccountProvider, OAuthIdentityProviderPort>;
 

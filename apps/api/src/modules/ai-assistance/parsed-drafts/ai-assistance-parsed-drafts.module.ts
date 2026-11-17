@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
-import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 
@@ -16,7 +16,7 @@ import { AiController } from "./presentation/http/v1/ai.controller.js";
   imports: [
     AccessQuotaChargesModule,
     AiAssistanceAiGenerationsModule,
-    IdentitySettingsModule,
+    IdentityUserPreferencesModule,
     PlanningTodoCategoriesQueriesModule,
     PlanningTodosQueriesModule,
   ],

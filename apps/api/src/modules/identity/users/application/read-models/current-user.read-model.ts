@@ -8,7 +8,8 @@ import type {
 
 import type { FeatureEntitlement } from "#api/modules/access/feature-grants/access-feature-grants.public";
 
-import type { AccountProvider, UserStatus } from "../../../auth/domain/auth.constants.js";
+import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
+import type { UserStatus } from "../../domain/users.constants.js";
 
 /** 하루·한 달 한도가 있는 기능은 지금까지 쓴 양과 다음 초기화 시각(ISO 문자열)을 함께 둔다 */
 interface MeteredFeatureEntitlement extends FeatureEntitlement {

@@ -7,7 +7,7 @@ import {
 import {
   AiDataSharingConsent,
   AiDataSharingConsentReaderPort,
-} from "#api/modules/identity/identity-settings.public";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 동의 시각은 테스트 시계보다 충분히 앞에 둔다. 시계 차 판정은 identity Entity 테스트가 맡는다

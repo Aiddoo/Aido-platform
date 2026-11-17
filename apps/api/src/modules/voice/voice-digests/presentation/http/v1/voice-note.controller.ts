@@ -7,7 +7,7 @@ import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/parsed-dra
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { ApiPlanningLocaleHeaders } from "#api/modules/voice/plan-applications/voice-plan-applications.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ClientAbortSignal } from "#api/platform/http/decorators/client-abort-signal.decorator";

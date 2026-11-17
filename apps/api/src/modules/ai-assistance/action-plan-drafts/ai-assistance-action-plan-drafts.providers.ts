@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
+import { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 

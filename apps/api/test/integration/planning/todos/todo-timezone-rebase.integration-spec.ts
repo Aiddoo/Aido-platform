@@ -5,8 +5,8 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { RefreshPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/refresh-push-timezone.use-case";
-import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
+import { RefreshPushTimezoneUseCase } from "#api/modules/identity/user-preferences/application/use-cases/refresh-push-timezone.use-case";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";

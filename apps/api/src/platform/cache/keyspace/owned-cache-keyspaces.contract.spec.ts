@@ -3,9 +3,13 @@ import {
   EntitlementCacheKey,
 } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import {
-  IDENTITY_CACHE_TTL_MS,
-  IdentityCacheKey,
-} from "#api/modules/identity/auth/infrastructure/cache/identity-cache.keyspace";
+  SESSION_CACHE_TTL_MS,
+  SessionCacheKey,
+} from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
+import {
+  USER_PROFILE_CACHE_TTL_MS,
+  UserProfileCacheKey,
+} from "#api/modules/identity/users/infrastructure/cache/user-profile-cache.keyspace";
 import {
   FRIENDSHIP_CACHE_TTL_MS,
   FriendshipCacheKey,
@@ -17,7 +21,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
       const expectedTtl = 30_000;
 
       // When
-      const actualTtl = IDENTITY_CACHE_TTL_MS.SESSION;
+      const actualTtl = SESSION_CACHE_TTL_MS;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -28,7 +32,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
       const expectedTtl = 5 * 60_000;
 
       // When
-      const actualTtl = IDENTITY_CACHE_TTL_MS.USER_PROFILE;
+      const actualTtl = USER_PROFILE_CACHE_TTL_MS;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -64,7 +68,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
         const sessionId = "sess_123";
 
         // When
-        const key = IdentityCacheKey.session(sessionId);
+        const key = SessionCacheKey.session(sessionId);
 
         // Then
         expect(key).toBe("aido:v1:auth:session:sess_123");
@@ -86,7 +90,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
 
         for (const { input, expected } of testCases) {
           // When
-          const key = IdentityCacheKey.session(input);
+          const key = SessionCacheKey.session(input);
 
           // Then
           expect(key).toBe(expected);
@@ -100,7 +104,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
         const userId = "user_1";
 
         // When
-        const key = IdentityCacheKey.userProfile(userId);
+        const key = UserProfileCacheKey.userProfile(userId);
 
         // Then
         expect(key).toBe("aido:v1:auth:user-profile:user_1");
@@ -111,7 +115,7 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
         const uuid = "550e8400-e29b-41d4-a716-446655440000";
 
         // When
-        const key = IdentityCacheKey.userProfile(uuid);
+        const key = UserProfileCacheKey.userProfile(uuid);
 
         // Then
         expect(key).toBe(`aido:v1:auth:user-profile:${uuid}`);
@@ -167,8 +171,8 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
       const id = "123";
 
       // When
-      const sessionKey = IdentityCacheKey.session(id);
-      const profileKey = IdentityCacheKey.userProfile(id);
+      const sessionKey = SessionCacheKey.session(id);
+      const profileKey = UserProfileCacheKey.userProfile(id);
       const subscriptionKey = EntitlementCacheKey.subscription(id);
 
       // Then
@@ -183,8 +187,8 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
       const userId2 = "user_2";
 
       // When
-      const key1 = IdentityCacheKey.userProfile(userId1);
-      const key2 = IdentityCacheKey.userProfile(userId2);
+      const key1 = UserProfileCacheKey.userProfile(userId1);
+      const key2 = UserProfileCacheKey.userProfile(userId2);
 
       // Then
       expect(key1).not.toBe(key2);

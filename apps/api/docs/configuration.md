@@ -7,7 +7,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 - 시작 검증은 `src/platform/config/schemas`의 전체 schema(`validateEnv`)가 한 번 한다. env는 여기 등록해야 읽힌다(schema가 모르는 변수는 버려진다).
 - 읽는 방법은 namespace 설정이다. [defineConfig](../src/platform/config/define-config.ts)`("<namespace>", schema, (env) => ({ ENV_NAME: env.ENV_NAME, … }))`(`registerAs` + Zod)로 정의하고, 읽기 함수는 schema가 읽는 env 키를 모두 적어야 컴파일된다. 주입은 `@Inject(xConfig.KEY)`, 타입은 `ConfigType<typeof xConfig>`다.
   - 공용은 `platform/config`의 `app`·`database`·`redis`·`jwt`·`sentry`·`cache`·`encryption`·`job`·`throttle`이다. 여러 slice가 같은 env(`SUPPORT_EMAIL`, 서명 대체용 `JWT_SECRET`)를 읽으면 각 slice 설정이 같은 schema 조각을 고른다.
-  - slice 소유는 `<context>-<slice>.config.ts`(사례: [identity-auth.config.ts](../src/modules/identity/auth/identity-auth.config.ts), [weather-weather-reports.config.ts](../src/modules/weather/weather-reports/weather-weather-reports.config.ts))이고 slice module이 `ConfigModule.forFeature`로 등록한다.
+  - slice 소유는 `<context>-<slice>.config.ts`(사례: [identity-linked-accounts.config.ts](../src/modules/identity/linked-accounts/identity-linked-accounts.config.ts), [weather-weather-reports.config.ts](../src/modules/weather/weather-reports/weather-weather-reports.config.ts))이고 slice module이 `ConfigModule.forFeature`로 등록한다.
   - 설정은 부팅 때 `process.env` 원문을 한 번 파싱한다. 요청마다 env를 다시 읽지 않고, 검증을 거친 env를 namespace schema로 다시 파싱하지 않는다(`z.stringbool()` 같은 칸이 검증 뒤 값을 거절한다).
   - 테스트는 설정 provider를 바꾸거나(`overrideProvider(<config>.KEY)`), 여러 namespace가 함께 바뀌는 배포 환경은 앱을 띄우기 전에 env를 넣는다(`createE2eApp({ env })`).
 - `process.env`는 `platform/config/env.ts`(`processEnv`)와 `*.config.ts`에서만 읽는다(oxlint `node/no-process-env`).

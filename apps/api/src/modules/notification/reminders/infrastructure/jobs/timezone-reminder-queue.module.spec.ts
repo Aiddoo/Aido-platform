@@ -2,18 +2,18 @@ import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { z } from "zod";
 
-import { PreferenceEntitlementPort } from "#api/modules/identity/preferences/application/ports/preference-entitlement.port";
-import { ReminderScheduleEnqueuerPort } from "#api/modules/identity/preferences/application/ports/reminder-schedule-enqueuer.port";
-import { ReminderTimezoneCachePort as PreferenceReminderTimezoneCachePort } from "#api/modules/identity/preferences/application/ports/reminder-timezone-cache.port";
-import { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/preferences/application/ports/todo-timezone-rebase-enqueuer.port";
-import { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import { UserSettingsCachePort } from "#api/modules/identity/preferences/application/ports/user-settings-cache.port";
-import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
+import { PreferenceEntitlementPort } from "#api/modules/identity/user-preferences/application/ports/preference-entitlement.port";
+import { ReminderScheduleEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/reminder-schedule-enqueuer.port";
+import { ReminderTimezoneCachePort as PreferenceReminderTimezoneCachePort } from "#api/modules/identity/user-preferences/application/ports/reminder-timezone-cache.port";
+import { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/todo-timezone-rebase-enqueuer.port";
+import { UserPreferenceRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
+import { UpsertPushTimezoneUseCase } from "#api/modules/identity/user-preferences/application/use-cases/upsert-push-timezone.use-case";
 import {
   refreshPushTimezoneProvider,
   updatePreferenceProvider,
   upsertPushTimezoneProvider,
-} from "#api/modules/identity/preferences/identity-preferences.providers";
+} from "#api/modules/identity/user-preferences/identity-user-preferences.providers";
 import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";

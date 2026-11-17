@@ -7,16 +7,16 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
-import type { AuthSecurityLogRepositoryPort } from "../../../auth/application/ports/auth-security-log.repository.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
-import type { IdentityUser } from "../../domain/identity-user.aggregate.js";
+import type { User } from "../../domain/user.aggregate.js";
 import type {
   AccountNotificationCleanupPort,
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "../ports/account-cleanup.port.js";
+import type { SecurityLogRepositoryPort } from "../ports/security-log.repository.port.js";
+import type { UserRepositoryPort } from "../ports/user.repository.port.js";
 import { UserAlerts } from "../users.alerts.js";
+import { UserLogEvent } from "../users.log-events.js";
 
 // 사용자마다 잠금·정리·삭제를 한 트랜잭션으로 하므로 후보는 이 수만큼씩 id 순으로 이어 읽는다
 const ACCOUNT_PURGE_BATCH_SIZE = 100;
@@ -25,11 +25,11 @@ type PurgeOutcome = "purged" | "skipped" | "failed";
 
 interface PurgeDeletedAccountsDependencies {
   readonly userRepository: Pick<
-    AuthUserRepositoryPort,
+    UserRepositoryPort,
     "listPurgeEligible" | "findByIdForUpdate" | "hardDelete"
   >;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
+  readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly notificationCleanup: AccountNotificationCleanupPort;
   readonly todoCommentCleanup: AccountTodoCommentCleanupPort;
   readonly usageCleanup: AccountUsageCleanupPort;
@@ -55,7 +55,7 @@ export class PurgeDeletedAccountsUseCase {
       outcomes[await this.#purge(candidate.id, at)] += 1;
     }
     this.#dependencies.logger.log({
-      event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED,
+      event: UserLogEvent.ACCOUNT_PURGE_COMPLETED,
       candidateCount,
       purgedCount: outcomes.purged,
       skippedCount: outcomes.skipped,
@@ -75,16 +75,15 @@ export class PurgeDeletedAccountsUseCase {
   }
 
   // 실패·건너뛴 후보도 커서가 지나가므로 같은 실행에서 다시 읽지 않는다
-  async *#purgeCandidates(at: Temporal.Instant): AsyncGenerator<IdentityUser> {
+  async *#purgeCandidates(at: Temporal.Instant): AsyncGenerator<User> {
     const batchSize = this.#dependencies.batchSize ?? ACCOUNT_PURGE_BATCH_SIZE;
     let afterId: UserId | null = null;
     for (;;) {
-      const batch: readonly IdentityUser[] =
-        await this.#dependencies.userRepository.listPurgeEligible({
-          now: at,
-          afterId,
-          limit: batchSize,
-        });
+      const batch: readonly User[] = await this.#dependencies.userRepository.listPurgeEligible({
+        now: at,
+        afterId,
+        limit: batchSize,
+      });
       yield* batch;
       const last = batch.at(-1);
       if (last == null || batch.length < batchSize) {
@@ -131,7 +130,7 @@ export class PurgeDeletedAccountsUseCase {
         return "skipped";
       }
       this.#dependencies.logger.log({
-        event: AuthLogEvent.ACCOUNT_PURGED,
+        event: UserLogEvent.ACCOUNT_PURGED,
         userId: userId.value,
       });
       const settlements = await Promise.allSettled([
@@ -145,7 +144,7 @@ export class PurgeDeletedAccountsUseCase {
       for (const [index, settlement] of settlements.entries()) {
         if (settlement.status === "rejected") {
           this.#dependencies.logger.warn({
-            event: AuthLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
+            event: UserLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
             userId: userId.value,
             context: index === 0 ? "notification" : "engagement",
           });
@@ -154,7 +153,7 @@ export class PurgeDeletedAccountsUseCase {
       return "purged";
     } catch (error) {
       this.#dependencies.logger.error({
-        event: AuthLogEvent.ACCOUNT_PURGE_FAILED,
+        event: UserLogEvent.ACCOUNT_PURGE_FAILED,
         userId: userId.value,
         errorType: error instanceof Error ? error.name : "unknown",
       });

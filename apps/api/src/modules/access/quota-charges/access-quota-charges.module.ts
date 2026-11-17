@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 
 import { ACCESS_QUOTA_CHARGES_PROVIDERS } from "./access-quota-charges.providers.js";
 import { QuotaLedgerPort } from "./application/ports/quota-ledger.port.js";
@@ -10,7 +10,7 @@ import { CheckQuotaRemainingUseCase } from "./application/use-cases/check-quota-
 
 // 원장은 같은 Context의 권한 판단을 쓰므로 권한 모듈을 다시 내보내 소비 Context가 한 번에 받는다
 @Module({
-  imports: [AccessFeatureGrantsQueriesModule, IdentityUserAccessModule],
+  imports: [AccessFeatureGrantsQueriesModule, IdentityUsersQueriesModule],
   providers: [...ACCESS_QUOTA_CHARGES_PROVIDERS],
   exports: [
     AccessFeatureGrantsQueriesModule,

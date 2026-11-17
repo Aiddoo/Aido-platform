@@ -21,7 +21,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
