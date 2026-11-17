@@ -19,22 +19,22 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 런타임 판단은 `NODE_ENV`가 아니라 배포 환경(`appConfig.environment`: `development | staging | production`)을 읽는다. `APP_ENV`가 우선이고, 없으면 `NODE_ENV=production`은 production, 나머지는 development다(개발서버는 production 빌드 + `APP_ENV=development`). 코드는 `NODE_ENV`·`APP_ENV`를 직접 읽지 않고 `appConfig`를 주입받아 환경 이름 대신 아래 스위치와 공급자 값을 읽는다. Sentry 발송과 경보 어댑터([관측](observability.md#환경별-어댑터))도 같은 값을 본다.
 
-| 환경 → 공급자·스위치                                                 | development 로컬 실행               | development 개발서버 | staging                     | production            |
-| -------------------------------------------------------------------- | ----------------------------------- | -------------------- | --------------------------- | --------------------- |
-| `devTools.exposeErrorDetails`(오류 원문·검증 상세·DB 정보)           | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.swaggerUi`(`/api/docs`·`/api/admin/docs`)                  | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.oauthDevRedirects`(`aido-dev://`·localhost·`exp://` 복귀)  | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.localCorsOrigins`(localhost 출처 추가)                     | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `responseContractCheck`(handler 반환값 응답 계약 검사)               | 켬                                  | 켬                   | 켬                          | 끔                    |
-| 웹훅 서명(RevenueCat)                                                | 비밀 있으면 검증, 없으면 건너뜀     | 같음                 | 검증(비밀 없으면 모두 거절) | 검증(비밀 필수)       |
-| Test Store 구매 반영                                                 | 반영                                | 반영                 | 반영                        | 받기만 함             |
-| `EMAIL_PROVIDER` 비었을 때                                           | 키 있으면 `resend`, 없으면 `log`    | 같음                 | `resend`                    | `resend`(`log` 금지)  |
-| `ADMIN_NOTIFIER_PROVIDER` 비었을 때                                  | 웹훅 있으면 `discord`, 없으면 `log` | 같음                 | `discord`                   | `discord`(`log` 금지) |
-| `CACHE_TYPE`(캐시·잠금·중복 방지·스로틀) / `PUSH_RATE_LIMIT_BACKEND` | `memory` / `postgres`               | 같음                 | 같음                        | 같음                  |
-| `AI_PROVIDER_ORDER` / `AI_GENERATION_MODE`                           | `anthropic,google,openai` / `on`    | 같음                 | 같음                        | 같음                  |
-| 초대 해시 비밀(`INVITE_ENABLED=true`일 때)                           | 없으면 로컬 값                      | 같음                 | 필수                        | 필수                  |
-| Sentry 발송                                                          | 안 함                               | 안 함                | 안 함                       | DSN 있으면 보냄       |
-| 공개 `/health` 상세(`exposeHealthDetails`: 큐·런타임·인스턴스)       | 공개                                | 공개                 | 공개                        | `{ status }`만        |
+| 환경 → 공급자·스위치                                                | development 로컬 실행               | development 개발서버 | staging                     | production            |
+| ------------------------------------------------------------------- | ----------------------------------- | -------------------- | --------------------------- | --------------------- |
+| `devTools.exposeErrorDetails`(오류 원문·검증 상세·DB 정보)          | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.swaggerUi`(`/api/docs`·`/api/admin/docs`)                 | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.oauthDevRedirects`(`aido-dev://`·localhost·`exp://` 복귀) | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.localCorsOrigins`(localhost 출처 추가)                    | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `responseContractCheck`(handler 반환값 응답 계약 검사)              | 켬                                  | 켬                   | 켬                          | 끔                    |
+| 웹훅 서명(RevenueCat)                                               | 비밀 있으면 검증, 없으면 건너뜀     | 같음                 | 검증(비밀 없으면 모두 거절) | 검증(비밀 필수)       |
+| Test Store 구매 반영                                                | 반영                                | 반영                 | 반영                        | 받기만 함             |
+| `EMAIL_PROVIDER` 비었을 때                                          | 키 있으면 `resend`, 없으면 `log`    | 같음                 | `resend`                    | `resend`(`log` 금지)  |
+| `ADMIN_NOTIFIER_PROVIDER` 비었을 때                                 | 웹훅 있으면 `discord`, 없으면 `log` | 같음                 | `discord`                   | `discord`(`log` 금지) |
+| `CACHE_TYPE`(캐시·중복 방지·스로틀) / `PUSH_RATE_LIMIT_BACKEND`     | `memory` / `postgres`               | 같음                 | 같음                        | 같음                  |
+| `AI_PROVIDER_ORDER` / `AI_GENERATION_MODE`                          | `anthropic,google,openai` / `on`    | 같음                 | 같음                        | 같음                  |
+| 초대 해시 비밀(`INVITE_ENABLED=true`일 때)                          | 없으면 로컬 값                      | 같음                 | 필수                        | 필수                  |
+| Sentry 발송                                                         | 안 함                               | 안 함                | 안 함                       | DSN 있으면 보냄       |
+| 공개 `/health` 상세(`exposeHealthDetails`: 큐·런타임·인스턴스)      | 공개                                | 공개                 | 공개                        | `{ status }`만        |
 
 - 로컬 실행(`appConfig.isLocalRun`)은 배포 환경이 development이고 `NODE_ENV`가 production이 아닐 때다(소스로 띄운 서버·테스트). 개발 도구는 로컬 실행에서만 켠다. 배포된 개발서버(production 빌드 + `APP_ENV=development`)는 외부에서 닿는 주소라 오류 원문·Swagger·OAuth 개발 복귀·localhost CORS를 닫고, 공급자·관측(로그 어댑터, Sentry 끔)만 development 값을 쓴다.
 - 테스트 실행(`NODE_ENV=test`)은 출시 응답 계약을 검증하므로 로컬 실행이어도 개발 도구를 끈다.

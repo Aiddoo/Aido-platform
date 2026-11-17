@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -35,7 +34,7 @@ const COMMAND = {
 };
 
 // 잠금과 오늘 할 일 조회 순서를 남긴다
-class OrderedLock extends MutationLockPort {
+class OrderedLock extends RecordingMutationLock {
   readonly #events: string[];
 
   constructor(events: string[]) {
@@ -43,7 +42,7 @@ class OrderedLock extends MutationLockPort {
     this.#events = events;
   }
 
-  async acquire(): Promise<void> {
+  override async acquire(): Promise<void> {
     this.#events.push("lock");
   }
 }

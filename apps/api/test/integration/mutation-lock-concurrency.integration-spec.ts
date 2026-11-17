@@ -353,6 +353,10 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
     }
   }
 
+  tryAcquire(keys: readonly string[]): Promise<boolean> {
+    return this.#delegate.tryAcquire(keys);
+  }
+
   async waitUntilAllTransactionsArrive(): Promise<readonly string[]> {
     await this.#barrier.waitUntilReady();
     return this.#barrier.participantsSeen;
@@ -829,6 +833,39 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     ]);
   });
 
+  it("기다리지 않는 잠금은 다른 트랜잭션이 잡은 키면 바로 false이고 commit 뒤에는 잡는다", async () => {
+    // Given
+    const keys = ["mutation:v1:subscription-webhook:batch-user"];
+    const held = createDeferred();
+    const release = createDeferred();
+    const holder = createTransactionHarness(client);
+    const holding = holder.uow.run(async () => {
+      await new PostgresMutationLockAdapter(holder.transactionHost).acquire(keys);
+      held.resolve();
+      await release.promise;
+    });
+    await held.promise;
+    const contender = createTransactionHarness(client);
+    const tryAcquire = () =>
+      contender.uow.run(() =>
+        new PostgresMutationLockAdapter(contender.transactionHost).tryAcquire(keys),
+      );
+
+    // When
+    let whileHeld: boolean;
+    try {
+      whileHeld = await completeWithin(tryAcquire(), 3000);
+    } finally {
+      release.resolve();
+      await holding;
+    }
+    const afterCommit = await tryAcquire();
+
+    // Then
+    expect(whileHeld).toBe(false);
+    expect(afterCommit).toBe(true);
+  });
+
   it("서로 반대 순서의 배치도 DB 내부 정렬 순서로 잠겨 교착 없이 완료한다", async () => {
     // Given
     const barrier = new RequiredParticipantBarrier(2);
@@ -1288,6 +1325,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         await continueLockAttempt.promise;
         await realLock.acquire(keys);
       },
+      tryAcquire: (keys) => realLock.tryAcquire(keys),
     };
     const useCase = new SendCheerUseCase({
       countCache: new PassThroughCountCache(),

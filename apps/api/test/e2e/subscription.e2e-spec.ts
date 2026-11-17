@@ -1,9 +1,10 @@
 import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { sql } from "drizzle-orm";
 import request from "supertest";
 
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { SubscriptionWebhookLockPort } from "#api/modules/billing/subscriptions/application/ports/subscription-webhook-lock.port";
+import { SubscriptionLockKeys } from "#api/modules/billing/subscriptions/application/subscriptions.lock-keys";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { AuthCachePort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
@@ -242,26 +243,22 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   it("실제 Webhook 잠금 경합은 429로 반환하고 잠금 해제 후 같은 이벤트를 처리한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("billing-lock@example.com", "Test1234!");
-    const lock = context.module.get(SubscriptionWebhookLockPort);
-    const release = await lock.acquire(user.userId);
-    if (release === null) {
-      throw new Error("테스트 Webhook 잠금 획득 실패");
-    }
     const payload = purchase(user.userId, "billing-lock");
+    const client = context.testDatabase.getClient();
+    const lockKey = SubscriptionLockKeys.webhook(user.userId);
 
     // When
-    try {
-      const rejected = await webhook(payload).expect(429);
-      expect(rejected.body.error.code).toBe(ErrorCode.SUBSCRIPTION_1605);
-      expect(
-        await context.testDatabase.getClient().select().from(subscriptionEventReceipt),
-      ).toEqual([]);
-    } finally {
-      await release();
-    }
+    // 다른 인스턴스가 같은 사용자의 웹훅을 처리하는 중인 것처럼 다른 트랜잭션에서 잠금을 잡아 둔다
+    const rejected = await client.transaction(async (transaction) => {
+      await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
+      return webhook(payload).expect(429);
+    });
+    const receiptsWhileLocked = await client.select().from(subscriptionEventReceipt);
     const retried = await webhook(payload).expect(200);
 
     // Then
+    expect(rejected.body.error.code).toBe(ErrorCode.SUBSCRIPTION_1605);
+    expect(receiptsWhileLocked).toEqual([]);
     expect(retried.body.data).toEqual({ received: true });
     expect(await storedUser(user.userId)).toMatchObject({ subscriptionStatus: "ACTIVE" });
     expect(

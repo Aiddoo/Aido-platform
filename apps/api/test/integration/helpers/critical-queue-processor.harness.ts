@@ -83,8 +83,6 @@ import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { InMemoryLockAdapter } from "#api/platform/lock/adapters/in-memory-lock.adapter";
-import { LockProviderPort } from "#api/platform/lock/lock-provider.port";
 import { SystemClock } from "#api/platform/time/system-clock";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -271,7 +269,6 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
     InMemoryDedupAdapter,
     { provide: DedupProviderPort, useExisting: InMemoryDedupAdapter },
-    { provide: LockProviderPort, useFactory: () => new InMemoryLockAdapter() },
     {
       provide: UserNotificationSettingsPort,
       inject: [DRIZZLE],

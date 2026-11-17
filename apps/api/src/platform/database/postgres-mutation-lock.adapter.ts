@@ -22,11 +22,7 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
   }
 
   async acquire(keys: readonly string[]): Promise<void> {
-    if (!this.#transactionHost.isTransactionActive()) {
-      throw new Error("Mutation lock requires an active transaction");
-    }
-
-    const orderedKeys = uniq(keys).sort();
+    const orderedKeys = this.#orderedKeysInTransaction(keys);
     if (orderedKeys.length === 0) {
       return;
     }
@@ -41,5 +37,31 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
       FROM ordered
       ORDER BY ordered."key"
     `);
+  }
+
+  async tryAcquire(keys: readonly string[]): Promise<boolean> {
+    const orderedKeys = this.#orderedKeysInTransaction(keys);
+    if (orderedKeys.length === 0) {
+      return true;
+    }
+
+    const { rows } = await this.#transactionHost.tx.execute<{ isAcquired: boolean }>(sql`
+      WITH ordered AS MATERIALIZED (
+        SELECT requested."key"
+        FROM unnest(${sql.param(orderedKeys)}::TEXT[]) AS requested("key")
+        ORDER BY requested."key"
+      )
+      SELECT pg_try_advisory_xact_lock(hashtextextended(ordered."key", 0)) AS "isAcquired"
+      FROM ordered
+      ORDER BY ordered."key"
+    `);
+    return rows.length === orderedKeys.length && rows.every((row) => row.isAcquired);
+  }
+
+  #orderedKeysInTransaction(keys: readonly string[]): string[] {
+    if (!this.#transactionHost.isTransactionActive()) {
+      throw new Error("Mutation lock requires an active transaction");
+    }
+    return uniq(keys).sort();
   }
 }

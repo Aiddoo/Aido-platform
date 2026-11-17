@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { CHEER_LIMITS } from "@aido/api/vocabulary";
 
-import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -28,7 +27,7 @@ const RECEIVER_ID = UserId.reconstitute(CHEER_FIXTURE_RECEIVER_ID);
 const DAILY_LIMIT = 3;
 
 // 잠금을 기다리는 동안 시계가 흐른 상황을 만든다
-class ClockAdvancingLock extends MutationLockPort {
+class ClockAdvancingLock extends RecordingMutationLock {
   readonly #clock: FixedClock;
 
   constructor(clock: FixedClock) {
@@ -36,7 +35,7 @@ class ClockAdvancingLock extends MutationLockPort {
     this.#clock = clock;
   }
 
-  async acquire(): Promise<void> {
+  override async acquire(): Promise<void> {
     this.#clock.advanceBy({ milliseconds: 200 });
   }
 }

@@ -2,7 +2,6 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeTargetTodo } from "#api/modules/social/nudges/domain/nudge-target-todo.vo";
-import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -31,7 +30,7 @@ const SENDER_ID = UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID);
 const DAILY_LIMIT = 3;
 
 // 잠금과 대상 할 일 조회 순서를 남기고, 잠금을 기다리는 동안 시계를 흘린다
-class OrderedLock extends MutationLockPort {
+class OrderedLock extends RecordingMutationLock {
   readonly #events: string[];
   readonly #clock: FixedClock | null;
 
@@ -41,7 +40,7 @@ class OrderedLock extends MutationLockPort {
     this.#clock = clock;
   }
 
-  async acquire(): Promise<void> {
+  override async acquire(): Promise<void> {
     this.#events.push("lock");
     this.#clock?.advanceBy({ milliseconds: 200 });
   }

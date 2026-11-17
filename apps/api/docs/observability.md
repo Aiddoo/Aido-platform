@@ -13,7 +13,7 @@
 ## 이벤트 키와 필드 (서버·앱 공통)
 
 - 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
-- 첫 마디는 Bounded Context 폴더 이름, platform은 기술 영역(`server`·`http`·`redis`·`cache`·`lock`·`dedup`·`jobs`·`database`·`events`·`outbound`·`observability`·`metering`·`config`)이다. 마디는 3~5개이고 마지막은 하이픈 없는 결과 한 단어(`failed`·`completed`·`skipped` …)다. Oxlint `aido/log-event-key`·`aido/logger-event-constant`가 강제한다.
+- 첫 마디는 Bounded Context 폴더 이름, platform은 기술 영역(`server`·`http`·`redis`·`cache`·`dedup`·`jobs`·`database`·`events`·`outbound`·`observability`·`metering`·`config`)이다. 마디는 3~5개이고 마지막은 하이픈 없는 결과 한 단어(`failed`·`completed`·`skipped` …)다. Oxlint `aido/log-event-key`·`aido/logger-event-constant`가 강제한다.
 - Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/docs/observability.md)와 같은 축).
 - `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다.
 - 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남기고 키 필드 이름은 `event` 하나다.

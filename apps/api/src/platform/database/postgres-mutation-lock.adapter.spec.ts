@@ -1,12 +1,20 @@
-import { createFakeTransactionHost } from "#test/mocks/drizzle.mock";
+import { createFakeTransactionHost, queryResult } from "#test/mocks/drizzle.mock";
 
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
 
 const TRANSACTION_CONTROL = /^(begin|commit|rollback)\b/i;
 
 describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
-  function setup() {
-    const { host, statements } = createFakeTransactionHost();
+  function setup(lockedKeys: readonly string[] = []) {
+    // pg_try_advisory_xact_lock은 정렬한 키마다 한 행을 돌려준다
+    const { host, statements } = createFakeTransactionHost(async ({ params }) => {
+      const [keys] = params;
+      return queryResult(
+        Array.isArray(keys)
+          ? keys.map((key) => ({ isAcquired: !lockedKeys.some((locked) => locked === key) }))
+          : [],
+      );
+    });
     const adapter = new PostgresMutationLockAdapter(host);
     const lockStatements = () => statements.filter(({ text }) => !TRANSACTION_CONTROL.test(text));
     return { host, adapter, lockStatements };
@@ -55,6 +63,48 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
     await host.withTransaction(() => adapter.acquire([]));
 
     // Then
+    expect(lockStatements()).toHaveLength(0);
+  });
+
+  it("기다리지 않는 잠금은 정렬한 키를 pg_try_advisory_xact_lock 한 번으로 잡고 모두 잡으면 true다", async () => {
+    // Given
+    const { host, adapter, lockStatements } = setup();
+
+    // When
+    const isAcquired = await host.withTransaction(() =>
+      adapter.tryAcquire(["mutation:v1:b", "mutation:v1:a", "mutation:v1:b"]),
+    );
+
+    // Then
+    expect(isAcquired).toBe(true);
+    const statements = lockStatements();
+    expect(statements).toHaveLength(1);
+    expect(statements[0]?.text).toContain("pg_try_advisory_xact_lock");
+    expect(statements[0]?.params).toEqual([["mutation:v1:a", "mutation:v1:b"]]);
+  });
+
+  it("기다리지 않는 잠금은 다른 트랜잭션이 잡은 키가 하나라도 있으면 false다", async () => {
+    // Given
+    const { host, adapter } = setup(["mutation:v1:b"]);
+
+    // When
+    const isAcquired = await host.withTransaction(() =>
+      adapter.tryAcquire(["mutation:v1:a", "mutation:v1:b"]),
+    );
+
+    // Then
+    expect(isAcquired).toBe(false);
+  });
+
+  it("기다리지 않는 잠금도 활성 트랜잭션이 아니면 SQL 전에 실패한다", async () => {
+    // Given
+    const { adapter, lockStatements } = setup();
+
+    // When
+    const result = adapter.tryAcquire(["mutation:v1:a"]);
+
+    // Then
+    await expect(result).rejects.toThrow("Mutation lock requires an active transaction");
     expect(lockStatements()).toHaveLength(0);
   });
 });

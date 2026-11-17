@@ -5,12 +5,9 @@ import { z } from "zod";
 
 import { RedisCacheStore } from "#api/platform/cache/adapters/redis-cache.store";
 import { RedisDedupAdapter } from "#api/platform/dedup/adapters/redis-dedup.adapter";
-import { RedisLockAdapter } from "#api/platform/lock/adapters/redis-lock.adapter";
-import { RedisErrorLogSampler } from "#api/platform/redis/redis-error-log-sampler";
 import { RedisThrottlerStorage } from "#api/platform/throttle/redis-throttler-storage";
 import { describeCacheStoreContract } from "#test/contracts/platform/cache-store.contract";
 import { describeDedupProviderContract } from "#test/contracts/platform/dedup-provider.contract";
-import { describeLockProviderContract } from "#test/contracts/platform/lock-provider.contract";
 import { describeThrottlerStorageContract } from "#test/contracts/platform/throttler-storage.contract";
 
 const REDIS_PORT = 6379;
@@ -90,54 +87,6 @@ describe.each([
       expect(await store.ttl("offline")).toBe(-2);
       expect(await store.delByPattern("offline*")).toBe(0);
       broken.disconnect();
-    });
-  });
-
-  describe("RedisLockAdapter", () => {
-    describeLockProviderContract({
-      name,
-      createProvider: () => new RedisLockAdapter(redis),
-    });
-
-    it("Redis에 닿지 못하면 잠금을 얻지 못한 것으로, 리소스는 잠긴 것으로 답한다(fail-closed)", async () => {
-      // Given
-      const broken = createFailFastClient();
-      const warnings: unknown[] = [];
-      const lock = new RedisLockAdapter(
-        broken,
-        new RedisErrorLogSampler({ warn: (entry: unknown) => warnings.push(entry) }),
-      );
-
-      // When
-      const release = await lock.acquire("resource", 5000);
-      const isLocked = await lock.isLocked("resource");
-
-      // Then
-      expect(release).toBeNull();
-      expect(isLocked).toBe(true);
-      expect(warnings).toHaveLength(1);
-      broken.disconnect();
-    });
-
-    it("해제 중 연결이 끊겨도 throw하지 않고 TTL 만료에 맡긴다", async () => {
-      // Given
-      const client = createFailFastClient();
-      await client.connect();
-      const warnings: unknown[] = [];
-      const lock = new RedisLockAdapter(
-        client,
-        new RedisErrorLogSampler({ warn: (entry: unknown) => warnings.push(entry) }),
-      );
-      const release = await lock.acquire("resource", 5000);
-      client.disconnect();
-
-      // When
-      const result = release?.();
-
-      // Then
-      await expect(result).resolves.toBeUndefined();
-      expect(warnings).toHaveLength(1);
-      expect(await redis.pttl("lock:resource")).toBeGreaterThan(0);
     });
   });
 

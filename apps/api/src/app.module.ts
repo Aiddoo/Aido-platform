@@ -39,7 +39,6 @@ import { RequestClientModule } from "#api/platform/http/request-client/request-c
 import { REQUEST_CLIENT_CLS_MIDDLEWARE } from "#api/platform/http/request-client/request-client.store";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
-import { LockModule } from "#api/platform/lock/lock.module";
 import { LoggerModule } from "#api/platform/logging/logger.module";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { MeteringModule } from "#api/platform/metering/metering.module";
@@ -81,7 +80,6 @@ import { TimeModule } from "#api/platform/time/time.module";
     RedisModule.forRoot(),
     CacheModule.forRoot(),
     DedupModule.forRoot(),
-    LockModule.forRoot(),
     JobQueueModule,
     AlertingModule,
     ResilienceModule,

@@ -53,7 +53,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 | 경우                                                                   | 위치                                                            |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `pg_advisory_xact_lock`                                                | `PostgresMutationLockAdapter`                                   |
+| `pg_advisory_xact_lock`·`pg_try_advisory_xact_lock`                    | `PostgresMutationLockAdapter`                                   |
 | 시퀀스 `nextval`                                                       | `sequence.ts`                                                   |
 | 트랜잭션 한정 `set_config('statement_timeout', …)`                     | `ClsUnitOfWork`                                                 |
 | VALUES CTE + `FOR UPDATE OF` + 데이터 변경 CTE(claim·finalize·release) | `DrizzlePushDeliveryLifecycleRepository`                        |

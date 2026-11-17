@@ -11,6 +11,7 @@ import type { UserMutationLockPort } from "#api/modules/identity/users/identity-
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
@@ -46,7 +47,6 @@ import type {
   SubscriptionUser,
   SubscriptionUserReaderPort,
 } from "../ports/subscription-user.reader.port.js";
-import type { SubscriptionWebhookLockPort } from "../ports/subscription-webhook-lock.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
 import {
   baseEventPayload,
@@ -59,6 +59,7 @@ import {
   subscriptionUserNotFound,
   subscriptionWebhookLockContended,
 } from "../subscriptions.errors.js";
+import { SubscriptionLockKeys } from "../subscriptions.lock-keys.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
 
 type ProcessedChainEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
@@ -74,7 +75,7 @@ export interface ApplyStoreSubscriptionEventDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: PremiumAccessCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
-  readonly webhookLock: SubscriptionWebhookLockPort;
+  readonly mutationLock: Pick<MutationLockPort, "tryAcquire">;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
   readonly reconcileScheduler: StoreSubscriptionReconcileSchedulerPort;
   readonly clock: ClockPort;
@@ -238,86 +239,78 @@ export class ApplyStoreSubscriptionEventUseCase {
    * 행이 없으면(탈퇴로 지워짐) 다음 갱신이 체인을 이어 받는다.
    */
   async #processTransfer(event: SubscriptionTransferredEvent): Promise<void> {
-    const {
-      subscriptionRepository,
-      subscriptionUserReader,
-      webhookLock,
-      unitOfWork,
-      userLock,
-      clock,
-    } = this.#dependencies;
+    const { subscriptionRepository, subscriptionUserReader, unitOfWork, userLock, clock } =
+      this.#dependencies;
     const receiverAppUserIds = uniq(event.receivers);
-    const lockKey = receiverAppUserIds[0] ?? "";
+    const receiverAppUserId = receiverAppUserIds[0] ?? "";
     this.#logStarted(event);
-    const release = await webhookLock.acquire(lockKey);
-    if (release == null) {
-      throw subscriptionWebhookLockContended(lockKey);
+    const receiver = await this.#findFirstUser(receiverAppUserIds);
+    if (receiver == null) {
+      throw subscriptionUserNotFound(receiverAppUserId);
     }
-
-    try {
-      const receiver = await this.#findFirstUser(receiverAppUserIds);
-      if (receiver == null) {
-        throw subscriptionUserNotFound(lockKey);
+    const previousOwners = uniqBy(
+      (
+        await Promise.all(
+          uniq(event.transferredFrom).map((appUserId) =>
+            subscriptionUserReader.findByAppUserId(appUserId),
+          ),
+        )
+      ).flatMap((owner) => (owner == null || owner.id === receiver.id ? [] : [owner])),
+      (owner) => owner.id,
+    );
+    const result = await unitOfWork.run(async () => {
+      await this.#lockWebhook(receiverAppUserId);
+      // 넘겨준·넘겨받은 사용자를 id 순으로 잠가 반대 방향 이전과 교착하지 않는다
+      for (const user of sortBy([receiver, ...previousOwners], [(user) => user.id])) {
+        if (!(await userLock.lockById(UserId.reconstitute(user.id))) && user.id === receiver.id) {
+          throw subscriptionUserNotFound(receiverAppUserId);
+        }
       }
-      const previousOwners = uniqBy(
-        (
-          await Promise.all(
-            uniq(event.transferredFrom).map((appUserId) =>
-              subscriptionUserReader.findByAppUserId(appUserId),
-            ),
-          )
-        ).flatMap((owner) => (owner == null || owner.id === receiver.id ? [] : [owner])),
-        (owner) => owner.id,
-      );
-      const result = await unitOfWork.run(async () => {
-        // 넘겨준·넘겨받은 사용자를 id 순으로 잠가 반대 방향 이전과 교착하지 않는다
-        for (const user of sortBy([receiver, ...previousOwners], [(user) => user.id])) {
-          if (!(await userLock.lockById(UserId.reconstitute(user.id))) && user.id === receiver.id) {
-            throw subscriptionUserNotFound(lockKey);
-          }
-        }
-        if (!(await this.#claimReceipt(event))) {
-          return null;
-        }
-        const now = clock.now();
-        const receiverId = UserId.reconstitute(receiver.id);
-        for (const owner of previousOwners) {
-          await subscriptionRepository.takeOverChains(
-            UserId.reconstitute(owner.id),
-            receiverId,
-            now,
-          );
-        }
-        // 옮겨 받은 스토어 행과 보상 기간을 함께 보고 다시 계산해 보상 기간이 구독을 덮지 않게 한다
-        const { access } = await this.#dependencies.projectPremiumAccess.execute({
-          userId: receiverId,
+      if (!(await this.#claimReceipt(event))) {
+        return null;
+      }
+      const now = clock.now();
+      const receiverId = UserId.reconstitute(receiver.id);
+      for (const owner of previousOwners) {
+        await subscriptionRepository.takeOverChains(UserId.reconstitute(owner.id), receiverId, now);
+      }
+      // 옮겨 받은 스토어 행과 보상 기간을 함께 보고 다시 계산해 보상 기간이 구독을 덮지 않게 한다
+      const { access } = await this.#dependencies.projectPremiumAccess.execute({
+        userId: receiverId,
+        now,
+      });
+      for (const owner of previousOwners) {
+        await this.#dependencies.projectPremiumAccess.execute({
+          userId: UserId.reconstitute(owner.id),
           now,
         });
-        for (const owner of previousOwners) {
-          await this.#dependencies.projectPremiumAccess.execute({
-            userId: UserId.reconstitute(owner.id),
-            now,
-          });
-        }
-        return withPremium(transferEventPayload(receiver, event, lockKey), access);
-      });
+      }
+      return withPremium(transferEventPayload(receiver, event, receiverAppUserId), access);
+    });
 
-      if (result == null) {
-        this.#logDuplicate(event, receiver.id);
-        return;
-      }
-      if (
-        !(await this.#settleAfterCommit(
-          event,
-          [receiver, ...previousOwners].map((user) => user.id),
-        ))
-      ) {
-        return;
-      }
-      this.#dependencies.notifier.notifySubscriptionEvent(result);
-      this.#logCompleted(event, receiver.id);
-    } finally {
-      await release();
+    if (result == null) {
+      this.#logDuplicate(event, receiver.id);
+      return;
+    }
+    if (
+      !(await this.#settleAfterCommit(
+        event,
+        [receiver, ...previousOwners].map((user) => user.id),
+      ))
+    ) {
+      return;
+    }
+    this.#dependencies.notifier.notifySubscriptionEvent(result);
+    this.#logCompleted(event, receiver.id);
+  }
+
+  // 같은 앱 사용자의 웹훅은 기다리지 않고 429로 돌려 공급자가 다시 보내게 한다. 잠금은 트랜잭션이 끝나면 풀린다
+  async #lockWebhook(appUserId: string): Promise<void> {
+    const isAcquired = await this.#dependencies.mutationLock.tryAcquire([
+      SubscriptionLockKeys.webhook(appUserId),
+    ]);
+    if (!isAcquired) {
+      throw subscriptionWebhookLockContended(appUserId);
     }
   }
 
@@ -332,43 +325,33 @@ export class ApplyStoreSubscriptionEventUseCase {
   }
 
   async #process(event: ProcessedChainEvent): Promise<void> {
-    const { subscriptionUserReader, webhookLock } = this.#dependencies;
     this.#logStarted(event);
-    const release = await webhookLock.acquire(event.appUserId);
-    if (release == null) {
-      throw subscriptionWebhookLockContended(event.appUserId);
+    const user = await this.#dependencies.subscriptionUserReader.findByAppUserId(event.appUserId);
+    if (user == null) {
+      throw subscriptionUserNotFound(event.appUserId);
     }
+    const eventPayload = await this.#applyInTransaction(user, event).catch(
+      async (error: unknown) => {
+        if (isPermanentFailure(error)) {
+          await this.#scheduleRecovery(user.id);
+        }
+        throw error;
+      },
+    );
 
-    try {
-      const user = await subscriptionUserReader.findByAppUserId(event.appUserId);
-      if (user == null) {
-        throw subscriptionUserNotFound(event.appUserId);
-      }
-      const eventPayload = await this.#applyInTransaction(user, event).catch(
-        async (error: unknown) => {
-          if (isPermanentFailure(error)) {
-            await this.#scheduleRecovery(user.id);
-          }
-          throw error;
-        },
-      );
-
-      if (eventPayload == null) {
-        this.#dependencies.logger.debug({
-          event: SubscriptionLogEvent.WEBHOOK_NO_CHANGE,
-          eventKind: event.kind,
-          userId: user.id,
-        });
-        return;
-      }
-      if (!(await this.#settleAfterCommit(event, [user.id]))) {
-        return;
-      }
-      this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
-      this.#logCompleted(event, user.id);
-    } finally {
-      await release();
+    if (eventPayload == null) {
+      this.#dependencies.logger.debug({
+        event: SubscriptionLogEvent.WEBHOOK_NO_CHANGE,
+        eventKind: event.kind,
+        userId: user.id,
+      });
+      return;
     }
+    if (!(await this.#settleAfterCommit(event, [user.id]))) {
+      return;
+    }
+    this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
+    this.#logCompleted(event, user.id);
   }
 
   async #applyInTransaction(
@@ -377,6 +360,7 @@ export class ApplyStoreSubscriptionEventUseCase {
   ): Promise<SubscriptionEventPayload | null> {
     const { subscriptionRepository, userLock, clock } = this.#dependencies;
     return this.#dependencies.unitOfWork.run(async () => {
+      await this.#lockWebhook(event.appUserId);
       const userId = UserId.reconstitute(user.id);
       if (!(await userLock.lockById(userId))) {
         throw subscriptionUserNotFound(event.appUserId);

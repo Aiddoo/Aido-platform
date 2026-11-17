@@ -3,7 +3,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { GetPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/get-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import type { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
-import { FakeSubscriptionWebhookLock } from "#test/doubles/billing/fake-subscription-webhook-lock";
 import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
@@ -16,6 +15,7 @@ import { RecordingStoreSubscriptionReconcileScheduler } from "#test/doubles/bill
 import { RecordingSubscriptionEventNotifier } from "#test/doubles/billing/recording-subscription-event-notifier";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPremiumGrantFixture } from "#test/fixtures/billing/premium-grant.fixture";
 import {
@@ -34,6 +34,7 @@ import type {
   SubscriptionStartedEvent,
 } from "../../domain/store-subscription.event.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
+import { SubscriptionLockKeys } from "../subscriptions.lock-keys.js";
 import {
   ApplyStoreSubscriptionEventUseCase,
   type ApplyStoreSubscriptionEventCommand,
@@ -154,7 +155,7 @@ function setup(
   const receiptRepository = new InMemorySubscriptionEventReceiptRepository();
   const cache = new RecordingPremiumAccessCache();
   const notifier = new RecordingSubscriptionEventNotifier();
-  const webhookLock = new FakeSubscriptionWebhookLock();
+  const mutationLock = new RecordingMutationLock();
   const reconcileScheduler = new RecordingStoreSubscriptionReconcileScheduler();
   const userLock = new FakeUserMutationLock(users.map((user) => user.id));
   const useCase = new ApplyStoreSubscriptionEventUseCase({
@@ -165,7 +166,7 @@ function setup(
     unitOfWork: new ImmediateUnitOfWork(),
     cache,
     notifier,
-    webhookLock,
+    mutationLock,
     projectPremiumAccess,
     reconcileScheduler,
     clock: new FixedClock(NOW.add({ hours: 1 })),
@@ -179,7 +180,7 @@ function setup(
     receiptRepository,
     cache,
     notifier,
-    webhookLock,
+    mutationLock,
     reconcileScheduler,
     userLock,
   };
@@ -402,7 +403,7 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
   describe("실패 분류", () => {
     it("처리하지 않는 이벤트는 사용자를 찾지 않고 닫는다", async () => {
       // Given
-      const { useCase, webhookLock } = setup();
+      const { useCase, mutationLock } = setup();
       const ignored: StoreSubscriptionChainEvent = {
         ...baseEvent,
         kind: "IGNORED",
@@ -413,7 +414,7 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       await useCase.execute(ignored);
 
       // Then
-      expect(webhookLock.acquiredAppUserIds).toEqual([]);
+      expect(mutationLock.acquiredKeys).toEqual([]);
     });
 
     it("우리 사용자가 아니면 영구 실패라 보고하고 받은 것으로 닫는다", async () => {
@@ -443,8 +444,8 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
 
     it("같은 사용자의 웹훅이 처리 중이면 SUBSCRIPTION_1605로 던져 공급자가 다시 보내게 한다", async () => {
       // Given
-      const { useCase, webhookLock, notifier } = setup();
-      webhookLock.held.add(USER.id);
+      const { useCase, mutationLock, notifier, receiptRepository } = setup();
+      mutationLock.contendedKeys.add(SubscriptionLockKeys.webhook(USER.id));
 
       // When
       const result = useCase.execute(startedEvent());
@@ -452,11 +453,12 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       // Then
       await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SUBSCRIPTION_1605 });
       expect(notifier.failures).toEqual([]);
+      expect(receiptRepository.receipts.size).toBe(0);
     });
 
-    it("일시 실패는 보고하지 않고 던져 공급자 재전송에 맡기며 잠금은 푼다", async () => {
+    it("일시 실패는 보고하지 않고 던져 공급자 재전송에 맡긴다", async () => {
       // Given
-      const { useCase, subscriptionRepository, webhookLock, notifier } = setup();
+      const { useCase, subscriptionRepository, notifier } = setup();
       vi.spyOn(subscriptionRepository, "save").mockRejectedValueOnce(new Error("connection lost"));
 
       // When
@@ -465,7 +467,6 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       // Then
       await expect(result).rejects.toThrow("connection lost");
       expect(notifier.failures).toEqual([]);
-      expect(webhookLock.held.size).toBe(0);
     });
 
     it("반영 뒤 캐시 무효화가 실패하면 보고하고 알림은 보내지 않는다", async () => {

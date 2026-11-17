@@ -52,6 +52,8 @@ RevenueCat `PRODUCT_CHANGE`는 정보성 안내다. `product_id`는 바꾸기 �
 
 RevenueCat은 non-2xx 응답이면 웹훅을 다시 보낸다([웹훅](https://www.revenuecat.com/docs/integrations/webhooks): 5·10·20·40·80분 간격 최대 5회). 처리 원장(`SubscriptionEventReceipt`)은 구독 변경·결제 문제 푸시 잡과 같은 트랜잭션이라, 실패하면 함께 롤백돼 다시 받은 웹훅이 한 번만 반영된다.
 
+같은 앱 사용자의 웹훅은 한 번에 하나만 반영한다. 트랜잭션 첫 문장에서 `MutationLockPort.tryAcquire`로 `SubscriptionLockKeys.webhook`(PostgreSQL advisory xact lock)을 기다리지 않고 잡고, 다른 요청이 잡고 있으면 429다. 잠금은 커밋·롤백 때 풀리고 인스턴스 수와 상관없이 하나다. 커밋 뒤 캐시 정리·알림은 잠금 밖이다.
+
 | 실패                                                             | 응답 | 처리                                                                                         |
 | ---------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------- |
 | 계약과 다른 원문                                                 | 200  | 로그 + 운영 경보 `billing.subscription.webhook.invalid`                                      |
