@@ -2,8 +2,8 @@ import type { SubscriptionStatus } from "@aido/api/vocabulary";
 
 import type {
   UserSubscriptionProjection,
-  UserSubscriptionProjectionRepositoryPort,
-} from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/application/ports/user-subscription-projection.port";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
@@ -23,7 +23,7 @@ interface SeedProjectionUserInput {
 
 // User 행을 만들고 읽는 방법은 구현마다 달라서 계약은 하네스로 받는다
 export interface UserSubscriptionProjectionHarness {
-  readonly repository: UserSubscriptionProjectionRepositoryPort;
+  readonly projection: UserSubscriptionProjectionPort;
   seedUser(input: SeedProjectionUserInput): Promise<void>;
   readProjection(userId: string): Promise<UserSubscriptionProjection | null>;
 }
@@ -37,18 +37,18 @@ function idValues(userIds: readonly UserId[]): string[] {
   return userIds.map((userId) => userId.value);
 }
 
-export function describeUserSubscriptionProjectionRepositoryContract(
+export function describeUserSubscriptionProjectionContract(
   createHarness: () => Promise<UserSubscriptionProjectionHarness>,
 ): void {
-  describe("User 구독 projection 저장소 계약", () => {
+  describe("User 구독 projection 포트 계약", () => {
     describe("update", () => {
       it("상태와 만료 시각을 User에 저장한다", async () => {
         // Given
-        const { repository, seedUser, readProjection } = await createHarness();
+        const { projection, seedUser, readProjection } = await createHarness();
         await seedUser({ id: FIRST_ID, subscriptionStatus: "FREE", subscriptionExpiresAt: null });
 
         // When
-        await repository.update(UserId.reconstitute(FIRST_ID), {
+        await projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "ACTIVE",
           subscriptionExpiresAt: FUTURE,
         });
@@ -61,7 +61,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("만료 시각을 null로 주면 지운다", async () => {
         // Given
-        const { repository, seedUser, readProjection } = await createHarness();
+        const { projection, seedUser, readProjection } = await createHarness();
         await seedUser({
           id: FIRST_ID,
           subscriptionStatus: "ACTIVE",
@@ -69,7 +69,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
         });
 
         // When
-        await repository.update(UserId.reconstitute(FIRST_ID), {
+        await projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "FREE",
           subscriptionExpiresAt: null,
         });
@@ -83,7 +83,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("만료 시각을 생략하면 저장된 값을 그대로 둔다", async () => {
         // Given
-        const { repository, seedUser, readProjection } = await createHarness();
+        const { projection, seedUser, readProjection } = await createHarness();
         await seedUser({
           id: FIRST_ID,
           subscriptionStatus: "ACTIVE",
@@ -91,7 +91,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
         });
 
         // When
-        await repository.update(UserId.reconstitute(FIRST_ID), {
+        await projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "CANCELLED",
         });
 
@@ -103,12 +103,12 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("다른 사용자의 projection은 바꾸지 않는다", async () => {
         // Given
-        const { repository, seedUser, readProjection } = await createHarness();
+        const { projection, seedUser, readProjection } = await createHarness();
         await seedUser({ id: FIRST_ID, subscriptionStatus: "FREE", subscriptionExpiresAt: null });
         await seedUser({ id: SECOND_ID, subscriptionStatus: "FREE", subscriptionExpiresAt: null });
 
         // When
-        await repository.update(UserId.reconstitute(FIRST_ID), {
+        await projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "ACTIVE",
           subscriptionExpiresAt: FUTURE,
         });
@@ -122,10 +122,10 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("User가 없으면 DatabaseRecordNotFoundError를 던진다", async () => {
         // Given
-        const { repository } = await createHarness();
+        const { projection } = await createHarness();
 
         // When
-        const update = repository.update(UserId.reconstitute(FIRST_ID), {
+        const update = projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "ACTIVE",
         });
 
@@ -137,7 +137,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
     describe("listLapsedPremiumUserIds", () => {
       it("ACTIVE인데 만료 시각이 지난 사용자만 userId 순으로 준다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         await seedUser({ id: THIRD_ID, subscriptionStatus: "ACTIVE", subscriptionExpiresAt: PAST });
         await seedUser({ id: FIRST_ID, subscriptionStatus: "ACTIVE", subscriptionExpiresAt: PAST });
         await seedUser({
@@ -147,7 +147,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
         });
 
         // When
-        const lapsed = await repository.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
+        const lapsed = await projection.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
 
         // Then
         expect(idValues(lapsed)).toEqual([FIRST_ID, THIRD_ID]);
@@ -155,11 +155,11 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("만료 시각이 없는 ACTIVE는 웹훅이 바꿀 때까지 유지하므로 제외한다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         await seedUser({ id: FIRST_ID, subscriptionStatus: "ACTIVE", subscriptionExpiresAt: null });
 
         // When
-        const lapsed = await repository.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
+        const lapsed = await projection.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
 
         // Then
         expect(lapsed).toEqual([]);
@@ -167,7 +167,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("ACTIVE가 아닌 사용자는 만료 시각이 지났어도 제외한다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         await seedUser({ id: FIRST_ID, subscriptionStatus: "FREE", subscriptionExpiresAt: PAST });
         await seedUser({
           id: SECOND_ID,
@@ -176,7 +176,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
         });
 
         // When
-        const lapsed = await repository.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
+        const lapsed = await projection.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
 
         // Then
         expect(lapsed).toEqual([]);
@@ -184,7 +184,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("탈퇴한 사용자는 제외한다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         await seedUser({
           id: FIRST_ID,
           subscriptionStatus: "ACTIVE",
@@ -193,7 +193,7 @@ export function describeUserSubscriptionProjectionRepositoryContract(
         });
 
         // When
-        const lapsed = await repository.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
+        const lapsed = await projection.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
 
         // Then
         expect(lapsed).toEqual([]);
@@ -201,13 +201,13 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("afterUserId 뒤부터 limit만큼만 준다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         for (const id of PROJECTION_CONTRACT_USER_IDS) {
           await seedUser({ id, subscriptionStatus: "ACTIVE", subscriptionExpiresAt: PAST });
         }
 
         // When
-        const page = await repository.listLapsedPremiumUserIds({
+        const page = await projection.listLapsedPremiumUserIds({
           now: NOW,
           afterUserId: UserId.reconstitute(FIRST_ID),
           limit: 1,
@@ -219,15 +219,15 @@ export function describeUserSubscriptionProjectionRepositoryContract(
 
       it("다시 계산해 projection이 바뀐 사용자는 조건에서 빠진다", async () => {
         // Given
-        const { repository, seedUser } = await createHarness();
+        const { projection, seedUser } = await createHarness();
         await seedUser({ id: FIRST_ID, subscriptionStatus: "ACTIVE", subscriptionExpiresAt: PAST });
-        await repository.update(UserId.reconstitute(FIRST_ID), {
+        await projection.update(UserId.reconstitute(FIRST_ID), {
           subscriptionStatus: "FREE",
           subscriptionExpiresAt: null,
         });
 
         // When
-        const lapsed = await repository.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
+        const lapsed = await projection.listLapsedPremiumUserIds({ now: NOW, limit: 10 });
 
         // Then
         expect(lapsed).toEqual([]);

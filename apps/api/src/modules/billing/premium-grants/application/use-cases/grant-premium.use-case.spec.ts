@@ -6,8 +6,8 @@ import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-l
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
-import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
+import { InMemoryUserSubscriptionProjection } from "#test/doubles/identity/in-memory-user-subscription-projection";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
@@ -37,7 +37,7 @@ function setup(
   const knownUserIds = options.knownUserIds ?? [SUBSCRIPTION_FIXTURE_USER_ID];
   const subscriptionRepository = new InMemorySubscriptionRepository(options.subscriptions ?? []);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(options.grants ?? []);
-  const projection = new InMemoryUserSubscriptionProjectionRepository(knownUserIds);
+  const projection = new InMemoryUserSubscriptionProjection(knownUserIds);
   const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(subscriptionRepository),
     premiumGrantRepository,

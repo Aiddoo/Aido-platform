@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { RedeemInviteUseCase } from "#api/modules/social/invite-redemptions/application/use-cases/redeem-invite.use-case";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { IssueMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/issue-my-invite.use-case";
@@ -130,7 +130,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
         installationId: "purchase-device",
         timezone: "Asia/Seoul",
       }),
-      context.module.get(RevenueCatWebhookReceiver).receive({ body: purchase }),
+      context.module.get(RevenueCatWebhookController).receive(purchase),
     ]);
 
     // Then

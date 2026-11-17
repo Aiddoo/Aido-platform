@@ -10,9 +10,9 @@ import {
   premiumGrantEndsAt,
   premiumGrantTermEndsAt,
   remainingPremiumGrantMs,
-  type PremiumGrantStart,
   type PremiumGrantTerm,
 } from "../../shared/domain/premium-access.domain-service.js";
+import type { PremiumGrantStart } from "../../shared/domain/premium-grant-reconciliation.domain-service.js";
 import { PremiumGrantId } from "./premium-grant-id.vo.js";
 import { PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH } from "./premium-grants.constants.js";
 import { invalidGrantDuration, invalidGrantSourceKey } from "./premium-grants.errors.js";

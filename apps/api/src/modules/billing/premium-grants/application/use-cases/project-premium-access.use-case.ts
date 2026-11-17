@@ -1,18 +1,18 @@
+import type {
+  UserSubscriptionProjection,
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
-  planPremiumReconciliation,
   resolvePremiumAccess,
   type PremiumAccess,
   type StoreEventChainState,
 } from "../../../shared/domain/premium-access.domain-service.js";
+import { planPremiumReconciliation } from "../../../shared/domain/premium-grant-reconciliation.domain-service.js";
 import { PremiumGrantId } from "../../domain/premium-grant-id.vo.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type {
-  UserSubscriptionProjection,
-  UserSubscriptionProjectionRepositoryPort,
-} from "../ports/user-subscription-projection.repository.port.js";
 import type { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 
 export interface ProjectPremiumAccessCommand {
@@ -36,7 +36,7 @@ export interface ProjectPremiumAccessDependencies {
     PremiumGrantRepositoryPort,
     "existsBySourceKey" | "save" | "saveAll"
   >;
-  readonly userSubscriptionProjection: Pick<UserSubscriptionProjectionRepositoryPort, "update">;
+  readonly userSubscriptionProjection: Pick<UserSubscriptionProjectionPort, "update">;
 }
 
 /**

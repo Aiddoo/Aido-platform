@@ -1,14 +1,14 @@
 import { eq } from "drizzle-orm";
 
-import { DrizzleUserSubscriptionProjectionRepository } from "#api/modules/billing/premium-grants/infrastructure/persistence/drizzle-user-subscription-projection.repository";
+import { DrizzleUserSubscriptionProjectionAdapter } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-subscription-projection.adapter";
 import { user } from "#api/platform/database/schema/index";
-import { describeUserSubscriptionProjectionRepositoryContract } from "#test/contracts/billing/user-subscription-projection-repository.contract";
+import { describeUserSubscriptionProjectionContract } from "#test/contracts/identity/user-subscription-projection.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () => {
+describe("DrizzleUserSubscriptionProjectionAdapter (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let seeded = 0;
@@ -27,10 +27,10 @@ describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () =
     await database.stop();
   });
 
-  describeUserSubscriptionProjectionRepositoryContract(async () => {
+  describeUserSubscriptionProjectionContract(async () => {
     const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleUserSubscriptionProjectionRepository(transactionHost, new DateClock()),
+      projection: new DrizzleUserSubscriptionProjectionAdapter(transactionHost, new DateClock()),
       seedUser: async (input) => {
         seeded += 1;
         await client.insert(user).values(

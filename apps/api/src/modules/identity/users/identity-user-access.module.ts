@@ -9,11 +9,13 @@ import { UserMutationLockPort } from "./application/ports/user-mutation-lock.por
 import { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 import { UserSearchReaderPort } from "./application/ports/user-search.reader.port.js";
 import { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
+import { UserSubscriptionProjectionPort } from "./application/ports/user-subscription-projection.port.js";
 import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
 import { DrizzleUserAiUsageCounterAdapter } from "./infrastructure/persistence/drizzle-user-ai-usage-counter.adapter.js";
 import { DrizzleUserBriefReader } from "./infrastructure/persistence/drizzle-user-brief.reader.js";
 import { DrizzleUserSearchReader } from "./infrastructure/persistence/drizzle-user-search.reader.js";
 import { DrizzleUserSignupReader } from "./infrastructure/persistence/drizzle-user-signup.reader.js";
+import { DrizzleUserSubscriptionProjectionAdapter } from "./infrastructure/persistence/drizzle-user-subscription-projection.adapter.js";
 import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
 
 // access·billing·ai·notification·planning·social·operations가 import하는 사용자 포트만 둔다. 이 모듈은 다른 Context
@@ -30,6 +32,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     { provide: UserBriefReaderPort, useClass: DrizzleUserBriefReader },
     { provide: UserSearchReaderPort, useClass: DrizzleUserSearchReader },
     { provide: UserSignupReaderPort, useClass: DrizzleUserSignupReader },
+    { provide: UserSubscriptionProjectionPort, useClass: DrizzleUserSubscriptionProjectionAdapter },
   ],
   exports: [
     DrizzleUserRepository,
@@ -42,6 +45,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     UserBriefReaderPort,
     UserSearchReaderPort,
     UserSignupReaderPort,
+    UserSubscriptionProjectionPort,
   ],
 })
 export class IdentityUserAccessModule {}

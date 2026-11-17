@@ -3,8 +3,8 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { StoreSubscriptionStatusReaderPort } from "#api/modules/billing/subscriptions/application/ports/store-subscription-status.reader.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { STORE_SUBSCRIPTION_RECONCILE_QUEUE } from "#api/modules/billing/subscriptions/infrastructure/jobs/store-subscription-reconcile.queue";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -13,15 +13,14 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { UserFixture } from "#test/fixtures/index";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 // 대조는 RevenueCat 읽기 설정이 있을 때만 켜진다. 설정은 앱 모듈을 불러올 때 읽으므로 import보다 먼저 넣고,
 // 실제 호출은 Port Stub이 막는다
@@ -46,7 +45,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let webhook: RevenueCatWebhookReceiver;
+  let webhook: RevenueCatWebhookController;
   let jobs: InMemoryJobQueue;
   let premiumAccess: PremiumAccessReaderPort;
   const statusReader = new StubStoreSubscriptionStatusReader();
@@ -63,7 +62,7 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
           .overrideProvider(StoreSubscriptionStatusReaderPort)
           .useValue(statusReader),
     });
-    webhook = context.module.get(RevenueCatWebhookReceiver);
+    webhook = context.module.get(RevenueCatWebhookController);
     jobs = context.module.get(JobQueuePort);
     premiumAccess = context.module.get(PremiumAccessReaderPort);
   });
@@ -108,12 +107,10 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
       createdAt: instantFromDate(startedAt),
     });
     await client.insert(userTable).values(user);
-    await webhook.receive({
-      body: storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
-    });
-    await webhook.receive({
-      body: storeEvent(user.id, SubscriptionEventBuilder.cancellation(), "cancel"),
-    });
+    await webhook.receive(
+      storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
+    );
+    await webhook.receive(storeEvent(user.id, SubscriptionEventBuilder.cancellation(), "cancel"));
     statusReader.states.set(CHAIN, {
       storeSubscriptionId: CHAIN,
       productId: "premium_monthly",

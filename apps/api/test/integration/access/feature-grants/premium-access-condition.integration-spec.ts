@@ -3,7 +3,7 @@ import { EntitlementReaderAdapter } from "#api/modules/access/feature-grants/inf
 import { DrizzleAccessStateReader } from "#api/modules/access/feature-grants/infrastructure/persistence/drizzle-access-state.reader";
 import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/infrastructure/persistence/premium-access-conditions.query-fragment";
 import { hasPaidAccess } from "#api/modules/access/shared/domain/paid-access.domain-service";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";

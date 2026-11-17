@@ -10,7 +10,7 @@ import type {
 } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { planOfTier } from "#api/modules/access/shared/domain/entitlement.domain-service";
 import type {
-  PremiumAccess,
+  PremiumAccessReadModel,
   PremiumAccessReaderPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/auth/application/use-cases/consume-verification-code.use-case";
@@ -215,10 +215,10 @@ class StubDailySendUsage implements Pick<DailySendUsageReaderPort, "readDailyUsa
 
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
 class StubPremiumAccessReader implements PremiumAccessReaderPort {
-  readonly accesses = new Map<string, PremiumAccess>();
+  readonly accesses = new Map<string, PremiumAccessReadModel>();
   readonly requestedUserIds: string[] = [];
 
-  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccessReadModel> {
     this.requestedUserIds.push(userId.value);
     return (
       this.accesses.get(userId.value) ?? {

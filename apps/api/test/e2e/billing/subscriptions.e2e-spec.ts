@@ -12,7 +12,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const webhookSecret = "subscription-e2e-webhook-secret";
 const at = new Date("2027-01-04T12:00:00.000Z");

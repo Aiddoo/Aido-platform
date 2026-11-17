@@ -1,21 +1,20 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { user as userTable } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
-import { UserFixture } from "#test/fixtures/index";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const at = new Date("2027-01-04T12:00:00.000Z");
 const expiresAt = new Date("2027-01-10T12:00:00.000Z");
@@ -47,7 +46,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let receiver: RevenueCatWebhookReceiver;
+  let receiver: RevenueCatWebhookController;
   const notifier = new FlakyBillingIssueNotifier();
 
   beforeAll(async () => {
@@ -58,7 +57,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
       customizeBuilder: (builder) =>
         builder.overrideProvider(SubscriptionEventNotifierPort).useValue(notifier),
     });
-    receiver = context.module.get(RevenueCatWebhookReceiver);
+    receiver = context.module.get(RevenueCatWebhookController);
   });
 
   beforeEach(async () => {
@@ -95,9 +94,9 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
     // Given
     const user = UserFixture.create({ id: createEntityId(), createdAt: instantFromDate(at) });
     await client.insert(userTable).values(user);
-    await receiver.receive({
-      body: storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
-    });
+    await receiver.receive(
+      storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
+    );
     const billingIssue = storeEvent(
       user.id,
       SubscriptionEventBuilder.billingIssue().withGracePeriodExpirationAtMs(graceEndsAt.getTime()),
@@ -106,7 +105,7 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
     notifier.failuresLeft = 1;
 
     // When
-    const firstAttempt = receiver.receive({ body: billingIssue });
+    const firstAttempt = receiver.receive(billingIssue);
     await expect(firstAttempt).rejects.toThrow("transient database failure");
     const afterFailure = {
       receipts: await client.query.subscriptionEventReceipt.findMany({
@@ -117,8 +116,8 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
         where: { storeSubscriptionId: CHAIN },
       }),
     };
-    await receiver.receive({ body: billingIssue });
-    await receiver.receive({ body: billingIssue });
+    await receiver.receive(billingIssue);
+    await receiver.receive(billingIssue);
 
     // Then
     expect(afterFailure).toEqual({ receipts: [], chain: { gracePeriodEndsAt: null } });

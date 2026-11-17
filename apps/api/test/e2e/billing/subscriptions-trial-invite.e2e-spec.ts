@@ -8,7 +8,7 @@ import { subscription } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const webhookSecret = "subscription-trial-invite-webhook-secret";
 const DAY_MS = 24 * 60 * 60 * 1000;

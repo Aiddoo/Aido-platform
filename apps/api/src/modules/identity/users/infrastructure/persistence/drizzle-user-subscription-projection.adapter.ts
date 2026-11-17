@@ -5,7 +5,7 @@ import { and, eq, gt, isNull, not } from "drizzle-orm";
 import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { user } from "#api/platform/database/schema/index";
+import { user } from "#api/platform/database/schema/identity.schema";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
@@ -13,21 +13,17 @@ import { instantToDate } from "#api/shared/domain/time/instant";
 import type {
   ListLapsedPremiumUsersParams,
   UserSubscriptionProjection,
-  UserSubscriptionProjectionRepositoryPort,
-} from "../../application/ports/user-subscription-projection.repository.port.js";
+  UserSubscriptionProjectionPort,
+} from "../../application/ports/user-subscription-projection.port.js";
 
 @Injectable()
-export class DrizzleUserSubscriptionProjectionRepository implements UserSubscriptionProjectionRepositoryPort {
+export class DrizzleUserSubscriptionProjectionAdapter implements UserSubscriptionProjectionPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
   }
 
   async update(userId: UserId, projection: UserSubscriptionProjection): Promise<void> {
@@ -60,5 +56,9 @@ export class DrizzleUserSubscriptionProjectionRepository implements UserSubscrip
       .orderBy(user.id)
       .limit(params.limit);
     return rows.map((row) => UserId.reconstitute(row.id));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

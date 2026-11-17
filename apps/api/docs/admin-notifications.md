@@ -80,7 +80,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 
 사유 라벨: `UNSUBSCRIBE` 사용자가 해지 · `BILLING_ERROR` 결제 실패 · `DEVELOPER_INITIATED` 개발자가 취소 · `PRICE_INCREASE` 가격 인상에 동의하지 않음 · `CUSTOMER_SUPPORT` 스토어 고객지원 환불 · `SUBSCRIPTION_PAUSED` 구독 일시정지 · `UNKNOWN` 알 수 없음. RevenueCat 원문 → billing 어휘는 ACL(`revenuecat-webhook-translator.adapter.ts`), billing 어휘 → 사람 말은 Discord 어댑터가 바꾼다.
 
-웹훅 값은 billing이 `SubscriptionEventPayload`에 이벤트 종류와 상관없이 같은 이름으로 싣는다(`baseEventPayload`). 체험 시작처럼 금액이 0이면 0을 그대로 보인다.
+웹훅 값은 billing이 `SubscriptionEventPayloadReadModel`에 이벤트 종류와 상관없이 같은 이름으로 싣는다(`baseEventPayload`). 체험 시작처럼 금액이 0이면 0을 그대로 보인다.
 
 ### 웹훅 처리 실패 (권고)
 

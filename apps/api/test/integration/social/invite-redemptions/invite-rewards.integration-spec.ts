@@ -3,7 +3,7 @@ import { and, count, eq, inArray } from "drizzle-orm";
 
 import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { InviteNotifierPort } from "#api/modules/social/invite-redemptions/application/ports/invite-notifier.port";
 import { InviteRedemptionReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.reader.port";
 import { InviteRedemptionRepositoryPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.repository.port";
@@ -365,21 +365,21 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     for (const suffix of ["A", "B", "C"]) {
       scenarios.push(await qualified(`RACEIVR${suffix}`, `RACEIVE${suffix}`));
     }
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
+    const webhook = context.module.get(RevenueCatWebhookController);
 
     // When
     await Promise.all(
       scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
-        webhook.receive({
-          body: SubscriptionEventBuilder.initialPurchase()
+        webhook.receive(
+          SubscriptionEventBuilder.initialPurchase()
             .withAppUserId(inviterId)
             .withOriginalTransactionId(`race-${inviterId}`)
             .withTransactionId(`race-${inviterId}`)
             .withEventId(`race-${inviterId}`)
             .withExpirationAtMs(storeExpiry.getTime())
             .build(),
-        }),
+        ),
       ]),
     );
 

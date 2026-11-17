@@ -15,7 +15,7 @@ import type {
   StoreSubscriptionEventFailureContext,
   SubscriptionEventNotifierPort,
 } from "../../application/ports/subscription-event-notifier.port.js";
-import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import type { SubscriptionEventPayloadReadModel } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 
 /**
@@ -43,7 +43,7 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     this.#customerConsole = customerConsole;
   }
 
-  notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
+  notifySubscriptionEvent(payload: SubscriptionEventPayloadReadModel): void {
     this.#adminEventNotifier.notifySubscriptionEvent(
       toSubscriptionNoticeInput(payload, this.#providerCustomerUrl(payload.appUserId)),
     );
@@ -82,7 +82,7 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
 
 // operations가 소유한 입력 모양으로 한 필드씩 옮긴다. 앱 사용자 ID 같은 billing 내부 값은 넘기지 않는다
 function toSubscriptionNoticeInput(
-  payload: SubscriptionEventPayload,
+  payload: SubscriptionEventPayloadReadModel,
   providerCustomerUrl: string | undefined,
 ) {
   return {

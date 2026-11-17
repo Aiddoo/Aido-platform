@@ -23,5 +23,4 @@ export {
   activeSubscriptionCondition,
   freeAccessCondition,
   premiumAccessCondition,
-  validStoreEntitlementCondition,
 } from "./infrastructure/persistence/premium-access-conditions.query-fragment.js";

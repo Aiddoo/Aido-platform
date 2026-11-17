@@ -14,6 +14,7 @@ import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/swee
 import { StoreCustomerConsolePort } from "./application/ports/store-customer-console.port.js";
 import { StoreSubscriptionReconcileSchedulerPort } from "./application/ports/store-subscription-reconcile-scheduler.port.js";
 import { StoreSubscriptionStatusReaderPort } from "./application/ports/store-subscription-status.reader.port.js";
+import { StoreWebhookPort } from "./application/ports/store-webhook.port.js";
 import { SubscriptionEventNotifierPort } from "./application/ports/subscription-event-notifier.port.js";
 import { SubscriptionEventReceiptRepositoryPort } from "./application/ports/subscription-event-receipt.repository.port.js";
 import { SubscriptionUserReaderPort } from "./application/ports/subscription-user.reader.port.js";
@@ -23,13 +24,15 @@ import { TrialEndingNotifierPort } from "./application/ports/trial-ending-notifi
 import { UpcomingRenewalNoticeRepositoryPort } from "./application/ports/upcoming-renewal-notice.repository.port.js";
 import { UpcomingRenewalNotifierPort } from "./application/ports/upcoming-renewal-notifier.port.js";
 import { ApplyStoreSubscriptionEventUseCase } from "./application/use-cases/apply-store-subscription-event.use-case.js";
+import { ApplySubscriptionChainEventUseCase } from "./application/use-cases/apply-subscription-chain-event.use-case.js";
+import { ChangeSubscriptionChainUseCase } from "./application/use-cases/change-subscription-chain.use-case.js";
 import { NotifyEndingTrialsUseCase } from "./application/use-cases/notify-ending-trials.use-case.js";
 import { NotifyUpcomingRenewalsUseCase } from "./application/use-cases/notify-upcoming-renewals.use-case.js";
 import { ReconcileStoreSubscriptionsUseCase } from "./application/use-cases/reconcile-store-subscriptions.use-case.js";
+import { TransferSubscriptionsUseCase } from "./application/use-cases/transfer-subscriptions.use-case.js";
 import { RevenueCatCustomerConsoleAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-customer-console.adapter.js";
 import { RevenueCatStoreSubscriptionStatusAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-store-subscription-status.adapter.js";
-import { RevenueCatWebhookReceiver } from "./infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter.js";
-import { RevenueCatWebhookSignatureGuard } from "./infrastructure/adapters/revenuecat/revenuecat-webhook-signature.guard.js";
+import { RevenueCatStoreWebhookAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-store-webhook.adapter.js";
 import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscription-event-notifier.adapter.js";
 import { TrialEndingNotifierAdapter } from "./infrastructure/adapters/trial-ending-notifier.adapter.js";
 import { UpcomingRenewalNotifierAdapter } from "./infrastructure/adapters/upcoming-renewal-notifier.adapter.js";
@@ -42,6 +45,7 @@ import { DrizzleSubscriptionUserReader } from "./infrastructure/persistence/driz
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeRepository } from "./infrastructure/persistence/drizzle-trial-ending-notice.repository.js";
 import { DrizzleUpcomingRenewalNoticeRepository } from "./infrastructure/persistence/drizzle-upcoming-renewal-notice.repository.js";
+import { StoreWebhookGuard } from "./presentation/http/guards/store-webhook.guard.js";
 
 export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
   { provide: SubscriptionRepositoryPort, useClass: DrizzleSubscriptionRepository },
@@ -67,18 +71,41 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
     useClass: DrizzleUpcomingRenewalNoticeRepository,
   },
   { provide: UpcomingRenewalNotifierPort, useClass: UpcomingRenewalNotifierAdapter },
-  provideUseCase(ApplyStoreSubscriptionEventUseCase, {
+  { provide: StoreWebhookPort, useClass: RevenueCatStoreWebhookAdapter },
+  provideUseCase(ChangeSubscriptionChainUseCase, {
+    subscriptionRepository: SubscriptionRepositoryPort,
+    projectPremiumAccess: ProjectPremiumAccessUseCase,
+    clock: ClockPort,
+    logger: loggerFor(ChangeSubscriptionChainUseCase),
+  }),
+  provideUseCase(ApplySubscriptionChainEventUseCase, {
     subscriptionRepository: SubscriptionRepositoryPort,
     subscriptionUserReader: SubscriptionUserReaderPort,
     receiptRepository: SubscriptionEventReceiptRepositoryPort,
     userLock: UserMutationLockPort,
-    unitOfWork: UnitOfWorkPort,
-    cache: PremiumAccessCachePort,
-    notifier: SubscriptionEventNotifierPort,
     mutationLock: MutationLockPort,
-    projectPremiumAccess: ProjectPremiumAccessUseCase,
+    unitOfWork: UnitOfWorkPort,
+    changeSubscriptionChain: ChangeSubscriptionChainUseCase,
+    notifier: SubscriptionEventNotifierPort,
     reconcileScheduler: StoreSubscriptionReconcileSchedulerPort,
     clock: ClockPort,
+    logger: loggerFor(ApplySubscriptionChainEventUseCase),
+  }),
+  provideUseCase(TransferSubscriptionsUseCase, {
+    subscriptionRepository: SubscriptionRepositoryPort,
+    subscriptionUserReader: SubscriptionUserReaderPort,
+    receiptRepository: SubscriptionEventReceiptRepositoryPort,
+    userLock: UserMutationLockPort,
+    mutationLock: MutationLockPort,
+    unitOfWork: UnitOfWorkPort,
+    projectPremiumAccess: ProjectPremiumAccessUseCase,
+    clock: ClockPort,
+  }),
+  provideUseCase(ApplyStoreSubscriptionEventUseCase, {
+    applySubscriptionChainEvent: ApplySubscriptionChainEventUseCase,
+    transferSubscriptions: TransferSubscriptionsUseCase,
+    cache: PremiumAccessCachePort,
+    notifier: SubscriptionEventNotifierPort,
     logger: loggerFor(ApplyStoreSubscriptionEventUseCase),
   }),
   provideUseCase(ReconcileStoreSubscriptionsUseCase, {
@@ -99,8 +126,7 @@ export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
     noticeRepository: UpcomingRenewalNoticeRepositoryPort,
     notifier: UpcomingRenewalNotifierPort,
   }),
-  RevenueCatWebhookReceiver,
-  RevenueCatWebhookSignatureGuard,
+  StoreWebhookGuard,
   PremiumGrantSweepScheduler,
   PremiumGrantSweepProcessor,
   StoreSubscriptionReconcileProcessor,

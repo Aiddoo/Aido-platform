@@ -8,7 +8,7 @@ import type { UserMutationLockPort } from "#api/modules/identity/users/identity-
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
+import type { SubscriptionReconcileField } from "../../domain/store-subscription-reconcile.domain-service.js";
 import type { StoreSubscriptionStatusReaderPort } from "../ports/store-subscription-status.reader.port.js";
 import type { SubscriptionRepositoryPort } from "../ports/subscription.repository.port.js";
 

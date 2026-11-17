@@ -1,4 +1,4 @@
-import { storeRenewalGraceEndsAt } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+import { storeRenewalGraceEndsAt } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 

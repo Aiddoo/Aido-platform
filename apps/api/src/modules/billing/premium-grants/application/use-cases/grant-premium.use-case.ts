@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { planNewGrantStart } from "../../../shared/domain/premium-access.domain-service.js";
+import { planNewGrantStart } from "../../../shared/domain/premium-grant-reconciliation.domain-service.js";
 import { PremiumGrantId } from "../../domain/premium-grant-id.vo.js";
 import { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";

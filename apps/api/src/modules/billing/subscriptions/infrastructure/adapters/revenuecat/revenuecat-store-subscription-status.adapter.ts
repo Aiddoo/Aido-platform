@@ -13,7 +13,7 @@ import {
   billingSubscriptionsConfig,
 } from "../../../billing-subscriptions.config.js";
 import type { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
-import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
+import type { StoreSubscriptionState } from "../../../domain/store-subscription-reconcile.domain-service.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
   type RevenueCatSubscription,

@@ -4,7 +4,7 @@
  */
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
 import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
 import { SendAdminNotificationUseCase } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
@@ -18,16 +18,15 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
-import type { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
+import type { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 /** 2026-11-10 10:00 KST */
 const AT = new Date("2026-11-10T01:00:00.000Z");
@@ -39,7 +38,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let receiver: RevenueCatWebhookReceiver;
+  let receiver: RevenueCatWebhookController;
   let jobQueue: InMemoryJobQueue;
   let notifier: FakeAdminNotifier;
   let processor: AdminNotificationProcessor;
@@ -50,7 +49,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
     context = await createE2eApp({ testDatabase: database });
-    receiver = context.module.get(RevenueCatWebhookReceiver);
+    receiver = context.module.get(RevenueCatWebhookController);
     jobQueue = context.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     notifier = context.module.get(AdminNotifierPort);
     // E2E 앱은 백그라운드 작업자를 끈다. 같은 조립의 유스케이스로 작업자를 만들어 큐 payload 검증부터 탄다
@@ -130,7 +129,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       .build();
 
     // When
-    await receiver.receive({ body: withCountry(purchase, "KR") });
+    await receiver.receive(withCountry(purchase, "KR"));
     const [notice] = await deliverPaymentNotices(1);
 
     // Then
@@ -215,10 +214,10 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
       .withExpirationAtMs(AT.getTime() - 60_000)
       .withExpirationReason("BILLING_ERROR")
       .build();
-    await receiver.receive({ body: purchase });
+    await receiver.receive(purchase);
 
     // When
-    await receiver.receive({ body: expiration });
+    await receiver.receive(expiration);
     const notices = await deliverPaymentNotices(2);
 
     // Then

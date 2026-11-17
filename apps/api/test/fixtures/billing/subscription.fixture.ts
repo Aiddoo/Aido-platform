@@ -1,11 +1,11 @@
 import type { SubscriptionStatus } from "@aido/api/vocabulary";
 
-import type { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import type { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import {
   Subscription,
   type SubscriptionPrimitives,
 } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
+import type { UserSubscriptionProjectionPort } from "#api/modules/identity/users/identity-users.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
@@ -47,7 +47,7 @@ export async function saveSubscriptionFixture(
 
 /** User 행의 구독 projection을 심는다. 시나리오가 Date로 시각을 적으므로 여기서 Instant로 바꾼다. */
 export async function setUserSubscriptionProjection(
-  repository: Pick<UserSubscriptionProjectionRepositoryPort, "update">,
+  repository: Pick<UserSubscriptionProjectionPort, "update">,
   userId: string,
   data: { subscriptionStatus: SubscriptionStatus; subscriptionExpiresAt?: Date | null },
 ): Promise<void> {

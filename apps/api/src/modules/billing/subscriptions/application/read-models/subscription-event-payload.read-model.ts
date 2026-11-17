@@ -24,13 +24,13 @@ import type {
   SubscriptionEndReason,
   SubscriptionStore,
 } from "../../domain/subscriptions.constants.js";
-import type { SubscriptionUser } from "../ports/subscription-user.reader.port.js";
+import type { SubscriptionUserReadModel } from "./subscription-user.read-model.js";
 
 /**
  * 구독 이벤트 알림 페이로드. 구독 상태를 바꾼 뒤 운영 알림(결제 채널)으로 넘기고 공급자 이름을 모른다.
  * 공급자 웹훅이 준 값은 이벤트마다 같은 이름으로 싣는다. 이벤트에 없으면 비운다.
  */
-export interface SubscriptionEventPayload {
+export interface SubscriptionEventPayloadReadModel {
   userId: string;
   email: string;
   name?: string;
@@ -97,7 +97,10 @@ type NotifiableChainEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORE
 
 function priceFields(
   price: StoreSubscriptionPrice,
-): Pick<SubscriptionEventPayload, "priceUsd" | "priceInPurchasedCurrency" | "purchasedCurrency"> {
+): Pick<
+  SubscriptionEventPayloadReadModel,
+  "priceUsd" | "priceInPurchasedCurrency" | "purchasedCurrency"
+> {
   return {
     ...(price.usd != null && { priceUsd: price.usd }),
     ...(price.amountInPurchasedCurrency != null && {
@@ -109,8 +112,8 @@ function priceFields(
 
 function planFields(
   productId: string | undefined,
-  key: keyof Pick<SubscriptionEventPayload, "planType" | "newPlanType">,
-): Pick<SubscriptionEventPayload, "planType" | "newPlanType"> {
+  key: keyof Pick<SubscriptionEventPayloadReadModel, "planType" | "newPlanType">,
+): Pick<SubscriptionEventPayloadReadModel, "planType" | "newPlanType"> {
   const planType = productId == null ? null : planTypeOfProduct(productId);
   return planType == null ? {} : { [key]: planType };
 }
@@ -120,17 +123,17 @@ function planFields(
  * 호출한 곳이 덮어쓴다.
  */
 export function baseEventPayload(
-  user: SubscriptionUser,
+  user: SubscriptionUserReadModel,
   event: NotifiableChainEvent,
   storeSubscriptionId?: string,
-): SubscriptionEventPayload {
+): SubscriptionEventPayloadReadModel {
   const lifecycle = classifySubscriptionLifecycle(lifecycleEventOf(event));
   const purchasedAt =
     event.kind === "STARTED" || event.kind === "RENEWED" ? event.startedAt : undefined;
   return {
-    userId: user.id,
+    userId: user.id.value,
     email: user.email,
-    name: user.profile?.name ?? undefined,
+    name: user.name ?? undefined,
     kind: event.kind,
     ...(event.kind === "STARTED" && { isOneTime: event.isOneTime }),
     productId: event.productId,
@@ -166,14 +169,14 @@ export function baseEventPayload(
 const TRANSFER_PRODUCT_LABEL = "-";
 
 export function transferEventPayload(
-  user: SubscriptionUser,
+  user: SubscriptionUserReadModel,
   event: SubscriptionTransferredEvent,
   appUserId: string,
-): SubscriptionEventPayload {
+): SubscriptionEventPayloadReadModel {
   return {
-    userId: user.id,
+    userId: user.id.value,
     email: user.email,
-    name: user.profile?.name ?? undefined,
+    name: user.name ?? undefined,
     kind: event.kind,
     productId: TRANSFER_PRODUCT_LABEL,
     store: event.store,

@@ -1,6 +1,9 @@
 import { mapAsync, sum } from "es-toolkit";
 
-import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import type {
+  UserMutationLockPort,
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -8,7 +11,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-subscription-projection.repository.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
@@ -55,7 +57,7 @@ type ListUserIdsPage = (page: {
 export interface SweepPremiumGrantsDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "listUserIdsToReconcile">;
   readonly userSubscriptionProjection: Pick<
-    UserSubscriptionProjectionRepositoryPort,
+    UserSubscriptionProjectionPort,
     "listLapsedPremiumUserIds"
   >;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;

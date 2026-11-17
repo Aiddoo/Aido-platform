@@ -14,6 +14,10 @@ export type {
 export { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 export { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 export { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
+export {
+  UserSubscriptionProjectionPort,
+  type UserSubscriptionProjection,
+} from "./application/ports/user-subscription-projection.port.js";
 export { IdentityUserAccessModule } from "./identity-user-access.module.js";
 export { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
 // 사람 id 칸을 가진 다른 Context의 행을 페이지로 고르는 SQL이 사용자 테이블을 직접 읽지 않게 한다

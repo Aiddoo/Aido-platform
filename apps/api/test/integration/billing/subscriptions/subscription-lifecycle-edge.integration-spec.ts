@@ -5,22 +5,21 @@ import {
   PremiumGranterPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/domain/store-renewal-grace.domain-service";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
-import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const AT = new Date("2028-02-26T04:00:00.000Z");
@@ -70,7 +69,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   });
 
   function webhook(body: RevenueCatWebhookPayload) {
-    return context.module.get(RevenueCatWebhookReceiver).receive({ body });
+    return context.module.get(RevenueCatWebhookController).receive(body);
   }
 
   function chainEvent(

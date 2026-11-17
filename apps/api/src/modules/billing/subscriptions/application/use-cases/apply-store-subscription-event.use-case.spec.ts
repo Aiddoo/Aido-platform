@@ -9,10 +9,10 @@ import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-
 import { InMemorySubscriptionEventReceiptRepository } from "#test/doubles/billing/in-memory-subscription-event-receipt.repository";
 import { InMemorySubscriptionUserReader } from "#test/doubles/billing/in-memory-subscription-user.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
-import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
 import { RecordingStoreSubscriptionReconcileScheduler } from "#test/doubles/billing/recording-store-subscription-reconcile-scheduler";
 import { RecordingSubscriptionEventNotifier } from "#test/doubles/billing/recording-subscription-event-notifier";
+import { InMemoryUserSubscriptionProjection } from "#test/doubles/identity/in-memory-user-subscription-projection";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
@@ -39,6 +39,9 @@ import {
   ApplyStoreSubscriptionEventUseCase,
   type ApplyStoreSubscriptionEventCommand,
 } from "./apply-store-subscription-event.use-case.js";
+import { ApplySubscriptionChainEventUseCase } from "./apply-subscription-chain-event.use-case.js";
+import { ChangeSubscriptionChainUseCase } from "./change-subscription-chain.use-case.js";
+import { TransferSubscriptionsUseCase } from "./transfer-subscriptions.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
 const DAY = 24 * 60 * 60 * 1000;
@@ -47,13 +50,13 @@ const NEXT_EXPIRES_AT = NOW.add({ milliseconds: 60 * DAY });
 const USER = {
   id: SUBSCRIPTION_FIXTURE_USER_ID,
   email: "subscriber@example.com",
-  profile: { name: "구독 사용자" },
+  name: "구독 사용자",
   appUserAlias: "app-user-alias",
 };
 const PREVIOUS_OWNER = {
   id: "clz7x5p8k0009qz0z8z8z8z8z",
   email: "previous@example.com",
-  profile: { name: "이전 사용자" },
+  name: "이전 사용자",
 };
 const CHAIN_ID = SUBSCRIPTION_FIXTURE_CHAIN_ID;
 
@@ -141,7 +144,7 @@ function setup(
   const users = [USER, ...(options.extraUsers ?? [])];
   const subscriptionRepository = new InMemorySubscriptionRepository(options.subscriptions ?? []);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(options.grants ?? []);
-  const userSubscriptionProjection = new InMemoryUserSubscriptionProjectionRepository(
+  const userSubscriptionProjection = new InMemoryUserSubscriptionProjection(
     users.map((user) => user.id),
   );
   const projectPremiumAccess = new ProjectPremiumAccessUseCase({
@@ -158,19 +161,42 @@ function setup(
   const mutationLock = new RecordingMutationLock();
   const reconcileScheduler = new RecordingStoreSubscriptionReconcileScheduler();
   const userLock = new FakeUserMutationLock(users.map((user) => user.id));
+  const clock = new FixedClock(NOW.add({ hours: 1 }));
+  const logger = new SilentLogger();
+  const unitOfWork = new ImmediateUnitOfWork();
+  const subscriptionUserReader = new InMemorySubscriptionUserReader(users);
   const useCase = new ApplyStoreSubscriptionEventUseCase({
-    subscriptionRepository,
-    subscriptionUserReader: new InMemorySubscriptionUserReader(users),
-    receiptRepository,
-    userLock,
-    unitOfWork: new ImmediateUnitOfWork(),
+    applySubscriptionChainEvent: new ApplySubscriptionChainEventUseCase({
+      subscriptionRepository,
+      subscriptionUserReader,
+      receiptRepository,
+      userLock,
+      mutationLock,
+      unitOfWork,
+      changeSubscriptionChain: new ChangeSubscriptionChainUseCase({
+        subscriptionRepository,
+        projectPremiumAccess,
+        clock,
+        logger,
+      }),
+      notifier,
+      reconcileScheduler,
+      clock,
+      logger,
+    }),
+    transferSubscriptions: new TransferSubscriptionsUseCase({
+      subscriptionRepository,
+      subscriptionUserReader,
+      receiptRepository,
+      userLock,
+      mutationLock,
+      unitOfWork,
+      projectPremiumAccess,
+      clock,
+    }),
     cache,
     notifier,
-    mutationLock,
-    projectPremiumAccess,
-    reconcileScheduler,
-    clock: new FixedClock(NOW.add({ hours: 1 })),
-    logger: new SilentLogger(),
+    logger,
   });
   return {
     useCase,

@@ -4,9 +4,9 @@ import { and, eq, sql } from "drizzle-orm";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { TrialEndingNoticeRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/trial-ending-notice.repository.port";
-import type { SubscriptionEventPayload } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
+import type { SubscriptionEventPayloadReadModel } from "#api/modules/billing/subscriptions/application/read-models/subscription-event-payload.read-model";
 import { NotifyEndingTrialsUseCase } from "#api/modules/billing/subscriptions/application/use-cases/notify-ending-trials.use-case";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import {
   notification,
   subscription,
@@ -18,16 +18,15 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
-import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // 런던 12:00(낮), 서울 21:00(야간)
@@ -36,7 +35,7 @@ const trialStartedAt = new Date("2026-12-07T12:00:00.000Z");
 const trialEndsAt = new Date("2027-01-07T00:00:00.000Z");
 const nextYear = new Date("2028-01-07T00:00:00.000Z");
 
-const events: SubscriptionEventPayload[] = [];
+const events: SubscriptionEventPayloadReadModel[] = [];
 const notifier: SubscriptionEventNotifierPort = {
   notifySubscriptionEvent: (payload) => {
     events.push(payload);
@@ -49,7 +48,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   let database: TestDatabase;
   let client: TestDatabaseClient;
   let context: E2eTestContext;
-  let webhook: RevenueCatWebhookReceiver;
+  let webhook: RevenueCatWebhookController;
   let notifyEndingTrials: NotifyEndingTrialsUseCase;
   let noticeSource: TrialEndingNoticeRepositoryPort;
   let premiumAccess: PremiumAccessReaderPort;
@@ -63,7 +62,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       customizeBuilder: (builder) =>
         builder.overrideProvider(SubscriptionEventNotifierPort).useValue(notifier),
     });
-    webhook = context.module.get(RevenueCatWebhookReceiver);
+    webhook = context.module.get(RevenueCatWebhookController);
     notifyEndingTrials = context.module.get(NotifyEndingTrialsUseCase);
     noticeSource = context.module.get(TrialEndingNoticeRepositoryPort);
     premiumAccess = context.module.get(PremiumAccessReaderPort);
@@ -167,26 +166,26 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       const userId = await givenUser("TRIALA01");
 
       // When
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
       const started = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(
+        trialEvent(
           userId,
           SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
           "cancel",
         ),
-      });
+      );
       const cancelled = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
       vi.setSystemTime(new Date(trialEndsAt.getTime() + 60_000));
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(
+        trialEvent(
           userId,
           SubscriptionEventBuilder.expiration()
             .withPeriodType("TRIAL")
             .withExpirationReason("UNSUBSCRIBE"),
           "expire",
         ),
-      });
+      );
       const expired = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
 
       // Then
@@ -209,17 +208,17 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     it("체험 시작 → 결제 전환: NORMAL로 바뀌고 다음 결제일은 스토어 만료 시각 그대로다", async () => {
       // Given
       const userId = await givenUser("TRIALB01");
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
 
       // When
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(
+        trialEvent(
           userId,
           SubscriptionEventBuilder.renewal().withTrialConversion().withPrice(19.99, "KRW", 29_900),
           "convert",
           nextYear,
         ),
-      });
+      );
 
       // Then
       expect(await storedTrial(userId)).toMatchObject({
@@ -238,32 +237,32 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     it("중복 전송과 전환 뒤 늦게 온 체험 해지·만료는 결제된 상태를 되돌리지 않는다", async () => {
       // Given
       const userId = await givenUser("TRIALC01");
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
       const conversion = trialEvent(
         userId,
         SubscriptionEventBuilder.renewal().withTrialConversion(),
         "convert",
         nextYear,
       );
-      await webhook.receive({ body: conversion });
+      await webhook.receive(conversion);
 
       // When
-      await webhook.receive({ body: trialPurchase(userId) });
-      await webhook.receive({ body: conversion });
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(trialPurchase(userId));
+      await webhook.receive(conversion);
+      await webhook.receive(
+        trialEvent(
           userId,
           SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
           "late-cancel",
         ),
-      });
-      await webhook.receive({
-        body: trialEvent(
+      );
+      await webhook.receive(
+        trialEvent(
           userId,
           SubscriptionEventBuilder.expiration().withPeriodType("TRIAL"),
           "late-expire",
         ),
-      });
+      );
 
       // Then
       expect(await storedTrial(userId)).toMatchObject({
@@ -286,15 +285,15 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       // Given
       const renewingUserId = await givenUser("TRIALD01");
       const cancelledUserId = await givenUser("TRIALD02");
-      await webhook.receive({ body: trialPurchase(renewingUserId) });
-      await webhook.receive({ body: trialPurchase(cancelledUserId) });
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(trialPurchase(renewingUserId));
+      await webhook.receive(trialPurchase(cancelledUserId));
+      await webhook.receive(
+        trialEvent(
           cancelledUserId,
           SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
           "cancel",
         ),
-      });
+      );
 
       // When
       const first = await notifyEndingTrials.execute({ now: instantFromDate(at) });
@@ -317,7 +316,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     it("현지 야간(서울 21시)이면 표시하지 않고 미뤄 아침 실행이 보낸다", async () => {
       // Given
       const userId = await givenUser("TRIALE01", "Asia/Seoul");
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
       const seoulMorning = new Date("2027-01-04T23:30:00.000Z");
 
       // When
@@ -336,16 +335,16 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       // Given
       const earlyUserId = await givenUser("TRIALF01");
       const convertedUserId = await givenUser("TRIALF02");
-      await webhook.receive({ body: trialPurchase(earlyUserId) });
-      await webhook.receive({ body: trialPurchase(convertedUserId) });
-      await webhook.receive({
-        body: trialEvent(
+      await webhook.receive(trialPurchase(earlyUserId));
+      await webhook.receive(trialPurchase(convertedUserId));
+      await webhook.receive(
+        trialEvent(
           convertedUserId,
           SubscriptionEventBuilder.renewal().withTrialConversion(),
           "convert",
           nextYear,
         ),
-      });
+      );
       const fourDaysBefore = new Date(trialEndsAt.getTime() - 4 * DAY_MS);
 
       // When
@@ -361,7 +360,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     it("두 실행이 같은 체험을 동시에 표시하면 행 잠금 뒤 한 실행만 얻는다", async () => {
       // Given
       const userId = await givenUser("TRIALG01");
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
       const [notice] = await noticeSource.listDue({
         now: instantFromDate(at),
         endsBefore: instantFromDate(trialEndsAt),
@@ -405,7 +404,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     it("두 sweep이 동시에 돌아도 알림은 하나다", async () => {
       // Given
       const userId = await givenUser("TRIALH01");
-      await webhook.receive({ body: trialPurchase(userId) });
+      await webhook.receive(trialPurchase(userId));
 
       // When
       const results = await Promise.all([

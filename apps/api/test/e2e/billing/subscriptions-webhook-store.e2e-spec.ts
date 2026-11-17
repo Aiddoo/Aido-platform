@@ -13,7 +13,7 @@ import { OperationalAlertPort } from "#api/shared/application/ports/operational-
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const webhookSecret = "subscription-store-e2e-webhook-secret";
 const at = new Date("2027-01-04T12:00:00.000Z");

@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, exists, gt, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
-import { validStoreEntitlementCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { validStoreEntitlementCondition } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
@@ -38,7 +38,7 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
     return and(eq(storeOf.userId, grantOf.userId), isNull(storeOf.deletedAt));
   }
 
-  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). 규칙은 billing shared가 소유한다
+  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). SQL은 subscriptions slice가 소유한다
   #validStoreOfGrantUser(at: Temporal.Instant) {
     return this.#db
       .select({ one: sql`1` })

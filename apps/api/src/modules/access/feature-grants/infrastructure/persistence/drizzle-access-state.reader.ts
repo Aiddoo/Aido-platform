@@ -2,6 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, sum } from "drizzle-orm";
 
+import { storeEntitlementWindowsQuery } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { featureGrant } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -28,12 +29,7 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
     // 스토어 유예(웹훅 대기·결제 유예)는 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 구독 행을 붙인다
     const row = await this.#db.query.user.findFirst({
       columns: { role: true, subscriptionStatus: true, subscriptionExpiresAt: true },
-      with: {
-        subscriptions: {
-          columns: { status: true, expiresAt: true, gracePeriodEndsAt: true },
-          where: { status: { in: ["ACTIVE", "CANCELLED"] }, deletedAt: { isNull: true } },
-        },
-      },
+      with: { subscriptions: storeEntitlementWindowsQuery },
       where: { id: userId.value, status: "ACTIVE", deletedAt: { isNull: true } },
     });
     return row == null ? null : toAccessState(row);
@@ -42,12 +38,7 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
   async findAccessState(userId: UserId): Promise<AccessState | null> {
     const row = await this.#db.query.user.findFirst({
       columns: { role: true, subscriptionStatus: true, subscriptionExpiresAt: true },
-      with: {
-        subscriptions: {
-          columns: { status: true, expiresAt: true, gracePeriodEndsAt: true },
-          where: { status: { in: ["ACTIVE", "CANCELLED"] }, deletedAt: { isNull: true } },
-        },
-      },
+      with: { subscriptions: storeEntitlementWindowsQuery },
       where: { id: userId.value },
     });
     return row == null ? null : toAccessState(row);

@@ -8,10 +8,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 
-import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { StoreSubscriptionId } from "#api/modules/billing/subscriptions/domain/store-subscription-id.vo";
 import { Subscription } from "#api/modules/billing/subscriptions/domain/subscription.aggregate";
+import { UserSubscriptionProjectionPort } from "#api/modules/identity/users/identity-users.public";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import {
   friendship as friendshipTable,
@@ -238,11 +238,14 @@ describe("초대 수락 HTTP (실제 DB)", () => {
         productId: "premium_monthly",
         startedAt: now,
         expiresAt: instantFromDate(expiresAt),
+        lastProcessedEventId: null,
+        environment: null,
+        periodType: null,
         now,
       }),
     );
     await testContext.module
-      .get(UserSubscriptionProjectionRepositoryPort)
+      .get(UserSubscriptionProjectionPort)
       .update(UserId.reconstitute(invitee.userId), {
         subscriptionStatus: "ACTIVE",
         subscriptionExpiresAt: instantFromDate(expiresAt),

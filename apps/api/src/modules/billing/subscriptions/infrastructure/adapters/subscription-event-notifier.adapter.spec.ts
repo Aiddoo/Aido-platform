@@ -16,7 +16,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
-import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import type { SubscriptionEventPayloadReadModel } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
@@ -104,7 +104,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 });
 
 describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", () => {
-  const event: SubscriptionEventPayload = {
+  const event: SubscriptionEventPayloadReadModel = {
     userId: "user-1",
     email: "user@example.com",
     kind: "STARTED",

@@ -4,7 +4,7 @@ import { maxBy } from "es-toolkit";
 import {
   storeEntitlementEndsAt,
   type StoreEntitlementWindow,
-} from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 
 /** User 구독 projection과 그 projection이 끝나는 시각 */
 export interface PaidAccessState {

@@ -1,4 +1,4 @@
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 
 import { IDENTITY_CACHE_TTL_MS, userProfileTtlMs } from "./identity-cache.keyspace.js";
 

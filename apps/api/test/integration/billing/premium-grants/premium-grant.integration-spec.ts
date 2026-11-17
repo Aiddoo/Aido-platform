@@ -2,7 +2,6 @@ import { and, eq } from "drizzle-orm";
 
 import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
-import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
 import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
@@ -11,13 +10,19 @@ import {
   PremiumGranterPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
-import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions-entitlement.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
+import { UserSubscriptionProjectionPort } from "#api/modules/identity/users/identity-users.public";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import {
   saveSubscriptionFixture,
   setUserSubscriptionProjection,
@@ -26,12 +31,6 @@ import {
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
-import {
-  createE2eApp,
-  destroyE2eApp,
-  type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
 
 // KST 13:00. 야간(21:00–08:00)이 아니라 바로 안내할 수 있다
 const AT = new Date("2028-02-26T04:00:00.000Z");
@@ -45,7 +44,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   let context: E2eTestContext;
   let granter: PremiumGranterPort;
   let subscriptions: SubscriptionRepositoryPort;
-  let projection: UserSubscriptionProjectionRepositoryPort;
+  let projection: UserSubscriptionProjectionPort;
   let entitlement: EntitlementReaderPort;
   let userId: string;
 
@@ -55,7 +54,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     context = await createE2eApp({ testDatabase: database });
     granter = context.module.get<PremiumGranterPort>(PremiumGranterPort);
     subscriptions = context.module.get(SubscriptionRepositoryPort);
-    projection = context.module.get(UserSubscriptionProjectionRepositoryPort);
+    projection = context.module.get(UserSubscriptionProjectionPort);
     entitlement = context.module.get(EntitlementReaderPort);
   });
 
@@ -138,7 +137,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .build();
 
     // When
-    await context.module.get(RevenueCatWebhookReceiver).receive({ body });
+    await context.module.get(RevenueCatWebhookController).receive(body);
 
     // Then
     expect(await grantsOf(userId)).toEqual([
@@ -370,20 +369,18 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await givenStoreSubscription();
 
     // When
-    await context.module.get(RevenueCatWebhookReceiver).receive({
-      body: {
-        event: {
-          app_id: "1234567890",
-          event_timestamp_ms: 78_789_789_798_798,
-          id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
-          store: "APP_STORE",
-          transferred_from: [giverAppUserId],
-          transferred_to: [receiverAppUserId],
-          type: "TRANSFER",
-          environment: "PRODUCTION",
-        },
-        api_version: "1.0",
+    await context.module.get(RevenueCatWebhookController).receive({
+      event: {
+        app_id: "1234567890",
+        event_timestamp_ms: 78_789_789_798_798,
+        id: "CD489E0E-5D52-4E03-966B-A7F17788E432",
+        store: "APP_STORE",
+        transferred_from: [giverAppUserId],
+        transferred_to: [receiverAppUserId],
+        type: "TRANSFER",
+        environment: "PRODUCTION",
       },
+      api_version: "1.0",
     });
 
     // Then
@@ -429,7 +426,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .withTransferredFrom([userId])
       .withEventId("transfer-away")
       .build();
-    await context.module.get(RevenueCatWebhookReceiver).receive({ body: transfer });
+    await context.module.get(RevenueCatWebhookController).receive(transfer);
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -474,7 +471,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .withTransferredFrom([giverId])
       .withEventId("transfer-in")
       .build();
-    await context.module.get(RevenueCatWebhookReceiver).receive({ body: transfer });
+    await context.module.get(RevenueCatWebhookController).receive(transfer);
 
     // When
     await granter.grant({
@@ -613,17 +610,17 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const beforePurchase = await premiumAccess();
     const purchasedAt = new Date("2028-02-28T04:00:00.000Z");
     vi.setSystemTime(purchasedAt);
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
+    const webhook = context.module.get(RevenueCatWebhookController);
 
     // When
-    await webhook.receive({ body: purchase("purchase-during-grant", purchasedAt) });
-    await webhook.receive({ body: purchase("purchase-during-grant", purchasedAt) });
-    await webhook.receive({ body: purchase("purchase-redelivered", purchasedAt) });
+    await webhook.receive(purchase("purchase-during-grant", purchasedAt));
+    await webhook.receive(purchase("purchase-during-grant", purchasedAt));
+    await webhook.receive(purchase("purchase-redelivered", purchasedAt));
     const afterPurchase = await premiumAccess();
     vi.setSystemTime(STORE_EXPIRY);
-    await webhook.receive({
-      body: storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-after-grants"),
-    });
+    await webhook.receive(
+      storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-after-grants"),
+    );
 
     // Then
     expect(beforePurchase).toEqual({
@@ -682,12 +679,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     });
     const purchasedAt = new Date("2028-02-29T15:00:00.000Z");
     vi.setSystemTime(purchasedAt);
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
+    const webhook = context.module.get(RevenueCatWebhookController);
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
 
     // When
     await Promise.all([
-      webhook.receive({ body: purchase("concurrent-purchase", purchasedAt) }),
+      webhook.receive(purchase("concurrent-purchase", purchasedAt)),
       sweep.execute({ now: instantFromDate(purchasedAt) }),
       granter.grant({
         userId: UserId.reconstitute(userId),
@@ -697,7 +694,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       }),
     ]);
     // 같은 사용자 웹훅 잠금 경합(SUBSCRIPTION_1605)은 RevenueCat이 다시 보내므로 재전송은 뒤에 온다
-    await webhook.receive({ body: purchase("concurrent-purchase-redelivered", purchasedAt) });
+    await webhook.receive(purchase("concurrent-purchase-redelivered", purchasedAt));
     await sweep.execute({ now: instantFromDate(purchasedAt) });
 
     // Then
@@ -723,10 +720,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       sourceKey: "invite:after-store",
       durationDays: 7,
     });
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
-    await webhook.receive({
-      body: storeEvent(SubscriptionEventBuilder.cancellation(), "store-cancelled"),
-    });
+    const webhook = context.module.get(RevenueCatWebhookController);
+    await webhook.receive(storeEvent(SubscriptionEventBuilder.cancellation(), "store-cancelled"));
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const finalEndsAt = new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS);
@@ -776,10 +771,10 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 7,
     });
     vi.setSystemTime(STORE_EXPIRY);
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
-    await webhook.receive({
-      body: storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-before-resub"),
-    });
+    const webhook = context.module.get(RevenueCatWebhookController);
+    await webhook.receive(
+      storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-before-resub"),
+    );
     const resubscribedAt = new Date(STORE_EXPIRY.getTime() + 2 * DAY_MS);
     vi.setSystemTime(resubscribedAt);
     const renewal = SubscriptionEventBuilder.renewal()
@@ -791,8 +786,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       .build();
 
     // When
-    await webhook.receive({ body: renewal });
-    await webhook.receive({ body: renewal });
+    await webhook.receive(renewal);
+    await webhook.receive(renewal);
 
     // Then
     expect(await grantsOf(userId)).toEqual([
@@ -941,8 +936,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
 
     // When
     await context.module
-      .get(RevenueCatWebhookReceiver)
-      .receive({ body: storeEvent(builder(), "admin-store") });
+      .get(RevenueCatWebhookController)
+      .receive(storeEvent(builder(), "admin-store"));
     await context.module
       .get(SweepPremiumGrantsUseCase)
       .execute({ now: instantFromDate(STORE_EXPIRY) });

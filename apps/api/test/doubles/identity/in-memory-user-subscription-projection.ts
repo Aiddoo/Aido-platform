@@ -1,8 +1,8 @@
 import {
   type ListLapsedPremiumUsersParams,
   type UserSubscriptionProjection,
-  UserSubscriptionProjectionRepositoryPort,
-} from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/application/ports/user-subscription-projection.port";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -12,7 +12,7 @@ interface SeedUserInput extends UserSubscriptionProjection {
 }
 
 // User 행의 구독 projection을 userId별로 둔다. 없는 사용자는 DB처럼 부재 오류다
-export class InMemoryUserSubscriptionProjectionRepository extends UserSubscriptionProjectionRepositoryPort {
+export class InMemoryUserSubscriptionProjection extends UserSubscriptionProjectionPort {
   readonly projections = new Map<string, UserSubscriptionProjection>();
   readonly #deletedUserIds = new Set<string>();
 
