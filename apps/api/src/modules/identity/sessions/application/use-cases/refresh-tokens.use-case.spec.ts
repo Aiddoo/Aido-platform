@@ -28,9 +28,9 @@ import {
 
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
-import type { VerifiedRefreshPayload } from "../read-models/login.read-model.js";
 import { SessionAlerts } from "../sessions.alerts.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
+import type { VerifiedRefreshPayload } from "./refresh-tokens.use-case.js";
 import { RefreshTokensUseCase } from "./refresh-tokens.use-case.js";
 
 const userId = AUTH_FIXTURE_USER_ID;

@@ -146,7 +146,11 @@ export class GoogleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       const isExpired =
         errorMessage.includes("expired") || errorMessage.includes("token used too late");
-      logOAuthTokenVerifyFailed(this.#logger, "GOOGLE", error, isExpired ? "expired" : "invalid");
+      logOAuthTokenVerifyFailed(this.#logger, {
+        provider: "GOOGLE",
+        error,
+        reason: isExpired ? "expired" : "invalid",
+      });
       if (isExpired) {
         throw expiredSocialToken("GOOGLE");
       }

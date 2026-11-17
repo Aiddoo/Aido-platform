@@ -15,14 +15,13 @@ import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repo
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 import {
   toUpdatedPreferenceReadModel,
-  type PreferenceChanges,
   type PreferenceReadModel,
 } from "../read-models/preference.read-model.js";
 import { invalidTimezone } from "../user-preferences.errors.js";
 import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
 
-export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
+export type UpdatePreferenceCommand = Readonly<Partial<PreferenceReadModel>> & {
   readonly userId: string;
 };
 

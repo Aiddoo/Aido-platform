@@ -1,5 +1,3 @@
-import type { UserRole } from "@aido/api/vocabulary";
-
 import type { TokenPair } from "../ports/token-issuer.port.js";
 
 export interface EmailVerificationReadModel {
@@ -29,12 +27,4 @@ export interface SocialLoginReadModel extends LoginReadModel {
 export interface RefreshedTokensReadModel {
   tokens: TokenPair;
   sessionId: string;
-}
-
-/** refresh 가드가 검증한 refresh 토큰 정보 */
-export interface VerifiedRefreshPayload {
-  userId: string;
-  email: string;
-  sessionId: string;
-  role: UserRole;
 }

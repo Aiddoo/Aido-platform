@@ -49,7 +49,7 @@ export class ExchangeOAuthCodeUseCase {
     }
     this.#dependencies.logger.debug({ event: OAuthStateLogEvent.OAUTH_EXCHANGE_CONSUMED, userId });
     // 웹 콜백은 시스템 브라우저 요청이라 앱 버전·기기가 없다. 코드는 일회용이라 알림도 한 번만 나간다.
-    if (state.isNewUser === true) {
+    if (state.isNewUser() === true) {
       await this.#dependencies.oauthSignupNotifier.notify({
         userId,
         provider: state.provider,
@@ -63,7 +63,7 @@ export class ExchangeOAuthCodeUseCase {
       userName: state.userName ?? undefined,
       profileImage: state.profileImage ?? undefined,
       accountRestored: state.accountRestored ?? undefined,
-      isNewUser: state.isNewUser ?? false,
+      isNewUser: state.isNewUser() ?? false,
     };
   }
 

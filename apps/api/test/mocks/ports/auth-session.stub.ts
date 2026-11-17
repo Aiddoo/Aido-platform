@@ -5,9 +5,9 @@ import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/sessio
 import type {
   TokenIssuerPort,
   TokenPair,
+  TokenPairClaims,
 } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
 import type { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubSessionCache implements Pick<
   SessionCachePort,
@@ -60,14 +60,14 @@ export class StubTokenIssuer implements Pick<
     return `token-family-${this.#familyCount}`;
   }
 
-  async generateTokenPair(
-    userId: UserId,
-    email: string,
-    sessionId: SessionId,
-    role: UserRole,
-    tokenFamily?: string,
-    tokenVersion?: number,
-  ): Promise<TokenPair> {
+  async generateTokenPair({
+    userId,
+    email,
+    sessionId,
+    role,
+    tokenFamily,
+    tokenVersion,
+  }: TokenPairClaims): Promise<TokenPair> {
     this.issued.push({
       userId: userId.value,
       email,

@@ -152,7 +152,7 @@ export class NaverOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         picture: naverUser.profile_image ?? undefined,
       };
     } catch (error) {
-      logOAuthTokenVerifyFailed(this.#logger, "NAVER", error);
+      logOAuthTokenVerifyFailed(this.#logger, { provider: "NAVER", error });
       if (error instanceof ApplicationException) {
         throw error;
       }

@@ -246,12 +246,12 @@ describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
   it("발급한 토큰 쌍은 access·refresh 가드를 모두 통과한다", async () => {
     // Given
     const issuer = new JwtTokenIssuerAdapter(new JwtService(), JWT);
-    const { accessToken, refreshToken } = await issuer.generateTokenPair(
-      UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-      "user@example.com",
-      SessionId.reconstitute(AUTH_FIXTURE_SESSION_ID),
-      "USER",
-    );
+    const { accessToken, refreshToken } = await issuer.generateTokenPair({
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+      email: "user@example.com",
+      sessionId: SessionId.reconstitute(AUTH_FIXTURE_SESSION_ID),
+      role: "USER",
+    });
 
     // When
     const access = await activate(validSessionGuard(), {
@@ -268,14 +268,14 @@ describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
   it("새 코드가 iss·aud를 실어 발급한 토큰도 옛 검증 옵션(secret·HS256만)으로 통과해 롤백해도 로그인이 유지된다", async () => {
     // Given
     const issuer = new JwtTokenIssuerAdapter(new JwtService(), JWT);
-    const { accessToken, refreshToken } = await issuer.generateTokenPair(
-      UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-      "user@example.com",
-      SessionId.reconstitute(AUTH_FIXTURE_SESSION_ID),
-      "USER",
-      "token-family",
-      1,
-    );
+    const { accessToken, refreshToken } = await issuer.generateTokenPair({
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+      email: "user@example.com",
+      sessionId: SessionId.reconstitute(AUTH_FIXTURE_SESSION_ID),
+      role: "USER",
+      tokenFamily: "token-family",
+      tokenVersion: 1,
+    });
     const legacyVerifier = new JwtService();
 
     // When

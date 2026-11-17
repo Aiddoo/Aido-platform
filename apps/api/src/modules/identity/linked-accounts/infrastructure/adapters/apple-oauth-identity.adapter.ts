@@ -74,7 +74,7 @@ export class AppleOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         emailVerified: claims.email_verified === true || claims.email_verified === "true",
       };
     } catch (error) {
-      logOAuthTokenVerifyFailed(this.#logger, "APPLE", error);
+      logOAuthTokenVerifyFailed(this.#logger, { provider: "APPLE", error });
       if (error instanceof errors.JWTExpired) {
         throw expiredSocialToken("APPLE");
       }

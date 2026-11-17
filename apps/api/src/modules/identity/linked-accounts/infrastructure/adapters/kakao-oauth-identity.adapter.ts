@@ -150,7 +150,7 @@ export class KakaoOAuthIdentityAdapter extends OAuthIdentityProviderPort {
         picture: kakaoAccount?.profile?.profile_image_url ?? undefined,
       };
     } catch (error) {
-      logOAuthTokenVerifyFailed(this.#logger, "KAKAO", error);
+      logOAuthTokenVerifyFailed(this.#logger, { provider: "KAKAO", error });
       if (error instanceof ApplicationException) {
         throw error;
       }

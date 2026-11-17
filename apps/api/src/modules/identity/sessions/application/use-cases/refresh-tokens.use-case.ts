@@ -18,10 +18,7 @@ import type { SessionCachePort } from "../ports/session-cache.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
 import type { TokenIssuerPort } from "../ports/token-issuer.port.js";
-import type {
-  RefreshedTokensReadModel,
-  VerifiedRefreshPayload,
-} from "../read-models/login.read-model.js";
+import type { RefreshedTokensReadModel } from "../read-models/login.read-model.js";
 import { SessionAlerts } from "../sessions.alerts.js";
 import {
   refreshTokenReused,
@@ -30,6 +27,14 @@ import {
   sessionRevoked,
 } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
+
+/** refresh 가드가 검증한 refresh 토큰 정보 */
+export interface VerifiedRefreshPayload {
+  readonly userId: string;
+  readonly email: string;
+  readonly sessionId: string;
+  readonly role: UserRole;
+}
 
 export interface RefreshTokensCommand {
   readonly refreshToken: string;
@@ -145,14 +150,14 @@ export class RefreshTokensUseCase {
     }
 
     const role = await this.#readCurrentRole(session, claimRole);
-    const tokens = await this.#dependencies.tokenService.generateTokenPair(
-      session.userId,
+    const tokens = await this.#dependencies.tokenService.generateTokenPair({
+      userId: session.userId,
       email,
-      session.id,
+      sessionId: session.id,
       role,
-      session.tokenFamily,
-      session.tokenVersion + 1,
-    );
+      tokenFamily: session.tokenFamily,
+      tokenVersion: session.tokenVersion + 1,
+    });
     const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(tokens.refreshToken);
     const refreshExpiresInSeconds =
       this.#dependencies.tokenService.getRefreshTokenExpiresInSeconds();

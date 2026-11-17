@@ -20,7 +20,17 @@ export interface UserPrimitives {
   readonly deletedAt: Temporal.Instant | null;
 }
 
-type UserProps = Omit<{ -readonly [K in keyof UserPrimitives]: UserPrimitives[K] }, "id">;
+interface UserProps {
+  email: string;
+  userTag: string;
+  role: UserRole;
+  status: UserStatus;
+  emailVerifiedAt: Temporal.Instant | null;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionExpiresAt: Temporal.Instant | null;
+  createdAt: Temporal.Instant;
+  deletedAt: Temporal.Instant | null;
+}
 
 // 탈퇴 유예는 UTC 기준 일수다(UTC에는 일광 절약이 없어 24시간 단위와 같다)
 const GRACE_PERIOD = Temporal.Duration.from({ hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS });
@@ -60,7 +70,7 @@ export class User extends AggregateRoot<UserId, UserProps> {
     return this.props.deletedAt;
   }
 
-  get isDeleted(): boolean {
+  isDeleted(): boolean {
     return this.props.deletedAt != null;
   }
 

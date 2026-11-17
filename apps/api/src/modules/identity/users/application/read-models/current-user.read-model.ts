@@ -18,7 +18,9 @@ interface MeteredFeatureEntitlement extends FeatureEntitlement {
 }
 
 /** 출시 앱 /me의 기능별 권한. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다 */
-export type CurrentUserEntitlements = Readonly<Record<PremiumFeature, FeatureEntitlement>> & {
+export type CurrentUserEntitlementsReadModel = Readonly<
+  Record<PremiumFeature, FeatureEntitlement>
+> & {
   readonly AI_PARSE: MeteredFeatureEntitlement;
   readonly CHEER: MeteredFeatureEntitlement;
   readonly NUDGE: MeteredFeatureEntitlement;
@@ -48,5 +50,5 @@ export interface CurrentUserReadModel {
   readonly premiumIsTrial?: boolean;
   readonly premiumPlanType?: SubscriptionPlanType | null;
   readonly isPremium?: boolean;
-  readonly entitlements?: CurrentUserEntitlements;
+  readonly entitlements?: CurrentUserEntitlementsReadModel;
 }

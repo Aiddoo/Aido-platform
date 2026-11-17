@@ -53,7 +53,7 @@ export class ResetPasswordUseCase {
     if (user == null) {
       throw invalidVerificationCode();
     }
-    if (user.isDeleted) {
+    if (user.isDeleted()) {
       throw accountDeleted(user.id.value);
     }
 

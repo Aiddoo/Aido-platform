@@ -6,11 +6,11 @@ import type { ConfigType } from "@nestjs/config";
 import { JwtService, type JwtVerifyOptions } from "@nestjs/jwt";
 import ms from "ms";
 
-import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
+import {
+  type TokenPairClaims,
+  TokenIssuerPort,
+} from "#api/modules/identity/sessions/application/ports/token-issuer.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-
-import type { SessionId } from "../../domain/session-id.vo.js";
 
 const JWT_TOKEN_TYPES = ["access", "refresh"] as const;
 
@@ -29,6 +29,8 @@ export interface TokenPair {
   refreshToken: string;
   expiresIn: number;
 }
+
+type JwtSubject = Pick<JwtPayload, "sub" | "email" | "role" | "sessionId">;
 
 const JWT_ALGORITHM = "HS256";
 const JWT_ISSUER = "aido-api";
@@ -55,25 +57,19 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
     this.#jwt = jwt;
   }
 
-  async generateTokenPair(
-    userId: UserId,
-    email: string,
-    sessionId: SessionId,
-    role: UserRole,
-    tokenFamily?: string,
-    tokenVersion = 1,
-  ): Promise<TokenPair> {
-    const family = tokenFamily ?? this.generateTokenFamily();
-
-    const accessToken = await this.#generateAccessToken(userId.value, email, sessionId.value, role);
-    const refreshToken = await this.#generateRefreshToken(
-      userId.value,
-      email,
-      sessionId.value,
-      role,
-      family,
-      tokenVersion,
-    );
+  async generateTokenPair(claims: TokenPairClaims): Promise<TokenPair> {
+    const subject = {
+      sub: claims.userId.value,
+      email: claims.email,
+      role: claims.role,
+      sessionId: claims.sessionId.value,
+    };
+    const accessToken = await this.#generateAccessToken(subject);
+    const refreshToken = await this.#generateRefreshToken({
+      ...subject,
+      tokenFamily: claims.tokenFamily ?? this.generateTokenFamily(),
+      tokenVersion: claims.tokenVersion ?? 1,
+    });
 
     return {
       accessToken,
@@ -96,19 +92,8 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
     return ms(this.#jwt.refreshExpiresIn) / MILLISECONDS_PER_SECOND;
   }
 
-  async #generateAccessToken(
-    userId: string,
-    email: string,
-    sessionId: string,
-    role: UserRole,
-  ): Promise<string> {
-    const payload: JwtPayload = {
-      sub: userId,
-      email,
-      role,
-      type: "access",
-      sessionId,
-    };
+  async #generateAccessToken(subject: JwtSubject): Promise<string> {
+    const payload: JwtPayload = { ...subject, type: "access" };
 
     return this.#jwtService.signAsync(payload, {
       secret: this.#jwt.secret,
@@ -120,22 +105,9 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
   }
 
   async #generateRefreshToken(
-    userId: string,
-    email: string,
-    sessionId: string,
-    role: UserRole,
-    tokenFamily: string,
-    tokenVersion: number,
+    subject: JwtSubject & { readonly tokenFamily: string; readonly tokenVersion: number },
   ): Promise<string> {
-    const payload: JwtPayload = {
-      sub: userId,
-      email,
-      role,
-      type: "refresh",
-      sessionId,
-      tokenFamily,
-      tokenVersion,
-    };
+    const payload: JwtPayload = { ...subject, type: "refresh" };
 
     return this.#jwtService.signAsync(payload, {
       secret: this.#jwt.refreshSecret,

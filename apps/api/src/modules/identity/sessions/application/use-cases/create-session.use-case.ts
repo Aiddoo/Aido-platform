@@ -47,14 +47,14 @@ export class CreateSessionUseCase {
     const now = clock.now();
     const sessionId = await sessionRepository.nextId();
     const tokenFamily = tokenService.generateTokenFamily();
-    const tokens = await tokenService.generateTokenPair(
-      UserId.reconstitute(command.userId),
-      command.email,
+    const tokens = await tokenService.generateTokenPair({
+      userId: UserId.reconstitute(command.userId),
+      email: command.email,
       sessionId,
-      command.role,
+      role: command.role,
       tokenFamily,
-      1,
-    );
+      tokenVersion: 1,
+    });
 
     const session = Session.create({
       id: sessionId,

@@ -10,15 +10,17 @@ export interface TokenPair {
   expiresIn: number;
 }
 
+export interface TokenPairClaims {
+  readonly userId: UserId;
+  readonly email: string;
+  readonly sessionId: SessionId;
+  readonly role: UserRole;
+  readonly tokenFamily?: string;
+  readonly tokenVersion?: number;
+}
+
 export abstract class TokenIssuerPort {
-  abstract generateTokenPair(
-    userId: UserId,
-    email: string,
-    sessionId: SessionId,
-    role: UserRole,
-    tokenFamily?: string,
-    tokenVersion?: number,
-  ): Promise<TokenPair>;
+  abstract generateTokenPair(claims: TokenPairClaims): Promise<TokenPair>;
   abstract generateTokenFamily(): string;
   abstract hashRefreshToken(token: string): string;
   abstract getRefreshTokenExpiresInSeconds(): number;

@@ -57,7 +57,7 @@ export class DeleteAccountUseCase {
     if (user == null) {
       throw userNotFound(input.userId);
     }
-    if (user.isDeleted) {
+    if (user.isDeleted()) {
       throw accountDeleted(user.id.value);
     }
 

@@ -26,12 +26,12 @@ describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
     const userId = "user-id";
 
     // When
-    const pair = await service.generateTokenPair(
-      UserId.reconstitute(userId),
-      "test@example.com",
-      SessionId.reconstitute("session-id"),
-      "USER",
-    );
+    const pair = await service.generateTokenPair({
+      userId: UserId.reconstitute(userId),
+      email: "test@example.com",
+      sessionId: SessionId.reconstitute("session-id"),
+      role: "USER",
+    });
 
     // Then
     for (const token of [pair.accessToken, pair.refreshToken]) {
@@ -54,12 +54,12 @@ describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
     });
 
     // When
-    const pair = await issuer.generateTokenPair(
-      UserId.reconstitute("user-id"),
-      "test@example.com",
-      SessionId.reconstitute("session-id"),
-      "USER",
-    );
+    const pair = await issuer.generateTokenPair({
+      userId: UserId.reconstitute("user-id"),
+      email: "test@example.com",
+      sessionId: SessionId.reconstitute("session-id"),
+      role: "USER",
+    });
 
     // Then
     const claims = z

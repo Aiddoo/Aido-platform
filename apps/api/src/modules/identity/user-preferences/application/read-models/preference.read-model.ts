@@ -30,7 +30,6 @@ export interface PreferenceSettingsReadModel {
 
 /** 앱에 돌려주는 설정 값(locale 제외). 변경 요청은 이 필드 중 일부만 보낸다 */
 export type PreferenceReadModel = Omit<PreferenceSettingsReadModel, "locale">;
-export type PreferenceChanges = Partial<PreferenceReadModel>;
 
 const PREFERENCE_RESPONSE_FIELDS = [
   "pushEnabled",

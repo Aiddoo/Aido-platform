@@ -23,10 +23,13 @@ export async function readOAuthProviderError(response: Response): Promise<string
 // 공급자 오류 원문에는 토큰 payload가 섞일 수 있어 오류 종류·코드만 남긴다
 export function logOAuthTokenVerifyFailed(
   logger: Pick<Logger, "error">,
-  provider: (typeof OAUTH_PROVIDERS)[number],
-  error: unknown,
-  reason?: "expired" | "invalid",
+  failure: {
+    readonly provider: (typeof OAUTH_PROVIDERS)[number];
+    readonly error: unknown;
+    readonly reason?: "expired" | "invalid";
+  },
 ): void {
+  const { provider, error, reason } = failure;
   logger.error({
     event: LinkedAccountsLogEvent.OAUTH_TOKEN_VERIFY_FAILED,
     provider,

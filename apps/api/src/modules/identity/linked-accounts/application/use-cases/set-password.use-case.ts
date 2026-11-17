@@ -57,7 +57,7 @@ export class SetPasswordUseCase {
     if (user == null) {
       throw userNotFound(input.userId);
     }
-    if (user.isDeleted) {
+    if (user.isDeleted()) {
       throw accountDeleted(user.id.value);
     }
 
@@ -74,7 +74,7 @@ export class SetPasswordUseCase {
       if (lockedUser == null) {
         throw userNotFound(input.userId);
       }
-      if (lockedUser.isDeleted) {
+      if (lockedUser.isDeleted()) {
         throw accountDeleted(lockedUser.id.value);
       }
       const accounts =

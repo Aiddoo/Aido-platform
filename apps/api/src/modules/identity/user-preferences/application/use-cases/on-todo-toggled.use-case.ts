@@ -58,7 +58,7 @@ export class OnTodoToggledUseCase {
         }
 
         const allCompleted = stats.total === stats.completed;
-        if (!(await this.#recordTransition(userId, preference, today, allCompleted))) {
+        if (!(await this.#recordTransition(preference, today, allCompleted))) {
           return;
         }
 
@@ -100,8 +100,8 @@ export class OnTodoToggledUseCase {
     return this.#dependencies.statsReader.countForDay(userId, date);
   }
 
+  // 설정 Aggregate의 id가 사용자 id다
   async #recordTransition(
-    userId: UserId,
     preference: UserPreference,
     today: Temporal.PlainDate,
     allCompleted: boolean,
@@ -113,7 +113,7 @@ export class OnTodoToggledUseCase {
       return false;
     }
 
-    const yesterdayStats = await this.#statsForDay(userId, today.subtract({ days: 1 }));
+    const yesterdayStats = await this.#statsForDay(preference.id, today.subtract({ days: 1 }));
     const hadYesterdayCompletion =
       yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
     return preference.recordTodoReopened(today, hadYesterdayCompletion);

@@ -24,10 +24,23 @@ export interface OAuthStatePrimitives {
   readonly exchangedAt: Temporal.Instant | null;
 }
 
-type OAuthStateProps = Omit<
-  { -readonly [K in keyof OAuthStatePrimitives]: OAuthStatePrimitives[K] },
-  "id"
->;
+interface OAuthStateProps {
+  state: string;
+  provider: AccountProvider;
+  redirectUri: string;
+  mode: string | null;
+  initiatingUserId: string | null;
+  exchangeCode: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  userId: string | null;
+  userName: string | null;
+  profileImage: string | null;
+  accountRestored: boolean | null;
+  isNewUser: boolean | null;
+  expiresAt: Temporal.Instant;
+  exchangedAt: Temporal.Instant | null;
+}
 
 export type OAuthStateValidity = (typeof OAUTH_STATE_VALIDITIES)[number];
 
@@ -77,12 +90,13 @@ export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
     return this.props.accountRestored;
   }
 
-  get isNewUser(): boolean | null {
-    return this.props.isNewUser;
-  }
-
   get exchangedAt(): Temporal.Instant | null {
     return this.props.exchangedAt;
+  }
+
+  // 옛 교환 행은 값이 없어(null) 호출자가 기본값을 정한다
+  isNewUser(): boolean | null {
+    return this.props.isNewUser;
   }
 
   validityAt(now: Temporal.Instant): OAuthStateValidity {

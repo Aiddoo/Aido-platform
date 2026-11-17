@@ -54,7 +54,7 @@ export class VerifyEmailUseCase {
       throw emailNotRegistered(email);
     }
 
-    if (user.isDeleted) {
+    if (user.isDeleted()) {
       throw accountDeleted(user.id.value);
     }
 

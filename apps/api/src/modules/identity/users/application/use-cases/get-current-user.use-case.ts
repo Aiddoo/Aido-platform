@@ -11,7 +11,7 @@ import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import type { UserProfileCachePort } from "../ports/user-profile-cache.port.js";
 import type { UserRepositoryPort } from "../ports/user.repository.port.js";
 import type {
-  CurrentUserEntitlements,
+  CurrentUserEntitlementsReadModel,
   CurrentUserReadModel,
 } from "../read-models/current-user.read-model.js";
 import { userNotFound } from "../users.errors.js";
@@ -121,7 +121,7 @@ export class GetCurrentUserUseCase {
   async #entitlements(
     userId: UserId,
     timezone: string,
-  ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
+  ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlementsReadModel }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
     const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([
