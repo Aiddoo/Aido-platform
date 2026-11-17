@@ -78,7 +78,7 @@
 | used·expired | 확인                                                  | —                          | `VERIFY_0751`                                   |
 | exhausted    | 확인                                                  | —                          | `VERIFY_0754`. 맞는 코드여도 시도로 세지 않는다 |
 
-`validityAt`은 사용 → 만료 → 소진 순으로 판단하고 만료 시각과 같은 순간부터 만료다. `consume`·`recordFailedAttempt`는 쓸 수 있는 코드에만 `true`이고, 저장소의 조건부 소비·원자적 증가가 경합을 막는다.
+`validityAt`은 사용 → 만료 → 소진 순으로 판단하고 만료 시각과 같은 순간부터 만료다. `consume`·`recordFailedAttempt`는 쓸 수 있는 코드에만 `true`이고, 저장소의 조건부 소비·원자적 증가가 경합을 막는다. `save`는 새 코드를 넣고, 읽은 코드(`isPersisted()`)는 읽은 뒤 소비했을 때만 쓰지 않았고 같은 hash·만료 전·시도 한도 전인 행을 소비한다. 아니면 `false`다.
 
 ## oauth-states
 

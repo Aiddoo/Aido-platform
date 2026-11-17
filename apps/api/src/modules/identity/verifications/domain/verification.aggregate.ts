@@ -52,11 +52,16 @@ export class Verification extends AggregateRoot<VerificationId, VerificationProp
 
   static reconstitute(primitives: VerificationPrimitives): Verification {
     const { id, userId, ...props } = primitives;
-    return new Verification(VerificationId.reconstitute(id), {
+    const verification = new Verification(VerificationId.reconstitute(id), {
       ...props,
       userId: UserId.reconstitute(userId),
     });
+    verification.#persisted = { usedAt: primitives.usedAt };
+    return verification;
   }
+
+  // 저장소가 새 코드를 넣을지, 읽은 코드의 소비만 쓸지 가르는 기준이다. 새 코드는 null이다
+  #persisted: { readonly usedAt: Temporal.Instant | null } | null = null;
 
   get userId(): UserId {
     return this.props.userId;
@@ -76,6 +81,14 @@ export class Verification extends AggregateRoot<VerificationId, VerificationProp
 
   get usedAt(): Temporal.Instant | null {
     return this.props.usedAt;
+  }
+
+  isPersisted(): boolean {
+    return this.#persisted != null;
+  }
+
+  hasBeenConsumedSinceLoad(): boolean {
+    return this.#persisted != null && this.#persisted.usedAt == null && this.props.usedAt != null;
   }
 
   validityAt(now: Temporal.Instant): VerificationValidity {

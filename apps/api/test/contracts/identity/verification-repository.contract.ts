@@ -1,12 +1,9 @@
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 
 import type { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
-import type {
-  Verification,
-  VerificationPrimitives,
-} from "#api/modules/identity/verifications/domain/verification.aggregate";
+import { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
+import type { VerificationType } from "#api/modules/identity/verifications/domain/verifications.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_OTHER_USER_ID,
@@ -16,19 +13,38 @@ import {
 const LATER = AUTH_FIXTURE_NOW.add({ minutes: 1 });
 let hashSequence = 0;
 
+interface VerificationSeed {
+  readonly createdAt?: Temporal.Instant;
+  readonly type?: VerificationType;
+  readonly userId?: string;
+  readonly attempts?: number;
+  readonly usedAt?: Temporal.Instant;
+}
+
+// 저장소는 새 코드만 넣으므로 발급(create)과 전이로 행 상태를 만든다
 async function saveVerification(
   repository: VerificationRepositoryPort,
-  overrides: Partial<VerificationPrimitives> = {},
+  seed: VerificationSeed = {},
 ): Promise<Verification> {
   hashSequence += 1;
-  const verification = createVerificationFixture({
-    id: (await repository.nextId()).value,
-    type: "PASSWORD_RESET",
+  const createdAt = seed.createdAt ?? AUTH_FIXTURE_NOW;
+  const verification = Verification.create({
+    id: await repository.nextId(),
+    userId: seed.userId ?? AUTH_FIXTURE_USER_ID,
+    type: seed.type ?? "PASSWORD_RESET",
     // Verification_token_key가 유일 제약이라 행마다 다른 hash를 쓴다
     tokenHash: `digest-${hashSequence}`,
-    ...overrides,
+    now: createdAt,
   });
-  await repository.save(verification);
+  for (let attempt = 0; attempt < (seed.attempts ?? 0); attempt += 1) {
+    verification.recordFailedAttempt(createdAt);
+  }
+  if (seed.usedAt != null) {
+    verification.consume(seed.usedAt);
+  }
+  if (!(await repository.save(verification))) {
+    throw new Error("새 인증 코드를 넣지 못했다");
+  }
   return verification;
 }
 
@@ -62,12 +78,20 @@ export function describeVerificationRepositoryContract(
       expect(ids[0]?.equals(ids[1] ?? ids[0])).toBe(false);
     });
 
-    it("저장한 코드는 같은 값으로 다시 읽는다", async () => {
+    it("새 코드는 넣어 true이고 같은 값으로 다시 읽는다", async () => {
       // Given
       const repository = await createRepository();
-      const saved = await saveVerification(repository, { attempts: 2 });
+      const issued = Verification.create({
+        id: await repository.nextId(),
+        userId: AUTH_FIXTURE_USER_ID,
+        type: "PASSWORD_RESET",
+        tokenHash: "digest-issued",
+        now: AUTH_FIXTURE_NOW,
+      });
+      issued.recordFailedAttempt(AUTH_FIXTURE_NOW);
 
       // When
+      const inserted = await repository.save(issued);
       const found = await repository.findValidByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
@@ -75,16 +99,22 @@ export function describeVerificationRepositoryContract(
       );
 
       // Then
-      expect(found?.toPrimitives()).toEqual(saved.toPrimitives());
+      expect(inserted).toBe(true);
+      expect(found?.toPrimitives()).toEqual(issued.toPrimitives());
     });
 
     it("유효한 코드는 그 사용자·종류의 쓰지 않고 만료 전인 것 중 가장 최근 것이다", async () => {
       // Given
       const repository = await createRepository();
+      await saveVerification(repository, { createdAt: LATER });
+      await repository.invalidateAllByUserIdAndType(
+        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+        "PASSWORD_RESET",
+        LATER,
+      );
       await saveVerification(repository, { createdAt: AUTH_FIXTURE_NOW.subtract({ minutes: 2 }) });
       const latest = await saveVerification(repository);
       await saveVerification(repository, { createdAt: LATER, usedAt: LATER });
-      await saveVerification(repository, { createdAt: LATER, expiresAt: LATER });
       await saveVerification(repository, { createdAt: LATER, type: "EMAIL_VERIFY" });
       await saveVerification(repository, { createdAt: LATER, userId: AUTH_FIXTURE_OTHER_USER_ID });
 
@@ -132,7 +162,9 @@ export function describeVerificationRepositoryContract(
       const repository = await createRepository();
       const active = await saveVerification(repository);
       await saveVerification(repository, { usedAt: AUTH_FIXTURE_NOW });
-      await saveVerification(repository, { expiresAt: AUTH_FIXTURE_NOW });
+      await saveVerification(repository, {
+        createdAt: AUTH_FIXTURE_NOW.subtract({ minutes: VERIFICATION_CODE.EXPIRY_MINUTES }),
+      });
       const otherType = await saveVerification(repository, { type: "EMAIL_VERIFY" });
 
       // When
@@ -242,14 +274,17 @@ export function describeVerificationRepositoryContract(
     it("만료가 기준 시각 전인 코드만 쓴 코드까지 limit개씩 지운다", async () => {
       // Given
       const repository = await createRepository();
+      // 코드는 발급 10분 뒤 만료라 발급 시각으로 만료 시각을 정한다
       await saveVerification(repository, {
-        expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }),
+        createdAt: AUTH_FIXTURE_NOW.subtract({ minutes: 10, milliseconds: 1 }),
       });
       await saveVerification(repository, {
-        expiresAt: AUTH_FIXTURE_NOW.subtract({ hours: 1 }),
-        usedAt: AUTH_FIXTURE_NOW.subtract({ hours: 2 }),
+        createdAt: AUTH_FIXTURE_NOW.subtract({ minutes: 70 }),
+        usedAt: AUTH_FIXTURE_NOW.subtract({ minutes: 65 }),
       });
-      await saveVerification(repository, { expiresAt: AUTH_FIXTURE_NOW });
+      await saveVerification(repository, {
+        createdAt: AUTH_FIXTURE_NOW.subtract({ minutes: 10 }),
+      });
 
       // When
       const deletedCounts = [

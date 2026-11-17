@@ -29,6 +29,10 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
     return [...this.#verifications.values()];
   }
 
+  seed(verification: Verification): void {
+    this.#verifications.set(verification.id.value, verification.toPrimitives());
+  }
+
   async nextId(): Promise<VerificationId> {
     this.#sequence += 1;
     return VerificationId.reconstitute(this.#sequence);
@@ -74,13 +78,15 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
   // Drizzle 저장소와 같은 조건이다. 읽은 코드는 소비만 저장하고 쓰였거나 만료·소진됐으면 false다
   async save(verification: Verification): Promise<boolean> {
     const saved = verification.toPrimitives();
-    const prior = this.#verifications.get(saved.id);
-    if (prior == null) {
+    if (!verification.isPersisted()) {
       this.#verifications.set(saved.id, saved);
       return true;
     }
+    const prior = this.#verifications.get(saved.id);
     if (
+      prior == null ||
       saved.usedAt == null ||
+      !verification.hasBeenConsumedSinceLoad() ||
       prior.usedAt != null ||
       prior.tokenHash !== saved.tokenHash ||
       !isAfter(prior.expiresAt, saved.usedAt) ||

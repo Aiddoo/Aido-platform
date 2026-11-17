@@ -67,24 +67,27 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
   }
 
   async save(entity: Verification): Promise<boolean> {
-    const row = toVerificationRow(entity);
-    const usedAt = row.usedAt ?? null;
+    if (!entity.isPersisted()) {
+      await this.#db.insert(verification).values(toVerificationRow(entity));
+      return true;
+    }
+    const usedAt = entity.usedAt;
+    if (usedAt == null || !entity.hasBeenConsumedSinceLoad()) {
+      return false;
+    }
+    // 읽은 뒤 다른 요청이 쓰거나 만료시키거나 시도를 다 썼으면 소비하지 않는다
     const saved = await this.#db
-      .insert(verification)
-      .values(row)
-      .onConflictDoUpdate({
-        target: verification.id,
-        set: { usedAt },
-        setWhere:
-          usedAt == null
-            ? sql`false`
-            : and(
-                isNull(verification.usedAt),
-                eq(verification.token, row.token),
-                gt(verification.expiresAt, usedAt),
-                lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
-              ),
-      })
+      .update(verification)
+      .set({ usedAt })
+      .where(
+        and(
+          eq(verification.id, entity.id.value),
+          isNull(verification.usedAt),
+          eq(verification.token, entity.tokenHash),
+          gt(verification.expiresAt, usedAt),
+          lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
+        ),
+      )
       .returning({ id: verification.id });
     return saved.length > 0;
   }

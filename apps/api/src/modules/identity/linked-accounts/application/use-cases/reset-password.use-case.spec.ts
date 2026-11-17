@@ -18,7 +18,7 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
 
   async function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
     const fixture = createAuthCredentialFixture(options);
-    await fixture.verificationRepository.save(
+    fixture.verificationRepository.seed(
       createVerificationFixture({
         userId: fixture.user.id,
         type: "PASSWORD_RESET",

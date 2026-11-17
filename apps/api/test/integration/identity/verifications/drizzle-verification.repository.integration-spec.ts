@@ -1,7 +1,7 @@
+import { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
 import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describeVerificationRepositoryContract } from "#test/contracts/identity/verification-repository.contract";
-import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_OTHER_USER_ID,
@@ -51,7 +51,13 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
     // Given
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const repository = new DrizzleVerificationRepository(transactionHost, client);
-    const verification = createVerificationFixture({ id: (await repository.nextId()).value });
+    const verification = Verification.create({
+      id: await repository.nextId(),
+      userId: AUTH_FIXTURE_USER_ID,
+      type: "EMAIL_VERIFY",
+      tokenHash: "digest:123456",
+      now: AUTH_FIXTURE_NOW,
+    });
     await repository.save(verification);
     const failure = new Error("후속 쓰기 실패");
 
@@ -75,10 +81,12 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
     // Given
     const repository = createRepository();
     const createdAt = Temporal.Instant.from("2027-01-08T12:00:00.123Z");
-    const verification = createVerificationFixture({
-      id: (await repository.nextId()).value,
-      createdAt,
-      expiresAt: createdAt.add({ minutes: 10 }),
+    const verification = Verification.create({
+      id: await repository.nextId(),
+      userId: AUTH_FIXTURE_USER_ID,
+      type: "EMAIL_VERIFY",
+      tokenHash: "digest:123456",
+      now: createdAt,
     });
 
     // When

@@ -68,7 +68,7 @@ describe("PurgeExpiredIdentityRecordsUseCase", () => {
       { id: 2, expiresAt: daysAgo(1) },
     ];
     for (const { id, expiresAt } of oneDayAfterExpiry) {
-      await fixture.verificationRepository.save(
+      fixture.verificationRepository.seed(
         createVerificationFixture({ id, tokenHash: `digest-${id}`, expiresAt }),
       );
       await fixture.oauthStateRepository.create({

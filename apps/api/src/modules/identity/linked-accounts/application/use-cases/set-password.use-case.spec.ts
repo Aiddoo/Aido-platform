@@ -45,7 +45,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     verification: Partial<VerificationPrimitives> = {},
   ) {
     const fixture = createAuthCredentialFixture({ socialOnly: true, ...options });
-    await fixture.verificationRepository.save(
+    fixture.verificationRepository.seed(
       createVerificationFixture({
         userId: fixture.user.id,
         type: "PASSWORD_SETUP",

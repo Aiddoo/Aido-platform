@@ -18,7 +18,7 @@ export abstract class VerificationRepositoryPort {
     type: VerificationType,
     since: Temporal.Instant,
   ): Promise<Temporal.Instant | null>;
-  /** 새 코드는 넣는다. 읽은 코드는 소비만 저장하고, 그 사이 쓰였거나 만료·소진됐으면 false다 */
+  /** 새 코드는 넣는다. 읽은 코드는 소비만 저장하고, 소비하지 않았거나 그 사이 쓰였거나 만료·소진됐으면 false다 */
   abstract save(verification: Verification): Promise<boolean>;
   /** 남은 같은 종류 코드를 지금 만료시키고 만료시킨 수를 준다 */
   abstract invalidateAllByUserIdAndType(
@@ -26,7 +26,6 @@ export abstract class VerificationRepositoryPort {
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<number>;
-  /** 호출자 트랜잭션이 롤백돼도 실패 횟수가 남아야 한다 */
   /** 동시에 틀려도 시도는 한도에서 멈춘다. 호출자 트랜잭션이 롤백돼도 남는다 */
   abstract saveFailedAttempt(verification: Verification): Promise<void>;
   abstract deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number>;
