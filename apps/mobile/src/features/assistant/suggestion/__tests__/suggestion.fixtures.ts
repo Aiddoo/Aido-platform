@@ -1,4 +1,8 @@
-import { recurringSuggestionSchema } from '@aido/api';
+import {
+  recurringSuggestionSchema,
+  suggestionAnalysisSchema,
+  suggestionListResponseSchema,
+} from '@aido/api';
 import { defineFixture } from '@src/testing/fixture';
 
 export const createSuggestionDto = defineFixture(recurringSuggestionSchema, {
@@ -12,4 +16,16 @@ export const createSuggestionDto = defineFixture(recurringSuggestionSchema, {
   expiresAt: '2026-11-20T00:00:00.000Z',
   createdAt: '2026-11-12T00:00:00.000Z',
   suggestedCategoryId: null,
+  evidence: { recordedCount: 9, completedCount: 8, periodDays: 14 },
+});
+
+export const createSuggestionAnalysisDto = defineFixture(suggestionAnalysisSchema, {
+  state: 'WAITING_FOR_NEXT_RUN',
+  canRequestNow: true,
+  nextAnalysisAt: '2026-11-17T07:00:00.000Z',
+});
+
+export const createSuggestionListDto = defineFixture(suggestionListResponseSchema, {
+  suggestions: [createSuggestionDto()],
+  analysis: createSuggestionAnalysisDto({ state: 'HAS_SUGGESTIONS', canRequestNow: false }),
 });

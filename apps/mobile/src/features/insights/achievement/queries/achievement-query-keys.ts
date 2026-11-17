@@ -4,9 +4,10 @@ import type { WeeklyAchievement, WeeklyAchievementPage } from '../domains/achiev
 
 export const ACHIEVEMENT_QUERY_KEYS = {
   all: ['achievement'] as const,
+  weeklyLists: () => [...ACHIEVEMENT_QUERY_KEYS.all, 'weekly-list'] as const,
   weeklyList: ({ year }: { year: number }) =>
     queryOptions<InfiniteData<WeeklyAchievementPage, number | undefined>>({
-      queryKey: [...ACHIEVEMENT_QUERY_KEYS.all, 'weekly-list', { year }],
+      queryKey: [...ACHIEVEMENT_QUERY_KEYS.weeklyLists(), { year }],
     }).queryKey,
   weeklyDetail: ({ year, week }: { year: number; week: number }) =>
     queryOptions<WeeklyAchievement>({

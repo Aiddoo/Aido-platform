@@ -19,6 +19,7 @@ import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infra
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { suggestionAnalysisPeriod } from "#api/modules/ai-assistance/suggestions/domain/suggestion-dispatch-window.domain-service";
 import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
 import {
   Suggestion,
@@ -27,17 +28,19 @@ import {
 import { AiSuggestionJobName } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { DrizzleSuggestionActivityReader } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-activity.reader";
+import { DrizzleSuggestionAnalysisRunRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-analysis-run.repository";
 import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-client-app-version.reader";
+import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-repeating-todo-title.reader";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   aiReport,
-  dailyCompletion,
   recurringSuggestion,
   todo,
   todoCategory,
@@ -174,19 +177,19 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const contextBuilder = new SuggestionContextReader({
       activityReader: activity,
-      weatherForecastReader: { readForecasts: async () => new Map() },
-      latestReportStats: { findLatestWeekly: async () => null },
+      repeatingTitleReader: new DrizzleRepeatingTodoTitleReader(fixture.txHost),
       clock,
-      logger,
     });
     const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
+      runs: new DrizzleSuggestionAnalysisRunRepository(fixture.txHost),
       generator: provider,
       scheduledAiConsent,
       clock,
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
+      mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
       userMutationLock,
       logger,
     });
@@ -202,7 +205,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       logger,
     });
     const notifications: { userId: string }[] = [];
-    const reportProcessor = new ReportGenerationProcessor(report);
+    const reportProcessor = new ReportGenerationProcessor(report, clock);
     const suggestionProcessor = new SuggestionAnalysisProcessor(
       analyze,
       {
@@ -214,8 +217,19 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       new StubUserLocalePreferenceReader(),
       { dispatchAnalysis: async () => undefined },
       new InMemoryJobQueue(),
+      clock,
     );
     return { analyze, report, reportProcessor, suggestionProcessor, notifications };
+  }
+
+  function analyzeCommand() {
+    return {
+      userId,
+      timezone: "Asia/Seoul",
+      localDate: Temporal.PlainDate.from("2026-10-08"),
+      trigger: "SCHEDULED",
+      isFinalAttempt: false,
+    } as const;
   }
 
   async function executeWorker(kind: "report" | "suggestion", provider: FakeAiGenerator) {
@@ -256,6 +270,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           status: "PENDING",
           createdAt: now,
           updatedAt: now,
+          evidence: null,
         }),
       ),
     );
@@ -266,51 +281,17 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     await client.update(userTable).set(patch).where(eq(userTable.id, userId));
   }
 
-  it("LA 분석의 DATE 월요일 완료율은 일요일로 이동하지 않는다", async () => {
-    // Given
-    await client.insert(dailyCompletion).values({
-      id: createEntityId(),
-      userId,
-      date: Temporal.PlainDate.from("2026-10-05"),
-      totalTodos: 2,
-      completedTodos: 2,
-      achievedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
-      updatedAt: Temporal.Instant.from("2026-10-05T12:00:00Z"),
-    });
-
-    // When
-    const rates = await activity.findDayCompletionRates(
-      UserId.reconstitute(userId),
-      new Date("2026-10-01T00:00:00Z"),
-      CURRENT_TIME,
-      "America/Los_Angeles",
-    );
-
-    // Then
-    expect(rates.find((rate) => rate.day === "MON")).toMatchObject({ total: 2, completed: 2 });
-    expect(rates.find((rate) => rate.day === "SUN")).toMatchObject({ total: 0, completed: 0 });
-  });
-
   it.each([
-    {
-      timezone: "Asia/Seoul",
-      from: "2026-10-07T15:00:00Z",
-      to: "2026-10-07T15:30:00Z",
-      dates: ["2026-10-07", "2026-10-08", "2026-10-09"],
-    },
-    {
-      timezone: "America/Los_Angeles",
-      from: "2026-10-07T07:00:00Z",
-      to: "2026-10-08T00:30:00Z",
-      dates: ["2026-10-06", "2026-10-07", "2026-10-08"],
-    },
+    { timezone: "Asia/Seoul", expected: ["2026-09-24", "2026-10-08"] },
+    { timezone: "America/Los_Angeles", expected: ["2026-09-23", "2026-09-24"] },
   ])(
     "$timezone 추천의 DATE 조회 범위는 UTC 날짜 대신 사용자 현지 날짜를 포함한다",
-    async ({ timezone, from, to, dates }) => {
+    async ({ timezone, expected }) => {
       // Given
+      const at = Temporal.Instant.from("2026-10-07T15:30:00Z");
       await client.delete(todo).where(eq(todo.userId, userId));
       await client.insert(todo).values(
-        dates.map((date) => {
+        ["2026-09-22", "2026-09-23", "2026-09-24", "2026-10-08", "2026-10-09"].map((date) => {
           const { id: _id, ...row } = TodoFixture.create({
             userId,
             categoryId,
@@ -322,34 +303,16 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           return row;
         }),
       );
-      await client.insert(dailyCompletion).values(
-        dates.map((date) => ({
-          id: createEntityId(),
-          userId,
-          date: Temporal.PlainDate.from(date),
-          totalTodos: 1,
-          completedTodos: 1,
-          achievedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
-          updatedAt: Temporal.Instant.from(`${date}T12:00:00Z`),
-        })),
-      );
 
       // When
-      const start = new Date(from);
-      const end = new Date(to);
-      const owner = UserId.reconstitute(userId);
-      const [todos, days, times, categories] = await Promise.all([
-        activity.findRecentTodos(owner, start, end, timezone),
-        activity.findDayCompletionRates(owner, start, end, timezone),
-        activity.findTimeCompletionRates(owner, start, end, timezone),
-        activity.findCategoryCompletionRates(owner, start, end, timezone),
-      ]);
+      const todos = await activity.findRecentTodos(
+        UserId.reconstitute(userId),
+        suggestionAnalysisPeriod({ at, timeZone: timezone }),
+        timezone,
+      );
 
       // Then
-      expect(todos.map((todo) => todo.title)).toEqual([dates[1]]);
-      expect(days.reduce((sum, day) => sum + day.total, 0)).toBe(1);
-      expect(times.morning.count + times.afternoon.count).toBe(1);
-      expect(categories).toMatchObject([{ total: 1, completed: 1 }]);
+      expect(todos.map((todo) => todo.title)).toEqual(expected);
     },
   );
 
@@ -524,9 +487,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
 
     // When
-    const error = await flow.analyze
-      .execute({ userId, timezone: "Asia/Seoul" })
-      .catch((failure: unknown) => failure);
+    const error = await flow.analyze.execute(analyzeCommand()).catch((failure: unknown) => failure);
 
     // Then
     expect(databaseSqlState(error)).toBe("23503");
@@ -572,7 +533,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     ]);
 
     // When
-    const analysis = generation(provider).analyze.execute({ userId, timezone: "Asia/Seoul" });
+    const analysis = generation(provider).analyze.execute(analyzeCommand());
     try {
       await waitForLocks(1);
     } finally {
@@ -582,7 +543,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     }
 
     // Then
-    expect(await analysis).toBe(0);
+    expect((await analysis)?.outcome).toBe("NOT_PREMIUM");
     expect(provider.getCallCount()).toBe(1);
     expect(await counts()).toEqual({ reports: 0, suggestions: 0 });
   });

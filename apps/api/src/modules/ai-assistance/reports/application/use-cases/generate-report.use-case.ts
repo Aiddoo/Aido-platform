@@ -25,8 +25,8 @@ import {
 } from "../../../shared/domain/user-calendar.domain-service.js";
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
-  AggregatedReportData,
   AggregateParams,
+  ReportAggregation,
   ReportContent,
   ReportType,
 } from "../../domain/ai-report.constants.js";
@@ -37,7 +37,8 @@ import {
   type ReportPeriod,
 } from "../../domain/report-period.domain-service.js";
 import { AiReportLogEvent } from "../ai-report.log-events.js";
-import { type ReportPromptInput } from "../messages/report-context.messages.js";
+import { FALLBACK_CATEGORY_NAMES } from "../messages/report-category.messages.js";
+import { buildReportContext, type ReportPromptInput } from "../messages/report-context.messages.js";
 import {
   buildNoAiConsentContent,
   buildFallbackContent,
@@ -210,14 +211,10 @@ export class GenerateReportUseCase {
     const { startDate, endDate, prevStartDate, prevEndDate } = window;
 
     const [aggregatedData, prevReport] = await Promise.all([
-      this.#aggregate({
-        userId,
-        startDate,
-        endDate,
-        prevStartDate,
-        prevEndDate,
-        timezone,
-      }),
+      this.#aggregate(
+        { userId, startDate, endDate, prevStartDate, prevEndDate, timezone },
+        FALLBACK_CATEGORY_NAMES[locale],
+      ),
       this.#dependencies.aiReportRepository.findLatest(UserId.reconstitute(userId), type),
     ]);
 
@@ -270,7 +267,7 @@ export class GenerateReportUseCase {
     readonly userId: string;
     readonly type: ReportType;
     readonly window: ReportWindow;
-    readonly aggregatedData: AggregatedReportData;
+    readonly aggregatedData: ReportAggregation;
     readonly content: ReportContent;
     readonly locale: SupportedLocale;
   }): Promise<AiReport | null> {
@@ -309,6 +306,7 @@ export class GenerateReportUseCase {
           hasActivity: aggregatedData.hasActivity,
           contentSource: content.contentSource,
           promptVersion: content.promptVersion,
+          dailyCompletions: aggregatedData.dailyCompletions,
           now: clock.now(),
         });
         await aiReportRepository.save(report);
@@ -322,12 +320,18 @@ export class GenerateReportUseCase {
     }
   }
 
-  /**
-   * 데이터 집계: 할 일 통계 읽기 포트로 원시 집계를 조회하고 도메인 서비스로 계산.
-   */
-  async #aggregate(params: AggregateParams): Promise<AggregatedReportData> {
+  async #aggregate(
+    params: AggregateParams,
+    fallbackCategoryName: string,
+  ): Promise<ReportAggregation> {
     const inputs = await this.#dependencies.todoStatsReader.fetchAggregationInputs(params);
-    return assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone);
+    return assembleAggregatedData(
+      inputs,
+      params.startDate,
+      params.endDate,
+      params.timezone,
+      fallbackCategoryName,
+    );
   }
 
   /**
@@ -351,6 +355,7 @@ export class GenerateReportUseCase {
     }
 
     const definition = reportPrompt;
+    const context = buildReportContext(input, locale);
     const logBase = {
       task: definition.id,
       promptVersion: definition.version,
@@ -362,8 +367,8 @@ export class GenerateReportUseCase {
       const { value, meta } = await generateWithPrompt(
         this.#dependencies.generator,
         definition,
-        definition.build(input, locale),
-        { input, locale },
+        definition.build(context, locale),
+        { context, locale },
         { agreedConsentVersion: consent.agreedVersion, userId },
       );
       this.#dependencies.logger.log(
@@ -374,6 +379,7 @@ export class GenerateReportUseCase {
       if (error instanceof AiGenerationError && isWithheldAiFailure(error.kind)) {
         this.#dependencies.logger.warn({
           event: AiReportLogEvent.PROVIDER_UNAVAILABLE,
+          userId,
           errorType: error.kind,
         });
         return buildFallbackContent(input, locale);

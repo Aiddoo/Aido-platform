@@ -31,6 +31,15 @@ export function createAiReportFixture(overrides: Partial<AiReportPrimitives> = {
     generatedAt: AI_REPORT_FIXTURE_NOW,
     contentSource: "AI",
     promptVersion: "report@1",
+    dailyCompletions: [
+      { date: Temporal.PlainDate.from("2026-03-02"), total: 3, completed: 2 },
+      { date: Temporal.PlainDate.from("2026-03-03"), total: 2, completed: 2 },
+      { date: Temporal.PlainDate.from("2026-03-04"), total: 0, completed: 0 },
+      { date: Temporal.PlainDate.from("2026-03-05"), total: 2, completed: 2 },
+      { date: Temporal.PlainDate.from("2026-03-06"), total: 1, completed: 1 },
+      { date: Temporal.PlainDate.from("2026-03-07"), total: 2, completed: 1 },
+      { date: Temporal.PlainDate.from("2026-03-08"), total: 0, completed: 0 },
+    ],
     ...overrides,
   });
 }

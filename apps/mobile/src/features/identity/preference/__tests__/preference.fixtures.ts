@@ -20,6 +20,7 @@ function generatePreferenceDto(): PreferenceResponse {
     weatherEveningEnabled: false,
     weatherEveningHour: 18,
     weatherEveningMinute: 0,
+    aiPushEnabled: true,
   };
 }
 

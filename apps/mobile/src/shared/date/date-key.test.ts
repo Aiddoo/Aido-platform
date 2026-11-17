@@ -15,6 +15,7 @@ import {
   getCalendarWeek,
   getDayOfWeek,
   getDaysInDateKeyMonth,
+  getIsoWeekNumber,
   getIsoWeekOfMonth,
   getIsoWeekYear,
   getMondayOfDateKey,
@@ -323,7 +324,7 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
     addDaysToDateKey(createDateKey('1900-01-01'), days),
   );
 
-  it('1900~2200년 날짜 key의 더하기·차이·요일·달 길이·ISO 주 연도가 Node 26 Temporal과 같다', () => {
+  it('1900~2200년 날짜 key의 더하기·차이·요일·달 길이·ISO 주 연도·번호가 Node 26 Temporal과 같다', () => {
     // When
     const mismatches = dateKeys.filter(
       (dateKey) =>
@@ -335,7 +336,8 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
           temporalOracle.diffDays('2026-11-12', dateKey) ||
         getDayOfWeek(dateKey) !== temporalOracle.dayOfWeek(dateKey) ||
         getDaysInDateKeyMonth(dateKey) !== temporalOracle.daysInMonth(dateKey) ||
-        getIsoWeekYear(dateKey) !== temporalOracle.isoWeekYear(dateKey),
+        getIsoWeekYear(dateKey) !== temporalOracle.isoWeekYear(dateKey) ||
+        getIsoWeekNumber(dateKey) !== temporalOracle.isoWeekNumber(dateKey),
     );
 
     // Then
@@ -373,6 +375,20 @@ describe('서버 Temporal과 같은 날짜 key 계산', () => {
 
     // Then
     expect([result, temporalOracle.isoWeekYear(dateKey)]).toEqual([expected, expected]);
+  });
+
+  it.each([
+    ['2026-01-01', 1],
+    ['2026-12-31', 53],
+    ['2027-01-03', 53],
+    ['2027-01-04', 1],
+    ['2026-11-16', 47],
+  ])('%s는 ISO %i주에 속한다', (dateKey, expected) => {
+    // When
+    const result = getIsoWeekNumber(createDateKey(dateKey));
+
+    // Then
+    expect([result, temporalOracle.isoWeekNumber(dateKey)]).toEqual([expected, expected]);
   });
 });
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { type AiSuggestionConfig, aiSuggestionSchema } from "./ai-suggestion.schema.js";
 import { type AiConfig, aiSchema } from "./ai.schema.js";
 import {
   type AppVersionConfig,
@@ -52,6 +53,7 @@ export const envSchema = z
     ...retentionSchema.shape,
     ...externalSchema.shape,
     ...aiSchema.shape,
+    ...aiSuggestionSchema.shape,
     ...webhookSchema.shape,
     ...featureDiscoverySchema.shape,
     ...inviteSchema.shape,
@@ -79,6 +81,7 @@ export type EnvConfig = AppConfig &
   RetentionConfig &
   ExternalConfig &
   AiConfig &
+  AiSuggestionConfig &
   WebhookConfig &
   FeatureDiscoveryConfig &
   InviteConfig;

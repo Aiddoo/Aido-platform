@@ -1,7 +1,7 @@
 import { NUDGE_REPLY_LABEL_KEYS } from '@src/features/social/nudge/constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import type { NudgeInteraction } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { isNudgeUnavailableError } from '@src/features/social/nudge/domains/todo-nudge.error';
+import { isNudgeDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { selectPageItems } from '@src/shared/domains/cursor-page.model';
@@ -125,9 +125,7 @@ SentNudgeList.Loading = NotificationList.Loading;
 
 SentNudgeList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
-  // 목록 API의 NUDGE_1105·1111은 꺼짐 뜻뿐이다. 1105도 받아 1.15.2 서버가 먼저 나가지 않았거나 되돌려져도 꺼진 상태로 보인다.
-  // 1105 수용은 서버 롤백 바닥이 1.15.2가 된 뒤 1.16.0에서 지운다(compatibility.md)
-  const isListDisabled = isNudgeUnavailableError(error);
+  const isListDisabled = isNudgeDisabledError(error);
 
   return (
     <VStack flex={1} p={24}>

@@ -79,6 +79,10 @@ export const updatePreferenceSchema = z
       .max(59)
       .optional()
       .describe("오후 날씨 알림 분 (0-59)"),
+    aiPushEnabled: z
+      .boolean()
+      .optional()
+      .describe("AI 제안·주간·월간 리포트 푸시 활성화 여부 (1.16.0+, 알림함 기록은 그대로 남음)"),
   })
   .refine(
     (data) =>
@@ -95,7 +99,8 @@ export const updatePreferenceSchema = z
       data.weatherMorningMinute != null ||
       data.weatherEveningEnabled != null ||
       data.weatherEveningHour != null ||
-      data.weatherEveningMinute != null,
+      data.weatherEveningMinute != null ||
+      data.aiPushEnabled != null,
     { error: "최소 하나의 설정 값이 필요합니다" },
   );
 

@@ -64,9 +64,9 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다. 큐를 따로 목록에 적지 않는다                                                                                                                                                                                                                                                                                   |
 | 연결 예산    | 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 13                                                                                                                                                                                                                                                                                                                                  |
 | `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                                                                                                                   |
-| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                                                                                                                                                                           |
+| 우선순위     | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). AI 제안 지금 받기도 `priority: 10`이고 전용 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`, 1칸·2초)가 가져간다([AI](ai.md#제안-분석-실행과-지금-받기)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                         |
 
-**연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 41인데 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
+**연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 42인데 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
 
 - 큐·스케줄은 모두 `defineQueue` + `JobQueuePort` 하나로 만든다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡고, pg-boss를 직접 부르거나 큐 이름 문자열을 따로 적지 않는다.
 - `JOB_WORKER_ENABLED=false`인 프로세스는 작업을 넣기만 한다. `work`·`registerSchedules`가 아무것도 등록하지 않고 pg-boss의 정기 작업 발행과 큐 유지보수도 끈다. 이렇게 띄운 프로세스가 있으면 worker를 켠 프로세스가 반드시 하나는 돌아야 한다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)).
@@ -76,7 +76,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 
 - 큐 이름 `*.v1`과 스케줄 key. 바꾸면 쌓인 작업과 스케줄을 잃는다.
 - 결정적 job id의 key 문자열(`deterministicJobId(queue, key)`). 날짜가 들어간 key(`invite-qualify-reminder:<수락>:<발송 시각>`)도 바이트 단위로 같아야 `cancel()`이 지운다.
-- 옛 payload schema(`admin-notification.queue.ts`의 `LegacyAdminNotificationSchema`·`LegacySendDataSchema`, `ai-report.queue.ts`의 선택 `locale`). 배포 순간 쌓여 있는 작업을 위해 둔다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
+- 옛 payload schema(`admin-notification.queue.ts`의 `LegacyAdminNotificationSchema`·`LegacySendDataSchema`, `ai-report.queue.ts`의 선택 `locale`, `ai-suggestion.queue.ts`의 선택 `weatherGrid`·`localDate`·`trigger`). 배포 순간 쌓여 있는 작업과 배포가 겹치는 동안의 옛 worker를 위해 둔다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
 
 ## 크론 주기와 `missed` 정책
 
@@ -90,7 +90,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | `push-delivery-outbox-relay-scheduler`         | `push-delivery.v1`                            | 매분(복구용)                      | `skip`(스캔 기반)                     |
 | `schedule-watchdog-scheduler`                  | `schedule-watchdog.v1`                        | 15분                              | `skip`                                |
 | `hourly-marketing-consent-reconfirm-scheduler` | `notification.marketing-consent-reconfirm.v1` | 매시 정각(현지 야간은 미룸)       | `skip`(다음 실행이 같은 조건)         |
-| `daily-suggestion-scheduler`                   | `ai-suggestion-analysis.v1`                   | 매시 정각, 현지 07시대인 사용자만 | `once`                                |
+| `daily-suggestion-scheduler`                   | `ai-suggestion-analysis.v1`                   | 매시 정각, 현지 09시대인 사용자만 | `once` + 실행 기록·현지 날짜 키       |
 | `weekly-report-scheduler`                      | `ai-report-generation.v1`                     | 매시 5분, 현지 새 주가 된 사용자  | `once`                                |
 | `monthly-report-scheduler`                     | `ai-report-generation.v1`                     | 매시 5분, 현지 새 달이 된 사용자  | `once`                                |
 | `premium-grant-sweep-scheduler`                | `premium-grant-sweep.v1`                      | 10분                              | `skip`                                |

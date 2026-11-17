@@ -1,6 +1,5 @@
 import {
   useDraftService,
-  useMarketingPushPromptRepository,
   useQueryCacheStorage,
   useVoiceNoteStorageService,
 } from '@src/bootstrap/providers/di-context';
@@ -15,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 /**
- * 로그인한 계정을 기기에 저장된 초안, 조회 캐시, 음성 메모, 계정 구분 없던 안내 기록의 주인으로 정하고 다른 계정의 것은 지운다.
+ * 로그인한 계정을 기기에 저장된 초안, 조회 캐시, 음성 메모의 주인으로 정하고 다른 계정의 것은 지운다.
  * 복원한 조회 캐시의 내 정보는 지난 실행의 다른 계정일 수 있어 이 마운트 뒤에 받은 내 정보로만 정한다
  */
 export function useClaimDeviceDataForUser(): void {
@@ -23,7 +22,6 @@ export function useClaimDeviceDataForUser(): void {
   const draftService = useDraftService();
   const queryCacheStorage = useQueryCacheStorage();
   const voiceNoteStorageService = useVoiceNoteStorageService();
-  const marketingPushPromptRepository = useMarketingPushPromptRepository();
   const isAuthenticated = status === 'authenticated';
   const [mountedAtMs] = useState(() => toEpochMs(getNowInstant()));
   const { data: accountId, dataUpdatedAt } = useQuery({
@@ -40,13 +38,6 @@ export function useClaimDeviceDataForUser(): void {
       queryCacheStorage.setOwner(meId);
       voiceNoteStorageService.removeAllExceptOwner(meId);
       voiceNoteStorageService.removeExpired(meId);
-      marketingPushPromptRepository.claimDeviceRecord(meId);
     }
-  }, [
-    meId,
-    draftService,
-    queryCacheStorage,
-    voiceNoteStorageService,
-    marketingPushPromptRepository,
-  ]);
+  }, [meId, draftService, queryCacheStorage, voiceNoteStorageService]);
 }

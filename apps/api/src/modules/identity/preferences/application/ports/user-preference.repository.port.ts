@@ -28,6 +28,7 @@ export interface PreferenceWriteInput {
   weatherEveningEnabled?: boolean;
   weatherEveningHour?: number;
   weatherEveningMinute?: number;
+  aiPushEnabled?: boolean;
 }
 
 /**

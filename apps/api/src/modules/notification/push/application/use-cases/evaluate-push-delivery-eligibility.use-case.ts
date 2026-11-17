@@ -12,6 +12,7 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import {
+  isAiPushDisabled,
   isAutomatedEngagementNotification,
   isGeneralRateLimitExemptNotification,
   isMarketingNotification,
@@ -146,6 +147,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     if (!preference.pushEnabled) {
       return this.#skipped(data, "PUSH_DISABLED");
     }
+    if (isAiPushDisabled(data.type, preference)) {
+      return this.#skipped(data, "AI_PUSH_DISABLED");
+    }
 
     // 단건 경로는 기존 계약대로 일반 rate counter를 설정·야간·동의보다 먼저 예약한다.
     if (
@@ -252,6 +256,9 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     }
     if (!recipient.preference.pushEnabled) {
       return "PUSH_DISABLED";
+    }
+    if (isAiPushDisabled(data.type, recipient.preference)) {
+      return "AI_PUSH_DISABLED";
     }
 
     const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);

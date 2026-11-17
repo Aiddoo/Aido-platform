@@ -213,8 +213,10 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       const legacy = await baseline(params);
       const current = await reader.fetchAggregationInputs(params);
       expect(
-        assembleAggregatedData(current, params.startDate, params.endDate, params.timezone),
-      ).toEqual(assembleAggregatedData(legacy, params.startDate, params.endDate, params.timezone));
+        assembleAggregatedData(current, params.startDate, params.endDate, params.timezone, "기타"),
+      ).toEqual(
+        assembleAggregatedData(legacy, params.startDate, params.endDate, params.timezone, "기타"),
+      );
       const beforeRounds: Awaited<ReturnType<typeof measure>>[] = [];
       const afterRounds: Awaited<ReturnType<typeof measure>>[] = [];
       for (let warmup = 0; warmup < 5; warmup++) {

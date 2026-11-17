@@ -319,7 +319,8 @@ TodoList.Item = function Item({
       middle={
         formattedTime != null || TodoPolicy.isRecurringTodo(todo) ? (
           <TodoRow.ScheduleLine
-            todo={todo}
+            repeat={todo.repeat}
+            isRepeating={TodoPolicy.isRecurringTodo(todo)}
             timeLabel={formattedTime}
             isReminderOff={isReminderOff && !todo.completed}
           />

@@ -1,337 +1,283 @@
+import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK, USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
+import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  formatHHmmTime,
-  formatYearAwareDateLabel,
-  type DateFormatContext,
-  type TimeFormat,
-} from '@src/shared/date/format/date-format';
-import { formatDaysOfWeek } from '@src/shared/date/format/date-labels';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
+import { useTrack, useTrackView } from '@src/shared/analytics';
+import type { TimeFormat } from '@src/shared/date/format/date-format';
+import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
 import {
   Box,
   Button,
   DashedDivider,
-  H4,
   HStack,
-  QueryErrorFallback,
+  LabelChip,
   type QueryErrorFallbackProps,
   ScallopedContainer,
   Spacing,
   Text,
-  TextSkeleton,
   VStack,
-  Mascot,
 } from '@src/shared/ui';
-import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
+import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { router, useIsFocused } from 'expo-router';
 
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-
-const SUGGESTION_LOADING_COUNT = 2;
-/** 소개의 고양이와 로딩 자리가 같은 크기라 함께 쓴다 */
-const INTRO_IMAGE_SIZE = 100;
+import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
+import { SuggestionStatus } from './suggestion-status';
 
 interface SuggestionItemProps {
-  suggestion: AiSuggestion;
+  suggestion: Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime' | 'evidence'>;
+  timeFormat: TimeFormat;
+  onMake: () => void;
   onDismiss: () => void;
   isDismissing?: boolean;
   isLast?: boolean;
 }
 
+/** 제안 영수증에서 상태 머리 아래 이어지는 제안 줄. 제안이 없으면 머리만 남는다 */
 export function SuggestionsList() {
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
+  // useSuspenseQueries는 쿼리마다 subscribed를 받지 않아 가려지면 구독을 끊는 목록과 따로 읽는다
   usePrefetchQuery(useGetPreferenceQueryOptions());
-  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
+  const isFocused = useIsFocused();
+  const { data: list } = useSuspenseQuery({
+    ...useGetSuggestionsQueryOptions(),
+    subscribed: isFocused,
+  });
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dismissSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
+  const push = useSingleTap(router.push);
 
-  if (suggestions.length === 0) {
-    return <SuggestionsList.Empty />;
+  if (list.suggestions.length === 0) {
+    return null;
   }
 
+  const handleMake = (suggestionId: number) =>
+    push({ pathname: '/suggestions/[suggestionId]/category', params: { suggestionId } });
+
   const handleDismiss = (suggestionId: number) => {
-    dismissSuggestionMutation.mutate({ suggestionId, input: { action: 'dismiss' } });
+    dismissSuggestionMutation.mutate({
+      suggestionId,
+      input: { action: 'dismiss' },
+      source: 'suggestions_screen',
+    });
   };
 
   return (
-    <ScallopedContainer>
-      <SuggestionsIntro
-        title={t('suggestions.list.header', { count: suggestions.length })}
-        description={t('suggestions.list.headerDescription')}
-      />
-
-      <Spacing size={20} />
-
-      <Box className="px-4 pb-4">
-        {suggestions.map((suggestion, index) => (
+    <>
+      <DashedDivider className="mx-5" />
+      <Box className="px-5 pt-1">
+        {list.suggestions.map((suggestion, index) => (
           <SuggestionsList.Item
             key={suggestion.id}
             suggestion={suggestion}
+            timeFormat={preference.timeFormat}
+            onMake={() => handleMake(suggestion.id)}
             onDismiss={() => handleDismiss(suggestion.id)}
             isDismissing={
               dismissSuggestionMutation.isPending &&
               dismissSuggestionMutation.variables?.suggestionId === suggestion.id
             }
-            isLast={index === suggestions.length - 1}
+            isLast={index === list.suggestions.length - 1}
           />
         ))}
       </Box>
-    </ScallopedContainer>
+      <Text size="e1" shade={5} align="center" className="px-5 pb-5">
+        {t('suggestions.expiryNotice', {
+          period: formatDayCountLabel(
+            AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS,
+            dateFormatContext,
+          ),
+        })}
+      </Text>
+    </>
   );
 }
 
 SuggestionsList.Item = function Item({
   suggestion,
+  timeFormat,
+  onMake,
   onDismiss,
   isDismissing = false,
   isLast = false,
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-  const push = useSingleTap(router.push);
-  // 확신도는 정수로 보인다. formatPercent(소수 한 자리)로 바꾸면 칩 글자 폭이 달라진다
-  const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
-
-  const handleOpenCategorySheet = () =>
-    push({
-      pathname: '/suggestions/[suggestionId]/category',
-      params: { suggestionId: suggestion.id },
-    });
+  const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
+    timeFormat,
+    dateFormatContext,
+  });
 
   return (
-    <Box className="py-2">
-      <VStack className="gap-2">
-        <VStack className="gap-1">
-          <HStack justify="between" align="center">
-            <Text size="b2" weight="semibold" shade={9}>
+    <Box className="py-3">
+      <VStack gap={2}>
+        <TodoRow.TitleLine
+          label={
+            <TodoRow.Label isCompleted={false} numberOfLines={2} className="flex-1">
               {suggestion.title}
-            </Text>
-            <Text size="e1" shade={5}>
-              {t('suggestions.list.confidence', { value: confidenceLabel })}
-            </Text>
-          </HStack>
-          <Text size="b4" shade={7}>
-            {formatSchedule(suggestion, {
-              timeFormat: preference.timeFormat,
-              context: dateFormatContext,
-              allDayLabel: t('suggestions.list.allDay'),
+            </TodoRow.Label>
+          }
+          isPrivate={false}
+        />
+        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
+        {suggestion.evidence != null && (
+          <Text size="e1" shade={6}>
+            {t('suggestions.item.evidence', {
+              period: formatDayCountLabel(suggestion.evidence.periodDays, dateFormatContext),
+              total: suggestion.evidence.recordedCount,
+              done: suggestion.evidence.completedCount,
             })}
           </Text>
-        </VStack>
-
-        <Text size="b4" shade={6}>
-          {suggestion.reason}
-        </Text>
-
-        <HStack justify="between" align="center" className="mt-1">
-          <Text size="e1" shade={5}>
-            {t('suggestions.list.expires', {
-              date: formatYearAwareDateLabel(suggestion.expiresAt, todayKey, dateFormatContext),
-            })}
-          </Text>
-
-          <HStack gap={8}>
-            <Button
-              size="small"
-              variant="weak"
-              color="dark"
-              display="inline"
-              onPress={onDismiss}
-              isDisabled={isDismissing}
-              isLoading={isDismissing}
-            >
-              {t('suggestions.list.reject')}
-            </Button>
-            <Button
-              size="small"
-              display="inline"
-              onPress={handleOpenCategorySheet}
-              isDisabled={isDismissing}
-            >
-              {t('suggestions.list.accept')}
-            </Button>
-          </HStack>
-        </HStack>
+        )}
       </VStack>
 
-      {!isLast && <DashedDivider className="mt-5" />}
+      <Spacing size={12} />
+
+      <HStack gap={8} justify="end">
+        <Button
+          size="small"
+          display="inline"
+          variant="weak"
+          color="dark"
+          isLoading={isDismissing}
+          onPress={onDismiss}
+        >
+          {t('suggestions.item.dismiss')}
+        </Button>
+        <Button size="small" display="inline" isDisabled={isDismissing} onPress={onMake}>
+          {t('suggestions.item.make')}
+        </Button>
+      </HStack>
+
+      {!isLast && (
+        <>
+          <Spacing size={12} />
+          <DashedDivider />
+        </>
+      )}
     </Box>
   );
 };
 
-SuggestionsList.PremiumPreview = function PremiumPreview() {
+/** 무료는 실제 제안 화면과 같은 영수증에 예시 제안을 그린다. 줄의 버튼과 아래 버튼은 모두 결제 화면으로 간다 */
+SuggestionsList.Free = function Free() {
   const push = useSingleTap(router.push);
-
   const { t } = useTranslation('ai');
+  const { trackEvent } = useTrack();
+  // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
+  const { data: preference } = useQuery(useGetPreferenceQueryOptions());
+  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const gateParams = {
+    feature: getPremiumGateAnalyticsFeature('AI_SUGGESTION'),
+    surface: 'suggestions',
+    presentation: 'inline',
+  } as const;
+
+  useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
+
+  const handleSubscribePress = () => {
+    trackEvent('premium_gate_cta_tapped', gateParams);
+    push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } });
+  };
 
   return (
-    <ScallopedContainer>
-      <SuggestionsIntro
-        title={t('suggestions.paywall.title')}
-        description={t('suggestions.paywall.description')}
-      />
-
-      <Spacing size={20} />
-
-      <Box className="px-4 pb-4">
-        <Box className="py-2 opacity-60">
-          <VStack gap={8}>
-            <VStack gap={4}>
-              <HStack justify="between" align="center">
-                <Text size="b2" weight="semibold" shade={9}>
-                  {t('suggestions.paywall.sampleTitle')}
-                </Text>
-                <Text size="e1" shade={5}>
-                  {t('suggestions.paywall.sampleConfidence')}
-                </Text>
-              </HStack>
-              <Text size="b4" shade={7}>
-                {t('suggestions.paywall.sampleSchedule')}
-              </Text>
-            </VStack>
-            <Text size="b4" shade={6}>
-              {t('suggestions.paywall.sampleReason')}
-            </Text>
-          </VStack>
-        </Box>
-
-        <Spacing size={16} />
-
-        <Button
-          size="medium"
-          onPress={() => push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } })}
-        >
-          {t('suggestions.paywall.subscribeCta')}
-        </Button>
-      </Box>
-    </ScallopedContainer>
-  );
-};
-
-SuggestionsList.Loading = function Loading() {
-  return (
-    <ScallopedContainer>
-      <Box className="items-center px-5 pt-4">
-        <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
-        <Spacing size={8} />
-        <TextSkeleton size="t3" className="w-48" />
-        <Spacing size={4} />
-        <TextSkeleton size="b4" className="w-56" />
-      </Box>
-
-      <Spacing size={20} />
-
-      <Box className="px-4 pb-4">
-        {range(SUGGESTION_LOADING_COUNT).map((index) => (
-          <Box key={index} className="py-2">
-            <VStack className="gap-2">
-              <VStack className="gap-1">
-                <HStack justify="between" align="center">
-                  <TextSkeleton size="b2" className="w-32" />
-                  <TextSkeleton size="e1" className="w-16" />
-                </HStack>
-                <TextSkeleton size="b4" className="w-40" />
-              </VStack>
-              <TextSkeleton size="b4" className="w-full" />
-              <HStack justify="between" align="center" className="mt-1">
-                <TextSkeleton size="e1" className="w-24" />
-                <HStack gap={8}>
-                  <Skeleton className="h-8 w-12 rounded-xl" />
-                  <Skeleton className="h-8 w-12 rounded-xl" />
-                </HStack>
-              </HStack>
-            </VStack>
-            {index < SUGGESTION_LOADING_COUNT - 1 && <DashedDivider className="mt-5" />}
+    <VStack gap={16}>
+      <ScallopedContainer testID="suggestions-status">
+        <SuggestionStatus.Free />
+        <DashedDivider className="mx-5" />
+        <Box className="px-5 pt-4 pb-2">
+          <Box className="items-start">
+            <LabelChip
+              color="warning"
+              label={t('suggestions.paywall.exampleBadge')}
+              labelProps={{ numberOfLines: 1 }}
+              pointerEvents="none"
+            />
           </Box>
-        ))}
-      </Box>
-    </ScallopedContainer>
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.vitamins'),
+              daysOfWeek: [...DAYS_OF_WEEK],
+              scheduledTime: '08:30',
+              evidence: {
+                recordedCount: 14,
+                completedCount: 13,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
+            timeFormat={timeFormat}
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
+          />
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.gym'),
+              daysOfWeek: ['MON', 'WED', 'FRI'],
+              scheduledTime: '19:00',
+              evidence: {
+                recordedCount: 6,
+                completedCount: 5,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
+            timeFormat={timeFormat}
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
+          />
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.recycling'),
+              daysOfWeek: ['TUE', 'THU'],
+              scheduledTime: '21:00',
+              evidence: {
+                recordedCount: 4,
+                completedCount: 3,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
+            timeFormat={timeFormat}
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
+          />
+          <SuggestionsList.Item
+            suggestion={{
+              title: t('suggestions.paywall.examples.weeklyReview'),
+              daysOfWeek: ['SUN'],
+              scheduledTime: null,
+              evidence: {
+                recordedCount: 2,
+                completedCount: 2,
+                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+              },
+            }}
+            timeFormat={timeFormat}
+            onMake={handleSubscribePress}
+            onDismiss={handleSubscribePress}
+            isLast
+          />
+        </Box>
+      </ScallopedContainer>
+
+      <Button size="medium" onPress={handleSubscribePress}>
+        {t('suggestions.paywall.subscribeCta')}
+      </Button>
+    </VStack>
   );
 };
 
-SuggestionsList.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
-  if (isSuggestionsPremiumRequiredError(error)) {
-    return <SuggestionsList.PremiumPreview />;
+SuggestionsList.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
+  // 한도 스냅샷이 늦어 프리미엄으로 물었지만 서버가 거절했다. 구독 상태를 다시 받는 동안 무료 화면과 같은 구성을 보인다
+  if (isSuggestionsPremiumRequiredError(props.error)) {
+    return <SuggestionsList.Free />;
   }
 
-  return (
-    <ScallopedContainer>
-      <Box className="px-5 py-6">
-        <QueryErrorFallback reset={reset} />
-      </Box>
-    </ScallopedContainer>
-  );
+  return <SuggestionStatus.Error {...props} />;
 };
-
-SuggestionsList.Empty = function Empty() {
-  const { t } = useTranslation('ai');
-  return (
-    <ScallopedContainer>
-      <SuggestionsIntro
-        title={t('suggestions.list.emptyNoHistory')}
-        description={t('suggestions.list.emptyNoHistoryDescription')}
-      />
-
-      <Spacing size={20} />
-
-      <Box className="px-4 pb-4">
-        <Box className="rounded-2xl border border-dashed border-gray-3 bg-white px-4 py-8">
-          <VStack gap={4} align="center">
-            <Text size="b3" weight="semibold" shade={8} align="center">
-              {t('suggestions.list.emptyNoPending')}
-            </Text>
-            <Text size="b4" shade={6} align="center">
-              {t('suggestions.list.emptyNoPendingDescription')}
-            </Text>
-          </VStack>
-        </Box>
-      </Box>
-    </ScallopedContainer>
-  );
-};
-
-interface SuggestionsIntroProps {
-  title: string;
-  description: string;
-}
-
-function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
-  return (
-    <Box className="items-center px-5 pt-4">
-      <Mascot name="catSuggestion" size={INTRO_IMAGE_SIZE} />
-      <Spacing size={8} />
-      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-        {title}
-      </H4>
-      <Text size="b4" shade={6} align="center">
-        {description}
-      </Text>
-    </Box>
-  );
-}
-
-function formatSchedule(
-  suggestion: AiSuggestion,
-  {
-    timeFormat,
-    context,
-    allDayLabel,
-  }: { timeFormat: TimeFormat; context: DateFormatContext; allDayLabel: string },
-): string {
-  const days = formatDaysOfWeek(suggestion.daysOfWeek, toLanguageOfIntlLocale(context.locale));
-  const time =
-    suggestion.scheduledTime == null
-      ? allDayLabel
-      : formatHHmmTime(suggestion.scheduledTime, timeFormat, context);
-  return `${days} · ${time}`;
-}

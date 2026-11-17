@@ -18,3 +18,4 @@ import { ScallopedContainer } from '@src/shared/ui';
 | Prop       | 타입        | 설명                                    |
 | ---------- | ----------- | --------------------------------------- |
 | `children` | `ReactNode` | 카드 안 내용. 여백은 사용처에서 정한다. |
+| `testID`   | `string`    | 바깥 표면의 테스트 id                   |

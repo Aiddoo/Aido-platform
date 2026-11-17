@@ -3,13 +3,8 @@ import { type Instant } from '@src/shared/date/instant';
 import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 
 import type { MarketingPushPromptState } from '../domains/marketing-push-prompt.model';
-import {
-  legacyMarketingPushPromptStorageSchema,
-  marketingPushPromptStorageSchema,
-} from '../schemas/marketing-push-prompt-storage.schema';
+import { marketingPushPromptStorageSchema } from '../schemas/marketing-push-prompt-storage.schema';
 
-// 1.14.x까지 계정 구분 없이 쓰던 키. 지우지 않으면 다음 계정이 앞사람이 닫은 기록을 이어받는다. 옮기는 코드와 함께 1.16.0에서 지운다(compatibility.md)
-const LEGACY_DEVICE_KEY = 'aido_marketing_push_prompt';
 const KEY_PREFIX = 'aido_notification_marketing_push_prompt_v1';
 
 const EMPTY_STATE: MarketingPushPromptState = { dismissedAt: null };
@@ -19,8 +14,6 @@ export interface MarketingPushPromptRepository {
   find(userId: string): MarketingPushPromptState;
   dismiss(userId: string, dismissedAt: Instant): void;
   subscribe(userId: string, listener: () => void): () => void;
-  /** 기기에 남은 1.14.x 기록을 이 계정으로 한 번 옮기고 지운다. 이미 계정 기록이 있으면 지우기만 한다 */
-  claimDeviceRecord(userId: string): void;
   clear(userId: string): void;
 }
 
@@ -54,16 +47,6 @@ export function createMarketingPushPromptRepository(
     },
     dismiss: (userId, dismissedAt) => save(userId, { dismissedAt }),
     subscribe: (userId, listener) => storage.subscribe(createKey(userId), listener),
-    claimDeviceRecord: (userId) => {
-      const legacy = parseStoredJson(
-        storage.get(LEGACY_DEVICE_KEY),
-        legacyMarketingPushPromptStorageSchema,
-      );
-      if (legacy?.lastPromptedAt != null && storage.get(createKey(userId)) == null) {
-        save(userId, { dismissedAt: legacy.lastPromptedAt });
-      }
-      storage.remove(LEGACY_DEVICE_KEY);
-    },
     clear: (userId) => {
       storage.remove(createKey(userId));
       snapshots.delete(userId);

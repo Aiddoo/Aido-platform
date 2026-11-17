@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
+import { AI_DATA_SHARING_CONSENT, AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
@@ -242,5 +242,43 @@ describe('AI 데이터 제공 동의 저장 실패', () => {
       marketing.settle();
       await marketingResult;
     });
+  });
+});
+
+describe('AI 데이터 제공 동의 저장', () => {
+  it('저장하면 refreshOnAiConsentChange로 밝힌 다른 피처의 조회만 다시 받게 한다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    httpClient.patch.mockResolvedValue(
+      ok({
+        aiDataSharingDecision: AI_DATA_SHARING_DECISION.AGREED,
+        aiDataSharingAgreedAt: '2026-11-17T00:00:00.000Z',
+        aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
+      }),
+    );
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(
+      CONSENT_QUERY_KEYS.detail(),
+      createConsent({ aiDataSharingDecision: AI_DATA_SHARING_DECISION.UNDECIDED }),
+    );
+    const dependentKey = ['other-feature', 'depends-on-ai-consent'];
+    const independentKey = ['other-feature', 'independent'];
+    queryClient
+      .getQueryCache()
+      .build(queryClient, { queryKey: dependentKey, meta: { refreshOnAiConsentChange: true } });
+    queryClient.getQueryCache().build(queryClient, { queryKey: independentKey });
+    const { result } = await renderScreenHook(
+      () => useMutation(useUpdateAiDataSharingConsentMutationOptions()),
+      { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    );
+
+    // When
+    await act(async () => {
+      await result.current.mutateAsync({ agreed: true });
+    });
+
+    // Then
+    expect(queryClient.getQueryState(dependentKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(independentKey)?.isInvalidated).toBe(false);
   });
 });

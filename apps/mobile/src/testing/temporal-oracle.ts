@@ -9,6 +9,7 @@ interface OraclePlainDate {
   readonly day: number;
   readonly dayOfWeek: number;
   readonly yearOfWeek: number;
+  readonly weekOfYear: number;
   readonly daysInMonth: number;
   add(duration: { days?: number; months?: number }): OraclePlainDate;
   until(other: OraclePlainDate): { readonly days: number };
@@ -48,6 +49,7 @@ export const temporalOracle = {
   /** 0=일 … 6=토 */
   dayOfWeek: (dateKey: string) => toPlainDate(dateKey).dayOfWeek % 7,
   isoWeekYear: (dateKey: string) => toPlainDate(dateKey).yearOfWeek,
+  isoWeekNumber: (dateKey: string) => toPlainDate(dateKey).weekOfYear,
   daysInMonth: (dateKey: string) => toPlainDate(dateKey).daysInMonth,
   diffDays: (from: string, to: string) => toPlainDate(from).until(toPlainDate(to)).days,
   /** 서버 toZonedInstant와 같은 규칙(겹치면 앞쪽, 없으면 전환 뒤) */

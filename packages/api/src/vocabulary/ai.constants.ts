@@ -37,12 +37,7 @@ export const AI_SUGGESTION_LIMITS = {
   MIN_OCCURRENCES: 3,
   /** 단순 반복(같은 제목) 패턴 인정 최소 매치 수 */
   MIN_REPEAT_OCCURRENCES: 2,
-  /** matchedTitles가 빈 배열인 유형(시즌/밸런스)의 최대 허용 개수 */
-  NO_MATCH_TYPE_CAP: 2,
-  /** 2회 반복 패턴에 요구되는 최소 신뢰도 */
-  CONFIDENCE_GATE_LOW_OCC: 0.75,
-  /** 3회 이상 반복 패턴에 요구되는 최소 신뢰도 */
-  CONFIDENCE_GATE_MULTI_OCC: 0.6,
+  MIN_ANALYSIS_RECORDS: 1,
   ANALYSIS_WEEKS: 2,
   /** 분석에 읽는 최근 할 일 상한. 입력 토큰과 응답 잘림을 막는다. */
   MAX_ANALYSIS_TODOS: 300,
@@ -54,8 +49,23 @@ export const AI_SUGGESTION_LIMITS = {
 
 export const AI_REPORT_TYPES = ["WEEKLY", "MONTHLY"] as const;
 
+// TEMPLATE은 AI 없이 통계로 채운 글이다(폴백·AI 동의 없음 포함)
+export const AI_REPORT_CONTENT_SOURCES = ["AI", "TEMPLATE"] as const;
+
 /** 추천에 대한 사용자 응답. 앱 분석 이벤트도 같은 값을 쓴다. */
 export const SUGGESTION_ACTIONS = ["accept", "dismiss"] as const;
 export type SuggestionActionKind = (typeof SUGGESTION_ACTIONS)[number];
 
 export const AI_SUGGESTION_STATUSES = ["PENDING", "ACCEPTED", "DISMISSED"] as const;
+
+export const AI_SUGGESTION_ANALYSIS_STATES = [
+  "HAS_SUGGESTIONS",
+  "NEEDS_AI_CONSENT",
+  "NEEDS_MORE_TODOS",
+  "ANALYZING",
+  "DONE_FOR_TODAY",
+  "NO_PATTERN_FOUND",
+  "UNAVAILABLE_TODAY",
+  "WAITING_FOR_NEXT_RUN",
+] as const;
+export type AiSuggestionAnalysisState = (typeof AI_SUGGESTION_ANALYSIS_STATES)[number];

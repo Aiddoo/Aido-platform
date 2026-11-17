@@ -44,7 +44,6 @@ import { EntitlementApi } from '@src/features/billing/subscription/apis/entitlem
 import { upsellDismissalStoredValue } from '@src/features/billing/subscription/schemas/upsell-dismissal-storage.schema';
 import { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
-import { createActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
 import { activationProgressStoredValue } from '@src/features/device/activation/schemas/activation-progress-storage.schema';
 import { ActivationService } from '@src/features/device/activation/services/activation.service';
 import { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
@@ -222,7 +221,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     now: getNowInstant,
   });
 
-  const activationProgressRepository = createActivationProgressRepository(syncStorage);
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
@@ -474,6 +472,5 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     inviteLinkOpenedStore: ports.inviteLinkOpenedStore,
 
     activationService: new ActivationService(syncStorage),
-    activationProgressRepository,
   };
 }

@@ -7,17 +7,28 @@ import type {
 } from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
 import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+import { SuggestionAnalysisStateReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-analysis-state.reader";
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
-import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import {
+  type AnalyzeAndCreateSuggestionsCommand,
+  AnalyzeAndCreateSuggestionsUseCase,
+} from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
+import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
+import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
-import { StubLatestReportStatsReader } from "#test/doubles/ai-assistance/stub-latest-report-stats.reader";
+import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-repeating-todo-title.reader";
+import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-single-todo-count.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
+import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 import {
   StubAiDataSharingConsent,
@@ -25,12 +36,13 @@ import {
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
   StubAiTodoStatsReader,
-  StubAiWeatherForecastReader,
 } from "#test/mocks/ports/ai-assistance.stub";
 
 import { createReportAiResponse } from "./ai-response.fixture.js";
 
 const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
+/** 고정 시각(서울 21:00)의 현지 날짜 */
+export const AI_ASSISTANCE_TODAY = Temporal.PlainDate.from("2026-03-22");
 
 export function createAnalysisTodo(
   overrides: Partial<TodoSummaryForAnalysis> = {},
@@ -77,14 +89,19 @@ export function createAiAssistanceFixture() {
   const unitOfWork = new StubAiGenerationUnitOfWork();
   const access = new StubAiGenerationAccess(unitOfWork);
   const repository = new InMemorySuggestionRepository();
+  const runs = new InMemorySuggestionAnalysisRunRepository();
+  const mutationLock = new RecordingMutationLock();
+  const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
+  const todoCountReader = new StubSingleTodoCountReader();
+  const timezoneReader = new StubUserTimezoneReader();
+  const onDemandConfig = { isEnabled: true };
   const activityReader = new StubSuggestionActivityReader();
   activityReader.todos = ["2026-03-02", "2026-03-09", "2026-03-16"].map((startDate) =>
     createAnalysisTodo({ startDate }),
   );
+  const repeatingTitleReader = new StubRepeatingTodoTitleReader();
   const reportRepository = new InMemoryAiReportRepository();
   const todoStatsReader = new StubAiTodoStatsReader();
-  const weatherForecastReader = new StubAiWeatherForecastReader();
-  const latestReportStats = new StubLatestReportStatsReader();
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
   const clientAppVersion = new StubAiClientAppVersion();
@@ -97,21 +114,48 @@ export function createAiAssistanceFixture() {
   });
   const contextBuilder = new SuggestionContextReader({
     activityReader,
-    weatherForecastReader,
-    latestReportStats,
+    repeatingTitleReader,
     clock,
-    logger,
   });
   const analyze = new AnalyzeAndCreateSuggestionsUseCase({
     repository,
+    runs,
     generator,
     scheduledAiConsent,
     unitOfWork,
+    mutationLock,
     contextBuilder,
     clock,
     logger,
     entitlementReader: access,
     userMutationLock: access,
+  });
+  const analysisState = new SuggestionAnalysisStateReader({
+    runs,
+    todoCountReader,
+    scheduledAiConsent,
+    timezoneReader,
+    onDemandConfig,
+    clock,
+  });
+  const request = new RequestSuggestionAnalysisUseCase({
+    entitlementReader: access,
+    onDemandConfig,
+    runs,
+    suggestions: repository,
+    enqueuer,
+    analysisState,
+    unitOfWork,
+    mutationLock,
+    clock,
+    logger,
+  });
+  const dispatch = new DispatchSuggestionAnalysesUseCase({
+    runs,
+    enqueuer,
+    unitOfWork,
+    mutationLock,
+    clock,
   });
   const generateReport = new GenerateReportUseCase({
     aiReportRepository: reportRepository,
@@ -129,18 +173,39 @@ export function createAiAssistanceFixture() {
     access,
     unitOfWork,
     repository,
+    runs,
+    mutationLock,
+    enqueuer,
+    todoCountReader,
+    timezoneReader,
+    onDemandConfig,
     activityReader,
+    repeatingTitleReader,
     reportRepository,
     todoStatsReader,
-    weatherForecastReader,
-    latestReportStats,
     generator,
     aiDataSharingConsent,
     clientAppVersion,
     logger,
     contextBuilder,
     analyze,
+    request,
+    dispatch,
     generateReport,
+  };
+}
+
+export function createAnalyzeCommand(
+  fixture: ReturnType<typeof createAiAssistanceFixture>,
+  overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {},
+): AnalyzeAndCreateSuggestionsCommand {
+  return {
+    userId: fixture.userId,
+    timezone: "Asia/Seoul",
+    localDate: AI_ASSISTANCE_TODAY,
+    trigger: "SCHEDULED",
+    isFinalAttempt: false,
+    ...overrides,
   };
 }
 
@@ -150,7 +215,6 @@ export function createSuggestionPick(overrides: Partial<SuggestionPick> = {}): S
     candidateId: "a1",
     daysOfWeek: ["MON"],
     useRecordedTime: false,
-    reason: "",
     ...overrides,
   };
 }
@@ -201,6 +265,7 @@ export function seedPendingSuggestion(
       expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
       createdAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
       updatedAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+      evidence: null,
     }),
   );
 }

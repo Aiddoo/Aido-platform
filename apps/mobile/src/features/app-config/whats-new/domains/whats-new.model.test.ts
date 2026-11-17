@@ -1,7 +1,7 @@
 import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
-import { RELEASE_1_15_0, RELEASES } from '../constants/releases.constants';
+import { RELEASE_1_16_0, RELEASES } from '../constants/releases.constants';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
 import {
@@ -15,8 +15,8 @@ const createEnabledConfig = (
   overrides: Partial<Extract<WhatsNewCampaignConfig, { enabled: true }>> = {},
 ): Extract<WhatsNewCampaignConfig, { enabled: true }> => ({
   enabled: true,
-  campaignId: RELEASE_1_15_0.campaignId,
-  minAppVersion: '1.15.0',
+  campaignId: RELEASE_1_16_0.campaignId,
+  minAppVersion: '1.16.0',
   autoOpen: true,
   ...overrides,
 });
@@ -24,14 +24,14 @@ const createEnabledConfig = (
 describe('shouldAutoOpen', () => {
   const eligibleContext = {
     config: createEnabledConfig(),
-    appVersion: '1.15.0',
+    appVersion: '1.16.0',
     hasSeen: false,
   };
 
   // 가입 시점은 받지 않는다. 출시 뒤에 가입한 새 계정도 이 조건이면 한 번 본다
   it('켜진 캠페인의 출시를 지원 버전과 같은 앱에서 처음 보면 연다', () => {
     // When
-    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_15_0, eligibleContext);
+    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_16_0, eligibleContext);
 
     // Then
     expect(result).toBe(true);
@@ -50,7 +50,7 @@ describe('shouldAutoOpen', () => {
     ['자동 열기 비활성', { config: createEnabledConfig({ autoOpen: false }) }],
   ])('%s이면 열지 않는다', (_label, overrides) => {
     // When
-    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_15_0, {
+    const result = WhatsNewPolicy.shouldAutoOpen(RELEASE_1_16_0, {
       ...eligibleContext,
       ...overrides,
     });
@@ -80,6 +80,7 @@ describe('findReleaseByCampaign', () => {
   it.each([
     ['앱이 모르는', 'feature-discovery-2026-08'],
     ['지운 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+    ['목록에만 남긴 지난 출시(1.15.0)가 쓰던', 'feature-discovery-2026-12'],
   ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
     // When
     const result = findReleaseByCampaign(RELEASES, campaignId);

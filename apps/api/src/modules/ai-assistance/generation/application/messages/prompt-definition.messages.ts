@@ -9,6 +9,7 @@ import type {
   AiGeneratorPort,
   AiTaskId,
 } from "../ports/ai-generator.port.js";
+import { type UntrustedTag, wrapUntrusted } from "./untrusted-input.messages.js";
 
 /** system은 사용자 값이 없는 고정 지시라 업체 어댑터가 캐시를 건다. prompt는 동적 맥락과 입력이다. */
 export interface BuiltPrompt {
@@ -87,6 +88,11 @@ export function composeSystem(sections: SystemSections): string {
     renderBlock("rules", sections.rules.join("\n\n")),
     renderBlock("examples", sections.examples),
   ].join("\n\n");
+}
+
+/** 예시 입력은 실제 user 턴과 같은 인코더로 만들어 데이터 블록 모양이 어긋나지 않게 한다. */
+export function renderExample(tag: UntrustedTag, input: unknown, output: unknown): string {
+  return `<example>\n${wrapUntrusted(tag, input)}\n<output>${JSON.stringify(output)}</output>\n</example>`;
 }
 
 /** user 턴: 동적 맥락을 먼저, 신뢰할 수 없는 사용자 입력 블록을 맨 끝에 둔다. */

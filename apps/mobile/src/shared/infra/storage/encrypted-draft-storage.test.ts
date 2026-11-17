@@ -80,7 +80,7 @@ describe('openEncryptedStorage', () => {
     );
   });
 
-  it('평문 초안은 암호화 저장소로 옮기고 평문 파일을 삭제한다', async () => {
+  it('평문 초안은 읽지 않고 평문 파일을 삭제한다', async () => {
     // Given
     const secureStorage = createMemoryKeyValueStorage();
     secureStorage.get.mockResolvedValue('cd'.repeat(16));
@@ -95,7 +95,7 @@ describe('openEncryptedStorage', () => {
     const { draftStorage } = await openEncryptedStorage(secureStorage, null);
 
     // Then
-    expect(draftStorage.get('aido_draft_v1:user-1:memo:create')).toBe('{"v":1}');
+    expect(draftStorage.get('aido_draft_v1:user-1:memo:create')).toBeUndefined();
     expect(deleteMMKV).toHaveBeenCalledWith('aido.drafts');
   });
 

@@ -8,10 +8,6 @@ import type {
   AggregationInputs,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
-import type {
-  WeatherForecastReaderPort,
-  WeatherForecast,
-} from "#api/modules/weather/forecasts/weather-forecasts.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -31,7 +27,7 @@ export class StubAiGenerationUnitOfWork implements UnitOfWorkPort {
 }
 
 export class StubAiGenerationAccess
-  implements Pick<EntitlementReaderPort, "canInTx">, UserMutationLockPort
+  implements Pick<EntitlementReaderPort, "can" | "canInTx">, UserMutationLockPort
 {
   role = "USER";
   subscriptionStatus = "ACTIVE";
@@ -44,6 +40,9 @@ export class StubAiGenerationAccess
 
   constructor(unitOfWork: StubAiGenerationUnitOfWork) {
     this.unitOfWork = unitOfWork;
+  }
+  async can(userId: UserId, feature: PremiumFeature): Promise<boolean> {
+    return this.canInTx(userId, feature);
   }
   async canInTx(_userId: UserId, _feature: PremiumFeature): Promise<boolean> {
     const eligible =
@@ -75,19 +74,6 @@ export class StubAiTodoStatsReader extends TodoStatsReaderPort {
   async fetchAggregationInputs(params: AggregateParams) {
     this.calls.push(structuredClone(params));
     return structuredClone(this.inputs);
-  }
-}
-
-export class StubAiWeatherForecastReader implements WeatherForecastReaderPort {
-  forecasts = new Map<string, WeatherForecast>();
-  failure: Error | null = null;
-  calls = 0;
-  async readForecasts() {
-    this.calls += 1;
-    if (this.failure) {
-      throw this.failure;
-    }
-    return this.forecasts;
   }
 }
 

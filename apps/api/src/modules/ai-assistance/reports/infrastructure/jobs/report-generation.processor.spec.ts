@@ -1,3 +1,5 @@
+import { DateClock } from "#test/doubles/platform/date-clock";
+
 import { ReportGenerationProcessor } from "./report-generation.processor.js";
 
 class RecordingGenerateReport {
@@ -23,7 +25,7 @@ describe("ReportGenerationProcessor", () => {
     async ({ attempt, isFinalAttempt }) => {
       // Given
       const generateReport = new RecordingGenerateReport();
-      const processor = new ReportGenerationProcessor(generateReport);
+      const processor = new ReportGenerationProcessor(generateReport, new DateClock());
       // When
       await processor.process(generateJob, attempt);
       // Then
@@ -34,7 +36,7 @@ describe("ReportGenerationProcessor", () => {
   it("시도 번호 없이 직접 실행하면 마지막 시도로 보고 폴백까지 허용한다", async () => {
     // Given
     const generateReport = new RecordingGenerateReport();
-    const processor = new ReportGenerationProcessor(generateReport);
+    const processor = new ReportGenerationProcessor(generateReport, new DateClock());
     // When
     await processor.process(generateJob);
     // Then

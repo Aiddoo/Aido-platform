@@ -5,3 +5,4 @@ export const TODO_REMINDER_QUEUE = TODO_REMINDER_QUEUE_DEFINITION.name;
 
 export { TodoReminderSchedulerPort } from "./reminders/application/ports/todo-reminder-scheduler.port.js";
 export { NotificationRemindersModule } from "./reminders/notification-reminders.module.js";
+export { NOTIFICATION_SCHEDULE } from "./reminders/domain/notification-schedule.domain-service.js";

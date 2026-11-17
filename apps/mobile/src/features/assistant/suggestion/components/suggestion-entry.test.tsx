@@ -26,7 +26,7 @@ import { Suspense } from 'react';
 
 import { SuggestionEntry } from './suggestion-entry';
 
-const RETRY_LABEL = '맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해주세요';
+const RETRY_LABEL = 'AI 제안을 불러오지 못했어요. 눌러서 다시 시도해주세요';
 const PREMIUM_ONLY_LABEL = 'AI 반복 제안은 프리미엄 구독자만 이용할 수 있어요';
 
 interface FeedEntryOptions {
@@ -71,6 +71,7 @@ async function renderFeedEntry(
       di: createTestDi({
         ports: { httpClient, errorReporter: createErrorReporterStub(), queryClient },
       }),
+      withLocalDate: true,
     },
   );
 
@@ -94,7 +95,10 @@ describe('SuggestionEntry', () => {
 
   it('프리미엄으로 알았지만 서버가 제안을 거절하면 다시 시도 대신 결제 안내를 보인다', async () => {
     // When
-    await renderFeedEntry({ isPremiumCached: true }, new ApiError('AI_1309', '프리미엄 전용', 403));
+    await renderFeedEntry(
+      { isPremiumCached: true },
+      new ApiError(ErrorCode.AI_1309, '프리미엄 전용', HttpStatus.FORBIDDEN),
+    );
 
     // Then
     expect(await screen.findByText(PREMIUM_ONLY_LABEL)).toBeTruthy();

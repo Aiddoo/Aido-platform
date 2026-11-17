@@ -75,10 +75,17 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       params.startDate,
       params.endDate,
       params.timezone,
+      "기타",
     );
     const transactionInputs = await uow.run(() => reader.fetchAggregationInputs(params));
     expect(
-      assembleAggregatedData(transactionInputs, params.startDate, params.endDate, params.timezone),
+      assembleAggregatedData(
+        transactionInputs,
+        params.startDate,
+        params.endDate,
+        params.timezone,
+        "기타",
+      ),
     ).toEqual(result);
     return result;
   };
@@ -383,7 +390,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
         });
         const inputs = await reader.fetchAggregationInputs(params);
         expect(
-          assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone)
+          assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone, "기타")
             .totalTodos,
         ).toBe(1);
         throw new Error("rollback");

@@ -11,7 +11,6 @@ import { ScheduledTodoReaderPort } from "./application/ports/scheduled-todo.read
 import { SunTimeProviderPort } from "./application/ports/sun-time-provider.port.js";
 import { WeatherForecastCachePort } from "./application/ports/weather-forecast-cache.port.js";
 import { WeatherForecastProviderPort } from "./application/ports/weather-forecast-provider.port.js";
-import { WeatherForecastReaderPort } from "./application/ports/weather-forecast.reader.port.js";
 import { WeatherReportCachePort } from "./application/ports/weather-report-cache.port.js";
 import { WeatherReportProviderPort } from "./application/ports/weather-report-provider.port.js";
 import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
@@ -19,7 +18,6 @@ import { GetWeatherConditionsUseCase } from "./application/use-cases/get-weather
 import { GetWeatherForecastUseCase } from "./application/use-cases/get-weather-forecast.use-case.js";
 import { GetWeatherReportUseCase } from "./application/use-cases/get-weather-report.use-case.js";
 import { ReadWeatherForecastUseCase } from "./application/use-cases/read-weather-forecast.use-case.js";
-import { ReadWeatherForecastsUseCase } from "./application/use-cases/read-weather-forecasts.use-case.js";
 import { ReadWeatherReportUseCase } from "./application/use-cases/read-weather-report.use-case.js";
 import { ReadWeatherReportsUseCase } from "./application/use-cases/read-weather-reports.use-case.js";
 import { AirkoreaAirQualityAdapter } from "./infrastructure/adapters/airkorea-air-quality.adapter.js";
@@ -27,7 +25,6 @@ import { KasiSunTimeAdapter } from "./infrastructure/adapters/kasi-sun-time.adap
 import { KmaLifestyleIndexAdapter } from "./infrastructure/adapters/kma-lifestyle-index.adapter.js";
 import { KmaWeatherForecastAdapter } from "./infrastructure/adapters/kma-weather-forecast.adapter.js";
 import { PlanningScheduledTodoAdapter } from "./infrastructure/adapters/planning-scheduled-todo.adapter.js";
-import { WeatherForecastReaderAdapter } from "./infrastructure/adapters/weather-forecast-reader.adapter.js";
 import { WeatherReportReaderAdapter } from "./infrastructure/adapters/weather-report-reader.adapter.js";
 import { WeatherKitAttributionAdapter } from "./infrastructure/adapters/weatherkit-attribution.adapter.js";
 import { WeatherKitReportAdapter } from "./infrastructure/adapters/weatherkit-report.adapter.js";
@@ -54,13 +51,6 @@ export const WEATHER_FORECASTS_PROVIDERS = [
     logger: loggerFor(ReadWeatherForecastUseCase),
     clock: ClockPort,
   }),
-  provideUseCase(ReadWeatherForecastsUseCase, {
-    weatherProvider: WeatherForecastProviderPort,
-    weatherCache: WeatherForecastCachePort,
-    logger: loggerFor(ReadWeatherForecastsUseCase),
-    clock: ClockPort,
-  }),
-  { provide: WeatherForecastReaderPort, useClass: WeatherForecastReaderAdapter },
   provideUseCase(ReadWeatherReportUseCase, {
     weatherReportProvider: WeatherReportProviderPort,
     weatherReportCache: WeatherReportCachePort,

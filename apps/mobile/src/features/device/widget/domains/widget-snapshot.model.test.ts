@@ -2,7 +2,6 @@ import { toDateKey } from '@src/shared/date/zoned';
 import { createDateKey } from '@src/testing/date-key';
 
 import { createWidgetSnapshot } from '../__tests__/widget-snapshot.fixtures';
-import { widgetSnapshotStorageSchema } from '../schemas/widget-snapshot-storage.schema';
 import { WidgetSnapshotPolicy } from './widget-snapshot.model';
 
 describe('isLoggedOut', () => {
@@ -138,32 +137,5 @@ describe('getDayForOwner', () => {
 
     // Then
     expect([day.date, renderState]).toEqual(['2026-07-12', 'data']);
-  });
-});
-
-describe('widgetSnapshotStorageSchema 하위 호환', () => {
-  it('이미 저장된 v1 snapshot을 같은 내용의 하루짜리 v2로 읽는다', () => {
-    // Given
-    const { days, updatedAtIso } = createWidgetSnapshot();
-    const legacySnapshot = { version: 1, updatedAtIso, ...days[0] };
-
-    // When
-    const result = widgetSnapshotStorageSchema.safeParse(legacySnapshot);
-
-    // Then
-    expect(result.success && result.data).toEqual({ version: 2, updatedAtIso, days });
-  });
-
-  it('compact streak가 없는 v1.5.1 스냅샷도 계속 읽는다', () => {
-    // Given
-    const { days, updatedAtIso } = createWidgetSnapshot();
-    const legacySnapshot = { version: 1, updatedAtIso, ...days[0] };
-    delete legacySnapshot.strings.compactStreakLabel;
-
-    // When
-    const result = widgetSnapshotStorageSchema.safeParse(legacySnapshot);
-
-    // Then
-    expect(result.success).toBe(true);
   });
 });

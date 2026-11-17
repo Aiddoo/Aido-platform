@@ -6,6 +6,68 @@
     "openLabel": "새로운 기능 열기",
     "dismissLabel": "새로운 기능 카드 닫기"
   },
+  "v1_16_0": {
+    "release": {
+      "title": "AI 제안·AI 리포트가 새로워졌어요",
+      "description": "최근 기록에서 자주 하는 할 일을 찾고, AI 리포트는 날마다·시간대 차트와 코치 한마디로 보여드려요"
+    },
+    "intro": {
+      "title": "아이두 AI가 새로워졌어요",
+      "description": "달라진 점과 무료로 쓸 수 있는 것을 보여드릴게요"
+    },
+    "suggestion": {
+      "title": "자주 하는 할 일을 찾아드려요",
+      "description": "최근 {{period}} 기록을 보고 반복 할 일로 만들어요"
+    },
+    "report": {
+      "title": "AI가 기록을 차트로 보여드려요",
+      "description": "날마다·시간대별 기록과 코치 한마디까지"
+    },
+    "request": {
+      "title": "아침까지 기다리지 않아도 돼요",
+      "description": "지금 분석 받기를 누르면 최근 할 일을 바로 살펴봐요"
+    },
+    "suggestions": {
+      "title": "근거를 보고 반복으로 만들어요",
+      "description": "최근 {{period}}에 몇 번 끝냈는지와 요일·시각을 함께 보여드려요"
+    },
+    "summary": {
+      "title": "나아진 만큼 한눈에 보여요",
+      "description": "달성률 변화와 날마다 끝낸 할 일을 보여드려요. 막대를 누르면 그날 기록이 보여요"
+    },
+    "hours": {
+      "title": "언제 잘 끝내는지 알려드려요",
+      "description": "주로 끝낸 시간과 AI 코치의 한마디를 함께 보여드려요"
+    },
+    "free": {
+      "title": "무료로도 이번 주 기록을 봐요",
+      "description": "막대를 누르면 그날 기록이 보이고, 예시 리포트로 AI 분석을 미리 볼 수 있어요"
+    },
+    "badge": {
+      "free": "무료"
+    },
+    "finish": {
+      "title": "이제 AI에게 맡겨볼까요?",
+      "description": "마이 > 새로운 기능에서 언제든 다시 볼 수 있어요",
+      "suggestion": "AI 제안",
+      "report": "AI 리포트",
+      "later": "나중에 할게요",
+      "bubble": "자주 하는 일을 찾아볼게요"
+    },
+    "demo": {
+      "suggestions": {
+        "workout": "아침 운동",
+        "vitamins": "영양제 먹기"
+      },
+      "coach": {
+        "summary": "아침 7시대에 가장 많이 끝냈고, 화요일과 목요일은 모두 끝냈어요.",
+        "tips": {
+          "morning": "중요한 할 일 하나는 아침에 먼저 해보세요.",
+          "evening": "주말에는 할 일을 몇 개만 골라 가볍게 정해보세요."
+        }
+      }
+    }
+  },
   "v1_15_0": {
     "release": {
       "title": "말로 할 일 만들기, 이제 AI가 나눠드려요",

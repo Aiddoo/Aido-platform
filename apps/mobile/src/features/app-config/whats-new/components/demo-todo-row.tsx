@@ -122,6 +122,7 @@ export function DemoTodoRow({
         todo.scheduledTime == null
           ? null
           : formatTimeOfDay(toTimeOfDay(todo.scheduledTime), timeFormat, dateFormatContext);
+      const isRepeating = isRecurring(todo.recurrenceGroupId);
 
       return (
         <TodoRow
@@ -145,8 +146,12 @@ export function DemoTodoRow({
             />
           }
           middle={
-            timeLabel != null || isRecurring(todo.recurrenceGroupId) ? (
-              <TodoRow.ScheduleLine todo={todo} timeLabel={timeLabel} />
+            timeLabel != null || isRepeating ? (
+              <TodoRow.ScheduleLine
+                repeat={todo.repeat}
+                isRepeating={isRepeating}
+                timeLabel={timeLabel}
+              />
             ) : undefined
           }
           bottom={

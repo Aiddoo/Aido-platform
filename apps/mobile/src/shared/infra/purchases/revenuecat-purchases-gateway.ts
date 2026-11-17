@@ -37,6 +37,11 @@ const NETWORK_CODES = [
   PURCHASES_ERROR_CODE.API_ENDPOINT_BLOCKED,
 ] as const;
 
+const STORE_PROBLEM_CODES = [
+  PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR,
+  PURCHASES_ERROR_CODE.PURCHASE_NOT_ALLOWED_ERROR,
+] as const;
+
 const STORE_SETUP_CODES = [
   PURCHASES_ERROR_CODE.CONFIGURATION_ERROR,
   PURCHASES_ERROR_CODE.INVALID_CREDENTIALS_ERROR,
@@ -59,7 +64,7 @@ export function toPurchasesGatewayError(error: unknown) {
     .with(PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR, () => 'cancelled')
     .with(PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR, () => 'payment-pending')
     .with(P.union(...STORE_SETUP_CODES), () => 'store-setup')
-    .with(PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR, () => 'store-problem')
+    .with(P.union(...STORE_PROBLEM_CODES), () => 'store-problem')
     .otherwise(() => 'other');
 
   return new PurchasesGatewayError(kind, storeErrorCode, getErrorMessage(error));

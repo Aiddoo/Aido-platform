@@ -7,7 +7,7 @@ describe('whatsNewParamsSchema', () => {
     const result = whatsNewParamsSchema.parse({ releaseId: '0.0.1', source: 'unknown' });
 
     // Then
-    expect(result).toEqual({ releaseId: RELEASE_ID.v1_15_0, source: 'mypage' });
+    expect(result).toEqual({ releaseId: RELEASE_ID.v1_16_0, source: 'mypage' });
   });
 
   it('값이 없어도 최신 출시를 연다', () => {
@@ -15,7 +15,7 @@ describe('whatsNewParamsSchema', () => {
     const result = whatsNewParamsSchema.parse({});
 
     // Then
-    expect(result.releaseId).toBe(RELEASE_ID.v1_15_0);
+    expect(result.releaseId).toBe(RELEASE_ID.v1_16_0);
   });
 
   it('있는 출시와 들어온 곳은 그대로 읽는다', () => {
@@ -31,6 +31,6 @@ describe('whatsNewParamsSchema', () => {
     const result = whatsNewParamsSchema.parse({ releaseId: '1.14.0', source: 'mypage' });
 
     // Then
-    expect(result.releaseId).toBe(RELEASE_ID.v1_15_0);
+    expect(result.releaseId).toBe(RELEASE_ID.v1_16_0);
   });
 });

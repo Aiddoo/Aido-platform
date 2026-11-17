@@ -18,7 +18,7 @@ import { isNotNil } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
-import { isRecurring, type Todo } from '../domains/todo.model';
+import type { TodoRepeat } from '../domains/todo-repeat.model';
 import {
   formatRepeatCadence,
   formatRepeatRuleLabel,
@@ -59,7 +59,8 @@ interface TodoTitleLineProps {
 }
 
 interface TodoScheduleLineProps {
-  todo: Pick<Todo, 'repeat' | 'recurrenceGroupId'>;
+  repeat: TodoRepeat | null;
+  isRepeating: boolean;
   /** 표시할 시간. 종일이면 null */
   timeLabel: string | null;
   /** 알림이 닿지 않아 시간 옆에 종 꺼짐을 그린다 */
@@ -171,15 +172,14 @@ TodoRow.TitleLine = function TitleLine({ label, isPrivate }: TodoTitleLineProps)
 };
 
 TodoRow.ScheduleLine = function ScheduleLine({
-  todo,
+  repeat,
+  isRepeating,
   timeLabel,
   isReminderOff = false,
 }: TodoScheduleLineProps) {
   const { t, i18n } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const repeatIconSize = fontScaledSize(REPEAT_ICON_SIZE);
-  const { repeat } = todo;
-  const isRepeating = isRecurring(todo.recurrenceGroupId);
   const ruleLabel = formatRepeatRuleLabel(repeat, i18n.language);
   const spokenRule =
     repeat == null

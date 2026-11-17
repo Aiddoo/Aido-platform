@@ -1,5 +1,4 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
-import { isSampleReportId } from '@src/features/insights/report/constants/sample-reports.constants';
 import { z } from 'zod';
 
 import { routeIdSchema, routeIntegerStringSchema } from './route-params.schema';
@@ -8,27 +7,6 @@ const reportIdSchema = routeIntegerStringSchema.pipe(aiReportIdParamSchema.shape
 const weekSchema = routeIntegerStringSchema.pipe(weeklyAchievementParamSchema.shape.week);
 
 describe('route params', () => {
-  it.each(['toString', '__proto__', 'constructor'])(
-    '샘플 ID가 아닌 프로토타입 이름 %s를 거부한다',
-    (id) => {
-      // When
-      const isSample = isSampleReportId(id);
-
-      // Then
-      expect(isSample).toBe(false);
-    },
-  );
-
-  it('등록된 샘플 ID만 허용한다', () => {
-    // When
-    const isWeeklySample = isSampleReportId('sample-weekly');
-    const isMonthlySample = isSampleReportId('sample-monthly');
-
-    // Then
-    expect(isWeeklySample).toBe(true);
-    expect(isMonthlySample).toBe(true);
-  });
-
   it.each([
     undefined,
     ['1'],

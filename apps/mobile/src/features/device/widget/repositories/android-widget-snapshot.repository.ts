@@ -4,7 +4,7 @@ import { parseStoredJson } from '@src/shared/utils/parse-stored-json';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import {
   type WidgetSnapshot,
-  widgetSnapshotStorageSchema,
+  widgetSnapshotSchema,
 } from '../schemas/widget-snapshot-storage.schema';
 
 /** 키는 출시된 위젯 계약이다. snapshot은 v2 JSON, 소유자는 공유 snapshot 밖 별도 값이다 */
@@ -24,10 +24,7 @@ export function createAndroidWidgetSnapshotRepository(
 ): AndroidWidgetSnapshotRepository {
   return {
     findSnapshot: () =>
-      parseStoredJson(
-        storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot),
-        widgetSnapshotStorageSchema,
-      ),
+      parseStoredJson(storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshot), widgetSnapshotSchema),
     findUserId: () => {
       const userId = storage.get(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);
       return userId && userId.trim().length > 0 ? userId : null;

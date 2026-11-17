@@ -1,0 +1,393 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "40e1066c-f980-4dbf-b799-f2b194cc58fc",
+  "prevIds": [
+    "d913a215-5b5f-438c-9a56-fe34fb932e94"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "SuggestionAnalysisRun"
+      ],
+      "writes": [
+        "s|tbl|public.SuggestionAnalysisRun",
+        "n|tbl|public.SuggestionAnalysisRun",
+        "e|tbl|public.SuggestionAnalysisRun",
+        "n|rel|public.SuggestionAnalysisRun",
+        "n|type|public.SuggestionAnalysisRun",
+        "n|rel|public.SuggestionAnalysisRun_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "AiReport",
+        "dailyCompletions"
+      ],
+      "writes": [
+        "s|col|public.AiReport.dailyCompletions",
+        "n|col|public.AiReport.dailyCompletions",
+        "e|col|public.AiReport.dailyCompletions"
+      ],
+      "reads": [
+        "n|tbl|public.AiReport",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "RecurringSuggestion",
+        "evidenceRecordedCount"
+      ],
+      "writes": [
+        "s|col|public.RecurringSuggestion.evidenceRecordedCount",
+        "n|col|public.RecurringSuggestion.evidenceRecordedCount",
+        "e|col|public.RecurringSuggestion.evidenceRecordedCount"
+      ],
+      "reads": [
+        "n|tbl|public.RecurringSuggestion",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "RecurringSuggestion",
+        "evidenceCompletedCount"
+      ],
+      "writes": [
+        "s|col|public.RecurringSuggestion.evidenceCompletedCount",
+        "n|col|public.RecurringSuggestion.evidenceCompletedCount",
+        "e|col|public.RecurringSuggestion.evidenceCompletedCount"
+      ],
+      "reads": [
+        "n|tbl|public.RecurringSuggestion",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "RecurringSuggestion",
+        "evidencePeriodDays"
+      ],
+      "writes": [
+        "s|col|public.RecurringSuggestion.evidencePeriodDays",
+        "n|col|public.RecurringSuggestion.evidencePeriodDays",
+        "e|col|public.RecurringSuggestion.evidencePeriodDays"
+      ],
+      "reads": [
+        "n|tbl|public.RecurringSuggestion",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "SuggestionAnalysisRun"
+      ],
+      "writes": [
+        "s|fk|public.SuggestionAnalysisRun.SuggestionAnalysisRun_userId_fkey",
+        "n|fk|public.SuggestionAnalysisRun.SuggestionAnalysisRun_userId_fkey",
+        "e|fk|public.SuggestionAnalysisRun.SuggestionAnalysisRun_userId_fkey",
+        "n|con|public.SuggestionAnalysisRun.SuggestionAnalysisRun_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.SuggestionAnalysisRun",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.SuggestionAnalysisRun.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "SuggestionAnalysisRun",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "AiReport",
+        "name": "dailyCompletions",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "RecurringSuggestion",
+        "name": "evidenceRecordedCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "RecurringSuggestion",
+        "name": "evidenceCompletedCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "RecurringSuggestion",
+        "name": "evidencePeriodDays",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "status",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "localDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "trigger",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "outcome",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "recentTodoCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "createdSuggestionCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "queuedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "startedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "finishedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "SuggestionAnalysisRun_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "SuggestionAnalysisRun",
+        "name": "SuggestionAnalysisRun_pkey",
+        "columns": [
+          "userId"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

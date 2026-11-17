@@ -10,7 +10,10 @@ import { type ComponentProps, useEffect } from 'react';
 
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { suggestionParamsSchema } from '../schemas/suggestion-params.schema';
+import {
+  suggestionParamsSchema,
+  suggestionSourceParamSchema,
+} from '../schemas/suggestion-params.schema';
 
 type SuggestionCategoryBottomSheetProps = Omit<
   ComponentProps<typeof RouteBottomSheet>,
@@ -39,11 +42,12 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
 }) {
   const { t } = useTranslation('ai');
   const [{ suggestionId }] = useRouteParams(suggestionParamsSchema);
-  const [{ data: suggestions }, { data: categoriesData }] = useSuspenseQueries({
+  const [{ source }] = useRouteParams(suggestionSourceParamSchema);
+  const [{ data: list }, { data: categoriesData }] = useSuspenseQueries({
     queries: [useGetSuggestionsQueryOptions(), useGetTodoCategoriesQueryOptions()],
   });
   const suggestion = useRetainedValue(
-    suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
+    list.suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
   );
   const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
     categoriesData.categories,
@@ -66,11 +70,11 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
       defaultValue={defaultCategoryId}
       onSubmit={(categoryId) =>
         actOnSuggestionMutation.mutate(
-          { suggestionId: suggestion.id, input: { action: 'accept', categoryId } },
+          { suggestionId: suggestion.id, input: { action: 'accept', categoryId }, source },
           { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
         )
       }
-      submitLabel={t('suggestions.category.submit')}
+      submitLabel={t('suggestions.item.make')}
       isLoading={actOnSuggestionMutation.isPending}
     />
   );

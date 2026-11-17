@@ -23,6 +23,9 @@ export const userPreferenceSchema = z
     weatherEveningEnabled: z.boolean().describe("오후 날씨 알림 활성화 여부"),
     weatherEveningHour: z.number().int().describe("오후 날씨 알림 시간 (0-23)"),
     weatherEveningMinute: z.number().int().describe("오후 날씨 알림 분 (0-59)"),
+    aiPushEnabled: z
+      .boolean()
+      .describe("AI 제안·주간·월간 리포트 푸시 활성화 여부 (1.16.0+, 알림함 기록은 그대로 남음)"),
   })
   .meta({
     example: {
@@ -40,6 +43,7 @@ export const userPreferenceSchema = z
       weatherEveningEnabled: false,
       weatherEveningHour: 18,
       weatherEveningMinute: 0,
+      aiPushEnabled: true,
     },
   });
 
@@ -61,6 +65,7 @@ export const preferenceResponseSchema = userPreferenceSchema.meta({
     weatherEveningEnabled: false,
     weatherEveningHour: 18,
     weatherEveningMinute: 0,
+    aiPushEnabled: true,
   },
 });
 
@@ -82,6 +87,7 @@ export const updatePreferenceResponseSchema = userPreferenceSchema.meta({
     weatherEveningEnabled: true,
     weatherEveningHour: 18,
     weatherEveningMinute: 0,
+    aiPushEnabled: true,
   },
 });
 

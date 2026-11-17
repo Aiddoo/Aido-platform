@@ -10,13 +10,11 @@ import { AiGeneratorPort } from "../generation/application/ports/ai-generator.po
 import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
 import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
 import { AiReportRepositoryPort } from "./application/ports/ai-report.repository.port.js";
-import { LatestReportStatsReaderPort } from "./application/ports/latest-report-stats.reader.port.js";
 import { TodoStatsReaderPort } from "./application/ports/todo-stats.reader.port.js";
 import { GenerateReportUseCase } from "./application/use-cases/generate-report.use-case.js";
 import { GetReportByIdUseCase } from "./application/use-cases/get-report-by-id.use-case.js";
 import { GetReportStatusUseCase } from "./application/use-cases/get-report-status.use-case.js";
 import { ListReportsUseCase } from "./application/use-cases/list-reports.use-case.js";
-import { LatestReportStatsReaderAdapter } from "./infrastructure/adapters/latest-report-stats-reader.adapter.js";
 import { ReportGenerationProcessor } from "./infrastructure/jobs/report-generation.processor.js";
 import { ReportGenerationScheduler } from "./infrastructure/jobs/report-generation.scheduler.js";
 import { DrizzleAiReportRepository } from "./infrastructure/persistence/drizzle-ai-report.repository.js";
@@ -25,7 +23,6 @@ import { DrizzleTodoStatsReader } from "./infrastructure/persistence/drizzle-tod
 export const AI_ASSISTANCE_REPORTS_PROVIDERS = [
   { provide: AiReportRepositoryPort, useClass: DrizzleAiReportRepository },
   { provide: TodoStatsReaderPort, useClass: DrizzleTodoStatsReader },
-  { provide: LatestReportStatsReaderPort, useClass: LatestReportStatsReaderAdapter },
   provideUseCase(GenerateReportUseCase, {
     aiReportRepository: AiReportRepositoryPort,
     todoStatsReader: TodoStatsReaderPort,

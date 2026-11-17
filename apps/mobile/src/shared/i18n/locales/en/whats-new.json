@@ -6,6 +6,68 @@
     "openLabel": "Open What's new",
     "dismissLabel": "Dismiss What's new card"
   },
+  "v1_16_0": {
+    "release": {
+      "title": "AI suggestions and AI reports are all new",
+      "description": "AI finds to-dos you do often from your recent record, and AI reports show daily and hourly charts with a coach note"
+    },
+    "intro": {
+      "title": "Aido's AI got an upgrade",
+      "description": "Here's what changed and what you can use for free"
+    },
+    "suggestion": {
+      "title": "AI finds to-dos you do often",
+      "description": "It looks at your last {{period}} and makes them repeat"
+    },
+    "report": {
+      "title": "AI charts your progress",
+      "description": "Daily and hourly charts, plus a coach note"
+    },
+    "request": {
+      "title": "No need to wait for the morning",
+      "description": "We'll check your recent to-dos right away when you tap Check now"
+    },
+    "suggestions": {
+      "title": "See why, then make it repeat",
+      "description": "We show how often you finished it in the last {{period}}, plus the days and time"
+    },
+    "summary": {
+      "title": "See your progress at a glance",
+      "description": "Your completion change and what you finished each day. Try tapping a bar"
+    },
+    "hours": {
+      "title": "Know when you get things done",
+      "description": "See the hours you usually finish, plus a note from your AI coach"
+    },
+    "free": {
+      "title": "See this week's record for free",
+      "description": "Tap a bar to see each day, and preview AI analysis with a sample report"
+    },
+    "badge": {
+      "free": "Free"
+    },
+    "finish": {
+      "title": "Ready to let AI help?",
+      "description": "You can find this again in Me > What's new",
+      "suggestion": "AI suggestions",
+      "report": "AI reports",
+      "later": "Maybe later",
+      "bubble": "Let me find what you do often"
+    },
+    "demo": {
+      "suggestions": {
+        "workout": "Morning workout",
+        "vitamins": "Take vitamins"
+      },
+      "coach": {
+        "summary": "You finished the most around 7 AM and cleared every to-do on Tuesday and Thursday.",
+        "tips": {
+          "morning": "Do one important to-do first thing in the morning.",
+          "evening": "On weekends, pick just a few to-dos and keep it light."
+        }
+      }
+    }
+  },
   "v1_15_0": {
     "release": {
       "title": "Speak to add, now with AI",

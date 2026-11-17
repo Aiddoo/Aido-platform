@@ -3,9 +3,13 @@ import type { CampaignId, FeatureKey } from '@src/shared/analytics/feature-key';
 import type { ReleaseId } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
 import type { RELEASE_1_15_0_STEPS } from './release-1-15-0.constants';
+import type { RELEASE_1_16_0_STEPS } from './release-1-16-0.constants';
 
 /** 소개 단계 이름. 목록 줄에서 바로 해 보기는 list다 */
-export type WhatsNewStep = (typeof RELEASE_1_15_0_STEPS)[number] | 'list';
+export type WhatsNewStep =
+  | (typeof RELEASE_1_16_0_STEPS)[number]
+  | (typeof RELEASE_1_15_0_STEPS)[number]
+  | 'list';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

@@ -19,7 +19,12 @@ export type EntitlementGateSurface =
   | 'notification_center'
   | 'app_icon_settings'
   | 'reminder_settings'
-  | 'voice_note';
+  | 'voice_note'
+  | 'report_list'
+  | 'report_sample';
+
+/** inline은 화면 안에 늘 보이는 잠금 카드다 */
+type PremiumGatePresentation = UpsellPresentation | 'inline';
 
 export type PremiumQuickstartAction = 'voice_note' | 'ai_report' | 'app_icon';
 
@@ -44,17 +49,17 @@ declare module '@src/shared/analytics/event-map' {
     subscription_restore_failed: { reason: PurchaseFailedReason };
     /** 스토어의 구독 관리 화면을 열었다 */
     subscription_management_opened: { store: 'app_store' | 'play_store' };
-    /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast다 */
+    /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast, 잠금 카드는 보일 때 inline이다 */
     premium_gate_shown: {
       feature: PremiumGateAnalyticsFeature;
       surface: EntitlementGateSurface;
-      presentation: UpsellPresentation;
+      presentation: PremiumGatePresentation;
     };
-    /** 안내 시트·토스트에서 프리미엄 보기를 눌렀다 */
+    /** 안내 시트·토스트·잠금 카드에서 프리미엄 보기를 눌렀다 */
     premium_gate_cta_tapped: {
       feature: PremiumGateAnalyticsFeature;
       surface: EntitlementGateSurface;
-      presentation: UpsellPresentation;
+      presentation: PremiumGatePresentation;
     };
     /** 시트를 프리미엄 보기·대안 동작 없이 닫았다(나중에·밀어 닫기). 그날 같은 기능은 토스트로 바뀐다 */
     premium_upsell_dismissed: {

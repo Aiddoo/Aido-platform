@@ -26,6 +26,7 @@ const COLUMN_DEFAULTS: UserPreferenceRecord = {
   weatherEveningEnabled: true,
   weatherEveningHour: 17,
   weatherEveningMinute: 30,
+  aiPushEnabled: true,
   currentStreak: 0,
   longestStreak: 0,
   lastCompletedDate: null,
@@ -141,6 +142,7 @@ export function describeUserPreferenceRepositoryContract(
       // When
       const written = await repository.upsert(UserId.reconstitute(USER_ID), {
         pushEnabled: false,
+        aiPushEnabled: false,
         weatherMorningHour: 0,
         weatherMorningMinute: undefined,
         timezone: undefined,
@@ -152,6 +154,7 @@ export function describeUserPreferenceRepositoryContract(
         ...SAVED_STREAK,
         timezone: "Asia/Seoul",
         pushEnabled: false,
+        aiPushEnabled: false,
         weatherMorningHour: 0,
         weatherMorningMinute: 17,
       };

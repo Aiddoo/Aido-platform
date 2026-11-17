@@ -1,8 +1,10 @@
 import {
   computeCategoryBreakdown,
+  computeDailyCompletions,
   computeDayPatterns,
   computeStreakDays,
   computeTimePatterns,
+  FALLBACK_CATEGORY_COLOR,
 } from "./report-aggregation.domain-service.js";
 
 // 사용자 현지 자정의 순간
@@ -78,7 +80,7 @@ describe("카테고리별 집계", () => {
     ];
 
     // When
-    const breakdown = computeCategoryBreakdown(totalGroups, completedGroups, categories);
+    const breakdown = computeCategoryBreakdown(totalGroups, completedGroups, categories, "기타");
 
     // Then
     expect(breakdown).toEqual([
@@ -86,5 +88,74 @@ describe("카테고리별 집계", () => {
       { name: "업무", color: "#111111", total: 2, completed: 0, rate: 0 },
       { name: "기타", color: "#808080", total: 2, completed: 0, rate: 0 },
     ]);
+  });
+
+  it.each([
+    { language: "ko", fallbackName: "기타" },
+    { language: "en", fallbackName: "Other" },
+  ])("지운 카테고리는 넘긴 $language 라벨과 회색으로 집계한다", ({ fallbackName }) => {
+    // Given
+    const totalGroups = [{ categoryId: 9, _count: { id: 2 } }];
+
+    // When
+    const breakdown = computeCategoryBreakdown(totalGroups, [], [], fallbackName);
+
+    // Then
+    expect(breakdown).toEqual([
+      { name: fallbackName, color: FALLBACK_CATEGORY_COLOR, total: 2, completed: 0, rate: 0 },
+    ]);
+  });
+});
+
+describe("computeDailyCompletions", () => {
+  it.each([
+    ["주간", "2026-11-09", "2026-11-15", 7],
+    ["윤년 2월 월간", "2028-02-01", "2028-02-29", 29],
+    ["평년 2월 월간", "2027-02-01", "2027-02-28", 28],
+    ["31일 달 월간", "2026-10-01", "2026-10-31", 31],
+    ["해를 넘기는 ISO 주", "2026-12-28", "2027-01-03", 7],
+    ["미국 DST가 끝나는 주", "2026-10-26", "2026-11-01", 7],
+  ])("%s는 첫날부터 마지막 날까지 하루씩 채운다", (_title, first, last, dayCount) => {
+    // When
+    const result = computeDailyCompletions({
+      totalGroups: [],
+      completedGroups: [],
+      period: { firstDay: Temporal.PlainDate.from(first), lastDay: Temporal.PlainDate.from(last) },
+    });
+
+    // Then
+    expect(result).toHaveLength(dayCount);
+    expect(result[0]?.date.toString()).toBe(first);
+    expect(result.at(-1)?.date.toString()).toBe(last);
+  });
+
+  it("기록 없는 날은 0이고 합이 전체 할 일 수와 같다", () => {
+    // Given
+    const totalGroups = [row("2026-12-29", 3), row("2027-01-02", 2)];
+    const completedGroups = [row("2026-12-29", 1)];
+
+    // When
+    const result = computeDailyCompletions({
+      totalGroups,
+      completedGroups,
+      period: {
+        firstDay: Temporal.PlainDate.from("2026-12-28"),
+        lastDay: Temporal.PlainDate.from("2027-01-03"),
+      },
+    });
+
+    // Then
+    expect(result.map(({ date, total, completed }) => [date.toString(), total, completed])).toEqual(
+      [
+        ["2026-12-28", 0, 0],
+        ["2026-12-29", 3, 1],
+        ["2026-12-30", 0, 0],
+        ["2026-12-31", 0, 0],
+        ["2027-01-01", 0, 0],
+        ["2027-01-02", 2, 0],
+        ["2027-01-03", 0, 0],
+      ],
+    );
+    expect(result.reduce((sum, item) => sum + item.total, 0)).toBe(5);
   });
 });

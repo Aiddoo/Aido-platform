@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
@@ -23,14 +24,17 @@ export class ReportGenerationProcessor implements OnModuleInit {
   }
 
   readonly #generateReport: Pick<GenerateReportUseCase, "execute">;
+  readonly #clock: ClockPort;
   readonly #jobQueue: Pick<JobQueuePort, "work"> | undefined;
 
   constructor(
     @Inject(GenerateReportUseCase) generateReport: Pick<GenerateReportUseCase, "execute">,
+    @Inject(ClockPort) clock: ClockPort,
     @Optional() jobQueue?: JobQueuePort,
   ) {
     this.#generateReport = generateReport;
     this.#jobQueue = jobQueue;
+    this.#clock = clock;
   }
 
   async onModuleInit(): Promise<void> {
@@ -61,6 +65,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
       reportType,
     });
 
+    const startedAtMs = this.#clock.now().epochMilliseconds;
     const report = await this.#generateReport.execute({
       userId,
       timezone,
@@ -84,6 +89,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
       queueName: AI_REPORT_QUEUE.name,
       userId,
       reportType,
+      durationMs: this.#clock.now().epochMilliseconds - startedAtMs,
     });
   }
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
-import { AI_REPORT_TYPES } from "../../../vocabulary/ai.constants.js";
+import { AI_REPORT_CONTENT_SOURCES, AI_REPORT_TYPES } from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
 export const reportStatsSchema = z.object({
@@ -40,6 +40,14 @@ export const timePatternItemSchema = z.object({
 
 export type TimePatternItem = z.infer<typeof timePatternItemSchema>;
 
+export const dailyCompletionItemSchema = z.object({
+  date: dateSchema,
+  total: z.number().int().nonnegative(),
+  completed: z.number().int().nonnegative(),
+});
+
+export type DailyCompletionItem = z.infer<typeof dailyCompletionItemSchema>;
+
 export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
 
 export const aiReportSchema = z.object({
@@ -60,6 +68,17 @@ export const aiReportSchema = z.object({
   aiTips: z.array(z.string()),
   hasActivity: z.boolean(),
   generatedAt: datetimeSchema,
+  dailyCompletions: z
+    .array(dailyCompletionItemSchema)
+    .nullable()
+    .optional()
+    .describe("기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null"),
+  aiContentSource: z
+    .enum(AI_REPORT_CONTENT_SOURCES)
+    .optional()
+    .describe(
+      "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
+    ),
 });
 
 export type AiReport = z.infer<typeof aiReportSchema>;

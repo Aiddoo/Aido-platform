@@ -13,7 +13,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-import { instant } from "../columns/temporal-columns.js";
+import { instant, plainDate } from "../columns/temporal-columns.js";
 import { reportType, suggestionStatus } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
@@ -39,6 +39,7 @@ export const aiReport = pgTable(
     year: integer().notNull(),
     contentSource: varchar({ length: 16 }),
     promptVersion: varchar({ length: 40 }),
+    dailyCompletions: jsonb(),
   },
   (table) => [
     foreignKey({
@@ -87,6 +88,9 @@ export const recurringSuggestion = pgTable(
     // Aggregate가 ClockPort 시각으로 채운다
     updatedAt: instant().notNull(),
     userId: text().notNull(),
+    evidenceRecordedCount: integer(),
+    evidenceCompletedCount: integer(),
+    evidencePeriodDays: integer(),
   },
   (table) => [
     foreignKey({
@@ -111,5 +115,31 @@ export const recurringSuggestion = pgTable(
       table.userId.asc().nullsLast(),
       table.updatedAt.asc().nullsLast(),
     ),
+  ],
+);
+
+// 값을 더할 때 migration 없이 추가만 하려고 상태·트리거·결과는 enum 대신 varchar이고 row mapper가 Zod로 읽는다
+export const suggestionAnalysisRun = pgTable(
+  "SuggestionAnalysisRun",
+  {
+    userId: text().primaryKey(),
+    status: varchar({ length: 16 }).notNull(),
+    localDate: plainDate().notNull(),
+    trigger: varchar({ length: 16 }).notNull(),
+    outcome: varchar({ length: 32 }),
+    recentTodoCount: integer(),
+    createdSuggestionCount: integer(),
+    queuedAt: instant().notNull(),
+    startedAt: instant(),
+    finishedAt: instant(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "SuggestionAnalysisRun_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
   ],
 );

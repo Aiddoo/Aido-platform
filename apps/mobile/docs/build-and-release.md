@@ -66,7 +66,6 @@ eas env:create --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment producti
 - Base64는 줄바꿈 없이 만든다(macOS는 `base64 -i`). Secret은 프로젝트 멤버만 접근한다. `eas secret:list`로 확인한다.
 - `EXPO_PUBLIC_SENTRY_DSN`은 `app.config.ts`의 `extra.sentryDsn`으로 전달되어 `initErrorReporting()`에서 쓰고, `SENTRY_AUTH_TOKEN`은 빌드 중 소스맵 업로드에만 쓴다(런타임 미포함).
 - 카카오톡 공유는 앱에 네이티브 앱 키가 필요하다. EAS 환경 `production`·`preview`·`development`에 각각 넣고 로컬은 `.env.development`에 둔다. 카카오 디벨로퍼스에 iOS 번들 ID(`com.aido.mobile`, `.preview`), Android 패키지, Android 키 해시 세 가지(debug 키, EAS 업로드 키, Play 앱 서명 키)를 모두 등록한다. 키가 있을 때만 `app.config.ts`가 카카오 config plugin을 넣고, 키를 처음 넣거나 바꾸면 **dev client를 다시 빌드**한다(JS 리로드로는 반영되지 않는다).
-- `@react-native-kakao/share`의 podspec은 `RNCKakaoSocial`·`RNCKakaoUser`를 요구하지만 `peerDependencies`에는 core만 있다. `@react-native-kakao/social`·`user`를 같은 버전(`pnpm-workspace.yaml` catalog)으로 직접 둔다. 빠지면 `pod install`이 `Unable to find a specification for 'RNCKakaoSocial'`로 실패한다.
 
 ## 빌드 방법과 비용
 

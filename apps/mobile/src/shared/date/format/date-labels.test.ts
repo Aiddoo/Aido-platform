@@ -9,6 +9,7 @@ import {
   formatCalendarWeekLabel,
   formatDateKeyCompactRange,
   formatDateKeyRange,
+  formatDayCountLabel,
   formatDaysOfWeek,
   formatIsoWeekLabel,
   formatRelativeDayLabel,
@@ -262,6 +263,22 @@ describe('formatRelativeDayLabel', () => {
     // When
     const labels = [KO_SEOUL_CONTEXT, EN_SEOUL_CONTEXT].map((context) =>
       formatRelativeDayLabel(createDateKey(dateKey), createDateKey(todayDateKey), context),
+    );
+
+    // Then
+    expect(labels).toEqual([korean, english]);
+  });
+});
+
+describe('formatDayCountLabel', () => {
+  it.each([
+    ['7로 나누어떨어지면 주로 쓴다', 14, '2주', '2 weeks'],
+    ['한 주는 단수다', 7, '1주', '1 week'],
+    ['나누어떨어지지 않으면 일로 쓴다', 10, '10일', '10 days'],
+  ] as const)('%s', (_name, days, korean, english) => {
+    // When
+    const labels = [KO_SEOUL_CONTEXT, EN_SEOUL_CONTEXT].map((context) =>
+      formatDayCountLabel(days, context),
     );
 
     // Then

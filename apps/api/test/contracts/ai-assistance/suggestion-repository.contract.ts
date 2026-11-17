@@ -44,11 +44,11 @@ export function describeSuggestionRepositoryContract(
       expect(new Set(ids.map((id) => id.value)).size).toBe(3);
     });
 
-    it("한 번에 저장한 제안은 주인에게만 보이고 다시 저장하면 상태가 바뀐다", async () => {
+    it("한 번에 저장한 제안은 근거 없는 옛 제안까지 주인에게만 그대로 보이고 다시 저장하면 상태가 바뀐다", async () => {
       // Given
       const repository = await createRepository();
-      const [suggestion] = await saveSuggestions(repository, [{}]);
-      if (suggestion == null) {
+      const [suggestion, legacy] = await saveSuggestions(repository, [{}, { evidence: null }]);
+      if (suggestion == null || legacy == null) {
         throw new Error("제안 준비 실패");
       }
       suggestion.dismiss(NOW);
@@ -56,11 +56,13 @@ export function describeSuggestionRepositoryContract(
       // When
       await repository.save(suggestion);
       const found = await repository.findByIdAndUserId(suggestion.id, USER_ID);
+      const foundLegacy = await repository.findByIdAndUserId(legacy.id, USER_ID);
       const foreign = await repository.findByIdAndUserId(suggestion.id, OTHER_USER_ID);
 
       // Then
       expect(found?.toPrimitives()).toEqual(suggestion.toPrimitives());
       expect(found?.status).toBe("DISMISSED");
+      expect(foundLegacy?.toPrimitives()).toEqual(legacy.toPrimitives());
       expect(foreign).toBeNull();
     });
 

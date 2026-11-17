@@ -221,7 +221,7 @@ describe("AI 리포트 E2E", () => {
 
       // Then
       expect(response.status).toBe(200);
-      expect(response.body.data.report.aiSummary).toBe(raw.summary);
+      expect(response.body.data.report.aiSummary).toBe(raw.insight);
       expect(response.body.data.report.aiTips).toEqual(raw.tips);
       // 라벨의 올해는 저장 시간대(테스트 사용자는 기본값 UTC)로 정한다
       expect(response.body.data.report.periodLabel).toBe(
@@ -231,7 +231,7 @@ describe("AI 리포트 E2E", () => {
       const stored = await ctx.testDatabase
         .getClient()
         .query.aiReport.findFirst({ where: { id: report.id.value } });
-      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@3" });
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@5" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
@@ -258,5 +258,37 @@ describe("AI 리포트 E2E", () => {
       expect(response.body.error.code).toBe("AI_1308");
     }
     expect(fakeAiGenerator.getCallCount()).toBe(0);
+  });
+
+  it("구독이 끝난 사용자는 리포트 목록·상세가 AI_1308이고 저장된 리포트는 남는다", async () => {
+    // Given
+    const user = await createPremiumUser("ai-report-expired@example.com", "Test1234!");
+    fakeAiGenerator.setRawResponse(createReportAiResponse("ko"));
+    await seedLastWeekTodo(user.userId);
+    const report = await ctx.module
+      .get(GenerateReportUseCase)
+      .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale: "ko" });
+    assert.exists(report);
+    await ctx.testDatabase
+      .getClient()
+      .update(userTable)
+      .set({ subscriptionStatus: "EXPIRED" })
+      .where(eq(userTable.id, user.userId));
+    await ctx.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(user.userId));
+
+    // When
+    for (const route of ["/v1/ai/reports", `/v1/ai/reports/${report.id.value}`]) {
+      const response = await request(ctx.app.getHttpServer())
+        .get(route)
+        .set("Authorization", `Bearer ${user.accessToken}`);
+
+      // Then
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe("AI_1308");
+    }
+    const stored = await ctx.testDatabase
+      .getClient()
+      .query.aiReport.findFirst({ where: { id: report.id.value } });
+    expect(stored).toBeDefined();
   });
 });

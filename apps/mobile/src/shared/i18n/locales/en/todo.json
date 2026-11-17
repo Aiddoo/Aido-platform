@@ -239,11 +239,19 @@
   "feed": {
     "loading": "Loading...",
     "suggestionsLoading": "Loading suggestions...",
-    "routineSuggestion": "We'll suggest routines just for you!",
-    "suggestionsArrived_one": "{{name}}, {{count}} personalized suggestion just arrived!",
-    "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
-    "preparing": "We're preparing this week's suggestions",
-    "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again"
+    "suggestionsArrived_one": "Found {{count}} frequent to-do",
+    "suggestionsArrived_other": "Found {{count}} frequent to-dos",
+    "suggestionsRetry": "Couldn't load your suggestions. Tap to try again",
+    "suggestionFree": "Turn frequent to-dos into repeating ones",
+    "suggestion": {
+      "analyzing": "Looking at your recent to-dos",
+      "doneForToday": "All caught up for today",
+      "noPatternFound": "No to-dos worth repeating yet",
+      "unavailableToday": "We couldn't check today",
+      "needsMoreTodos": "Add to-dos and we'll find the ones you do often",
+      "needsAiConsent": "AI suggestions need your consent",
+      "waitingForNextRun": "Waiting for the next check"
+    }
   },
   "activation": {
     "title": "Create and complete your first to-do",

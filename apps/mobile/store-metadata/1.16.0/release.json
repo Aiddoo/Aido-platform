@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "releaseVersion": "1.16.0",
+  "patchNotes": {
+    "ko": [
+      "AI 제안이 최근 2주 기록을 이유로 보여 주고, 아침까지 기다리지 않고 바로 분석을 받을 수 있어요.",
+      "띄어쓰기나 이모지만 다른 할 일도 같은 반복 할 일 후보로 묶어 찾아요.",
+      "AI 리포트가 날마다 끝낸 할 일과 시간대 차트, 코치 한마디로 바뀌었어요.",
+      "무료 사용자도 이번 주 내 기록을 보고, AI 제안과 리포트를 예시로 미리 볼 수 있어요.",
+      "AI 제안 알림이 오전 9시에 오고, 설정에서 AI 알림만 따로 끌 수 있어요."
+    ],
+    "en": [
+      "AI suggestions show why, and you get an analysis right away without waiting for the morning.",
+      "To-dos that differ only in spacing or emoji group together.",
+      "AI reports show daily progress, hourly charts, and a coach note.",
+      "Free plan shows your record for this week and sample AI suggestions and reports.",
+      "Suggestion alerts arrive at 9 AM, and you can turn off AI alerts on their own in Settings."
+    ]
+  }
+}

@@ -8,6 +8,7 @@ env:
 onFlowStart:
   - runScript: scripts/lib.js
   - runScript: scripts/screens-setup.js
+  - runScript: ../scripts/selectors.js
 ---
 - runFlow: subflows/resume.yaml
 - runFlow:
@@ -15,8 +16,16 @@ onFlowStart:
     env:
       ROUTE: reports
 - extendedWaitUntil:
-    visible: '.*(AI 리포트|AI Reports|나만의 리포트).*'
+    visible: '.*(AI 리포트|AI reports).*'
     timeout: 20000
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE != 'premium'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.report.thisWeekRecord}
+          timeout: 20000
 - takeScreenshot: 30_AI_리포트_목록
 - runFlow:
     when:
@@ -27,8 +36,14 @@ onFlowStart:
           env:
             ROUTE: reports/${MAESTRO_SHOT_WEEKLY_REPORT_ID}
       - extendedWaitUntil:
-          visible: '.*(AI 요약|AI summary|AI Summary).*'
+          visible:
+            id: ${output.ids.report.summary}
           timeout: 20000
+      - runFlow: subflows/assert-no-dev-error.yaml
+      - assertVisible:
+          id: ${output.ids.report.dailyChart}
+      - assertVisible:
+          id: ${output.ids.report.hourChart}
       - takeScreenshot: 31_AI_리포트_주간
       - scroll
       - waitForAnimationToEnd:
@@ -38,6 +53,11 @@ onFlowStart:
           file: subflows/open.yaml
           env:
             ROUTE: reports/${MAESTRO_SHOT_MONTHLY_REPORT_ID}
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.report.summary}
+          timeout: 20000
+      - runFlow: subflows/assert-no-dev-error.yaml
       - waitForAnimationToEnd:
           timeout: 5000
       - takeScreenshot: 33_AI_리포트_월간
@@ -45,6 +65,11 @@ onFlowStart:
     file: subflows/open.yaml
     env:
       ROUTE: suggestions
+# 무료도 같은 상태 카드가 위에 있다. 구독 버튼은 작은 화면에서 첫 화면 아래라 기다리지 않는다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.suggestions.status}
+    timeout: 20000
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 34_AI_반복_제안

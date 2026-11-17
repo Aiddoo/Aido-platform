@@ -101,6 +101,7 @@ const JOB_TRACE_RATES: ReadonlyMap<string, number> = new Map([
   ["todo-series-materialization.v1", 1],
   ["email-delivery.v1", 0.5],
   ["ai-report-generation.v1", 0.5],
+  ["ai-suggestion-analysis.v1", 0.5],
 ]);
 
 export const DEFAULT_JOB_TRACE_RATE = 0.05;

@@ -43,20 +43,26 @@ async function renderUpdate(httpClient = createHttpClientStub()) {
 }
 
 describe('설정 토글 저장', () => {
-  it('연결이 없으면 바로 실패해 바꾼 토글을 되돌리고 알린다', async () => {
-    // Given
-    const httpClient = createHttpClientStub();
-    httpClient.patch.mockRejectedValue(new NetworkError());
-    const { cached, update } = await renderUpdate(httpClient);
+  it.each([
+    ['nightPushEnabled', false],
+    ['aiPushEnabled', true],
+  ] as const)(
+    '연결이 없으면 바로 실패해 바꾼 토글(%s)을 되돌리고 알린다',
+    async (setting, saved) => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.patch.mockRejectedValue(new NetworkError());
+      const { cached, update } = await renderUpdate(httpClient);
 
-    // When
-    const result = update({ nightPushEnabled: true });
+      // When
+      const result = update({ [setting]: !saved });
 
-    // Then
-    await expect(result).rejects.toBeInstanceOf(NetworkError);
-    expect(cached()?.nightPushEnabled).toBe(false);
-    expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
-  });
+      // Then
+      await expect(result).rejects.toBeInstanceOf(NetworkError);
+      expect(cached()?.[setting]).toBe(saved);
+      expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
+    },
+  );
 
   it('프리미엄 전용 시각을 서버가 거절하면 카탈로그 문구를 전역 피드백으로 알리고 값을 되돌린다', async () => {
     // Given

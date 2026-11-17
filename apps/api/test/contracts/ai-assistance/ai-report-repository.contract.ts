@@ -28,17 +28,20 @@ export function describeAiReportRepositoryContract(
   createRepository: () => Promise<AiReportRepositoryPort>,
 ): void {
   describe("AI 리포트 저장소 계약", () => {
-    it("저장한 리포트는 주인에게만 보이고 모든 값을 그대로 돌려준다", async () => {
+    it("저장한 리포트는 날짜별 값이 없는 옛 리포트까지 주인에게만 모든 값을 그대로 돌려준다", async () => {
       // Given
       const repository = await createRepository();
       const report = await saveReport(repository);
+      const legacy = await saveReport(repository, { period: 9, dailyCompletions: null });
 
       // When
       const found = await repository.findByIdAndUserId(report.id, USER_ID);
+      const foundLegacy = await repository.findByIdAndUserId(legacy.id, USER_ID);
       const foreign = await repository.findByIdAndUserId(report.id, OTHER_USER_ID);
 
       // Then
       expect(found?.toPrimitives()).toEqual(report.toPrimitives());
+      expect(foundLegacy?.toPrimitives()).toEqual(legacy.toPrimitives());
       expect(foreign).toBeNull();
     });
 

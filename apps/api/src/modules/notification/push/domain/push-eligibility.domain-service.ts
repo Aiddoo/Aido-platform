@@ -4,17 +4,16 @@ import type { NotificationType } from "../../inbox/domain/notification-type.cons
  * 푸시 발송 자격 정책 (순수 도메인).
  *
  * 어떤 알림 타입이 마케팅 동의를 요구하는지, 야간(21:00-08:00)에도 예외적으로
- * 발송되는지를 소유한다. 실제 발송 오케스트레이션(설정/rate-limit/동의 조회)은
+ * 발송되는지, 사용자가 종류별로 끈 푸시인지를 소유한다. 실제 발송 오케스트레이션(설정/rate-limit/동의 조회)은
  * 애플리케이션 서비스가 이 정책을 사용해 수행한다.
  */
 
 /**
  * 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림.
  * 보상·체험 종료와 연간 갱신 안내(PREMIUM_GRANT_ENDING·PREMIUM_TRIAL_ENDING·PREMIUM_RENEWAL_UPCOMING)는
- * 이용 중인 혜택의 거래 정보라 넣지 않는다.
+ * 이용 중인 혜택의 거래 정보라 넣지 않는다. 구독한 AI 제안의 결과(AI_SUGGESTION)도 이용 중인 서비스 정보라 넣지 않는다.
  */
 const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<NotificationType>([
-  "AI_SUGGESTION",
   "WINBACK",
   "SOCIAL_DIGEST",
   "NUDGE_SUGGEST",
@@ -49,6 +48,13 @@ const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<N
 const GENERAL_RATE_LIMIT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
   new Set<NotificationType>(["TODO_REMINDER"]);
 
+/** 설정의 "AI 제안·리포트 알림"(aiPushEnabled)이 끄는 알림 타입. 무료 주간 성취(WEEKLY_ACHIEVEMENT)는 AI가 만들지 않아 넣지 않는다 */
+const AI_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set<NotificationType>([
+  "AI_SUGGESTION",
+  "WEEKLY_REPORT",
+  "MONTHLY_REPORT",
+]);
+
 /** 마케팅 동의가 필요한 알림 타입인지 */
 export function isMarketingNotification(type: NotificationType): boolean {
   return MARKETING_NOTIFICATION_TYPES.has(type);
@@ -65,4 +71,12 @@ export function isNightExemptNotification(type: NotificationType): boolean {
 
 export function isGeneralRateLimitExemptNotification(type: NotificationType): boolean {
   return GENERAL_RATE_LIMIT_EXEMPT_NOTIFICATION_TYPES.has(type);
+}
+
+/** 알림함 기록은 남기고 푸시만 끈다(야간 수신 설정과 같다) */
+export function isAiPushDisabled(
+  type: NotificationType,
+  preference: { readonly aiPushEnabled: boolean },
+): boolean {
+  return !preference.aiPushEnabled && AI_NOTIFICATION_TYPES.has(type);
 }

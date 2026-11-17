@@ -3,8 +3,8 @@
 exports[`en 푸시 문구 렌더 스냅샷 > AI 제안 1`] = `
 [
   {
-    "body": "Based on your recent to-dos. Take a look",
-    "title": "New to-do ideas for you ✨",
+    "body": "Set them to repeat and skip retyping",
+    "title": "We found to-dos you do often ✨",
     "variantId": "default",
   },
 ]
@@ -6823,8 +6823,8 @@ exports[`en 푸시 문구 렌더 스냅샷 > 할 일 만들기 콕 · 자리표�
 exports[`ko 푸시 문구 렌더 스냅샷 > AI 제안 1`] = `
 [
   {
-    "body": "최근 기록에 맞춰 골라봤어요",
-    "title": "맞춤 할 일 제안이 도착했어요 ✨",
+    "body": "반복으로 만들면 매번 다시 적지 않아도 돼요",
+    "title": "자주 하는 할 일을 찾았어요 ✨",
     "variantId": "default",
   },
 ]

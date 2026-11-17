@@ -256,11 +256,11 @@ describe("GenerateReportUseCase", () => {
           period,
           locale,
           hasActivity: true,
-          aiSummary: createReportAiResponse(locale).summary,
+          aiSummary: createReportAiResponse(locale).insight,
           aiTips: createReportAiResponse(locale).tips,
           stats: { totalTodos: 4, completedTodos: 3 },
           contentSource: "AI",
-          promptVersion: "report@3",
+          promptVersion: "report@5",
         });
         expect(f.todoStatsReader.calls[0]?.startDate.toISOString()).toBe(start);
         expect(f.generator.getCallCount()).toBe(1);
@@ -350,7 +350,7 @@ describe("GenerateReportUseCase", () => {
     "%s에서 실제 schema가 거절한 출력은 locale fallback으로 저장한다",
     (locale) =>
       withAiAssistanceTime(async () => {
-        // Given - summary/tips 필수 필드가 없는 실제 원본
+        // Given
         const f = useReportActivity(createAiAssistanceFixture());
         f.generator.setRawResponse({});
         // When - 실제 report schema를 사용하는 생성
@@ -365,7 +365,7 @@ describe("GenerateReportUseCase", () => {
         expect(f.reportRepository.saved[0]?.locale).toBe(locale);
         expect(f.reportRepository.saved[0]?.aiSummary).toBeTruthy();
         expect(f.reportRepository.saved[0]?.aiSummary).not.toBe(
-          createReportAiResponse(locale).summary,
+          createReportAiResponse(locale).insight,
         );
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
         expect(f.generator.getCallCount()).toBe(1);
@@ -472,7 +472,7 @@ describe("GenerateReportUseCase", () => {
       }),
   );
 
-  it("마지막 시도의 일시 오류는 통계 기반 폴백을 FALLBACK 출처로 저장한다", () =>
+  it("마지막 시도의 일시 오류는 템플릿 폴백을 FALLBACK 출처로 저장한다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = useReportActivity(createAiAssistanceFixture());
@@ -488,7 +488,7 @@ describe("GenerateReportUseCase", () => {
       expect(f.reportRepository.saved[0]).toMatchObject({
         contentSource: "FALLBACK",
         promptVersion: null,
-        aiSummary: "3월 2주차에는 할 일 4개 중 3개를 완료해 달성률 75%였어요.",
+        aiSummary: "작은 일 하나부터 다시 시작하기 좋은 때예요.",
       });
       expect(f.logger.error).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -553,17 +553,18 @@ describe("GenerateReportUseCase", () => {
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
         expect(f.logger.warn).toHaveBeenCalledWith({
           event: "ai.report.provider.unavailable",
+          userId: f.userId,
           errorType: kind,
         });
         expect(f.logger.error).not.toHaveBeenCalled();
       }),
   );
 
-  it("요약·팁이 비어 있는 출력은 저장하지 않고 폴백으로 바꾼다", () =>
+  it("insight·팁이 비어 있는 출력은 저장하지 않고 폴백으로 바꾼다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = useReportActivity(createAiAssistanceFixture());
-      f.generator.setRawResponse({ summary: " ", tips: [] });
+      f.generator.setRawResponse({ insightKey: null, insight: " ", tips: [] });
       // When
       await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
       // Then
@@ -598,6 +599,7 @@ describe("GenerateReportUseCase", () => {
           generatedAt: Temporal.Instant.from("2026-01-05T00:00:00Z"),
           contentSource: "AI",
           promptVersion: "report@v2.1",
+          dailyCompletions: null,
         }),
       );
       // When

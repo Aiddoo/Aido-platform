@@ -1,11 +1,24 @@
+import {
+  recurringSuggestionSchema,
+  suggestionAnalysisResponseSchema,
+  suggestionListResponseSchema,
+} from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import request from "supertest";
+import { z } from "zod";
 
 import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
+import {
+  type CreateTodoData,
+  type StagedTodoCreation,
+  StagedTodoCreatorPort,
+} from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { StagedTodoCreatorAdapter } from "#api/modules/planning/todos/infrastructure/adapters/staged-todo-creator.adapter";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -21,14 +34,37 @@ import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/p
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   recurringSuggestion,
+  todo,
   todoSeries,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
+import { TodoFixture } from "#test/fixtures/todo.fixture";
 
 import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+
+// 실제 할 일 생성 경로를 그대로 쓰고 다음 한 번만 실패를 넣는다
+@Injectable()
+class FailableStagedTodoCreator extends StagedTodoCreatorAdapter {
+  #nextFailure: Error | null = null;
+
+  failNextStage(error: Error): void {
+    this.#nextFailure = error;
+  }
+
+  override async stage(input: CreateTodoData): Promise<StagedTodoCreation> {
+    const failure = this.#nextFailure;
+    if (failure != null) {
+      this.#nextFailure = null;
+      throw failure;
+    }
+    return super.stage(input);
+  }
+}
 
 describe("AI 제안 E2E", () => {
   let ctx: E2eTestContext;
@@ -39,7 +75,11 @@ describe("AI 제안 E2E", () => {
 
     ctx = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
+        builder
+          .overrideProvider(AiGeneratorPort)
+          .useValue(fakeAiGenerator)
+          .overrideProvider(StagedTodoCreatorPort)
+          .useClass(FailableStagedTodoCreator),
       additionalResetters: [() => fakeAiGenerator.clear()],
     });
   }, 60_000);
@@ -63,6 +103,32 @@ describe("AI 제안 E2E", () => {
     const cacheService = ctx.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
+  }
+
+  async function setSubscriptionStatus(userId: string, subscriptionStatus: "ACTIVE" | "EXPIRED") {
+    await ctx.testDatabase
+      .getClient()
+      .update(userTable)
+      .set({ subscriptionStatus })
+      .where(eq(userTable.id, userId));
+    await ctx.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(userId));
+  }
+
+  async function seedRecentTodo(userId: string, accessToken: string) {
+    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    const { id: _id, ...row } = TodoFixture.create({
+      userId,
+      categoryId,
+      title: "책 읽기",
+      startDate: todayUtc(),
+    });
+    await ctx.testDatabase.getClient().insert(todo).values(row);
+  }
+
+  function analysisJobs() {
+    return ctx.module
+      .get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort)
+      .jobsIn(AI_SUGGESTION_QUEUE);
   }
 
   /** PENDING 상태의 AI 제안 행을 직접 시딩하고 ID를 반환하는 헬퍼 */
@@ -98,7 +164,7 @@ describe("AI 제안 E2E", () => {
   }
 
   describe("GET /ai/suggestions", () => {
-    it("200: 빈 제안 목록을 반환해야 한다 (초기 상태)", async () => {
+    it("200: 할 일을 적지 않은 사용자는 빈 제안 목록과 할 일을 적어 달라는 분석 상태를 받는다", async () => {
       // Given
       const user = await createPremiumUser("ai-suggestion-list@example.com", "Test1234!");
 
@@ -109,8 +175,13 @@ describe("AI 제안 E2E", () => {
 
       // Then
       expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.suggestions).toEqual([]);
+      const data = suggestionListResponseSchema.parse(response.body.data);
+      expect(data.suggestions).toEqual([]);
+      expect(response.body.data.analysis).toEqual({
+        state: "NEEDS_MORE_TODOS",
+        canRequestNow: false,
+        nextAnalysisAt: expect.any(String),
+      });
     });
 
     it("401: 인증 토큰 없이 요청 시 에러를 반환해야 한다", async () => {
@@ -267,6 +338,134 @@ describe("AI 제안 E2E", () => {
     });
   });
 
+  describe("POST /ai/suggestions/analyses", () => {
+    it("202: 두 번 눌러도 오늘 분석 job은 같은 하루 key로 1개이고 상태는 분석 중이다", async () => {
+      // Given
+      const user = await createPremiumUser("ai-suggestion-request@example.com", "Test1234!");
+      await seedRecentTodo(user.userId, user.accessToken);
+
+      // When
+      const responses = [];
+      for (const _press of [1, 2]) {
+        responses.push(
+          await request(ctx.app.getHttpServer())
+            .post("/v1/ai/suggestions/analyses")
+            .set("Authorization", `Bearer ${user.accessToken}`),
+        );
+      }
+
+      // Then
+      for (const response of responses) {
+        expect(response.status).toBe(202);
+        expect(suggestionAnalysisResponseSchema.parse(response.body.data).analysis).toMatchObject({
+          state: "ANALYZING",
+          canRequestNow: false,
+        });
+      }
+      expect(analysisJobs()).toEqual([
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            data: expect.objectContaining({ userId: user.userId, trigger: "ON_DEMAND" }),
+          }),
+          options: expect.objectContaining({
+            idempotencyKey: expect.stringMatching(
+              new RegExp(`^suggestion_${user.userId}_\\d{4}-\\d{2}-\\d{2}$`),
+            ),
+            priority: 10,
+          }),
+        }),
+      ]);
+    });
+
+    it("403: 무료 사용자는 AI_1309이고 job을 넣지 않는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser(
+        "ai-suggestion-request-free@example.com",
+        "Test1234!",
+      );
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/ai/suggestions/analyses")
+        .set("Authorization", `Bearer ${user.accessToken}`);
+
+      // Then
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe(ErrorCode.AI_1309);
+      expect(analysisJobs()).toEqual([]);
+    });
+
+    it("403: 1.13.0 이상 앱에서 AI 데이터 처리에 동의하지 않았으면 AI_1311이다", async () => {
+      // Given
+      const user = await createPremiumUser(
+        "ai-suggestion-request-consent@example.com",
+        "Test1234!",
+      );
+      await seedRecentTodo(user.userId, user.accessToken);
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/ai/suggestions/analyses")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.16.0");
+
+      // Then
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe(ErrorCode.AI_1311);
+      expect(analysisJobs()).toEqual([]);
+    });
+  });
+
+  it("구독이 끝나면 조회·분석 요청이 AI_1309이고 대기 제안은 남아 다시 구독하면 그대로 보인다", async () => {
+    // Given
+    const user = await createPremiumUser("ai-suggestion-expired@example.com", "Test1234!");
+    const suggestionId = await seedPendingSuggestion(user.userId);
+    await setSubscriptionStatus(user.userId, "EXPIRED");
+
+    // When
+    const expiredList = await request(ctx.app.getHttpServer())
+      .get("/v1/ai/suggestions")
+      .set("Authorization", `Bearer ${user.accessToken}`);
+    const expiredRequest = await request(ctx.app.getHttpServer())
+      .post("/v1/ai/suggestions/analyses")
+      .set("Authorization", `Bearer ${user.accessToken}`);
+    await setSubscriptionStatus(user.userId, "ACTIVE");
+    const renewedList = await request(ctx.app.getHttpServer())
+      .get("/v1/ai/suggestions")
+      .set("Authorization", `Bearer ${user.accessToken}`);
+
+    // Then
+    for (const response of [expiredList, expiredRequest]) {
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe(ErrorCode.AI_1309);
+    }
+    expect(renewedList.status).toBe(200);
+    const renewed = suggestionListResponseSchema.parse(renewedList.body.data);
+    expect(renewed.suggestions.map(({ id }) => id)).toEqual([suggestionId]);
+    expect(renewed.analysis?.state).toBe("HAS_SUGGESTIONS");
+  });
+
+  it("출시 앱(1.15.x) 요청 모양의 목록 조회는 analysis·evidence를 몰라도 그대로 읽힌다", async () => {
+    // Given
+    const user = await createPremiumUser("ai-suggestion-released-app@example.com", "Test1234!");
+    await seedPendingSuggestion(user.userId);
+    const releasedAppListSchema = z.object({
+      suggestions: z.array(recurringSuggestionSchema.omit({ evidence: true })),
+    });
+
+    // When
+    const response = await request(ctx.app.getHttpServer())
+      .get("/v1/ai/suggestions")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .set("X-Timezone", "Asia/Seoul");
+
+    // Then
+    expect(response.status).toBe(200);
+    expect(releasedAppListSchema.parse(response.body.data).suggestions).toEqual([
+      expect.objectContaining({ title: "팀 미팅", status: "PENDING" }),
+    ]);
+  });
+
   it("비프리미엄 제안 조회·행동은 없는 ID보다 AI_1309를 우선한다", async () => {
     // Given
     const user = await ctx.helpers.createVerifiedUser(
@@ -317,29 +516,29 @@ describe("AI 제안 E2E", () => {
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
     const creator = ctx.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
+    if (!(creator instanceof FailableStagedTodoCreator)) {
+      throw new Error("실패를 넣을 수 있는 할 일 생성기로 바꾸지 않았다");
+    }
     const before = await ctx.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
-    const failure = vi.spyOn(creator, "stage").mockRejectedValueOnce(new Error("테스트 생성 실패"));
-    try {
-      // When
-      const response = await request(ctx.app.getHttpServer())
-        .patch(`/v1/ai/suggestions/${id}`)
-        .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ action: "accept", categoryId });
+    creator.failNextStage(new Error("테스트 생성 실패"));
 
-      // Then
-      expect(response.status).toBe(500);
-      const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
-        where: { id },
-      });
-      expect(row?.status).toBe("PENDING");
-      const after = await ctx.testDatabase
-        .getClient()
-        .query.todo.findMany({ where: { userId: user.userId } });
-      expect(after).toHaveLength(before.length);
-    } finally {
-      failure.mockRestore();
-    }
+    // When
+    const response = await request(ctx.app.getHttpServer())
+      .patch(`/v1/ai/suggestions/${id}`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ action: "accept", categoryId });
+
+    // Then
+    expect(response.status).toBe(500);
+    const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
+      where: { id },
+    });
+    expect(row?.status).toBe("PENDING");
+    const after = await ctx.testDatabase
+      .getClient()
+      .query.todo.findMany({ where: { userId: user.userId } });
+    expect(after).toHaveLength(before.length);
   });
 });

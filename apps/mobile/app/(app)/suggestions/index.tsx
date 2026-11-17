@@ -1,15 +1,14 @@
+import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import { refreshAiSuggestions } from '@src/features/assistant/suggestion/queries/suggestion-cache';
 import { useFeatureAccess } from '@src/features/billing/subscription/hooks/use-feature-access';
-import { AiConsentNotice } from '@src/features/identity/consent/components/ai-consent-notice';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useTranslation } from '@src/shared/i18n';
 import {
   QueryErrorBoundary,
   ReadableContent,
-  Spacing,
   SafeAreaScrollView,
-  VStack,
+  ScallopedContainer,
+  Spacing,
   TintedRefreshControl,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,7 +16,6 @@ import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
 export default function SuggestionsScreen() {
-  const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const featureAccess = useFeatureAccess('AI_SUGGESTION');
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshAiSuggestions(queryClient));
@@ -37,24 +35,24 @@ export default function SuggestionsScreen() {
 
         {match(featureAccess.status)
           .with('premium', () => (
-            <VStack gap={12}>
-              <AiConsentNotice title={t('consent.notice.suggestions')} />
-
-              <QueryErrorBoundary fallback={SuggestionsList.Error}>
-                <Suspense fallback={<SuggestionsList.Loading />}>
+            // 상태 머리와 제안 줄이 같은 목록 쿼리를 읽어 경계 하나로 묶는다. 실패하면 다시 시도 하나가 둘을 함께 다시 받는다
+            <QueryErrorBoundary fallback={SuggestionsList.Error}>
+              <Suspense fallback={<SuggestionStatus.Loading />}>
+                <ScallopedContainer testID="suggestions-status">
+                  <SuggestionStatus />
                   <SuggestionsList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </VStack>
+                </ScallopedContainer>
+              </Suspense>
+            </QueryErrorBoundary>
           ))
-          .with('free', () => <SuggestionsList.PremiumPreview />)
+          .with('free', () => <SuggestionsList.Free />)
           .with('error', () => (
-            <SuggestionsList.Error
+            <SuggestionStatus.Error
               error={featureAccess.error}
               reset={() => featureAccess.refetch()}
             />
           ))
-          .with('loading', () => <SuggestionsList.Loading />)
+          .with('loading', () => <SuggestionStatus.Loading />)
           .exhaustive()}
       </ReadableContent>
 

@@ -18,7 +18,6 @@ import type { SuggestionApi } from '@src/features/assistant/suggestion/apis/sugg
 import type { EntitlementApi } from '@src/features/billing/subscription/apis/entitlement.api';
 import type { PurchasesSession } from '@src/features/billing/subscription/services/purchases.session';
 import type { SubscriptionService } from '@src/features/billing/subscription/services/subscription.service';
-import type { ActivationProgressRepository } from '@src/features/device/activation/repositories/activation-progress.repository';
 import type { ActivationService } from '@src/features/device/activation/services/activation.service';
 import type { AppIconService } from '@src/features/device/app-icon/services/app-icon.service';
 import type { CoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
@@ -179,8 +178,6 @@ export interface DIContainer extends SharedDependencies {
   inviteLinkOpenedStore: InviteLinkOpenedStore;
 
   activationService: ActivationService;
-  /** 시작 정리(`useStartupCleanup`)만 쓴다. 화면은 `activationService`를 써서 훅을 두지 않는다 */
-  activationProgressRepository: ActivationProgressRepository;
 }
 
 const DIContext = createContext<DIContainer | null>(null);

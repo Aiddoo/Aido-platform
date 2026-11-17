@@ -81,6 +81,7 @@ export class SettingsController {
 | \`eveningReminderHour\` | number | 저녁 리마인더 시간 (12-23, 오후만 허용, 기본 19) |
 | \`eveningReminderMinute\` | number | 저녁 리마인더 분 (0-59, 기본 0) |
 | \`timeFormat\` | string | 시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제, 기본 TWELVE_HOUR) |
+| \`aiPushEnabled\` | boolean | AI 제안·주간·월간 리포트 푸시 on/off (1.16.0+, 기본 true). 꺼도 알림함 기록은 남음 |
 
 **타임존**: 앱 실행 시 푸시 토큰 등록과 함께 자동 설정되며, 수동 변경도 가능합니다.
 
@@ -115,6 +116,7 @@ export class SettingsController {
 | \`eveningReminderHour\` | number? | 저녁 리마인더 시간 (12-23, 기본 19) |
 | \`eveningReminderMinute\` | number? | 저녁 리마인더 분 (0-59, 기본 0) |
 | \`timeFormat\` | string? | 시간 표시 형식 (TWELVE_HOUR | TWENTY_FOUR_HOUR) |
+| \`aiPushEnabled\` | boolean? | AI 제안·주간·월간 리포트 푸시 on/off (1.16.0+). 꺼도 알림함 기록은 남음 |
 
 **프리미엄 전용**: 리마인더 시간 변경은 프리미엄 구독 사용자만 가능. 무료 유저 시도 시 \`403 PREFERENCE_1701\`.
 

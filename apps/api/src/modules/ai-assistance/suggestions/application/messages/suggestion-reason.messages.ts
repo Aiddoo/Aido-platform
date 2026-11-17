@@ -1,4 +1,5 @@
 import type { DayOfWeek } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
@@ -14,27 +15,31 @@ interface SuggestionReasonCopy {
   ) => string;
 }
 
-const dayList = (locale: SupportedLocale, days: readonly DayOfWeek[]) =>
-  days
-    .map((day) =>
-      locale === "ko"
-        ? `${suggestionContextTranslations.ko.days[day]}요일`
-        : suggestionContextTranslations.en.days[day],
-    )
-    .join(locale === "ko" ? "·" : ", ");
+const EN_DAY_LIST = new Intl.ListFormat("en", { type: "conjunction" });
 
-/** 모델 사유가 근거 수치를 벗어났을 때 쓰는 서버 문장. 기록 수치만 쓴다. */
+function formatDays(locale: SupportedLocale, days: readonly DayOfWeek[]): string {
+  return match(locale)
+    .with("ko", () =>
+      days.map((day) => `${suggestionContextTranslations.ko.days[day]}요일`).join("·"),
+    )
+    .with("en", () =>
+      EN_DAY_LIST.format(days.map((day) => suggestionContextTranslations.en.days[day])),
+    )
+    .exhaustive();
+}
+
+/** 출시 앱(≤1.15)이 보이는 제안 근거. 모델 글 없이 기록 수치로만 만든다. */
 export const suggestionReasonCopy: Readonly<Record<SupportedLocale, SuggestionReasonCopy>> = {
   ko: {
     repeat: (candidate, days) =>
-      `최근 '${candidate.title}' 활동을 ${candidate.occurrences}번 기록하고 ${candidate.completed}번 완료했어요. ${dayList("ko", days)}에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.`,
+      `최근 '${candidate.title}' 활동을 ${candidate.occurrences}번 기록하고 ${candidate.completed}번 완료했어요. ${formatDays("ko", days)}에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.`,
     starter: (todoCount, candidate, days) =>
-      `기록이 아직 ${todoCount}개라 패턴으로 보기는 일러요. 이미 해본 '${candidate.title}' 활동을 ${dayList("ko", days)}에 다시 해볼 수 있게 제안해요.`,
+      `기록이 아직 ${todoCount}개라 패턴으로 보기는 일러요. 이미 해본 '${candidate.title}' 활동이니 ${formatDays("ko", days)}에 다시 해보세요.`,
   },
   en: {
     repeat: (candidate, days) =>
-      `You recorded '${candidate.title}' ${candidate.occurrences} times recently and completed it ${candidate.completed} times. Repeating it on ${dayList("en", days)} saves entering it again each time.`,
+      `You added '${candidate.title}' ${candidate.occurrences} times recently and completed it ${candidate.completed} times. If you set it to repeat on ${formatDays("en", days)}, you won't have to add it again each time.`,
     starter: (todoCount, candidate, days) =>
-      `With only ${todoCount} recent records it is too early to call this a pattern, so this suggests trying '${candidate.title}' again on ${dayList("en", days)}.`,
+      `You only have ${todoCount} ${todoCount === 1 ? "record" : "records"} so far, which is too early to call a pattern. Since you've already done '${candidate.title}', here's a suggestion to try it again on ${formatDays("en", days)}.`,
   },
 };

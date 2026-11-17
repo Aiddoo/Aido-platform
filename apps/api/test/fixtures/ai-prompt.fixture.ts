@@ -12,7 +12,18 @@ export function topLevelTags(system: string): string[] {
 }
 
 export function exampleOutputs(system: string): unknown[] {
-  return [...system.matchAll(/^(?:출력|Output): (\{.+\})$/gm)].map((match) =>
-    JSON.parse(match[1] ?? ""),
+  return [...system.matchAll(/^(?:출력: |Output: |<output>)(\{.+\})(?:<\/output>)?$/gm)].map(
+    (match) => JSON.parse(match[1] ?? ""),
   );
+}
+
+export function readExamples(system: string, tag: string) {
+  return [...system.matchAll(/^<example>\n([\s\S]*?)\n<\/example>$/gm)].map((match) => {
+    const body = match[1] ?? "";
+    const [output] = exampleOutputs(body);
+    if (output == null) {
+      throw new Error("example output missing");
+    }
+    return { input: readPromptBlock(body, tag), output };
+  });
 }

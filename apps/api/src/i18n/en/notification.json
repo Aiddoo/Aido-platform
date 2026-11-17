@@ -549,8 +549,8 @@
     },
     "AI_SUGGESTION": {
       "default": {
-        "title": "New to-do ideas for you ✨",
-        "body": "Based on your recent to-dos. Take a look"
+        "title": "We found to-dos you do often ✨",
+        "body": "Set them to repeat and skip retyping"
       }
     },
     "BILLING_ISSUE": {

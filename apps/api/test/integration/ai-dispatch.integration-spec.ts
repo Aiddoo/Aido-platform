@@ -1,12 +1,16 @@
 import { AI_REPORT_QUEUE } from "#api/modules/ai-assistance/reports/infrastructure/jobs/ai-report.queue";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
 import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
+import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
 import {
   AI_SUGGESTION_QUEUE,
   AiSuggestionJobName,
 } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
+import { SuggestionAnalysisQueueAdapter } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis-queue.adapter";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
+import { DrizzleSuggestionAnalysisRunRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-analysis-run.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   todo,
   todoCategory,
@@ -19,15 +23,21 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
-import { createDatabaseTransactionFixture } from "#test/setup/database-context";
+import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-// 서울 2026-10-08(목) 07:00 = UTC 2026-10-07 22:00, LA 2026-10-08 07:00 PDT = UTC 2026-10-08 14:00
-const SEOUL_0700 = Temporal.Instant.from("2026-10-07T22:00:00Z");
+// 서울 2026-10-08(목) 09:00 = UTC 2026-10-08 00:00, LA 2026-10-08 09:00 PDT = UTC 2026-10-08 16:00
+const SEOUL_0900 = Temporal.Instant.from("2026-10-08T00:00:00Z");
 
 describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 PostgreSQL)", () => {
-  const database = new TestDatabase();
+  let statements: string[] | null = null;
+  const database = new TestDatabase({
+    createClient: (url) =>
+      createTestClient(url, {}, (statement) => {
+        statements?.push(statement);
+      }),
+  });
   let client: TestDatabaseClient;
   let clock: FixedClock;
   let queue: InMemoryJobQueue;
@@ -41,13 +51,10 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   beforeEach(async () => {
     suppressLogger();
     await database.cleanup();
-    clock = new FixedClock(SEOUL_0700);
+    statements = null;
+    clock = new FixedClock(SEOUL_0900);
     queue = new InMemoryJobQueue();
-    scheduler = new SuggestionAnalysisScheduler(
-      createDatabaseTransactionFixture(client).txHost,
-      queue,
-      clock,
-    );
+    scheduler = createSuggestionScheduler();
     seoulUserId = await createActiveUser("Asia/Seoul");
     laUserId = await createActiveUser("America/Los_Angeles");
   });
@@ -57,6 +64,29 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   afterAll(async () => {
     await database.stop();
   });
+
+  function createSuggestionScheduler(): SuggestionAnalysisScheduler {
+    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    return new SuggestionAnalysisScheduler(
+      txHost,
+      queue,
+      clock,
+      new DispatchSuggestionAnalysesUseCase({
+        runs: new DrizzleSuggestionAnalysisRunRepository(txHost),
+        enqueuer: new SuggestionAnalysisQueueAdapter(queue),
+        unitOfWork: uow,
+        mutationLock: new PostgresMutationLockAdapter(txHost),
+        clock,
+      }),
+    );
+  }
+
+  async function findRuns() {
+    return client.query.suggestionAnalysisRun.findMany({
+      columns: { userId: true, status: true, localDate: true, trigger: true },
+      orderBy: { localDate: "asc" },
+    });
+  }
 
   async function createActiveUser(timezone: string): Promise<string> {
     const id = createEntityId();
@@ -97,14 +127,22 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       .map((job) => job.options.idempotencyKey);
   }
 
-  it("서울 07시에는 서울 사용자만, LA 07시에는 LA 사용자만 그 현지 날짜 키로 등록한다", async () => {
-    // When - 서울 07:00(LA 전날 15:00)
+  it("서울 09시에는 서울 사용자만, LA 09시에는 LA 사용자만 그 현지 날짜 키로 등록한다", async () => {
+    // When
     await scheduler.dispatchAnalysis();
 
     // Then
     expect(analyzeKeys()).toEqual([`suggestion_${seoulUserId}_2026-10-08`]);
+    expect(await findRuns()).toEqual([
+      {
+        userId: seoulUserId,
+        status: "QUEUED",
+        localDate: Temporal.PlainDate.from("2026-10-08"),
+        trigger: "SCHEDULED",
+      },
+    ]);
 
-    // When - LA 07:00 PDT(서울 23:00)
+    // When
     clock.advanceBy({ hours: 16 });
     await scheduler.dispatchAnalysis();
 
@@ -113,11 +151,37 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       `suggestion_${seoulUserId}_2026-10-08`,
       `suggestion_${laUserId}_2026-10-08`,
     ]);
+    expect((await findRuns()).map(({ userId }) => userId).sort()).toEqual(
+      [seoulUserId, laUserId].sort(),
+    );
   });
 
-  it("따라잡기 창(07~10시)의 매시 디스패치가 다시 돌아도 같은 현지 날짜에는 한 번만 등록한다", async () => {
-    // When - 서울 07·08·09시와 창 밖 10시
-    for (const _hour of [7, 8, 9, 10]) {
+  it("한 묶음의 실행 기록은 사람 수와 상관없이 잠금·조회·저장 각 1문장이다", async () => {
+    // Given
+    await createActiveUser("Asia/Seoul");
+    await createActiveUser("Asia/Seoul");
+    statements = [];
+
+    // When
+    await scheduler.dispatchAnalysis();
+
+    // Then
+    expect(analyzeKeys()).toHaveLength(3);
+    const ledgerStatements = statements.filter(
+      (statement) =>
+        statement.includes("pg_advisory_xact_lock") ||
+        statement.includes('"SuggestionAnalysisRun"'),
+    );
+    expect(ledgerStatements.map((statement) => statement.trim().split(/\s+/)[0])).toEqual([
+      "WITH",
+      "select",
+      "insert",
+    ]);
+  });
+
+  it("따라잡기 창(09~12시)의 매시 디스패치가 다시 돌아도 같은 현지 날짜에는 한 번만 등록한다", async () => {
+    // When
+    for (const _seoulHour of [9, 10, 11, 12]) {
       await scheduler.dispatchAnalysis();
       clock.advanceBy({ hours: 1 });
     }
@@ -125,7 +189,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     // Then
     expect(analyzeKeys()).toEqual([`suggestion_${seoulUserId}_2026-10-08`]);
 
-    // When - 다음 날 서울 07시
+    // When
     clock.advanceBy({ hours: 20 });
     await scheduler.dispatchAnalysis();
 
@@ -134,26 +198,29 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       `suggestion_${seoulUserId}_2026-10-08`,
       `suggestion_${seoulUserId}_2026-10-09`,
     ]);
+    expect(await findRuns()).toEqual([
+      expect.objectContaining({
+        userId: seoulUserId,
+        status: "QUEUED",
+        localDate: Temporal.PlainDate.from("2026-10-09"),
+      }),
+    ]);
   });
 
-  it("LA 서머타임이 끝난 날에도 현지 07시(PST)에 한 번 등록한다", async () => {
-    // Given - LA 2026-11-01(일) 서머타임 종료, 07:00 PST = UTC 15:00
-    clock = new FixedClock(Temporal.Instant.from("2026-11-01T14:00:00Z"));
-    scheduler = new SuggestionAnalysisScheduler(
-      createDatabaseTransactionFixture(client).txHost,
-      queue,
-      clock,
-    );
+  it("LA 서머타임이 끝난 날에도 현지 09시(PST)에 한 번 등록한다", async () => {
+    // Given
+    clock = new FixedClock(Temporal.Instant.from("2026-11-01T16:00:00Z"));
+    scheduler = createSuggestionScheduler();
     await insertRecentTodo(laUserId, "2026-10-30");
 
-    // When - 06:00 PST, 07:00 PST
+    // When
     await scheduler.dispatchAnalysis();
-    const beforeLocalSeven = analyzeKeys();
+    const beforeLocalNine = analyzeKeys();
     clock.advanceBy({ hours: 1 });
     await scheduler.dispatchAnalysis();
 
     // Then
-    expect(beforeLocalSeven).toEqual([]);
+    expect(beforeLocalNine).toEqual([]);
     expect(analyzeKeys()).toEqual([`suggestion_${laUserId}_2026-11-01`]);
   });
 
@@ -165,7 +232,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       return new ReportGenerationScheduler(
         createDatabaseTransactionFixture(client).txHost,
         reportQueue,
-        new ReportGenerationProcessor({ execute: async () => null }),
+        new ReportGenerationProcessor({ execute: async () => null }, new DateClock()),
         new DateClock(),
       );
     }

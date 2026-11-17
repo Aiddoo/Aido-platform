@@ -31,6 +31,8 @@ export function useGetReportDetailQueryOptions({ reportId }: { reportId: number 
   return queryOptions({
     queryKey: REPORT_QUERY_KEYS.detail({ reportId }),
     queryFn: async ({ signal }) => unwrap(await reportApi.getReportById(reportId, signal)),
+    // 서버가 기간마다 한 번 만들고 고치지 않는다. 'static'은 구독이 바뀔 때의 무효화까지 막아 Infinity로 둔다
+    staleTime: Infinity,
     meta: { refreshOnPremiumChange: true },
   });
 }

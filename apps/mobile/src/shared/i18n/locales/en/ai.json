@@ -6,35 +6,49 @@
   "report": {
     "typeWeekly": "Weekly",
     "typeMonthly": "Monthly",
-    "sampleBadge": "Sample",
     "card": {
       "completionRate": "Completion",
       "completed": "Done",
-      "streak": "Streak",
-      "streakDays_one": "{{count}} day",
-      "streakDays_other": "{{count}} days",
+      "streak": "Streak this period",
+      "perfectDays": "Perfect days",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
       "viewDetail": "View details"
     },
-    "detail": {
-      "statsSummary": "Stats summary",
-      "categoryBreakdown": "By category",
-      "dayPatterns": "By day of week",
-      "activeHours": "Most active hours",
-      "countUnit_one": "{{count}} task",
-      "countUnit_other": "{{count}} tasks",
-      "aiSummary": "AI summary",
-      "aiTips": "AI tips"
+    "headline": {
+      "noActivity": "No to-dos this period",
+      "improved": "Up {{points}} pts",
+      "declined": "Down {{points}} pts",
+      "unchanged": "Same as last time"
     },
-    "dday": {
-      "today": "Arrived today!",
-      "inDays_one": "In {{count}} day",
-      "inDays_other": "In {{count}} days"
+    "detail": {
+      "categoryBreakdown": "By category",
+      "dailyCompletions": "To-dos finished each day",
+      "dailyHint": "Tap a bar to see that day",
+      "dayCompletions": "{{date}} · Finished {{completed}} of {{total}}",
+      "dayEmpty": "{{date}} · No to-dos",
+      "completionHours": "When you usually finish",
+      "peakHour": "You finished the most around {{hour}}",
+      "hourCompletions": "{{hour}} · Finished {{count}}"
+    },
+    "coach": {
+      "aiTitle": "AI coach",
+      "templateTitle": "Summary for this period"
     },
     "statusBanner": {
-      "nextWeekly": "Next weekly report",
-      "nextMonthly": "Next monthly report"
+      "nextToday": "Next report today at {{time}}",
+      "nextInDays_one": "Next report in {{count}} day · {{date}}, {{time}}",
+      "nextInDays_other": "Next report in {{count}} days · {{date}}, {{time}}"
+    },
+    "latest": {
+      "trendTitle": "Recent weekly completion",
+      "trendLabel_one": "Completion over the last {{count}} week, from {{start}} to {{end}}",
+      "trendLabel_other": "Completion over the last {{count}} weeks, from {{start}} to {{end}}",
+      "trendWeek": "{{week}}: {{rate}} completed",
+      "trendEmpty": "No completion history yet"
     },
     "list": {
+      "pastReports": "Past reports",
       "premiumTitle": "AI reports",
       "freeTitle": "Your personal AI-powered report",
       "premiumDescription": "We analyze your to-dos and turn them into reports",
@@ -44,72 +58,107 @@
       "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
       "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days"
     },
-    "lockedDetail": {
-      "title": "Get your personal report",
-      "description": "Subscribe to Premium and we'll send you\nAI-powered reports every week and month",
-      "subscribe": "Subscribe to Premium"
-    },
     "unavailable": {
       "title": "Report not found",
-      "description": "This report was removed or is no longer available.",
+      "description": "This report was removed or is no longer available",
       "backToList": "Go to reports"
+    },
+    "thisWeek": {
+      "title": "My record this week",
+      "dayUpcoming": "{{date}} · Not here yet",
+      "info": {
+        "label": "About this week's record",
+        "free": "How many to-dos you finished each day.\nTap a bar to see that day.\nWeekly and monthly AI analysis comes with Premium.",
+        "premium": "How many to-dos you finished each day.\nTap a bar to see that day.\nAI analysis comes with your reports."
+      }
+    },
+    "sample": {
+      "title": "Sample report",
+      "badge": "Sample data",
+      "listDescription": "With Premium, reports from your own to-dos stack up like this every week and month",
+      "noticeTitle": "This is a sample report",
+      "noticeDescription": "Subscribe and we'll analyze your own to-dos like this every week and month",
+      "categories": {
+        "work": "Work",
+        "study": "Study",
+        "workout": "Workout"
+      },
+      "weekly": {
+        "summaries": {
+          "lastWeek": "You left 2 of 4 on Wednesday, then cleared every to-do three days straight from Friday to Sunday. You finished the most around 7 AM and got 13 of 14 work to-dos done. Workouts slipped the most, with 4 of 8 done.",
+          "twoWeeksAgo": "You left one or two each weekday but cleared everything on Sunday. Finishing 5 of 6 on Friday gave the week a strong finish. You got 4 of 8 workouts done.",
+          "threeWeeksAgo": "You planned 6 on Friday and left half, but cleared everything over the weekend. You got 12 of 14 work to-dos done. Workouts slipped the most, with 3 of 8 done.",
+          "fourWeeksAgo": "Finishing 3 of 4 on Wednesday got you through midweek. You cleared everything on Sunday and got 12 of 14 work to-dos done. Study slipped a little, with 6 of 10 done."
+        },
+        "tips": {
+          "workout": "Put your workout right after your 7 AM to-do so it slips less.",
+          "midweek": "Midweek, try keeping it to four to-dos or fewer."
+        }
+      },
+      "monthly": {
+        "summaries": {
+          "lastMonth": "You cleared every to-do over the last 5 days of the month to finish strong. You finished the most around 7 AM and kept up with work steadily. Workouts had the lowest completion rate.",
+          "twoMonthsAgo": "The earlier you started with a to-do, the more you got done that day. You cleared every to-do over the last 2 days of the month. Workouts had the lowest completion rate.",
+          "threeMonthsAgo": "You kept up with work steadily and cleared every to-do over the last 3 days of the month. You finished the most around 7 AM. Study slipped more often than work, and workouts had the lowest completion rate.",
+          "fourMonthsAgo": "You kept weekends light at 3 to-dos a day and did most of it on weekdays. You finished the most around 7 AM and cleared everything on the last day of the month. Workouts had the lowest completion rate."
+        },
+        "tips": {
+          "repeat": "Make your workout a repeating to-do with a set day and time.",
+          "morning": "Next month, try finishing one work to-do first thing in the morning."
+        }
+      }
     }
   },
+  "updateHint": {
+    "title": "AI suggestions and reports are all new",
+    "premiumDescription": "We find to-dos you do often from your last {{period}}.\nTap Check now to get them right away.\nReports show charts and a coach note.",
+    "freeDescription": "See this week's record and example suggestions and reports for free.\nAI suggestions and report analysis come with Premium."
+  },
   "suggestions": {
-    "list": {
-      "emptyNoHistory": "No suggestions yet",
-      "emptyNoHistoryDescription": "As your to-do history grows, AI will spot recurring patterns and suggest them here",
-      "emptyNoPending": "Nothing to suggest right now",
-      "emptyNoPendingDescription": "New recurring patterns will show up here as soon as we find them",
-      "header_one": "{{count}} suggestion has arrived",
-      "header_other": "{{count}} suggestions have arrived",
-      "headerDescription": "We analyze your recurring patterns and suggest them back",
-      "allDay": "All day",
-      "confidence": "Confidence {{value}}",
-      "expires": "Expires {{date}}",
-      "reject": "Dismiss",
-      "accept": "Accept"
+    "item": {
+      "make": "Make it repeat",
+      "dismiss": "Not needed",
+      "evidence": "Done {{done}} of {{total}} times in the last {{period}}"
     },
+    "status": {
+      "hasSuggestions_one": "Found {{count}} frequent to-do",
+      "hasSuggestions_other": "Found {{count}} frequent to-dos",
+      "hasSuggestionsDescription": "Make them repeat, no retyping needed",
+      "analyzing": "Looking at your recent to-dos",
+      "analyzingDescription": "This only takes a moment",
+      "doneForToday": "All caught up for today",
+      "noPatternFound": "No to-dos worth repeating yet",
+      "unavailableToday": "We couldn't check today",
+      "needsMoreTodos": "No to-dos to look at yet",
+      "needsMoreTodosDescription": "We look at to-dos from the last {{period}}",
+      "needsAiConsentDescription": "You only need to do this once",
+      "addTodo": "Add a to-do",
+      "waitingForNextRun": "Waiting for the next check",
+      "nextAnalysisAt": "We'll look again on {{date}} at {{time}}",
+      "requestNow": "Check now"
+    },
+    "expiryNotice": "Suggestions go away after {{period}}",
     "paywall": {
-      "title": "Let AI suggest your to-dos",
-      "description": "Get personalized to-do suggestions based on your recurring patterns",
-      "sampleTitle": "Morning stretch every day",
-      "sampleConfidence": "Confidence 92%",
-      "sampleSchedule": "Mon, Tue, Wed, Thu, Fri · 07:30",
-      "sampleReason": "We spotted a morning workout pattern over the last 2 weeks",
+      "title": "We'll find to-dos you do often",
+      "description": "Subscribe to get these from your own to-dos",
+      "exampleBadge": "Examples",
+      "examples": {
+        "vitamins": "Take vitamins",
+        "gym": "Go to the gym",
+        "recycling": "Take out the recycling",
+        "weeklyReview": "Write a weekly review"
+      },
       "subscribeCta": "Subscribe to get suggestions"
-    },
-    "category": {
-      "submit": "Create"
     },
     "toasts": {
       "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
       "retryLater": "Please try again later",
-      "accepted": "Suggestion accepted — your repeating to-do is ready.",
-      "rejected": "Suggestion dismissed."
-    }
-  },
-  "sampleReport": {
-    "categories": {
-      "work": "Work projects",
-      "selfDev": "Self-development",
-      "health": "Health & fitness",
-      "life": "Everyday life",
-      "side": "Side projects"
+      "accepted": "Set to repeat every {{days}}",
+      "rejected": "Suggestion cleared"
     },
-    "weekly": {
-      "summary": "Work projects hit a 92% completion rate — your most focused category this week. Your after-work self-development routine is settling in, and you're on a 5-day streak! Wednesday's completion rate dipped noticeably, though.",
-      "tip1": "Your completion rate tends to drop on Wednesdays. Try trimming Wednesdays down to 3–4 to-dos and your rate should climb.",
-      "tip2": "9 AM and 7 PM after work are your most active hours. Try scheduling important to-dos in those slots.",
-      "tip3": "Health & fitness sits at 71%, lower than your other categories. Blocking workout time on your calendar in advance makes it easier to stay consistent.",
-      "tip4": "You're on a 5-day streak! Keep it going through the weekend to earn the 7-day streak badge."
-    },
-    "monthly": {
-      "summary": "You finished February at an 82% completion rate — up 8 points from last month (74%)! Work projects led the way at 91%, and the self-development routine you set early in the month is turning into a habit. Your rate dipped slightly in week three but bounced back in week four, which is impressive.",
-      "tip1": "Breaking monthly goals into weekly chunks makes them lighter. Try splitting this month's self-development goal into 8 per week.",
-      "tip2": "Wednesday is your lowest day every week at 74%. A midweek refresh routine — a walk or a short meditation — can help you recharge.",
-      "tip3": "Side projects came in at 67%, a bit short. Reserving a 2-hour block on weekend mornings will help you make steady progress.",
-      "tip4": "You logged a 9-day streak! How about going for 14 days next month?"
+    "preview": {
+      "title": "To-dos worth repeating",
+      "viewAll": "View all"
     }
   },
   "consent": {

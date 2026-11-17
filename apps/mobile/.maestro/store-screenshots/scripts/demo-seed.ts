@@ -40,6 +40,7 @@ const TAG_ALPHABET = '23456789BCDFGHJKMNPQRSTVWXZ';
 const DAY_MS = 86_400_000;
 const AI_REPORT_QUEUE = 'ai-report-generation.v1';
 const AI_SUGGESTION_QUEUE = 'ai-suggestion-analysis.v1';
+const SUGGESTION_EVIDENCE_PERIOD_DAYS = 14;
 const REPORT_FALLBACK_PREFIXES = [
   '이번 기간의 할 일 통계를 기반으로',
   'This report was generated from your to-do stats',
@@ -137,6 +138,10 @@ const localeContentSchema = z.object({
         time: timeSchema,
         category: z.string(),
         reason: z.string(),
+        evidence: z.object({
+          recordedCount: z.number().int().positive(),
+          completedCount: z.number().int().nonnegative(),
+        }),
       }),
     ),
   }),
@@ -337,6 +342,14 @@ function addDays(dateKey: string, days: number): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   const value = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + days));
   return value.toISOString().slice(0, 10);
+}
+
+function dateRange(start: string, endExclusive: string): string[] {
+  const dates: string[] = [];
+  for (let date = start; date < endExclusive; date = addDays(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
 }
 
 function dayOfWeek(dateKey: string): DayOfWeek {
@@ -1673,6 +1686,7 @@ async function insertFallbackReport(
   const byCategory = new Map<string, { color: string; total: number; completed: number }>();
   const byDay = new Map<DayOfWeek, { total: number; completed: number }>();
   const byHour = new Map<number, number>();
+  const byDate = new Map<string, { total: number; completed: number }>();
   for (const row of rows) {
     const name = typeof row.name === 'string' ? row.name : '';
     const category = byCategory.get(name) ?? {
@@ -1688,6 +1702,11 @@ async function insertFallbackReport(
     day.total += 1;
     day.completed += row.completed === true ? 1 : 0;
     byDay.set(dow, day);
+    const dateKey = typeof row.date === 'string' ? row.date.slice(0, 10) : today;
+    const dated = byDate.get(dateKey) ?? { total: 0, completed: 0 };
+    dated.total += 1;
+    dated.completed += row.completed === true ? 1 : 0;
+    byDate.set(dateKey, dated);
     if (row.scheduledTime instanceof Date && row.completed === true) {
       const hour = Number(
         new Intl.DateTimeFormat('en-GB', {
@@ -1707,8 +1726,9 @@ async function insertFallbackReport(
   return insertReturningId(
     ctx.db,
     `INSERT INTO "AiReport" ("userId", "type", "year", "period", "stats", "categoryBreakdown", "dayPatterns",
-       "timePatterns", "aiSummary", "aiTips", "hasActivity", "generatedAt", "createdAt", "locale")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, $13)`,
+       "timePatterns", "aiSummary", "aiTips", "hasActivity", "generatedAt", "createdAt", "locale",
+       "dailyCompletions")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, $13, $14)`,
     [
       userId,
       reportType,
@@ -1746,6 +1766,12 @@ async function insertFallbackReport(
       total > 0,
       utc(instant(today, '09:00', content.timezone)),
       locale,
+      JSON.stringify(
+        dateRange(start, end).map((date) => {
+          const day = byDate.get(date) ?? { total: 0, completed: 0 };
+          return { date, total: day.total, completed: day.completed };
+        }),
+      ),
     ],
   );
 }
@@ -1764,8 +1790,9 @@ async function insertFallbackSuggestions(
     const categoryId = rows.find((row) => row.name === categoryName)?.id;
     await ctx.db.query(
       `INSERT INTO "RecurringSuggestion" ("userId", "title", "daysOfWeek", "scheduledTime", "confidence", "reason",
-         "matchedTodos", "status", "expiresAt", "createdAt", "updatedAt", "suggestedCategoryId")
-       VALUES ($1, $2, $3, $4, $5, $6, '[]', 'PENDING', $7, $8, $8, $9)`,
+         "matchedTodos", "status", "expiresAt", "createdAt", "updatedAt", "suggestedCategoryId",
+         "evidenceRecordedCount", "evidenceCompletedCount", "evidencePeriodDays")
+       VALUES ($1, $2, $3, $4, $5, $6, '[]', 'PENDING', $7, $8, $8, $9, $10, $11, $12)`,
       [
         userId,
         suggestion.title,
@@ -1776,6 +1803,9 @@ async function insertFallbackSuggestions(
         utc(new Date(ctx.now.getTime() + 7 * DAY_MS)),
         utc(ctx.now),
         typeof categoryId === 'number' ? categoryId : null,
+        suggestion.evidence.recordedCount,
+        suggestion.evidence.completedCount,
+        SUGGESTION_EVIDENCE_PERIOD_DAYS,
       ],
     );
   }

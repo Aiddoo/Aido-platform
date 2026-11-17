@@ -24,12 +24,21 @@ export function toAiReport(dto: AiReportDto): AiReport {
     categoryBreakdown: dto.categoryBreakdown.map((item) =>
       pick(item, ['name', 'color', 'total', 'completed', 'rate']),
     ),
-    dayPatterns: dto.dayPatterns.map((item) => pick(item, ['day', 'total', 'completed', 'rate'])),
     timePatterns: dto.timePatterns.map((item) => pick(item, ['hour', 'count'])),
+    dailyCompletions:
+      dto.dailyCompletions?.map((day) => ({
+        ...pick(day, ['total', 'completed']),
+        date: dateKeySchema.parse(day.date),
+      })) ?? null,
+    aiContentSource: dto.aiContentSource ?? null,
     generatedAt: toInstant(dto.generatedAt),
   };
 }
 
 export function toReportStatus(dto: ReportStatusDto): ReportStatus {
-  return pick(dto, ['daysUntilWeekly', 'daysUntilMonthly']);
+  return {
+    ...pick(dto, ['daysUntilWeekly', 'daysUntilMonthly']),
+    nextWeeklyAt: toInstant(dto.nextWeeklyAt),
+    nextMonthlyAt: toInstant(dto.nextMonthlyAt),
+  };
 }

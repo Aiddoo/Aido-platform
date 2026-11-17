@@ -1,5 +1,14 @@
 import type { AI_REPORT_TYPES, DayOfWeek } from "@aido/api/vocabulary";
 
+import type { SupportedLocale } from "#api/shared/domain/locale";
+
+/** 코치 카드(393pt 폭·13pt) 글자 수: ko 두 줄, en tip 두 줄·insight 세 줄. 넘는 문장은 자르지 않고 버린다 */
+export const REPORT_TEXT_MAX_LENGTH = {
+  ko: { insight: 70, tip: 55 },
+  en: { insight: 120, tip: 90 },
+} as const satisfies Record<SupportedLocale, { insight: number; tip: number }>;
+export const REPORT_MAX_TIPS = 2;
+
 export interface ReportStats {
   readonly totalTodos: number;
   readonly completedTodos: number;
@@ -24,6 +33,11 @@ export interface TimePatternItem {
   readonly hour: number;
   readonly count: number;
 }
+export interface DailyCompletionItem {
+  readonly date: Temporal.PlainDate;
+  readonly total: number;
+  readonly completed: number;
+}
 
 /** 리포트 타입. DB ReportType enum과 같은 vocabulary 튜플에서 유도한다 */
 export type ReportType = (typeof AI_REPORT_TYPES)[number];
@@ -41,6 +55,11 @@ export interface AggregatedReportData {
   readonly dayPatterns: DayPatternItem[];
   readonly timePatterns: TimePatternItem[];
   readonly hasActivity: boolean;
+}
+
+/** 프롬프트에 넣지 않고 리포트에만 저장하는 날마다 기록까지 담은 집계 */
+export interface ReportAggregation extends AggregatedReportData {
+  readonly dailyCompletions: DailyCompletionItem[];
 }
 
 /**

@@ -1,6 +1,6 @@
 import benefitAiParsingImage from '@assets/images/subscription/benefit-ai-parsing.webp';
 import benefitAiReportImage from '@assets/images/subscription/benefit-ai-report.webp';
-import benefitAiRoutineImage from '@assets/images/subscription/benefit-ai-routine.webp';
+import benefitAiSuggestionImage from '@assets/images/subscription/benefit-ai-suggestion.webp';
 import benefitAiVoiceNoteImage from '@assets/images/subscription/benefit-ai-voice-note.webp';
 import type { FeatureMediaProps } from '@src/shared/ui';
 
@@ -24,7 +24,7 @@ export interface BenefitSlide {
 export const BENEFIT_SLIDES = [
   { feature: 'AI_PARSE', image: benefitAiParsingImage, tone: 'brand' },
   { feature: 'AI_REPORT', image: benefitAiReportImage, tone: 'dark' },
-  { feature: 'AI_SUGGESTION', image: benefitAiRoutineImage, tone: 'brand' },
+  { feature: 'AI_SUGGESTION', image: benefitAiSuggestionImage, tone: 'brand' },
   { feature: 'VOICE_NOTE', image: benefitAiVoiceNoteImage, tone: 'dark' },
 ] as const satisfies readonly BenefitSlide[];
 

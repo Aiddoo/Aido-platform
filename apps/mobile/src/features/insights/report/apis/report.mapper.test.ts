@@ -26,6 +26,8 @@ const reportDto = aiReportResponseSchema.parse({
     aiTips: ['아침에 몰아 하세요'],
     hasActivity: true,
     generatedAt: '2026-04-01T00:00:00.000Z',
+    dailyCompletions: [{ date: '2026-03-01', total: 2, completed: 1 }],
+    aiContentSource: 'TEMPLATE',
   },
 }).report;
 
@@ -39,13 +41,14 @@ describe('toAiReport', () => {
     expect(report).toMatchObject({
       type: 'MONTHLY',
       generatedAt: '2026-04-01T00:00:00.000Z',
-      dayPatterns: [{ day: 'MON', rate: 83 }],
+      dailyCompletions: [{ date: '2026-03-01', total: 2, completed: 1 }],
+      aiContentSource: 'TEMPLATE',
     });
   });
 });
 
 describe('toReportStatus', () => {
-  it('다음 리포트까지 남은 날짜만 앱 모델로 옮긴다', () => {
+  it('다음 리포트까지 남은 날짜와 도착 시각을 앱 모델로 옮긴다', () => {
     // Given
     const { status } = reportStatusResponseSchema.parse({
       status: {
@@ -63,6 +66,11 @@ describe('toReportStatus', () => {
 
     // Then
     expect(reportStatusSchema.parse(reportStatus)).toEqual(reportStatus);
-    expect(reportStatus).toEqual({ daysUntilWeekly: 2, daysUntilMonthly: 23 });
+    expect(reportStatus).toEqual({
+      nextWeeklyAt: '2026-03-09T00:00:00.000Z',
+      nextMonthlyAt: '2026-04-01T00:00:00.000Z',
+      daysUntilWeekly: 2,
+      daysUntilMonthly: 23,
+    });
   });
 });

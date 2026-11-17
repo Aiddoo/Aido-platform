@@ -3,6 +3,7 @@ import { useWhatsNewAutoOpen } from '@src/features/app-config/whats-new/hooks/us
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
+import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
 import { TodoCommentTitleBar } from '@src/features/engagement/comment/components/todo-comment-title-bar';
 import { TodoDetailSummary } from '@src/features/engagement/comment/components/todo-detail-summary';
@@ -36,6 +37,7 @@ import {
   type RouteFriend,
   useRouteFriend,
 } from '@src/features/social/friend/hooks/use-route-friend';
+import { useGetFriendsInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { InviteEntryBanner } from '@src/features/social/invite/components/invite-entry-banner';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -56,7 +58,7 @@ import {
   StyledSafeAreaView,
   TintedRefreshControl,
 } from '@src/shared/ui';
-import { usePrefetchQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, usePrefetchQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect, useState } from 'react';
 import { ScrollViewContainer } from 'react-native-reorderable-list';
@@ -73,6 +75,12 @@ export default function FeedScreen() {
 
   // 피드를 내리기 시작하면 위에 떠 있는 친구 줄 안내가 내용을 가리지 않게 닫는다
   const [hasScrolledFeed, setHasScrolledFeed] = useState(false);
+
+  // 말풍선은 한 번에 하나다. 친구가 없어 친구 줄 안내가 남았으면 그 안내를 닫거나 피드를 내린 뒤에 AI 개편 안내를 연다
+  const [isFriendHintPending] = useMyPendingCoachmark('friend-strip');
+  const { data: friends } = useInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+  const isFriendHintAhead =
+    isFriendHintPending && !hasScrolledFeed && (friends?.items.length ?? 0) === 0;
 
   const openMyInvite = useOpenMyInvite();
 
@@ -112,6 +120,7 @@ export default function FeedScreen() {
                 <MyFeed
                   onScrollBeginDrag={() => setHasScrolledFeed(true)}
                   shouldShowHint={shouldShowCoachmarks}
+                  shouldShowSuggestionHint={shouldShowCoachmarks && !isFriendHintAhead}
                 />
               ))
               .exhaustive()}
@@ -145,11 +154,14 @@ export default function FeedScreen() {
   );
 }
 
-function MyFeed({
-  onScrollBeginDrag,
-  shouldShowHint,
-}: Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'> &
-  Pick<ComponentProps<typeof MyCalendar>, 'shouldShowHint'>) {
+interface MyFeedProps
+  extends
+    Pick<ComponentProps<typeof ScrollViewContainer>, 'onScrollBeginDrag'>,
+    Pick<ComponentProps<typeof MyCalendar>, 'shouldShowHint'> {
+  shouldShowSuggestionHint: boolean;
+}
+
+function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }: MyFeedProps) {
   const [selectedDateKey] = useFeedDateKey();
 
   const queryClient = useQueryClient();
@@ -157,6 +169,9 @@ function MyFeed({
   const hasPendingNavigation = useHasPendingPushNotificationEntry();
   const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
   const isReminderOff = useIsPushReminderOff();
+
+  // 말풍선은 열 때 잰 자리에 머물러 피드가 움직이는 동안 AI 제안 입구 안내를 내렸다가 멈춘 자리에서 다시 잰다
+  const [isScrolling, setIsScrolling] = useState(false);
 
   // 내 피드에서만 도는 첫 화면 조율이다. 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음)
   // 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다. 닫은 안내는 다시 보기 카드로 남는다
@@ -177,7 +192,13 @@ function MyFeed({
     <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
-      onScrollBeginDrag={onScrollBeginDrag}
+      onScrollBeginDrag={(event) => {
+        setIsScrolling(true);
+        onScrollBeginDrag?.(event);
+      }}
+      onScrollEndDrag={() => setIsScrolling(false)}
+      onMomentumScrollBegin={() => setIsScrolling(true)}
+      onMomentumScrollEnd={() => setIsScrolling(false)}
       refreshControl={<TintedRefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
     >
       <StyledSafeAreaView edges={['left', 'right']}>
@@ -219,7 +240,7 @@ function MyFeed({
         <Box className="px-4">
           <QueryErrorBoundary fallback={SuggestionEntry.Error}>
             <Suspense fallback={<SuggestionEntry.Loading />}>
-              <SuggestionEntry />
+              <SuggestionEntry shouldShowHint={shouldShowSuggestionHint && !isScrolling} />
             </Suspense>
           </QueryErrorBoundary>
         </Box>

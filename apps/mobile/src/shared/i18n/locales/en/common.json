@@ -52,6 +52,12 @@
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago"
   },
+  "dayCount": {
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "weeks_one": "{{count}} week",
+    "weeks_other": "{{count}} weeks"
+  },
   "dateRange": {
     "full": "{{start}} – {{end}}",
     "compact": "{{start}}–{{end}}"

@@ -1,13 +1,9 @@
 import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
-import { countBy, maxBy } from "es-toolkit";
 
-import {
-  hasOnlyGroundedNumbers,
-  numbersIn,
-} from "../../shared/domain/grounded-numbers.domain-service.js";
 import {
   collectRecordedActivities,
   selectRecordedDays,
+  toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
 import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
 
@@ -16,7 +12,7 @@ export const MAX_SUGGESTION_CANDIDATES = 30;
 /** 시작 단계(기록 3개 미만)에서 고를 수 있는 제안 수 */
 const MAX_STARTER_PICKS = 2;
 
-const SUGGESTION_MODES = ["PATTERN", "STARTER"] as const;
+export const SUGGESTION_MODES = ["PATTERN", "STARTER"] as const;
 
 export type SuggestionMode = (typeof SUGGESTION_MODES)[number];
 
@@ -26,6 +22,8 @@ export interface SuggestionCandidate {
   readonly title: string;
   readonly occurrences: number;
   readonly completed: number;
+  /** 끝낸 비율(정수 %). 모델이 직접 나누지 않게 서버가 넣는다 */
+  readonly completionRate: number;
   readonly days: readonly {
     readonly day: DayOfWeek;
     readonly total: number;
@@ -40,7 +38,6 @@ export interface SuggestionPick {
   readonly candidateId: string;
   readonly daysOfWeek: readonly DayOfWeek[];
   readonly useRecordedTime: boolean;
-  readonly reason: string;
 }
 
 export interface ResolvedSuggestionPick {
@@ -48,18 +45,27 @@ export interface ResolvedSuggestionPick {
   readonly daysOfWeek: DayOfWeek[];
   readonly scheduledTime: string | null;
   readonly confidence: number;
-  readonly modelReason: string;
 }
 
 export function suggestionModeOf(todoCount: number): SuggestionMode {
   return todoCount < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES ? "STARTER" : "PATTERN";
 }
 
-/** 많이 기록하고 많이 끝낸 활동부터 최대 30개를 후보로 만든다. */
+/**
+ * 많이 기록하고 많이 끝낸 활동부터 최대 30개다. PATTERN은 한 번뿐인 활동을 모델에 보이지 않고,
+ * 이미 반복 중인 할 일과 같은 활동은 어느 모드에서도 넣지 않는다.
+ */
 export function buildSuggestionCandidates(
   todos: readonly TodoSummaryForAnalysis[],
+  mode: SuggestionMode,
+  repeatingTitles: readonly string[],
 ): SuggestionCandidate[] {
+  const minOccurrences = mode === "PATTERN" ? AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES : 1;
+  const repeatingKeys = new Set(repeatingTitles.map(toActivityKey));
   return collectRecordedActivities(todos)
+    .filter(
+      (activity) => activity.occurrences >= minOccurrences && !repeatingKeys.has(activity.key),
+    )
     .sort(
       (left, right) =>
         right.occurrences - left.occurrences ||
@@ -67,23 +73,16 @@ export function buildSuggestionCandidates(
         left.title.localeCompare(right.title),
     )
     .slice(0, MAX_SUGGESTION_CANDIDATES)
-    .map((activity, index) => {
-      const records = todos.filter((todo) => todo.title === activity.title);
-      const timeCounts = countBy(
-        records.flatMap((record) => (record.scheduledTime == null ? [] : [record.scheduledTime])),
-        (time) => time,
-      );
-      const topTime = maxBy(Object.entries(timeCounts), ([, count]) => count);
-      return {
-        id: `a${index + 1}`,
-        title: activity.title,
-        occurrences: activity.occurrences,
-        completed: activity.completedOccurrences,
-        days: activity.days,
-        recordedTime: topTime != null && topTime[1] >= 2 ? topTime[0] : null,
-        categoryName: records[0]?.categoryName ?? "",
-      };
-    });
+    .map((activity, index) => ({
+      id: `a${index + 1}`,
+      title: activity.title,
+      occurrences: activity.occurrences,
+      completed: activity.completedOccurrences,
+      completionRate: Math.round((activity.completedOccurrences / activity.occurrences) * 100),
+      days: activity.days,
+      recordedTime: activity.recordedTime,
+      categoryName: activity.categoryName,
+    }));
 }
 
 /** 근거 기반 신뢰도. 같은 활동을 여러 번 끝냈을수록 높다. */
@@ -98,29 +97,23 @@ export function suggestionConfidence(candidate: SuggestionCandidate, mode: Sugge
   return 0.65;
 }
 
-/**
- * 모델이 고른 후보를 실제 기록으로 검증한다.
- * 없는 id·중복·이력에서 응답한 활동은 버리고, 요일은 기록된 요일과의 교집합, 시각은 기록된 시각만 쓴다.
- */
 export function resolveSuggestionPicks(
   picks: readonly SuggestionPick[],
   candidates: readonly SuggestionCandidate[],
   options: { readonly mode: SuggestionMode; readonly excludedTitles: readonly string[] },
 ): ResolvedSuggestionPick[] {
   const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-  const excluded = new Set(options.excludedTitles);
+  const excludedKeys = new Set(options.excludedTitles.map(toActivityKey));
   const seen = new Set<string>();
   const maxPicks =
     options.mode === "STARTER" ? MAX_STARTER_PICKS : AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER;
   const resolved: ResolvedSuggestionPick[] = [];
   for (const pick of picks) {
     const candidate = byId.get(pick.candidateId);
-    if (candidate == null || seen.has(candidate.id) || excluded.has(candidate.title)) {
-      continue;
-    }
     if (
-      options.mode === "PATTERN" &&
-      candidate.occurrences < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
+      candidate == null ||
+      seen.has(candidate.id) ||
+      excludedKeys.has(toActivityKey(candidate.title))
     ) {
       continue;
     }
@@ -131,40 +124,13 @@ export function resolveSuggestionPicks(
     );
     resolved.push({
       candidate,
-      daysOfWeek:
-        chosen.length > 0
-          ? chosen
-          : selectRecordedDays({
-              title: candidate.title,
-              occurrences: candidate.occurrences,
-              completedOccurrences: candidate.completed,
-              days: candidate.days,
-              recordedTimes: [],
-            }),
+      daysOfWeek: chosen.length > 0 ? chosen : selectRecordedDays(candidate),
       scheduledTime: pick.useRecordedTime ? candidate.recordedTime : null,
       confidence: suggestionConfidence(candidate, options.mode),
-      modelReason: pick.reason,
     });
     if (resolved.length >= maxPicks) {
       break;
     }
   }
   return resolved;
-}
-
-/**
- * 모델이 쓴 사유의 숫자가 후보 근거에 있는 값인지 확인한다. 없는 수치는 환각으로 본다.
- * 제목·카테고리 이름의 분량("영어 단어 30개")을 그대로 다시 쓴 것과 기록된 요일 수는 근거로 인정한다.
- */
-export function isReasonGrounded(reason: string, candidate: SuggestionCandidate): boolean {
-  return hasOnlyGroundedNumbers(reason, {
-    numbers: [
-      candidate.occurrences,
-      candidate.completed,
-      candidate.days.length,
-      ...candidate.days.flatMap((day) => [day.total, day.completed]),
-      ...(candidate.recordedTime == null ? [] : numbersIn(candidate.recordedTime)),
-    ],
-    quotedTexts: [candidate.title, candidate.categoryName],
-  });
 }

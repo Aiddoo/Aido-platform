@@ -4,8 +4,8 @@ import type { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { REPORT_TYPE_LABEL_KEYS } from '../constants/report-labels';
 import type { ReportType } from '../domains/report.model';
+import { getReportTypeLabelKey } from '../utils/report-label.view-model';
 
 type ReportTypeChipProps = Omit<ComponentProps<typeof Chip>, 'children' | 'color' | 'variant'> & {
   type: ReportType;
@@ -16,10 +16,10 @@ export function ReportTypeChip({ type, ...props }: ReportTypeChipProps) {
 
   return match(type)
     .with('WEEKLY', () => (
-      <LabelChip color="accent" label={t(REPORT_TYPE_LABEL_KEYS.WEEKLY)} {...props} />
+      <LabelChip color="accent" label={t(getReportTypeLabelKey('WEEKLY'))} {...props} />
     ))
     .with('MONTHLY', () => (
-      <LabelChip color="success" label={t(REPORT_TYPE_LABEL_KEYS.MONTHLY)} {...props} />
+      <LabelChip color="success" label={t(getReportTypeLabelKey('MONTHLY'))} {...props} />
     ))
     .exhaustive();
 }

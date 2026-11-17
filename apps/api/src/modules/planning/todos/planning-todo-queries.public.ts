@@ -1,4 +1,9 @@
 // 할 일 조회 포트만 연다. planning-todos.public은 notification을 거치는 Module을 함께 열어 날씨·알림이 쓰면 순환이 된다
+export { RepeatingTodoTitleReaderPort } from "./application/ports/repeating-todo-title.reader.port.js";
+export {
+  type SingleTodoCountQuery,
+  SingleTodoCountReaderPort,
+} from "./application/ports/single-todo-count.reader.port.js";
 export { TodoCompletionGroupReaderPort } from "./application/ports/todo-completion-group.reader.port.js";
 export { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 export { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";

@@ -91,6 +91,7 @@ export const UserFixture = {
       weatherEveningEnabled: preferenceOverrides.weatherEveningEnabled ?? false,
       weatherEveningHour: preferenceOverrides.weatherEveningHour ?? 18,
       weatherEveningMinute: preferenceOverrides.weatherEveningMinute ?? 0,
+      aiPushEnabled: preferenceOverrides.aiPushEnabled ?? true,
       currentStreak: preferenceOverrides.currentStreak ?? 0,
       longestStreak: preferenceOverrides.longestStreak ?? 0,
       lastCompletedDate: preferenceOverrides.lastCompletedDate ?? null,

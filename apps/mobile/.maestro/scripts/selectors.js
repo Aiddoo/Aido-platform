@@ -69,6 +69,19 @@ output.ids = {
   subscription: {
     paywall: 'subscription-paywall',
   },
+  report: {
+    thisWeekRecord: 'report-this-week-record',
+    summary: 'report-summary',
+    dailyChart: 'report-daily-chart',
+    hourChart: 'report-hour-chart',
+    freeSubscribe: 'report-free-subscribe',
+    sampleLatest: 'report-sample-latest',
+    sampleNotice: 'report-sample-notice',
+    sampleSubscribe: 'report-sample-subscribe',
+  },
+  suggestions: {
+    status: 'suggestions-status',
+  },
 };
 
 output.labels = {
@@ -76,4 +89,7 @@ output.labels = {
   save: '저장|Save',
   // iOS 시스템 창(암호 저장 제안)의 버튼
   savePasswordNotNow: '지금 안 함|Not Now',
+  // 개발 빌드의 오류 창(LogBox) 제목. 창이 화면을 덮어도 뒤 요소가 보여 id 확인만으로는 오류를 놓친다
+  devErrorOverlay: 'Uncaught Error|Render Error',
+  viewDetail: '자세히 보기|View details',
 };

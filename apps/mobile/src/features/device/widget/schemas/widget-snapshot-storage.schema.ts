@@ -1,13 +1,11 @@
 import { SUPPORTED_LOCALES } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
-import { omit } from 'es-toolkit';
 import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import { widgetRenderStateSchema } from '../domains/widget-snapshot.model';
 
 // Persist only display data; isolated widget runtimes cannot access auth or i18n.
-/** 하루치 표시 데이터. v1 snapshot 본문과 같은 모양이다. */
 const widgetDaySnapshotSchema = z.object({
   /** data: 그날 할 일 있음 · empty: 로그인했으나 그날 할 일 없음 · loggedOut: 비로그인 */
   state: widgetRenderStateSchema.exclude(['stale']),
@@ -65,8 +63,8 @@ const widgetDaySnapshotSchema = z.object({
   }),
 });
 
-/** 내일 day를 함께 저장해 자정이 지나면 앱을 열기 전에도 새 날짜를 보인다. 저장 key는 v1과 같다 */
-const widgetSnapshotSchema = z.object({
+/** 내일 day를 함께 저장해 자정이 지나면 앱을 열기 전에도 새 날짜를 보인다. 저장소에서 읽을 때도 쓴다 */
+export const widgetSnapshotSchema = z.object({
   version: z.literal(2),
   updatedAtIso: z.string(),
   days: z.union([
@@ -78,18 +76,3 @@ const widgetSnapshotSchema = z.object({
 export type WidgetSnapshot = z.infer<typeof widgetSnapshotSchema>;
 export type WidgetDaySnapshot = z.infer<typeof widgetDaySnapshotSchema>;
 export type WidgetSnapshotStrings = WidgetDaySnapshot['strings'];
-
-const legacyWidgetSnapshotV1Schema = widgetDaySnapshotSchema.extend({
-  version: z.literal(1),
-  updatedAtIso: z.string(),
-});
-
-/** 저장소에서 읽을 때만 사용한다. 이미 저장된 v1은 하루짜리 v2로 읽는다. v1 읽기는 1.16.0에서 지운다(compatibility.md) */
-export const widgetSnapshotStorageSchema = z.union([
-  widgetSnapshotSchema,
-  legacyWidgetSnapshotV1Schema.transform((legacy): WidgetSnapshot => ({
-    version: 2,
-    updatedAtIso: legacy.updatedAtIso,
-    days: [omit(legacy, ['version', 'updatedAtIso'])],
-  })),
-]);

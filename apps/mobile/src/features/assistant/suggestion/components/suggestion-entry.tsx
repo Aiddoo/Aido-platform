@@ -3,43 +3,63 @@ import {
   EntitlementPolicy,
 } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
+import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { AiFilledIcon, LabelChip, ListRow, type QueryErrorFallbackProps } from '@src/shared/ui';
-import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import {
+  AiFilledIcon,
+  Box,
+  LabelChip,
+  ListRow,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { router, useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, Suspense } from 'react';
+import { type ComponentProps, type ComponentRef, type ReactNode, Suspense, useRef } from 'react';
+import type { View } from 'react-native';
+import { match } from 'ts-pattern';
 
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
+import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
 
-export function SuggestionEntry() {
-  const { t } = useTranslation('todo');
+interface SuggestionEntryProps {
+  /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았거나 피드가 움직이는 중이면 false라 AI 개편 안내를 미룬다 */
+  shouldShowHint?: boolean;
+}
+
+export function SuggestionEntry({ shouldShowHint = true }: SuggestionEntryProps) {
+  const { t } = useTranslation(['todo', 'ai']);
   const push = useSingleTap(router.push);
-  const [{ data: me }, { data: canUseSuggestions }] = useSuspenseQueries({
-    queries: [
-      useGetMeQueryOptions(),
-      { ...useGetEntitlementsQueryOptions(), select: selectCanUseSuggestions },
-    ],
+  const { data: canUseSuggestions } = useSuspenseQuery({
+    ...useGetEntitlementsQueryOptions(),
+    select: selectCanUseSuggestions,
   });
 
   if (!canUseSuggestions) {
     return (
-      <InfoCard
-        label={t('feed.routineSuggestion')}
-        isPremiumOnly
-        onPress={() => push('/suggestions')}
-      />
+      <AiUpdateCoachmark
+        description={t('ai:updateHint.freeDescription')}
+        shouldShowHint={shouldShowHint}
+      >
+        <InfoCard
+          label={t('todo:feed.suggestionFree')}
+          isPremiumOnly
+          onPress={() => push('/suggestions')}
+        />
+      </AiUpdateCoachmark>
     );
   }
 
   // 제안만 늦게 오면 "불러오는 중" 대신 제안을 기다린다는 문구를 보인다
   return (
-    <Suspense fallback={<InfoCard label={t('feed.suggestionsLoading')} />}>
-      <PremiumSuggestionEntry name={me.name} />
+    <Suspense fallback={<InfoCard label={t('todo:feed.suggestionsLoading')} />}>
+      <PremiumSuggestionEntry shouldShowHint={shouldShowHint} />
     </Suspense>
   );
 }
@@ -66,24 +86,73 @@ SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
   return <InfoCard label={t('todo:feed.suggestionsRetry')} onPress={reset} />;
 };
 
-interface PremiumSuggestionEntryProps {
-  name: string;
-}
-
-function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
-  const { t } = useTranslation('todo');
+function PremiumSuggestionEntry({ shouldShowHint }: { shouldShowHint: boolean }) {
+  const { t } = useTranslation(['todo', 'ai']);
   const push = useSingleTap(router.push);
-  const { data: suggestionCount } = useSuspenseQuery({
+  const dateFormatContext = useDateFormatContext();
+  // 분석 중 polling이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다
+  const isFocused = useIsFocused();
+  const { data: view } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
-    select: (suggestions) => suggestions.length,
+    select: (list) => ({
+      state: getSuggestionDisplayState(list),
+      count: list.suggestions.length,
+    }),
+    subscribed: isFocused,
   });
 
-  const label =
-    suggestionCount > 0
-      ? t('feed.suggestionsArrived', { name, count: suggestionCount })
-      : t('feed.preparing');
+  const label = match(view.state)
+    .with('HAS_SUGGESTIONS', () => t('todo:feed.suggestionsArrived', { count: view.count }))
+    .with('ANALYZING', () => t('todo:feed.suggestion.analyzing'))
+    .with('DONE_FOR_TODAY', () => t('todo:feed.suggestion.doneForToday'))
+    .with('NO_PATTERN_FOUND', () => t('todo:feed.suggestion.noPatternFound'))
+    .with('UNAVAILABLE_TODAY', () => t('todo:feed.suggestion.unavailableToday'))
+    .with('NEEDS_MORE_TODOS', () => t('todo:feed.suggestion.needsMoreTodos'))
+    .with('NEEDS_AI_CONSENT', () => t('todo:feed.suggestion.needsAiConsent'))
+    .with('WAITING_FOR_NEXT_RUN', () => t('todo:feed.suggestion.waitingForNextRun'))
+    .exhaustive();
 
-  return <InfoCard label={label} onPress={() => push('/suggestions')} />;
+  return (
+    <AiUpdateCoachmark
+      description={t('ai:updateHint.premiumDescription', {
+        period: formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext),
+      })}
+      shouldShowHint={shouldShowHint}
+    >
+      <InfoCard label={label} onPress={() => push('/suggestions')} />
+    </AiUpdateCoachmark>
+  );
+}
+
+interface AiUpdateCoachmarkProps {
+  /** 무료와 프리미엄(체험·유예·관리자 포함)은 쓸 수 있는 것이 달라 입구가 고른 문구를 받는다 */
+  description: string;
+  shouldShowHint: boolean;
+  children: ReactNode;
+}
+
+/** 1.16.0 AI 제안·리포트 개편을 계정마다 한 번 알린다. 피드 맨 아래라 입구가 다 보일 때만 연다 */
+function AiUpdateCoachmark({ description, shouldShowHint, children }: AiUpdateCoachmarkProps) {
+  const { t } = useTranslation('ai');
+  const targetRef = useRef<ComponentRef<typeof View>>(null);
+
+  return (
+    <Box ref={targetRef}>
+      <CoachmarkPopover
+        kind="ai-feature-update"
+        title={t('updateHint.title')}
+        description={description}
+        Icon={AiFilledIcon}
+        placement="top"
+        align="center"
+        shouldAutoOpen={shouldShowHint}
+        onScreenTargetRef={targetRef}
+        isPassThrough
+      >
+        {children}
+      </CoachmarkPopover>
+    </Box>
+  );
 }
 
 interface InfoCardProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
@@ -110,7 +179,13 @@ function InfoCard({ label, isPremiumOnly = false, ...props }: InfoCardProps) {
           <ListRow.Texts
             type="1RowTypeA"
             top={label}
-            topProps={{ size: 'b3', weight: 'medium', shade: 8 }}
+            topProps={{
+              size: 'b3',
+              weight: 'medium',
+              shade: 8,
+              lineBreakStrategyIOS: 'hangul-word',
+              textBreakStrategy: 'highQuality',
+            }}
           />
         }
         right={

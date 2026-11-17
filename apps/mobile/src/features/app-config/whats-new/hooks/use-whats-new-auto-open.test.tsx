@@ -14,11 +14,12 @@ import { renderScreenHook } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
+import { RELEASE_1_16_0 } from '../constants/releases.constants';
 import { createWhatsNewRepository } from '../repositories/whats-new.repository';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
 
 const USER_ID = 'user-1';
-const CAMPAIGN_ID = 'feature-discovery-2026-12';
+const CAMPAIGN_ID = RELEASE_1_16_0.campaignId;
 const AUTO_OPEN_CONFIG = {
   enabled: true,
   campaignId: CAMPAIGN_ID,

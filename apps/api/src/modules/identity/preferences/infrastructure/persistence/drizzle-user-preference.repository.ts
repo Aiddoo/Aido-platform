@@ -152,6 +152,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
       weatherEveningEnabled: data.weatherEveningEnabled,
       weatherEveningHour: data.weatherEveningHour,
       weatherEveningMinute: data.weatherEveningMinute,
+      aiPushEnabled: data.aiPushEnabled,
     };
   }
 }

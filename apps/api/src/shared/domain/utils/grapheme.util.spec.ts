@@ -1,4 +1,4 @@
-import { truncateGraphemes } from "./grapheme.util.js";
+import { countGraphemes, truncateGraphemes } from "./grapheme.util.js";
 
 describe("truncateGraphemes", () => {
   it("상한 이하 문자열은 그대로 돌려준다", () => {
@@ -29,5 +29,18 @@ describe("truncateGraphemes", () => {
     // Then
     expect(kept).toBe(`a${family}`);
     expect(dropped).toBe("a");
+  });
+});
+
+describe("countGraphemes", () => {
+  it.each([
+    { value: "운동하기", expected: 4 },
+    { value: "러닝 😀", expected: 4 },
+    { value: "a👨‍👩‍👧b", expected: 3 },
+  ])("$value는 보이는 글자 $expected개다", ({ value, expected }) => {
+    // When
+    const result = countGraphemes(value);
+    // Then
+    expect(result).toBe(expected);
   });
 });

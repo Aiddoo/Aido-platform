@@ -22,6 +22,7 @@ export function createSuggestionFixture(overrides: Partial<SuggestionPrimitives>
     expiresAt: Temporal.Instant.from("2026-03-18T00:00:00Z"),
     createdAt: SUGGESTION_FIXTURE_NOW,
     updatedAt: SUGGESTION_FIXTURE_NOW,
+    evidence: { recordedCount: 6, completedCount: 5, periodDays: 14 },
     ...overrides,
   });
 }

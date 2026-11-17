@@ -2,20 +2,17 @@ import { aiReportIdParamSchema } from '@aido/api';
 import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
-import { isSampleReportId } from '../constants/sample-reports.constants';
+import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
 import { reportTypeSchema } from '../domains/report.model';
 
-const sampleReportSchema = z
-  .string()
-  .refine(isSampleReportId)
-  .transform((id) => ({ kind: 'sample' as const, id }));
-
-const savedReportSchema = routeIntegerStringSchema
-  .pipe(aiReportIdParamSchema.shape.id)
-  .transform((id) => ({ kind: 'saved' as const, id }));
-
 export const reportParamsSchema = z.object({
-  reportId: z.union([sampleReportSchema, savedReportSchema]),
+  reportId: routeIntegerStringSchema.pipe(aiReportIdParamSchema.shape.id),
+});
+
+/** 무료 리포트 화면의 예시 리포트. `?type=WEEKLY&periodsAgo=1`(1이 지난주·지난달) */
+export const sampleReportParamsSchema = z.object({
+  type: reportTypeSchema,
+  periodsAgo: routeIntegerStringSchema.pipe(z.coerce.number().int().max(SAMPLE_REPORT_COUNT)),
 });
 
 /** 리포트 목록의 주간·월간 탭. `?type=` */

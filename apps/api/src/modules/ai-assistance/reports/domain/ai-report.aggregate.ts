@@ -5,6 +5,7 @@ import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 import { AiReportId } from "./ai-report-id.vo.js";
 import type {
   CategoryBreakdownItem,
+  DailyCompletionItem,
   DayPatternItem,
   ReportContentSource,
   ReportStats,
@@ -30,6 +31,8 @@ export interface AiReportPrimitives {
   /** 옛 행은 출처를 남기지 않아 null이다 */
   readonly contentSource: ReportContentSource | null;
   readonly promptVersion: string | null;
+  /** 1.16.0 전 리포트는 날짜별 값을 남기지 않아 null이다 */
+  readonly dailyCompletions: readonly DailyCompletionItem[] | null;
 }
 
 type AiReportProps = Omit<AiReportPrimitives, "id" | "userId"> & { readonly userId: UserId };
@@ -43,7 +46,7 @@ export type CreateAiReportParams = Omit<AiReportPrimitives, "id" | "userId" | "g
 
 type CopiedFields = Pick<
   AiReportPrimitives,
-  "stats" | "categoryBreakdown" | "dayPatterns" | "timePatterns" | "aiTips"
+  "stats" | "categoryBreakdown" | "dayPatterns" | "timePatterns" | "aiTips" | "dailyCompletions"
 >;
 
 function copyPrimitives<T extends CopiedFields>(primitives: T): T {
@@ -54,6 +57,7 @@ function copyPrimitives<T extends CopiedFields>(primitives: T): T {
     dayPatterns: primitives.dayPatterns.map((item) => ({ ...item })),
     timePatterns: primitives.timePatterns.map((item) => ({ ...item })),
     aiTips: [...primitives.aiTips],
+    dailyCompletions: primitives.dailyCompletions?.map((item) => ({ ...item })) ?? null,
   };
 }
 

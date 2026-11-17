@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.15.3",
+  "version": "1.16.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -52,8 +52,6 @@
     "@react-native-firebase/app": "26.4.1",
     "@react-native-kakao/core": "catalog:",
     "@react-native-kakao/share": "catalog:",
-    "@react-native-kakao/social": "catalog:",
-    "@react-native-kakao/user": "catalog:",
     "@sentry/react-native": "catalog:expo58",
     "@shopify/flash-list": "catalog:expo58",
     "@shopify/react-native-skia": "catalog:expo58",
@@ -114,7 +112,7 @@
     "react-native-keyboard-controller": "catalog:expo58",
     "react-native-mmkv": "4.3.2",
     "react-native-nitro-modules": "0.37.2",
-    "react-native-purchases": "10.16.0",
+    "react-native-purchases": "11.0.2",
     "react-native-reanimated": "catalog:expo58",
     "react-native-reorderable-list": "catalog:",
     "react-native-reserved-regions": "catalog:",

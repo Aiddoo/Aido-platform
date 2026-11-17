@@ -52,9 +52,7 @@ export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
     isFetchingNextPage,
     isFetchNextPageError,
   } = useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
-  const [isRefreshing, handleRefresh] = useRefresh(() =>
-    refreshWeeklyAchievements(queryClient, { year }),
-  );
+  const [isRefreshing, handleRefresh] = useRefresh(() => refreshWeeklyAchievements(queryClient));
 
   return (
     <InfiniteList

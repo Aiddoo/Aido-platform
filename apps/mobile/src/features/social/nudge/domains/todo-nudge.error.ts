@@ -14,6 +14,11 @@ export function isNudgeUnavailableError(error: unknown): error is ApiError {
   return isApiError(error) && NUDGE_UNAVAILABLE_CODES.some((code) => error.hasCode(code));
 }
 
+/** 서버 설정으로 답장·감사 기능이 꺼졌다(NUDGE_1111) */
+export function isNudgeDisabledError(error: unknown): error is ApiError {
+  return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1111);
+}
+
 /** 서버에서 그 할 일이 아직 완료 전이다(NUDGE_1110). 다른 기기에서 완료를 풀었거나 완료 저장보다 먼저 닿은 요청이다 */
 export function isThanksTodoNotCompletedError(error: unknown): error is ApiError {
   return isApiError(error) && error.hasCode(ErrorCode.NUDGE_1110);

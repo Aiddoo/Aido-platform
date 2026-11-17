@@ -1,4 +1,5 @@
 import {
+  isAiPushDisabled,
   isAutomatedEngagementNotification,
   isGeneralRateLimitExemptNotification,
   isMarketingNotification,
@@ -6,17 +7,13 @@ import {
 } from "./push-eligibility.domain-service.js";
 
 describe("Push 발송 대상 판단 정책", () => {
-  it.each([
-    "AI_SUGGESTION",
-    "WINBACK",
-    "SOCIAL_DIGEST",
-    "NUDGE_SUGGEST",
-    "LUNCH_NUDGE",
-    "STREAK_AT_RISK",
-  ] as const)("%s는 별도 광고성 푸시 동의가 필요한 참여 유도 알림이다", (type) => {
-    expect(isMarketingNotification(type)).toBe(true);
-    expect(isAutomatedEngagementNotification(type)).toBe(true);
-  });
+  it.each(["WINBACK", "SOCIAL_DIGEST", "NUDGE_SUGGEST", "LUNCH_NUDGE", "STREAK_AT_RISK"] as const)(
+    "%s는 별도 광고성 푸시 동의가 필요한 참여 유도 알림이다",
+    (type) => {
+      expect(isMarketingNotification(type)).toBe(true);
+      expect(isAutomatedEngagementNotification(type)).toBe(true);
+    },
+  );
 
   it.each([
     "FOLLOW_NEW",
@@ -28,6 +25,7 @@ describe("Push 발송 대상 판단 정책", () => {
     "MORNING_REMINDER",
     "EVENING_REMINDER",
     "WEEKLY_REPORT",
+    "AI_SUGGESTION",
   ] as const)("%s 서비스 알림은 별도 광고성 푸시 동의를 요구하지 않는다", (type) => {
     expect(isMarketingNotification(type)).toBe(false);
     expect(isAutomatedEngagementNotification(type)).toBe(false);
@@ -65,6 +63,26 @@ describe("Push 발송 대상 판단 정책", () => {
       const result = isGeneralRateLimitExemptNotification(type);
       // Then
       expect(result).toBe(exempt);
+    },
+  );
+
+  it.each([
+    ["AI_SUGGESTION", true],
+    ["WEEKLY_REPORT", true],
+    ["MONTHLY_REPORT", true],
+    ["WEEKLY_ACHIEVEMENT", false],
+    ["TODO_REMINDER", false],
+    ["WEATHER_MORNING", false],
+    ["FOLLOW_NEW", false],
+    ["WINBACK", false],
+  ] as const)(
+    "AI 제안·리포트 알림을 끄면 AI가 만든 알림 푸시만 건너뛴다(%s → %s)",
+    (type, skippedWhenOff) => {
+      // When
+      const whenOff = isAiPushDisabled(type, { aiPushEnabled: false });
+      const whenOn = isAiPushDisabled(type, { aiPushEnabled: true });
+      // Then
+      expect({ whenOff, whenOn }).toEqual({ whenOff: skippedWhenOff, whenOn: false });
     },
   );
 });

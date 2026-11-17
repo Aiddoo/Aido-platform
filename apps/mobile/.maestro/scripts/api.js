@@ -108,6 +108,8 @@ function signIn(role) {
         categoryId: categoryId,
         startDate: todayKey(),
       }).todo,
+    completeTodo: (todoId) =>
+      call('PATCH', '/v1/todos/' + todoId + '/complete', token, { completed: true }),
     hasTodoIn: (categoryId, todoId) => todosIn(categoryId).some((todo) => todo.id === todoId),
     waitForTodo: (categoryId, title, isCompleted) =>
       poll(
