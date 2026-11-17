@@ -11,7 +11,10 @@
   "type": "module",
   "imports": {
     "#api/*": {
-      "types": "./src/*.ts",
+      "types": [
+        "./src/*.ts",
+        null
+      ],
       "default": "./dist/src/*.js"
     },
     "#test/*": "./test/*.ts"
