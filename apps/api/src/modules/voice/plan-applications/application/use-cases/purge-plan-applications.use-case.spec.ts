@@ -11,13 +11,13 @@ import { PurgePlanApplicationsUseCase } from "./purge-plan-applications.use-case
 const NOW = PLAN_APPLICATION_FIXTURE_NOW;
 
 describe("PurgePlanApplicationsUseCase — 적용 멱등 기록 정리", () => {
-  it("만든 지 7일이 넘은 기록만 지우고 지운 수를 돌려준다", async () => {
+  it("만든 지 30일(앱이 적용 요청을 메모와 함께 두는 기간)이 넘은 기록만 지우고 지운 수를 돌려준다", async () => {
     // Given
     const repository = new InMemoryPlanApplicationRepository();
     const created = [
-      { key: "recent", createdAt: NOW.subtract({ hours: 24 }) },
-      { key: "just-seven-days", createdAt: NOW.subtract({ hours: 7 * 24 }) },
-      { key: "old", createdAt: NOW.subtract({ hours: 7 * 24, milliseconds: 1 }) },
+      { key: "eight-days", createdAt: NOW.subtract({ hours: 8 * 24 }) },
+      { key: "just-thirty-days", createdAt: NOW.subtract({ hours: 30 * 24 }) },
+      { key: "old", createdAt: NOW.subtract({ hours: 30 * 24, milliseconds: 1 }) },
     ];
     for (const [index, { key, createdAt }] of created.entries()) {
       await repository.save(
@@ -41,6 +41,6 @@ describe("PurgePlanApplicationsUseCase — 적용 멱등 기록 정리", () => {
     expect(purgedCount).toBe(1);
     expect(
       repository.saved.map((application) => application.toPrimitives().idempotencyKey),
-    ).toEqual(["recent", "just-seven-days"]);
+    ).toEqual(["eight-days", "just-thirty-days"]);
   });
 });

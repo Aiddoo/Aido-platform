@@ -1,4 +1,4 @@
-const MINUTE_MS = 60_000;
+import { MINUTE_MS } from "#api/shared/domain/time/time-units";
 
 /** 공급자가 정하는 receipt 대기·보관 시간. 값은 푸시 공급자 어댑터가 준다. */
 export interface PushReceiptTiming {

@@ -5,6 +5,7 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import { NOTIFICATION_MILESTONES } from "../../../shared/domain/notification-milestone.constants.js";
 
@@ -18,8 +19,6 @@ export const NotificationJobName = {
   MILESTONE_REACHED: "milestone-reached",
   PUSH_RECEIPTS: "push-receipts",
 } as const;
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 const NOTIFICATION_RETRY = {
   retryLimit: 2,

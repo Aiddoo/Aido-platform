@@ -1,11 +1,11 @@
+import { REFRESH_TOKEN_REUSE_GRACE_MS } from "@aido/api/vocabulary";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_USER_ID,
   createSessionFixture,
 } from "#test/fixtures/identity/session.fixture";
-
-import { TOKEN_REUSE_GRACE_PERIOD_MS } from "./sessions.constants.js";
 
 describe("Session — refresh 토큰 회전과 재사용 판단", () => {
   it("만료 시각 직전까지 유효하고 그 순간부터 만료, 폐기가 만료보다 먼저다", () => {
@@ -33,17 +33,17 @@ describe("Session — refresh 토큰 회전과 재사용 판단", () => {
       previousTokenHash: "previous-hash",
       lastUsedAt: AUTH_FIXTURE_NOW,
     });
-    const atGraceEnd = AUTH_FIXTURE_NOW.add({ milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS });
+    const atGraceEnd = AUTH_FIXTURE_NOW.add({ milliseconds: REFRESH_TOKEN_REUSE_GRACE_MS });
 
     // When
     const outcomes = [
-      session.isRetryWithin("previous-hash", atGraceEnd, TOKEN_REUSE_GRACE_PERIOD_MS),
+      session.isRetryWithin("previous-hash", atGraceEnd, REFRESH_TOKEN_REUSE_GRACE_MS),
       session.isRetryWithin(
         "previous-hash",
         atGraceEnd.add({ milliseconds: 1 }),
-        TOKEN_REUSE_GRACE_PERIOD_MS,
+        REFRESH_TOKEN_REUSE_GRACE_MS,
       ),
-      session.isRetryWithin("other-hash", AUTH_FIXTURE_NOW, TOKEN_REUSE_GRACE_PERIOD_MS),
+      session.isRetryWithin("other-hash", AUTH_FIXTURE_NOW, REFRESH_TOKEN_REUSE_GRACE_MS),
     ];
 
     // Then

@@ -1,4 +1,9 @@
-import { REVOKE_REASON, SECURITY_EVENT, type UserRole } from "@aido/api/vocabulary";
+import {
+  REFRESH_TOKEN_REUSE_GRACE_MS,
+  REVOKE_REASON,
+  SECURITY_EVENT,
+  type UserRole,
+} from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -12,7 +17,6 @@ import type { SecurityLogRepositoryPort } from "../../../users/application/ports
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { SessionId } from "../../domain/session-id.vo.js";
 import type { Session } from "../../domain/session.aggregate.js";
-import { TOKEN_REUSE_GRACE_PERIOD_MS } from "../../domain/sessions.constants.js";
 import type { SessionCachePort } from "../ports/session-cache.port.js";
 import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
@@ -85,7 +89,7 @@ export class RefreshTokensUseCase {
       authSession.isRetryWithin(
         refreshTokenHash,
         this.#dependencies.clock.now(),
-        TOKEN_REUSE_GRACE_PERIOD_MS,
+        REFRESH_TOKEN_REUSE_GRACE_MS,
       )
     ) {
       return this.#rotateSession(authSession, input, true);

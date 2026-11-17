@@ -6,11 +6,11 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PlanResultReplayFactoryPort } from "../../application/ports/plan-result-replay-factory.port.js";
 import type { PlanResultReplay } from "../../application/ports/plan-result-replay.port.js";
-
-/** 재시도는 몇 분 안에 끝난다. 이 시간이 지나면 잊는다. */
-const PLAN_RESULT_REPLAY_TTL_MS = 10 * 60 * 1000;
-/** 힙 384MiB 안에서 결과 하나가 최악 100KB여도 20MB를 넘지 않는 수다. */
-const PLAN_RESULT_REPLAY_MAX_ITEMS = 200;
+import {
+  PLAN_RESULT_REPLAY_MAX_ITEMS,
+  PLAN_RESULT_REPLAY_TTL_MS,
+  PlanResultReplayKey,
+} from "../cache/plan-result-replay.keyspace.js";
 
 /**
  * 말한 내용에서 나온 결과라 Redis에 두지 않고 프로세스 메모리에만 잠시 둔다(서버 인스턴스는 하나다).
@@ -42,7 +42,7 @@ class InMemoryPlanResultReplayAdapter<T> implements PlanResultReplay<T> {
   }
 
   #key(userId: UserId, idempotencyKey: string): string {
-    return `${this.#namespace}:${userId.value}:${idempotencyKey}`;
+    return PlanResultReplayKey.result(this.#namespace, userId.value, idempotencyKey);
   }
 }
 

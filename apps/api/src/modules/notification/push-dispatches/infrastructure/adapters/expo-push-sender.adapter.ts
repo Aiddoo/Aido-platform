@@ -6,6 +6,7 @@ import { match, P } from "ts-pattern";
 
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { HOUR_MS, MINUTE_MS } from "#api/shared/domain/time/time-units";
 
 import {
   type PushFailure,
@@ -26,14 +27,12 @@ import { buildExpoPushMessage } from "./expo-push-message.mapper.js";
 import { PushProviderLogEvent, pushTransportStatusCode } from "./push-provider.log-events.js";
 import { PushThroughputLimiterAdapter } from "./push-throughput-limiter.adapter.js";
 
-const MINUTE_MS = 60_000;
-
 /**
  * Expo는 수락 15분 뒤부터 receipt를 물으라고 권하고 receipt를 약 24시간 보관한다.
  * SDK 전송은 abort signal을 받지 않아 정책 timeout 뒤에도 요청이 이어질 수 있어 lease 여유를 둔다.
  */
 export const EXPO_PUSH_TIMING = {
-  receipt: { readyAfterMs: 15 * MINUTE_MS, retentionMs: 24 * 60 * MINUTE_MS },
+  receipt: { readyAfterMs: 15 * MINUTE_MS, retentionMs: 24 * HOUR_MS },
   unabortableSendGraceMs: 10 * MINUTE_MS,
 } as const satisfies PushProviderTiming;
 

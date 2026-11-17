@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON } from "@aido/api/vocabulary";
+import { REFRESH_TOKEN_REUSE_GRACE_MS, REVOKE_REASON } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -13,7 +13,6 @@ import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
-import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { SessionCacheKey } from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -917,7 +916,7 @@ describe("인증 E2E", () => {
         .update(sessionTable)
         .set({
           lastUsedAt: Temporal.Now.instant().subtract({
-            milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1000,
+            milliseconds: REFRESH_TOKEN_REUSE_GRACE_MS + 1000,
           }),
         })
         .where(eq(sessionTable.id, session.id));

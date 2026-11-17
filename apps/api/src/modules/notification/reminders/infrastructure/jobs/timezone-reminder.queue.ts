@@ -5,14 +5,13 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 export const TimezoneReminderJobName = {
   SWEEP_REMINDERS: "sweep-reminders",
   REMINDER_HOUR_CHANGED: "reminder-hour-changed",
   SOCIAL_DIGEST: "social-digest",
 } as const;
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 const TIMEZONE_REMINDER_RETRY = {
   retryLimit: 2,

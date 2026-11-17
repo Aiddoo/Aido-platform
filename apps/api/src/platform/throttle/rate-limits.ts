@@ -2,9 +2,8 @@ import { applyDecorators } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Throttle, type ThrottlerOptions } from "@nestjs/throttler";
 
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "#api/shared/domain/time/time-units";
+
 const DAILY_THROTTLER = "daily";
 
 interface PerMinuteLimit {

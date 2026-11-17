@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import { BROADCAST_FAN_OUT_PAGE_SIZE } from "../../domain/broadcast-campaigns.constants.js";
 
@@ -16,8 +17,6 @@ const broadcastDeliveryJobSchema = z.strictObject({
     userIds: z.array(z.string().min(1)).min(1).max(BROADCAST_FAN_OUT_PAGE_SIZE),
   }),
 });
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 const BROADCAST_DELIVERY_RETRY = {
   retryLimit: 5,

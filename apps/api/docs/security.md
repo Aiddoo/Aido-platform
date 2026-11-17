@@ -42,7 +42,7 @@
 
 - `JWT_REFRESH_SECRET` 회전은 전체 유저 즉시 로그아웃이다. 불가피하면 이중 키 검증 기간을 두고 회전한다.
 - `JWT_REFRESH_EXPIRES_IN`(기본 30d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다(sliding). 그 기간 이상 접속하지 않은 유저는 다시 로그인한다. 이미 발급한 토큰은 발급 때의 `exp`를 그대로 쓴다. 운영 env에 이 값이 있으면 기본값보다 먼저라 배포 때 확인한다. 수명은 정수+단위(`15m`·`30d`)이고 시작 검증이 access 1일 이하·refresh 365일 이하·access < refresh를 지킨다(`jwt.schema.ts`).
-- 리프레시 토큰 재사용 grace는 10초(`TOKEN_REUSE_GRACE_PERIOD_MS`)다. 앱의 갱신 타임아웃(8초)보다 항상 길게 둔다.
+- 리프레시 토큰 재사용 grace는 10초다. 서버 검사와 앱 갱신 타임아웃(grace - 2초 = 8초)이 `@aido/api/vocabulary`의 `REFRESH_TOKEN_REUSE_GRACE_MS` 하나를 읽어 타임아웃이 늘 더 짧다.
 
 ## 식별 기록 보관 기한
 

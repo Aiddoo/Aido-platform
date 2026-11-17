@@ -5,12 +5,11 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 export const TODO_SERIES_PAUSED_JOB_NAME = "send-series-paused-notice";
 export const TODO_REMINDER_SNOOZE_JOB_NAME = "send-snoozed-reminder";
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 const reminderJobDataSchema = z.object({
   todoId: z.number(),

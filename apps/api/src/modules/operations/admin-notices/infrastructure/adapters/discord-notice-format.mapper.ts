@@ -1,6 +1,7 @@
+import { DAY_MS } from "#api/shared/domain/time/time-units";
+
 /** 운영자가 한국에서 보므로 시각은 KST로 적는다. */
 const OPERATOR_TIMEZONE = "Asia/Seoul";
-const DAY_MS = 24 * 60 * 60 * 1000;
 const FIELD_VALUE_MAX_LENGTH = 1024;
 const TRANSACTION_ID_MAX_LENGTH = 20;
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 export const BroadcastFanOutJobName = {
   FAN_OUT: "fan-out-campaign",
@@ -11,8 +12,6 @@ const broadcastFanOutJobSchema = z.strictObject({
   name: z.literal(BroadcastFanOutJobName.FAN_OUT),
   data: z.strictObject({ campaignId: z.string().min(1) }),
 });
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 /** 한 실행은 분배 예산(60초) 뒤 다음 cursor 작업을 남기므로 만료는 그보다 넉넉하다. */
 const BROADCAST_FAN_OUT_RETRY = {

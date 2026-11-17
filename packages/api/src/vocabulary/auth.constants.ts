@@ -1,3 +1,6 @@
+/** 같은 refresh 토큰이 이 시간 안에 다시 오면 서버는 재사용 공격이 아니라 응답을 못 받은 앱의 재시도로 본다. 앱 갱신 요청 시간 제한은 이보다 짧아야 한다 */
+export const REFRESH_TOKEN_REUSE_GRACE_MS = 10_000;
+
 // 비밀번호에 쓸 수 있는 특수문자의 원본이다. PATTERN과 판정이 모두 여기서 만들어진다
 export const PASSWORD_ALLOWED_SYMBOLS = "@$!%*#?&";
 
