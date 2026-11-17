@@ -6,7 +6,7 @@
 
 | 항목           | 지금 동작                                                                                                                                                                                          | 바꿀 때 지킬 것                                                                                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| JWT            | HS256 고정, `iss` `aido-api`·`aud` `aido-app`을 싣고 두 가드가 모두 검증한다(`JWT_VERIFY_OPTIONS`, `jwt-token-issuer.adapter.ts`). 없거나 다르면 access는 `AUTH_0101`, refresh는 `AUTH_0104`다     | 발급·검증 값을 바꾸면 이전 값 토큰이 모두 거절된다. 새 값을 싣고 refresh 수명(7일)이 지난 뒤 검증을 바꾼다         |
+| JWT            | HS256 고정, `iss` `aido-api`·`aud` `aido-app`을 싣고 두 가드가 모두 검증한다(`JWT_VERIFY_OPTIONS`, `jwt-token-issuer.adapter.ts`). 없거나 다르면 access는 `AUTH_0101`, refresh는 `AUTH_0104`다     | 발급·검증 값을 바꾸면 이전 값 토큰이 모두 거절된다. 새 값을 싣고 refresh 수명(30일)이 지난 뒤 검증을 바꾼다        |
 | HMAC 서명 키   | 용도별 key ring([SigningKeyRing](../src/platform/security/signing-key-ring.ts)): `CURSOR_SIGNING_KEYS`(댓글 커서), `OPT_OUT_TOKEN_SIGNING_KEYS`(광고 수신 거부 링크). 비우면 `JWT_SECRET`으로 서명 | 검증은 ring 키와 `JWT_SECRET`(kid 없는 옛 토큰)을 모두 받는다                                                      |
 | PostgreSQL TLS | URL `sslmode`(운영 `require`)가 있으면 TLS + 인증서 검증(`rejectUnauthorized: true`, 이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). `DATABASE_SSL_ALLOW_UNVERIFIED=true`는 비상 스위치                    | 배포 전 EC2에서 같은 URL로 연결을 확인한다. 실패면 배포하지 않는다                                                 |
 | 토큰 암호화    | `TOKEN_ENCRYPTION_KEY`로 scrypt 키를 만든다. `TOKEN_ENCRYPTION_SALT`가 없으면 기본 salt 상수다                                                                                                     | 운영 암호문이 그 값으로 만들어져 salt를 바꾸지 않는다                                                              |
@@ -40,7 +40,7 @@
 앱의 세션 규칙은 [모바일 인증](../../mobile/docs/auth.md#세션-수명주기와-불변식)에 있다. 서버 설정이 깨면 출시 앱 전체가 로그아웃된다.
 
 - `JWT_REFRESH_SECRET` 회전은 전체 유저 즉시 로그아웃이다. 불가피하면 이중 키 검증 기간을 두고 회전한다.
-- `JWT_REFRESH_EXPIRES_IN`(기본 7d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다. 그 기간 이상 접속하지 않은 유저는 다시 로그인한다.
+- `JWT_REFRESH_EXPIRES_IN`(기본 30d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다(sliding). 그 기간 이상 접속하지 않은 유저는 다시 로그인한다. 이미 발급한 토큰은 발급 때의 `exp`를 그대로 쓴다. 운영 env에 이 값이 있으면 기본값보다 먼저라 배포 때 확인한다.
 - 리프레시 토큰 재사용 grace는 10초(`TOKEN_REUSE_GRACE_PERIOD_MS`)다. 앱의 갱신 타임아웃(8초)보다 항상 길게 둔다.
 
 ## AI

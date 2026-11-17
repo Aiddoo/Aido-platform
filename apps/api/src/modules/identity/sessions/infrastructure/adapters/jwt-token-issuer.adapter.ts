@@ -41,7 +41,7 @@ export const JWT_VERIFY_OPTIONS = {
   audience: JWT_AUDIENCE,
 } satisfies JwtVerifyOptions;
 
-// Access Token (15분) + Refresh Token (7일) 발급 및 검증, Token Rotation 지원
+// Access Token (15분) + Refresh Token (30일) 발급 및 검증, Token Rotation 지원
 @Injectable()
 export class JwtTokenIssuerAdapter extends TokenIssuerPort {
   readonly #jwtService: JwtService;

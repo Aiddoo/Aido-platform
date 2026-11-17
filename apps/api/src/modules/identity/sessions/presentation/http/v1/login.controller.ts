@@ -89,7 +89,7 @@ export class LoginController {
 | 토큰 | 유효기간 |
 |------|----------|
 | accessToken | 15분 |
-| refreshToken | 7일 |
+| refreshToken | 30일 |
 
 ### ⚠️ 에러 케이스
 | 코드 | 상태 | 상황 |
@@ -142,7 +142,7 @@ export class LoginController {
 | 토큰 | 유효기간 | 저장 위치 |
 |------|----------|-----------|
 | Access Token | 15분 | 메모리 |
-| Refresh Token | 7일 | Secure Storage |
+| Refresh Token | 30일 | Secure Storage |
 
 ### ⚠️ 에러 케이스
 | 코드 | 상태 | 상황 | 클라이언트 처리 |

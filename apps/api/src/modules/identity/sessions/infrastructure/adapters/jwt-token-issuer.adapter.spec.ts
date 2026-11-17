@@ -1,7 +1,9 @@
 import { JwtService } from "@nestjs/jwt";
+import { z } from "zod";
 
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/jwt-token-issuer.adapter";
+import { jwtSchema } from "#api/platform/config/schemas/jwt.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { decodeJwtSegment } from "#test/fixtures/jwt-token.fixture";
 
@@ -36,5 +38,34 @@ describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
       expect(decodeJwtSegment(token, 0)).toMatchObject({ alg: "HS256" });
       expect(decodeJwtSegment(token, 1)).toMatchObject({ iss: "aido-api", aud: "aido-app" });
     }
+  });
+
+  it("기본 설정의 refresh 토큰은 발급 시각부터 30일 뒤 만료된다", async () => {
+    // Given
+    const defaults = jwtSchema.parse({
+      JWT_SECRET: accessSecret,
+      JWT_REFRESH_SECRET: refreshSecret,
+    });
+    const issuer = new JwtTokenIssuerAdapter(new JwtService(), {
+      secret: accessSecret,
+      refreshSecret,
+      expiresIn: defaults.JWT_EXPIRES_IN,
+      refreshExpiresIn: defaults.JWT_REFRESH_EXPIRES_IN,
+    });
+
+    // When
+    const pair = await issuer.generateTokenPair(
+      UserId.reconstitute("user-id"),
+      "test@example.com",
+      SessionId.reconstitute("session-id"),
+      "USER",
+    );
+
+    // Then
+    const claims = z
+      .object({ iat: z.number(), exp: z.number() })
+      .parse(decodeJwtSegment(pair.refreshToken, 1));
+    expect(claims.exp - claims.iat).toBe(30 * 24 * 60 * 60);
+    expect(issuer.getRefreshTokenExpiresInSeconds()).toBe(30 * 24 * 60 * 60);
   });
 });
