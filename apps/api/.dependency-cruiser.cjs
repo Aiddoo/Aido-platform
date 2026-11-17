@@ -2,6 +2,14 @@
 module.exports = {
   forbidden: [
     {
+      name: "aido-api-subpath-only",
+      comment:
+        "@aido/api는 subpath(contracts/<기능>/v<n>·vocabulary·common·errors)로만 import한다. 루트 진입 파일은 없다.",
+      severity: "error",
+      from: {},
+      to: { path: "^@aido/api$" },
+    },
+    {
       name: "no-circular",
       comment: "파일 import 순환은 ESM에서 부팅 실패로 이어진다. 포트나 이벤트로 끊는다.",
       severity: "error",

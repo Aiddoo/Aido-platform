@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PROFILE_ICON_KEYS } from '@aido/api';
+import { PROFILE_ICON_KEYS } from '@aido/api/vocabulary';
 import sharp from 'sharp';
 
 import { TAB_ICON_IMAGES } from './tab-icon-images.mjs';

@@ -2,7 +2,7 @@ import {
   consentResponseSchema,
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/user-consent/v1";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

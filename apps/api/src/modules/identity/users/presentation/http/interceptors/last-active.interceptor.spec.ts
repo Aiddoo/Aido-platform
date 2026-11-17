@@ -1,6 +1,6 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import type { CurrentUserPayload } from "@aido/api";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { Logger } from "@nestjs/common";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 import { of } from "rxjs";

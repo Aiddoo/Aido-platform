@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { Header, Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";

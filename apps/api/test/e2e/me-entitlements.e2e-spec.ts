@@ -1,4 +1,4 @@
-import { currentUserSchema } from "@aido/api";
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";

@@ -86,18 +86,19 @@ presentation → application → domain        infrastructure → application(po
 다른 Context → *.public.ts 만               shared/* → 어떤 module도 모름
 ```
 
-| 규칙                                                                             | 강제                                                                           |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Domain은 Nest·ORM·SDK·platform을 모른다. `@aido/api`는 `/vocabulary`·`/errors`만 | oxlint `no-restricted-imports` overrides(`.oxlintrc.json`)                     |
-| Application은 infrastructure·presentation·SDK·platform·계약을 모른다             | 같음                                                                           |
-| 다른 Context는 `*.public.ts`로만 import한다                                      | dependency-cruiser `cross-context-only-via-public`                             |
-| ai-assistance `ai-generations`는 그것을 쓰는 slice를 모른다(`shared`만)          | dependency-cruiser `ai-generations-knows-no-consumer`                          |
-| 파일·Module 순환 금지, `forwardRef(` 0건                                         | `import/no-cycle` + dependency-cruiser + `no-restricted-imports`(`forwardRef`) |
-| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)               | ls-lint(`.ls-lint.yml`)                                                        |
-| 비공개 멤버는 `#`, 파라미터 프로퍼티 금지                                        | oxlint `typescript/parameter-properties` + `aido/no-member-accessibility`      |
-| 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                     | oxlint `aido/no-inline-coded-exception`                                        |
-| 안 쓰는 파일·export·의존성 0                                                     | knip(`check:unused`)                                                           |
-| 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지      | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`        |
+| 규칙                                                                                      | 강제                                                                           |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Domain은 Nest·ORM·SDK·platform을 모른다. `@aido/api`는 `/vocabulary`·`/errors`만          | oxlint `no-restricted-imports` overrides(`.oxlintrc.json`)                     |
+| Application은 infrastructure·presentation·SDK·platform·계약을 모른다                      | 같음                                                                           |
+| 다른 Context는 `*.public.ts`로만 import한다                                               | dependency-cruiser `cross-context-only-via-public`                             |
+| `@aido/api`는 subpath(`contracts/<x>/v<n>`·`vocabulary`·`common`·`errors`)로만 import한다 | dependency-cruiser `aido-api-subpath-only`                                     |
+| ai-assistance `ai-generations`는 그것을 쓰는 slice를 모른다(`shared`만)                   | dependency-cruiser `ai-generations-knows-no-consumer`                          |
+| 파일·Module 순환 금지, `forwardRef(` 0건                                                  | `import/no-cycle` + dependency-cruiser + `no-restricted-imports`(`forwardRef`) |
+| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)                        | ls-lint(`.ls-lint.yml`)                                                        |
+| 비공개 멤버는 `#`, 파라미터 프로퍼티 금지                                                 | oxlint `typescript/parameter-properties` + `aido/no-member-accessibility`      |
+| 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                              | oxlint `aido/no-inline-coded-exception`                                        |
+| 안 쓰는 파일·export·의존성 0                                                              | knip(`check:unused`)                                                           |
+| 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지               | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`        |
 
 - 규칙은 모든 Context에 같은 세기로 걸린다. 예외 목록이나 "옮긴 Context만" 같은 단계 구분을 두지 않는다.
 - 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
@@ -108,11 +109,11 @@ presentation → application → domain        infrastructure → application(po
 
 다른 코드가 import하는 진입 파일은 세 종류뿐이다. 나머지 파일은 정의한 파일에서 바로 import하고 `export … from`으로 다시 내보내지 않는다(barrel `index.ts` 금지).
 
-| 진입 파일                                                | 규칙                                                                                                 |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| slice `<context>-<slice>.public.ts`                      | 다른 Context가 쓰는 Module·Port·이벤트 payload schema·SQL 조건만 이름을 적어 export. `export *` 금지 |
-| `@aido/api` package exports 진입 파일                    | `packages/api/package.json` `exports`의 `.`·`/common`·`/errors`·`/vocabulary`·`/contracts/*` index   |
-| Drizzle schema 묶음(`platform/database/schema/index.ts`) | drizzle-kit과 RQB가 schema 객체 하나를 요구해 `tables.schema.ts`가 Context별 schema를 모은다         |
+| 진입 파일                                                | 규칙                                                                                                                    |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| slice `<context>-<slice>.public.ts`                      | 다른 Context가 쓰는 Module·Port·이벤트 payload schema·SQL 조건만 이름을 적어 export. `export *` 금지                    |
+| `@aido/api` package exports 진입 파일                    | `packages/api/package.json` `exports`의 `/common`·`/errors`·`/vocabulary`·`/contracts/<x>/v<n>` index. 루트 진입은 없다 |
+| Drizzle schema 묶음(`platform/database/schema/index.ts`) | drizzle-kit과 RQB가 schema 객체 하나를 요구해 `tables.schema.ts`가 Context별 schema를 모은다                            |
 
 - public에는 실제 소비되는 값·타입만 둔다. 내부 UseCase·구현 Repository·테스트 helper를 내보내지 않는다.
 - 포트 파일이 도메인 타입이나 계약 타입을 다시 내보내지 않는다. 쓰는 쪽이 원래 파일을 import한다.

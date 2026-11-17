@@ -2,8 +2,8 @@ import {
   updateAiDataSharingConsentSchema,
   updateMarketingConsentSchema,
   updateMarketingPushConsentSchema,
-  updatePreferenceSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/user-consent/v1";
+import { updatePreferenceSchema } from "@aido/api/contracts/user-preference/v1";
 import type { z } from "zod";
 
 export const UpdatePreferenceDto = updatePreferenceSchema.meta({ id: "UpdatePreferenceDto" });

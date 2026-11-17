@@ -1,4 +1,4 @@
-import type { currentUserSchema } from "@aido/api/contracts/auth";
+import type { currentUserSchema } from "@aido/api/contracts/auth/v1";
 import type { z } from "zod";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";

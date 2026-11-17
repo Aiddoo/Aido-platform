@@ -1,4 +1,7 @@
-import { growthSummaryQuerySchema, growthSummaryResponseSchema } from "@aido/api/contracts/admin";
+import {
+  growthSummaryQuerySchema,
+  growthSummaryResponseSchema,
+} from "@aido/api/contracts/admin/v1";
 import type { z } from "zod";
 
 export const GrowthSummaryQueryDto = growthSummaryQuerySchema.meta({

@@ -1,4 +1,4 @@
-import type { LinkedAccountsResponse } from "@aido/api/contracts/auth";
+import type { LinkedAccountsResponse } from "@aido/api/contracts/auth/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

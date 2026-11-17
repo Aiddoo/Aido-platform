@@ -1,4 +1,4 @@
-import type { GrowthSummaryResponse } from "@aido/api/contracts/admin";
+import type { GrowthSummaryResponse } from "@aido/api/contracts/admin/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

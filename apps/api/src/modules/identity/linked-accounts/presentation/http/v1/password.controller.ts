@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ErrorCode } from "@aido/api/errors";
 import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Body, Controller, HttpCode, HttpStatus, Patch, Post } from "@nestjs/common";

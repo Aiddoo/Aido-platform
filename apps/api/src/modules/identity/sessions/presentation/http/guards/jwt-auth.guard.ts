@@ -1,4 +1,4 @@
-import { userRoleSchema } from "@aido/api/contracts/auth";
+import { userRoleSchema } from "@aido/api/contracts/auth/v1";
 import {
   type CanActivate,
   type ExecutionContext,

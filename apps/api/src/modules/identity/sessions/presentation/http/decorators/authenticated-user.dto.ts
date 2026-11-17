@@ -1,4 +1,4 @@
-import { type CurrentUserPayload, userRoleSchema } from "@aido/api/contracts/auth";
+import { type CurrentUserPayload, userRoleSchema } from "@aido/api/contracts/auth/v1";
 import { z } from "zod";
 
 /** JwtAuthGuard가 `req.user`에 둔 access 토큰 사용자를 HTTP 경계에서 확인한다. */

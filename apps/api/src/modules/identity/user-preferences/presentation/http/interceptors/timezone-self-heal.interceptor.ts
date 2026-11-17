@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import {
   type CallHandler,
   type ExecutionContext,

@@ -36,15 +36,18 @@ tester.run('no-object-method-shorthand', rules['no-object-method-shorthand'], {
 
 tester.run('dto-alias', rules['dto-alias'], {
   valid: [
-    "import type { TodoResponse } from '@aido/api/contracts';",
-    "import type { TodoResponse as TodoResponseDto } from '@aido/api/contracts';",
-    "import type { TodoSchema as TodoRequestSchema } from '@aido/api';",
+    "import type { TodoResponse } from '@aido/api/contracts/todo/v1';",
+    "import type { TodoResponse as TodoResponseDto } from '@aido/api/contracts/todo/v1';",
+    "import type { TodoSchema as TodoRequestSchema } from '@aido/api/contracts/todo/v1';",
     "import { x as y } from 'other';",
-    "import { todoSchema as remoteTodo } from '@aido/api';",
+    "import { todoSchema as remoteTodo } from '@aido/api/contracts/todo/v1';",
   ],
   invalid: [
-    { code: "import type { TodoResponse as TodoDTO } from '@aido/api/contracts';", errors: 1 },
-    { code: "import { type TodoResponse as Todo } from '@aido/api';", errors: 1 },
+    {
+      code: "import type { TodoResponse as TodoDTO } from '@aido/api/contracts/todo/v1';",
+      errors: 1,
+    },
+    { code: "import { type TodoResponse as Todo } from '@aido/api/contracts/todo/v1';", errors: 1 },
   ],
 });
 

@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 
 import { LoginWithPasswordUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-password.use-case";
 import { LogoutAllUseCase } from "#api/modules/identity/sessions/application/use-cases/logout-all.use-case";

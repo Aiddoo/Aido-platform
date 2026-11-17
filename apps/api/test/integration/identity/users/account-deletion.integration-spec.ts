@@ -1,4 +1,4 @@
-import { ACCOUNT_DELETION } from "@aido/api";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";

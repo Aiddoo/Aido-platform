@@ -1,4 +1,4 @@
-import { resendVerificationSchema } from "@aido/api/contracts/auth";
+import { resendVerificationSchema } from "@aido/api/contracts/auth/v1";
 import type { z } from "zod";
 
 export const ResendVerificationDto = resendVerificationSchema.meta({ id: "ResendVerificationDto" });

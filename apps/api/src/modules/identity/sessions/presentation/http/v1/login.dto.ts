@@ -10,7 +10,7 @@ import {
   revokeSessionSchema,
   sessionListResponseSchema,
   verifyEmailSchema,
-} from "@aido/api/contracts/auth";
+} from "@aido/api/contracts/auth/v1";
 import type { z } from "zod";
 
 export const LoginDto = loginSchema.meta({ id: "LoginDto" });

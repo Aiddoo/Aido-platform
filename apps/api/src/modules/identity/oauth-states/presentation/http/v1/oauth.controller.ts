@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ErrorCode } from "@aido/api/errors";
 import type { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import {

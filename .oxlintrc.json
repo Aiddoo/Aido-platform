@@ -320,7 +320,7 @@
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               },
               {
-                "regex": "^@aido/api(?:$|/(?:contracts|common)(?:/|$))",
+                "regex": "^@aido/api/(?:contracts|common)(?:/|$)",
                 "message": "Domain·Application은 계약 타입을 쓰지 않는다. vocabulary·errors만 허용"
               }
             ]
@@ -350,7 +350,7 @@
                 "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               },
               {
-                "regex": "^@aido/api(?:$|/(?:contracts|common)(?:/|$))",
+                "regex": "^@aido/api/(?:contracts|common)(?:/|$)",
                 "message": "Domain·Application은 계약 타입을 쓰지 않는다. vocabulary·errors만 허용"
               }
             ]

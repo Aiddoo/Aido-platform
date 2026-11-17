@@ -1,11 +1,13 @@
 import {
   consentResponseSchema,
-  preferenceResponseSchema,
   updateAiDataSharingConsentResponseSchema,
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
+} from "@aido/api/contracts/user-consent/v1";
+import {
+  preferenceResponseSchema,
   updatePreferenceResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/user-preference/v1";
 import type { z } from "zod";
 
 export const PreferenceResponseDto = preferenceResponseSchema.meta({ id: "PreferenceResponseDto" });

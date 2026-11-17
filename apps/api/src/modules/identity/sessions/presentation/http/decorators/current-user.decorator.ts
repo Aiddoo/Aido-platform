@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
 
 import type { HttpRequest } from "#api/platform/http/http-request";

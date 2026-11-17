@@ -14,7 +14,7 @@
  * pnpm --filter @aido/server test:e2e -- user-settings.e2e-spec
  */
 
-import { USER_PREFERENCE_DEFAULTS } from "@aido/api";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 

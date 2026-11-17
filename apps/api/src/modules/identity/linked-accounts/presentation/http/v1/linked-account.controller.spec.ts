@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/list-linked-accounts.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/unlink-oauth-account.use-case";

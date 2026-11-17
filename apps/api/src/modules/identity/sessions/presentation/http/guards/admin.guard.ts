@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 
 import type { HttpRequest } from "#api/platform/http/http-request";

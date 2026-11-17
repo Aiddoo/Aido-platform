@@ -31,7 +31,7 @@ const base = {
     '^@assets/(.*)$': '<rootDir>/assets/$1',
 
     // Monorepo packages
-    '^@aido/api(?:/(.*))?$': '<rootDir>/../../packages/api/src/$1',
+    '^@aido/api/(.*)$': '<rootDir>/../../packages/api/src/$1',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/testing/mocks/expo-secure-store.ts',
