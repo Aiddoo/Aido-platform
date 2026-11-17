@@ -171,6 +171,8 @@ describe("GetEntitlementUsageUseCase — 권한·한도·사용량", () => {
       used: PLAN_CATALOG.FRIEND.free,
       remaining: 2,
     });
+    // 결제 화면 요금제 비교는 받은 자리 없이 요금제 값이다
+    expect(usage.plans.FRIEND.free.limit).toBe(PLAN_CATALOG.FRIEND.free);
   });
 
   it("프리미엄은 카테고리를 프리미엄 한도로 세고, 무제한인 친구는 개수를 싣지 않는다", async () => {

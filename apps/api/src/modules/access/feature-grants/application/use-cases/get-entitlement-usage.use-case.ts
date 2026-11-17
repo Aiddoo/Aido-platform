@@ -8,6 +8,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   resolveAccessSubject,
   resolveFeatureQuota,
+  resolvePlanComparisons,
   resolveResourceUsage,
   type FeatureUsageReading,
 } from "../../../shared/domain/entitlement.domain-service.js";
@@ -78,6 +79,7 @@ export class GetEntitlementUsageUseCase {
       features: mapValues(PLAN_CATALOG, (_definition, feature) =>
         resolveFeatureQuota({ plan, feature, grants, usage: usage[feature] ?? null }),
       ),
+      plans: resolvePlanComparisons(),
     };
   }
 }

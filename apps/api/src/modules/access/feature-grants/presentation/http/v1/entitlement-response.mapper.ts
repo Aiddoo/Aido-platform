@@ -13,5 +13,9 @@ export function toEntitlementUsageResponse(
     features: mapValues(entitlementUsage.features, (featureQuota) =>
       toFeatureQuotaReadModel(featureQuota),
     ),
+    plans: mapValues(entitlementUsage.plans, ({ free, premium }) => ({
+      free: { ...free },
+      premium: { ...premium },
+    })),
   };
 }

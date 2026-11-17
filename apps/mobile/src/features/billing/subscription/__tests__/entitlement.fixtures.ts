@@ -9,6 +9,7 @@ import {
   type AccessTier,
   PLAN_CATALOG,
   PLAN_FEATURE_KEYS,
+  type Plan,
   type PlanFeature,
 } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
@@ -93,15 +94,43 @@ export function createFeatureQuotaDto(
   });
 }
 
-/** GET /v1/entitlements 응답. 기본은 아무것도 쓰지 않은 무료 사용자다 */
+type PlanFeatureLimitDto = EntitlementSnapshotDto['plans'][PlanFeature]['free'];
+
+/** 서버 resolvePlanComparisons처럼 요금제 값을 받은 자리 없이 카탈로그에서 읽는다 */
+function createPlanFeatureLimitDto(feature: PlanFeature, plan: Plan): PlanFeatureLimitDto {
+  const definition = PLAN_CATALOG[feature];
+  if (definition.kind === 'flag') {
+    return { allowed: definition[plan], limit: null, isFairUse: false, perUse: null };
+  }
+  const fairUseLimit =
+    plan === 'premium' && 'fairUse' in definition ? definition.fairUse.premium : null;
+  const limit = definition[plan] ?? fairUseLimit;
+  return {
+    allowed: limit == null || limit > 0,
+    limit,
+    isFairUse: definition[plan] == null && fairUseLimit != null,
+    perUse:
+      'perUse' in definition
+        ? {
+            maxSeconds: definition.perUse.maxSeconds[plan],
+            maxCharacters: definition.perUse.maxCharacters[plan],
+          }
+        : null,
+  };
+}
+
+/** GET /v1/entitlements 응답. 기본은 아무것도 쓰지 않은 무료 사용자이고 요금제 값은 카탈로그와 같다 */
 export function createEntitlementSnapshotDto({
   tier = 'FREE',
   isPremium = tier === 'PREMIUM',
   used = {},
+  plans = {},
 }: {
   tier?: AccessTier;
   isPremium?: boolean;
   used?: Partial<Record<PlanFeature, number>>;
+  /** 운영 중 바뀐 요금제 값을 흉내 낸다 */
+  plans?: Partial<EntitlementSnapshotDto['plans']>;
 } = {}): EntitlementSnapshotDto {
   return entitlementSnapshotSchema.parse({
     isPremium,
@@ -110,6 +139,15 @@ export function createEntitlementSnapshotDto({
       PLAN_FEATURE_KEYS.map((feature) => [
         feature,
         createFeatureQuotaDto(feature, { tier, used: used[feature] }),
+      ]),
+    ),
+    plans: Object.fromEntries(
+      PLAN_FEATURE_KEYS.map((feature) => [
+        feature,
+        plans[feature] ?? {
+          free: createPlanFeatureLimitDto(feature, 'free'),
+          premium: createPlanFeatureLimitDto(feature, 'premium'),
+        },
       ]),
     ),
   });

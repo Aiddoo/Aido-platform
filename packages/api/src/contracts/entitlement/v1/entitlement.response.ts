@@ -6,6 +6,7 @@ import {
   PLAN_CATALOG,
   PLAN_FEATURE_KEYS,
   PLAN_QUOTA_PERIODS,
+  type Plan,
   type PlanFeature,
 } from "../../../vocabulary/plan-catalog.constants.js";
 
@@ -98,6 +99,45 @@ const featureQuotasShape = {
   VOICE_NOTE: featureQuotaSchema,
 } satisfies Record<PlanFeature, typeof featureQuotaSchema>;
 
+const planFeatureLimitSchema = z
+  .object({
+    allowed: z.boolean().meta({
+      description: "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+    }),
+    limit: z.int().nonnegative().nullable().meta({
+      description:
+        "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+    }),
+    isFairUse: z.boolean().meta({
+      description: "무제한으로 보이는 요금제의 공정 사용 한도인지. true면 '넉넉하게(월 N회까지)'다",
+    }),
+    perUse: featurePerUseLimitSchema
+      .nullable()
+      .meta({ description: "이 요금제의 한 번 길이 상한" }),
+  })
+  .meta({ description: "요금제 하나의 기능 값(서버가 집행하는 카탈로그)" });
+
+// 기능마다 같은 모양이라 OpenAPI가 한 component로 참조한다
+const planComparisonSchema = z
+  .object({
+    free: planFeatureLimitSchema,
+    premium: planFeatureLimitSchema,
+  } satisfies Record<Plan, typeof planFeatureLimitSchema>)
+  .meta({ id: "PlanComparisonDto", description: "기능 하나의 무료·프리미엄 요금제 값" });
+
+const planComparisonsShape = {
+  AI_PARSE: planComparisonSchema,
+  CHEER: planComparisonSchema,
+  NUDGE: planComparisonSchema,
+  FRIEND: planComparisonSchema,
+  TODO_CATEGORY: planComparisonSchema,
+  AI_REPORT: planComparisonSchema,
+  AI_SUGGESTION: planComparisonSchema,
+  CUSTOM_REMINDER_TIME: planComparisonSchema,
+  APP_ICON: planComparisonSchema,
+  VOICE_NOTE: planComparisonSchema,
+} satisfies Record<PlanFeature, typeof planComparisonSchema>;
+
 export const entitlementSnapshotSchema = z
   .object({
     isPremium: z.boolean().meta({
@@ -107,6 +147,11 @@ export const entitlementSnapshotSchema = z
     /** 새 서버가 기능을 더해도 이전 앱이 응답을 거절하지 않도록 모르는 키를 허용한다. */
     features: z.looseObject(featureQuotasShape).meta({
       description: "PLAN_CATALOG 모든 기능의 현재 한도·사용량. 키 순서는 PLAN_FEATURE_KEYS다",
+    }),
+    // 운영 중 카탈로그 숫자를 바꿔도 결제 화면이 앱에 묶인 숫자 대신 서버 값을 보여 준다
+    plans: z.looseObject(planComparisonsShape).meta({
+      description:
+        "기능마다 무료·프리미엄 요금제 값(받은 자리 없이). 결제 화면의 무료→프리미엄 비교가 그대로 그린다",
     }),
   })
   .meta({ description: "서버가 계산한 현재 권한 전체 (GET /v1/entitlements)" });

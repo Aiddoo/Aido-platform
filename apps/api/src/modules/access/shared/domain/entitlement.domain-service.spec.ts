@@ -11,6 +11,7 @@ import {
   resolveFeatureLimit,
   resolveFeatureQuota,
   resolvePerUseLimit,
+  resolvePlanComparisons,
   resolveQuotaLimit,
   resolveResourceUsage,
 } from "./entitlement.domain-service.js";
@@ -333,5 +334,34 @@ describe("받은 자리(grant)", () => {
     // Then
     expect(premium).toBeNull();
     expect(free).toEqual({ used: 7, resetsAt: null });
+  });
+});
+
+describe("resolvePlanComparisons — 결제 화면의 요금제 비교", () => {
+  it("요금제마다 사용자 스냅샷과 같은 계산으로 집행 한도를 싣고 받은 자리는 더하지 않는다", () => {
+    // When
+    const plans = resolvePlanComparisons();
+
+    // Then
+    expect(Object.keys(plans)).toEqual(Object.keys(PLAN_CATALOG));
+    expect(plans.AI_PARSE).toEqual({
+      free: { allowed: true, limit: PLAN_CATALOG.AI_PARSE.free, isFairUse: false, perUse: null },
+      premium: {
+        allowed: true,
+        limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+        isFairUse: true,
+        perUse: null,
+      },
+    });
+    expect(plans.NUDGE.premium).toMatchObject({ allowed: true, limit: null, isFairUse: false });
+    expect(plans.FRIEND.free.limit).toBe(PLAN_CATALOG.FRIEND.free);
+    expect(plans.AI_REPORT).toMatchObject({
+      free: { allowed: false, limit: null },
+      premium: { allowed: true, limit: null },
+    });
+    expect(plans.VOICE_NOTE.premium.perUse).toEqual({
+      maxSeconds: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium,
+      maxCharacters: PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium,
+    });
   });
 });

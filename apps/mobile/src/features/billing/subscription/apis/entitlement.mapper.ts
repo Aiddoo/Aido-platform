@@ -38,6 +38,7 @@ export function toEntitlementSnapshot(dto: EntitlementSnapshotDto): EntitlementS
     isPremium: dto.isPremium,
     tier: dto.tier,
     features: mapValues(pick(dto.features, PLAN_FEATURE_KEYS), toFeatureQuota),
+    plans: pick(dto.plans, PLAN_FEATURE_KEYS),
   } satisfies Record<keyof EntitlementSnapshotDto, unknown>);
 }
 

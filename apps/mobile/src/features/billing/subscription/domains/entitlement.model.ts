@@ -3,6 +3,7 @@ import {
   PLAN_CATALOG,
   PLAN_FEATURE_KEYS,
   PLAN_QUOTA_PERIODS,
+  type Plan,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
@@ -19,6 +20,11 @@ const quotaPeriodSchema = z.enum(PLAN_QUOTA_PERIODS);
 type QuotaPeriod = z.infer<typeof quotaPeriodSchema>;
 
 /** 서버가 계산한 기능 하나의 한도·사용량. 앱은 이 값을 그대로 쓰고 다시 계산하지 않는다 */
+const perUseLimitSchema = z.object({
+  maxSeconds: z.int().positive(),
+  maxCharacters: z.int().positive(),
+});
+
 export const featureQuotaSchema = z.object({
   feature: entitlementFeatureSchema,
   allowed: z.boolean(),
@@ -29,17 +35,30 @@ export const featureQuotaSchema = z.object({
   period: quotaPeriodSchema.nullable(),
   resetsAt: instantSchema.nullable(),
   isFairUse: z.boolean(),
-  perUse: z
-    .object({ maxSeconds: z.int().positive(), maxCharacters: z.int().positive() })
-    .nullable(),
+  perUse: perUseLimitSchema.nullable(),
 });
 export type FeatureQuota = z.infer<typeof featureQuotaSchema>;
+
+/** 서버가 집행하는 요금제 하나의 기능 값(받은 자리 없이). limit·perUse의 null은 무제한이다 */
+const planFeatureLimitSchema = z.object({
+  allowed: z.boolean(),
+  limit: z.int().nonnegative().nullable(),
+  isFairUse: z.boolean(),
+  perUse: perUseLimitSchema.nullable(),
+});
+
+const planComparisonSchema = z.object({
+  free: planFeatureLimitSchema,
+  premium: planFeatureLimitSchema,
+});
 
 export const entitlementSnapshotSchema = z.object({
   /** 유효한 스토어 구독·보상 기간이 있는지. ADMIN은 반영하지 않는다 */
   isPremium: z.boolean(),
   tier: accessTierSchema,
   features: z.partialRecord(entitlementFeatureSchema, featureQuotaSchema),
+  /** 결제 화면의 무료·프리미엄 비교. 운영 중 바뀐 요금제 숫자도 서버 값 그대로다 */
+  plans: z.record(entitlementFeatureSchema, planComparisonSchema),
 });
 export type EntitlementSnapshot = z.infer<typeof entitlementSnapshotSchema>;
 
@@ -154,10 +173,27 @@ function getResetNotice(
   return daysLeft === 1 ? { type: 'tomorrow' } : { type: 'date', date: quota.resetsAt };
 }
 
-/** 무료 사용자는 초대로 늘어난 자리까지 반영한 서버 값을, 프리미엄·관리자는 카탈로그 무료 한도를 쓴다 */
-function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number {
+/** 요금제의 집행 한도. null은 무제한이다 */
+function getPlanLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
+  return snapshot.plans[feature][plan].limit;
+}
+
+/** 요금제의 한 번 길이 상한(초). null은 길이 제한이 없다 */
+function getPlanMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
+  return snapshot.plans[feature][plan].perUse?.maxSeconds ?? null;
+}
+
+/** 요금제에서 쓸 수 있는 기능인지 */
+function canUseOnPlan(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
+  return snapshot.plans[feature][plan].allowed;
+}
+
+/** 무료 사용자는 초대로 늘어난 자리까지 반영한 내 한도를, 프리미엄·관리자는 서버의 무료 요금제 한도를 쓴다 */
+function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number | null {
   const limit = getLimit(snapshot, feature);
-  return snapshot.tier === 'FREE' && limit != null ? limit : PLAN_CATALOG[feature].free;
+  return snapshot.tier === 'FREE' && limit != null
+    ? limit
+    : getPlanLimit(snapshot, feature, 'free');
 }
 
 function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): EntitlementSnapshot {
@@ -196,4 +232,7 @@ export const EntitlementPolicy = {
   withFeatureQuota,
   shouldOfferPremium,
   getFreeLimit,
+  getPlanLimit,
+  getPlanMaxSeconds,
+  canUseOnPlan,
 } as const;

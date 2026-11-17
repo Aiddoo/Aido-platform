@@ -8858,6 +8858,55 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "description": "유효한 스토어 구독이나 보상 기간이 있는지. ADMIN role은 반영하지 않는다",
           "type": "boolean",
         },
+        "plans": {
+          "additionalProperties": {},
+          "description": "기능마다 무료·프리미엄 요금제 값(받은 자리 없이). 결제 화면의 무료→프리미엄 비교가 그대로 그린다",
+          "properties": {
+            "AI_PARSE": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "AI_REPORT": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "AI_SUGGESTION": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "APP_ICON": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "CHEER": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "CUSTOM_REMINDER_TIME": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "FRIEND": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "NUDGE": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "TODO_CATEGORY": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+            "VOICE_NOTE": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
+          },
+          "required": [
+            "AI_PARSE",
+            "CHEER",
+            "NUDGE",
+            "FRIEND",
+            "TODO_CATEGORY",
+            "AI_REPORT",
+            "AI_SUGGESTION",
+            "CUSTOM_REMINDER_TIME",
+            "APP_ICON",
+            "VOICE_NOTE",
+          ],
+          "type": "object",
+        },
         "tier": {
           "description": "권한 주체 (FREE: 무료, PREMIUM: 구독·보상 기간, ADMIN: 관리자. ADMIN의 기능·한도는 PREMIUM과 같다)",
           "enum": [
@@ -8872,6 +8921,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "isPremium",
         "tier",
         "features",
+        "plans",
       ],
       "type": "object",
     },
@@ -13472,6 +13522,120 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "success",
         "data",
         "meta",
+      ],
+      "type": "object",
+    },
+    "PlanComparisonDto": {
+      "description": "기능 하나의 무료·프리미엄 요금제 값",
+      "properties": {
+        "free": {
+          "description": "요금제 하나의 기능 값(서버가 집행하는 카탈로그)",
+          "properties": {
+            "allowed": {
+              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+              "type": "boolean",
+            },
+            "isFairUse": {
+              "description": "무제한으로 보이는 요금제의 공정 사용 한도인지. true면 '넉넉하게(월 N회까지)'다",
+              "type": "boolean",
+            },
+            "limit": {
+              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "perUse": {
+              "description": "이 요금제의 한 번 길이 상한",
+              "nullable": true,
+              "properties": {
+                "maxCharacters": {
+                  "description": "한 번에 보낼 수 있는 최대 글자 수. 서버가 이 상한으로 다시 막는다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "maxSeconds": {
+                  "description": "말로 메모하기 한 번의 최대 길이(초). 앱 타이머가 이 시간에 멈춘다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "maxSeconds",
+                "maxCharacters",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "allowed",
+            "limit",
+            "isFairUse",
+            "perUse",
+          ],
+          "type": "object",
+        },
+        "premium": {
+          "description": "요금제 하나의 기능 값(서버가 집행하는 카탈로그)",
+          "properties": {
+            "allowed": {
+              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+              "type": "boolean",
+            },
+            "isFairUse": {
+              "description": "무제한으로 보이는 요금제의 공정 사용 한도인지. true면 '넉넉하게(월 N회까지)'다",
+              "type": "boolean",
+            },
+            "limit": {
+              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
+            "perUse": {
+              "description": "이 요금제의 한 번 길이 상한",
+              "nullable": true,
+              "properties": {
+                "maxCharacters": {
+                  "description": "한 번에 보낼 수 있는 최대 글자 수. 서버가 이 상한으로 다시 막는다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "maxSeconds": {
+                  "description": "말로 메모하기 한 번의 최대 길이(초). 앱 타이머가 이 시간에 멈춘다",
+                  "exclusiveMinimum": true,
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "maxSeconds",
+                "maxCharacters",
+              ],
+              "type": "object",
+            },
+          },
+          "required": [
+            "allowed",
+            "limit",
+            "isFairUse",
+            "perUse",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "free",
+        "premium",
       ],
       "type": "object",
     },

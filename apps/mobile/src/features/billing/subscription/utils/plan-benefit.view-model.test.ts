@@ -14,7 +14,7 @@ import {
 } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
-  it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 카탈로그를 쓴다', () => {
+  it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 서버 요금제 값을 쓴다', () => {
     // Given
     const snapshot = EntitlementPolicy.withFeatureQuota(
       createEntitlementSnapshot(),
@@ -35,7 +35,7 @@ describe('getPlanBenefitAmounts', () => {
   });
 
   it.each(['PREMIUM', 'ADMIN'] as const)(
-    '%s에게도 무료 쪽은 카탈로그의 무료 양을 보여 준다',
+    '%s에게도 무료 쪽은 서버의 무료 요금제 양을 보여 준다',
     (tier) => {
       // Given
       const snapshot = createEntitlementSnapshot({ tier });
@@ -55,6 +55,34 @@ describe('getPlanBenefitAmounts', () => {
       });
     },
   );
+});
+
+describe('운영 중 바뀐 요금제 값', () => {
+  it('앱에 묶인 카탈로그와 달라도 결제 화면은 서버가 보낸 무료·프리미엄 숫자를 그린다', () => {
+    // Given
+    // 운영에서 카테고리 한도를 무료 5개·프리미엄 50개로 올렸다
+    const changed = { allowed: true, isFairUse: false, perUse: null };
+    const snapshot = createEntitlementSnapshot({
+      tier: 'PREMIUM',
+      plans: {
+        TODO_CATEGORY: {
+          free: { ...changed, limit: 5 },
+          premium: { ...changed, limit: 50 },
+        },
+      },
+    });
+
+    // When
+    const amounts = getPlanBenefitAmounts(snapshot);
+    const comparison = toPlanFeatureComparison(snapshot, 'TODO_CATEGORY');
+
+    // Then
+    expect([amounts.free.category, amounts.premium.category]).toEqual([5, 50]);
+    expect(comparison).toEqual({
+      free: { type: 'amount', unit: 'items', amount: 5 },
+      premium: { type: 'amount', unit: 'items', amount: 50 },
+    });
+  });
 });
 
 describe('getPlanComparison', () => {

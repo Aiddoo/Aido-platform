@@ -20,7 +20,7 @@
 | 권한 판단 문        | `EntitlementReaderPort`, `AccessReadConsistency`                       | 다른 Context가 묻는 `can`·`getFeatureLimit`(캐시)과 잠금 뒤 재확인 `canInTransaction`·`getFeatureLimitInTransaction`(캐시 없이 최신)        |
 | 권한 캐시           | `EntitlementCachePort`, `EntitlementCacheInvalidatorPort`              | 사용자 권한 상태 10분 캐시. 끝나는 시각을 함께 담아 TTL 안에서도 넘기지 않고, 상태를 바꾼 쪽이 커밋 뒤 비운다                               |
 | featureQuota        | `FeatureQuotaState`, `resolveFeatureQuota`, `FeatureQuotaReadModel`    | 기능 하나의 한도·사용량·남은 수·초기화 시각·길이 상한. 한도 오류 details와 응답에 같은 모양으로 싣는다                                      |
-| 권한 현황           | `EntitlementUsageReadModel`, `GetEntitlementUsageUseCase`              | `GET /v1/entitlements`가 돌려주는 모든 기능의 featureQuota(`feature-grants` slice). 캐시 없이 최신 권한으로 계산한다                        |
+| 권한 현황           | `EntitlementUsageReadModel`, `GetEntitlementUsageUseCase`              | `GET /v1/entitlements`가 돌려주는 모든 기능의 featureQuota와 요금제 비교(`plans`, `feature-grants` slice). 캐시 없이 최신 권한으로 계산한다 |
 | 소유 Context 사용량 | `OwnedFeatureUsageReaderPort`                                          | access가 셀 수 없는 응원·콕 찌르기 오늘 사용량(X-Timezone 하루)과 친구·카테고리 개수. 그 Context의 한도 검사와 같은 값이다                  |
 | 횟수 원장           | `QuotaLedgerPort`                                                      | AI처럼 돈이 드는 기능의 공개 문. 호출 전 `reserve`, 결과를 주면 `commit`, 실패·빈 결과면 `refund`, 결과를 잃으면 `reopen`                   |
 | 차감                | `QuotaCharge`(Aggregate), `QuotaChargeId`                              | 고객 문의 때 설명하는 차감 한 건. 같은 Idempotency-Key 재요청은 같은 행을 잇고 시도(`attempt`)마다 1씩 는다                                 |

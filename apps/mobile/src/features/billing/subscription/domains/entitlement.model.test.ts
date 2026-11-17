@@ -337,7 +337,7 @@ describe('getFreeLimit', () => {
     expect(limit).toBe(7);
   });
 
-  it.each(['PREMIUM', 'ADMIN'] as const)('%s는 카탈로그의 무료 한도를 쓴다', (tier) => {
+  it.each(['PREMIUM', 'ADMIN'] as const)('%s는 서버의 무료 요금제 한도를 쓴다', (tier) => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier });
 

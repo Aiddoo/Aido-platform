@@ -1,11 +1,9 @@
 import { getLegalUrl } from '@src/shared/constants/legal-urls';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { Trans, useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { H2, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Chip, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -13,6 +11,7 @@ import { match } from 'ts-pattern';
 
 import { BENEFIT_SLIDES } from '../constants/subscription.constants';
 import { type EntitlementFeature } from '../domains/entitlement.model';
+import { useFormatPlanAmount } from '../hooks/use-format-plan-amount';
 import { useSubscriptionParams } from '../hooks/use-subscription-params';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { hasBenefitSlide } from '../utils/benefit-slides.view-model';
@@ -185,13 +184,12 @@ function useBlockedFeature() {
   return feature == null || hasBenefitSlide(BENEFIT_SLIDES, feature) ? null : feature;
 }
 
-/** 기능 하나의 혜택 제목·설명. 숫자는 서버 스냅샷(무료)과 카탈로그(프리미엄)에서 온다 */
+/** 기능 하나의 혜택 제목·설명. 무료·프리미엄 숫자 모두 서버 스냅샷(내 한도·요금제 값)에서 온다 */
 function useFormatBenefit() {
   const { t } = useTranslation('subscription');
-  const { locale } = useDateFormatContext();
+  const formatAmount = useFormatPlanAmount();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { free, premium } = getPlanBenefitAmounts(entitlements);
-  const formatAmount = (value: number) => formatCount(value, locale);
 
   return (feature: EntitlementFeature) =>
     match(feature)

@@ -116,6 +116,17 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
       resetsAt: null,
     });
     expect(snapshot.features.AI_REPORT).toMatchObject({ allowed: false, limit: null });
+    // 결제 화면 비교는 무료 사용자도 프리미엄 집행 한도를 서버에서 받는다
+    expect(Object.keys(snapshot.plans)).toEqual([...PLAN_FEATURE_KEYS]);
+    expect(snapshot.plans.AI_PARSE).toEqual({
+      free: { allowed: true, limit: PLAN_CATALOG.AI_PARSE.free, isFairUse: false, perUse: null },
+      premium: {
+        allowed: true,
+        limit: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+        isFairUse: true,
+        perUse: null,
+      },
+    });
   });
 
   it("FREE 사용자가 카테고리 한도를 채우면 남은 0을 받고, 다음 만들기 거절도 같은 featureQuota다", async () => {
