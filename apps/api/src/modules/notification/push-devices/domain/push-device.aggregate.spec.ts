@@ -5,6 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { PushDeviceId } from "./push-device-id.vo.js";
 import { PushDevice } from "./push-device.aggregate.js";
 import { PushPermission } from "./push-permission.vo.js";
+import { PushToken } from "./push-token.entity.js";
 
 const REPORTED_AT = Temporal.Instant.from("2026-11-04T03:00:00.000Z");
 
@@ -15,7 +16,7 @@ function report(status: PushPermission["status"], token: string | null) {
     sessionId: "session-a",
     platform: "IOS",
     permission: PushPermission.create({ status, canAskAgain: false }),
-    token,
+    pushToken: PushToken.create({ token, payloadVersion: 2, appVersion: null }),
     deviceModel: "iPhone 17 Pro",
     osVersion: "26.1",
     now: REPORTED_AT,
@@ -23,6 +24,27 @@ function report(status: PushPermission["status"], token: string | null) {
 }
 
 describe("PushDevice — 푸시 기기", () => {
+  it("토큰을 등록하는 보고는 같은 기기와 그 토큰을 가진 다른 등록을 넘겨받고, 그 밖의 보고는 같은 기기만 넘겨받는다", () => {
+    // Given
+    const registering = report("GRANTED", "ExponentPushToken[a]");
+    const keeping = report("GRANTED", null);
+    const releasing = report("DENIED", "ExponentPushToken[a]");
+
+    // When
+    const takeovers = [registering, keeping, releasing].map(({ takeover }) => ({
+      userId: takeover.userId.value,
+      deviceId: takeover.deviceId.value,
+      token: takeover.token,
+    }));
+
+    // Then
+    expect(takeovers).toEqual([
+      { userId: "user-a", deviceId: "ios_device-a", token: "ExponentPushToken[a]" },
+      { userId: "user-a", deviceId: "ios_device-a", token: null },
+      { userId: "user-a", deviceId: "ios_device-a", token: null },
+    ]);
+  });
+
   it.each([
     ["GRANTED", "ExponentPushToken[a]"],
     ["PROVISIONAL", "ExponentPushToken[a]"],
@@ -75,7 +97,7 @@ describe("PushDevice — 푸시 기기", () => {
       sessionId: null,
       platform: null,
       permission: PushPermission.create({ status: "GRANTED", canAskAgain: false }),
-      token: null,
+      pushToken: PushToken.create({ token: null, payloadVersion: 2, appVersion: null }),
       deviceModel: null,
       osVersion: null,
       now: REPORTED_AT,

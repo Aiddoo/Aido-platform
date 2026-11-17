@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 
 import { vi } from "vitest";
 
-import { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
+import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import { DrizzlePushDeviceRepository } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-push-token.repository";
 import type { PushReceiptResult } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
@@ -21,6 +22,10 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
+import {
+  createRegisteringPushDeviceFixture,
+  type PushTokenRegistrationFixture,
+} from "#test/fixtures/notification/push-token.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
 import { createPushDispatchStaging } from "#test/integration/helpers/push-dispatch-staging";
@@ -42,6 +47,23 @@ const payloadTooLarge = (ticketId: string): PushReceiptResult => ({
   status: "failed",
   failure: { kind: "PAYLOAD_TOO_LARGE", providerCode: "MessageTooBig" },
 });
+
+// 토큰은 기기 보고로 등록한다. 같은 사용자·기기에 다른 토큰을 보고하면 그 행의 토큰이 바뀐다
+async function registerToken(
+  transactionHost: ConstructorParameters<typeof DrizzlePushDeviceRepository>[0],
+  registration: Partial<PushTokenRegistrationFixture>,
+): Promise<PushTokenReadModel> {
+  const device = createRegisteringPushDeviceFixture(registration);
+  await new DrizzlePushDeviceRepository(transactionHost).save(device);
+  const records = await new DrizzlePushTokenRepository(transactionHost).findPushTokensByUser({
+    userId: device.userId,
+  });
+  const record = records.find((item) => item.deviceId === device.id.value);
+  if (record == null) {
+    throw new Error("push token fixture 누락");
+  }
+  return record;
+}
 
 describe("receipt 정합성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -71,10 +93,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const tokens = new DrizzlePushTokenRepository(transactionHost);
     const receipts = new DrizzlePushReceiptRepository(transactionHost, new DateClock());
-    const token = await tokens.registerPushToken({
-      userId: UserId.reconstitute(user.id),
+    const token = await registerToken(transactionHost, {
+      userId: user.id,
       token: `ExponentPushToken[${suffix}-old]`,
-      deviceId: PushDeviceId.reconstitute("device"),
+      deviceId: `device-${suffix}`,
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -141,10 +163,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   it("이전 토큰의 지연 invalid receipt는 같은 기기의 새 토큰을 비활성화하지 않는다", async () => {
     // Given
     const f = await fixture("rotation");
-    await f.tokens.registerPushToken({
-      userId: UserId.reconstitute(f.user.id),
+    await registerToken(f.transactionHost, {
+      userId: f.user.id,
       token: "ExponentPushToken[rotation-new]",
-      deviceId: PushDeviceId.reconstitute("device"),
+      deviceId: f.token.deviceId,
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,
@@ -200,10 +222,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const invalid = await record(f, [unregistered(f.ticketId)]);
 
     // When
-    await f.tokens.registerPushToken({
-      userId: UserId.reconstitute(f.user.id),
+    await registerToken(f.transactionHost, {
+      userId: f.user.id,
       token: "ExponentPushToken[between-new]",
-      deviceId: PushDeviceId.reconstitute("device"),
+      deviceId: f.token.deviceId,
       platform: "IOS",
       sessionId: null,
       payloadVersion: 1,

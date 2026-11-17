@@ -1,27 +1,17 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, ne, or } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
-import {
-  databaseConstraint,
-  isUniqueConstraintViolation,
-  requireRecord,
-} from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindPushTokensParams,
-  type KeepPushTokenData,
   type PushTokenRepositoryPort,
-  type RegisterPushTokenData,
 } from "../../application/ports/push-token.repository.port.js";
-import { pushTokenRegistrationConflict } from "../../application/push-devices.errors.js";
 import type { PushTokenReadModel } from "../../application/read-models/push-token.read-model.js";
 import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
-
-const PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT = "PushToken_token_key";
 
 @Injectable()
 export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
@@ -33,99 +23,6 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
 
   get #db() {
     return this.#transactionHost.tx;
-  }
-
-  async releasePushTokenHeldElsewhere(
-    data: Parameters<PushTokenRepositoryPort["releasePushTokenHeldElsewhere"]>[0],
-  ): Promise<{ readonly userIds: readonly string[] }> {
-    const userId = data.userId.value;
-    const deviceId = data.deviceId.value;
-    const sameDeviceOfOtherUser = and(
-      eq(pushToken.deviceId, deviceId),
-      ne(pushToken.userId, userId),
-    );
-    // 해제 요청(unregister)과 같은 삭제다. 그 등록의 발송 시도 기록은 FK cascade로 함께 지워진다.
-    const released = await this.#db
-      .delete(pushToken)
-      .where(
-        data.token == null
-          ? sameDeviceOfOtherUser
-          : or(
-              sameDeviceOfOtherUser,
-              and(
-                eq(pushToken.token, data.token),
-                or(ne(pushToken.userId, userId), ne(pushToken.deviceId, deviceId)),
-              ),
-            ),
-      )
-      .returning({ userId: pushToken.userId });
-    return { userIds: released.map((row) => row.userId) };
-  }
-
-  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenReadModel> {
-    const {
-      userId,
-      token,
-      deviceId,
-      platform,
-      sessionId,
-      payloadVersion,
-      appVersion,
-      registeredAt,
-    } = data;
-    try {
-      const [row] = await this.#db
-        .insert(pushToken)
-        .values({
-          userId: userId.value,
-          token,
-          deviceId: deviceId.value,
-          platform,
-          sessionId,
-          isActive: true,
-          payloadVersion,
-          appVersion,
-          updatedAt: registeredAt,
-        })
-        .onConflictDoUpdate({
-          target: [pushToken.userId, pushToken.deviceId],
-          set: {
-            token,
-            platform,
-            sessionId,
-            isActive: true,
-            payloadVersion,
-            appVersion,
-            updatedAt: registeredAt,
-          },
-        })
-        .returning();
-      return requireRecord(row);
-    } catch (error) {
-      if (
-        isUniqueConstraintViolation(error) &&
-        databaseConstraint(error) === PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT
-      ) {
-        throw pushTokenRegistrationConflict(error);
-      }
-      throw error;
-    }
-  }
-
-  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
-    const kept = await this.#db
-      .update(pushToken)
-      .set({
-        sessionId: data.sessionId,
-        payloadVersion: data.payloadVersion,
-        appVersion: data.appVersion,
-        updatedAt: data.keptAt,
-      })
-      .where(
-        and(eq(pushToken.userId, data.userId.value), eq(pushToken.deviceId, data.deviceId.value)),
-      )
-      .returning({ isActive: pushToken.isActive });
-    return { hasActiveToken: kept.some((row) => row.isActive) };
   }
 
   findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {

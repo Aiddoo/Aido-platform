@@ -1,6 +1,5 @@
 import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
-import { match } from "ts-pattern";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -13,10 +12,13 @@ import { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import { PushDevice } from "../../domain/push-device.aggregate.js";
 import { platformFromDeviceId } from "../../domain/push-device.domain-service.js";
 import { PushPermission } from "../../domain/push-permission.vo.js";
-import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
+import { PushToken } from "../../domain/push-token.entity.js";
+import type {
+  PushDeviceRepositoryPort,
+  SavedPushDeviceResult,
+} from "../ports/push-device.repository.port.js";
 import type { PushTokenCachePort } from "../ports/push-token-cache.port.js";
 import type { PushTokenFormatPort } from "../ports/push-token-format.port.js";
-import { type PushTokenRepositoryPort } from "../ports/push-token.repository.port.js";
 import { invalidPushToken, PushTokenRegistrationConflictError } from "../push-devices.errors.js";
 import { PushDeviceLogEvent } from "../push-devices.log-events.js";
 
@@ -46,17 +48,7 @@ export interface PushDeviceReport {
 }
 
 interface ReportPushDeviceDependencies {
-  readonly pushDeviceRepository: Pick<
-    PushDeviceRepositoryPort,
-    "releasePushDeviceHeldElsewhere" | "savePushDevice"
-  >;
-  readonly pushTokenRepository: Pick<
-    PushTokenRepositoryPort,
-    | "releasePushTokenHeldElsewhere"
-    | "registerPushToken"
-    | "keepPushToken"
-    | "deletePushTokensByDevice"
-  >;
+  readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "save">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly pushTokenFormat: Pick<PushTokenFormatPort, "isValid">;
   readonly userSettings: Pick<
@@ -68,15 +60,11 @@ interface ReportPushDeviceDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
-interface SavedPushDevice {
-  readonly releasedUserIds: readonly string[];
-  readonly hasActiveToken: boolean;
-}
-
 /**
  * 기기 하나의 알림 권한과 토큰을 저장한다.
  *
  * 권한이 발송을 허용하고 토큰이 있으면 토큰을 등록하고, 토큰이 없으면 기존 토큰을 두며, 권한이 없으면 이 기기의 토큰을 지운다.
+ * 다른 사용자의 같은 기기·같은 토큰 등록은 넘겨받는다(PushDevice.takeover).
  * 같은 토큰을 동시에 등록해 충돌하면 새 트랜잭션에서 한 번만 다시 시도한다.
  */
 export class ReportPushDeviceUseCase {
@@ -97,14 +85,18 @@ export class ReportPushDeviceUseCase {
       sessionId: command.sessionId,
       platform: platformFromDeviceId(command.deviceId) ?? command.platformHint ?? null,
       permission: PushPermission.create(command.permission),
-      token: command.token,
+      pushToken: PushToken.create({
+        token: command.token,
+        payloadVersion: command.payloadVersion,
+        appVersion: command.appVersion,
+      }),
       deviceModel: command.deviceModel,
       osVersion: command.osVersion,
       now: this.#dependencies.clock.now(),
     });
 
-    const { releasedUserIds, hasActiveToken } = await this.#saveWithSingleRetry(device, command);
-    const previousUserIds = uniq(releasedUserIds.filter((userId) => userId !== command.userId));
+    const { previousOwnerIds, hasActiveToken } = await this.#saveWithSingleRetry(device, command);
+    const previousUserIds = uniq(previousOwnerIds.filter((userId) => userId !== command.userId));
     await Promise.all(
       [command.userId, ...previousUserIds].map((userId) =>
         this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
@@ -140,9 +132,9 @@ export class ReportPushDeviceUseCase {
   async #saveWithSingleRetry(
     device: PushDevice,
     command: ReportPushDeviceCommand,
-  ): Promise<SavedPushDevice> {
+  ): Promise<SavedPushDeviceResult> {
     try {
-      return await this.#save(device, command);
+      return await this.#save(device);
     } catch (error) {
       if (!(error instanceof PushTokenRegistrationConflictError)) {
         throw error;
@@ -151,54 +143,14 @@ export class ReportPushDeviceUseCase {
         event: PushDeviceLogEvent.REPORT_PUSH_DEVICE_TOKEN_CONFLICT_RETRIED,
         userId: command.userId,
       });
-      return this.#save(device, command);
+      return this.#save(device);
     }
   }
 
-  #save(device: PushDevice, command: ReportPushDeviceCommand): Promise<SavedPushDevice> {
-    const { pushDeviceRepository, pushTokenRepository } = this.#dependencies;
-    const { userId, id: deviceId, tokenChange } = device;
-
-    return this.#dependencies.unitOfWork.run(async () => {
-      const devices = await pushDeviceRepository.releasePushDeviceHeldElsewhere(userId, deviceId);
-      const tokens = await pushTokenRepository.releasePushTokenHeldElsewhere({
-        userId,
-        deviceId,
-        token: tokenChange.kind === "REGISTER" ? tokenChange.token : null,
-      });
-      await pushDeviceRepository.savePushDevice(device);
-      const hasActiveToken = await match(tokenChange)
-        .with({ kind: "REGISTER" }, async ({ token }) => {
-          await pushTokenRepository.registerPushToken({
-            userId,
-            token,
-            deviceId,
-            platform: device.platform,
-            sessionId: device.sessionId,
-            payloadVersion: command.payloadVersion,
-            appVersion: command.appVersion,
-            registeredAt: device.reportedAt,
-          });
-          return true;
-        })
-        .with({ kind: "KEEP" }, async () => {
-          const kept = await pushTokenRepository.keepPushToken({
-            userId,
-            deviceId,
-            sessionId: device.sessionId,
-            payloadVersion: command.payloadVersion,
-            appVersion: command.appVersion,
-            keptAt: device.reportedAt,
-          });
-          return kept.hasActiveToken;
-        })
-        .with({ kind: "RELEASE" }, async () => {
-          await pushTokenRepository.deletePushTokensByDevice(userId, deviceId);
-          return false;
-        })
-        .exhaustive();
-      return { releasedUserIds: [...devices.userIds, ...tokens.userIds], hasActiveToken };
-    });
+  #save(device: PushDevice): Promise<SavedPushDeviceResult> {
+    return this.#dependencies.unitOfWork.run(() =>
+      this.#dependencies.pushDeviceRepository.save(device),
+    );
   }
 
   async #syncDeliveryLocale(command: ReportPushDeviceCommand): Promise<void> {

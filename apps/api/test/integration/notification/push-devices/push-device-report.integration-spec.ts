@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { PushDeviceLogEvent } from "#api/modules/notification/push-devices/application/push-devices.log-events";
 import {
@@ -43,16 +43,11 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  function createReportPushDevice(
-    pushTokenRepository?: ConstructorParameters<
-      typeof ReportPushDeviceUseCase
-    >[0]["pushTokenRepository"],
-  ) {
+  function createReportPushDevice() {
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const warnings: unknown[] = [];
     const reportPushDevice = new ReportPushDeviceUseCase({
       pushDeviceRepository: new DrizzlePushDeviceRepository(transactionHost),
-      pushTokenRepository: pushTokenRepository ?? new DrizzlePushTokenRepository(transactionHost),
       unitOfWork: uow,
       pushTokenFormat: { isValid: () => true },
       userSettings: { upsertPushLocale: async () => {}, upsertPushTimezone: async () => {} },
@@ -66,6 +61,14 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
       },
     });
     return { reportPushDevice, warnings, transactionHost };
+  }
+
+  // 다른 트랜잭션의 행 잠금을 기다리는 연결 수다
+  async function lockWaitCount(): Promise<number> {
+    const result = await client.execute<{ waiting: number }>(
+      sql`SELECT COUNT(*)::INT AS waiting FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`,
+    );
+    return result.rows[0]?.waiting ?? 0;
   }
 
   function command(overrides: Partial<ReportPushDeviceCommand>): ReportPushDeviceCommand {
@@ -208,45 +211,48 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     ]);
   });
 
-  it("해제 직후 다른 요청이 같은 토큰을 먼저 커밋하면 새 트랜잭션에서 한 번 재시도해 토큰을 옮긴다", async () => {
+  it("넘겨받은 뒤 다른 요청이 같은 토큰을 먼저 커밋하면 충돌을 새 트랜잭션에서 한 번 재시도해 토큰을 옮긴다", async () => {
     // Given
-    // 첫 해제가 끝난 뒤 다른 연결이 같은 토큰을 다른 사용자로 커밋한다
-    const { transactionHost } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzlePushTokenRepository(transactionHost);
-    let releaseCalls = 0;
-    const racingRepository: ConstructorParameters<
-      typeof ReportPushDeviceUseCase
-    >[0]["pushTokenRepository"] = {
-      async releasePushTokenHeldElsewhere(data) {
-        const released = await repository.releasePushTokenHeldElsewhere(data);
-        releaseCalls += 1;
-        if (releaseCalls === 1) {
-          await client.insert(pushToken).values({
-            userId: firstUserId,
-            token: TOKEN,
-            deviceId: "ios_first",
-            platform: "IOS",
-            updatedAt: REPORTED_AT,
-          });
-        }
-        return released;
-      },
-      registerPushToken: (data) => repository.registerPushToken(data),
-      keepPushToken: (data) => repository.keepPushToken(data),
-      deletePushTokensByDevice: (userId, deviceId) =>
-        repository.deletePushTokensByDevice(userId, deviceId),
-    };
-    const { reportPushDevice, warnings } = createReportPushDevice(racingRepository);
+    // 다른 연결이 같은 토큰을 다른 사용자로 넣고 커밋하지 않은 채 잡고 있다
+    const { reportPushDevice, warnings } = createReportPushDevice();
+    let releaseHolder: () => void = () => {};
+    const holderCommitted = new Promise<void>((resolve) => {
+      releaseHolder = resolve;
+    });
+    let markInserted: () => void = () => {};
+    const inserted = new Promise<void>((resolve) => {
+      markInserted = resolve;
+    });
+    const holder = client.transaction(async (transaction) => {
+      await transaction.insert(pushToken).values({
+        userId: firstUserId,
+        token: TOKEN,
+        deviceId: "ios_first",
+        platform: "IOS",
+        updatedAt: REPORTED_AT,
+      });
+      markInserted();
+      await holderCommitted;
+    });
+    await inserted;
 
     // When
-    await reportPushDevice.execute(command({ userId: secondUserId, deviceId: "ios_second" }));
+    // 보고의 넘겨받기는 커밋 전 행을 보지 못하고, 등록 insert가 unique 키에서 기다리다 충돌한다
+    const reporting = reportPushDevice.execute(
+      command({ userId: secondUserId, deviceId: "ios_second" }),
+    );
+    await vi.waitFor(async () => {
+      expect(await lockWaitCount()).toBe(1);
+    });
+    releaseHolder();
+    await holder;
+    await reporting;
 
     // Then
     const rows = await client.select().from(pushToken).where(eq(pushToken.token, TOKEN));
     expect(rows).toEqual([
       expect.objectContaining({ userId: secondUserId, deviceId: "ios_second" }),
     ]);
-    expect(releaseCalls).toBe(2);
     expect(warnings).toEqual([
       {
         event: PushDeviceLogEvent.REPORT_PUSH_DEVICE_TOKEN_CONFLICT_RETRIED,

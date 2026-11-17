@@ -42,7 +42,6 @@ const NOTIFICATION_PUSH_DEVICES_EXTERNAL_PROVIDERS = [
 export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
   provideUseCase(ReportPushDeviceUseCase, {
     pushDeviceRepository: PushDeviceRepositoryPort,
-    pushTokenRepository: PushTokenRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     pushTokenFormat: PushTokenFormatPort,
     userSettings: UserNotificationSettingsPort,

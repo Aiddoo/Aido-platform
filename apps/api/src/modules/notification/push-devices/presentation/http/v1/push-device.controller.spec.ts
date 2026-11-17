@@ -45,8 +45,8 @@ class RecordingSettings implements Pick<
 }
 
 function setup() {
-  const devices = new InMemoryPushDeviceRepository();
   const tokens = new InMemoryPushTokenRepository();
+  const devices = new InMemoryPushDeviceRepository([], tokens);
   const settings = new RecordingSettings();
   const cache = new RecordingPushTokenCache();
   const unitOfWork = new ImmediateUnitOfWork();
@@ -55,7 +55,6 @@ function setup() {
   const controller = new PushDeviceController(
     new ReportPushDeviceUseCase({
       pushDeviceRepository: devices,
-      pushTokenRepository: tokens,
       unitOfWork,
       pushTokenFormat: new StubPushTokenFormat(),
       userSettings: settings,
@@ -110,6 +109,8 @@ describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
         permissionStatus: "GRANTED",
         permissionCanAskAgain: false,
         token: null,
+        payloadVersion: 2,
+        appVersion: "1.14.1",
         deviceModel: "SM-S931N",
         osVersion: null,
         reportedAt: NOW,

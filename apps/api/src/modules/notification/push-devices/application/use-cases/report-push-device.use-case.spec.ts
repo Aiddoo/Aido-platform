@@ -46,14 +46,13 @@ function createCommand(overrides: Partial<ReportPushDeviceCommand> = {}): Report
 }
 
 function setup() {
-  const devices = new InMemoryPushDeviceRepository();
   const tokens = new InMemoryPushTokenRepository();
+  const devices = new InMemoryPushDeviceRepository([], tokens);
   const settings = new RecordingSettings();
   const cache = new RecordingPushTokenCache();
   const logger = new SilentLogger();
   const useCase = new ReportPushDeviceUseCase({
     pushDeviceRepository: devices,
-    pushTokenRepository: tokens,
     unitOfWork: new ImmediateUnitOfWork(),
     pushTokenFormat: new StubPushTokenFormat(),
     userSettings: settings,

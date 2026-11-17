@@ -60,17 +60,18 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 ## push-devices
 
-| 용어        | 코드                                                                | 뜻                                                                                                                                |
-| ----------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 기기        | `PushDevice`(Aggregate, `push-devices` slice), `PushDeviceId`       | 한 사용자의 앱 설치 하나. 한 시점에 주인은 한 명이고, 다른 사용자가 같은 기기로 보고하면 이전 기록을 지운다                       |
-| 기기 보고   | `ReportPushDeviceUseCase`                                           | 앱이 권한·토큰·언어·시간대를 보고한다. 같은 토큰을 가진 다른 사용자·기기의 등록은 같은 트랜잭션에서 지운다(소유 이전)             |
-| 플랫폼      | `PushDevicePlatform`(`IOS`·`ANDROID`), `platformFromDeviceId`       | deviceId 접두어 `ios_`·`android_`, 없으면 기기 헤더로 정한다. 둘 다 모르면 `NOTIFICATION_1006`                                    |
-| 알림 권한   | `PushPermission`(VO), `PushPermissionStatus`                        | 앱이 OS에서 읽은 `GRANTED`·`PROVISIONAL`·`DENIED`·`NOT_DETERMINED`와 다시 물을 수 있는지. 앞의 둘만 발송한다(`allowsDelivery`)    |
-| 토큰        | `PushToken`(엔티티)                                                 | 기기·로그인 세션에 묶인 발송 주소. 값은 유일하고 형식이 틀리면 `NOTIFICATION_1001`                                                |
-| 토큰 변화   | `PushTokenChange`, `tokenChange`                                    | 보고 하나가 토큰을 바꾸는 방식. `REGISTER`(허용+토큰)·`KEEP`(허용인데 토큰 없음 = 발급 실패 한 번)·`RELEASE`(권한 없음)           |
-| 해제        | `UnregisterPushDeviceUseCase`, `UnregisterPushDeviceByTokenUseCase` | 로그인한 기기의 로그아웃 해제와 세션이 끝난 기기의 공개 해제. 공개 해제는 deviceId·토큰이 둘 다 맞을 때만 지우고 결과는 같게 준다 |
-| 세션 해제   | `ReleaseSessionPushDevicesUseCase`                                  | identity가 세션을 폐기하면 그 세션의 기기·토큰을 바로 지운다. 실패해도 세션 폐기는 막지 않는다                                    |
-| 오래된 기기 | `PUSH_DEVICE_STALE_AFTER_DAYS`                                      | 오래 보고하지 않은 기기는 지운 앱으로 보고 건너뜀 사유 판정에서 뺀다([기기와 토큰](../push-delivery.md#기기와-토큰))              |
+| 용어        | 코드                                                                | 뜻                                                                                                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 기기        | `PushDevice`(Aggregate, `push-devices` slice), `PushDeviceId`       | 한 사용자의 앱 설치 하나. 한 시점에 주인은 한 명이고, 다른 사용자가 같은 기기로 보고하면 이전 기록을 지운다                                                                                                                                                        |
+| 기기 보고   | `ReportPushDeviceUseCase`                                           | 앱이 권한·토큰·언어·시간대를 보고한다. 같은 토큰을 가진 다른 사용자·기기의 등록은 같은 트랜잭션에서 지운다(소유 이전)                                                                                                                                              |
+| 플랫폼      | `PushDevicePlatform`(`IOS`·`ANDROID`), `platformFromDeviceId`       | deviceId 접두어 `ios_`·`android_`, 없으면 기기 헤더로 정한다. 둘 다 모르면 `NOTIFICATION_1006`                                                                                                                                                                     |
+| 알림 권한   | `PushPermission`(VO), `PushPermissionStatus`                        | 앱이 OS에서 읽은 `GRANTED`·`PROVISIONAL`·`DENIED`·`NOT_DETERMINED`와 다시 물을 수 있는지. 앞의 둘만 발송한다(`allowsDelivery`)                                                                                                                                     |
+| 토큰        | `PushToken`(엔티티)                                                 | 기기·로그인 세션에 묶인 발송 주소. 기기 보고(`save`)로만 등록·유지·해제한다. 값은 유일하고 형식이 틀리면 `NOTIFICATION_1001`                                                                                                                                       |
+| 토큰 변화   | `PushTokenChange`, `tokenChange`                                    | 보고 하나가 토큰을 바꾸는 방식. `REGISTER`(허용+토큰)·`KEEP`(허용인데 토큰 없음 = 발급 실패 한 번)·`RELEASE`(권한 없음)                                                                                                                                            |
+| 넘겨받기    | `PushDevice.takeover`, `PushDeviceRepositoryPort.save`              | 보고한 사용자가 다른 사용자의 같은 기기와 등록하는 토큰을 가진 다른 등록을 넘겨받는다. `save`가 넘겨받기·기기·토큰 변화를 한 트랜잭션에 쓰고 이전 사용자 ID를 준다. 사이에 같은 토큰을 다른 등록이 먼저 잡으면 `PushToken_token_key`가 막고 보고를 한 번 다시 한다 |
+| 해제        | `UnregisterPushDeviceUseCase`, `UnregisterPushDeviceByTokenUseCase` | 로그인한 기기의 로그아웃 해제와 세션이 끝난 기기의 공개 해제. 공개 해제는 deviceId·토큰이 둘 다 맞을 때만 지우고 결과는 같게 준다                                                                                                                                  |
+| 세션 해제   | `ReleaseSessionPushDevicesUseCase`                                  | identity가 세션을 폐기하면 그 세션의 기기·토큰을 바로 지운다. 실패해도 세션 폐기는 막지 않는다                                                                                                                                                                     |
+| 오래된 기기 | `PUSH_DEVICE_STALE_AFTER_DAYS`                                      | 오래 보고하지 않은 기기는 지운 앱으로 보고 건너뜀 사유 판정에서 뺀다([기기와 토큰](../push-delivery.md#기기와-토큰))                                                                                                                                               |
 
 기기는 보고마다 통째로 덮어쓰고 상태 전이가 없다. 토큰만 상태가 있다.
 
