@@ -66227,7 +66227,7 @@ GET /weekly-achievements/2026/10
                         "type": "object",
                       },
                       "message": {
-                        "example": "브로드캐스트 접수가 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
                         "type": "string",
                       },
                     },
@@ -66255,7 +66255,7 @@ GET /weekly-achievements/2026/10
               },
             },
           },
-          "description": "브로드캐스트 접수가 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
         },
         "500": {
           "content": {

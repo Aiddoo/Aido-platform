@@ -1,12 +1,12 @@
 import request from "supertest";
 
-import { WEATHER_LOCATION_V2_THROTTLE } from "#api/modules/weather/locations/presentation/http/v2/weather-location.controller";
+import { UserLocationRateLimits } from "#api/modules/weather/locations/presentation/http/locations.rate-limits";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("날씨 v2 위치 변경 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
   let testContext: E2eTestContext;
-  const limit = WEATHER_LOCATION_V2_THROTTLE.UPDATE.default.limit;
+  const limit = UserLocationRateLimits.update.limitPerMinute;
 
   beforeAll(async () => {
     testContext = await createE2eApp({ withRealThrottler: true });

@@ -2,7 +2,6 @@ import type { WeatherReportResponse } from "@aido/api/contracts/weather";
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -19,18 +18,15 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 import { type SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetWeatherReportUseCase } from "../../../application/use-cases/get-weather-report.use-case.js";
 import { resolveWeatherReportLanguage } from "../../../domain/weather-report-language.domain-service.js";
+import { ForecastRateLimits } from "../forecasts.rate-limits.js";
 import { toWeatherReportResponse } from "./weather-report-response.mapper.js";
 import { WeatherReportResponseDto } from "./weather.dto.js";
-
-const WEATHER_REPORT_V2_THROTTLE = {
-  GET: { default: { ttl: 60_000, limit: 60 } },
-} as const;
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V2)
 @ApiBearerAuth()
@@ -43,8 +39,7 @@ export class WeatherV2Controller {
   }
 
   @Get()
-  @ThrottleByUser()
-  @Throttle(WEATHER_REPORT_V2_THROTTLE.GET)
+  @RateLimit(ForecastRateLimits.readReport)
   @ApiHeader({
     name: "Accept-Language",
     required: false,

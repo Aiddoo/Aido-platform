@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -17,14 +16,13 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { ReportContentUseCase } from "../../../application/use-cases/report-content.use-case.js";
+import { UserReportRateLimits } from "../reports.rate-limits.js";
 import { toCreateUserReportResponse } from "./user-report-response.mapper.js";
 import { CreateUserReportDto, CreateUserReportResponseDto } from "./user-report.dto.js";
-
-const REPORT_THROTTLE = { ttl: 60_000, limit: 10 } as const;
 
 @ApiTags(SWAGGER_TAGS.REPORTS)
 @ApiBearerAuth()
@@ -37,8 +35,7 @@ export class UserReportController {
   }
 
   @Post()
-  @ThrottleByUser()
-  @Throttle({ default: REPORT_THROTTLE })
+  @RateLimit(UserReportRateLimits.report)
   @ApiDoc({
     summary: "사용자·콘텐츠 신고",
     operationId: "createUserReport",

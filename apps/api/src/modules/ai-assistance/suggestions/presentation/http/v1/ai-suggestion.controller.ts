@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -29,13 +28,14 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { AiDataSharingConsentGuard } from "../../../../parsing/ai-assistance-parsing.public.js";
 import { HandleSuggestionActionUseCase } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "../../../application/use-cases/list-pending-suggestions.use-case.js";
 import { RequestSuggestionAnalysisUseCase } from "../../../application/use-cases/request-suggestion-analysis.use-case.js";
+import { SuggestionRateLimits } from "../suggestions.rate-limits.js";
 import {
   toSuggestionActionResponse,
   toSuggestionAnalysisResponse,
@@ -48,11 +48,6 @@ import {
   SuggestionIdParamDto,
   SuggestionListResponseDto,
 } from "./ai-suggestion.dto.js";
-
-// 하루 한 번은 같은 job key·실행 기록이 막고, 이 한도는 연타·두 기기 동시 요청의 요청 수만 줄인다
-const AI_SUGGESTION_THROTTLE = {
-  REQUEST_ANALYSIS: { default: { ttl: 60_000, limit: 5 } },
-} as const;
 
 const SUGGESTION_LIST_DESCRIPTION = `프리미엄 사용자의 대기 중(PENDING) 제안과 분석 상태(\`analysis\`)를 줍니다.
 
@@ -86,7 +81,7 @@ const SUGGESTION_ANALYSIS_REQUEST_DESCRIPTION = `오늘(저장 시간대의 현�
 - 분석은 사용자당 하루 한 번입니다. 오늘 이미 요청했거나(아침 자동 분석 포함) 기능이 꺼져 있거나 최근 14일 단건 할 일이 없으면 큐에 넣지 않고 202와 지금 상태를 줍니다.
 - 날짜는 요청 헤더가 아니라 저장된 시간대로 정합니다. 09:00 전에 요청하면 그날 자동 분석을 대신합니다.
 - 앱 안에서 결과를 기다리는 요청이라 푸시·알림함 항목을 만들지 않습니다. 응답의 \`analysis.state\`가 \`ANALYZING\`이면 목록을 다시 조회해 결과를 봅니다.
-- 사용자당 1분에 ${AI_SUGGESTION_THROTTLE.REQUEST_ANALYSIS.default.limit}회까지입니다.
+- 사용자당 1분에 ${SuggestionRateLimits.requestAnalysis.limitPerMinute}회까지입니다.
 - 1.13.0 이상 앱은 AI 데이터 처리 동의가 있어야 합니다(AI_1311). 프리미엄이 아니면 AI_1309입니다.`;
 
 const SUGGESTION_ACTION_DESCRIPTION = `제안을 수락하거나 거절합니다.
@@ -150,8 +145,7 @@ export class AiSuggestionController {
   @Post("analyses")
   @HttpCode(HttpStatus.ACCEPTED)
   @UseGuards(AiDataSharingConsentGuard)
-  @ThrottleByUser()
-  @Throttle(AI_SUGGESTION_THROTTLE.REQUEST_ANALYSIS)
+  @RateLimit(SuggestionRateLimits.requestAnalysis)
   @ApiDoc({
     summary: "지금 AI 제안 분석 요청",
     operationId: "requestAiSuggestionAnalysis",

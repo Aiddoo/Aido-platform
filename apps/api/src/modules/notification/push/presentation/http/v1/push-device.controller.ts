@@ -12,7 +12,6 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 import { match } from "ts-pattern";
 
 import {
@@ -34,12 +33,13 @@ import {
   ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
 import { OptOutMarketingPushUseCase } from "../../../application/use-cases/opt-out-marketing-push.use-case.js";
 import { ReportPushDeviceUseCase } from "../../../application/use-cases/report-push-device.use-case.js";
 import { UnregisterPushDeviceByTokenUseCase } from "../../../application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "../../../application/use-cases/unregister-push-device.use-case.js";
+import { PushDeviceRateLimits } from "../push.rate-limits.js";
 import { PushDeviceMapper } from "./push-device-response.mapper.js";
 import {
   MarketingPushOptOutDto,
@@ -56,9 +56,6 @@ import {
 
 // 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값이다
 const LEGACY_DEFAULT_DEVICE_ID = "default";
-
-// 로그인 전 요청이라 IP로 센다. 앱은 세션이 끝날 때 한 번(실패하면 다음 실행에 한 번 더) 보낸다
-const PUSH_DEVICE_UNREGISTER_THROTTLE = { ttl: 60_000, limit: 20 } as const;
 
 function pushDeviceContext(client: RequestClient) {
   return {
@@ -118,7 +115,7 @@ export class PushDeviceController {
   @Post("push-devices/unregister")
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: PUSH_DEVICE_UNREGISTER_THROTTLE })
+  @RateLimit(PushDeviceRateLimits.unregisterByToken)
   @ApiDoc({
     summary: "세션이 끝난 기기의 푸시 해제",
     operationId: "unregisterPushDeviceByToken",
@@ -139,7 +136,6 @@ export class PushDeviceController {
 
   @Put("push-devices/:deviceId")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
   @ApiParam({
     name: "deviceId",
     description: "앱이 만든 기기 식별자. ios_ 또는 android_로 시작",

@@ -13,7 +13,6 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -36,8 +35,8 @@ import {
   ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { DeleteTodoCommentUseCase } from "../../../application/use-cases/delete-todo-comment.use-case.js";
 import { EditTodoCommentUseCase } from "../../../application/use-cases/edit-todo-comment.use-case.js";
@@ -50,6 +49,7 @@ import {
 } from "../../../application/use-cases/list-todo-comment-threads.use-case.js";
 import { UnlikeTodoCommentUseCase } from "../../../application/use-cases/unlike-todo-comment.use-case.js";
 import { WriteTodoCommentChainUseCase } from "../../../application/use-cases/write-todo-comment-chain.use-case.js";
+import { TodoCommentRateLimits } from "../comments.rate-limits.js";
 import {
   toTodoCommentChainResponse,
   toTodoCommentLikeResponse,
@@ -73,12 +73,6 @@ import {
   UpdateTodoCommentDto,
   WriteTodoCommentChainDto,
 } from "./todo-comment.dto.js";
-
-/** 사용자마다 1분 창. 이어 쓰기 한 요청이 최대 5개라 작성은 글 수가 아니라 요청 수로 센다. */
-export const TODO_COMMENT_THROTTLE = {
-  WRITE: { default: { ttl: 60_000, limit: 30 } },
-  LIKE: { default: { ttl: 60_000, limit: 120 } },
-} as const;
 
 const DEPRECATED_READ_DESCRIPTION =
   "1.14.0 이하 앱 전용입니다. 1.14.1 이상은 `GET /v2/todos/{todoId}/comments`와 `…/comments/{commentId}/replies`를 씁니다. 댓글·답글 2단계 값만 내려갑니다. 1.14.0 이하 앱 사용자가 사라지면 제거합니다.";
@@ -202,8 +196,7 @@ export class TodoCommentController {
   }
 
   @Post("comments")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
+  @RateLimit(TodoCommentRateLimits.write)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -235,8 +228,7 @@ export class TodoCommentController {
   }
 
   @Patch("comments/:commentId")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
+  @RateLimit(TodoCommentRateLimits.write)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -268,8 +260,7 @@ export class TodoCommentController {
   }
 
   @Delete("comments/:commentId")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.WRITE)
+  @RateLimit(TodoCommentRateLimits.write)
   @ApiDoc({
     summary: "댓글 삭제",
     operationId: "deleteTodoComment",
@@ -295,8 +286,7 @@ export class TodoCommentController {
   }
 
   @Put("comments/:commentId/likes")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.LIKE)
+  @RateLimit(TodoCommentRateLimits.like)
   @ApiDoc({
     summary: "댓글 좋아요",
     operationId: "likeTodoComment",
@@ -322,8 +312,7 @@ export class TodoCommentController {
   }
 
   @Delete("comments/:commentId/likes")
-  @ThrottleByUser()
-  @Throttle(TODO_COMMENT_THROTTLE.LIKE)
+  @RateLimit(TodoCommentRateLimits.like)
   @ApiDoc({
     summary: "댓글 좋아요 취소",
     operationId: "unlikeTodoComment",

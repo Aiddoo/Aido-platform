@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -29,8 +28,8 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { GetNudgeInteractionAvailabilityUseCase } from "../../../application/use-cases/get-nudge-interaction-availability.use-case.js";
 import { GetNudgeInteractionUseCase } from "../../../application/use-cases/get-nudge-interaction.use-case.js";
@@ -39,6 +38,7 @@ import { GetNudgeThanksPreviewUseCase } from "../../../application/use-cases/get
 import { ReplyToNudgeUseCase } from "../../../application/use-cases/reply-to-nudge.use-case.js";
 import { SendNudgeThanksUseCase } from "../../../application/use-cases/send-nudge-thanks.use-case.js";
 import { ReleasedAppNudgeErrorInterceptor } from "../interceptors/released-app-nudge-error.interceptor.js";
+import { NudgeRateLimits } from "../nudges.rate-limits.js";
 import {
   toNudgeInteractionResponse,
   toNudgeInteractionsResponse,
@@ -57,8 +57,6 @@ import {
   SendNudgeThanksResponseDto,
 } from "./nudge-interaction.dto.js";
 import { NudgeIdParamDto } from "./nudge.dto.js";
-
-const NUDGE_INTERACTION_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 
 const DISABLED_NOT_FOUND_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
 
@@ -154,8 +152,7 @@ export class NudgeInteractionController {
   }
 
   @Put(":id/reply")
-  @ThrottleByUser()
-  @Throttle({ default: NUDGE_INTERACTION_THROTTLE })
+  @RateLimit(NudgeRateLimits.interact)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -210,8 +207,7 @@ export class NudgeInteractionController {
   }
 
   @Put("todos/:todoId/thanks")
-  @ThrottleByUser()
-  @Throttle({ default: NUDGE_INTERACTION_THROTTLE })
+  @RateLimit(NudgeRateLimits.interact)
   @ApiDoc({
     summary: "완료한 할 일의 콕에 감사 전하기",
     operationId: "sendNudgeThanks",

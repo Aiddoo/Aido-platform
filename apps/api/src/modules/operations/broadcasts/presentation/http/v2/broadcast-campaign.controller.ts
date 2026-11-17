@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import { Admin } from "#api/modules/identity/identity-auth-http.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
@@ -15,11 +14,13 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
+import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
 
 import { CreateBroadcastCampaignUseCase } from "../../../application/use-cases/create-broadcast-campaign.use-case.js";
 import { GetBroadcastCampaignUseCase } from "../../../application/use-cases/get-broadcast-campaign.use-case.js";
 import { BroadcastCampaignId } from "../../../domain/broadcast-campaign-id.vo.js";
+import { BroadcastRateLimits } from "../broadcasts.rate-limits.js";
 import {
   toBroadcastCampaignAcceptedDto,
   toBroadcastCampaignDto,
@@ -30,9 +31,6 @@ import {
   BroadcastCampaignIdParamDto,
   CreateBroadcastCampaignDto,
 } from "./broadcast-campaign.dto.js";
-
-const THROTTLED_DESCRIPTION = "브로드캐스트 접수가 너무 잦습니다. 잠시 후 다시 시도해 주세요.";
-const BROADCAST_CREATION_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
 @ApiBearerAuth()
@@ -52,8 +50,7 @@ export class BroadcastCampaignController {
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
   @Admin()
-  @ThrottleByUser()
-  @Throttle({ default: BROADCAST_CREATION_THROTTLE })
+  @RateLimit(BroadcastRateLimits.createCampaign)
   @ApiDoc({
     summary: "브로드캐스트 캠페인 접수",
     operationId: "createBroadcastCampaign",
@@ -63,7 +60,7 @@ export class BroadcastCampaignController {
 - \`localizedContent\`에 언어별 제목·본문을 주면 수신자 언어로 보냅니다. 없는 언어는 \`title\`·\`body\`로 보냅니다.
 - \`delivery\`가 \`RECIPIENT_LOCAL_TIME\`이면 수신자 저장 시간대의 \`date\` \`localTime\`에 알림을 만듭니다. 이미 지났으면 다음 날 같은 시각입니다. 기본은 \`NOW\`입니다.
 - 진행과 전달 결과는 \`GET /v2/admin/notifications/broadcasts/{campaignId}\`로 확인합니다.
-- 관리자마다 분당 ${BROADCAST_CREATION_THROTTLE.limit}회까지 접수합니다.`,
+- 관리자마다 분당 ${BroadcastRateLimits.createCampaign.limitPerMinute}회까지 접수합니다.`,
   })
   @ApiSuccessResponse({
     status: HttpStatus.ACCEPTED,

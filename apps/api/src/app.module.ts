@@ -46,12 +46,10 @@ import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { RedisModule } from "#api/platform/redis/redis.module";
 import { ResilienceModule } from "#api/platform/resilience/resilience.module";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
+import { DAILY_THROTTLER_OPTIONS } from "#api/platform/throttle/rate-limits";
 import { THROTTLER_STORAGE } from "#api/platform/throttle/throttle.constants";
 import { ThrottleModule } from "#api/platform/throttle/throttle.module";
-import {
-  DAILY_THROTTLER_OPTIONS,
-  UserAwareThrottlerGuard,
-} from "#api/platform/throttle/user-aware-throttler.guard";
+import { UserAwareThrottlerGuard } from "#api/platform/throttle/user-aware-throttler.guard";
 import { TimeModule } from "#api/platform/time/time.module";
 
 @Module({

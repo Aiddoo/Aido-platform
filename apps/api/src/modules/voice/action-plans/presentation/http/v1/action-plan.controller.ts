@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -20,13 +19,12 @@ import {
 import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
 import { ApplyActionPlanUseCase } from "../../../application/use-cases/apply-action-plan.use-case.js";
+import { ActionPlanRateLimits } from "../action-plans.rate-limits.js";
 import { toApplyActionPlanResponse } from "./action-plan-response.mapper.js";
 import { ApplyActionPlanRequestDto, ApplyActionPlanResponseDto } from "./action-plan.dto.js";
-
-const ACTION_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 10 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
@@ -40,8 +38,7 @@ export class ActionPlanController {
 
   @Post("apply")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @Throttle(ACTION_PLAN_THROTTLE)
+  @RateLimit(ActionPlanRateLimits.apply)
   @ApiIdempotencyKeyHeader()
   @ApiDoc({
     summary: "사용자가 확인한 계획 저장",

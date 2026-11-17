@@ -3,13 +3,13 @@ import { randomUUID } from "node:crypto";
 import { createTodoResponseSchema } from "@aido/api";
 import request from "supertest";
 
-import { TODO_COMMENT_THROTTLE } from "#api/modules/engagement/comments/presentation/http/v1/todo-comment.controller";
+import { TodoCommentRateLimits } from "#api/modules/engagement/comments/presentation/http/comments.rate-limits";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("할 일 댓글 작성 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
   let testContext: E2eTestContext;
-  const limit = TODO_COMMENT_THROTTLE.WRITE.default.limit;
+  const limit = TodoCommentRateLimits.write.limitPerMinute;
 
   beforeAll(async () => {
     testContext = await createE2eApp({ withRealThrottler: true });

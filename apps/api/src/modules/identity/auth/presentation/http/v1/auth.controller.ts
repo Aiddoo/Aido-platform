@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import { ChangePasswordUseCase } from "#api/modules/identity/auth/application/use-cases/change-password.use-case";
 import { LoginWithPasswordUseCase } from "#api/modules/identity/auth/application/use-cases/login-with-password.use-case";
@@ -49,10 +48,10 @@ import {
   ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
+import { AuthRateLimits } from "../auth.rate-limits.js";
 import { toRequestMetadata } from "./auth-request.mapper.js";
-import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   AuthTokensDto,
   ChangePasswordDto,
@@ -113,7 +112,7 @@ export class AuthController {
 
   @Post("register")
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.REGISTER })
+  @RateLimit(AuthRateLimits.register)
   @ApiDoc({
     summary: "회원가입",
     operationId: "register",
@@ -157,7 +156,7 @@ export class AuthController {
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.VERIFY_EMAIL })
+  @RateLimit(AuthRateLimits.verifyEmail)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -206,7 +205,7 @@ export class AuthController {
   @Post("resend-verification")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.RESEND_VERIFICATION })
+  @RateLimit(AuthRateLimits.resendVerification)
   @ApiDoc({
     summary: "인증 코드 재발송",
     operationId: "resendVerificationCode",
@@ -239,7 +238,7 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.LOGIN })
+  @RateLimit(AuthRateLimits.login)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -373,7 +372,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Public()
   @UseGuards(JwtRefreshGuard)
   @ApiBearerAuth()
-  @Throttle({ default: AUTH_THROTTLE.REFRESH })
+  @RateLimit(AuthRateLimits.refresh)
   @ApiDoc({
     summary: "토큰 갱신",
     operationId: "refreshTokens",
@@ -419,7 +418,7 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.FORGOT_PASSWORD })
+  @RateLimit(AuthRateLimits.forgotPassword)
   @ApiDoc({
     summary: "비밀번호 재설정 - 코드 요청",
     operationId: "forgotPassword",
@@ -457,7 +456,7 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("reset-password")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.RESET_PASSWORD })
+  @RateLimit(AuthRateLimits.resetPassword)
   @ApiDoc({
     summary: "비밀번호 재설정 - 새 비밀번호 설정",
     operationId: "resetPassword",
@@ -505,8 +504,7 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("password/setup-code")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.PASSWORD_SETUP_CODE })
+  @RateLimit(AuthRateLimits.requestPasswordSetupCode)
   @ApiDoc({
     summary: "비밀번호 최초 설정 - 코드 요청",
     operationId: "requestPasswordSetupCode",
@@ -546,8 +544,7 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("password")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.SET_PASSWORD })
+  @RateLimit(AuthRateLimits.setPassword)
   @ApiDoc({
     summary: "비밀번호 최초 설정 - 비밀번호 생성",
     operationId: "setPassword",
@@ -601,8 +598,7 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Patch("password")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.CHANGE_PASSWORD })
+  @RateLimit(AuthRateLimits.changePassword)
   @ApiDoc({
     summary: "비밀번호 변경",
     operationId: "changePassword",

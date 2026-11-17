@@ -107,6 +107,9 @@ ls:
     .dto.ts: kebab-case
     .dto.spec.ts: kebab-case
     .dto.integration-spec.ts: kebab-case
+    .rate-limits.ts: kebab-case
+    .rate-limits.spec.ts: kebab-case
+    .rate-limits.integration-spec.ts: kebab-case
     .guard.ts: kebab-case
     .guard.spec.ts: kebab-case
     .guard.integration-spec.ts: kebab-case

@@ -14,7 +14,6 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -37,7 +36,7 @@ import {
   ApiCreatedSuccessResponse,
   ApiSuccessResponse,
 } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
 import { AcceptFriendRequestUseCase } from "../../../application/use-cases/accept-friend-request.use-case.js";
 import { GetFriendResourceLimitUseCase } from "../../../application/use-cases/get-friend-resource-limit.use-case.js";
@@ -49,6 +48,7 @@ import { RemoveFriendUseCase } from "../../../application/use-cases/remove-frien
 import { ReorderFriendUseCase } from "../../../application/use-cases/reorder-friend.use-case.js";
 import { SearchUsersUseCase } from "../../../application/use-cases/search-users.use-case.js";
 import { SendFriendRequestByTagUseCase } from "../../../application/use-cases/send-friend-request-by-tag.use-case.js";
+import { FriendRateLimits } from "../friends.rate-limits.js";
 import {
   FOLLOW_RESPONSE_MESSAGES,
   toAcceptFriendRequestResponse,
@@ -89,8 +89,6 @@ import {
  *   자동 수락: A→B(PENDING) + B→A(POST) = A↔B(ACCEPTED)
  * ```
  */
-const FRIEND_REQUEST_THROTTLE = { ttl: 60_000, limit: 30 } as const;
-
 @ApiTags(SWAGGER_TAGS.FOLLOWS)
 @ApiBearerAuth()
 @Controller({ path: "follows", version: API_VERSION.V1 })
@@ -131,8 +129,7 @@ export class FollowController {
   }
 
   @Post(":userTag")
-  @ThrottleByUser()
-  @Throttle({ default: FRIEND_REQUEST_THROTTLE })
+  @RateLimit(FriendRateLimits.sendRequest)
   @ApiParam({
     name: "userTag",
     description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",

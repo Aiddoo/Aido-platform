@@ -11,7 +11,6 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -30,12 +29,13 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { BlockUserUseCase } from "../../../application/use-cases/block-user.use-case.js";
 import { GetBlockedUsersUseCase } from "../../../application/use-cases/get-blocked-users.use-case.js";
 import { UnblockUserUseCase } from "../../../application/use-cases/unblock-user.use-case.js";
+import { BlockRateLimits } from "../blocks.rate-limits.js";
 import {
   toBlockedUsersResponse,
   toBlockUserResponse,
@@ -53,8 +53,6 @@ const USER_ID_PARAM = {
   description: "대상 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
   example: "clz7x5p8k0005qz0z8z8z8z8z",
 } as const;
-
-const BLOCK_THROTTLE = { ttl: 60_000, limit: 30 } as const;
 
 @ApiTags(SWAGGER_TAGS.BLOCKS)
 @ApiBearerAuth()
@@ -76,8 +74,7 @@ export class UserBlockController {
 
   @Post(":userId")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @Throttle({ default: BLOCK_THROTTLE })
+  @RateLimit(BlockRateLimits.write)
   @ApiParam(USER_ID_PARAM)
   @ApiDoc({
     summary: "사용자 차단",
@@ -107,8 +104,7 @@ export class UserBlockController {
 
   @Delete(":userId")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @Throttle({ default: BLOCK_THROTTLE })
+  @RateLimit(BlockRateLimits.write)
   @ApiParam(USER_ID_PARAM)
   @ApiDoc({
     summary: "차단 해제",

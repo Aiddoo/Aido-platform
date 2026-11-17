@@ -16,7 +16,6 @@ import {
   Res,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 import type { Response } from "express";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
@@ -46,13 +45,13 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { invalidCredentials } from "../../../application/auth.errors.js";
+import { AuthRateLimits } from "../auth.rate-limits.js";
 import { buildOAuthErrorParams, toRequestMetadata } from "./auth-request.mapper.js";
-import { AUTH_THROTTLE } from "./auth-throttle.constants.js";
 import {
   AppleMobileCallbackDto,
   AuthTokensDto,
@@ -171,7 +170,7 @@ export class OAuthController {
   @Post("exchange")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
+  @RateLimit(AuthRateLimits.exchangeOAuthCode)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -220,7 +219,7 @@ export class OAuthController {
   @Post("apple/callback")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
+  @RateLimit(AuthRateLimits.exchangeOAuthCode)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -282,7 +281,7 @@ export class OAuthController {
   @Post("google/callback")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
+  @RateLimit(AuthRateLimits.exchangeOAuthCode)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -381,7 +380,7 @@ export class OAuthController {
   @Post("kakao/callback")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
+  @RateLimit(AuthRateLimits.exchangeOAuthCode)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -491,7 +490,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("naver/callback")
   @HttpCode(HttpStatus.OK)
   @Public()
-  @Throttle({ default: AUTH_THROTTLE.OAUTH_CODE })
+  @RateLimit(AuthRateLimits.exchangeOAuthCode)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -595,8 +594,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @Post("link")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.LINK_SOCIAL_ACCOUNT })
+  @RateLimit(AuthRateLimits.linkSocialAccount)
   @ApiDoc({
     summary: "소셜 계정 연동 (토큰 직접 전송)",
     operationId: "linkSocialAccount",
@@ -665,8 +663,7 @@ provider에 따라 필수 토큰이 다릅니다:
   @Post("link-with-code")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.LINK_SOCIAL_ACCOUNT })
+  @RateLimit(AuthRateLimits.linkSocialAccount)
   @ApiDoc({
     summary: "소셜 계정 연동 (교환 코드)",
     operationId: "linkWithExchangeCode",

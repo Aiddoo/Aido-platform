@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { VOICE_NOTE_THROTTLE } from "#api/modules/voice/voice-notes/presentation/http/v1/voice-note.controller";
+import { VoiceNoteRateLimits } from "#api/modules/voice/voice-notes/presentation/http/voice-notes.rate-limits";
 import { user } from "#api/platform/database/schema/index";
 import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -478,7 +478,7 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
         .set("Idempotency-Key", `throttle-${index}`)
         .send({ text: "x".repeat(maxCharacters.free + 1), durationSeconds: 1, segments: [] });
     const allowed = [];
-    for (let index = 0; index < VOICE_NOTE_THROTTLE.MINUTE.default.limit; index += 1) {
+    for (let index = 0; index < VoiceNoteRateLimits.digest.limitPerMinute; index += 1) {
       allowed.push(await digest(index));
     }
 
@@ -492,7 +492,7 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
     // Then
     expect(allowed.map((response) => response.status)).toEqual(allowed.map(() => 422));
     expect(allowed[0]?.headers["x-ratelimit-limit-daily"]).toBe(
-      String(VOICE_NOTE_THROTTLE.DAY_LIMIT),
+      String(VoiceNoteRateLimits.digest.limitPerDay),
     );
     expect(throttled.status).toBe(429);
     expect(quick.headers["x-ratelimit-limit-daily"]).toBeUndefined();

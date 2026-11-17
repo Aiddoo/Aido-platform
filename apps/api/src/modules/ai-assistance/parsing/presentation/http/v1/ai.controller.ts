@@ -7,7 +7,6 @@ import {
 } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import { RequireQuota } from "#api/modules/access/quotas/access-quotas.public";
 import {
@@ -31,13 +30,14 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";
 import { ParseMemoUseCase } from "../../../application/use-cases/parse-memo.use-case.js";
 import { ParseTodoUseCase } from "../../../application/use-cases/parse-todo.use-case.js";
 import { AiDataSharingConsentGuard } from "../guards/ai-data-sharing-consent.guard.js";
+import { ParsingRateLimits } from "../parsing.rate-limits.js";
 import { toAiUsageData } from "./ai-usage-response.mapper.js";
 import {
   AiUsageResponseDto,
@@ -51,11 +51,6 @@ const AI_PARSE_QUOTA_DOC = `AI 할 일 만들기는 글·말·메모로 만든 �
 - 무료: **월 ${PLAN_CATALOG.AI_PARSE.free}회**
 - 프리미엄: 넉넉하게 (월 ${PLAN_CATALOG.AI_PARSE.fairUse.premium.toLocaleString("ko-KR")}회까지, 넘으면 AI_1303)
 - 다시 채우는 때: KST 매월 1일 00:00`;
-
-const AI_PARSE_THROTTLE = {
-  TODO: { ttl: 60_000, limit: 20 },
-  MEMO: { ttl: 60_000, limit: 10 },
-} as const;
 
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
@@ -80,9 +75,7 @@ export class AiController {
   // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
   @RequireQuota("AI_PLAN")
   @UseGuards(AiDataSharingConsentGuard)
-  // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
-  @ThrottleByUser()
-  @Throttle({ default: AI_PARSE_THROTTLE.TODO })
+  @RateLimit(ParsingRateLimits.parseTodo)
   @ApiAppVersionHeader("설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.")
   @ApiHeader({
     name: "X-Timezone",
@@ -233,9 +226,7 @@ if (confirmed) {
   // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
   @RequireQuota("AI_PLAN")
   @UseGuards(AiDataSharingConsentGuard)
-  // 유료 사용자는 월 한도가 없어 IP를 바꿔 가며 유료 모델 호출을 반복하지 못하게 사용자 기준으로 센다.
-  @ThrottleByUser()
-  @Throttle({ default: AI_PARSE_THROTTLE.MEMO })
+  @RateLimit(ParsingRateLimits.parseMemo)
   @ApiAppVersionHeader("설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.")
   @ApiHeader({
     name: "X-Timezone",

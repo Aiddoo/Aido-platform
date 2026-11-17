@@ -1,7 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, HttpCode, HttpStatus, Put } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
@@ -15,20 +14,13 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { RegisterUserLocationUseCase } from "../../../application/use-cases/register-user-location.use-case.js";
+import { UserLocationRateLimits } from "../locations.rate-limits.js";
 import { toWeatherLocationResponse } from "./weather-location-response.mapper.js";
 import { UpdateWeatherLocationDto, WeatherLocationResponseDto } from "./weather-location.dto.js";
-
-/**
- * GET은 저장된 위치만 쓰므로 공급자 호출 수를 늘리는 수단은 위치 변경이다. 위치 변경을 더 좁게
- * 막아 먼 좌표를 바꿔 가며 새 칸을 만드는 요청이 WeatherKit 월 호출량을 쓰지 못하게 한다.
- */
-export const WEATHER_LOCATION_V2_THROTTLE = {
-  UPDATE: { default: { ttl: 60_000, limit: 10 } },
-} as const;
 
 @ApiTags(SWAGGER_TAGS.WEATHER_V2)
 @ApiBearerAuth()
@@ -42,8 +34,7 @@ export class WeatherLocationV2Controller {
 
   @Put("location")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @Throttle(WEATHER_LOCATION_V2_THROTTLE.UPDATE)
+  @RateLimit(UserLocationRateLimits.update)
   @ApiDoc({
     summary: "날씨 위치 등록",
     operationId: "updateWeatherLocation",

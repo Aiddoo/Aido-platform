@@ -2,7 +2,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import {
@@ -26,15 +25,14 @@ import {
 import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
+import { ActionPlanRateLimits } from "../action-plans.rate-limits.js";
 import { ApiPlanningLocaleHeaders } from "../plan-request.decorator.js";
 import { toQuickPlanResponse } from "./action-plan-response.mapper.js";
 import { QuickPlanRequestDto, QuickPlanResponseDto } from "./action-plan.dto.js";
-
-const QUICK_PLAN_THROTTLE = { default: { ttl: 60_000, limit: 20 } } as const;
 
 @ApiTags(SWAGGER_TAGS.VOICE)
 @ApiBearerAuth()
@@ -49,8 +47,7 @@ export class QuickPlanController {
   @Post()
   @HttpCode(HttpStatus.OK)
   @UseGuards(AiDataSharingConsentGuard)
-  @ThrottleByUser()
-  @Throttle(QUICK_PLAN_THROTTLE)
+  @RateLimit(ActionPlanRateLimits.createQuickPlan)
   @ApiIdempotencyKeyHeader()
   @ApiPlanningLocaleHeaders()
   @ApiDoc({
