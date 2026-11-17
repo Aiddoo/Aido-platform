@@ -3,8 +3,8 @@ import type { NotificationHistoryReaderPort } from "#api/modules/notification/no
 import type { NotificationInboxReaderPort } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
-import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -189,8 +189,8 @@ export function describeNotificationRepositoryContract(
 
         // When
         const results = [
-          first == null ? null : await repository.markAsRead(first),
-          stale == null ? null : await repository.markAsRead(stale),
+          first == null ? null : await repository.save(first),
+          stale == null ? null : await repository.save(stale),
         ];
 
         // Then

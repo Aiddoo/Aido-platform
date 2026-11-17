@@ -1,4 +1,3 @@
-import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
 import type {
   RetentionStageCandidateReadModel,
@@ -9,6 +8,7 @@ import {
   type RetentionVariant,
 } from "#api/modules/notification/retention-assignments/domain/retention-assignments.constants";
 import { isRetentionStageDue } from "#api/modules/notification/retention-assignments/domain/retention-stage.domain-service";
+import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import type { retentionExperimentStageStatus } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createRetentionStageCandidateFixture } from "#test/fixtures/notification/retention-stage-candidate.fixture";

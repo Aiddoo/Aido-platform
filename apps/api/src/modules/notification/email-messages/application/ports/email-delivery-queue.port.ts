@@ -1,4 +1,4 @@
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 
 const EMAIL_ENQUEUE_RESULTS = ["queued", "duplicate"] as const;
 export type EmailEnqueueResult = (typeof EMAIL_ENQUEUE_RESULTS)[number];

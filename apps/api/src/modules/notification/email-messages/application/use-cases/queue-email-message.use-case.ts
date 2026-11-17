@@ -1,9 +1,7 @@
-import { randomUUID } from "node:crypto";
-
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
 import { resolveEmailPriority } from "../../domain/email-budget.domain-service.js";
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 import { EmailMessageLogEvent } from "../email-messages.log-events.js";
 import type { EmailBudgetPort } from "../ports/email-budget.port.js";
 import type { EmailDeliveryQueuePort } from "../ports/email-delivery-queue.port.js";
@@ -44,7 +42,7 @@ export class QueueEmailMessageUseCase {
 
     try {
       const enqueued = await this.#dependencies.queue.enqueue({
-        deliveryId: message.idempotencyKey ?? randomUUID(),
+        deliveryId: message.id.value,
         message,
       });
       if (enqueued === "duplicate") {

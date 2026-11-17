@@ -4,7 +4,7 @@ import {
 } from "#test/doubles/notification/recording-email-delivery";
 import { StubEmailTemplateRenderer } from "#test/doubles/notification/stub-email-template-renderer";
 
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 import { QueueEmailMessageUseCase } from "./queue-email-message.use-case.js";
 import { SendCodeEmailUseCase } from "./send-code-email.use-case.js";
 

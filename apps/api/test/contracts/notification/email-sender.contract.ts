@@ -2,7 +2,8 @@ import type {
   EmailDeliveryOutcome,
   EmailSenderPort,
 } from "#api/modules/notification/email-messages/application/ports/email-sender.port";
-import { EmailMessage } from "#api/modules/notification/email-messages/domain/email-message.vo";
+import { EmailMessageId } from "#api/modules/notification/email-messages/domain/email-message-id.vo";
+import { EmailMessage } from "#api/modules/notification/email-messages/domain/email-message.aggregate";
 
 const EMAIL_CONTRACT_SCENARIOS = [
   "success",
@@ -67,13 +68,13 @@ export function describeEmailSenderContract(harness: EmailSenderContractHarness)
 
     const message = () =>
       EmailMessage.create({
+        id: EmailMessageId.reconstitute(IDEMPOTENCY_KEY),
         kind: "verification",
         to: RECIPIENT,
         subject: "인증 코드",
         html: `<p>${CODE}</p>`,
         text: CODE,
         tags: [{ name: "type", value: "verification" }],
-        idempotencyKey: IDEMPOTENCY_KEY,
       });
 
     it.each(harness.scenarios)(

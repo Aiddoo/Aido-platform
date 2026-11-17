@@ -1,13 +1,18 @@
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  PersistedBatchNotificationResultReadModel,
-  PublishPushDeliveryAfterCommitUseCase,
-  PushDeliveryMode,
-  PushDispatchStagingRepositoryPort,
+import {
+  type PersistedBatchNotificationResultReadModel,
+  type PublishPushDeliveryAfterCommitUseCase,
+  type PushDeliveryMode,
+  PushDispatch,
+  type PushDispatchRepositoryPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
+import { pushDispatchIdMissing } from "../notifications.errors.js";
 import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 
 /**
@@ -20,7 +25,8 @@ interface PersistBatchNotificationDependencies {
     NotificationRepositoryPort,
     "createManyNotificationsAndReturn"
   >;
-  readonly pushDispatchStaging: Pick<PushDispatchStagingRepositoryPort, "stageMany">;
+  readonly pushDispatchRepository: Pick<PushDispatchRepositoryPort, "nextIds" | "saveAll">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "register">;
 }
@@ -68,18 +74,29 @@ export class PersistBatchNotificationUseCase {
         .map((data) => forceKey(data.userId, data.type)),
     );
 
-    const staged = await this.#dependencies.pushDispatchStaging.stageMany(
-      created.map((notification) => ({
-        notificationId: notification.id,
-        userId: notification.userId,
+    const dispatchIds = await this.#dependencies.pushDispatchRepository.nextIds(created.length);
+    const now = this.#dependencies.clock.now();
+    const dispatches = created.map((notification, index) => {
+      const dispatchId = dispatchIds[index];
+      if (dispatchId == null) {
+        throw pushDispatchIdMissing();
+      }
+      return PushDispatch.create({
+        id: dispatchId,
+        notificationId: NotificationId.reconstitute(notification.id),
+        recipientId: UserId.reconstitute(notification.userId),
         purpose: notification.purpose,
         campaignKey: notification.campaignKey,
         variantId: notification.variantId,
         deliveryMode,
         force: forcedKeys.has(forceKey(notification.userId, notification.type)),
-      })),
+        now,
+      });
+    });
+    await this.#dependencies.pushDispatchRepository.saveAll(dispatches);
+    this.#dependencies.afterCommitPublisher.register(
+      dispatches.map((dispatch) => dispatch.id.value),
     );
-    this.#dependencies.afterCommitPublisher.register(staged.map((dispatch) => dispatch.dispatchId));
     return { count: created.length, sourceData: dataList };
   }
 }

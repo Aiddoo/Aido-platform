@@ -7,7 +7,7 @@ import { NotificationPushDevicesModule } from "../push-devices/notification-push
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
-import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
+import { PushDispatchRepositoryPort } from "./application/ports/push-dispatch.repository.port.js";
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
 import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
@@ -26,7 +26,7 @@ import { MarketingPushOptOutController } from "./presentation/http/v1/marketing-
   controllers: [MarketingPushOptOutController],
   providers: [...NOTIFICATION_PUSH_DISPATCHES_PROVIDERS, PushDeliveryQueueProcessor],
   exports: [
-    PushDispatchStagingRepositoryPort,
+    PushDispatchRepositoryPort,
     PublishPushDeliveryAfterCommitUseCase,
     ReconcilePushReceiptsUseCase,
     NotificationRecipientLocaleReaderPort,

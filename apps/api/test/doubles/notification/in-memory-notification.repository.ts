@@ -12,9 +12,9 @@ import type {
 } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
-import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
+import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import type { NotificationMilestone } from "#api/modules/notification/shared/domain/notification-milestone.constants";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -125,7 +125,7 @@ export class InMemoryNotificationRepository
     return created;
   }
 
-  async markAsRead(notification: Notification): Promise<boolean> {
+  async save(notification: Notification): Promise<boolean> {
     const { id, userId, isRead, readAt } = notification.toPrimitives();
     const row = this.#rows.get(id);
     if (row == null || row.userId !== userId || row.isRead) {

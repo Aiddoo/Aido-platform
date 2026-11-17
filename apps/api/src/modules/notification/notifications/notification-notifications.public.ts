@@ -3,7 +3,7 @@ export { NotificationHistoryReader } from "./application/notification-history.re
 export { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
 export { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 export { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
-export { NotificationId } from "./domain/notification-id.vo.js";
+export { NotificationId } from "../shared/domain/notification-id.vo.js";
 export type { CreateNotificationData } from "../shared/domain/notification-draft.constants.js";
 export { SCHEDULER_CAMPAIGN_KEY } from "../shared/domain/notification-campaign.constants.js";
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../shared/domain/transactional-notification-campaign.constants.js";

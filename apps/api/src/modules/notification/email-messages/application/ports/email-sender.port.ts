@@ -1,4 +1,4 @@
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 
 const EMAIL_QUOTA_SCOPES = ["daily", "monthly"] as const;
 export type EmailQuotaScope = (typeof EMAIL_QUOTA_SCOPES)[number];
@@ -28,7 +28,7 @@ export type EmailDeliveryOutcome =
 
 /**
  * 이메일 전송 포트(공급자 중립). 메시지 하나를 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다.
- * 재시도는 호출하는 큐(pg-boss)의 몫이라 어댑터는 다시 시도하지 않는다. 공급자 멱등 키는 message.idempotencyKey다.
+ * 재시도는 호출하는 큐(pg-boss)의 몫이라 어댑터는 다시 시도하지 않는다. 공급자 멱등 키는 발송 건 id(message.id)다.
  */
 export abstract class EmailSenderPort {
   abstract send(message: EmailMessage): Promise<EmailDeliveryOutcome>;

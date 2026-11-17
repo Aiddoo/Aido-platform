@@ -12,7 +12,7 @@ import { SendNotificationUseCase } from "#api/modules/notification/notifications
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
 import { SendMorningReminderUseCase } from "#api/modules/notification/reminders/application/use-cases/send-morning-reminder.use-case";
 import {
@@ -95,10 +95,8 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(transactionHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
-          transactionHost,
-          new DateClock(),
-        ),
+        pushDispatchRepository: new DrizzlePushDispatchRepository(transactionHost),
+        clock: new DateClock(),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -111,10 +109,8 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(transactionHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
-            transactionHost,
-            new DateClock(),
-          ),
+          pushDispatchRepository: new DrizzlePushDispatchRepository(transactionHost),
+          clock: new DateClock(),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),

@@ -20,7 +20,7 @@ import type {
   EmailTemplateRendererPort,
   RenderedEmail,
 } from "../../application/ports/email-template-renderer.port.js";
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 import { EmailTemplateMail } from "../templates/email-template.mail.js";
 import { EMAIL_PROVIDER_POLICY } from "./email-outbound.policy.js";
 import { EmailLogEvent } from "./email-provider.log-events.js";
@@ -124,7 +124,7 @@ export class NestMailEmailSenderAdapter
         text: message.text,
         retry: false,
         signal,
-        ...(message.idempotencyKey != null && { idempotencyKey: message.idempotencyKey }),
+        idempotencyKey: message.id.value,
       });
       return { status: "sent", providerMessageId: result.providerMessageId ?? null };
     } catch (error) {

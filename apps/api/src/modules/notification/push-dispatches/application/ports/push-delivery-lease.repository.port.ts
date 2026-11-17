@@ -9,6 +9,7 @@ export interface ReleasePushDeliveryInput {
 }
 
 // 작업 실패·lease 만료로 발송을 다시 PENDING으로 돌린다
+// 만료 회수는 수천 건일 수 있어 PushDispatch를 한 건씩 복원하지 않고 집합 SQL로 돌린다
 export abstract class PushDeliveryLeaseRepositoryPort {
   abstract release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number>;
   abstract recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number>;

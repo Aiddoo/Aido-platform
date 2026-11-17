@@ -27,6 +27,7 @@ export interface ReopenPushDeliveriesAfterClaimFailureInput {
 }
 
 // PushDispatch worker lease를 job ID와 증가 attempt로 fencing한다
+// 초당 수백 건을 옮기므로 PushDispatch를 한 건씩 복원하지 않고 집합 SQL 한 문장으로 바꾼다
 export abstract class PushDeliveryClaimRepositoryPort {
   // Outbox ownership과 dispatch lease를 함께 rollback할 수 있도록 UnitOfWorkPort.run 안에서 호출한다.
   abstract claim(input: ClaimPushDeliveriesInput): Promise<readonly ClaimedPushDelivery[]>;

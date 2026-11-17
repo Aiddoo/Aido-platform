@@ -9,3 +9,7 @@ export function emailRecipientMissing(): DomainException {
 export function emailSubjectMissing(): DomainException {
   return new DomainException(ErrorCode.SYS_0002, { field: "subject" });
 }
+
+export function emailKindUnknown(): DomainException {
+  return new DomainException(ErrorCode.SYS_0002, { field: "kind" });
+}

@@ -1,6 +1,8 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
+import { InMemoryPushDispatchRepository } from "#test/doubles/notification/in-memory-push-dispatch.repository";
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -9,17 +11,13 @@ import {
   NOTIFICATION_FIXTURE_USER_ID,
 } from "#test/fixtures/notification/notification.fixture";
 
-import {
-  PushDispatchStagingRepositoryPort,
-  type StagedPushDispatch,
-  type StagePushDispatchInput,
-} from "../../../push-dispatches/application/ports/push-dispatch-staging.repository.port.js";
 import type { PublishPushDeliveryAfterCommitUseCase } from "../../../push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
 import { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 const DISPATCH_ID = 41;
+const NOW = Temporal.Instant.from("2026-11-18T00:00:00Z");
 
 const data = createNotificationDraftFixture({
   type: "FOLLOW_NEW",
@@ -27,19 +25,6 @@ const data = createNotificationDraftFixture({
   body: "누군가 친구가 되고 싶어해요",
   friendId: "friend-1",
 });
-
-class RecordingPushDispatchStaging extends PushDispatchStagingRepositoryPort {
-  readonly staged: StagePushDispatchInput[] = [];
-
-  async stage(input: StagePushDispatchInput): Promise<StagedPushDispatch> {
-    this.staged.push(input);
-    return { dispatchId: DISPATCH_ID, notificationId: input.notificationId };
-  }
-
-  async stageMany(inputs: readonly StagePushDispatchInput[]): Promise<StagedPushDispatch[]> {
-    return Promise.all(inputs.map((input) => this.stage(input)));
-  }
-}
 
 class RecordingAfterCommitPublisher implements Pick<
   PublishPushDeliveryAfterCommitUseCase,
@@ -81,14 +66,15 @@ function setup(
 ) {
   const notificationRepository =
     overrides.notificationRepository ?? new InMemoryNotificationRepository();
-  const pushDispatchStaging = new RecordingPushDispatchStaging();
+  const pushDispatchRepository = new InMemoryPushDispatchRepository(DISPATCH_ID);
   const cache = overrides.cache ?? new PassThroughNotificationCache();
   const unitOfWork = new ImmediateUnitOfWork();
   const afterCommit = new RecordingAfterCommitRegistry();
   const afterCommitPublisher = new RecordingAfterCommitPublisher();
   const useCase = new SendNotificationUseCase({
     notificationRepository,
-    pushDispatchStaging,
+    pushDispatchRepository,
+    clock: new FixedClock(NOW),
     cache,
     unitOfWork,
     afterCommit,
@@ -98,7 +84,7 @@ function setup(
   return {
     useCase,
     notificationRepository,
-    pushDispatchStaging,
+    pushDispatchRepository,
     cache,
     unitOfWork,
     afterCommit,
@@ -109,7 +95,7 @@ function setup(
 describe("SendNotificationUseCase — 단건 알림 생성과 발송 준비", () => {
   it("unique 제약 위반이면 null을 반환하고 dispatch와 부수효과를 준비하지 않는다", async () => {
     // Given
-    const { useCase, pushDispatchStaging, afterCommit, afterCommitPublisher } = setup({
+    const { useCase, pushDispatchRepository, afterCommit, afterCommitPublisher } = setup({
       notificationRepository: new FailingNotificationRepository(new DuplicateNotificationError()),
     });
 
@@ -118,14 +104,14 @@ describe("SendNotificationUseCase — 단건 알림 생성과 발송 준비", ()
 
     // Then
     expect(result).toBeNull();
-    expect(pushDispatchStaging.staged).toEqual([]);
+    expect(pushDispatchRepository.dispatches).toEqual([]);
     expect(afterCommitPublisher.registeredDispatchIds).toEqual([]);
     expect(afterCommit.tasks).toHaveLength(0);
   });
 
   it("unique 위반이 아닌 오류는 재전파하고 dispatch를 준비하지 않는다", async () => {
     // Given
-    const { useCase, pushDispatchStaging, afterCommitPublisher } = setup({
+    const { useCase, pushDispatchRepository, afterCommitPublisher } = setup({
       notificationRepository: new FailingNotificationRepository(new Error("db down")),
     });
 
@@ -134,7 +120,7 @@ describe("SendNotificationUseCase — 단건 알림 생성과 발송 준비", ()
 
     // Then
     await expect(result).rejects.toThrow("db down");
-    expect(pushDispatchStaging.staged).toEqual([]);
+    expect(pushDispatchRepository.dispatches).toEqual([]);
     expect(afterCommitPublisher.registeredDispatchIds).toEqual([]);
   });
 
@@ -143,7 +129,7 @@ describe("SendNotificationUseCase — 단건 알림 생성과 발송 준비", ()
     const {
       useCase,
       notificationRepository,
-      pushDispatchStaging,
+      pushDispatchRepository,
       cache,
       unitOfWork,
       afterCommit,
@@ -161,15 +147,18 @@ describe("SendNotificationUseCase — 단건 알림 생성과 발송 준비", ()
     });
     expect(notificationRepository.rowOf(1)).toEqual(result);
     expect(unitOfWork.runCount).toBe(1);
-    expect(pushDispatchStaging.staged).toEqual([
+    expect(pushDispatchRepository.dispatches).toEqual([
       {
+        id: DISPATCH_ID,
         notificationId: 1,
-        userId: NOTIFICATION_FIXTURE_USER_ID,
+        recipientId: NOTIFICATION_FIXTURE_USER_ID,
         purpose: "TRANSACTIONAL",
-        campaignKey: undefined,
-        variantId: undefined,
+        campaignKey: null,
+        variantId: null,
+        status: "PENDING",
         deliveryMode: "SINGLE",
         force: false,
+        stagedAt: NOW,
       },
     ]);
     expect(afterCommitPublisher.registeredDispatchIds).toEqual([[DISPATCH_ID]]);

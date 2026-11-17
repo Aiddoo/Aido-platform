@@ -7,7 +7,8 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { EmailMessageAlerts } from "../../application/email-messages.alerts.js";
 import { DeliverEmailUseCase } from "../../application/use-cases/deliver-email.use-case.js";
-import { EmailMessage } from "../../domain/email-message.vo.js";
+import { EmailMessageId } from "../../domain/email-message-id.vo.js";
+import { EmailMessage } from "../../domain/email-message.aggregate.js";
 import {
   EMAIL_DELIVERY_QUEUE,
   type EmailDeliveryJob,
@@ -59,10 +60,10 @@ export class EmailDeliveryQueueProcessor implements OnModuleInit {
   #unseal(job: EmailDeliveryJob): EmailMessage | null {
     try {
       const sealed = SealedEmailSchema.parse(JSON.parse(this.#encryption.decrypt(job.sealed)));
-      return EmailMessage.reconstitute({
+      return EmailMessage.create({
         ...sealed,
+        id: EmailMessageId.reconstitute(job.deliveryId),
         kind: job.kind,
-        idempotencyKey: job.deliveryId,
       });
     } catch (error) {
       // 인증·문의 메일이 말없이 사라지므로 사람이 보게 한다. 키 교체나 롤백이 원인일 때가 많다.

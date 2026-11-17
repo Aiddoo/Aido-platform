@@ -7,7 +7,7 @@ import type {
   EmailDeliveryOutcome,
   EmailQuotaScope,
 } from "#api/modules/notification/email-messages/application/ports/email-sender.port";
-import type { EmailMessage } from "#api/modules/notification/email-messages/domain/email-message.vo";
+import type { EmailMessage } from "#api/modules/notification/email-messages/domain/email-message.aggregate";
 
 // 담은 발송 건을 남긴다. failure를 두면 큐가 내려간 것처럼 던지고, result로 중복 담기를 흉내 낸다
 export class RecordingEmailDeliveryQueue extends EmailDeliveryQueuePort {

@@ -16,9 +16,12 @@ import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/todo-comme
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
-import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch-staging.repository.port";
+import { PushDispatchRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-outbox.use-case";
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
+import { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -32,6 +35,7 @@ import {
   todoCommentLike,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import {
   createE2eApp,
@@ -44,6 +48,23 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 
 const AT = new Date("2027-01-08T12:00:00.000Z");
 let statements: string[] | null = null;
+
+// 없는 알림을 가리키게 바꿔 발송 저장에서 외래 키 오류를 낸다
+function withMissingNotification(dispatch: PushDispatch): PushDispatch {
+  const primitives = dispatch.toPrimitives();
+  return PushDispatch.create({
+    id: PushDispatchId.reconstitute(primitives.id),
+    notificationId: NotificationId.reconstitute(-1),
+    recipientId: UserId.reconstitute(primitives.recipientId),
+    purpose: primitives.purpose,
+    campaignKey: primitives.campaignKey,
+    variantId: primitives.variantId,
+    deliveryMode: primitives.deliveryMode,
+    force: primitives.force,
+    now: primitives.stagedAt,
+  });
+}
+
 describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
@@ -332,15 +353,15 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     }
     const transactionHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
-    const staging = context.module.get(PushDispatchStagingRepositoryPort);
-    const stage = staging.stage.bind(staging);
+    const dispatchRepository = context.module.get(PushDispatchRepositoryPort);
+    const saveAll = dispatchRepository.saveAll.bind(dispatchRepository);
     const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
     let stagedNotificationCount = 0;
     let stagingSqlState: string | undefined;
-    vi.spyOn(staging, "stage").mockImplementationOnce(async (input) => {
+    vi.spyOn(dispatchRepository, "saveAll").mockImplementationOnce(async (dispatches) => {
       stagedNotificationCount = await transactionHost.tx.$count(notification);
       try {
-        return await stage({ ...input, notificationId: -1 });
+        return await saveAll(dispatches.map(withMissingNotification));
       } catch (error) {
         stagingSqlState = databaseSqlState(error);
         throw error;

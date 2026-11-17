@@ -10,7 +10,7 @@ import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
   PublishPushDeliveryAfterCommitUseCase,
-  PushDispatchStagingRepositoryPort,
+  PushDispatchRepositoryPort,
   PushQuietHoursReaderPort,
 } from "../push-dispatches/notification-push-dispatches.public.js";
 import { UserNotificationSettingsPort } from "../shared/application/ports/user-notification-settings.port.js";
@@ -103,7 +103,8 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
-    pushDispatchStaging: PushDispatchStagingRepositoryPort,
+    pushDispatchRepository: PushDispatchRepositoryPort,
+    clock: ClockPort,
     cache: NotificationCachePort,
     unitOfWork: UnitOfWorkPort,
     afterCommit: AfterCommitTaskRegistryPort,
@@ -120,7 +121,8 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(PersistBatchNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
-    pushDispatchStaging: PushDispatchStagingRepositoryPort,
+    pushDispatchRepository: PushDispatchRepositoryPort,
+    clock: ClockPort,
     unitOfWork: UnitOfWorkPort,
     afterCommitPublisher: PublishPushDeliveryAfterCommitUseCase,
   }),

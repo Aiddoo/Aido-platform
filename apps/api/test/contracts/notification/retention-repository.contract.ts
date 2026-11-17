@@ -1,6 +1,6 @@
-import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
 import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 

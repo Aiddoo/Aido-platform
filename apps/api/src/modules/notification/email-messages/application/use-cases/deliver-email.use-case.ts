@@ -1,7 +1,7 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 
-import type { EmailMessage } from "../../domain/email-message.vo.js";
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 import { EmailMessageAlerts } from "../email-messages.alerts.js";
 import { emailDeliveryRetryable } from "../email-messages.errors.js";
 import { EmailMessageLogEvent } from "../email-messages.log-events.js";

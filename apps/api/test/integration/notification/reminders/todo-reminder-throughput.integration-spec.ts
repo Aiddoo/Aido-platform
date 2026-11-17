@@ -11,7 +11,7 @@ import { SendBatchNotificationUseCase } from "#api/modules/notification/notifica
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
+import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
 import { todoReminderJobKey } from "#api/modules/notification/reminders/infrastructure/jobs/reminder-job-keys.constants";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
@@ -80,10 +80,8 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
     const publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(transactionHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
-          transactionHost,
-          new DateClock(),
-        ),
+        pushDispatchRepository: new DrizzlePushDispatchRepository(transactionHost),
+        clock: new DateClock(),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -96,10 +94,8 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
           notificationRepository: new DrizzleNotificationRepository(transactionHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
-            transactionHost,
-            new DateClock(),
-          ),
+          pushDispatchRepository: new DrizzlePushDispatchRepository(transactionHost),
+          clock: new DateClock(),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),

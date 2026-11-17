@@ -45,7 +45,7 @@ describe("toEmailMessage — 렌더된 본문을 발송 메시지로 조립", ()
     expect(message.subject).toBe("제목");
     expect(message.text).toBe("본문");
     expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
-    expect(message.idempotencyKey).toBeUndefined();
+    expect(message.id.value).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("같은 문의 내용은 같은 멱등 키라 재전송이 운영자에게 두 번 가지 않는다", () => {
@@ -63,9 +63,9 @@ describe("toEmailMessage — 렌더된 본문을 발송 메시지로 조립", ()
     );
 
     // Then
-    expect(first.idempotencyKey).toBe(retry.idempotencyKey);
-    expect(first.idempotencyKey).not.toBe(other.idempotencyKey);
-    expect(first.idempotencyKey).not.toContain("앱이 멈춰요");
+    expect(first.id.value).toBe(retry.id.value);
+    expect(first.id.value).not.toBe(other.id.value);
+    expect(first.id.value).not.toContain("앱이 멈춰요");
   });
 
   it("문의는 type·category 태그를 함께 붙인다", () => {
@@ -84,7 +84,7 @@ describe("toEmailMessage — 렌더된 본문을 발송 메시지로 조립", ()
     const message = toEmailMessage("support@test.com", { kind: "user-report", data: report }, body);
 
     // Then
-    expect(message.idempotencyKey).toBe("user-report:clz7x5p8k0123qz0z8z8z8z8z");
+    expect(message.id.value).toBe("user-report:clz7x5p8k0123qz0z8z8z8z8z");
     expect(message.tags).toEqual([
       { name: "type", value: "user-report" },
       { name: "reason", value: "HARASSMENT" },

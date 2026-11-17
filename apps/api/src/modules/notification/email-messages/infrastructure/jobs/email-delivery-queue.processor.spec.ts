@@ -57,7 +57,7 @@ describe("EmailDeliveryQueueProcessor", () => {
     // Then
     const [delivery] = deliverEmail.inputs;
     expect(delivery?.deliveryId).toBe("delivery-1");
-    expect(delivery?.message.idempotencyKey).toBe("delivery-1");
+    expect(delivery?.message.id.value).toBe("delivery-1");
     expect(delivery?.message.to).toBe(EMAIL_MESSAGE_FIXTURE_RECIPIENT);
     expect(delivery?.message.text).toContain(EMAIL_MESSAGE_FIXTURE_CODE);
     expect(delivery?.message.kind).toBe("verification");

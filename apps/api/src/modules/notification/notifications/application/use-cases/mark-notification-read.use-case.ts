@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotificationId } from "../../domain/notification-id.vo.js";
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { notificationNotFound } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import type { NotificationCachePort } from "../ports/notification-cache.port.js";
@@ -14,7 +14,7 @@ export interface MarkNotificationReadCommand {
 }
 
 export interface MarkNotificationReadDependencies {
-  readonly notificationRepository: Pick<NotificationRepositoryPort, "findById" | "markAsRead">;
+  readonly notificationRepository: Pick<NotificationRepositoryPort, "findById" | "save">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug">;
@@ -40,7 +40,7 @@ export class MarkNotificationReadUseCase {
       return;
     }
 
-    const isChanged = await notificationRepository.markAsRead(notification);
+    const isChanged = await notificationRepository.save(notification);
     if (isChanged) {
       await cache.invalidateUnreadCount(userId);
     }

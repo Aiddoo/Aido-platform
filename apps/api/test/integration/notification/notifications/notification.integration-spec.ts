@@ -36,11 +36,13 @@ import {
 } from "#api/modules/notification/push-devices/notification-push-devices.providers";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push-dispatches/application/ports/marketing-push-opt-out-token.port";
 import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-job-enqueuer.port";
-import { PushDispatchStagingRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch-staging.repository.port";
+import { PushDispatchRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch.repository.port";
 import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { PushRateLimiterPort } from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
 import { OptOutMarketingPushUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/opt-out-marketing-push.use-case";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case";
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
+import type { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
 import {
   NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
@@ -142,18 +144,20 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       return userId.length > 0 ? UserId.reconstitute(userId) : null;
     }),
   };
-  const mockPushDispatchStaging = {
-    stage: vi.fn().mockImplementation(async (input: { notificationId: number }) => ({
-      dispatchId: input.notificationId,
-      notificationId: input.notificationId,
-    })),
-    stageMany: vi.fn().mockImplementation(async (inputs: readonly { notificationId: number }[]) =>
-      inputs.map((input) => ({
-        dispatchId: input.notificationId,
-        notificationId: input.notificationId,
-      })),
+  let lastDispatchId = 0;
+  const mockPushDispatchRepository = {
+    nextIds: vi.fn(async (count: number) =>
+      Array.from({ length: count }, () => {
+        lastDispatchId += 1;
+        return PushDispatchId.reconstitute(lastDispatchId);
+      }),
     ),
-  } satisfies PushDispatchStagingRepositoryPort;
+    saveAll: vi.fn(async (_dispatches: readonly PushDispatch[]) => {}),
+  } satisfies PushDispatchRepositoryPort;
+  const savedDispatches = () =>
+    mockPushDispatchRepository.saveAll.mock.calls.flatMap(([dispatches]) =>
+      dispatches.map((dispatch) => dispatch.toPrimitives()),
+    );
   const mockAfterCommitPublisher = { register: vi.fn() };
   const mockUserId = "user-notification-123";
   const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
@@ -174,8 +178,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         ...NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
         ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
         {
-          provide: PushDispatchStagingRepositoryPort,
-          useValue: mockPushDispatchStaging,
+          provide: PushDispatchRepositoryPort,
+          useValue: mockPushDispatchRepository,
         },
         // 이 테스트는 outbox 발행을 막아 두고 알림 행·토큰 저장만 본다
         { provide: PushDeliveryJobEnqueuerPort, useValue: { enqueueDeliveries: vi.fn() } },
@@ -942,16 +946,20 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       });
       const saved = await client.query.notification.findMany({ where: { userId: mockUserId } });
       expect(saved).toHaveLength(1);
-      expect(mockPushDispatchStaging.stage).toHaveBeenCalledWith({
-        notificationId: saved[0]?.id,
-        userId: mockUserId,
-        purpose: "TRANSACTIONAL",
-        campaignKey: undefined,
-        variantId: undefined,
-        deliveryMode: "SINGLE",
-        force: false,
-      });
-      expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([saved[0]?.id]);
+      const dispatches = savedDispatches();
+      expect(dispatches).toEqual([
+        expect.objectContaining({
+          notificationId: saved[0]?.id,
+          recipientId: mockUserId,
+          purpose: "TRANSACTIONAL",
+          campaignKey: null,
+          variantId: null,
+          status: "PENDING",
+          deliveryMode: "SINGLE",
+          force: false,
+        }),
+      ]);
+      expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([dispatches[0]?.id]);
     });
 
     it("푸시 토큰이 없어도 알림을 생성해야 함", async () => {
@@ -1094,9 +1102,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // Then
       expect(result.count).toBe(1);
-      expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
+      expect(savedDispatches()).toEqual([
         expect.objectContaining({
-          userId: mockUserId,
+          recipientId: mockUserId,
           deliveryMode: "BATCH",
           force: true,
         }),
@@ -1128,14 +1136,14 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
       // Then
       expect(result.count).toBe(2);
-      expect(mockPushDispatchStaging.stageMany).toHaveBeenCalledWith([
+      expect(savedDispatches()).toEqual([
         expect.objectContaining({
-          userId: mockUserId,
+          recipientId: mockUserId,
           deliveryMode: "BATCH",
           force: true,
         }),
         expect.objectContaining({
-          userId: mockUserId,
+          recipientId: mockUserId,
           deliveryMode: "BATCH",
           force: false,
         }),

@@ -1,15 +1,18 @@
 import { type AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  PublishPushDeliveryAfterCommitUseCase,
-  PushDispatchStagingRepositoryPort,
+import {
+  type PublishPushDeliveryAfterCommitUseCase,
+  PushDispatch,
+  type PushDispatchRepositoryPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
-import { DuplicateNotificationError } from "../notifications.errors.js";
+import { DuplicateNotificationError, pushDispatchIdMissing } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationCachePort } from "../ports/notification-cache.port.js";
 import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
@@ -18,7 +21,8 @@ import type { InboxNotificationReadModel } from "../read-models/inbox-notificati
 /** 알림과 일반 push outbox를 한 transaction으로 만들고 부수효과는 commit 뒤 시작한다. */
 interface SendNotificationDependencies {
   readonly notificationRepository: Pick<NotificationRepositoryPort, "createNotification">;
-  readonly pushDispatchStaging: Pick<PushDispatchStagingRepositoryPort, "stage">;
+  readonly pushDispatchRepository: Pick<PushDispatchRepositoryPort, "nextIds" | "saveAll">;
+  readonly clock: Pick<ClockPort, "now">;
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
@@ -39,17 +43,24 @@ export class SendNotificationUseCase {
         const notification = await this.#dependencies.notificationRepository.createNotification(
           withNotificationCopyRevision(data),
         );
-        const staged = await this.#dependencies.pushDispatchStaging.stage({
-          notificationId: notification.id,
-          userId: data.userId,
+        const [dispatchId] = await this.#dependencies.pushDispatchRepository.nextIds(1);
+        if (dispatchId == null) {
+          throw pushDispatchIdMissing();
+        }
+        const dispatch = PushDispatch.create({
+          id: dispatchId,
+          notificationId: NotificationId.reconstitute(notification.id),
+          recipientId: UserId.reconstitute(data.userId),
           purpose: data.purpose ?? "TRANSACTIONAL",
-          campaignKey: data.campaignKey,
-          variantId: data.variantId,
+          campaignKey: data.campaignKey ?? null,
+          variantId: data.variantId ?? null,
           deliveryMode: "SINGLE",
           force: false,
+          now: this.#dependencies.clock.now(),
         });
+        await this.#dependencies.pushDispatchRepository.saveAll([dispatch]);
         this.#registerUnreadCountInvalidation(data.userId);
-        this.#dependencies.afterCommitPublisher.register([staged.dispatchId]);
+        this.#dependencies.afterCommitPublisher.register([dispatch.id.value]);
         return notification;
       });
     } catch (error) {

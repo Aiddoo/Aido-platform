@@ -1,5 +1,6 @@
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
-import { InMemoryPushDispatchStagingRepository } from "#test/doubles/notification/in-memory-push-dispatch-staging.repository";
+import { InMemoryPushDispatchRepository } from "#test/doubles/notification/in-memory-push-dispatch.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
@@ -20,16 +21,23 @@ class RecordingAfterCommitPublisher implements Pick<
 
 function createPersistUseCase() {
   const notificationRepository = new InMemoryNotificationRepository();
-  const pushDispatchStaging = new InMemoryPushDispatchStagingRepository(101);
+  const pushDispatchRepository = new InMemoryPushDispatchRepository(101);
   const unitOfWork = new ImmediateUnitOfWork();
   const afterCommitPublisher = new RecordingAfterCommitPublisher();
   const useCase = new PersistBatchNotificationUseCase({
     notificationRepository,
-    pushDispatchStaging,
+    pushDispatchRepository,
+    clock: new FixedClock(Temporal.Instant.from("2026-11-18T00:00:00Z")),
     unitOfWork,
     afterCommitPublisher,
   });
-  return { notificationRepository, pushDispatchStaging, unitOfWork, afterCommitPublisher, useCase };
+  return {
+    notificationRepository,
+    pushDispatchRepository,
+    unitOfWork,
+    afterCommitPublisher,
+    useCase,
+  };
 }
 
 describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 저장", () => {
@@ -37,7 +45,7 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
     // Given
     const {
       notificationRepository,
-      pushDispatchStaging,
+      pushDispatchRepository,
       unitOfWork,
       afterCommitPublisher,
       useCase,
@@ -63,18 +71,18 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
       expect.objectContaining({ id: 1, userId: "u1", type: "SYSTEM_NOTICE", title: "공지" }),
       expect.objectContaining({ id: 2, userId: "u2", type: "FOLLOW_NEW", title: "t" }),
     ]);
-    expect(pushDispatchStaging.dispatches).toEqual([
+    expect(pushDispatchRepository.dispatches).toEqual([
       expect.objectContaining({
-        dispatchId: 101,
+        id: 101,
         notificationId: 1,
-        userId: "u1",
+        recipientId: "u1",
         deliveryMode: "BATCH",
         force: true,
       }),
       expect.objectContaining({
-        dispatchId: 102,
+        id: 102,
         notificationId: 2,
-        userId: "u2",
+        recipientId: "u2",
         deliveryMode: "BATCH",
         force: false,
       }),
@@ -84,7 +92,7 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
 
   it("SINGLE을 고르면 알림은 한 번에 넣고 dispatch는 단건 발송 경로로 둔다", async () => {
     // Given
-    const { pushDispatchStaging, unitOfWork, useCase } = createPersistUseCase();
+    const { pushDispatchRepository, unitOfWork, useCase } = createPersistUseCase();
     const dataList = [
       createNotificationDraftFixture({ userId: "u1", type: "TODO_REMINDER" }),
       createNotificationDraftFixture({ userId: "u2", type: "TODO_REMINDER" }),
@@ -95,7 +103,7 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
 
     // Then
     expect(unitOfWork.runCount).toBe(1);
-    expect(pushDispatchStaging.dispatches.map((dispatch) => dispatch.deliveryMode)).toEqual([
+    expect(pushDispatchRepository.dispatches.map((dispatch) => dispatch.deliveryMode)).toEqual([
       "SINGLE",
       "SINGLE",
     ]);
@@ -105,7 +113,7 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
     // Given
     const {
       notificationRepository,
-      pushDispatchStaging,
+      pushDispatchRepository,
       unitOfWork,
       afterCommitPublisher,
       useCase,
@@ -118,7 +126,7 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
     expect(result).toEqual({ count: 0, sourceData: [] });
     expect(unitOfWork.runCount).toBe(0);
     expect(notificationRepository.size).toBe(0);
-    expect(pushDispatchStaging.dispatches).toEqual([]);
+    expect(pushDispatchRepository.dispatches).toEqual([]);
     expect(afterCommitPublisher.registered).toEqual([]);
   });
 });

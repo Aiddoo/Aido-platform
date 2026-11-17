@@ -1,7 +1,7 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
-import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 
 export interface ListInboxNotificationsQuery {

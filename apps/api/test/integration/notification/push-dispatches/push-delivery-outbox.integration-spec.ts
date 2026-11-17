@@ -3,7 +3,6 @@ import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -16,6 +15,7 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
+import { createPushDispatchStaging } from "#test/integration/helpers/push-dispatch-staging";
 import { createTransactionHost } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -87,8 +87,8 @@ function trackSettlement<T>(promise: Promise<T>): TrackedPromise<T> {
 
 type DatabaseTransactionHost = TransactionHost<DrizzleTransactionalAdapter>;
 
-function staging(host: DatabaseTransactionHost): DrizzlePushDispatchStagingRepository {
-  return new DrizzlePushDispatchStagingRepository(host, new DateClock());
+function staging(host: DatabaseTransactionHost): ReturnType<typeof createPushDispatchStaging> {
+  return createPushDispatchStaging(host, new DateClock());
 }
 
 function outbox(host: DatabaseTransactionHost): DrizzlePushDeliveryOutboxRepository {

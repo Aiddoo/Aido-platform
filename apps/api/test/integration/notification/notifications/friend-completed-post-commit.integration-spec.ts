@@ -12,15 +12,14 @@ import { FinalizeBatchNotificationUseCase } from "#api/modules/notification/noti
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
 import { SendFriendCompletionNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/send-friend-completion-notifications.use-case";
 import { NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
-import {
-  PushDispatchStagingRepositoryPort,
-  type StagePushDispatchInput,
-} from "#api/modules/notification/push-dispatches/application/ports/push-dispatch-staging.repository.port";
+import { PushDispatchRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case";
 import {
   PublishPushDeliveryOutboxUseCase,
   type PublishPushDeliveryOutboxInput,
 } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-outbox.use-case";
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
+import type { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
 import { NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS } from "#api/modules/notification/push-dispatches/notification-push-dispatches.providers";
 import { UserNotificationSettingsPort } from "#api/modules/notification/shared/application/ports/user-notification-settings.port";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
@@ -125,7 +124,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
   let persistBatch: PersistBatchNotificationUseCase;
   let unitOfWork: AfterCommitAwareUnitOfWork;
   let repository: EventRecordingNotificationRepository;
-  let staging: Mocked<PushDispatchStagingRepositoryPort>;
+  let staging: Mocked<PushDispatchRepositoryPort>;
   let executePublish: MockedFunction<(input: PublishPushDeliveryOutboxInput) => Promise<number>>;
   let events: string[];
 
@@ -137,16 +136,14 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
       events.push("persist-notifications");
     });
     staging = vi.mocked({
-      stage: vi.fn(),
-      stageMany: vi.fn(async (inputs: readonly StagePushDispatchInput[]) => {
+      nextIds: vi.fn(async (count: number) =>
+        Array.from({ length: count }, (_, index) => PushDispatchId.reconstitute(201 + index)),
+      ),
+      saveAll: vi.fn(async (_dispatches: readonly PushDispatch[]) => {
         expect(unitOfWork.storage.getStore()?.closed).toBe(false);
         events.push("stage-dispatch-outbox");
-        return inputs.map((input, index) => ({
-          dispatchId: 201 + index,
-          notificationId: input.notificationId,
-        }));
       }),
-    } satisfies PushDispatchStagingRepositoryPort);
+    } satisfies PushDispatchRepositoryPort);
     const cache = new EventRecordingNotificationCache(events);
     const notificationDeduplication: NotificationDeduplicationPort = {
       recordNotifiedUsers: vi.fn(async () => {
@@ -185,7 +182,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
         ]),
         { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
         { provide: NotificationRepositoryPort, useValue: repository },
-        { provide: PushDispatchStagingRepositoryPort, useValue: staging },
+        { provide: PushDispatchRepositoryPort, useValue: staging },
         { provide: NotificationCachePort, useValue: cache },
         { provide: NotificationDeduplicationPort, useValue: notificationDeduplication },
         { provide: UserNotificationSettingsPort, useValue: userSettings },
@@ -210,16 +207,20 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
 
     // Then
     expect(unitOfWork.rootTransactionCount).toBe(1);
-    expect(staging.stageMany).toHaveBeenCalledWith([
+    expect(
+      staging.saveAll.mock.calls.flatMap(([dispatches]) =>
+        dispatches.map((dispatch) => dispatch.toPrimitives()),
+      ),
+    ).toEqual([
       expect.objectContaining({
         notificationId: 1,
-        userId: "user-1",
+        recipientId: "user-1",
         deliveryMode: "BATCH",
         force: false,
       }),
       expect.objectContaining({
         notificationId: 2,
-        userId: "user-2",
+        recipientId: "user-2",
         deliveryMode: "BATCH",
         force: false,
       }),
@@ -262,7 +263,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
     expect(
       repository.rows().map(({ userId, type, friendId }) => ({ userId, type, friendId })),
     ).toEqual([{ userId: "user-1", type: "FRIEND_COMPLETED", friendId: "friend-1" }]);
-    expect(staging.stageMany).toHaveBeenCalledTimes(1);
+    expect(staging.saveAll).toHaveBeenCalledTimes(1);
     expect(executePublish).not.toHaveBeenCalled();
   });
 });

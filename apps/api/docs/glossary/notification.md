@@ -85,7 +85,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 | 용어          | 코드                                                                     | 뜻                                                                                                                               |
 | ------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| 발송          | `PushDispatch`(Aggregate, `push-dispatches` slice)                       | 알림 하나를 한 사용자의 기기들로 보내는 일. 알림과 같은 트랜잭션에서 만들고(`stage`·`stageMany`) 커밋 뒤 큐가 보낸다             |
+| 발송          | `PushDispatch`(Aggregate, `push-dispatches` slice)                       | 알림 하나를 한 사용자의 기기들로 보내는 일. 알림과 같은 트랜잭션에서 `create`·`saveAll`로 만들고 커밋 뒤 큐가 보낸다             |
 | 발송 아웃박스 | `PushDispatchOutbox`(엔티티)                                             | 발송을 `push-delivery.v1`에 올리는 행. 커밋 직후 빠른 경로와 매분 relay(`RelayPushDeliveryOutboxUseCase`)가 같은 행을 올린다     |
 | 발행 세대     | `publishAttempt`, `PushDeliveryPublication`                              | 아웃박스를 다시 열 때마다 느는 번호. 큐 작업 key와 담당 표시가 이 값을 쓴다                                                      |
 | 담당 표시     | `PushDeliveryFenceReadModel`                                             | 발송·세대·작업 id·시도 수. 늦게 끝난 worker가 새 세대의 결과를 덮지 못하게 한다. 외부 공급자까지 한 번 전달을 보장하지 않는다    |

@@ -1,8 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { NotificationId } from "../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
-import { NotificationId } from "./notification-id.vo.js";
 import { notificationAccessDenied } from "./notifications.errors.js";
 
 export interface NotificationPrimitives {

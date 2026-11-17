@@ -27,7 +27,7 @@ import { PushDeliveryFinalizationRepositoryPort } from "./application/ports/push
 import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-job-enqueuer.port.js";
 import { PushDeliveryLeaseRepositoryPort } from "./application/ports/push-delivery-lease.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
-import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
+import { PushDispatchRepositoryPort } from "./application/ports/push-dispatch.repository.port.js";
 import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
 import { PushProviderPort } from "./application/ports/push-provider.port.js";
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
@@ -54,7 +54,7 @@ import { DrizzlePushDeliveryClaimRepository } from "./infrastructure/persistence
 import { DrizzlePushDeliveryFinalizationRepository } from "./infrastructure/persistence/drizzle-push-delivery-finalization.repository.js";
 import { DrizzlePushDeliveryLeaseRepository } from "./infrastructure/persistence/drizzle-push-delivery-lease.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/drizzle-push-delivery-outbox.repository.js";
-import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/drizzle-push-dispatch-staging.repository.js";
+import { DrizzlePushDispatchRepository } from "./infrastructure/persistence/drizzle-push-dispatch.repository.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizzle-push-receipt.repository.js";
 import { notificationPushDispatchesConfig } from "./notification-push-dispatches.config.js";
 
@@ -83,7 +83,7 @@ const pushRateLimiterProvider = {
 // 테스트 하네스가 공급자·한도기만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다
 export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
   { provide: PushReceiptRepositoryPort, useClass: DrizzlePushReceiptRepository },
-  { provide: PushDispatchStagingRepositoryPort, useClass: DrizzlePushDispatchStagingRepository },
+  { provide: PushDispatchRepositoryPort, useClass: DrizzlePushDispatchRepository },
   { provide: PushDeliveryOutboxRepositoryPort, useClass: DrizzlePushDeliveryOutboxRepository },
   { provide: PushDeliveryClaimRepositoryPort, useClass: DrizzlePushDeliveryClaimRepository },
   {

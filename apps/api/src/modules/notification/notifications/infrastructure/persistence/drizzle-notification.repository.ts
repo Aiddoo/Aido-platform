@@ -12,11 +12,11 @@ import { notification, pushDispatch } from "#api/platform/database/schema/index"
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import { duplicateNotification } from "../../application/notifications.errors.js";
 import { type NotificationRepositoryPort } from "../../application/ports/notification.repository.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
-import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
 import { toNotification } from "./notification-row.mapper.js";
 
@@ -100,7 +100,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     }
   }
 
-  async markAsRead(target: Notification): Promise<boolean> {
+  async save(target: Notification): Promise<boolean> {
     const { id, userId, isRead, readAt } = target.toPrimitives();
     const updated = await this.#db
       .update(notification)

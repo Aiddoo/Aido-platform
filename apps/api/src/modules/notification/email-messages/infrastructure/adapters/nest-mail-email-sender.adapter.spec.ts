@@ -9,6 +9,7 @@ import {
 } from "@nestjs/mail";
 import { vi } from "vitest";
 
+import { EmailMessageId } from "#api/modules/notification/email-messages/domain/email-message-id.vo";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   describeEmailSenderContract,
@@ -135,21 +136,12 @@ describe("NestMailEmailSenderAdapter — ResendTransport 원문 fixture", () => 
     givenResponses([success]);
 
     // When
-    await adapter().send(createEmailMessageFixture({ idempotencyKey: "delivery-1" }));
+    await adapter().send(
+      createEmailMessageFixture({ id: EmailMessageId.reconstitute("delivery-1") }),
+    );
 
     // Then
     expect(http.request().headers.get("idempotency-key")).toBe("delivery-1");
-  });
-
-  it("멱등 키가 없으면 요청 헤더에도 싣지 않는다", async () => {
-    // Given
-    givenResponses([success]);
-
-    // When
-    await adapter().send(createEmailMessageFixture());
-
-    // Then
-    expect(http.request().headers.has("idempotency-key")).toBe(false);
   });
 
   it("모듈 재시도가 켜져 있어도 일시 장애를 한 번만 시도하고 다시 보내지 않는다", async () => {
