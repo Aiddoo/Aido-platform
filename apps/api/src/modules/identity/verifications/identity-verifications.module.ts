@@ -4,10 +4,10 @@ import { NotificationEmailMessagesModule } from "#api/modules/notification/email
 
 import { IdentityUsersQueriesModule } from "../users/identity-users-queries.module.js";
 import { VerificationRepositoryPort } from "./application/ports/verification.repository.port.js";
-import { CheckVerificationEmailCapUseCase } from "./application/use-cases/check-verification-email-cap.use-case.js";
 import { ConsumeVerificationCodeUseCase } from "./application/use-cases/consume-verification-code.use-case.js";
 import { IssueVerificationCodeUseCase } from "./application/use-cases/issue-verification-code.use-case.js";
-import { RecordVerificationEmailSentUseCase } from "./application/use-cases/record-verification-email-sent.use-case.js";
+import { ReleaseVerificationEmailCapUseCase } from "./application/use-cases/release-verification-email-cap.use-case.js";
+import { ReserveVerificationEmailCapUseCase } from "./application/use-cases/reserve-verification-email-cap.use-case.js";
 import { SendVerificationCodeUseCase } from "./application/use-cases/send-verification-code.use-case.js";
 import { IDENTITY_VERIFICATIONS_PROVIDERS } from "./identity-verifications.providers.js";
 import { VerificationController } from "./presentation/http/v1/verification.controller.js";
@@ -19,8 +19,8 @@ import { VerificationController } from "./presentation/http/v1/verification.cont
   controllers: [VerificationController],
   providers: [...IDENTITY_VERIFICATIONS_PROVIDERS],
   exports: [
-    CheckVerificationEmailCapUseCase,
-    RecordVerificationEmailSentUseCase,
+    ReserveVerificationEmailCapUseCase,
+    ReleaseVerificationEmailCapUseCase,
     IssueVerificationCodeUseCase,
     SendVerificationCodeUseCase,
     ConsumeVerificationCodeUseCase,

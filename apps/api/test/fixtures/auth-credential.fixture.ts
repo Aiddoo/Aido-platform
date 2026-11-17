@@ -17,10 +17,10 @@ import { CreateSessionUseCase } from "#api/modules/identity/sessions/application
 import { IssueLoginUseCase } from "#api/modules/identity/sessions/application/use-cases/issue-login.use-case";
 import { ProvisionUserUseCase } from "#api/modules/identity/users/application/use-cases/provision-user.use-case";
 import { RestoreAccountUseCase } from "#api/modules/identity/users/application/use-cases/restore-account.use-case";
-import { CheckVerificationEmailCapUseCase } from "#api/modules/identity/verifications/application/use-cases/check-verification-email-cap.use-case";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
 import { IssueVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/issue-verification-code.use-case";
-import { RecordVerificationEmailSentUseCase } from "#api/modules/identity/verifications/application/use-cases/record-verification-email-sent.use-case";
+import { ReleaseVerificationEmailCapUseCase } from "#api/modules/identity/verifications/application/use-cases/release-verification-email-cap.use-case";
+import { ReserveVerificationEmailCapUseCase } from "#api/modules/identity/verifications/application/use-cases/reserve-verification-email-cap.use-case";
 import { SendVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/send-verification-code.use-case";
 import type {
   DailySendUsage,
@@ -106,13 +106,12 @@ export function createAuthCredentialFixture(
   const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
   const sessionService = new CreateSessionUseCase({ sessionRepository, tokenService, clock });
   const verificationEmailCap = new InMemoryVerificationEmailCap();
-  const checkVerificationEmailCap = new CheckVerificationEmailCapUseCase({
+  const reserveVerificationEmailCap = new ReserveVerificationEmailCapUseCase({
     verificationEmailCap,
     clock,
   });
-  const recordVerificationEmailSent = new RecordVerificationEmailSentUseCase({
+  const releaseVerificationEmailCap = new ReleaseVerificationEmailCapUseCase({
     verificationEmailCap,
-    clock,
   });
   const issueVerificationCode = new IssueVerificationCodeUseCase({
     verificationRepository,
@@ -167,8 +166,9 @@ export function createAuthCredentialFixture(
     unitOfWork,
     clock,
     sessionService,
-    checkVerificationEmailCap,
-    recordVerificationEmailSent,
+    verificationEmailCap,
+    reserveVerificationEmailCap,
+    releaseVerificationEmailCap,
     issueVerificationCode,
     sendVerificationCode,
     consumeVerificationCode,

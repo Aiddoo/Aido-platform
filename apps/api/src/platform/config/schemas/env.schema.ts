@@ -18,7 +18,7 @@ import {
 } from "./feature-discovery.schema.js";
 import { type InviteConfig, inviteSchema, validateInviteConfig } from "./invite.schema.js";
 import { type JobConfig, jobSchema } from "./job.schema.js";
-import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
+import { type JwtConfig, jwtSchema, validateJwtLifetimes } from "./jwt.schema.js";
 import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
 import { type OAuthConfig, oauthSchema } from "./oauth.schema.js";
 import { validateProductionReadiness } from "./production-readiness.js";
@@ -55,7 +55,8 @@ export const envSchema = z
   .check(validateFeatureDiscoveryConfig)
   .check(validateInviteConfig)
   .check(validateWeatherKitConfig)
-  .check(validateCacheConfig);
+  .check(validateCacheConfig)
+  .check(validateJwtLifetimes);
 
 /**
  * 환경변수 전체 타입

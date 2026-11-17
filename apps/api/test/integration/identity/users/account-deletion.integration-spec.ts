@@ -86,8 +86,8 @@ import {
 } from "../../../../src/modules/identity/users/identity-users.providers.js";
 import {
   issueVerificationCodeProvider,
-  checkVerificationEmailCapProvider,
-  recordVerificationEmailSentProvider,
+  reserveVerificationEmailCapProvider,
+  releaseVerificationEmailCapProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../../../src/modules/identity/verifications/identity-verifications.providers.js";
@@ -154,8 +154,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         createSessionProvider,
         JwtTokenIssuerAdapter,
         issueVerificationCodeProvider,
-        checkVerificationEmailCapProvider,
-        recordVerificationEmailSentProvider,
+        reserveVerificationEmailCapProvider,
+        releaseVerificationEmailCapProvider,
         sendVerificationCodeProvider,
         consumeVerificationCodeProvider,
         {

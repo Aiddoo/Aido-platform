@@ -9,12 +9,11 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
-import type { CheckVerificationEmailCapUseCase } from "../../../verifications/application/use-cases/check-verification-email-cap.use-case.js";
 import type {
   IssueVerificationCodeUseCase,
   IssuedVerificationCode,
 } from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
-import type { RecordVerificationEmailSentUseCase } from "../../../verifications/application/use-cases/record-verification-email-sent.use-case.js";
+import type { ReserveVerificationEmailCapUseCase } from "../../../verifications/application/use-cases/reserve-verification-email-cap.use-case.js";
 import type { SendVerificationCodeUseCase } from "../../../verifications/application/use-cases/send-verification-code.use-case.js";
 import { verificationResendCooldown } from "../../../verifications/application/verifications.errors.js";
 import { resendCooldownRemainingSeconds } from "../../../verifications/domain/verification.domain-service.js";
@@ -32,8 +31,7 @@ export interface RequestPasswordResetCommand {
 
 interface RequestPasswordResetDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
-  readonly checkVerificationEmailCap: Pick<CheckVerificationEmailCapUseCase, "execute">;
-  readonly recordVerificationEmailSent: Pick<RecordVerificationEmailSentUseCase, "execute">;
+  readonly reserveVerificationEmailCap: Pick<ReserveVerificationEmailCapUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
@@ -60,10 +58,13 @@ export class RequestPasswordResetUseCase {
     if (cooldownStartedAt != null) {
       throw verificationResendCooldown(resendCooldownRemainingSeconds(cooldownStartedAt, now));
     }
-    await this.#dependencies.checkVerificationEmailCap.execute({ email });
-    await this.#dependencies.resetCooldown.start(email, now);
     // 대기를 지난 요청은 가입 여부와 상관없이 보냈다고 답하므로 모두 같은 수로 센다
-    await this.#dependencies.recordVerificationEmailSent.execute({ email });
+    await this.#dependencies.reserveVerificationEmailCap.execute({
+      purpose: "PASSWORD_RESET",
+      email,
+      sourceIp: ip,
+    });
+    await this.#dependencies.resetCooldown.start(email, now);
 
     const user = await this.#dependencies.userRepository.findByEmail(email);
 

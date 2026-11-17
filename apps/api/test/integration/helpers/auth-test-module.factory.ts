@@ -91,8 +91,8 @@ import {
 } from "../../../src/modules/identity/users/identity-users.providers.js";
 import {
   issueVerificationCodeProvider,
-  checkVerificationEmailCapProvider,
-  recordVerificationEmailSentProvider,
+  reserveVerificationEmailCapProvider,
+  releaseVerificationEmailCapProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../../src/modules/identity/verifications/identity-verifications.providers.js";
@@ -150,8 +150,8 @@ export async function createAuthTestModule(
       createSessionProvider,
       JwtTokenIssuerAdapter,
       issueVerificationCodeProvider,
-      checkVerificationEmailCapProvider,
-      recordVerificationEmailSentProvider,
+      reserveVerificationEmailCapProvider,
+      releaseVerificationEmailCapProvider,
       sendVerificationCodeProvider,
       consumeVerificationCodeProvider,
       {

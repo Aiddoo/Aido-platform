@@ -47,24 +47,39 @@ export function sentAtsInEmailCapWindow(
     .toSorted(Temporal.Instant.compare);
 }
 
+/** 한 기준(이메일·IP·사용자)으로 센 창 안팎의 보낸 시각과 그 기준의 상한 */
+export interface VerificationEmailCapCount {
+  readonly sentAts: readonly Temporal.Instant[];
+  readonly maxCodes: number;
+}
+
+function capRemainingSeconds(
+  count: VerificationEmailCapCount,
+  now: Temporal.Instant,
+): number | null {
+  const oldestBlocking = sentAtsInEmailCapWindow(count.sentAts, now).at(-count.maxCodes);
+  if (oldestBlocking == null) {
+    return null;
+  }
+  return resendRemainingSeconds(oldestBlocking.add(EMAIL_CAP_WINDOW), now);
+}
+
 /**
- * 창 안에 보낸 코드가 상한만큼 있으면 막는다. 남은 초는 다시 보내기 대기(60초)를 넘기지 않는다.
+ * 기준 하나라도 창 안에 보낸 코드가 상한만큼 있으면 막는다. 남은 초는 다시 보내기 대기(60초)를 넘기지 않는다.
  * 출시 앱은 이 값을 초 단위 타이머로, 문구는 "1분 뒤"로만 보여 줘 하루치 초를 그대로 주면 어색하다
  */
 export function judgeVerificationEmailCap(
-  sentAts: readonly Temporal.Instant[],
+  counts: readonly VerificationEmailCapCount[],
   now: Temporal.Instant,
 ): VerificationEmailCapJudgement {
-  const oldestBlocking = sentAtsInEmailCapWindow(sentAts, now).at(
-    -VERIFICATION_EMAIL_CAP.MAX_CODES,
-  );
-  if (oldestBlocking == null) {
+  const blockedSeconds = counts.flatMap((count) => capRemainingSeconds(count, now) ?? []);
+  if (blockedSeconds.length === 0) {
     return { ok: true };
   }
   return {
     ok: false,
     remainingSeconds: Math.min(
-      resendRemainingSeconds(oldestBlocking.add(EMAIL_CAP_WINDOW), now),
+      Math.max(...blockedSeconds),
       VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS,
     ),
   };

@@ -4,6 +4,10 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
 import { Public } from "#api/modules/identity/sessions/presentation/http/decorators/public.decorator";
+import {
+  CurrentRequestSource,
+  type RequestSource,
+} from "#api/modules/identity/sessions/presentation/http/decorators/request-source.decorator";
 import { ResendVerificationUseCase } from "#api/modules/identity/verifications/application/use-cases/resend-verification.use-case";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { ResponseLocale } from "#api/platform/http/decorators/locale.decorator";
@@ -56,9 +60,14 @@ export class VerificationController {
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
   async resendVerification(
     @Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto,
+    @CurrentRequestSource() source: RequestSource,
     @ResponseLocale() emailLocale: SupportedLocale,
   ) {
-    const result = await this.#resendVerificationUseCase.execute({ email: dto.email, emailLocale });
+    const result = await this.#resendVerificationUseCase.execute({
+      email: dto.email,
+      emailLocale,
+      sourceIp: source.ip,
+    });
     return result;
   }
 }

@@ -189,14 +189,15 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     expect(fixture.verificationRepository.all).toHaveLength(1);
   });
 
-  it("가입한 이메일과 없는 이메일은 24시간 상한에서 같은 VERIFY_0753과 남은 초를 받는다", async () => {
+  it("한 IP는 이메일마다 하루 5통이고 가입한 이메일과 없는 이메일은 같은 VERIFY_0753·남은 초를 받는다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
     const useCase = new RequestPasswordResetUseCase(fixture);
     const emails = [fixture.user.email, "nobody@example.com"];
-    for (let request = 0; request < 10; request += 1) {
+    const metadata = { ip: "192.0.2.10" };
+    for (let request = 0; request < 5; request += 1) {
       for (const email of emails) {
-        await useCase.execute({ email, emailLocale: "ko" });
+        await useCase.execute({ email, metadata, emailLocale: "ko" });
       }
       fixture.clock.advanceBy({ seconds: 61 });
     }
@@ -204,7 +205,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     // When
     const capped = await Promise.all(
       emails.map((email) =>
-        useCase.execute({ email, emailLocale: "ko" }).catch((error: unknown) => error),
+        useCase.execute({ email, metadata, emailLocale: "ko" }).catch((error: unknown) => error),
       ),
     );
 
@@ -215,10 +216,75 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
       expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
     ]);
-    expect(fixture.verificationRepository.all).toHaveLength(10);
+    expect(fixture.verificationRepository.all).toHaveLength(5);
   });
 
-  it("60초 대기 중 다시 누른 요청은 상한을 쓰지 않아 하루 10번째 코드도 받는다", async () => {
+  it("한 IP가 그 이메일 몫을 다 써도 다른 IP의 본인은 재설정 코드를 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    for (let request = 0; request < 5; request += 1) {
+      await useCase.execute({
+        email: fixture.user.email,
+        metadata: { ip: "203.0.113.66" },
+        emailLocale: "ko",
+      });
+      fixture.clock.advanceBy({ seconds: 61 });
+    }
+    fixture.emailSender.clear();
+
+    // When
+    const fromOwner = await useCase.execute({
+      email: fixture.user.email,
+      metadata: { ip: "192.0.2.10" },
+      emailLocale: "ko",
+    });
+
+    // Then
+    expect(fromOwner).toEqual({
+      message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.",
+    });
+    expect(fixture.emailSender.hasSentTo(fixture.user.email)).toBe(true);
+  });
+
+  it("이메일마다 하루 20통을 채우면 새 IP도 막고 가입 여부와 상관없이 같은 응답이다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    const emails = [fixture.user.email, "nobody@example.com"];
+    for (const ip of ["198.51.100.1", "198.51.100.2", "198.51.100.3", "198.51.100.4"]) {
+      for (let request = 0; request < 5; request += 1) {
+        for (const email of emails) {
+          await useCase.execute({ email, metadata: { ip }, emailLocale: "ko" });
+        }
+        fixture.clock.advanceBy({ seconds: 61 });
+      }
+    }
+
+    // When
+    const capped = await Promise.all(
+      emails.map((email) =>
+        useCase
+          .execute({ email, metadata: { ip: "192.0.2.10" }, emailLocale: "ko" })
+          .catch((error: unknown) => error),
+      ),
+    );
+
+    // Then
+    expect(capped).toEqual([
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 60 },
+      }),
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 60 },
+      }),
+    ]);
+    expect(fixture.verificationRepository.all).toHaveLength(20);
+  });
+
+  it("60초 대기 중 다시 누른 요청은 상한을 쓰지 않아 그 IP의 5번째 코드도 받는다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
     const useCase = new RequestPasswordResetUseCase(fixture);
@@ -226,7 +292,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       useCase
         .execute({ email: fixture.user.email, emailLocale: "ko" })
         .catch((error: unknown) => error);
-    for (let issued = 0; issued < 9; issued += 1) {
+    for (let issued = 0; issued < 4; issued += 1) {
       await request();
       for (let tap = 0; tap < 5; tap += 1) {
         fixture.clock.advanceBy({ seconds: 10 });
@@ -236,13 +302,13 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     }
 
     // When
-    const tenth = await request();
+    const fifth = await request();
     fixture.clock.advanceBy({ seconds: 61 });
-    const eleventh = await request();
+    const sixth = await request();
 
     // Then
-    expect(tenth).toEqual({ message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." });
-    expect(fixture.verificationRepository.all).toHaveLength(10);
-    expect(eleventh).toEqual(expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753 }));
+    expect(fifth).toEqual({ message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." });
+    expect(fixture.verificationRepository.all).toHaveLength(5);
+    expect(sixth).toEqual(expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753 }));
   });
 });

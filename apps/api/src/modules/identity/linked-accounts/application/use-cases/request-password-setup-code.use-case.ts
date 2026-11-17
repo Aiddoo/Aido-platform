@@ -5,9 +5,9 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { userNotFound } from "../../../users/application/users.errors.js";
-import type { CheckVerificationEmailCapUseCase } from "../../../verifications/application/use-cases/check-verification-email-cap.use-case.js";
 import type { IssueVerificationCodeUseCase } from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
-import type { RecordVerificationEmailSentUseCase } from "../../../verifications/application/use-cases/record-verification-email-sent.use-case.js";
+import type { ReleaseVerificationEmailCapUseCase } from "../../../verifications/application/use-cases/release-verification-email-cap.use-case.js";
+import type { ReserveVerificationEmailCapUseCase } from "../../../verifications/application/use-cases/reserve-verification-email-cap.use-case.js";
 import type { SendVerificationCodeUseCase } from "../../../verifications/application/use-cases/send-verification-code.use-case.js";
 import { passwordAlreadySet } from "../linked-accounts.errors.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
@@ -21,8 +21,8 @@ export interface RequestPasswordSetupCodeCommand {
 interface RequestPasswordSetupCodeDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
   readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
-  readonly checkVerificationEmailCap: Pick<CheckVerificationEmailCapUseCase, "execute">;
-  readonly recordVerificationEmailSent: Pick<RecordVerificationEmailSentUseCase, "execute">;
+  readonly reserveVerificationEmailCap: Pick<ReserveVerificationEmailCapUseCase, "execute">;
+  readonly releaseVerificationEmailCap: Pick<ReleaseVerificationEmailCapUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
 }
@@ -49,22 +49,33 @@ export class RequestPasswordSetupCodeUseCase {
       throw passwordAlreadySet(input.userId);
     }
 
-    await this.#dependencies.checkVerificationEmailCap.execute({ email: user.email });
-    const issued = await this.#dependencies.issueVerificationCode.execute({
+    const reservation = await this.#dependencies.reserveVerificationEmailCap.execute({
+      purpose: "PASSWORD_SETUP",
       userId: input.userId,
-      type: "PASSWORD_SETUP",
     });
-    await this.#dependencies.recordVerificationEmailSent.execute({ email: user.email });
-    await this.#dependencies.sendVerificationCode.execute({
-      userId: input.userId,
-      email: user.email,
-      code: issued.code,
-      type: "PASSWORD_SETUP",
-      emailLocale: input.emailLocale,
-    });
+    try {
+      await this.#sendSetupCode(user.email, input);
+    } catch (error) {
+      await this.#dependencies.releaseVerificationEmailCap.execute(reservation);
+      throw error;
+    }
 
     return {
       message: "비밀번호 설정 코드가 이메일로 발송되었습니다.",
     };
+  }
+
+  async #sendSetupCode(email: string, input: RequestPasswordSetupCodeCommand): Promise<void> {
+    const issued = await this.#dependencies.issueVerificationCode.execute({
+      userId: input.userId,
+      type: "PASSWORD_SETUP",
+    });
+    await this.#dependencies.sendVerificationCode.execute({
+      userId: input.userId,
+      email,
+      code: issued.code,
+      type: "PASSWORD_SETUP",
+      emailLocale: input.emailLocale,
+    });
   }
 }
