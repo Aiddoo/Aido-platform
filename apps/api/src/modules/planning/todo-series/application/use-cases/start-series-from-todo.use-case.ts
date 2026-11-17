@@ -1,6 +1,7 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -15,12 +16,7 @@ import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import {
-  invalidRepeatRule,
-  noRepeatDates,
-  todoNotFound,
-  todoSeriesLimitReached,
-} from "../todo-series.errors.js";
+import { invalidRepeatRule, noRepeatDates, todoSeriesLimitReached } from "../todo-series.errors.js";
 import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occurrences.use-case.js";
 import type { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
@@ -73,7 +69,7 @@ export class StartSeriesFromTodoUseCase {
     }
     const activeCount = await seriesRepository.countActiveByUserId(ownerId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
-      throw todoSeriesLimitReached(activeCount);
+      throw todoSeriesLimitReached(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER, activeCount);
     }
   }
 

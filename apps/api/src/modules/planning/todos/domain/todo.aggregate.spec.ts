@@ -402,6 +402,52 @@ describe("Todo — 할 일 애그리게잇", () => {
     });
   });
 
+  describe("끝낸 할 일의 시각 바꾸기", () => {
+    it("PATCH로 시각을 바꾸면 리마인더를 다시 잡지 않도록 순간 없는 TodoRescheduledEvent를 낸다", () => {
+      // Given
+      const todo = createTodoFixture({ completed: true, completedAt: NOW });
+
+      // When
+      todo.updateDetails({ scheduledLocalTime: "18:30" }, "UTC", LATER);
+
+      // Then
+      expect(todo.schedule.scheduledTime).toEqual(
+        Temporal.Instant.from("2026-11-10T18:30:00.000Z"),
+      );
+      const rescheduled = todo
+        .pullDomainEvents()
+        .find((event) => event instanceof TodoRescheduledEvent);
+      expect(rescheduled).toBeInstanceOf(TodoRescheduledEvent);
+      if (rescheduled instanceof TodoRescheduledEvent) {
+        expect(rescheduled.scheduledTime).toBeNull();
+      }
+    });
+
+    it("전용 일정 바꾸기도 끝낸 할 일이면 순간 없는 TodoRescheduledEvent를 낸다", () => {
+      // Given
+      const todo = createTodoFixture({ completed: true, completedAt: NOW });
+
+      // When
+      todo.reschedule(
+        TodoSchedule.create({
+          startDate: Temporal.PlainDate.from("2026-11-11"),
+          endDate: null,
+          scheduledLocalTime: "09:00",
+          isAllDay: false,
+          timezone: "UTC",
+        }),
+        LATER,
+      );
+
+      // Then
+      const [rescheduled] = todo.pullDomainEvents();
+      expect(rescheduled).toBeInstanceOf(TodoRescheduledEvent);
+      if (rescheduled instanceof TodoRescheduledEvent) {
+        expect(rescheduled.scheduledTime).toBeNull();
+      }
+    });
+  });
+
   describe("reschedule", () => {
     it("일정을 변경하고 scheduledTime을 담은 TodoRescheduledEvent를 적립한다", () => {
       // Given
@@ -529,6 +575,35 @@ describe("Todo — 할 일 애그리게잇", () => {
       // Then
       expect(changes).toEqual([false, false]);
       expect(todo.pullDomainEvents()).toHaveLength(0);
+    });
+  });
+
+  describe("hasChangedItems", () => {
+    it("할 일 칸만 바꾸면 false이고 하위 항목을 더하거나 고치면 true다", () => {
+      // Given
+      const completedOnly = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
+      const withItemChange = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
+
+      // When
+      completedOnly.complete("UTC", LATER);
+      completedOnly.rename(TodoTitle.create("새 제목"), LATER);
+      withItemChange.updateItem(TodoItemId.reconstitute(1), { completed: true }, LATER);
+
+      // Then
+      expect(completedOnly.hasChangedItems()).toBe(false);
+      expect(withItemChange.hasChangedItems()).toBe(true);
+    });
+
+    it("같은 값으로 고치거나 같은 순서로 다시 보내면 false다", () => {
+      // Given
+      const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
+
+      // When
+      todo.updateItem(TodoItemId.reconstitute(1), { title: "항목 1" }, LATER);
+      todo.reorderItems(itemIds(1, 2), LATER);
+
+      // Then
+      expect(todo.hasChangedItems()).toBe(false);
     });
   });
 

@@ -67,11 +67,7 @@ export class ReorderTodoUseCase {
         TodoLockKeys.todo(id),
         ...(targetTodoId == null ? [] : [TodoLockKeys.todo(targetTodoId)]),
       ]);
-      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
-      if (todo == null) {
-        throw todoNotFound(id);
-      }
-
+      let todo = await this.#lockTodo(todoId, ownerId);
       if (targetTodoId === id) {
         return;
       }
@@ -82,7 +78,8 @@ export class ReorderTodoUseCase {
       let sortOrder = await this.#planSortOrder(ownerId, todoId, target, position);
       if (sortOrder == null) {
         await this.#dependencies.todoRepository.renumberSortOrders(ownerId);
-        // 다시 매기면 기준 할 일의 값도 바뀐다
+        // 다시 매기면 옮길 할 일과 기준 할 일의 값도 바뀐다. 옛 값과 새 자리가 같아도 저장을 건너뛰지 않게 다시 읽는다
+        todo = await this.#lockTodo(todoId, ownerId);
         const renumberedTarget =
           targetTodoId == null ? null : await this.#findTarget(targetTodoId, ownerId);
         sortOrder = await this.#planSortOrder(ownerId, todoId, renumberedTarget, position);
@@ -109,6 +106,14 @@ export class ReorderTodoUseCase {
       throw todoNotFound(id);
     }
     return response;
+  }
+
+  async #lockTodo(todoId: TodoId, ownerId: UserId): Promise<Todo> {
+    const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
+    if (todo == null) {
+      throw todoNotFound(todoId.value);
+    }
+    return todo;
   }
 
   async #findTarget(targetTodoId: number, ownerId: UserId): Promise<Todo> {

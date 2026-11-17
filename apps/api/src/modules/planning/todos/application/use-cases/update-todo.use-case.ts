@@ -4,6 +4,7 @@ import {
   TodoCategoryLockKeys,
   TodoCategoryId,
 } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { todoNotRepeating } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -17,7 +18,7 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
-import { todoNotFound, todoNotRepeating } from "../todos.errors.js";
+import { todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";

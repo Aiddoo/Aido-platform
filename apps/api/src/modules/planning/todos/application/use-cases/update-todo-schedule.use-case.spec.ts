@@ -24,6 +24,37 @@ describe("할 일 일정 수정", () => {
     vi.restoreAllMocks();
   });
 
+  it("끝낸 할 일의 시각을 바꾸면 리마인더를 잡지 않고 지운다", async () => {
+    // Given
+    const record = fixture.records.get(1);
+    if (record != null) {
+      Object.assign(record, {
+        completed: true,
+        completedAt: Temporal.Instant.from("2026-05-15T01:00:00Z"),
+      });
+    }
+    // When
+    await useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+      schedule: {
+        startDate: Temporal.PlainDate.from("2026-05-16"),
+        endDate: null,
+        scheduledTime: "12:30",
+        isAllDay: false,
+      },
+    });
+    // Then
+    expect(fixture.records.get(1)?.scheduledTime).toEqual(
+      Temporal.Instant.from("2026-05-16T03:30:00Z"),
+    );
+    expect(fixture.todoReminder.scheduled).toEqual([]);
+    expect(fixture.todoReminder.cancelled).toEqual([1]);
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.rescheduled",
+    ]);
+  });
   it("시간 일정을 저장하고 리마인더 이벤트에 동일한 시간을 전달한다", async () => {
     // Given
     const scheduledTime = Temporal.Instant.from("2026-05-16T03:30:00Z");

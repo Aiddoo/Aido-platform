@@ -2,6 +2,7 @@ import type { TodoEditScope } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -11,6 +12,7 @@ import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-servic
 import type { TodoOccurrenceWriterPort } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
@@ -18,7 +20,7 @@ import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-chang
 import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import { todoNotFound, todoNotRepeating, todoSeriesNotFound } from "../todo-series.errors.js";
+import { todoNotRepeating, todoSeriesNotFound } from "../todo-series.errors.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
 
 export interface DeleteTodoOccurrencesInput {
@@ -56,8 +58,11 @@ export class DeleteTodoOccurrencesUseCase {
     const { todoRepository, seriesRepository, todoReminder, unitOfWork, mutationLock } =
       this.#dependencies;
     const deleted = await unitOfWork.run(async () => {
-      // 카테고리 삭제와 같은 순서(잠금 → 규칙 행)로 잡아 교착을 막는다
-      await mutationLock.acquire([TodoCategoryLockKeys.userCategories(userId)]);
+      // 이후 모두 고치기·카테고리 삭제와 같은 순서(카테고리 → 순서 잠금 → 규칙 행 → 할 일 행)로 잡아 교착을 막는다
+      await mutationLock.acquire([
+        TodoCategoryLockKeys.userCategories(userId),
+        TodoLockKeys.sortOrder(userId),
+      ]);
       const todo = await todoRepository.findByIdAndUserId(TodoId.reconstitute(todoId), ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);

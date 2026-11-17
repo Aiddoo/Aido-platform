@@ -1,13 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoEditScope } from "@aido/api/vocabulary";
+import type { TodoEditScope } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 import type { RepeatSpec } from "../domain/repeat-rule.vo.js";
-
-export function todoNotFound(todoId: number): ApplicationException {
-  return new ApplicationException(ErrorCode.TODO_0801, { todoId });
-}
 
 export function todoSeriesNotFound(seriesId: string): ApplicationException {
   return new ApplicationException(ErrorCode.TODO_0841, { seriesId });
@@ -30,16 +26,7 @@ export function noRepeatDates(startDate: string, repeat: RepeatSpec): Applicatio
   return new ApplicationException(ErrorCode.TODO_0843, { startDate, repeat });
 }
 
-export function todoSeriesLimitReached(activeCount: number): ApplicationException {
-  return new ApplicationException(ErrorCode.TODO_0842, {
-    limit: TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER,
-    activeCount,
-  });
-}
-
-export function categoryTodoLimitReached(activeCount: number): ApplicationException {
-  return new ApplicationException(ErrorCode.TODO_0811, {
-    activeCount,
-    maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-  });
+// limit은 경로마다 다르다. 옛 생성 경로는 옛 상한으로 센다
+export function todoSeriesLimitReached(limit: number, activeCount: number): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_0842, { limit, activeCount });
 }

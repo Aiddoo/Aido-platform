@@ -11,6 +11,10 @@ import {
   TodoSeriesId,
   TodoSeries,
 } from "#api/modules/planning/todo-series/planning-todo-series.public";
+import {
+  invalidRepeatRule,
+  todoSeriesLimitReached,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -22,12 +26,7 @@ import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js"
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type { CreatedOccurrence } from "../ports/todo-occurrence-writer.port.js";
 import type { TodoRepositoryPort } from "../ports/todo.repository.port.js";
-import {
-  categoryTodoLimitReached,
-  invalidRepeatRule,
-  recurringTodoCategoryLimitReached,
-  todoSeriesLimitReached,
-} from "../todos.errors.js";
+import { categoryTodoLimitReached, recurringTodoCategoryLimitReached } from "../todos.errors.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 /** 잠금 전에 검증을 마친 단일 할 일 입력. 제목·일정 오류가 소유·한도 오류보다 먼저다. */

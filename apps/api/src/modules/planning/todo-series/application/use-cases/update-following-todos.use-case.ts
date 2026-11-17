@@ -5,6 +5,10 @@ import {
   TodoCategoryLockKeys,
   TodoCategoryId,
 } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import {
+  categoryTodoLimitReached,
+  todoNotFound,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -37,8 +41,6 @@ import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries, TodoSeriesChanges } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import {
-  categoryTodoLimitReached,
-  todoNotFound,
   todoNotRepeating,
   todoSeriesLimitReached,
   todoSeriesNotFound,
@@ -347,7 +349,7 @@ export class UpdateFollowingTodosUseCase {
   async #assertSeriesLimit(userId: UserId): Promise<void> {
     const activeCount = await this.#dependencies.seriesRepository.countActiveByUserId(userId);
     if (activeCount >= TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER) {
-      throw todoSeriesLimitReached(activeCount);
+      throw todoSeriesLimitReached(TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER, activeCount);
     }
   }
 }

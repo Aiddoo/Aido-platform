@@ -14,6 +14,8 @@ export { TodoCompletionGroupReaderPort } from "./application/ports/todo-completi
 export { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 export { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 export { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";
+// 할 일 부재·카테고리 한도 거절은 todo-series도 같은 코드로 낸다
+export { categoryTodoLimitReached, todoNotFound } from "./application/todos.errors.js";
 export { todoChangedPayloadSchema } from "./application/todo-published-events.constants.js";
 export { TODO_CHANGE_EVENT_NAMES } from "./domain/todo-changed.event.js";
 export { TodoTimezoneRebaseQueueService } from "./infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter.js";

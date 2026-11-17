@@ -359,6 +359,32 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     );
   });
 
+  it("하위 항목이 있는 할 일을 완료하면 하위 항목 문장 없이 할 일 행만 저장한다", async () => {
+    // Given
+    const items = await createItems(3);
+    const statements: string[] = [];
+    recording = statements;
+
+    // When
+    const response = await context.module
+      .get(SetTodoCompletedUseCase)
+      .execute({ id: todoId, userId, completed: true, timezone: "UTC" });
+    recording = null;
+
+    // Then
+    expect(response.completed).toBe(true);
+    expect(
+      statements.filter(
+        (statement) =>
+          /"TodoItem"/.test(statement) && /^(insert|delete|update|with)/i.test(statement.trim()),
+      ),
+    ).toEqual([]);
+    expect(await readItems()).toEqual(items);
+    process.stdout.write(
+      `PLANNING_QUERY_AFTER_RESULT ${JSON.stringify({ scenario: "complete-with-3-items", ...statementSummary(statements), fixture: { items: 3 }, transactionControlsExcluded: true })}\n`,
+    );
+  });
+
   it("반복 부모 3개와 item 6개는 각 한 번의 bulk INSERT와 잠금 포함 7 SQL로 저장한다", async () => {
     // Given
     await client.delete(todo).where(eq(todo.id, todoId));

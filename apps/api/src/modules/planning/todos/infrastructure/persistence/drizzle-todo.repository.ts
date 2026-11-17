@@ -120,7 +120,9 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
       .where(eq(todo.id, id))
       .returning({ id: todo.id });
     requireRecord(updated);
-    await this.#saveItems(id, items);
+    if (entity.hasChangedItems()) {
+      await this.#saveItems(id, items);
+    }
   }
 
   async delete(entity: Todo): Promise<void> {

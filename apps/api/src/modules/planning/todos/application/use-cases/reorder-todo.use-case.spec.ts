@@ -140,4 +140,33 @@ describe("할 일 순서 변경", () => {
     await expect(otherUserResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect([...fixture.records.values()]).toEqual(before);
   });
+  it("다시 번호 매긴 뒤 새 자리가 옮길 할 일의 옛 값과 같아도 그 자리에 저장한다", async () => {
+    // Given
+    // 1000·1001 사이에 자리가 없어 다시 매기면 1024·2048·3072가 되고, 새 자리는 옛 값과 같은 1536이다
+    fixture.records.clear();
+    for (const [todoId, sortOrder] of [
+      [1, 1000],
+      [2, 1001],
+      [3, 1536],
+    ] as const) {
+      fixture.records.set(todoId, { ...createPlanningTodo(fixture.userId, todoId), sortOrder });
+    }
+    // When
+    const result = await useCase.execute({
+      id: 3,
+      userId: fixture.userId,
+      targetTodoId: 2,
+      position: "before",
+    });
+    // Then
+    const sorted = [...fixture.records.values()].sort(
+      (left, right) => left.sortOrder - right.sortOrder,
+    );
+    expect(sorted.map((todo) => [todo.id, todo.sortOrder])).toEqual([
+      [1, 1024],
+      [3, 1536],
+      [2, 2048],
+    ]);
+    expect(result.sortOrder).toBe(1536);
+  });
 });

@@ -1,4 +1,5 @@
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -12,12 +13,7 @@ import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
-import {
-  todoNotFound,
-  todoNotRepeating,
-  todoSeriesEnded,
-  todoSeriesNotFound,
-} from "../todo-series.errors.js";
+import { todoNotRepeating, todoSeriesEnded, todoSeriesNotFound } from "../todo-series.errors.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
 

@@ -4,6 +4,11 @@ export {
   type TodoSeriesReadModel,
   toTodoSeriesReadModel,
 } from "./application/read-models/todo-series.read-model.js";
+export {
+  invalidRepeatRule,
+  todoNotRepeating,
+  todoSeriesLimitReached,
+} from "./application/todo-series.errors.js";
 export { todoSeriesChangedPayloadSchema } from "./application/todo-series-published-events.constants.js";
 export { CatchUpTodoSeriesUseCase } from "./application/use-cases/catch-up-todo-series.use-case.js";
 export { DeleteTodoOccurrencesUseCase } from "./application/use-cases/delete-todo-occurrences.use-case.js";

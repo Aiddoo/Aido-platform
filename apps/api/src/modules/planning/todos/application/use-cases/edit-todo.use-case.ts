@@ -7,6 +7,7 @@ import type {
   UpdateFollowingTodosUseCase,
   RepeatSpec,
 } from "#api/modules/planning/todo-series/planning-todo-series.public";
+import { invalidRepeatRule } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -16,7 +17,7 @@ import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
 import type { TodoEvent } from "../../domain/todo.aggregate.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
-import { invalidRepeatRule, todoNotFound } from "../todos.errors.js";
+import { todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";

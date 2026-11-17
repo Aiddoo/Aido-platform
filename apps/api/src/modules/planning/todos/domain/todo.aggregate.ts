@@ -149,6 +149,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
   }
 
   #deleted = false;
+  #itemsChanged = false;
 
   get userId(): UserId {
     return this.props.userId;
@@ -192,6 +193,11 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
 
   get items(): readonly TodoItem[] {
     return this.props.items;
+  }
+
+  // 저장소가 하위 항목 문장을 건너뛸지 본다. 완료·제목·일정 같은 할 일 칸만 바뀐 저장은 항목을 다시 쓰지 않는다
+  hasChangedItems(): boolean {
+    return this.#itemsChanged;
   }
 
   isOccurrence(): boolean {
@@ -277,7 +283,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       const { scheduledTime } = this.props.schedule;
       // 되돌리기는 reopen이 새 시각으로 다시 잡는다. 시각만 바꾼 PATCH도 옛 시각의 예약이 남지 않게 한다
       if (!reopens && !isSameInstant(scheduledTime, previousScheduledTime)) {
-        this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
+        this.#raiseRescheduled(completedAfter);
       }
     }
     const completionChanged = this.#changeCompletion(patch.completed, timezone, now);
@@ -290,9 +296,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     }
     this.props.schedule = schedule;
     this.props.updatedAt = now;
-    this.raise(
-      new TodoRescheduledEvent(this.id.value, this.props.userId.value, schedule.scheduledTime),
-    );
+    this.#raiseRescheduled(this.props.completed);
     return true;
   }
 
@@ -368,6 +372,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       now: params.now,
     });
     this.props.items = [...items, item];
+    this.#itemsChanged = true;
     this.reopen(params.timezone, params.now);
     return item;
   }
@@ -383,12 +388,17 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     const renamed = title != null && item.rename(title, now);
     const completionChanged =
       change.completed != null && item.changeCompleted(change.completed, now);
-    return renamed || completionChanged;
+    if (!renamed && !completionChanged) {
+      return false;
+    }
+    this.#itemsChanged = true;
+    return true;
   }
 
   removeItem(itemId: TodoItemId): boolean {
     this.#requireItem(itemId);
     this.props.items = this.props.items.filter((item) => !item.id.equals(itemId));
+    this.#itemsChanged = true;
     return true;
   }
 
@@ -399,7 +409,11 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       this.#requireItem(itemId).moveTo(sortOrder, now),
     );
     this.props.items = itemIds.map((itemId) => this.#requireItem(itemId));
-    return moved.some(Boolean);
+    if (!moved.some(Boolean)) {
+      return false;
+    }
+    this.#itemsChanged = true;
+    return true;
   }
 
   toPrimitives(): TodoPrimitives {
@@ -430,6 +444,12 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       return false;
     }
     return completed ? this.complete(timezone, now) : this.reopen(timezone, now);
+  }
+
+  // 끝낸 할 일은 울릴 알림이 없어 순간 없이 낸다. 리마인더는 지우고 다른 Context에는 일정이 바뀐 사실만 간다
+  #raiseRescheduled(completed: boolean): void {
+    const scheduledTime = completed ? null : this.props.schedule.scheduledTime;
+    this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
   }
 
   #assertCompleteItemOrder(itemIds: readonly TodoItemId[]): void {
