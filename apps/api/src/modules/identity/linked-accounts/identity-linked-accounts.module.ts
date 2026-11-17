@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
+import { NotificationPushDevicesQueriesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
+
 import { IdentitySessionsQueriesModule } from "../sessions/identity-sessions-queries.module.js";
 import { IdentityUsersQueriesModule } from "../users/identity-users-queries.module.js";
 import { IdentityVerificationsModule } from "../verifications/identity-verifications.module.js";
@@ -29,6 +31,7 @@ import { SocialAccountLinkController } from "./presentation/http/v1/social-accou
     IdentityUsersQueriesModule,
     IdentitySessionsQueriesModule,
     IdentityVerificationsModule,
+    NotificationPushDevicesQueriesModule,
   ],
   controllers: [LinkedAccountController, SocialAccountLinkController, PasswordController],
   providers: [...IDENTITY_LINKED_ACCOUNTS_PROVIDERS],

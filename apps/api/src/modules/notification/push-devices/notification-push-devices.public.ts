@@ -1,4 +1,5 @@
 export { NotificationPushDevicesModule } from "./notification-push-devices.module.js";
+export { NotificationPushDevicesQueriesModule } from "./notification-push-devices-queries.module.js";
 export { ActivePushTokenReaderPort } from "./application/ports/active-push-token.reader.port.js";
 export { ClientAppVersionReaderPort } from "./application/ports/client-app-version.reader.port.js";
 export { PushDeviceRepositoryPort } from "./application/ports/push-device.repository.port.js";

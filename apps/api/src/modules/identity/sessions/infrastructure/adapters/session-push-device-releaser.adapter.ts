@@ -22,9 +22,7 @@ export class SessionPushDeviceReleaserAdapter implements SessionPushDeviceReleas
 
   async releaseSessions(sessionIds: readonly SessionId[]): Promise<void> {
     try {
-      await this.#sessionPushDeviceRelease.releaseSessions(
-        sessionIds.map((sessionId) => sessionId.value),
-      );
+      await this.#sessionPushDeviceRelease.releaseSessions(sessionIds);
     } catch (error) {
       this.#logger.warn({
         event: SessionLogEvent.SESSION_PUSH_DEVICE_RELEASE_FAILED,

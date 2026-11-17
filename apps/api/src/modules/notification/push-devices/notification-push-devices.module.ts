@@ -8,7 +8,6 @@ import { ClientAppVersionReaderPort } from "./application/ports/client-app-versi
 import { PushDeviceRepositoryPort } from "./application/ports/push-device.repository.port.js";
 import { PushTokenCachePort } from "./application/ports/push-token-cache.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-import { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
 import { NOTIFICATION_PUSH_DEVICES_PROVIDERS } from "./notification-push-devices.providers.js";
 import { PushDeviceController } from "./presentation/http/v1/push-device.controller.js";
 
@@ -24,7 +23,6 @@ import { PushDeviceController } from "./presentation/http/v1/push-device.control
     ClientAppVersionReaderPort,
     PushTokenCachePort,
     UserNotificationSettingsPort,
-    SessionPushDeviceReleasePort,
   ],
 })
 export class NotificationPushDevicesModule {}

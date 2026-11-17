@@ -22,6 +22,7 @@ import { LoginAttemptRepositoryPort } from "../sessions/application/ports/login-
 import { SessionCachePort } from "../sessions/application/ports/session-cache.port.js";
 import { SessionPushDeviceReleaserPort } from "../sessions/application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "../sessions/application/ports/session.repository.port.js";
+import { SessionPushDeviceReleaserAdapter } from "../sessions/infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { VerificationRepositoryPort } from "../verifications/application/ports/verification.repository.port.js";
 import { IssueVerificationCodeUseCase } from "../verifications/application/use-cases/issue-verification-code.use-case.js";
 import { SendVerificationCodeUseCase } from "../verifications/application/use-cases/send-verification-code.use-case.js";
@@ -174,6 +175,8 @@ const purgeExpiredIdentityRecordsProvider = provideUseCase(PurgeExpiredIdentityR
 });
 
 export const IDENTITY_USERS_PROVIDERS = [
+  // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
+  { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   { provide: UserProfileCachePort, useClass: UserProfileCacheAdapter },
   { provide: UserActivityWriterPort, useClass: DrizzleUserRepository },
   { provide: UserProvisioningSeederPort, useClass: UserProvisioningSeederAdapter },

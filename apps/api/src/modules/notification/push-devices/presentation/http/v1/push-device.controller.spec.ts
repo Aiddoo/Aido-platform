@@ -59,6 +59,7 @@ function setup() {
       pushTokenFormat: new StubPushTokenFormat(),
       userSettings: settings,
       cache,
+      preferenceCache: cache,
       clock,
       logger,
     }),

@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import type { PushDeviceRepositoryPort } from "../ports/push-device.repository.port.js";
@@ -44,16 +43,14 @@ export class UnregisterPushDeviceByTokenUseCase {
       });
       // 토큰이 유일해 지운 등록은 많아야 하나다
       for (const userId of released.userIds) {
-        await pushDeviceRepository.deletePushDevice(UserId.reconstitute(userId), deviceId);
+        await pushDeviceRepository.deletePushDevice(userId, deviceId);
       }
       return released;
     });
-    await Promise.all(
-      userIds.map((userId) => cache.invalidatePushTokens(UserId.reconstitute(userId))),
-    );
+    await Promise.all(userIds.map((userId) => cache.invalidatePushTokens(userId)));
     logger.log({
       event: PushDeviceLogEvent.PUSH_DEVICE_UNREGISTERED_BY_TOKEN,
-      userIds,
+      userIds: userIds.map((userId) => userId.value),
       tokenCount: userIds.length,
     });
   }

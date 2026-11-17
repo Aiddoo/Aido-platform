@@ -1,6 +1,7 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import {
   PushDeviceRepositoryPort,
   type SavedPushDeviceResult,
@@ -82,8 +83,9 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
   }
 
   async deletePushDevicesBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessions: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
+    const sessionIds = sessions.map((session) => session.value);
     return this.#deleteWhere(
       (device) => device.sessionId != null && sessionIds.includes(device.sessionId),
     );
@@ -112,11 +114,11 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
 
   async #deleteWhere(
     predicate: (device: PushDevice) => boolean,
-  ): Promise<{ readonly userIds: readonly string[] }> {
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = [...this.#devices.entries()].filter(([, device]) => predicate(device));
     for (const [key] of deleted) {
       this.#devices.delete(key);
     }
-    return { userIds: deleted.map(([, device]) => device.userId.value) };
+    return { userIds: deleted.map(([, device]) => device.userId) };
   }
 }

@@ -11,8 +11,7 @@ import { PushDeviceRepositoryPort } from "./application/ports/push-device.reposi
 import { PushTokenCachePort } from "./application/ports/push-token-cache.port.js";
 import { PushTokenFormatPort } from "./application/ports/push-token-format.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-import { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
-import { ReleaseSessionPushDevicesUseCase } from "./application/use-cases/release-session-push-devices.use-case.js";
+import { UserPreferenceCachePort } from "./application/ports/user-preference-cache.port.js";
 import { ReportPushDeviceUseCase } from "./application/use-cases/report-push-device.use-case.js";
 import { UnregisterPushDeviceByTokenUseCase } from "./application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
@@ -20,6 +19,7 @@ import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/ca
 import { ExpoPushTokenFormatAdapter } from "./infrastructure/adapters/expo-push-token-format.adapter.js";
 import { UserNotificationSettingsAdapter } from "./infrastructure/adapters/user-notification-settings.adapter.js";
 import { PushTokenCacheAdapter } from "./infrastructure/cache/push-token-cache.adapter.js";
+import { UserPreferenceCacheAdapter } from "./infrastructure/cache/user-preference-cache.adapter.js";
 import { DrizzleClientAppVersionReader } from "./infrastructure/persistence/drizzle-client-app-version.reader.js";
 import { DrizzlePushDeviceRepository } from "./infrastructure/persistence/drizzle-push-device.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle-push-token.repository.js";
@@ -37,6 +37,7 @@ const NOTIFICATION_PUSH_DEVICES_EXTERNAL_PROVIDERS = [
   { provide: PushTokenFormatPort, useClass: ExpoPushTokenFormatAdapter },
   // 같은 Context의 발송·알림 slice도 이 Module에서 identity 설정 ACL을 받는다
   { provide: UserNotificationSettingsPort, useClass: UserNotificationSettingsAdapter },
+  { provide: UserPreferenceCachePort, useClass: UserPreferenceCacheAdapter },
 ] satisfies Provider[];
 
 export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
@@ -46,6 +47,7 @@ export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
     pushTokenFormat: PushTokenFormatPort,
     userSettings: UserNotificationSettingsPort,
     cache: PushTokenCachePort,
+    preferenceCache: UserPreferenceCachePort,
     clock: ClockPort,
     logger: loggerFor(ReportPushDeviceUseCase),
   }),
@@ -63,14 +65,6 @@ export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
     cache: PushTokenCachePort,
     logger: loggerFor(UnregisterPushDeviceByTokenUseCase),
   }),
-  provideUseCase(ReleaseSessionPushDevicesUseCase, {
-    pushDeviceRepository: PushDeviceRepositoryPort,
-    pushTokenRepository: PushTokenRepositoryPort,
-    unitOfWork: UnitOfWorkPort,
-    cache: PushTokenCachePort,
-    logger: loggerFor(ReleaseSessionPushDevicesUseCase),
-  }),
-  { provide: SessionPushDeviceReleasePort, useExisting: ReleaseSessionPushDevicesUseCase },
 ] satisfies Provider[];
 
 export const NOTIFICATION_PUSH_DEVICES_PROVIDERS = [

@@ -3,6 +3,7 @@ import type { ConfigType } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { NotificationPushDevicesQueriesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 
 import { IdentityLinkedAccountsModule } from "../linked-accounts/identity-linked-accounts.module.js";
@@ -32,6 +33,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     IdentityLinkedAccountsModule,
     IdentityVerificationsModule,
     AccessFeatureGrantsQueriesModule,
+    NotificationPushDevicesQueriesModule,
   ],
   controllers: [LoginController, MobileOAuthLoginController, SessionController],
   providers: [...IDENTITY_SESSIONS_PROVIDERS, JwtAuthGuard, JwtRefreshGuard],

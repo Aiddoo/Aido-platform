@@ -1,3 +1,4 @@
+import { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { PushDeviceRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-device.repository.port";
 import type { PushTokenRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
 import { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
@@ -74,7 +75,7 @@ export function describePushDeviceRepositoryContract(
 
       // Then
       expect(taken).toEqual({
-        previousOwnerIds: [OTHER_USER_ID, OTHER_USER_ID],
+        previousOwnerIds: [UserId.reconstitute(OTHER_USER_ID), UserId.reconstitute(OTHER_USER_ID)],
         hasActiveToken: false,
       });
       expect(again).toEqual({ previousOwnerIds: [], hasActiveToken: false });
@@ -103,7 +104,10 @@ export function describePushDeviceRepositoryContract(
       const saved = await devices.save(createPushDeviceFixture({ token: movedToken }));
 
       // Then
-      expect(saved).toEqual({ previousOwnerIds: [OTHER_USER_ID], hasActiveToken: true });
+      expect(saved).toEqual({
+        previousOwnerIds: [UserId.reconstitute(OTHER_USER_ID)],
+        hasActiveToken: true,
+      });
       expect(await tokensOf(tokens, OTHER_USER_ID)).toEqual([]);
       expect(await tokensOf(tokens, USER_ID)).toEqual([
         { deviceId: "ios_device-a", token: movedToken, isActive: true },
@@ -267,10 +271,12 @@ export function describePushDeviceRepositoryContract(
       );
 
       // When
-      const released = await repository.deletePushDevicesBySessions([PUSH_FIXTURE_SESSION_ID]);
+      const released = await repository.deletePushDevicesBySessions([
+        SessionId.reconstitute(PUSH_FIXTURE_SESSION_ID),
+      ]);
 
       // Then
-      expect(released.userIds).toEqual([USER_ID, USER_ID]);
+      expect(released.userIds.map((userId) => userId.value)).toEqual([USER_ID, USER_ID]);
       expect(await statusesOf(repository, [USER_ID, OTHER_USER_ID])).toEqual({
         [OTHER_USER_ID]: ["GRANTED"],
       });

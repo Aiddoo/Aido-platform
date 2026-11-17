@@ -5,13 +5,14 @@ import { and, eq, gte, inArray, ne, or } from "drizzle-orm";
 import { groupBy, mapValues, omit } from "es-toolkit";
 import { match } from "ts-pattern";
 
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import {
   databaseConstraint,
   isUniqueConstraintViolation,
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushDevice, pushToken } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   PushDeviceRepositoryPort,
@@ -68,13 +69,18 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
   }
 
   async deletePushDevicesBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessionIds: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = await this.#db
       .delete(pushDevice)
-      .where(inArray(pushDevice.sessionId, [...sessionIds]))
+      .where(
+        inArray(
+          pushDevice.sessionId,
+          sessionIds.map((sessionId) => sessionId.value),
+        ),
+      )
       .returning({ userId: pushDevice.userId });
-    return { userIds: deleted.map((row) => row.userId) };
+    return { userIds: deleted.map((row) => UserId.reconstitute(row.userId)) };
   }
 
   async findPermissionStatusesByUsers(
@@ -107,7 +113,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
     return this.#transactionHost.tx;
   }
 
-  async #releaseDeviceHeldElsewhere(takeover: PushDeviceTakeover): Promise<string[]> {
+  async #releaseDeviceHeldElsewhere(takeover: PushDeviceTakeover): Promise<UserId[]> {
     const released = await this.#db
       .delete(pushDevice)
       .where(
@@ -117,11 +123,11 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
         ),
       )
       .returning({ userId: pushDevice.userId });
-    return released.map((row) => row.userId);
+    return released.map((row) => UserId.reconstitute(row.userId));
   }
 
   // 해제 요청(unregister)과 같은 삭제다. 그 등록의 발송 시도 기록은 FK cascade로 함께 지워진다
-  async #releaseTokenHeldElsewhere(takeover: PushDeviceTakeover): Promise<string[]> {
+  async #releaseTokenHeldElsewhere(takeover: PushDeviceTakeover): Promise<UserId[]> {
     const userId = takeover.userId.value;
     const deviceId = takeover.deviceId.value;
     const sameDeviceOfOtherUser = and(
@@ -142,7 +148,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
             ),
       )
       .returning({ userId: pushToken.userId });
-    return released.map((row) => row.userId);
+    return released.map((row) => UserId.reconstitute(row.userId));
   }
 
   async #registerToken(device: PushDevice, token: string): Promise<void> {

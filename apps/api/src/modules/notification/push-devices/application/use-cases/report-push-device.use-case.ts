@@ -19,6 +19,7 @@ import type {
 } from "../ports/push-device.repository.port.js";
 import type { PushTokenCachePort } from "../ports/push-token-cache.port.js";
 import type { PushTokenFormatPort } from "../ports/push-token-format.port.js";
+import type { UserPreferenceCachePort } from "../ports/user-preference-cache.port.js";
 import { invalidPushToken, PushTokenRegistrationConflictError } from "../push-devices.errors.js";
 import { PushDeviceLogEvent } from "../push-devices.log-events.js";
 
@@ -55,7 +56,8 @@ interface ReportPushDeviceDependencies {
     UserNotificationSettingsPort,
     "upsertPushLocale" | "upsertPushTimezone"
   >;
-  readonly cache: Pick<PushTokenCachePort, "invalidatePushTokens" | "invalidateUserPreference">;
+  readonly cache: Pick<PushTokenCachePort, "invalidatePushTokens">;
+  readonly preferenceCache: Pick<UserPreferenceCachePort, "invalidateUserPreference">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
@@ -96,7 +98,9 @@ export class ReportPushDeviceUseCase {
     });
 
     const { previousOwnerIds, hasActiveToken } = await this.#saveWithSingleRetry(device, command);
-    const previousUserIds = uniq(previousOwnerIds.filter((userId) => userId !== command.userId));
+    const previousUserIds = uniq(
+      previousOwnerIds.map((userId) => userId.value).filter((userId) => userId !== command.userId),
+    );
     await Promise.all(
       [command.userId, ...previousUserIds].map((userId) =>
         this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
@@ -163,7 +167,7 @@ export class ReportPushDeviceUseCase {
       await this.#dependencies.userSettings.upsertPushLocale(userId, command.locale);
     }
     if (timezone || command.locale) {
-      await this.#dependencies.cache.invalidateUserPreference(userId);
+      await this.#dependencies.preferenceCache.invalidateUserPreference(userId);
     }
   }
 }

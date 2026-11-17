@@ -36,6 +36,7 @@ import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 
 export const createSessionProvider = provideUseCase(CreateSessionUseCase, {
   sessionRepository: SessionRepositoryPort,
@@ -154,6 +155,8 @@ const revokeSessionProvider = provideUseCase(RevokeSessionUseCase, {
 
 export const IDENTITY_SESSIONS_PROVIDERS = [
   { provide: TokenIssuerPort, useClass: JwtTokenIssuerAdapter },
+  // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
+  { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   createSessionProvider,
   authenticateSessionProvider,
   listActiveSessionsProvider,

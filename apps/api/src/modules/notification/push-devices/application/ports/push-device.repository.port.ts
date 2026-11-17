@@ -1,5 +1,6 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
@@ -7,7 +8,7 @@ import type { PushDevice } from "../../domain/push-device.aggregate.js";
 
 export interface SavedPushDeviceResult {
   // 넘겨받은 등록의 이전 사용자 ID다. 같은 사용자가 여러 번 나올 수 있다
-  readonly previousOwnerIds: readonly string[];
+  readonly previousOwnerIds: readonly UserId[];
   readonly hasActiveToken: boolean;
 }
 
@@ -19,8 +20,8 @@ export abstract class PushDeviceRepositoryPort {
   abstract deletePushDevice(userId: UserId, deviceId: PushDeviceId): Promise<void>;
   abstract deleteAllPushDevicesByUser(userId: UserId): Promise<void>;
   abstract deletePushDevicesBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }>;
+    sessionIds: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }>;
   // reportedSince 이후 보고한 기기의 권한이고, 그런 기기가 없는 사용자는 Map에 없다
   abstract findPermissionStatusesByUsers(
     userIds: readonly UserId[],

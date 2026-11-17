@@ -1,3 +1,4 @@
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PushDeviceId } from "../../domain/push-device-id.vo.js";
@@ -21,11 +22,11 @@ export abstract class PushTokenRepositoryPort {
   abstract deletePushTokenByDeviceAndToken(data: {
     readonly deviceId: PushDeviceId;
     readonly token: string;
-  }): Promise<{ readonly userIds: readonly string[] }>;
+  }): Promise<{ readonly userIds: readonly UserId[] }>;
   // 지운 토큰마다 그 사용자 ID를 하나씩 돌려준다
   abstract deletePushTokensBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }>;
+    sessionIds: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }>;
   abstract deactivateInvalidTokens(
     tokens: string[],
     deactivatedAt: Temporal.Instant,

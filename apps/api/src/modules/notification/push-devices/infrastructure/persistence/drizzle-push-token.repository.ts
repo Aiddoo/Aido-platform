@@ -2,9 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindPushTokensParams,
@@ -71,22 +72,27 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
   async deletePushTokenByDeviceAndToken(data: {
     readonly deviceId: PushDeviceId;
     readonly token: string;
-  }): Promise<{ readonly userIds: readonly string[] }> {
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = await this.#db
       .delete(pushToken)
       .where(and(eq(pushToken.token, data.token), eq(pushToken.deviceId, data.deviceId.value)))
       .returning({ userId: pushToken.userId });
-    return { userIds: deleted.map((row) => row.userId) };
+    return { userIds: deleted.map((row) => UserId.reconstitute(row.userId)) };
   }
 
   async deletePushTokensBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessionIds: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = await this.#db
       .delete(pushToken)
-      .where(inArray(pushToken.sessionId, [...sessionIds]))
+      .where(
+        inArray(
+          pushToken.sessionId,
+          sessionIds.map((sessionId) => sessionId.value),
+        ),
+      )
       .returning({ userId: pushToken.userId });
-    return { userIds: deleted.map((row) => row.userId) };
+    return { userIds: deleted.map((row) => UserId.reconstitute(row.userId)) };
   }
 
   async deactivateInvalidTokens(

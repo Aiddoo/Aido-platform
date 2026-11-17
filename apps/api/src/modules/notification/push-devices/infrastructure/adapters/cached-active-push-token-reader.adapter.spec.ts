@@ -114,9 +114,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const { cache, pushTokenRepository, reader } = createFixture([
       { userId, token: "ExponentPushToken[before-commit]" },
     ]);
-    const invalidator = new PushTokenCacheAdapter(cache, {
-      invalidateUserPreference: async () => {},
-    });
+    const invalidator = new PushTokenCacheAdapter(cache);
     const findTokens = pushTokenRepository.findPushTokensByUser.bind(pushTokenRepository);
     vi.spyOn(pushTokenRepository, "findPushTokensByUser").mockImplementationOnce(async (query) => {
       const stale = await findTokens(query);

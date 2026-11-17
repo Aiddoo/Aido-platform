@@ -1,3 +1,4 @@
+import { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { PushDeviceRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-device.repository.port";
 import type { PushTokenRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
 import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
@@ -226,7 +227,7 @@ export function describePushTokenRepositoryContract(
       // Then
       expect([mismatched, matched, repeated]).toEqual([
         { userIds: [] },
-        { userIds: [USER_ID] },
+        { userIds: [UserId.reconstitute(USER_ID)] },
         { userIds: [] },
       ]);
       expect(await tokensOf(repository, USER_ID)).toEqual([
@@ -256,10 +257,12 @@ export function describePushTokenRepositoryContract(
       });
 
       // When
-      const released = await repository.deletePushTokensBySessions([PUSH_FIXTURE_SESSION_ID]);
+      const released = await repository.deletePushTokensBySessions([
+        SessionId.reconstitute(PUSH_FIXTURE_SESSION_ID),
+      ]);
 
       // Then
-      expect(released.userIds).toEqual([USER_ID, USER_ID]);
+      expect(released.userIds.map((userId) => userId.value)).toEqual([USER_ID, USER_ID]);
       expect(await tokensOf(repository, USER_ID)).toEqual([]);
       expect(await tokensOf(repository, OTHER_USER_ID)).toHaveLength(1);
     });

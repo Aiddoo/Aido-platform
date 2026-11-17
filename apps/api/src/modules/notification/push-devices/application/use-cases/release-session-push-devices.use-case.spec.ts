@@ -1,3 +1,4 @@
+import { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { RecordingPushTokenCache } from "#test/doubles/notification/recording-push-token-cache";
@@ -47,7 +48,7 @@ describe("ReleaseSessionPushDevicesUseCase — 폐기된 세션의 푸시 기기
     const { devices, tokens, cache, useCase } = setup();
 
     // When
-    await useCase.releaseSessions(["session-phone"]);
+    await useCase.execute({ sessionIds: [SessionId.reconstitute("session-phone")] });
 
     // Then
     expect(tokens.tokenOf("user-a", "ios_phone")).toBeUndefined();
@@ -64,7 +65,7 @@ describe("ReleaseSessionPushDevicesUseCase — 폐기된 세션의 푸시 기기
     const { tokens, devices, cache, useCase } = setup();
 
     // When
-    await useCase.releaseSessions([]);
+    await useCase.execute({ sessionIds: [] });
 
     // Then
     expect(tokens.size).toBe(3);

@@ -5,6 +5,7 @@ import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/acce
 import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { EngagementTodoCommentsModule } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationPushDevicesQueriesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { NotificationRetentionAssignmentsModule } from "#api/modules/notification/retention-assignments/notification-retention-assignments.public";
 import { OperationsAdminNoticesModule } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
@@ -48,6 +49,7 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
     BillingPremiumGrantsModule,
     EngagementTodoCommentsModule,
     NotificationNotificationsModule,
+    NotificationPushDevicesQueriesModule,
     SocialCheersModule,
     SocialNudgesModule,
   ],

@@ -51,7 +51,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       pushTokenFormat: { isValid: () => true },
       userSettings: { upsertPushLocale: async () => {}, upsertPushTimezone: async () => {} },
-      cache: { invalidatePushTokens: async () => {}, invalidateUserPreference: async () => {} },
+      cache: { invalidatePushTokens: async () => {} },
+      preferenceCache: { invalidateUserPreference: async () => {} },
       clock: new FixedClock(REPORTED_AT),
       logger: {
         log() {},

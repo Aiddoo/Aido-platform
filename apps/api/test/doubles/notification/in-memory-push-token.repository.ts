@@ -1,3 +1,4 @@
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import {
   type FindPushTokensParams,
   PushTokenRepositoryPort,
@@ -9,7 +10,7 @@ import type {
   PushDevice,
   PushDeviceTakeover,
 } from "#api/modules/notification/push-devices/domain/push-device.aggregate";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 interface StoredPushToken extends PushTokenReadModel {
   readonly sessionId: string | null;
@@ -60,7 +61,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return this.#find((row) => row.userId === userId && row.deviceId === deviceId)?.sessionId;
   }
 
-  releaseHeldElsewhere(data: PushDeviceTakeover): string[] {
+  releaseHeldElsewhere(data: PushDeviceTakeover): UserId[] {
     const userId = data.userId.value;
     const deviceId = data.deviceId.value;
     const released = [...this.#tokens.values()].filter((row) => {
@@ -71,7 +72,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
         (row.userId !== userId || row.deviceId !== deviceId);
       return sameDeviceOfOtherUser || sameTokenElsewhere;
     });
-    return this.#delete(released);
+    return this.#delete(released).map((owner) => UserId.reconstitute(owner));
   }
 
   register(device: PushDevice, token: string): void {
@@ -152,20 +153,21 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
   async deletePushTokenByDeviceAndToken(data: {
     readonly deviceId: PushDeviceId;
     readonly token: string;
-  }): Promise<{ readonly userIds: readonly string[] }> {
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = [...this.#tokens.values()].filter(
       (row) => row.token === data.token && row.deviceId === data.deviceId.value,
     );
-    return { userIds: this.#delete(deleted) };
+    return { userIds: this.#delete(deleted).map((userId) => UserId.reconstitute(userId)) };
   }
 
   async deletePushTokensBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessions: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
+    const sessionIds = sessions.map((session) => session.value);
     const deleted = [...this.#tokens.values()].filter(
       (row) => row.sessionId != null && sessionIds.includes(row.sessionId),
     );
-    return { userIds: this.#delete(deleted) };
+    return { userIds: this.#delete(deleted).map((userId) => UserId.reconstitute(userId)) };
   }
 
   async deactivateInvalidTokens(
