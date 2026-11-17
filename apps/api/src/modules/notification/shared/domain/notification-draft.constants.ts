@@ -109,7 +109,7 @@ export interface CreateNotificationData {
   variantId?: string | null;
 
   /**
-   * TODO_REMINDER의 회차(날짜 + 벽시계, 다시 알림은 누른 알림 id). 중복 방지 유니크 인덱스에만 쓰고
+   * TODO_REMINDER의 회차(날짜 + 벽시계, 다시 알림은 누른 알림 id). 중복 방지 유니크 인덱스와 푸시 보관 시간에 쓰고
    * 응답·푸시에 싣지 않는다.
    */
   reminderOccurrenceKey?: string | null;

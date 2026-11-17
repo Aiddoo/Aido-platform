@@ -257,6 +257,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
             cheerId: true,
             metadata: true,
             notificationDate: true,
+            reminderOccurrenceKey: true,
           },
         },
       },

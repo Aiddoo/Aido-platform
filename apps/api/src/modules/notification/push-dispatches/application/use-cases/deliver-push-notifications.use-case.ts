@@ -30,6 +30,7 @@ import {
   type BatchPushDeliveryRecipient,
   type EvaluatePushDeliveryEligibilityUseCase,
   type PushDeliveryEligibilityDecision,
+  type PushDeliverySettingsDecision,
 } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 export interface DeliverPushNotificationsCommand {
@@ -46,12 +47,32 @@ interface ClaimedBatchCandidate {
   readonly rateLimitDispatchId: number;
 }
 
-interface PartitionedEligibility<TCandidate> {
-  readonly eligible: TCandidate[];
+// 설정 판단을 통과해 받는 사람 기준 보관 시간이 정해진 후보다
+interface ExpiringBatchCandidate extends ClaimedBatchCandidate {
+  readonly ttlSeconds: number;
+}
+
+interface PartitionedEligibility<TCandidate, TEligible = TCandidate> {
+  readonly eligible: TEligible[];
   readonly skipped: Array<{
     readonly candidate: TCandidate;
     readonly reason: PushDispatchSkipReason;
   }>;
+}
+
+function partitionSettings(
+  decisions: readonly PushDeliverySettingsDecision<ClaimedBatchCandidate>[],
+): PartitionedEligibility<ClaimedBatchCandidate, ExpiringBatchCandidate> {
+  const eligible: ExpiringBatchCandidate[] = [];
+  const skipped: PartitionedEligibility<ClaimedBatchCandidate>["skipped"] = [];
+  for (const decision of decisions) {
+    if (decision.status === "eligible") {
+      eligible.push({ ...decision.candidate, ttlSeconds: decision.ttlSeconds });
+    } else {
+      skipped.push({ candidate: decision.candidate, reason: decision.reason });
+    }
+  }
+  return { eligible, skipped };
 }
 
 function partitionEligibility<TCandidate>(
@@ -155,6 +176,7 @@ export class DeliverPushNotificationsUseCase {
           storedLocale: recipient.preference.locale,
           lastRequestLocale: null,
         }),
+        ttlSeconds: eligibility.ttlSeconds,
       }),
     });
     if (delivery.status === "skipped") {
@@ -184,7 +206,7 @@ export class DeliverPushNotificationsUseCase {
       candidates.map((candidate) => candidate.data.userId),
     );
     this.#addBatchContexts(candidates, recipients, contexts);
-    const settings = partitionEligibility(
+    const settings = partitionSettings(
       this.#dependencies.eligibility.evaluateBatchSettings(candidates, recipients),
     );
     await this.#finalizeBatchSkipped(settings.skipped, contexts);
@@ -206,7 +228,7 @@ export class DeliverPushNotificationsUseCase {
       ...reserved.map((candidate) => candidate.dispatchId),
       ...newlyReserved,
     ]);
-    const eligible = candidates.filter((candidate) =>
+    const eligible = settings.eligible.filter((candidate) =>
       approvedDispatchIds.has(candidate.dispatchId),
     );
     if (eligible.length === 0) {
@@ -223,6 +245,7 @@ export class DeliverPushNotificationsUseCase {
             storedLocale: recipients.get(candidate.data.userId)?.preference?.locale ?? null,
             lastRequestLocale: null,
           }),
+          ttlSeconds: candidate.ttlSeconds,
         }),
       ),
     );

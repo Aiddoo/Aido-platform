@@ -4,6 +4,8 @@ import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-ma
 
 import { PushNotificationPayloadMapper } from "./push-notification-payload.mapper.js";
 
+const TTL_SECONDS = 1800;
+
 describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   let factory: PushNotificationPayloadMapper;
   let optOutTokens: StubMarketingPushOptOutToken;
@@ -36,6 +38,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       },
       notificationId: 101,
       dispatchId: 202,
+      ttlSeconds: TTL_SECONDS,
     });
 
     // Then
@@ -63,13 +66,13 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         variantId: "comment.created.ko.v1",
         dispatchId: 202,
       },
-      ttlSeconds: 43_200,
+      ttlSeconds: TTL_SECONDS,
       priority: "high",
     });
     expect(optOutTokens.issuedUserIds).toEqual([]);
   });
 
-  it("단건과 배치 모두 알림 종류의 보관 시간을 싣는다(할 일 리마인더 1시간, 재방문 안내 하루)", () => {
+  it("단건과 배치 모두 발송 판단이 정한 보관 시간과 high 우선순위를 싣는다", () => {
     // Given
     const reminder = {
       userId: "user-1",
@@ -77,21 +80,25 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       title: "곧 시작",
       body: "본문",
     } as const;
-    const winback = {
-      userId: "user-1",
-      type: "WINBACK",
-      title: "다시 와요",
-      body: "본문",
-    } as const;
 
     // When
-    const single = factory.createSingle({ data: reminder, notificationId: 1, dispatchId: 2 });
-    const batch = factory.createBatch({ data: winback, notificationId: 3, dispatchId: 4 });
+    const single = factory.createSingle({
+      data: reminder,
+      notificationId: 1,
+      dispatchId: 2,
+      ttlSeconds: 540,
+    });
+    const batch = factory.createBatch({
+      data: reminder,
+      notificationId: 3,
+      dispatchId: 4,
+      ttlSeconds: 60,
+    });
 
     // Then
     expect([single, batch]).toEqual([
-      expect.objectContaining({ ttlSeconds: 3600, priority: "high" }),
-      expect.objectContaining({ ttlSeconds: 86_400, priority: "high" }),
+      expect.objectContaining({ ttlSeconds: 540, priority: "high" }),
+      expect.objectContaining({ ttlSeconds: 60, priority: "high" }),
     ]);
   });
 
@@ -107,6 +114,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       },
       notificationId: 1,
       dispatchId: 2,
+      ttlSeconds: TTL_SECONDS,
     });
 
     // Then
@@ -141,8 +149,20 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       };
 
       // When
-      const single = factory.createSingle({ data, notificationId: 1, dispatchId: 2, locale: "ko" });
-      const batch = factory.createBatch({ data, notificationId: 3, dispatchId: 4, locale: "ko" });
+      const single = factory.createSingle({
+        data,
+        notificationId: 1,
+        dispatchId: 2,
+        locale: "ko",
+        ttlSeconds: TTL_SECONDS,
+      });
+      const batch = factory.createBatch({
+        data,
+        notificationId: 3,
+        dispatchId: 4,
+        locale: "ko",
+        ttlSeconds: TTL_SECONDS,
+      });
 
       // Then
       expect([single.categoryId, batch.categoryId]).toEqual([categoryId, categoryId]);
@@ -165,6 +185,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       },
       notificationId: 10,
       dispatchId: 20,
+      ttlSeconds: TTL_SECONDS,
     });
 
     // Then
@@ -195,6 +216,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       },
       notificationId: 1,
       dispatchId: 2,
+      ttlSeconds: TTL_SECONDS,
     });
 
     // Then
@@ -216,7 +238,12 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
     };
 
     // When
-    const payload = factory.createBatch({ data, notificationId: 1, dispatchId: 2 });
+    const payload = factory.createBatch({
+      data,
+      notificationId: 1,
+      dispatchId: 2,
+      ttlSeconds: TTL_SECONDS,
+    });
 
     // Then
     expect(payload.minAppVersion).toBeUndefined();
@@ -250,7 +277,12 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       };
 
       // When
-      const payload = factory.createSingle({ data, notificationId: 7, dispatchId: 8 });
+      const payload = factory.createSingle({
+        data,
+        notificationId: 7,
+        dispatchId: 8,
+        ttlSeconds: TTL_SECONDS,
+      });
 
       // Then
       expect(pushNotificationDataSchema.parse(payload.data)).toMatchObject({
@@ -285,7 +317,13 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         };
 
         // When
-        const payload = factory.createSingle({ data, notificationId: 1, dispatchId: 2, locale });
+        const payload = factory.createSingle({
+          data,
+          notificationId: 1,
+          dispatchId: 2,
+          locale,
+          ttlSeconds: TTL_SECONDS,
+        });
 
         // Then
         expect(payload).toMatchObject({ title, body, categoryId: "MARKETING" });
@@ -317,6 +355,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         data,
         notificationId: 1,
         dispatchId: 2,
+        ttlSeconds: TTL_SECONDS,
         locale: "ko",
       });
 
@@ -338,7 +377,12 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       };
 
       // When
-      const payload = factory.createSingle({ data, notificationId: 1, dispatchId: 2 });
+      const payload = factory.createSingle({
+        data,
+        notificationId: 1,
+        dispatchId: 2,
+        ttlSeconds: TTL_SECONDS,
+      });
 
       // Then
       expect(pushNotificationDataSchema.parse(payload.data)).toMatchObject({

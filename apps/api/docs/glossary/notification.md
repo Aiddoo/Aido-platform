@@ -96,7 +96,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 발송 자격     | `EvaluatePushDeliveryEligibilityUseCase`                                 | 수신 설정·광고성 동의·야간·빈도 한도·토큰·앱 버전을 한곳에서 판단한다([공통 발송 조건](../push-notifications.md#공통-발송-조건)) |
 | 건너뜀 사유   | `PushDispatchSkipReason`, `noActiveTokenSkipReason`                      | 푸시를 보내지 않은 이유. 관리자 캠페인 집계가 이 값으로 센다                                                                     |
 | 빈도 한도     | `PUSH_RATE_LIMIT_POLICY`, `PushRateLimiterPort`, `markRateLimitReserved` | 일반(시간당)과 참여 유도(하루·간격) 두 한도. 같은 발송의 재시도는 처음 예약을 다시 쓴다                                          |
-| 보관 시간     | `pushDeliveryOptions`                                                    | 꺼진 기기에 공급자가 메시지를 들고 있는 시간(`ttl`). 종류마다 정한다                                                             |
+| 보관 시간     | `resolvePushExpiry`                                                      | 꺼진 기기에 공급자가 메시지를 들고 있는 시간(`ttl`). 종류 기본값을 받는 사람 시간대의 할 일 시작·자정·야간 시작으로 줄인다       |
 | 전달 시도     | `PushDeliveryAttempt`(엔티티), `PushDeliveryAttemptStatus`               | 기기 토큰 하나에 대한 공급자 전송 결과와 ticket                                                                                  |
 | 실패 종류     | `PushFailureKind`, `revokesPushToken`                                    | 공급자 오류를 채널 중립으로 바꾼 값. 기기 미등록·잘못된 토큰만 토큰을 끈다                                                       |
 | receipt 확인  | `ReconcilePushReceiptsUseCase`, `PushReceiptTiming`                      | 수락한 ticket의 최종 결과를 공급자에게 묻는다. 대기·보관 시간은 채널이 준다                                                      |

@@ -38,11 +38,13 @@ import type {
   BatchPushDeliveryRecipient,
   EvaluatePushDeliveryEligibilityUseCase,
   PushDeliveryEligibilityDecision,
+  PushDeliverySettingsDecision,
   SinglePushDeliveryRecipient,
 } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T03:00:00.000Z");
 const PROCESSING_JOB_ID = "push-delivery-job-20260829";
+const SETTINGS_TTL_SECONDS = 1800;
 const LOCAL_DATE = "2026-08-29";
 const LOCAL_DATE_CONTEXT = {
   timezone: "Asia/Seoul",
@@ -160,13 +162,13 @@ class StubDeliveryEligibility implements Pick<
 
   async evaluateSingle(
     ...input: SingleEvaluateInput
-  ): Promise<PushDeliveryEligibilityDecision<CreateNotificationData>> {
+  ): Promise<PushDeliverySettingsDecision<CreateNotificationData>> {
     this.#callOrder.push("evaluateSingle");
     this.singleEvaluations.push(input);
     const [data] = input;
     const reason = this.singleSkipReasons.get(data.userId);
     return reason == null
-      ? { status: "eligible", candidate: data }
+      ? { status: "eligible", candidate: data, ttlSeconds: SETTINGS_TTL_SECONDS }
       : { status: "skipped", candidate: data, reason };
   }
 
@@ -191,13 +193,13 @@ class StubDeliveryEligibility implements Pick<
 
   evaluateBatchSettings<TCandidate extends BatchCandidate>(
     candidates: readonly TCandidate[],
-  ): readonly PushDeliveryEligibilityDecision<TCandidate>[] {
+  ): readonly PushDeliverySettingsDecision<TCandidate>[] {
     this.#callOrder.push("evaluateBatchSettings");
     this.batchSettingsCandidates.push([...candidates]);
     return candidates.map((candidate) => {
       const reason = this.batchSettingsSkipReasons.get(candidate.data.userId);
       return reason == null
-        ? { status: "eligible", candidate }
+        ? { status: "eligible", candidate, ttlSeconds: SETTINGS_TTL_SECONDS }
         : { status: "skipped", candidate, reason };
     });
   }
@@ -448,7 +450,13 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
       "finalizeResults",
     ]);
     expect(fixture.payloadFactory.singleInputs).toEqual([
-      { data: claimed.item.data, notificationId: 111, dispatchId: 11, locale: "ko" },
+      {
+        data: claimed.item.data,
+        notificationId: 111,
+        dispatchId: 11,
+        locale: "ko",
+        ttlSeconds: SETTINGS_TTL_SECONDS,
+      },
     ]);
     expect(fixture.lifecycle.finalizedResults).toEqual([
       [
@@ -567,6 +575,10 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
       ]),
     );
     expect(fixture.payloadFactory.batchDispatchIds).toEqual([203, 204]);
+    expect(fixture.delivery.preparedPayloads.flat().map(({ ttlSeconds }) => ttlSeconds)).toEqual([
+      SETTINGS_TTL_SECONDS,
+      SETTINGS_TTL_SECONDS,
+    ]);
     expect(fixture.lifecycle.finalizedSkipped).toEqual([
       [expect.objectContaining({ fence: settingsSkipped.fence, reason: "PUSH_DISABLED" })],
       [expect.objectContaining({ fence: rateLimited.fence, reason: "RATE_LIMITED" })],

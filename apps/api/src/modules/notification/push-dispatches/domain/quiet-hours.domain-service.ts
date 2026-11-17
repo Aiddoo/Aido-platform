@@ -30,3 +30,16 @@ export function isWithinQuietHours(params: {
   }
   return afterStart && beforeEnd;
 }
+
+/** 지금 뒤로 처음 조용한 시간이 시작하는 순간(받는 사람 현지 시각) */
+export function nextQuietHoursStart(params: {
+  readonly instant: Temporal.Instant;
+  readonly timeZone: TimeZone;
+  readonly window: QuietHoursWindow;
+}): Temporal.Instant {
+  const local = params.instant.toZonedDateTimeISO(params.timeZone.value);
+  const today = local.withPlainTime(params.window.start).toInstant();
+  return Temporal.Instant.compare(today, params.instant) > 0
+    ? today
+    : local.add({ days: 1 }).withPlainTime(params.window.start).toInstant();
+}

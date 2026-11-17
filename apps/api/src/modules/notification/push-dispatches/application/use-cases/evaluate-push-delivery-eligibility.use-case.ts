@@ -16,6 +16,8 @@ import {
   type UserNotificationSettingsPort,
 } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { reminderOccurrenceStart } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { resolvePushExpiry } from "../../domain/push-delivery-options.domain-service.js";
 import {
   isAiPushDisabled,
   isAutomatedEngagementNotification,
@@ -23,10 +25,6 @@ import {
   isMarketingNotification,
   isNightExemptNotification,
 } from "../../domain/push-eligibility.domain-service.js";
-import {
-  isWithinQuietHours,
-  PUSH_QUIET_HOURS_WINDOW,
-} from "../../domain/quiet-hours.domain-service.js";
 import { type NotificationRecipientPreferenceReaderPort } from "../ports/notification-recipient-preference.reader.port.js";
 import {
   type PushRateLimitRequest,
@@ -52,6 +50,19 @@ export type PushDeliveryEligibilityDecision<TCandidate> =
   | {
       readonly status: "eligible";
       readonly candidate: TCandidate;
+    }
+  | {
+      readonly status: "skipped";
+      readonly candidate: TCandidate;
+      readonly reason: PushDispatchSkipReason;
+    };
+
+// 설정 판단을 통과하면 받는 사람 기준 공급자 보관 시간도 함께 정한다
+export type PushDeliverySettingsDecision<TCandidate> =
+  | {
+      readonly status: "eligible";
+      readonly candidate: TCandidate;
+      readonly ttlSeconds: number;
     }
   | {
       readonly status: "skipped";
@@ -142,7 +153,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     recipient: SinglePushDeliveryRecipient,
     rateLimitDispatchId: number,
     hasReservedRateLimit: boolean,
-  ): Promise<PushDeliveryEligibilityDecision<CreateNotificationData>> {
+  ): Promise<PushDeliverySettingsDecision<CreateNotificationData>> {
     const { preference } = recipient;
     if (!preference.pushEnabled) {
       return this.#skipped(data, "PUSH_DISABLED");
@@ -165,21 +176,17 @@ export class EvaluatePushDeliveryEligibilityUseCase {
 
     const isEngagement =
       data.purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(data.type);
-    const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
-
-    if (this.#isQuietHours(recipient.timezone) && isMarketing) {
-      return this.#skipped(data, "MARKETING_QUIET_HOURS");
+    const settings = this.#withExpiry(
+      data,
+      data,
+      recipient.timezone,
+      mustExpireBeforeQuietHours(data, preference.nightPushEnabled),
+    );
+    if (settings.status === "skipped") {
+      return settings;
     }
 
-    if (
-      this.#isQuietHours(recipient.timezone) &&
-      !preference.nightPushEnabled &&
-      !isNightExemptNotification(data.type)
-    ) {
-      return this.#skipped(data, "NIGHT_PUSH_DISABLED");
-    }
-
-    if (isMarketing) {
+    if (isMarketingDelivery(data)) {
       const consent = await this.#dependencies.userSettings.findConsentReadModel(
         UserId.reconstitute(data.userId),
       );
@@ -200,25 +207,25 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       return this.#skipped(data, "ENGAGEMENT_RATE_LIMITED");
     }
 
-    return { status: "eligible", candidate: data };
+    return settings;
   }
 
   evaluateBatchSettings<TCandidate extends PushDeliveryCandidate>(
     candidates: readonly TCandidate[],
     recipients: ReadonlyMap<string, BatchPushDeliveryRecipient>,
-  ): readonly PushDeliveryEligibilityDecision<TCandidate>[] {
+  ): readonly PushDeliverySettingsDecision<TCandidate>[] {
     return candidates.map((candidate) => {
       const recipient = recipients.get(candidate.data.userId);
-      const forced =
-        candidate.data.force === true &&
-        candidate.data.purpose !== "ENGAGEMENT" &&
-        !isMarketingNotification(candidate.data.type);
-      if (forced) {
-        return { status: "eligible", candidate };
+      // 관리자 강제 발송은 수신 설정(켜짐·야간)을 따르지 않는다. 광고성은 강제할 수 없다
+      if (candidate.data.force === true && !isMarketingDelivery(candidate.data)) {
+        return this.#withExpiry(
+          candidate,
+          candidate.data,
+          recipient?.timezone ?? resolveDeliveryTimezone(undefined),
+          false,
+        );
       }
-
-      const reason = this.#batchSettingsSkipReason(candidate.data, recipient);
-      return reason ? this.#skipped(candidate, reason) : { status: "eligible", candidate };
+      return this.#batchSettingsDecision(candidate, recipient);
     });
   }
 
@@ -247,35 +254,34 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     );
   }
 
-  #batchSettingsSkipReason(
-    data: CreateNotificationData,
+  #batchSettingsDecision<TCandidate extends PushDeliveryCandidate>(
+    candidate: TCandidate,
     recipient: BatchPushDeliveryRecipient | undefined,
-  ): PushDispatchSkipReason | null {
+  ): PushDeliverySettingsDecision<TCandidate> {
+    const { data } = candidate;
     if (!recipient?.preference) {
-      return "PUSH_SETTINGS_MISSING";
+      return this.#skipped(candidate, "PUSH_SETTINGS_MISSING");
     }
-    if (!recipient.preference.pushEnabled) {
-      return "PUSH_DISABLED";
+    const { preference } = recipient;
+    if (!preference.pushEnabled) {
+      return this.#skipped(candidate, "PUSH_DISABLED");
     }
-    if (isAiPushDisabled(data.type, recipient.preference)) {
-      return "AI_PUSH_DISABLED";
+    if (isAiPushDisabled(data.type, preference)) {
+      return this.#skipped(candidate, "AI_PUSH_DISABLED");
     }
-
-    const isMarketing = data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
-    if (this.#isQuietHours(recipient.timezone) && isMarketing) {
-      return "MARKETING_QUIET_HOURS";
+    const settings = this.#withExpiry(
+      candidate,
+      data,
+      recipient.timezone,
+      mustExpireBeforeQuietHours(data, preference.nightPushEnabled),
+    );
+    if (settings.status === "skipped") {
+      return settings;
     }
-    if (
-      this.#isQuietHours(recipient.timezone) &&
-      !recipient.preference.nightPushEnabled &&
-      !isNightExemptNotification(data.type)
-    ) {
-      return "NIGHT_PUSH_DISABLED";
+    if (isMarketingDelivery(data) && !recipient.consent?.marketingPushAgreedAt) {
+      return this.#skipped(candidate, "MARKETING_CONSENT_REQUIRED");
     }
-    if (isMarketing && !recipient.consent?.marketingPushAgreedAt) {
-      return "MARKETING_CONSENT_REQUIRED";
-    }
-    return null;
+    return settings;
   }
 
   #createRateLimitRequest(
@@ -301,18 +307,49 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     return localDateIn(this.#dependencies.clock.now(), timezone).toString();
   }
 
-  #isQuietHours(timezone: string): boolean {
-    return isWithinQuietHours({
-      instant: this.#dependencies.clock.now(),
-      timeZone: TimeZone.reconstitute(resolveTimezone(timezone)),
-      window: PUSH_QUIET_HOURS_WINDOW,
+  // 받는 사람 시간대로 공급자 보관 시간을 정하고, 야간 전에 사라져야 하는데 야간이 코앞이면 건너뛴다
+  #withExpiry<TCandidate>(
+    candidate: TCandidate,
+    data: CreateNotificationData,
+    timezone: string,
+    expiresBeforeQuietHours: boolean,
+  ): PushDeliverySettingsDecision<TCandidate> {
+    const timeZone = TimeZone.reconstitute(resolveTimezone(timezone));
+    const expiry = resolvePushExpiry({
+      type: data.type,
+      now: this.#dependencies.clock.now(),
+      timeZone,
+      expiresBeforeQuietHours,
+      todoStartsAt:
+        data.type === "TODO_REMINDER" && data.reminderOccurrenceKey != null
+          ? reminderOccurrenceStart(data.reminderOccurrenceKey, timeZone)
+          : null,
     });
+    if (expiry.status === "quiet-hours") {
+      return this.#skipped(
+        candidate,
+        isMarketingDelivery(data) ? "MARKETING_QUIET_HOURS" : "NIGHT_PUSH_DISABLED",
+      );
+    }
+    return { status: "eligible", candidate, ttlSeconds: expiry.ttlSeconds };
   }
 
   #skipped<TCandidate>(
     candidate: TCandidate,
     reason: PushDispatchSkipReason,
-  ): PushDeliveryEligibilityDecision<TCandidate> {
+  ): Extract<PushDeliveryEligibilityDecision<TCandidate>, { readonly status: "skipped" }> {
     return { status: "skipped", candidate, reason };
   }
+}
+
+function isMarketingDelivery(data: CreateNotificationData): boolean {
+  return data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
+}
+
+// 광고성은 늘, 그 밖은 야간 수신을 끈 사람에게 가는 야간 예외 아닌 알림만 야간 전에 사라져야 한다
+function mustExpireBeforeQuietHours(
+  data: CreateNotificationData,
+  nightPushEnabled: boolean,
+): boolean {
+  return isMarketingDelivery(data) || (!nightPushEnabled && !isNightExemptNotification(data.type));
 }

@@ -26,6 +26,7 @@ interface ClaimedDispatchRow {
     readonly cheerId: number | null;
     readonly metadata: unknown;
     readonly notificationDate: Temporal.PlainDate | null;
+    readonly reminderOccurrenceKey: string | null;
   };
 }
 
@@ -80,6 +81,7 @@ export function toClaimedPushDelivery(input: {
         cheerId: notification.cheerId,
         metadata: toNotificationMetadata(notification.metadata),
         notificationDate: notification.notificationDate,
+        reminderOccurrenceKey: notification.reminderOccurrenceKey,
         force: outbox.force,
       },
     },

@@ -226,7 +226,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
 
     // Then
     expect(decisions).toEqual([
-      { status: "eligible", candidate: forced },
+      { status: "eligible", candidate: forced, ttlSeconds: 86_400 },
       { status: "skipped", candidate: missing, reason: "PUSH_SETTINGS_MISSING" },
       { status: "skipped", candidate: marketing, reason: "MARKETING_CONSENT_REQUIRED" },
     ]);
@@ -279,7 +279,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
 
       // Then
       expect(decisions).toEqual([
-        { status: "eligible", candidate: reminder },
+        { status: "eligible", candidate: reminder, ttlSeconds: 3600 },
         { status: "skipped", candidate: transactional, reason: "RATE_LIMITED" },
       ]);
       expect(rateLimiter.generalRequests).toEqual([
@@ -344,7 +344,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       // Then
       expect(decisions).toEqual([
         { status: "skipped", candidate: suggestion, reason: "AI_PUSH_DISABLED" },
-        { status: "eligible", candidate: transactional },
+        { status: "eligible", candidate: transactional, ttlSeconds: 43_200 },
       ]);
       expect(rateLimiter.generalRequests).toEqual([
         { dispatchId: RATE_LIMIT_DISPATCH_ID + 1, userId: "user-1" },
@@ -370,19 +370,22 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       // Then
       expect(decisions).toEqual([
         { status: "skipped", candidate: offReport, reason: "AI_PUSH_DISABLED" },
-        { status: "eligible", candidate: offSocial },
-        { status: "eligible", candidate: onReport },
+        { status: "eligible", candidate: offSocial, ttlSeconds: 43_200 },
+        { status: "eligible", candidate: onReport, ttlSeconds: 86_400 },
       ]);
     });
   });
 
   describe("야간 경계 — 사용자가 정한 리마인더만 야간 수신을 꺼도 보낸다", () => {
+    // 21:00까지 5분 미만이면 대기열·공급자 지연으로 야간에 뜰 수 있어 야간처럼 건너뛴다
     it.each([
-      ["Asia/Seoul", "20:59", false],
+      ["Asia/Seoul", "20:55", false],
+      ["Asia/Seoul", "20:56", true],
       ["Asia/Seoul", "21:00", true],
       ["Asia/Seoul", "07:59", true],
       ["Asia/Seoul", "08:00", false],
-      ["America/Los_Angeles", "20:59", false],
+      ["America/Los_Angeles", "20:55", false],
+      ["America/Los_Angeles", "20:56", true],
       ["America/Los_Angeles", "21:00", true],
       ["America/Los_Angeles", "07:59", true],
       ["America/Los_Angeles", "08:00", false],
@@ -439,9 +442,68 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
 
       // Then
       expect(decisions).toEqual([
-        { status: "eligible", candidate: reminder },
+        { status: "eligible", candidate: reminder, ttlSeconds: 3600 },
         { status: "skipped", candidate: transactional, reason: "NIGHT_PUSH_DISABLED" },
       ]);
+    });
+  });
+
+  describe("보관 시간 — 받는 사람 시간대로 줄인다", () => {
+    it("현지 20:15에 광고성과 야간 수신을 끈 사람의 소셜 알림은 21:00까지, 야간 수신을 켠 사람의 소셜 알림은 종류 기본값이다", async () => {
+      // Given
+      const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase(
+        localInstant("America/Los_Angeles", "20:15"),
+      );
+      userSettings.preferences.set(
+        "night-off",
+        createNotificationDeliveryPreferenceFixture({
+          timezone: "America/Los_Angeles",
+          nightPushEnabled: false,
+        }),
+      );
+      userSettings.preferences.set(
+        "night-on",
+        createNotificationDeliveryPreferenceFixture({ timezone: "America/Los_Angeles" }),
+      );
+      userSettings.consents.set("night-on", { marketingPushAgreedAt: MARKETING_AGREED_AT });
+      const recipients = await useCase.loadBatchRecipients(["night-off", "night-on"]);
+      const candidates = [
+        { data: { ...transactional, userId: "night-off" }, rateLimitDispatchId: 1 },
+        { data: { ...engagement, userId: "night-on" }, rateLimitDispatchId: 2 },
+        { data: { ...transactional, userId: "night-on" }, rateLimitDispatchId: 3 },
+      ];
+
+      // When
+      const decisions = useCase.evaluateBatchSettings(candidates, recipients);
+
+      // Then
+      expect(
+        decisions.map((decision) => (decision.status === "eligible" ? decision.ttlSeconds : null)),
+      ).toEqual([45 * 60, 45 * 60, 12 * 3600]);
+    });
+
+    it("10분 전 할 일 리마인더는 받는 사람 시간대의 회차 시작까지 10분만 보관한다", async () => {
+      // Given
+      const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
+        localInstant("Asia/Seoul", "09:50"),
+      );
+      const recipient = await useCase.loadSingleRecipient("user-1");
+      const reminder = {
+        ...transactional,
+        type: "TODO_REMINDER" as const,
+        reminderOccurrenceKey: "2026-07-16T10:00",
+      };
+
+      // When
+      const decision = await useCase.evaluateSingle(
+        reminder,
+        recipient,
+        RATE_LIMIT_DISPATCH_ID,
+        true,
+      );
+
+      // Then
+      expect(decision).toEqual({ status: "eligible", candidate: reminder, ttlSeconds: 600 });
     });
   });
 });

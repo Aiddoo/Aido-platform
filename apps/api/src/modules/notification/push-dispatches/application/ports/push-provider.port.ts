@@ -1,4 +1,4 @@
-import type { PushDeliveryPriority } from "../../domain/push-delivery-options.constants.js";
+import type { PushDeliveryPriority } from "../../domain/push-delivery-options.domain-service.js";
 import type { PushFailureKind } from "../../domain/push-failure-kind.constants.js";
 import type { PushReceiptTiming } from "../../domain/push-receipt.domain-service.js";
 

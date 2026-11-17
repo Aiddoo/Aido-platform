@@ -29,6 +29,7 @@ import { NotificationJobLogEvent } from "../../../shared/application/notificatio
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import { createReminderOccurrenceKey } from "../../../shared/domain/reminder-occurrence.domain-service.js";
 import {
   SNOOZED_TODO_REMINDER_STAGE,
   TODO_SERIES_PAUSED_STAGE,
@@ -40,7 +41,6 @@ import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import { REMINDER_LATE_LIMIT_MINUTES } from "../../domain/notification-schedule.domain-service.js";
 import {
-  createReminderOccurrenceKey,
   type ReminderLateSkipReason,
   reminderFireAt,
   reminderLateSkipReason,
