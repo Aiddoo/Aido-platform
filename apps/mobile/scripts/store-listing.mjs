@@ -24,6 +24,7 @@ export const RELEASE_VERSION = JSON.parse(
 export const STORES = {
   'app-store': {
     label: 'App Store',
+    patchNotesKey: 'appStore',
     locales: ['ko', 'en-US', 'en-GB'],
     pairs: [['ko', 'en-US']],
     inherits: { 'en-GB': 'en-US' },
@@ -46,6 +47,7 @@ export const STORES = {
   },
   'google-play': {
     label: 'Google Play',
+    patchNotesKey: 'googlePlay',
     locales: ['ko-KR', 'en-US'],
     pairs: [['ko-KR', 'en-US']],
     inherits: {},
@@ -67,6 +69,12 @@ const STALE_TERMS = [
   { pattern: /\bPro\b/u, message: '"Pro" 대신 앱과 같은 "프리미엄/Premium"을 쓴다' },
   { pattern: /iTunes/u, message: '"iTunes 계정" 대신 "Apple 계정/Apple Account"를 쓴다' },
 ];
+
+// 출시 노트는 절 제목 아래 "- " 목록으로 쓴다. 절은 이 순서로 필요한 것만 둔다(1.13.0부터 올린 스토어 형식).
+const RELEASE_NOTE_SECTIONS = {
+  ko: ['새로운 기능', '개선', '버그 수정'],
+  en: ['New', 'Improvements', 'Bug fixes'],
+};
 
 export const characterCount = (value) => [...value].length;
 export const byteCount = (value) => Buffer.byteLength(value, 'utf8');
@@ -97,6 +105,44 @@ export function loadListing(store, locale) {
     values: { ...base, ...own },
     inherited: Object.keys(base).filter((field) => !(field in own)),
   };
+}
+
+export function releaseNotesProblems(notes, language, expected) {
+  const problems = [];
+  const sections = RELEASE_NOTE_SECTIONS[language];
+  const bullets = [];
+  let sectionIndex = -1;
+  let sectionBulletCount = 0;
+  for (const line of notes.split('\n')) {
+    if (line === '') {
+      continue;
+    }
+    if (line.startsWith('- ')) {
+      if (sectionIndex === -1) {
+        problems.push(`절 제목 없이 시작한 줄: ${line}`);
+      }
+      bullets.push(line.slice(2));
+      sectionBulletCount += 1;
+      continue;
+    }
+    const nextIndex = sections.indexOf(line);
+    if (nextIndex <= sectionIndex) {
+      problems.push(`절 제목은 ${sections.join(' → ')} 순서로 한 번씩만 쓴다: ${line}`);
+      continue;
+    }
+    if (sectionIndex !== -1 && sectionBulletCount === 0) {
+      problems.push(`비어 있는 절: ${sections[sectionIndex]}`);
+    }
+    sectionIndex = nextIndex;
+    sectionBulletCount = 0;
+  }
+  if (sectionIndex !== -1 && sectionBulletCount === 0) {
+    problems.push(`비어 있는 절: ${sections[sectionIndex]}`);
+  }
+  if (JSON.stringify(bullets) !== JSON.stringify(expected)) {
+    problems.push(`${RELEASE_VERSION}/release.json의 ${language} 항목과 다르다`);
+  }
+  return problems;
 }
 
 function readRelease() {
@@ -222,18 +268,13 @@ export function checkListings() {
         }
       }
 
-      // 업데이트 내용은 release.json 항목을 모두 담아야 한다(같은 순서).
-      const notes = values.release_notes ?? '';
-      const expected = release.patchNotes?.[language] ?? [];
-      const bullets = notes
-        .split('\n')
-        .filter((line) => line.startsWith('- '))
-        .map((line) => line.slice(2));
-      if (JSON.stringify(bullets) !== JSON.stringify(expected)) {
-        errors.push(
-          `${at('release_notes')}: ${RELEASE_VERSION}/release.json의 ${language} 항목과 다르다`,
-        );
-      }
+      // 출시 노트는 스토어마다 따로 쓰고(Play 500자·App Store 4000자) release.json의 그 스토어 항목을 같은 순서로 담는다.
+      const expected = release.patchNotes?.[config.patchNotesKey]?.[language] ?? [];
+      errors.push(
+        ...releaseNotesProblems(values.release_notes ?? '', language, expected).map(
+          (problem) => `${at('release_notes')}: ${problem}`,
+        ),
+      );
     }
 
     for (const [left, right] of config.pairs) {
@@ -245,17 +286,6 @@ export function checkListings() {
     }
   }
 
-  // 두 스토어의 같은 언어 업데이트 내용은 같아야 한다.
-  for (const [appStore, play] of [
-    ['ko', 'ko-KR'],
-    ['en-US', 'en-US'],
-  ]) {
-    const a = loadListing('app-store', appStore).values.release_notes;
-    const b = loadListing('google-play', play).values.release_notes;
-    if (a !== b) {
-      errors.push(`release_notes: app-store/${appStore}와 google-play/${play}가 다르다`);
-    }
-  }
   errors.push(...customProductPageProblems());
   return { errors, warnings };
 }

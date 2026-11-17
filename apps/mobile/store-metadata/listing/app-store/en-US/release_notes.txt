@@ -1,7 +1,16 @@
-AI suggestions and reports are clearer, with reasons and charts.
+New
+- AI suggestions (Premium): Aido spots the to-dos you do often in the last 2 weeks and suggests making them repeat. You'll also see why, like “Done 4 of 4 times in the last 2 weeks.”
+- Get them now: No need to wait for the morning. Tap Check now to get suggestions right away.
+- AI reports (Premium): Simple charts show how much you got done, what you finished each day, and the time you usually finish. Your AI coach adds a small tip for next time.
+- Free previews: Without a subscription, see what you finished this week and preview sample AI suggestions and reports.
+- Choose your alerts: Turn off AI suggestion and report alerts on their own in Settings.
 
-- AI suggestions show why, and you get an analysis right away without waiting for the morning.
-- To-dos that differ only in spacing or emoji group together.
-- AI reports show daily progress, hourly charts, and a coach note.
-- Free plan shows your record for this week and sample AI suggestions and reports.
-- Suggestion alerts arrive at 9 AM, and you can turn off AI alerts on their own in Settings.
+Improvements
+- To-dos that differ only in spacing or emoji, like “Workout” and “Work out,” are treated as the same.
+- To-dos you already set to repeat aren't suggested again.
+- AI suggestion alerts arrive at 9 AM.
+- With VoiceOver on, charts read out the record for the day or hour you pick.
+
+Bug fixes
+- Fixed the time we said your report would arrive not matching when it actually arrived.
+- Fixed AI suggestions not arriving when you have a lot of to-dos.

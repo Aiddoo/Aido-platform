@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { characterCount, checkListings, keywordProblems } from './store-listing.mjs';
+import {
+  characterCount,
+  checkListings,
+  keywordProblems,
+  releaseNotesProblems,
+} from './store-listing.mjs';
 
 test('저장소의 스토어 등록 정보가 한도와 규칙을 지킨다', () => {
   assert.deepEqual(checkListings().errors, []);
@@ -28,4 +33,20 @@ test('키워드 한도는 글자 수 기준이라 한글 100자 안이면 통과
   );
   assert.deepEqual(result.problems, []);
   assert.deepEqual(result.warnings, []);
+});
+
+test('출시 노트는 절 제목을 정한 순서로 한 번씩 쓰고 release.json 항목을 모두 담는다', () => {
+  const notes = '새로운 기능\n- 하나\n\n버그 수정\n- 둘';
+  assert.deepEqual(releaseNotesProblems(notes, 'ko', ['하나', '둘']), []);
+  assert.match(releaseNotesProblems('- 하나', 'ko', ['하나']).join(), /절 제목 없이/u);
+  assert.match(
+    releaseNotesProblems('버그 수정\n- 둘\n개선\n- 하나', 'ko', ['둘', '하나']).join(),
+    /순서/u,
+  );
+  assert.match(
+    releaseNotesProblems('개선\n버그 수정\n- 둘', 'ko', ['둘']).join(),
+    /비어 있는 절: 개선/u,
+  );
+  assert.match(releaseNotesProblems(notes, 'ko', ['하나']).join(), /release\.json/u);
+  assert.match(releaseNotesProblems("What's new\n- one", 'en', ['one']).join(), /순서/u);
 });

@@ -1,20 +1,59 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "releaseVersion": "1.16.0",
   "patchNotes": {
-    "ko": [
-      "AI 제안이 최근 2주 기록을 이유로 보여 주고, 아침까지 기다리지 않고 바로 분석을 받을 수 있어요.",
-      "띄어쓰기나 이모지만 다른 할 일도 같은 반복 할 일 후보로 묶어 찾아요.",
-      "AI 리포트가 날마다 끝낸 할 일과 시간대 차트, 코치 한마디로 바뀌었어요.",
-      "무료 사용자도 이번 주 내 기록을 보고, AI 제안과 리포트를 예시로 미리 볼 수 있어요.",
-      "AI 제안 알림이 오전 9시에 오고, 설정에서 AI 알림만 따로 끌 수 있어요."
-    ],
-    "en": [
-      "AI suggestions show why, and you get an analysis right away without waiting for the morning.",
-      "To-dos that differ only in spacing or emoji group together.",
-      "AI reports show daily progress, hourly charts, and a coach note.",
-      "Free plan shows your record for this week and sample AI suggestions and reports.",
-      "Suggestion alerts arrive at 9 AM, and you can turn off AI alerts on their own in Settings."
-    ]
+    "appStore": {
+      "ko": [
+        "AI 제안(프리미엄): 최근 2주 동안 적은 할 일에서 자주 하는 일을 찾아, 반복 할 일로 만들어 두도록 알려 드려요. ‘최근 2주 4번 중 4번 끝냈어요’처럼 왜 제안했는지도 함께 보여 드려요.",
+        "바로 받기: 아침까지 기다리지 않아도 돼요. ‘지금 분석 받기’를 누르면 바로 제안을 받을 수 있어요.",
+        "AI 리포트(프리미엄): 얼마나 해냈는지, 날마다 몇 개를 끝냈는지, 주로 몇 시에 끝냈는지 그래프로 한눈에 볼 수 있어요. AI 코치가 다음에 해 볼 작은 팁도 알려 드려요.",
+        "무료로 미리 보기: 구독하지 않아도 이번 주에 끝낸 할 일을 볼 수 있고, AI 제안과 리포트가 어떤 모습인지 예시로 먼저 볼 수 있어요.",
+        "알림 고르기: 설정에서 AI 제안·리포트 알림만 따로 끌 수 있어요.",
+        "‘운동하기’와 ‘운동 하기’처럼 띄어쓰기나 이모지만 다른 할 일도 같은 일로 알아봐요.",
+        "이미 반복으로 만들어 둔 할 일은 다시 제안하지 않아요.",
+        "AI 제안 알림은 오전 9시에 와요.",
+        "VoiceOver를 켜면 그래프에서 고른 날짜나 시간의 기록을 읽어 줘요.",
+        "리포트가 온다고 안내한 시간과 실제로 온 시간이 달랐던 문제를 고쳤어요.",
+        "할 일이 아주 많으면 AI 제안을 받지 못하던 문제를 고쳤어요."
+      ],
+      "en": [
+        "AI suggestions (Premium): Aido spots the to-dos you do often in the last 2 weeks and suggests making them repeat. You'll also see why, like “Done 4 of 4 times in the last 2 weeks.”",
+        "Get them now: No need to wait for the morning. Tap Check now to get suggestions right away.",
+        "AI reports (Premium): Simple charts show how much you got done, what you finished each day, and the time you usually finish. Your AI coach adds a small tip for next time.",
+        "Free previews: Without a subscription, see what you finished this week and preview sample AI suggestions and reports.",
+        "Choose your alerts: Turn off AI suggestion and report alerts on their own in Settings.",
+        "To-dos that differ only in spacing or emoji, like “Workout” and “Work out,” are treated as the same.",
+        "To-dos you already set to repeat aren't suggested again.",
+        "AI suggestion alerts arrive at 9 AM.",
+        "With VoiceOver on, charts read out the record for the day or hour you pick.",
+        "Fixed the time we said your report would arrive not matching when it actually arrived.",
+        "Fixed AI suggestions not arriving when you have a lot of to-dos."
+      ]
+    },
+    "googlePlay": {
+      "ko": [
+        "AI 제안(프리미엄): 자주 하는 할 일을 찾아 반복으로 만들도록 알려 드리고, 왜 제안했는지도 보여 드려요. ‘지금 분석 받기’를 누르면 바로 받을 수 있어요.",
+        "AI 리포트(프리미엄): 날마다 끝낸 할 일과 주로 끝낸 시간을 그래프로 보여 주고, AI 코치가 작은 팁을 알려 드려요.",
+        "무료로 미리 보기: 이번 주에 끝낸 할 일을 보고, AI 제안과 리포트를 예시로 먼저 볼 수 있어요.",
+        "알림 고르기: 설정에서 AI 알림만 따로 끌 수 있어요.",
+        "띄어쓰기나 이모지만 다른 할 일도 같은 일로 알아봐요.",
+        "이미 반복 중인 할 일은 다시 제안하지 않아요.",
+        "AI 제안 알림은 오전 9시에 와요.",
+        "TalkBack을 켜면 그래프의 기록을 읽어 줘요.",
+        "리포트가 온다고 안내한 시간이 실제와 달랐던 문제를 고쳤어요.",
+        "할 일이 아주 많으면 AI 제안을 받지 못하던 문제를 고쳤어요."
+      ],
+      "en": [
+        "AI suggestions (Premium) find to-dos you repeat and say why. Check now gets them instantly.",
+        "AI reports (Premium) chart your days, with tips from your AI coach.",
+        "Preview AI features and this week's record for free.",
+        "Turn off just AI alerts in Settings.",
+        "To-dos differing only in spacing or emoji count as one.",
+        "Repeating to-dos aren't suggested again.",
+        "TalkBack reads charts aloud.",
+        "Fixed the shown report arrival time.",
+        "Fixed suggestions with many to-dos."
+      ]
+    }
   }
 }
