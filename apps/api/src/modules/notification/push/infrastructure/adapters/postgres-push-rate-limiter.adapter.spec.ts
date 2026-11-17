@@ -2,6 +2,7 @@ import { DatabaseError, Pool } from "pg";
 import { vi } from "vitest";
 
 import { createDatabase, type Database } from "#api/platform/database/database.client";
+import { DateClock } from "#test/doubles/platform/date-clock";
 
 import {
   PostgresPushRateLimiterAdapter,
@@ -41,7 +42,7 @@ describe("PostgresPushRateLimiterAdapter 재시도", () => {
       .spyOn(database, "transaction")
       .mockRejectedValueOnce(sqlQueryError("40001"))
       .mockResolvedValueOnce([false]);
-    const limiter = new PostgresPushRateLimiterAdapter(database);
+    const limiter = new PostgresPushRateLimiterAdapter(database, new DateClock());
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     await vi.advanceTimersByTimeAsync(0);
@@ -58,7 +59,7 @@ describe("PostgresPushRateLimiterAdapter 재시도", () => {
     const database = createUnconnectedDatabase();
     const error = sqlQueryError("23503");
     const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(error);
-    const limiter = new PostgresPushRateLimiterAdapter(database);
+    const limiter = new PostgresPushRateLimiterAdapter(database, new DateClock());
     // When
     const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
     // Then

@@ -1,10 +1,10 @@
-import { Inject, Injectable } from "@nestjs/common";
 import { and, count, eq, gt, inArray, max } from "drizzle-orm";
 import { retry } from "es-toolkit";
 
 import { isTransactionWriteConflict } from "#api/platform/database/database-error.util";
-import { DRIZZLE, type Database } from "#api/platform/database/database.client";
+import type { Database } from "#api/platform/database/database.client";
 import { pushDispatch, pushRateLimitReservation } from "#api/platform/database/schema/index";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type {
   EngagementPushRateLimitRequest,
@@ -43,15 +43,17 @@ interface ReservationRecord {
   readonly phase: PushRateLimitPhase;
   readonly userId: string;
   readonly localDate: Temporal.PlainDate | null;
+  readonly reservedAt: Temporal.Instant;
 }
 
 /** Drizzle ORM과 Serializable 트랜잭션으로 구현한 영속 푸시 rate limiter. */
-@Injectable()
 export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
   readonly #db: Database;
+  readonly #clock: ClockPort;
 
-  constructor(@Inject(DRIZZLE) db: Database) {
+  constructor(db: Database, clock: ClockPort) {
     this.#db = db;
+    this.#clock = clock;
   }
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
@@ -80,15 +82,15 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
       return [];
     }
     this.#assertRequests(requests);
+    // 호출자의 CLS 트랜잭션과 따로 짧은 Serializable 트랜잭션을 열어 충돌하면 한도 판정만 다시 시도한다
     return retry(
       () =>
         this.#db.transaction(
           async (transaction) => {
+            const now = this.#clock.now();
             const dispatchIds = requests.map((request) => request.dispatchId);
             const userIds = requests.map((request) => request.userId);
-            const generalWindowStart = Temporal.Instant.fromEpochMilliseconds(
-              Date.now() - GENERAL.WINDOW_MS,
-            );
+            const generalWindowStart = now.subtract({ milliseconds: GENERAL.WINDOW_MS });
             const engagementDates = requests.flatMap((request) =>
               request.engagementLocalDate != null
                 ? [Temporal.PlainDate.from(request.engagementLocalDate)]
@@ -133,7 +135,10 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
               )
               .groupBy(pushRateLimitReservation.userId, pushRateLimitReservation.localDate);
             this.#assertDispatchOwnership(requests, dispatches);
-            const decisions = this.#decide(requests, existing, generalStats, engagementStats);
+            const decisions = this.#decide(
+              { requests, existing, generalStats, engagementStats },
+              now,
+            );
             if (decisions.reservations.length > 0) {
               await transaction
                 .insert(pushRateLimitReservation)
@@ -152,15 +157,23 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
   }
 
   #decide(
-    requests: readonly ReservationRequest[],
-    existing: readonly { dispatchId: number; phase: PushRateLimitPhase }[],
-    generalStats: readonly { userId: string; count: number }[],
-    engagementStats: readonly {
-      userId: string;
-      localDate: Temporal.PlainDate | null;
-      count: number;
-      lastReservedAt: Temporal.Instant | null;
-    }[],
+    {
+      requests,
+      existing,
+      generalStats,
+      engagementStats,
+    }: {
+      readonly requests: readonly ReservationRequest[];
+      readonly existing: readonly { dispatchId: number; phase: PushRateLimitPhase }[];
+      readonly generalStats: readonly { userId: string; count: number }[];
+      readonly engagementStats: readonly {
+        userId: string;
+        localDate: Temporal.PlainDate | null;
+        count: number;
+        lastReservedAt: Temporal.Instant | null;
+      }[];
+    },
+    now: Temporal.Instant,
   ): { readonly limited: readonly boolean[]; readonly reservations: readonly ReservationRecord[] } {
     const existingKeys = new Set(existing.map(({ dispatchId, phase }) => `${dispatchId}:${phase}`));
     const generalByUser = new Map(generalStats.map((row) => [row.userId, row.count]));
@@ -171,7 +184,6 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
       ]),
     );
     const reservations: ReservationRecord[] = [];
-    const now = Date.now();
     const limited = requests.map((request) => {
       const generalReserved = existingKeys.has(`${request.dispatchId}:GENERAL`);
       const engagementReserved = existingKeys.has(`${request.dispatchId}:ENGAGEMENT`);
@@ -189,7 +201,8 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
           !engagementReserved &&
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
             (engagement?.lastReservedAt != null &&
-              now - engagement.lastReservedAt.epochMilliseconds < ENGAGEMENT.MIN_INTERVAL_MS)));
+              now.epochMilliseconds - engagement.lastReservedAt.epochMilliseconds <
+                ENGAGEMENT.MIN_INTERVAL_MS)));
       if (isLimited) {
         return true;
       }
@@ -200,6 +213,7 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
           phase: "GENERAL",
           userId: request.userId,
           localDate: null,
+          reservedAt: now,
         });
       }
       if (localDate && !engagementReserved) {
@@ -208,6 +222,7 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
           phase: "ENGAGEMENT",
           userId: request.userId,
           localDate,
+          reservedAt: now,
         });
       }
       return false;

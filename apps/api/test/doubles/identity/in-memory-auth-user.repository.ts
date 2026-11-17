@@ -1,8 +1,11 @@
+import { sortBy } from "es-toolkit";
+
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import type { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   type AuthUserProfileRecord,
   AuthUserRepositoryPort,
+  type PurgeEligibleUsersQuery,
 } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import type { UserStatus } from "#api/modules/identity/auth/domain/auth.constants";
 import {
@@ -147,10 +150,13 @@ export class InMemoryAuthUserRepository extends AuthUserRepositoryPort {
     this.#users.set(stored.id, { ...stored, status, deletedAt });
   }
 
-  async listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]> {
-    return this.all
+  async listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<IdentityUser[]> {
+    const afterId = query.afterId?.value;
+    return sortBy(this.all, ["id"])
+      .filter((user) => afterId == null || user.id > afterId)
       .map((user) => IdentityUser.reconstitute(user))
-      .filter((user) => user.isPurgeEligibleAt(now));
+      .filter((user) => user.isPurgeEligibleAt(query.now))
+      .slice(0, query.limit);
   }
 
   async hardDelete(id: UserId): Promise<void> {

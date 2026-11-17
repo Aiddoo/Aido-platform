@@ -47,6 +47,8 @@ export const BROADCAST_DELIVERY_QUEUE = defineQueue({
     jobPolicy: BROADCAST_DELIVERY_DEAD_LETTER_RETRY,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE },
+  // 수신자 현지 시각 예약은 시간대 묶음 작업을 미리 쌓아 두고, pg-boss는 예약 작업도 대기 수로 센다
+  backlogWarningSize: 20_000,
 });
 
 export const BROADCAST_DELIVERY_DEAD_LETTER_QUEUE = defineQueue({

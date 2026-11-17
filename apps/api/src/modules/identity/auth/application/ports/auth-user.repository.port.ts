@@ -23,6 +23,13 @@ export interface AuthUserProfileRecord extends AuthUserRecord {
   accounts: Array<{ provider: AccountProvider }>;
 }
 
+export interface PurgeEligibleUsersQuery {
+  readonly now: Temporal.Instant;
+  /** id 순 커서. 지난 묶음의 마지막 사용자 id */
+  readonly afterId: UserId | null;
+  readonly limit: number;
+}
+
 export abstract class AuthUserRepositoryPort {
   abstract findByEmail(email: string): Promise<IdentityUser | null>;
   abstract findById(id: UserId): Promise<IdentityUser | null>;
@@ -46,7 +53,7 @@ export abstract class AuthUserRepositoryPort {
   abstract saveAccountStatus(user: IdentityUser): Promise<void>;
   /** 계정 변경을 직렬화하려고 사용자 행을 잠그고 읽는다(FOR NO KEY UPDATE) */
   abstract findByIdForUpdate(id: UserId): Promise<IdentityUser | null>;
-  /** 탈퇴 유예가 지난 사용자 */
-  abstract listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]>;
+  /** 탈퇴 유예가 지난 사용자를 id 순으로 limit명까지 */
+  abstract listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<IdentityUser[]>;
   abstract hardDelete(id: UserId): Promise<void>;
 }

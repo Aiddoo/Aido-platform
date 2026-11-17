@@ -98,6 +98,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       readonly notificationCleanup?: StubAccountNotificationCleanup;
       readonly todoCommentCleanup?: StubAccountTodoCommentCleanup;
       readonly securityLogRepository?: InMemoryAuthSecurityLogRepository;
+      readonly batchSize?: number;
     } = {},
   ) {
     const userRepository =
@@ -119,6 +120,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       logger,
       alert,
       unitOfWork: new ImmediateUnitOfWork(),
+      ...(options.batchSize != null && { batchSize: options.batchSize }),
     });
     return {
       alert,
@@ -221,6 +223,29 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
         details: { candidateCount: 2, purgedCount: 1, failedCount: 1 },
       },
     ]);
+  });
+
+  it("후보가 묶음 크기를 넘으면 실패한 후보를 지나 다음 묶음까지 모두 처리한다", async () => {
+    // Given
+    const fixture = given({
+      batchSize: 2,
+      userRepository: new FailingHardDeleteUserRepository([
+        deletedUser("user-1"),
+        deletedUser("user-2"),
+        deletedUser("user-3"),
+        deletedUser("user-4"),
+        deletedUser("user-5"),
+      ]),
+    });
+
+    // When
+    await fixture.useCase.execute();
+
+    // Then
+    expect(fixture.userRepository.all.map((user) => user.id)).toEqual(["user-1"]);
+    expect(fixture.logger.messages).toContainEqual(
+      completion({ candidateCount: 5, purgedCount: 4, skippedCount: 0, failedCount: 1 }),
+    );
   });
 
   it.each([

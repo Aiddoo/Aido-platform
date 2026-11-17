@@ -88,7 +88,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     await givenUser({ deletedAt: null });
 
     // When
-    const candidates = await repository.listPurgeEligible(now);
+    const candidates = await repository.listPurgeEligible({ now, afterId: null, limit: 10 });
 
     // Then
     expect(candidates.map((user) => user.toPrimitives())).toEqual([
@@ -123,7 +123,11 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
       deletedAt: null,
     });
     expect(
-      await repository.listPurgeEligible(Temporal.Instant.from("2027-02-01T00:00:00Z")),
+      await repository.listPurgeEligible({
+        now: Temporal.Instant.from("2027-02-01T00:00:00Z"),
+        afterId: null,
+        limit: 10,
+      }),
     ).toEqual([]);
   });
 
@@ -164,8 +168,8 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     const purge = new PurgeDeletedAccountsUseCase({
       ...dependencies,
       userRepository: {
-        listPurgeEligible: async (checkedAt) => {
-          const candidates = await repository.listPurgeEligible(checkedAt);
+        listPurgeEligible: async (query) => {
+          const candidates = await repository.listPurgeEligible(query);
           await client
             .update(userTable)
             .set({ status: "ACTIVE", deletedAt: null })

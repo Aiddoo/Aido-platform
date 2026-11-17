@@ -96,13 +96,20 @@ const pushRateLimiterProvider = {
   useFactory: (
     config: ConfigType<typeof notificationPushConfig>,
     database: Database,
+    clock: ClockPort,
     redis?: Redis,
   ): PushRateLimiterPort =>
     selectPushRateLimiter(config.rateLimitBackend, {
       database,
+      clock,
       ...(redis && { redis }),
     }),
-  inject: [notificationPushConfig.KEY, DRIZZLE, { token: REDIS_COMMAND_CLIENT, optional: true }],
+  inject: [
+    notificationPushConfig.KEY,
+    DRIZZLE,
+    ClockPort,
+    { token: REDIS_COMMAND_CLIENT, optional: true },
+  ],
 } satisfies Provider;
 
 // 테스트 하네스가 공급자·한도기·설정 어댑터만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다

@@ -45,7 +45,35 @@ export const QueueAlerts = defineAlerts("jobs", {
     runbook:
       "태그 queue의 원래 큐에서 같은 시각 jobs.job.failed 경보를 본다. 원인을 고친 뒤 DLQ 작업을 다시 넣거나 지운다.",
   },
+  BACKLOGGED: {
+    key: "jobs.queue.backlogged",
+    severity: "warning",
+    summary: "큐의 대기 작업이 경고 기준보다 많이 쌓였다",
+    runbook:
+      "태그 queue의 worker가 살아 있는지와 같은 시각 jobs.job.failed·DB 풀 경보를 본다. 대기 수에는 예약(startAfter) 작업도 들어가므로 대량 예약·발송 직후인지 먼저 확인한다.",
+  },
 });
+
+// pg-boss warning 가운데 큐 적체(queue_backlog)만 이 모양이다. 다른 warning은 SQL 값이 섞일 수 있어 읽지 않는다
+const queueBacklogWarningSchema = z.object({
+  name: z.string().min(1),
+  queuedCount: z.coerce.number().int(),
+  warningQueueSize: z.coerce.number().int(),
+});
+
+export function queueBackloggedAlert(warningData: unknown): OperationalAlert | null {
+  const parsed = queueBacklogWarningSchema.safeParse(warningData);
+  if (!parsed.success) {
+    return null;
+  }
+  const { name, queuedCount, warningQueueSize } = parsed.data;
+  return {
+    ...QueueAlerts.BACKLOGGED,
+    subject: name,
+    tags: { queue: name },
+    details: { queuedCount, threshold: warningQueueSize },
+  };
+}
 
 // payload가 schema에 맞지 않아 handler에 넘기지 못한 실패의 오류 종류
 export const INVALID_JOB_PAYLOAD_ERROR_TYPE = "InvalidJobPayload";

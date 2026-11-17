@@ -1,7 +1,7 @@
 import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
-import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
@@ -9,6 +9,7 @@ import type { AuthUserActivityWriterPort } from "#api/modules/identity/auth/appl
 import {
   type AuthUserProfileRecord,
   AuthUserRepositoryPort,
+  type PurgeEligibleUsersQuery,
 } from "#api/modules/identity/auth/application/ports/auth-user.repository.port";
 import type {
   UserActivity,
@@ -281,12 +282,20 @@ export class DrizzleUserRepository
     });
   }
 
-  async listPurgeEligible(now: Temporal.Instant): Promise<IdentityUser[]> {
-    const cutoff = now.subtract(PURGE_GRACE_PERIOD);
+  async listPurgeEligible(query: PurgeEligibleUsersQuery): Promise<IdentityUser[]> {
+    const cutoff = query.now.subtract(PURGE_GRACE_PERIOD);
     const rows = await this.#db
       .select()
       .from(user)
-      .where(and(isNotNull(user.deletedAt), lt(user.deletedAt, cutoff)));
+      .where(
+        and(
+          isNotNull(user.deletedAt),
+          lt(user.deletedAt, cutoff),
+          query.afterId == null ? undefined : gt(user.id, query.afterId.value),
+        ),
+      )
+      .orderBy(asc(user.id))
+      .limit(query.limit);
     return rows.map(toIdentityUser);
   }
 

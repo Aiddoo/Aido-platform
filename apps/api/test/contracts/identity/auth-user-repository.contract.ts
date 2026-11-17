@@ -165,10 +165,47 @@ export function describeAuthUserRepositoryContract(
       await repository.saveAccountStatus(atBoundary);
 
       // When
-      const eligible = await repository.listPurgeEligible(AUTH_FIXTURE_NOW);
+      const eligible = await repository.listPurgeEligible({
+        now: AUTH_FIXTURE_NOW,
+        afterId: null,
+        limit: 10,
+      });
 
       // Then
       expect(eligible.map((user) => user.id.value)).toEqual([expired.id.value]);
+    });
+
+    it("완전 삭제 대상은 id 순으로 limit명씩 읽고 afterId 다음부터 이어 읽는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const deletedAt = AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD).subtract({ milliseconds: 1 });
+      const users = [
+        await createUser(repository),
+        await createUser(repository),
+        await createUser(repository),
+      ];
+      for (const user of users) {
+        user.requestDeletion(deletedAt);
+        await repository.saveAccountStatus(user);
+      }
+
+      // When
+      const first = await repository.listPurgeEligible({
+        now: AUTH_FIXTURE_NOW,
+        afterId: null,
+        limit: 2,
+      });
+      const rest = await repository.listPurgeEligible({
+        now: AUTH_FIXTURE_NOW,
+        afterId: first.at(-1)?.id ?? null,
+        limit: 2,
+      });
+
+      // Then
+      expect(first).toHaveLength(2);
+      expect([...first, ...rest].map((user) => user.id.value).toSorted()).toEqual(
+        users.map((user) => user.id.value).toSorted(),
+      );
     });
 
     it("완전 삭제하면 다시 찾지 못하고 없는 사용자 삭제는 실패한다", async () => {

@@ -4,22 +4,33 @@ import type {
   JobInsert,
   JobWithMetadata,
   PreviewScheduleOptions,
-  QueueOptions,
   Schedule,
   ScheduleOptions,
   SendOptions,
   StopOptions,
   UpdateQueueOptions,
+  Warning,
   WorkOptions,
 } from "pg-boss";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { defineQueue } from "#api/shared/application/ports/job-queue.port";
+import {
+  defineQueue,
+  JOB_BACKLOG_WARNING_SIZE,
+} from "#api/shared/application/ports/job-queue.port";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createFakeDatabase, type ExecutedStatement } from "#test/mocks/drizzle.mock";
 
 import { JobQueueRegistry } from "./job-queue.registry.js";
-import { LazyPgBossClient, type PgBossClient, type PgBossQueueCounts } from "./pg-boss-client.js";
+import { QueueAlerts } from "./jobs.alerts.js";
+import {
+  LazyPgBossClient,
+  type PgBossClient,
+  type PgBossListener,
+  type PgBossQueueCounts,
+  type PgBossQueueOptions,
+} from "./pg-boss-client.js";
 import { deterministicJobId, PgBossJobQueueAdapter } from "./pg-boss-job-queue.adapter.js";
 
 const QUEUE = "document-generation";
@@ -44,6 +55,12 @@ const PG_BOSS_POLICY = {
   deleteAfterSeconds: 604_800,
 } as const;
 
+// 2초 폴링 정의의 큐 옵션. DLQ를 원래 큐 쪽에서 만들 때는 경고 기준을 싣지 않는다
+const PG_BOSS_QUEUE_OPTIONS = {
+  ...PG_BOSS_POLICY,
+  warningQueueSize: JOB_BACKLOG_WARNING_SIZE.INTERACTIVE,
+} as const;
+
 const START_AFTER = Temporal.Instant.from("2026-07-22T12:00:00.000Z");
 const documentSchema = z.object({ documentId: z.number() });
 
@@ -64,7 +81,10 @@ const DEAD_LETTER_DEFINITION = defineQueue({
 
 class FakePgBossClient implements PgBossClient {
   readonly createdQueues: string[] = [];
-  readonly createQueueCalls: Array<{ readonly name: string; readonly options?: QueueOptions }> = [];
+  readonly createQueueCalls: Array<{
+    readonly name: string;
+    readonly options?: PgBossQueueOptions;
+  }> = [];
   readonly updateQueueCalls: Array<{
     readonly name: string;
     readonly options: UpdateQueueOptions;
@@ -88,6 +108,7 @@ class FakePgBossClient implements PgBossClient {
   }> = [];
   readonly stopCalls: StopOptions[] = [];
   readonly handlers = new Map<string, (jobs: JobWithMetadata<object>[]) => Promise<unknown>>();
+  readonly listeners: PgBossListener[] = [];
   queues: PgBossQueueCounts[] = [];
   deleteError?: Error;
 
@@ -99,11 +120,22 @@ class FakePgBossClient implements PgBossClient {
     this.stopCalls.push(options ?? {});
   }
 
-  on(_event: "error", _listener: (error: Error) => void): unknown {
+  on(event: "error", listener: (error: Error) => void): unknown;
+  on(event: "warning", listener: (warning: Warning) => void): unknown;
+  on(...registration: PgBossListener): unknown {
+    this.listeners.push(registration);
     return this;
   }
 
-  async createQueue(name: string, options?: QueueOptions): Promise<void> {
+  emitWarning(warning: Warning): void {
+    for (const registration of this.listeners) {
+      if (registration[0] === "warning") {
+        registration[1](warning);
+      }
+    }
+  }
+
+  async createQueue(name: string, options?: PgBossQueueOptions): Promise<void> {
     this.createdQueues.push(name);
     this.createQueueCalls.push({ name, options });
   }
@@ -160,6 +192,10 @@ class FakePgBossClient implements PgBossClient {
 
   previewSchedule(_cron: string, _options: PreviewScheduleOptions): Date[] {
     return [];
+  }
+
+  getDb(): Db {
+    return { executeSql: async () => ({ rows: [] }) };
   }
 }
 
@@ -237,7 +273,7 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
     });
     expect(boss.updateQueueCalls).toEqual([
       { name: DEAD_LETTER_QUEUE, options: PG_BOSS_POLICY },
-      { name: QUEUE, options: PG_BOSS_POLICY },
+      { name: QUEUE, options: PG_BOSS_QUEUE_OPTIONS },
     ]);
     expect(boss.sendCalls).toHaveLength(1);
     expect(boss.sendCalls[0]).toMatchObject({
@@ -296,7 +332,7 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
     expect(boss.insertCalls).toEqual([]);
   });
 
-  it("DLQ worker가 enqueue보다 먼저 등록돼도 DLQ 정책을 한 번만 맞춘다", async () => {
+  it("DLQ worker가 enqueue보다 먼저 등록돼도 DLQ를 한 번만 만들고 원래 큐 쪽은 경고 기준을 덮지 않는다", async () => {
     // Given
     await jobQueue.work(DEAD_LETTER_DEFINITION, vi.fn().mockResolvedValue(undefined));
 
@@ -305,9 +341,45 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
 
     // Then
     expect(boss.createQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toEqual([
+      { name: DEAD_LETTER_QUEUE, options: PG_BOSS_QUEUE_OPTIONS },
+    ]);
+    expect(boss.updateQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toEqual([
+      { name: DEAD_LETTER_QUEUE, options: PG_BOSS_QUEUE_OPTIONS },
       { name: DEAD_LETTER_QUEUE, options: PG_BOSS_POLICY },
     ]);
-    expect(boss.updateQueueCalls.filter(({ name }) => name === DEAD_LETTER_QUEUE)).toHaveLength(1);
+  });
+
+  it("pg-boss 큐 적체 warning은 큐별 경보로 올리고 다른 warning은 무시한다", async () => {
+    // Given
+    const alerts = new RecordingOperationalAlert();
+    const alertingBoss = new FakePgBossClient();
+    new PgBossJobQueueAdapter(
+      alertingBoss,
+      { tx: createFakeDatabase().database },
+      new JobQueueRegistry(),
+      { shutdownTimeoutMs: 90_000, workerEnabled: true },
+      alerts,
+    );
+
+    // When
+    alertingBoss.emitWarning({
+      message: "Warning: large queue backlog",
+      data: { name: QUEUE, queuedCount: 1200, warningQueueSize: 1000, pinSeconds: 0.1 },
+    });
+    alertingBoss.emitWarning({
+      message: "Warning: slow query",
+      data: { elapsed: 31, sql: "SELECT 1", values: ["user@example.com"] },
+    });
+
+    // Then
+    expect(alerts.alerts).toEqual([
+      {
+        ...QueueAlerts.BACKLOGGED,
+        subject: QUEUE,
+        tags: { queue: QUEUE },
+        details: { queuedCount: 1200, threshold: 1000 },
+      },
+    ]);
   });
 
   it("idempotencyKey를 결정적 pg-boss id와 singletonKey로 매핑한다", async () => {

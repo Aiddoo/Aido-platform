@@ -197,7 +197,8 @@ describe("env 예시에 운영 값을 넣어 시작하는 설정", () => {
       expect.objectContaining({
         connectionString: appPool.connectionString,
         ssl: appPool.ssl,
-        options: appPool.options,
+        options: appPool.options?.replace("statement_timeout=15000", "statement_timeout=60000"),
+        query_timeout: 65_000,
         application_name: "aido-pg-boss",
         max: 3,
         schema: env.JOB_SCHEMA,

@@ -151,9 +151,10 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
     let anchorCondition;
     if (cursor != null) {
+      // 다른 사용자의 할 일 id는 없는 커서와 같게 빈 페이지다
       const anchor = await this.#db.query.todo.findFirst({
         columns: { id: true, sortOrder: true },
-        where: { id: cursor },
+        where: { id: cursor, userId: userId.value },
         with: { category: { columns: { sortOrder: true } } },
       });
       if (anchor == null) {

@@ -1,4 +1,5 @@
 import { Injectable, type OnModuleInit } from "@nestjs/common";
+import { zip } from "es-toolkit";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobHeartbeatPort } from "#api/shared/application/ports/job-heartbeat.port";
@@ -7,8 +8,13 @@ import { OperationalAlertPort } from "#api/shared/application/ports/operational-
 
 import { JobQueueRegistry } from "./job-queue.registry.js";
 import { deadLetterAlert, scheduleFailingAlert, scheduleOverdueAlert } from "./jobs.alerts.js";
-import { PgBossScheduleRunReader, type WatchedSchedule } from "./pg-boss-schedule-run.reader.js";
 import {
+  PgBossScheduleRunReader,
+  type ScheduleRunWindow,
+  type WatchedSchedule,
+} from "./pg-boss-schedule-run.reader.js";
+import {
+  type DueRuns,
   findDueRuns,
   judgeScheduleRuns,
   scheduleRunWindowStart,
@@ -18,6 +24,10 @@ import {
   SCHEDULE_WATCHDOG_INTERVAL_MINUTES,
   SCHEDULE_WATCHDOG_QUEUE,
 } from "./schedule-watchdog.queue.js";
+
+interface DueScheduleWindow extends ScheduleRunWindow {
+  readonly due: DueRuns;
+}
 
 /**
  * pg-boss에 등록된 모든 스케줄이 제때 끝나는지와 DLQ 유입을 보고, 실행마다 worker 생존 신호를 보낸다.
@@ -61,20 +71,36 @@ export class ScheduleWatchdogProcessor implements OnModuleInit {
   }
 
   async #watchSchedules(now: Temporal.Instant): Promise<void> {
-    const schedules = await this.#reader.listSchedules();
-    for (const schedule of schedules) {
+    const windows: DueScheduleWindow[] = [];
+    for (const schedule of await this.#reader.listSchedules()) {
       // 감시 작업 자신이 멈추면 생존 신호가 끊겨 바깥 감시자가 알린다
       if (schedule.queue === SCHEDULE_WATCHDOG_QUEUE.name) {
         continue;
       }
-      await this.#watchSchedule(schedule, now);
+      const window = await this.#dueWindowOf(schedule, now);
+      if (window != null) {
+        windows.push(window);
+      }
+    }
+    // 스케줄마다 따로 세면 감시 한 번에 job 표 조회가 스케줄 수만큼 나가 연결을 오래 잡는다(Sentry NODE-NESTJS-2K)
+    const counted = await this.#reader.countRuns(windows);
+    for (const [{ schedule, due }, runs] of zip(windows, counted)) {
+      const verdict = judgeScheduleRuns({ now, runs });
+      if (verdict === "failing") {
+        this.#alerts.raise(scheduleFailingAlert(schedule, runs.failed));
+      } else if (verdict === "overdue") {
+        this.#alerts.raise(scheduleOverdueAlert(schedule, due.latest));
+      }
     }
   }
 
-  async #watchSchedule(schedule: WatchedSchedule, now: Temporal.Instant): Promise<void> {
+  async #dueWindowOf(
+    schedule: WatchedSchedule,
+    now: Temporal.Instant,
+  ): Promise<DueScheduleWindow | null> {
     const due = await findDueRuns({ now, preview: this.#reader.occurrencesOf(schedule) });
     if (due == null) {
-      return;
+      return null;
     }
     const since = scheduleRunWindowStart({
       now,
@@ -82,22 +108,15 @@ export class ScheduleWatchdogProcessor implements OnModuleInit {
       registeredAt: schedule.registeredAt,
       finishedRunRetentionSeconds: schedule.finishedRunRetentionSeconds,
     });
-    if (since == null) {
-      return;
-    }
-    const runs = await this.#reader.countRuns(schedule, since);
-    const verdict = judgeScheduleRuns({ now, runs });
-    if (verdict === "failing") {
-      this.#alerts.raise(scheduleFailingAlert(schedule, runs.failed));
-    } else if (verdict === "overdue") {
-      this.#alerts.raise(scheduleOverdueAlert(schedule, due.latest));
-    }
+    return since == null ? null : { schedule, due, since };
   }
 
   async #watchDeadLetters(now: Temporal.Instant): Promise<void> {
     const since = now.subtract({ minutes: SCHEDULE_WATCHDOG_INTERVAL_MINUTES });
-    for (const queue of this.#registry.deadLetterQueueNames()) {
-      const arrivals = await this.#reader.countDeadLetterArrivals(queue, since);
+    const queues = this.#registry.deadLetterQueueNames();
+    const arrivalsByQueue = await this.#reader.countDeadLetterArrivals(queues, since);
+    for (const queue of queues) {
+      const arrivals = arrivalsByQueue.get(queue) ?? 0;
       if (arrivals > 0) {
         this.#alerts.raise(
           deadLetterAlert({ queue, arrivals, windowMinutes: SCHEDULE_WATCHDOG_INTERVAL_MINUTES }),

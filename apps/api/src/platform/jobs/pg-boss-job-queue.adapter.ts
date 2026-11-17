@@ -11,6 +11,7 @@ import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { withJobScope } from "#api/platform/observability/sentry-scope";
 import {
   JobQueuePort,
+  resolveBacklogWarningSize,
   resolveDeadLetterJobPolicy,
   resolveDeadLetterQueue,
   type EnqueueManyJob,
@@ -29,6 +30,7 @@ import { JobQueueRegistry } from "./job-queue.registry.js";
 import {
   INVALID_JOB_PAYLOAD_ERROR_TYPE,
   jobKindOf,
+  queueBackloggedAlert,
   reportFailedJobAttempt,
 } from "./jobs.alerts.js";
 import { PG_BOSS_CLIENT, type PgBossClient } from "./pg-boss-client.js";
@@ -74,6 +76,13 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     this.#alerts = alerts ?? null;
     this.#boss.on("error", (error) => {
       this.#runtimeErrorLog.error(error);
+    });
+    // pg-boss 유지보수(supervise)가 큐마다 대기 수를 잴 때 정의의 경고 기준을 넘으면 warning을 낸다
+    this.#boss.on("warning", (warning) => {
+      const alert = queueBackloggedAlert(warning.data);
+      if (alert != null) {
+        this.#alerts?.raise(alert);
+      }
     });
   }
 
@@ -322,10 +331,17 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   async #ensure(queue: QueueDefinition<object>): Promise<void> {
     this.#registry.register(queue);
     const deadLetterQueue = resolveDeadLetterQueue(queue.deadLetter);
+    const deadLetterPolicy = resolveDeadLetterJobPolicy(queue.deadLetter);
     if (deadLetterQueue != null) {
-      await this.#queues.ensure(deadLetterQueue, resolveDeadLetterJobPolicy(queue.deadLetter));
+      await this.#queues.ensure(
+        deadLetterQueue,
+        deadLetterPolicy == null ? undefined : { retry: deadLetterPolicy },
+      );
     }
-    await this.#queues.ensure(queue.name, queue.retry);
+    await this.#queues.ensure(queue.name, {
+      retry: queue.retry,
+      backlogWarningSize: resolveBacklogWarningSize(queue),
+    });
   }
 }
 

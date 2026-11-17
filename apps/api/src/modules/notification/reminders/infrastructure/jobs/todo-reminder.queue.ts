@@ -57,6 +57,8 @@ export const TODO_REMINDER_QUEUE = defineQueue({
     batchSize: 20,
     burstWhenBatchFull: true,
   },
+  // 앞으로 울릴 리마인더가 모두 예약 작업으로 대기 수에 들어간다. 늦은 발송은 notification.reminder.late-skips.high가 본다
+  backlogWarningSize: 100_000,
 });
 
 // 같은 큐에 작업별 보존 기간만 다르게 넣는다. pg-boss는 작업 행의 deleteAfterSeconds를 큐 기본값보다 먼저 쓴다

@@ -7,6 +7,8 @@ import {
   pushRateLimitReservation,
   user,
 } from "#api/platform/database/schema/index";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
@@ -19,7 +21,7 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     testDatabase = new TestDatabase();
     client = await testDatabase.start();
-    limiter = new PostgresPushRateLimiterAdapter(client);
+    limiter = new PostgresPushRateLimiterAdapter(client, new DateClock());
   });
 
   afterAll(async () => testDatabase?.stop());
@@ -79,7 +81,7 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
 
     // When
     const firstDecision = await limiter.reserveGeneral({ dispatchId, userId });
-    const restarted = new PostgresPushRateLimiterAdapter(client);
+    const restarted = new PostgresPushRateLimiterAdapter(client, new DateClock());
     const retriedDecision = await restarted.reserveGeneral({ dispatchId, userId });
 
     // Then
@@ -120,6 +122,39 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
         ),
       ),
     ).resolves.toBe(15);
+  });
+
+  it("참여 유도 최소 간격은 주입한 시계로 재고 간격이 지나면 다시 예약한다", async () => {
+    // Given
+    const clock = new FixedClock(Temporal.Instant.from("2026-08-29T03:00:00Z"));
+    const clockedLimiter = new PostgresPushRateLimiterAdapter(client, clock);
+    const userId = await createUser("interval");
+    const first = await createDispatch(userId, "interval-a");
+    const second = await createDispatch(userId, "interval-b");
+    const third = await createDispatch(userId, "interval-c");
+    await clockedLimiter.reserveEngagement({
+      dispatchId: first,
+      userId,
+      localDate: "2026-08-29",
+    });
+
+    // When
+    clock.advanceBy({ hours: 3 });
+    const withinInterval = await clockedLimiter.reserveEngagement({
+      dispatchId: second,
+      userId,
+      localDate: "2026-08-29",
+    });
+    clock.advanceBy({ hours: 1 });
+    const afterInterval = await clockedLimiter.reserveEngagement({
+      dispatchId: third,
+      userId,
+      localDate: "2026-08-29",
+    });
+
+    // Then
+    expect(withinInterval).toBe(true);
+    expect(afterInterval).toBe(false);
   });
 
   it("배치 예약은 서로 다른 사용자를 한 트랜잭션에서 일반·engagement로 저장한다", async () => {

@@ -29,7 +29,7 @@
 
 ## 큐 정의
 
-[defineQueue](../src/shared/application/ports/job-queue.port.ts)`({ name, payloadSchema, retry, deadLetter, worker, schedules })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
+[defineQueue](../src/shared/application/ports/job-queue.port.ts)`({ name, payloadSchema, retry, deadLetter, worker, schedules, backlogWarningSize })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
 
 ```ts
 export const DOCUMENT_QUEUE = defineQueue({
@@ -61,6 +61,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | 멱등         | at-least-once라 handler는 같은 payload 재실행에 멱등이다(idempotency key, 유니크 키, 상태 fence, `boolean` 전이)                                                                                                                                                                                                                                                                                         |
 | 이름         | 새 큐는 `<context>.<purpose>.v1`. worker 동시성은 pg-boss 12 용어 `localConcurrency`                                                                                                                                                                                                                                                                                                                     |
 | 묶음         | 발송량이 많거나 같은 시각에 몰리는 큐는 `batchSize`(+`burstWhenBatchFull`). handler가 throw하면 묶음 전체가 재시도되므로 상태 fence로 멱등을 보장한다. 다시 실행하면 한 번 더 보내는 작업이 섞인 큐는 `isolateJobFailures`로 작업마다 끝낸다(`notification.v1`·`push-delivery.v1`). 작업마다 끝내면서 조회·발행을 묶을 큐는 `workBatch`로 묶음을 한 번에 받고 실패한 작업만 돌려준다(`todo-reminder.v1`) |
+| 적체 경고    | 대기 작업이 `backlogWarningSize`를 넘으면 `jobs.queue.backlogged` 경보다. 없으면 폴링 종류의 `JOB_BACKLOG_WARNING_SIZE`(1,000·5,000·10,000)이고, 예약(`startAfter`)을 많이 쌓는 큐는 정의에서 정한다(`todo-reminder.v1` 100,000)                                                                                                                                                                         |
 | Health       | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다. 큐를 따로 목록에 적지 않는다                                                                                                                                                                                                                                                                                   |
 | 연결 예산    | 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 13                                                                                                                                                                                                                                                                                                                                  |
 | `startAfter` | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                                                                                                                   |

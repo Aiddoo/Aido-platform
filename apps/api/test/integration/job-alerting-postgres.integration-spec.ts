@@ -1,11 +1,14 @@
 import { sql } from "drizzle-orm";
-import { PgBoss } from "pg-boss";
+import { type Db, PgBoss } from "pg-boss";
 import { z } from "zod";
 
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
-import { JobAlerts } from "#api/platform/jobs/jobs.alerts";
+import { JobAlerts, QueueAlerts } from "#api/platform/jobs/jobs.alerts";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
-import { PgBossScheduleRunReader } from "#api/platform/jobs/pg-boss-schedule-run.reader";
+import {
+  PgBossScheduleRunReader,
+  type WatchedSchedule,
+} from "#api/platform/jobs/pg-boss-schedule-run.reader";
 import { ScheduleWatchdogProcessor } from "#api/platform/jobs/schedule-watchdog.processor";
 import { SCHEDULE_WATCHDOG_HEARTBEAT } from "#api/platform/jobs/schedule-watchdog.queue";
 import { DeduplicatingOperationalAlertAdapter } from "#api/platform/observability/deduplicating-operational-alert.adapter";
@@ -122,7 +125,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
   function watchdogWith(alerts: OperationalAlertPort, registry = new JobQueueRegistry()) {
     const heartbeat = new RecordingJobHeartbeat();
-    const reader = new PgBossScheduleRunReader(boss, database, { schema: SCHEMA });
+    const reader = new PgBossScheduleRunReader(boss, { schema: SCHEMA });
     const watchdog = new ScheduleWatchdogProcessor(
       jobQueueWith(alerts, registry),
       reader,
@@ -144,6 +147,54 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
   async function jobStates(queue: string): Promise<string[]> {
     const jobs = await boss.findJobs(queue);
     return jobs.map(({ state }) => state);
+  }
+
+  // 감시 reader가 pg-boss 풀에 보낸 문장을 센다
+  function recordingReader() {
+    const statements: string[] = [];
+    const recordingDb = (db: Db): Db => ({
+      executeSql: (text, values) => {
+        statements.push(text);
+        return db.executeSql(text, values);
+      },
+    });
+    const reader = new PgBossScheduleRunReader(
+      {
+        getSchedules: () => boss.getSchedules(),
+        previewSchedule: (cron, options) => boss.previewSchedule(cron, options),
+        getDb: () => recordingDb(boss.getDb()),
+      },
+      { schema: SCHEMA },
+    );
+    return { reader, statements };
+  }
+
+  function watchedSchedule(queue: string, payload: object | null): WatchedSchedule {
+    return {
+      queue,
+      scheduleKey: queue,
+      cron: "0 * * * *",
+      timezone: "UTC",
+      payload,
+      registeredAt: Temporal.Instant.from("2026-01-01T00:00:00Z"),
+      finishedRunRetentionSeconds: 7 * 24 * 60 * 60,
+    };
+  }
+
+  async function givenJob(
+    queue: string,
+    data: object,
+    state: "created" | "completed" | "failed",
+    createdHoursAgo = 0,
+  ): Promise<void> {
+    await boss.createQueue(queue);
+    const id = await boss.send(queue, data);
+    await database.execute(sql`
+      UPDATE pgboss.job
+      SET state = ${state}::pgboss.job_state,
+        created_on = now() - make_interval(hours => ${createdHoursAgo})
+      WHERE name = ${queue} AND id = ${id}::uuid
+    `);
   }
 
   it("재시도가 남은 실패는 경보하지 않고 재시도를 다 쓴 실패만 경보한다", async () => {
@@ -278,6 +329,97 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
         details: expect.objectContaining({ failedRuns: 1 }),
       }),
     );
+  });
+
+  it("대기 작업이 정의의 경고 기준을 넘으면 pg-boss 유지보수의 warning으로 큐 적체 경보를 올린다", async () => {
+    // Given
+    const supervising = new PgBoss({
+      connectionString: testDatabase.getConnectionUri(),
+      schema: SCHEMA,
+      migrate: false,
+      createSchema: false,
+      max: 2,
+      schedule: false,
+      superviseIntervalSeconds: 1,
+      monitorIntervalSeconds: 1,
+    });
+    await supervising.start();
+    const alerts = new RecordingOperationalAlert();
+    const { transactionHost } = createDatabaseTransactionFixture(database);
+    const jobQueue = new PgBossJobQueueAdapter(
+      supervising,
+      transactionHost,
+      new JobQueueRegistry(),
+      { shutdownTimeoutMs: 10_000, workerEnabled: true },
+      alerts,
+    );
+    const queue = documentQueue("integration-backlog", { backlogWarningSize: 1 });
+
+    // When
+    await jobQueue.enqueue(queue, { documentId: 1 });
+    await jobQueue.enqueue(queue, { documentId: 2 });
+
+    // Then
+    try {
+      await eventually(() => {
+        expect(alerts.alerts).toContainEqual({
+          ...QueueAlerts.BACKLOGGED,
+          subject: "integration-backlog",
+          tags: { queue: "integration-backlog" },
+          details: { queuedCount: 2, threshold: 1 },
+        });
+      });
+    } finally {
+      await supervising.stop({ graceful: false, close: true });
+    }
+  });
+
+  it("여러 스케줄의 창 안 실행 수를 pg-boss 풀의 문장 하나로 센다", async () => {
+    // Given
+    await givenJob("integration-runs-completed", {}, "completed");
+    await givenJob("integration-runs-completed", {}, "completed", 3);
+    await givenJob("integration-runs-failed", {}, "failed");
+    await givenJob("integration-runs-pending", { name: "dispatch" }, "created");
+    await givenJob("integration-runs-pending", { name: "analyze" }, "completed");
+    const { reader, statements } = recordingReader();
+    const since = Temporal.Now.instant().subtract({ hours: 1 });
+
+    // When
+    const runs = await reader.countRuns([
+      { schedule: watchedSchedule("integration-runs-completed", {}), since },
+      { schedule: watchedSchedule("integration-runs-failed", {}), since },
+      { schedule: watchedSchedule("integration-runs-pending", { name: "dispatch" }), since },
+      { schedule: watchedSchedule("integration-runs-pending", { name: "analyze" }), since },
+      { schedule: watchedSchedule("integration-runs-empty", null), since },
+    ]);
+
+    // Then
+    expect(statements).toHaveLength(1);
+    expect(runs).toEqual([
+      { completed: 1, failed: 0, oldestPendingCreatedAt: null },
+      { completed: 0, failed: 1, oldestPendingCreatedAt: null },
+      { completed: 0, failed: 0, oldestPendingCreatedAt: expect.any(Temporal.Instant) },
+      { completed: 1, failed: 0, oldestPendingCreatedAt: null },
+      { completed: 0, failed: 0, oldestPendingCreatedAt: null },
+    ]);
+  });
+
+  it("여러 DLQ의 감시 주기 안 유입 수를 문장 하나로 센다", async () => {
+    // Given
+    await givenJob("integration-arrivals-a", {}, "created");
+    await givenJob("integration-arrivals-a", {}, "created");
+    await givenJob("integration-arrivals-b", {}, "created", 3);
+    const { reader, statements } = recordingReader();
+
+    // When
+    const arrivals = await reader.countDeadLetterArrivals(
+      ["integration-arrivals-a", "integration-arrivals-b"],
+      Temporal.Now.instant().subtract({ hours: 1 }),
+    );
+
+    // Then
+    expect(statements).toHaveLength(1);
+    expect(arrivals).toEqual(new Map([["integration-arrivals-a", 2]]));
   });
 
   it("최근 감시 주기 안에 DLQ로 옮겨진 작업이 있으면 DLQ 경보를 올린다", async () => {
