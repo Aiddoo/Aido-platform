@@ -1,4 +1,9 @@
-import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
+import {
+  AI_SUGGESTION_LIMITS,
+  completionRate,
+  DAYS_OF_WEEK,
+  type DayOfWeek,
+} from "@aido/api/vocabulary";
 
 import {
   collectRecordedActivities,
@@ -78,7 +83,7 @@ export function buildSuggestionCandidates(
       title: activity.title,
       occurrences: activity.occurrences,
       completed: activity.completedOccurrences,
-      completionRate: Math.round((activity.completedOccurrences / activity.occurrences) * 100),
+      completionRate: completionRate(activity.completedOccurrences, activity.occurrences),
       days: activity.days,
       recordedTime: activity.recordedTime,
       categoryName: activity.categoryName,
