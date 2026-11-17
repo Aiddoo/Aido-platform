@@ -42,18 +42,22 @@ import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/pl
 import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
-import { DrizzleSchedulerReader } from "./infrastructure/persistence/drizzle-scheduler.reader.js";
+import { DrizzleReEngagementReader } from "./infrastructure/persistence/drizzle-re-engagement.reader.js";
+import { DrizzleScheduledReminderReader } from "./infrastructure/persistence/drizzle-scheduled-reminder.reader.js";
+import { DrizzleSchedulerPreferenceReader } from "./infrastructure/persistence/drizzle-scheduler-preference.reader.js";
+import { DrizzleTodoReminderReader } from "./infrastructure/persistence/drizzle-todo-reminder.reader.js";
+import { DrizzleWeatherReminderReader } from "./infrastructure/persistence/drizzle-weather-reminder.reader.js";
+import { DrizzleWeeklyAchievementStatsReader } from "./infrastructure/persistence/drizzle-weekly-achievement-stats.reader.js";
 
 // 읽기 포트는 계약별로 나뉘고 DB 접근은 Drizzle 어댑터 하나에 모인다
 export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
   { provide: WeatherBriefingTodoReaderPort, useClass: PlanningWeatherBriefingTodoAdapter },
-  DrizzleSchedulerReader,
-  { provide: ScheduledReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: ReEngagementReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: WeatherReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: WeeklyAchievementStatsReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: TodoReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: SchedulerPreferenceReaderPort, useExisting: DrizzleSchedulerReader },
+  { provide: ScheduledReminderReaderPort, useClass: DrizzleScheduledReminderReader },
+  { provide: ReEngagementReaderPort, useClass: DrizzleReEngagementReader },
+  { provide: WeatherReminderReaderPort, useClass: DrizzleWeatherReminderReader },
+  { provide: WeeklyAchievementStatsReaderPort, useClass: DrizzleWeeklyAchievementStatsReader },
+  { provide: TodoReminderReaderPort, useClass: DrizzleTodoReminderReader },
+  { provide: SchedulerPreferenceReaderPort, useClass: DrizzleSchedulerPreferenceReader },
   { provide: SchedulerDedupPort, useClass: SchedulerDedupAdapter },
   { provide: TodoSeriesOwnerDormancyPort, useClass: TodoSeriesOwnerDormancyAdapter },
   { provide: TodoReminderSchedulerPort, useClass: TodoReminderSchedulerAdapter },

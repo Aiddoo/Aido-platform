@@ -8,7 +8,6 @@ import type { PushReceiptResult } from "#api/modules/notification/push-dispatche
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push-dispatches/domain/push-receipt.domain-service";
 import { EXPO_PUSH_TIMING } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-sender.adapter";
-import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-receipt.repository";
@@ -24,6 +23,7 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
+import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -404,10 +404,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const notification = requireRecord(created);
     const staging = new DrizzlePushDispatchStagingRepository(f.transactionHost, new DateClock());
     const outbox = new DrizzlePushDeliveryOutboxRepository(f.transactionHost, new DateClock());
-    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(
-      f.transactionHost,
-      new DateClock(),
-    );
+    const lifecycle = createPushDeliveryLifecycle(f.transactionHost, new DateClock());
     const staged = await f.uow.run(() =>
       staging.stage({
         notificationId: notification.id,

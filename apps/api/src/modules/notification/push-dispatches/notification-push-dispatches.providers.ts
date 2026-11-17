@@ -22,8 +22,10 @@ import { NotificationRecipientLocaleReaderPort } from "./application/ports/notif
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
+import { PushDeliveryClaimRepositoryPort } from "./application/ports/push-delivery-claim.repository.port.js";
+import { PushDeliveryFinalizationRepositoryPort } from "./application/ports/push-delivery-finalization.repository.port.js";
 import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-job-enqueuer.port.js";
-import { PushDeliveryLifecycleRepositoryPort } from "./application/ports/push-delivery-lifecycle.repository.port.js";
+import { PushDeliveryLeaseRepositoryPort } from "./application/ports/push-delivery-lease.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
 import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
 import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
@@ -49,7 +51,9 @@ import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-no
 import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
 import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/drizzle-push-campaign-outcome.reader.js";
-import { DrizzlePushDeliveryLifecycleRepository } from "./infrastructure/persistence/drizzle-push-delivery-lifecycle.repository.js";
+import { DrizzlePushDeliveryClaimRepository } from "./infrastructure/persistence/drizzle-push-delivery-claim.repository.js";
+import { DrizzlePushDeliveryFinalizationRepository } from "./infrastructure/persistence/drizzle-push-delivery-finalization.repository.js";
+import { DrizzlePushDeliveryLeaseRepository } from "./infrastructure/persistence/drizzle-push-delivery-lease.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/drizzle-push-delivery-outbox.repository.js";
 import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/drizzle-push-dispatch-staging.repository.js";
 import { DrizzlePushFunnelReader } from "./infrastructure/persistence/drizzle-push-funnel.reader.js";
@@ -83,10 +87,12 @@ export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
   { provide: PushReceiptRepositoryPort, useClass: DrizzlePushReceiptRepository },
   { provide: PushDispatchStagingRepositoryPort, useClass: DrizzlePushDispatchStagingRepository },
   { provide: PushDeliveryOutboxRepositoryPort, useClass: DrizzlePushDeliveryOutboxRepository },
+  { provide: PushDeliveryClaimRepositoryPort, useClass: DrizzlePushDeliveryClaimRepository },
   {
-    provide: PushDeliveryLifecycleRepositoryPort,
-    useClass: DrizzlePushDeliveryLifecycleRepository,
+    provide: PushDeliveryFinalizationRepositoryPort,
+    useClass: DrizzlePushDeliveryFinalizationRepository,
   },
+  { provide: PushDeliveryLeaseRepositoryPort, useClass: DrizzlePushDeliveryLeaseRepository },
   { provide: PushCampaignOutcomeReaderPort, useClass: DrizzlePushCampaignOutcomeReader },
   { provide: PushFunnelReaderPort, useClass: DrizzlePushFunnelReader },
   { provide: PushDeliveryJobEnqueuerPort, useClass: PushDeliveryQueueAdapter },
@@ -137,7 +143,9 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     logger: loggerFor(DispatchPushNotificationUseCase),
   }),
   provideUseCase(DeliverPushNotificationsUseCase, {
-    lifecycle: PushDeliveryLifecycleRepositoryPort,
+    claims: PushDeliveryClaimRepositoryPort,
+    finalization: PushDeliveryFinalizationRepositoryPort,
+    lease: PushDeliveryLeaseRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     eligibility: EvaluatePushDeliveryEligibilityUseCase,
     payloadFactory: PushNotificationPayloadPort,
@@ -158,13 +166,13 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     logger: loggerFor(PublishPushDeliveryAfterCommitUseCase),
   }),
   provideUseCase(RecoverFailedPushDeliveriesUseCase, {
-    lifecycle: PushDeliveryLifecycleRepositoryPort,
+    claims: PushDeliveryClaimRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
   }),
   provideUseCase(RelayPushDeliveryOutboxUseCase, {
     outbox: PushDeliveryOutboxRepositoryPort,
-    lifecycle: PushDeliveryLifecycleRepositoryPort,
+    lease: PushDeliveryLeaseRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     publishOutbox: PublishPushDeliveryOutboxUseCase,
     pushProvider: PushProviderPort,

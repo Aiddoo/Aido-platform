@@ -1,7 +1,7 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryLeaseRepositoryPort } from "../ports/push-delivery-lease.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
 import type { PushProviderPort, PushProviderTiming } from "../ports/push-provider.port.js";
 import { PUSH_DELIVERY_JOB_EXPIRE_SECONDS } from "../read-models/push-delivery.read-model.js";
@@ -17,7 +17,7 @@ function processingLeaseMs(timing: PushProviderTiming): number {
 
 interface RelayPushDeliveryOutboxDependencies {
   readonly outbox: Pick<PushDeliveryOutboxRepositoryPort, "recoverStaleProcessing">;
-  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing">;
+  readonly lease: Pick<PushDeliveryLeaseRepositoryPort, "recoverStaleProcessing">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly publishOutbox: Pick<PublishPushDeliveryOutboxUseCase, "execute">;
   readonly pushProvider: Pick<PushProviderPort, "timing">;
@@ -36,7 +36,7 @@ export class RelayPushDeliveryOutboxUseCase {
       .now()
       .subtract({ milliseconds: processingLeaseMs(this.#dependencies.pushProvider.timing) });
     await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.lifecycle.recoverStaleProcessing(processingCutoff);
+      await this.#dependencies.lease.recoverStaleProcessing(processingCutoff);
       await this.#dependencies.outbox.recoverStaleProcessing(processingCutoff);
     });
 

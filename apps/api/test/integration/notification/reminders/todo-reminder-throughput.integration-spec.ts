@@ -20,7 +20,6 @@ import {
   TODO_REMINDER_QUEUE,
   type TodoReminderRuntimeJob,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
-import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import {
   notification,
@@ -36,6 +35,7 @@ import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-tod
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -110,12 +110,11 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
     });
     processor = new TodoReminderQueueProcessor(
-      new DrizzleSchedulerReader(
-        transactionHost,
-        new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
-        { onboardingV2: { enabled: false, treatmentPercent: 50 } },
-        new DateClock(),
-      ),
+      createSchedulerReaders({
+        transactionHost: transactionHost,
+        cache: new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
+        clock: new DateClock(),
+      }).todoReminder,
       new StubTodoSeriesOwnerDormancy(),
       publisher,
       batchPublisher,

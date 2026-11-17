@@ -22,7 +22,7 @@ import {
   TODO_REMINDER_QUEUE as TODO_REMINDER_QUEUE_DEFINITION,
   todoReminderJobSchema,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
-import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
+import { DrizzleTodoReminderReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-todo-reminder.reader";
 import { notificationRetentionAssignmentsConfig } from "#api/modules/notification/retention-assignments/notification-retention-assignments.config";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
@@ -193,7 +193,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     });
     const readerModule = await Test.createTestingModule({
       providers: [
-        DrizzleSchedulerReader,
+        DrizzleTodoReminderReader,
         { provide: TransactionHost, useValue: transactionHost },
         { provide: CacheStorePort, useValue: {} },
         { provide: ClockPort, useValue: new DateClock() },
@@ -204,7 +204,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       ],
     }).compile();
     processor = new TodoReminderQueueProcessor(
-      readerModule.get(DrizzleSchedulerReader),
+      readerModule.get(DrizzleTodoReminderReader),
       new StubTodoSeriesOwnerDormancy(),
       publisher,
       batchPublisher,

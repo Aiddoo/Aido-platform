@@ -1,7 +1,7 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { type PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryClaimRepositoryPort } from "../ports/push-delivery-claim.repository.port.js";
 import type { PushDeliveryPublicationReadModel } from "../read-models/push-delivery.read-model.js";
 
 interface RecoverFailedPushDeliveriesInput {
@@ -9,7 +9,7 @@ interface RecoverFailedPushDeliveriesInput {
 }
 
 interface RecoverFailedPushDeliveriesDependencies {
-  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "reopenFailedPublications">;
+  readonly claims: Pick<PushDeliveryClaimRepositoryPort, "reopenFailedPublications">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
 }
@@ -25,7 +25,7 @@ export class RecoverFailedPushDeliveriesUseCase {
 
   execute(input: RecoverFailedPushDeliveriesInput): Promise<number> {
     return this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.lifecycle.reopenFailedPublications({
+      this.#dependencies.claims.reopenFailedPublications({
         publications: input.publications,
         availableAt: this.#dependencies.clock.now(),
         error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",

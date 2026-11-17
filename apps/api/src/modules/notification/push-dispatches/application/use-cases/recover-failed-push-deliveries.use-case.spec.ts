@@ -2,15 +2,15 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import type {
-  PushDeliveryLifecycleRepositoryPort,
+  PushDeliveryClaimRepositoryPort,
   ReopenPushDeliveriesAfterClaimFailureInput,
-} from "../ports/push-delivery-lifecycle.repository.port.js";
+} from "../ports/push-delivery-claim.repository.port.js";
 import { RecoverFailedPushDeliveriesUseCase } from "./recover-failed-push-deliveries.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T12:00:00.000Z");
 
 class RecordingReopenLifecycle implements Pick<
-  PushDeliveryLifecycleRepositoryPort,
+  PushDeliveryClaimRepositoryPort,
   "reopenFailedPublications"
 > {
   readonly reopenInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
@@ -29,7 +29,7 @@ describe("RecoverFailedPushDeliveriesUseCase — 재시도가 끝난 발송 다�
     lifecycle.reopenedCount = 1;
     const unitOfWork = new ImmediateUnitOfWork();
     const useCase = new RecoverFailedPushDeliveriesUseCase({
-      lifecycle,
+      claims: lifecycle,
       unitOfWork,
       clock: new FixedClock(NOW),
     });

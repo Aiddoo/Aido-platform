@@ -1,6 +1,5 @@
 import { omit } from "es-toolkit";
 
-import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import {
   todo,
@@ -17,11 +16,12 @@ import {
 } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 PostgreSQL)", () => {
+describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실제 PostgreSQL)", () => {
   const database = new TestDatabase();
   let client: TestDatabaseClient;
   let sequence = 0;
@@ -40,13 +40,12 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
   });
 
   // 활성 시간대는 캐시를 거치므로 계약 사례마다 새 캐시로 만든다
-  function createReader(): DrizzleSchedulerReader {
-    return new DrizzleSchedulerReader(
-      createDatabaseTransactionFixture(client).transactionHost,
-      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
-      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
-      new DateClock(),
-    );
+  function createReader(): ReturnType<typeof createSchedulerReaders> {
+    return createSchedulerReaders({
+      transactionHost: createDatabaseTransactionFixture(client).transactionHost,
+      cache: new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
+      clock: new DateClock(),
+    });
   }
 
   async function insertUser(seed: Pick<WeeklyStatsUserSeed, "plan"> = {}): Promise<string> {
@@ -134,7 +133,7 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
       const reader = createReader();
       const reads = {
         premiumMorning: (timezones: readonly string[]) =>
-          reader.findPremiumMorningReminderUsers({
+          reader.scheduledReminder.findPremiumMorningReminderUsers({
             timezones,
             hour: 8,
             minute: 0,
@@ -142,9 +141,13 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
             tomorrow: TOMORROW,
           }),
         freeMorning: (timezones: readonly string[]) =>
-          reader.findFreeMorningReminderUsers({ timezones, today: TODAY, tomorrow: TOMORROW }),
+          reader.scheduledReminder.findFreeMorningReminderUsers({
+            timezones,
+            today: TODAY,
+            tomorrow: TOMORROW,
+          }),
         premiumEvening: (timezones: readonly string[]) =>
-          reader.findPremiumEveningReminderUsers({
+          reader.scheduledReminder.findPremiumEveningReminderUsers({
             timezones,
             hour: 19,
             minute: 0,
@@ -152,10 +155,19 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
             tomorrow: TOMORROW,
           }),
         lunchNudge: (timezones: readonly string[]) =>
-          reader.findLunchNudgeUsers({ timezones, today: TODAY, tomorrow: TOMORROW }),
+          reader.scheduledReminder.findLunchNudgeUsers({
+            timezones,
+            today: TODAY,
+            tomorrow: TOMORROW,
+          }),
         weatherMorning: (timezones: readonly string[]) =>
-          reader.findWeatherMorningUsersWithLocation({ timezones, hour: 8, minute: 0 }),
-        activeUsers: (timezones: readonly string[]) => reader.findActiveUsersInTimezones(timezones),
+          reader.weatherReminder.findWeatherMorningUsersWithLocation({
+            timezones,
+            hour: 8,
+            minute: 0,
+          }),
+        activeUsers: (timezones: readonly string[]) =>
+          reader.reEngagement.findActiveUsersInTimezones(timezones),
       };
 
       for (const [name, read] of Object.entries(reads)) {
@@ -175,21 +187,21 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
       const reader = createReader();
 
       // When
-      const morning = await reader.findPremiumMorningReminderUsers({
+      const morning = await reader.scheduledReminder.findPremiumMorningReminderUsers({
         timezones: GROUP,
         hour: 8,
         minute: 0,
         today: TODAY,
         tomorrow: TOMORROW,
       });
-      const evening = await reader.findPremiumEveningReminderUsers({
+      const evening = await reader.scheduledReminder.findPremiumEveningReminderUsers({
         timezones: GROUP,
         hour: 19,
         minute: 0,
         today: TODAY,
         tomorrow: TOMORROW,
       });
-      const weather = await reader.findWeatherMorningUsersWithLocation({
+      const weather = await reader.weatherReminder.findWeatherMorningUsersWithLocation({
         timezones: GROUP,
         hour: 8,
         minute: 0,
@@ -213,12 +225,12 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
   });
 
   describeWeeklyAchievementStatsReaderContract(async () => ({
-    reader: createReader(),
+    reader: createReader().weeklyAchievementStats,
     givenUser: givenWeeklyStatsUser,
   }));
 
   describeSchedulerPreferenceReaderContract(async () => ({
-    reader: createReader(),
+    reader: createReader().schedulerPreference,
     givenPreference: async ({ timezone, locale }) => {
       const userId = await insertUser();
       await client.insert(userPreference).values({ userId, timezone, locale });

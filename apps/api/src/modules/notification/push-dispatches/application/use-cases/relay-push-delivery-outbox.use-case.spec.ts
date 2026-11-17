@@ -2,7 +2,7 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
-import type { PushDeliveryLifecycleRepositoryPort } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { PushDeliveryLeaseRepositoryPort } from "../ports/push-delivery-lease.repository.port.js";
 import type { PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
 import type {
   PublishPushDeliveryOutboxInput,
@@ -22,7 +22,7 @@ class RecordingRelaySteps
   readonly publishInputs: PublishPushDeliveryOutboxInput[] = [];
   publishedPerBatch = 0;
 
-  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing"> = {
+  readonly lifecycle: Pick<PushDeliveryLeaseRepositoryPort, "recoverStaleProcessing"> = {
     recoverStaleProcessing: async (startedBefore: Temporal.Instant) => {
       this.steps.push(`lifecycle-recover:${toIsoString(startedBefore)}`);
       return 0;
@@ -44,7 +44,7 @@ class RecordingRelaySteps
 function createRelayUseCase(steps: RecordingRelaySteps) {
   return new RelayPushDeliveryOutboxUseCase({
     outbox: steps,
-    lifecycle: steps.lifecycle,
+    lease: steps.lifecycle,
     unitOfWork: new ImmediateUnitOfWork(),
     publishOutbox: steps,
     pushProvider: {

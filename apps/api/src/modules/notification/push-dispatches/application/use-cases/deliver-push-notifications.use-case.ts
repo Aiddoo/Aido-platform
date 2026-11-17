@@ -7,11 +7,15 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
-import {
-  type ClaimedPushDelivery,
-  type PushDeliveryContext,
-  type PushDeliveryLifecycleRepositoryPort,
-} from "../ports/push-delivery-lifecycle.repository.port.js";
+import type {
+  ClaimedPushDelivery,
+  PushDeliveryClaimRepositoryPort,
+} from "../ports/push-delivery-claim.repository.port.js";
+import type {
+  PushDeliveryContext,
+  PushDeliveryFinalizationRepositoryPort,
+} from "../ports/push-delivery-finalization.repository.port.js";
+import type { PushDeliveryLeaseRepositoryPort } from "../ports/push-delivery-lease.repository.port.js";
 import type { PushNotificationPayloadPort } from "../ports/push-notification-payload.port.js";
 import type { PushResult } from "../ports/push-provider.port.js";
 import {
@@ -72,15 +76,15 @@ function partitionEligibility<TCandidate>(
  * DB fence는 stale worker의 상태 덮어쓰기를 막지만 외부 provider까지 exactly-once로 만들지는 않는다.
  */
 interface DeliverPushNotificationsDependencies {
-  readonly lifecycle: Pick<
-    PushDeliveryLifecycleRepositoryPort,
-    | "claim"
-    | "finalizeResults"
-    | "finalizeSkipped"
-    | "markRateLimitReserved"
-    | "release"
-    | "reopenAfterFinalClaimFailure"
+  readonly claims: Pick<
+    PushDeliveryClaimRepositoryPort,
+    "claim" | "markRateLimitReserved" | "reopenAfterFinalClaimFailure"
   >;
+  readonly finalization: Pick<
+    PushDeliveryFinalizationRepositoryPort,
+    "finalizeResults" | "finalizeSkipped"
+  >;
+  readonly lease: Pick<PushDeliveryLeaseRepositoryPort, "release">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly eligibility: Pick<
     EvaluatePushDeliveryEligibilityUseCase,
@@ -159,7 +163,7 @@ export class DeliverPushNotificationsUseCase {
     }
 
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.lifecycle.finalizeResults([
+      this.#dependencies.finalization.finalizeResults([
         { fence: claimed.fence, context, results: delivery.results },
       ]),
     );
@@ -254,7 +258,7 @@ export class DeliverPushNotificationsUseCase {
         : [];
     });
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.lifecycle.finalizeResults(finalizations),
+      this.#dependencies.finalization.finalizeResults(finalizations),
     );
   }
 
@@ -280,7 +284,7 @@ export class DeliverPushNotificationsUseCase {
     }
     const reservedAt = this.#now();
     const reserved = await this.#dependencies.unitOfWork.run(async () => {
-      const reservedDispatchIds = await this.#dependencies.lifecycle.markRateLimitReserved(
+      const reservedDispatchIds = await this.#dependencies.claims.markRateLimitReserved(
         claimedDeliveries.map((claimed) => claimed.fence),
         reservedAt,
       );
@@ -300,7 +304,7 @@ export class DeliverPushNotificationsUseCase {
   async #claim(input: DeliverPushNotificationsCommand): Promise<readonly ClaimedPushDelivery[]> {
     try {
       return await this.#dependencies.unitOfWork.run(() =>
-        this.#dependencies.lifecycle.claim({
+        this.#dependencies.claims.claim({
           publications: input.publications,
           processingJobId: input.processingJobId,
           processingJobAttempt: input.processingJobAttempt,
@@ -322,7 +326,7 @@ export class DeliverPushNotificationsUseCase {
     const message = claimError instanceof Error ? claimError.message : String(claimError);
     try {
       await this.#dependencies.unitOfWork.run(async () => {
-        const recovered = await this.#dependencies.lifecycle.reopenAfterFinalClaimFailure({
+        const recovered = await this.#dependencies.claims.reopenAfterFinalClaimFailure({
           publications: input.publications,
           availableAt: this.#now(),
           error: message,
@@ -356,7 +360,7 @@ export class DeliverPushNotificationsUseCase {
       return [{ fence: candidate.claimed.fence, context, reason }];
     });
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.lifecycle.finalizeSkipped(finalizations),
+      this.#dependencies.finalization.finalizeSkipped(finalizations),
     );
   }
 
@@ -367,7 +371,7 @@ export class DeliverPushNotificationsUseCase {
   ): Promise<void> {
     this.#logSkipped(claimed.item.data, reason);
     await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.lifecycle.finalizeSkipped([{ fence: claimed.fence, context, reason }]),
+      this.#dependencies.finalization.finalizeSkipped([{ fence: claimed.fence, context, reason }]),
     );
   }
 
@@ -397,7 +401,7 @@ export class DeliverPushNotificationsUseCase {
     const at = this.#now();
     try {
       await this.#dependencies.unitOfWork.run(() =>
-        this.#dependencies.lifecycle.release(
+        this.#dependencies.lease.release(
           claimed.map((item) => ({
             fence: item.fence,
             error: message,

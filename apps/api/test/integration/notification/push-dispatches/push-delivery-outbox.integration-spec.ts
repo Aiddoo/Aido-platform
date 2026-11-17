@@ -2,7 +2,6 @@ import { Propagation, type TransactionHost } from "@nestjs-cls/transactional";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
-import { DrizzlePushDeliveryLifecycleRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-lifecycle.repository";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -16,6 +15,7 @@ import {
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
+import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
 import { createTransactionHost } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -95,8 +95,8 @@ function outbox(host: DatabaseTransactionHost): DrizzlePushDeliveryOutboxReposit
   return new DrizzlePushDeliveryOutboxRepository(host, new DateClock());
 }
 
-function lifecycle(host: DatabaseTransactionHost): DrizzlePushDeliveryLifecycleRepository {
-  return new DrizzlePushDeliveryLifecycleRepository(host, new DateClock());
+function lifecycle(host: DatabaseTransactionHost): ReturnType<typeof createPushDeliveryLifecycle> {
+  return createPushDeliveryLifecycle(host, new DateClock());
 }
 
 describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
@@ -959,7 +959,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       }),
     );
 
-    const aheadOfDatabase = new DrizzlePushDeliveryLifecycleRepository(
+    const aheadOfDatabase = createPushDeliveryLifecycle(
       host,
       new FixedClock(nowInstant().add({ minutes: 1 })),
     );

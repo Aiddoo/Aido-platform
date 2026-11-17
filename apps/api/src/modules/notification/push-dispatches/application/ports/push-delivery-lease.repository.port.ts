@@ -1,0 +1,15 @@
+import type { PushDeliveryFence } from "./push-delivery-claim.repository.port.js";
+
+export interface ReleasePushDeliveryInput {
+  readonly fence: PushDeliveryFence;
+  readonly error: string;
+  // JobRuntime의 마지막 attempt일 때만 새 publication generation을 열어 둔다.
+  readonly reopenOutbox: boolean;
+  readonly availableAt: Temporal.Instant;
+}
+
+// 작업 실패·lease 만료로 발송을 다시 PENDING으로 돌린다
+export abstract class PushDeliveryLeaseRepositoryPort {
+  abstract release(inputs: readonly ReleasePushDeliveryInput[]): Promise<number>;
+  abstract recoverStaleProcessing(startedBefore: Temporal.Instant): Promise<number>;
+}

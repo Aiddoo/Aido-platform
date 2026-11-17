@@ -15,7 +15,7 @@ import { createNotificationDraftFixture } from "#test/fixtures/notification/noti
 import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
-import type { ClaimedPushDelivery } from "../ports/push-delivery-lifecycle.repository.port.js";
+import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
 import type {
   BatchPushNotificationPayload,
   PushNotificationPayloadPort,
@@ -353,7 +353,9 @@ function createDeliverPushNotificationsUseCase() {
   const payloadFactory = new RecordingPayloadFactory(callOrder);
   const delivery = new StubPushDelivery(callOrder);
   const useCase = new DeliverPushNotificationsUseCase({
-    lifecycle,
+    claims: lifecycle,
+    finalization: lifecycle,
+    lease: lifecycle,
     unitOfWork,
     eligibility,
     payloadFactory,

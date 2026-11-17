@@ -4,7 +4,6 @@ import { DrizzleAccessStateReader } from "#api/modules/access/feature-grants/inf
 import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/infrastructure/persistence/premium-access-conditions.query-fragment";
 import { hasPaidAccess } from "#api/modules/access/shared/domain/paid-access.domain-service";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
-import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { subscription, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -13,6 +12,7 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { UserFixture } from "#test/fixtures/user.fixture";
+import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -38,7 +38,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   const database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 2 }) });
   let client: TestDatabaseClient;
   let memory: InMemoryCacheStore;
-  let reader: DrizzleSchedulerReader;
+  let reader: ReturnType<typeof createSchedulerReaders>;
   let entitlement: EntitlementReaderAdapter;
   let entitlementReader: DrizzleAccessStateReader;
   let userIds: Record<Scenario, string>;
@@ -47,12 +47,11 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     client = await database.start();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleSchedulerReader(
-      transactionHost,
-      memory,
-      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
-      new DateClock(),
-    );
+    reader = createSchedulerReaders({
+      transactionHost: transactionHost,
+      cache: memory,
+      clock: new DateClock(),
+    });
     entitlementReader = new DrizzleAccessStateReader(transactionHost);
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
@@ -150,8 +149,10 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
 
   it("만료가 지난 ACTIVE projection은 무료 대상이고 자동 갱신 유예 안의 구독자는 프리미엄 대상이다", async () => {
     // When
-    const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
-    const premiumMorning = await reader.findPremiumMorningReminderUsers({
+    const freeIds = await reader.weeklyAchievementStats.findFreeRecipientIds(
+      Object.values(userIds),
+    );
+    const premiumMorning = await reader.scheduledReminder.findPremiumMorningReminderUsers({
       timezones: ["UTC"],
       hour: 8,
       minute: 0,
@@ -168,7 +169,9 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
 
   it("SQL 조건은 모든 경우(ADMIN·스토어 유예 포함)에 EntitlementReaderAdapter의 premium 요금제 판단과 같다", async () => {
     // When
-    const freeIds = await reader.findFreeRecipientIds(Object.values(userIds));
+    const freeIds = await reader.weeklyAchievementStats.findFreeRecipientIds(
+      Object.values(userIds),
+    );
     const decisions = await Promise.all(
       Object.entries(userIds).map(async ([scenario, id]) => ({
         scenario,

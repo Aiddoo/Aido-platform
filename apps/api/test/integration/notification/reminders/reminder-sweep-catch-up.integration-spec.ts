@@ -21,7 +21,6 @@ import {
 } from "#api/modules/notification/reminders/application/use-cases/sweep-timezone-reminders.use-case";
 import type { TimezoneContext } from "#api/modules/notification/reminders/domain/local-clock.domain-service";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
-import { DrizzleSchedulerReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-scheduler.reader";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import {
   notification,
@@ -40,6 +39,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -78,7 +78,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
   const database = new TestDatabase();
   let client: TestDatabaseClient;
   let transaction: ReturnType<typeof createDatabaseTransactionFixture>;
-  let reader: DrizzleSchedulerReader;
+  let reader: ReturnType<typeof createSchedulerReaders>;
   let publisher: PublishNotificationUseCase;
   let batchPublisher: PublishNotificationBatchUseCase;
   let userId: string;
@@ -87,12 +87,11 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     client = await database.start();
     transaction = createDatabaseTransactionFixture(client);
     const { transactionHost, uow } = transaction;
-    reader = new DrizzleSchedulerReader(
-      transactionHost,
-      new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
-      { onboardingV2: { enabled: false, treatmentPercent: 50 } },
-      new DateClock(),
-    );
+    reader = createSchedulerReaders({
+      transactionHost: transactionHost,
+      cache: new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
+      clock: new DateClock(),
+    });
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
         notificationRepository: new DrizzleNotificationRepository(transactionHost),
@@ -152,7 +151,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     const logger = new SilentLogger();
     const sweptMinutes: string[] = [];
     const morningReminder = new SendMorningReminderUseCase({
-      reader,
+      reader: reader.scheduledReminder,
       notificationPublisher: batchPublisher,
       // Redis가 비어 있는(cold) 상태로 두어 저장된 알림 행만으로 하루 한 번을 판단하게 한다
       notificationHistoryReader: new NotificationHistoryReader({
@@ -166,7 +165,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       logger: new SilentLogger(),
     });
     const sweep = new SweepTimezoneRemindersUseCase({
-      preferenceReader: reader,
+      preferenceReader: reader.schedulerPreference,
       enqueuer: { enqueueSocialDigest: () => undefined },
       sweepCursor: cursor,
       clock,
@@ -303,7 +302,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
 
       function createProcessor(now: Temporal.Instant) {
         return new TodoReminderQueueProcessor(
-          reader,
+          reader.todoReminder,
           new StubTodoSeriesOwnerDormancy(),
           publisher,
           batchPublisher,
