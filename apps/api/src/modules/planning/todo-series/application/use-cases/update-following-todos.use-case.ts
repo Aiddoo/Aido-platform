@@ -16,17 +16,18 @@ import {
   resolveScheduledInstant,
 } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
+import type {
+  TodoOccurrencePatch,
+  TodoOccurrenceTime,
+  TodoOccurrenceWriterPort,
+} from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type {
   TodoReminderSchedulerPort,
   TodoReminderSchedule,
 } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
-import type {
-  OccurrencePatch,
-  OccurrenceRow,
-  OccurrenceTime,
-  TodoRepositoryPort,
-} from "../../../todos/application/ports/todo.repository.port.js";
+import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import type { TodoOccurrenceReadModel } from "../../../todos/application/read-models/todo-occurrence.read-model.js";
 import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
@@ -72,21 +73,20 @@ export interface AppliedFollowingEdit {
 }
 
 interface UpdateFollowingTodosDependencies {
-  readonly todoRepository: Pick<
-    TodoRepositoryPort,
-    | "findByIdAndUserId"
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "countCategoryUsage">;
+  readonly occurrenceWriter: Pick<
+    TodoOccurrenceWriterPort,
     | "findOccurrencesFrom"
     | "updateFollowingOccurrences"
     | "updateOccurrenceTimes"
     | "reassignOccurrences"
     | "moveOccurrence"
     | "deleteMany"
-    | "countCategoryUsage"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly seriesRepository: Pick<
     TodoSeriesRepositoryPort,
-    "lockForUpdate" | "lockFollowingSegments" | "insert" | "update" | "countActiveByUserId"
+    "lockForUpdate" | "lockFollowingSegments" | "insert" | "save" | "countActiveByUserId"
   >;
   readonly categoryOwnership: Pick<CategoryOwnershipPort, "validateOwnership">;
   readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
@@ -144,11 +144,11 @@ export class UpdateFollowingTodosUseCase {
     }
     const { seriesId } = todo;
     if (seriesId == null) {
-      throw todoNotRepeating(id);
+      throw todoNotRepeating(id, "THIS_AND_FOLLOWING");
     }
-    const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
-    if (series == null || series.userId.value !== userId) {
-      throw todoSeriesNotFound(seriesId);
+    const series = await seriesRepository.lockForUpdate(seriesId);
+    if (series == null || !series.userId.equals(ownerId)) {
+      throw todoSeriesNotFound(seriesId.value);
     }
     if (input.categoryId != null) {
       await this.#dependencies.categoryOwnership.validateOwnership(
@@ -183,7 +183,7 @@ export class UpdateFollowingTodosUseCase {
     series: TodoSeries,
     pivot: string,
   ): Promise<AppliedFollowingEdit> {
-    const { todoRepository, seriesRepository, materializer, todoReminder } = this.#dependencies;
+    const { seriesRepository, materializer, todoReminder } = this.#dependencies;
     const now = this.#dependencies.clock.now();
     const rule = input.repeat == null ? null : RepeatRule.create(input.repeat);
     const ruleChanged = rule != null && !rule.equals(series.rule);
@@ -258,7 +258,11 @@ export class UpdateFollowingTodosUseCase {
       responseTodoId = remapped.responseTodoId;
     }
 
-    await todoRepository.updateFollowingOccurrences(target.id, pivot, toOccurrencePatch(input));
+    await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
+      target.id,
+      pivot,
+      toOccurrencePatch(input),
+    );
 
     // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
     if (details.scheduledLocalTime !== undefined) {
@@ -268,7 +272,7 @@ export class UpdateFollowingTodosUseCase {
     }
 
     const drafts = ruleChanged || split ? materializer.planFirstRun(target, now) : [];
-    await seriesRepository.update(series);
+    await seriesRepository.save(series);
     if (split) {
       await seriesRepository.insert(target);
     }
@@ -278,7 +282,7 @@ export class UpdateFollowingTodosUseCase {
       } else if (checklistChanged) {
         segment.replaceChecklist(input.checklist ?? []);
       }
-      await seriesRepository.update(segment);
+      await seriesRepository.save(segment);
     }
     await materializer.persist(target, drafts);
     // 지운 회차와 시각이 바뀐 회차의 예약을 지우고 새 시각으로 다시 잡는다. 행과 함께 커밋한다.
@@ -296,9 +300,9 @@ export class UpdateFollowingTodosUseCase {
     segment: TodoSeries,
     changes: Omit<TodoSeriesChanges, "rule" | "checklistTemplate">,
     pivot: string,
-  ): Promise<readonly OccurrenceTime[]> {
+  ): Promise<readonly TodoOccurrenceTime[]> {
     segment.applyDetails(changes);
-    await this.#dependencies.todoRepository.updateFollowingOccurrences(
+    await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
       segment.id,
       pivot,
       toOccurrencePatch(changes),
@@ -322,8 +326,8 @@ export class UpdateFollowingTodosUseCase {
     pivot: string,
     now: Temporal.Instant,
   ) {
-    const { todoRepository } = this.#dependencies;
-    const rows = await todoRepository.findOccurrencesFrom(
+    const { occurrenceWriter } = this.#dependencies;
+    const rows = await occurrenceWriter.findOccurrencesFrom(
       [source, ...following].map((segment) => segment.id),
       pivot,
     );
@@ -359,7 +363,7 @@ export class UpdateFollowingTodosUseCase {
       }
     }
     // 유니크 인덱스 때문에 자리를 비운 뒤 기준 회차를 옮긴다.
-    await todoRepository.deleteMany(
+    await occurrenceWriter.deleteMany(
       [...deletedTodoIds].map((todoId) => TodoId.reconstitute(todoId)),
     );
 
@@ -368,7 +372,7 @@ export class UpdateFollowingTodosUseCase {
     if (pivotMoveDate != null) {
       const localTime = target.scheduledLocalTime;
       const scheduledTime = resolveScheduledInstant(pivotMoveDate, localTime, target.timezone);
-      await todoRepository.moveOccurrence(TodoId.reconstitute(pivotTodoId), {
+      await occurrenceWriter.moveOccurrence(TodoId.reconstitute(pivotTodoId), {
         occurrenceDate: pivotMoveDate,
         scheduledLocalTime: localTime,
         scheduledTime,
@@ -382,7 +386,7 @@ export class UpdateFollowingTodosUseCase {
     const reassigned = keep
       .filter((row) => row.seriesId !== target.id.value && !deletedTodoIds.has(row.todoId))
       .map((row) => row.todoId);
-    await todoRepository.reassignOccurrences(
+    await occurrenceWriter.reassignOccurrences(
       (target === source ? reassigned : [...reassigned, ...movedTodoIds]).map((todoId) =>
         TodoId.reconstitute(todoId),
       ),
@@ -396,9 +400,9 @@ export class UpdateFollowingTodosUseCase {
     target: TodoSeries,
     pivot: string,
     localTime: string | null,
-  ): Promise<readonly OccurrenceTime[]> {
-    const { todoRepository } = this.#dependencies;
-    const rows = await todoRepository.findOccurrencesFrom([target.id], pivot);
+  ): Promise<readonly TodoOccurrenceTime[]> {
+    const { occurrenceWriter } = this.#dependencies;
+    const rows = await occurrenceWriter.findOccurrencesFrom([target.id], pivot);
     const times = rows
       .filter((row) => !row.completed)
       .map((row) => ({
@@ -406,7 +410,7 @@ export class UpdateFollowingTodosUseCase {
         scheduledLocalTime: localTime,
         scheduledTime: resolveScheduledInstant(row.startDate, localTime, target.timezone),
       }));
-    await todoRepository.updateOccurrenceTimes(times);
+    await occurrenceWriter.updateOccurrenceTimes(times);
     return times;
   }
 
@@ -433,9 +437,9 @@ export class UpdateFollowingTodosUseCase {
  * 완료 기록을 먼저 지키고, 그다음은 이미 기준 규칙에 있던 행이다.
  */
 function pickOccurrencePerDate(
-  rows: readonly OccurrenceRow[],
+  rows: readonly TodoOccurrenceReadModel[],
   sourceSeriesId: string,
-): readonly OccurrenceRow[] {
+): readonly TodoOccurrenceReadModel[] {
   const ranked = sortBy(rows, [
     (row) => (row.completed ? 0 : 1),
     (row) => (row.seriesId === sourceSeriesId ? 0 : 1),
@@ -444,7 +448,7 @@ function pickOccurrencePerDate(
 }
 
 function toReminders(
-  times: readonly OccurrenceTime[],
+  times: readonly TodoOccurrenceTime[],
   userId: string,
 ): readonly TodoReminderSchedule[] {
   return times.flatMap(({ todoId, scheduledTime }) =>
@@ -454,7 +458,7 @@ function toReminders(
 
 function toOccurrencePatch(
   changes: Pick<TodoSeriesChanges, "title" | "categoryId" | "visibility">,
-): OccurrencePatch {
+): TodoOccurrencePatch {
   return {
     title: changes.title,
     categoryId:

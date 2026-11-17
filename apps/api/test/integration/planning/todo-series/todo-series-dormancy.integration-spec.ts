@@ -17,6 +17,7 @@ import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-seri
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { DrizzleTodoOccurrenceWriterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-occurrence-writer.adapter";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -143,6 +144,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       seriesRepository: new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()),
       materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
+        occurrenceWriter: new DrizzleTodoOccurrenceWriterAdapter(
+          fixture.transactionHost,
+          new DateClock(),
+        ),
         todoReminder: new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
         applyTodoEvents: { execute: async () => undefined },
       }),

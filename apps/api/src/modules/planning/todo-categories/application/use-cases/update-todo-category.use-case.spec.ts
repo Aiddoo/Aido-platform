@@ -14,14 +14,14 @@ import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
 import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
-import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
+import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import { UpdateTodoCategoryUseCase } from "./update-todo-category.use-case.js";
 
 const USER_ID = TODO_FIXTURE_USER_ID;
 const LATER = TODO_FIXTURE_NOW.add({ hours: 1 });
 
 class RecordingCategoryRepository extends InMemoryTodoCategoryRepository {
-  readonly updates: [number, UpdateCategoryInput][] = [];
+  readonly saved: [number, { readonly name: string; readonly color: string }][] = [];
   readonly nameChecks: string[] = [];
 
   override async existsByUserIdAndName(
@@ -33,9 +33,10 @@ class RecordingCategoryRepository extends InMemoryTodoCategoryRepository {
     return super.existsByUserIdAndName(userId, name, excludeId);
   }
 
-  override async update(id: TodoCategoryId, input: UpdateCategoryInput) {
-    this.updates.push([id.value, input]);
-    return super.update(id, input);
+  override async save(category: TodoCategory) {
+    const { id, name, color } = category.toPrimitives();
+    this.saved.push([id, { name, color }]);
+    await super.save(category);
   }
 }
 
@@ -83,7 +84,7 @@ describe("카테고리 수정", () => {
 
     // Then
     await expect(update).rejects.toMatchObject(error);
-    expect(repository.updates).toEqual([]);
+    expect(repository.saved).toEqual([]);
     expect(cache.invalidatedUserIds).toEqual([]);
     expect(eventPublisher.publishedEvents).toEqual([]);
   });
@@ -117,7 +118,7 @@ describe("카테고리 수정", () => {
     // Then
     expect(insideCommit).toEqual([{ invalidated: 0, events: 1 }]);
     expect(result.toPrimitives()).toMatchObject({ name: "수정", color: "#FF0000", sortOrder: 0 });
-    expect(context.repository.updates).toEqual([[1, { name: "수정", color: "#FF0000" }]]);
+    expect(context.repository.saved).toEqual([[1, { name: "수정", color: "#FF0000" }]]);
     expect(context.cache.invalidatedUserIds).toEqual([USER_ID]);
     expect(
       context.eventPublisher.publishedEvents.map((event) => [event.eventName, event.toPayload()]),
@@ -138,7 +139,7 @@ describe("카테고리 수정", () => {
 
     // Then
     expect(repository.nameChecks).toEqual([]);
-    expect(repository.updates).toEqual([[1, { name: "기존", color: "#FF0000" }]]);
+    expect(repository.saved).toEqual([[1, { name: "기존", color: "#FF0000" }]]);
   });
 
   it("이름을 바꾸면 친구 화면 할 일 캐시를 커밋 뒤에 지운다", async () => {
@@ -168,7 +169,7 @@ describe("카테고리 수정", () => {
 
     // Then
     expect(result.toPrimitives()).toMatchObject({ name: "기존", updatedAt: TODO_FIXTURE_NOW });
-    expect(repository.updates).toEqual([]);
+    expect(repository.saved).toEqual([]);
     expect(eventPublisher.publishedEvents).toEqual([]);
     expect(afterCommit.tasks).toEqual([]);
   });

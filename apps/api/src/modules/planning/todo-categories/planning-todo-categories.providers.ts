@@ -75,6 +75,7 @@ export const PLANNING_TODO_CATEGORIES_PROVIDERS = [
     logger: loggerFor(DeleteTodoCategoryUseCase),
   }),
   provideUseCase(ReorderTodoCategoryUseCase, {
+    clock: ClockPort,
     repository: TodoCategoryRepositoryPort,
     cache: TodoCategoryCachePort,
     todoCache: TodoCachePort,

@@ -13,10 +13,12 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoId } from "../../domain/todo-id.vo.js";
 import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
+import type { TodoEvent } from "../../domain/todo.aggregate.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { invalidRepeatRule, todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
+import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 import type { UpdateTodoData, UpdateTodoUseCase } from "./update-todo.use-case.js";
@@ -46,6 +48,7 @@ interface EditTodoDependencies {
   readonly mutationLock: MutationLockPort;
   readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
+  readonly completionEffects: Pick<ApplyTodoCompletionEffectsUseCase, "execute">;
 }
 
 interface ResolvedEditTodoInput extends EditTodoInput {
@@ -93,7 +96,7 @@ export class EditTodoUseCase {
 
   async #editFollowing(input: ResolvedEditTodoInput, repeat: RepeatSpec | undefined) {
     const { id, userId, timezone, checklist, data } = input;
-    const { updateFollowingTodos, updateTodo, unitOfWork, applyTodoEvents } = this.#dependencies;
+    const { updateFollowingTodos, updateTodo, unitOfWork } = this.#dependencies;
     const followingInput = {
       id,
       userId,
@@ -121,7 +124,7 @@ export class EditTodoUseCase {
         timezone,
         data: { startDate, endDate, completed },
       });
-      await applyTodoEvents.execute(thisOnly.events);
+      await this.#applyEvents(thisOnly.events);
       return { following, thisOnly };
     });
     await updateFollowingTodos.publish(applied.following, userId);
@@ -131,7 +134,7 @@ export class EditTodoUseCase {
 
   async #startSeries(input: ResolvedEditTodoInput, repeat: RepeatSpec) {
     const { id, userId, timezone, data } = input;
-    const { startSeriesFromTodo, updateTodo, unitOfWork, applyTodoEvents } = this.#dependencies;
+    const { startSeriesFromTodo, updateTodo, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
       await this.#acquireLocks(id, userId);
       await startSeriesFromTodo.assertCanStart(id, userId);
@@ -140,7 +143,7 @@ export class EditTodoUseCase {
       const events = updated.events.filter((event) => !(event instanceof TodoRescheduledEvent));
       const started = await startSeriesFromTodo.apply({ todoId: id, userId, repeat, timezone });
       // 옛 커밋 뒤 순서와 같게 전환 뒤에 반영한다(완료와 함께 전환하면 첫 회차 예약이 취소된다)
-      await applyTodoEvents.execute(events);
+      await this.#applyEvents(events);
       return { updated: { ...updated, events }, started };
     });
     await updateTodo.publish(applied.updated);
@@ -150,17 +153,23 @@ export class EditTodoUseCase {
 
   async #stopSeries(input: ResolvedEditTodoInput) {
     const { id, userId, timezone, data } = input;
-    const { stopTodoSeries, updateTodo, unitOfWork, applyTodoEvents } = this.#dependencies;
+    const { stopTodoSeries, updateTodo, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
       await this.#acquireLocks(id, userId);
       const stopped = await stopTodoSeries.apply({ todoId: id, userId });
       const updated = await updateTodo.apply({ id, userId, timezone, data });
-      await applyTodoEvents.execute(updated.events);
+      await this.#applyEvents(updated.events);
       return { stopped, updated };
     });
     await stopTodoSeries.publish(applied.stopped);
     await updateTodo.publish(applied.updated);
     return this.#read(id, userId);
+  }
+
+  // 완료 칸이 바뀌었으면 전용 완료 경로와 같은 스트릭·마일스톤·친구 완료 알림을 같은 트랜잭션에서 낸다
+  async #applyEvents(events: readonly TodoEvent[]): Promise<void> {
+    await this.#dependencies.applyTodoEvents.execute(events);
+    await this.#dependencies.completionEffects.execute(events);
   }
 
   /** 단계마다 따로 잠그면 다른 요청과 순서가 엇갈릴 수 있어 쓸 잠금을 정렬해 한 번에 잡는다. */

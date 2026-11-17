@@ -15,16 +15,16 @@ import { TodoLogEvent } from "../todos.log-events.js";
 import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
-export interface ToggleTodoCompleteInput {
+export interface SetTodoCompletedInput {
   readonly id: number;
   readonly userId: string;
   readonly completed: boolean;
-  /** 스트릭의 "오늘" 경계 */
+  // 스트릭의 "오늘" 경계
   readonly timezone: string;
 }
 
-interface ToggleTodoCompleteDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateDetails">;
+interface SetTodoCompletedDependencies {
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -36,33 +36,30 @@ interface ToggleTodoCompleteDependencies {
 }
 
 export class SetTodoCompletedUseCase {
-  readonly #dependencies: ToggleTodoCompleteDependencies;
+  readonly #dependencies: SetTodoCompletedDependencies;
 
-  constructor(dependencies: ToggleTodoCompleteDependencies) {
+  constructor(dependencies: SetTodoCompletedDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ToggleTodoCompleteInput): Promise<TodoReadModel> {
+  async execute(input: SetTodoCompletedInput): Promise<TodoReadModel> {
     const { id, userId, completed, timezone } = input;
     const todoId = TodoId.reconstitute(id);
     const ownerId = UserId.reconstitute(userId);
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
 
-      const changed = todo.toggleComplete(completed, timezone, this.#dependencies.clock.now());
+      const now = this.#dependencies.clock.now();
+      const changed = completed ? todo.complete(timezone, now) : todo.reopen(timezone, now);
       if (!changed) {
         return;
       }
-
-      await this.#dependencies.todoRepository.updateDetails(todoId, {
-        completed: todo.completed,
-        completedAt: todo.completedAt,
-      });
+      await this.#dependencies.todoRepository.save(todo);
 
       this.#dependencies.logger.log({
         event: TodoLogEvent.COMPLETION_CHANGED,

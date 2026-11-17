@@ -56,7 +56,7 @@ describe("할 일 완료 상태 전이", () => {
       completed: true,
     };
     await useCase.execute(input);
-    const completionWrite = vi.spyOn(fixture.todoRepository, "updateCompletion");
+    const completionWrite = vi.spyOn(fixture.todoRepository, "save");
     vi.setSystemTime(new Date("2026-05-15T04:00:00Z"));
     // When
     const result = await useCase.execute(input);

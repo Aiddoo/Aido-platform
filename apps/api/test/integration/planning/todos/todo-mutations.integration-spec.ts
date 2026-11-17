@@ -10,14 +10,14 @@ import { DeleteTodoCategoryUseCase } from "#api/modules/planning/todo-categories
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/application/ports/staged-todo-creator.port";
+import { TodoOccurrenceWriterPort } from "#api/modules/planning/todos/application/ports/todo-occurrence-writer.port";
 import { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-cases/add-todo-item.use-case";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
-import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import type { TodoDetailsPatch } from "#api/modules/planning/todos/domain/todo.aggregate";
 import {
   todo,
   todoCategory,
@@ -284,51 +284,46 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     }
   });
 
-  it("item 재정렬 도중 not-found면 앞서 적용한 순서도 rollback한다", async () => {
+  it("item 재정렬에 모르는 항목이 섞이면 TODO_0822로 거절하고 순서를 바꾸지 않는다", async () => {
     // Given
     const items = await createItems(2);
     const first = items.at(0);
     if (first === undefined) {
       throw new Error("item fixture 누락");
     }
-    const repository = context.module.get(TodoRepositoryPort);
-    const unitOfWork = context.module.get(UnitOfWorkPort);
 
     // When
-    const result = unitOfWork.run(() =>
-      repository.reorderItems([
-        TodoItemId.reconstitute(first.id),
-        TodoItemId.reconstitute(999_999),
-      ]),
-    );
+    const result = context.module
+      .get(ReorderTodoItemsUseCase)
+      .execute({ todoId, userId, itemIds: [first.id, 999_999] });
 
     // Then
-    await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0822 });
     expect(await readItems()).toEqual(items);
   });
 
-  it("부분 수정은 명시적 null·false를 저장하고 undefined는 이전 값을 유지한다", async () => {
+  it("부분 수정은 명시적 null·false를 저장하고 생략한 칸은 이전 값을 유지한다", async () => {
     // Given
     const repository = context.module.get(TodoRepositoryPort);
     const unitOfWork = context.module.get(UnitOfWorkPort);
-    await unitOfWork.run(() =>
-      repository.updateDetails(TodoId.reconstitute(todoId), {
-        title: "기존 제목",
-        completed: true,
-        completedAt: instantFromDate(AT),
-        endDate: Temporal.PlainDate.from("2027-01-05"),
-      }),
-    );
+    const edit = (patch: TodoDetailsPatch) =>
+      unitOfWork.run(async () => {
+        const found = await repository.findByIdAndUserId(
+          TodoId.reconstitute(todoId),
+          UserId.reconstitute(userId),
+        );
+        if (found?.updateDetails(patch, "UTC", instantFromDate(AT)) === true) {
+          await repository.save(found);
+        }
+      });
+    await edit({
+      title: "기존 제목",
+      completed: true,
+      endDate: Temporal.PlainDate.from("2027-01-05"),
+    });
 
     // When
-    await unitOfWork.run(() =>
-      repository.updateDetails(TodoId.reconstitute(todoId), {
-        title: undefined,
-        completed: false,
-        completedAt: null,
-        endDate: null,
-      }),
-    );
+    await edit({ completed: false, endDate: null });
 
     // Then
     const row = await client.query.todo.findFirst({
@@ -338,7 +333,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
     expect(row).toEqual({ title: "기존 제목", completed: false, completedAt: null, endDate: null });
   });
 
-  it("3개 item 재정렬은 PK 선행 조회 없이 한 번의 UPDATE로 수정하며 잠금 포함 4 SQL로 완료한다", async () => {
+  it("3개 item 재정렬은 PK 선행 조회 없이 행 잠금·할 일 행 UPDATE·항목 upsert 한 문장, 잠금 포함 6 SQL로 끝낸다", async () => {
     // Given
     const items = await createItems(3);
     const itemIds = items.map((item) => item.id).reverse();
@@ -353,7 +348,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
     // Then
     expect(response.items.map((item) => item.id)).toEqual(itemIds);
-    expect(statementSummary(statements)).toEqual({ total: 4, orm: 3, locks: 1 });
+    expect(statementSummary(statements)).toEqual({ total: 6, orm: 5, locks: 1 });
     expect(
       statements.filter((statement) =>
         /^select (?:(?!\sfrom\s)[^])*\sfrom "TodoItem"/i.test(statement),
@@ -578,7 +573,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
 
   it("반복 item 저장이 실패하면 부모 bulk 생성도 rollback한다", async () => {
     // Given
-    const repository = context.module.get(TodoRepositoryPort);
+    const repository = context.module.get(TodoOccurrenceWriterPort);
     const unitOfWork = context.module.get(UnitOfWorkPort);
     const before = await client.query.todo.findMany({ columns: { id: true }, where: { userId } });
 

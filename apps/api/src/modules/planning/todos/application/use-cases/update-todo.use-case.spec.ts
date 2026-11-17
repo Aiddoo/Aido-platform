@@ -9,6 +9,7 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 describe("할 일 부분 수정", () => {
@@ -184,7 +185,7 @@ describe("할 일 부분 수정", () => {
     expect(result).toMatchObject({ isAllDay: false, scheduledTime: expect.any(String) });
     expect(fixture.records.get(1)?.isAllDay).toBe(false);
   });
-  it("완료 상태가 바뀔 때만 completedAt을 바꾼다", async () => {
+  it("완료 칸은 전용 완료 경로와 같은 완료·되돌리기 사실과 완료 효과를 내고 바뀔 때만 completedAt을 바꾼다", async () => {
     // Given
     const input = { id: 1, userId: fixture.userId, timezone: "UTC", data: { completed: true } };
     // When
@@ -196,9 +197,15 @@ describe("할 일 부분 수정", () => {
     expect(completed.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(repeated.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(uncompleted).toMatchObject({ completed: false, completedAt: null });
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.completed",
+      "planning.todo.reopened",
+    ]);
     expect(
-      new Set(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)),
-    ).toEqual(new Set(["planning.todo.updated"]));
+      fixture.completionEffects.events.map((event) =>
+        event instanceof TodoToggledEvent ? event.completed : null,
+      ),
+    ).toEqual([true, false]);
   });
   it("일반 PATCH는 카테고리 소유권만 확인하고 전용 이동의 활성 한도를 적용하지 않는다", async () => {
     // Given

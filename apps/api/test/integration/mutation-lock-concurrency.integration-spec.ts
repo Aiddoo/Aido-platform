@@ -1177,6 +1177,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       CONCURRENCY,
     );
     const useCase = new ReorderTodoCategoryUseCase({
+      clock: new DateClock(),
       repository: categoryRepository,
       cache: createTodoCategoryCache(),
       todoCache: new FakeTodoCache(),

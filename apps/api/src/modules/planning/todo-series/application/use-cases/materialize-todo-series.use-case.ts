@@ -12,7 +12,7 @@ import type { MaterializeTodoOccurrencesUseCase } from "./materialize-todo-occur
 import type { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 interface TodoSeriesDueRunnerDependencies {
-  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "update">;
+  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "lockForUpdate" | "save">;
   readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planDueRun" | "persist">;
   readonly effects: Pick<PublishTodoCreationUseCase, "publishOccurrences">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -48,7 +48,7 @@ export class MaterializeTodoSeriesUseCase {
         return null;
       }
       const occurrences = await materializer.persist(series, drafts);
-      await seriesRepository.update(series);
+      await seriesRepository.save(series);
       return { series, occurrences };
     });
     if (materialized == null || materialized.occurrences.length === 0) {

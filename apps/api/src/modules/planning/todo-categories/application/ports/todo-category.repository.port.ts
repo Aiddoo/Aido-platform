@@ -10,21 +10,13 @@ export interface CategoryTodoCount {
   readonly completed: number;
 }
 
-/** 카테고리 부분 갱신. undefined는 바꾸지 않는다. */
-export interface UpdateCategoryInput {
-  readonly name?: string;
-  readonly color?: string;
-  readonly sortOrder?: number;
-}
-
-/**
- * 같은 사용자 안 이름이 겹치면 TODO_CATEGORY_0853이다(저장소가 유니크 위반을 번역한다).
- * 수정은 고친 칸만 쓰고 저장된 행을 돌려준다. 다른 카테고리 순서 밀기와 겹쳐도 덮어쓰지 않게 하려는 것이다.
- */
+// 같은 사용자 안 이름이 겹치면 TODO_CATEGORY_0853이다(저장소가 유니크 위반을 번역한다).
+// 카테고리를 바꾸는 UseCase는 모두 사용자 카테고리 잠금 아래에서 읽고 save해 순서 밀기와 겹쳐도 덮어쓰지 않는다
 export abstract class TodoCategoryRepositoryPort {
   abstract nextId(): Promise<TodoCategoryId>;
   abstract insert(category: TodoCategory): Promise<void>;
-  abstract update(id: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory>;
+  // 있는 행의 이름·색·순서·수정 시각을 쓴다
+  abstract save(category: TodoCategory): Promise<void>;
   abstract delete(id: TodoCategoryId): Promise<void>;
 
   abstract findByIdAndUserId(id: TodoCategoryId, userId: UserId): Promise<TodoCategory | null>;
@@ -38,6 +30,7 @@ export abstract class TodoCategoryRepositoryPort {
     excludeId?: TodoCategoryId,
   ): Promise<boolean>;
   abstract getMaxSortOrder(userId: UserId): Promise<number>;
+  // 사이 카테고리를 한 칸씩 미는 묶음 문장이다
   abstract shiftSortOrders(
     userId: UserId,
     fromSortOrder: number,

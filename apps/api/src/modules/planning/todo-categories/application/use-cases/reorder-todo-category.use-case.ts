@@ -1,6 +1,7 @@
 import type { TodoCachePort } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -34,13 +35,14 @@ export interface ReorderTodoCategoryInput {
 interface ReorderTodoCategoryDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
-    "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "update"
+    "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "save"
   >;
   readonly cache: TodoCategoryCachePort;
   // 친구 화면 할 일 캐시가 카테고리 순서를 담고 그 순서로 정렬한다
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -97,9 +99,10 @@ export class ReorderTodoCategoryUseCase {
       this.#dependencies.afterCommit.register(() =>
         this.#dependencies.todoCache.invalidateFriendTodos(userId),
       );
-      return this.#dependencies.repository.update(category.id, {
-        sortOrder: plan.newSortOrder,
-      });
+      if (category.moveTo(plan.newSortOrder, this.#dependencies.clock.now())) {
+        await this.#dependencies.repository.save(category);
+      }
+      return category;
     });
 
     await this.#dependencies.cache.invalidate(userId);

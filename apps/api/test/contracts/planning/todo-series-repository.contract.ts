@@ -90,7 +90,7 @@ export function describeTodoSeriesRepositoryContract(
       series.stopAfter("2026-11-20");
 
       // When
-      await context.seriesRepository.update(series);
+      await context.seriesRepository.save(series);
       const locked = await context.seriesRepository.lockForUpdate(series.id);
 
       // Then

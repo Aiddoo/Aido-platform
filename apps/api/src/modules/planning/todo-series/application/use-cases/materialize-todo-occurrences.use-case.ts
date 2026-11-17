@@ -1,9 +1,10 @@
 import { appendSortOrders } from "../../../shared/domain/todo-sort-order.domain-service.js";
-import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
-  TodoRepositoryPort,
-} from "../../../todos/application/ports/todo.repository.port.js";
+  TodoOccurrenceWriterPort,
+} from "../../../todos/application/ports/todo-occurrence-writer.port.js";
+import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
+import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { TodoOccurrencesCreatedEvent } from "../../domain/todo-occurrences-created.event.js";
@@ -16,10 +17,8 @@ import type { TodoSeries, TodoOccurrenceDraft } from "../../domain/todo-series.a
 export const MAX_OCCURRENCES_PER_RUN = 400;
 
 interface TodoOccurrenceMaterializerDependencies {
-  readonly todoRepository: Pick<
-    TodoRepositoryPort,
-    "getMaxSortOrder" | "nextIds" | "insertOccurrences"
-  >;
+  readonly todoRepository: Pick<TodoRepositoryPort, "getMaxSortOrder">;
+  readonly occurrenceWriter: Pick<TodoOccurrenceWriterPort, "nextIds" | "insertOccurrences">;
   readonly todoReminder: Pick<TodoReminderSchedulerPort, "scheduleReminders">;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
 }
@@ -55,13 +54,13 @@ export class MaterializeTodoOccurrencesUseCase {
     if (drafts.length === 0) {
       return [];
     }
-    const { todoRepository } = this.#dependencies;
+    const { todoRepository, occurrenceWriter } = this.#dependencies;
     const userId = series.userId.value;
     const maxSortOrder = await todoRepository.getMaxSortOrder(series.userId);
     // 회차 id를 한 문장으로 먼저 받는다
-    const ids = await todoRepository.nextIds(drafts.length);
+    const ids = await occurrenceWriter.nextIds(drafts.length);
     const sortOrders = appendSortOrders(maxSortOrder, drafts.length);
-    const created = await todoRepository.insertOccurrences(
+    const created = await occurrenceWriter.insertOccurrences(
       drafts.flatMap((draft, index) => {
         const id = ids[index];
         const sortOrder = sortOrders[index];

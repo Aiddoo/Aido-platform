@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import type { TodoCachePort } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -9,7 +7,6 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -32,7 +29,7 @@ export interface UpdateTodoCategoryInput {
 interface UpdateTodoCategoryDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
-    "findByIdAndUserId" | "existsByUserIdAndName" | "update"
+    "findByIdAndUserId" | "existsByUserIdAndName" | "save"
   >;
   readonly cache: TodoCategoryCachePort;
   // 친구 화면 할 일 캐시가 카테고리 이름·색·순서를 함께 담는다
@@ -80,23 +77,12 @@ export class UpdateTodoCategoryUseCase {
       if (!category.updateDetails(data, now)) {
         return category;
       }
-      const updated = await this.#dependencies.repository.update(categoryId, {
-        name: data.name == null ? undefined : category.name.value,
-        color: data.color == null ? undefined : category.color.value,
-      });
+      await this.#dependencies.repository.save(category);
       this.#dependencies.afterCommit.register(() =>
         this.#dependencies.todoCache.invalidateFriendTodos(userId),
       );
-      await this.#dependencies.eventPublisher.publish([
-        new CategoryChangedEvent({
-          eventName: "planning.todo-category.updated",
-          eventId: randomUUID(),
-          occurredAt: now,
-          categoryId: id,
-          userId: input.userId,
-        }),
-      ]);
-      return updated;
+      await this.#dependencies.eventPublisher.publish(category.pullDomainEvents());
+      return category;
     });
 
     await this.#dependencies.cache.invalidate(userId);

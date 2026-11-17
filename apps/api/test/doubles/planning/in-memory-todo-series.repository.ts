@@ -35,7 +35,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   async insert(series: TodoSeries): Promise<void> {
     this.store.set(series.id.value, this.#copy(series));
   }
-  async update(series: TodoSeries): Promise<void> {
+  async save(series: TodoSeries): Promise<void> {
     this.store.set(series.id.value, this.#copy(series));
   }
   async lockFamilyIds(

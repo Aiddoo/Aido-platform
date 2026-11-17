@@ -5,6 +5,8 @@ import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { checklistLimitReached } from "../../shared/domain/planning.errors.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
+import { TodoCategoryId } from "../../todo-categories/domain/todo-category-id.vo.js";
+import { TodoSeriesId } from "../../todo-series/domain/todo-series-id.vo.js";
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
 import { TodoCreatedEvent } from "./todo-created.event.js";
 import { TodoDeletedEvent } from "./todo-deleted.event.js";
@@ -54,7 +56,7 @@ export interface TodoPrimitives {
 
 export interface TodoDetailsPatch {
   readonly title?: string;
-  readonly categoryId?: number;
+  readonly categoryId?: TodoCategoryId;
   readonly startDate?: Temporal.PlainDate;
   readonly endDate?: Temporal.PlainDate | null;
   readonly scheduledLocalTime?: string | null;
@@ -63,17 +65,22 @@ export interface TodoDetailsPatch {
   readonly completed?: boolean;
 }
 
+export interface TodoItemChange {
+  readonly title?: string;
+  readonly completed?: boolean;
+}
+
 interface TodoProps {
   readonly userId: UserId;
-  categoryId: number;
+  categoryId: TodoCategoryId;
   title: TodoTitle;
-  readonly sortOrder: number;
+  sortOrder: number;
   completed: boolean;
   completedAt: Temporal.Instant | null;
   schedule: TodoSchedule;
   visibility: TodoVisibility;
-  readonly seriesId: string | null;
-  readonly occurrenceDate: Temporal.PlainDate | null;
+  seriesId: TodoSeriesId | null;
+  occurrenceDate: Temporal.PlainDate | null;
   items: TodoItem[];
   readonly createdAt: Temporal.Instant;
   updatedAt: Temporal.Instant;
@@ -82,7 +89,7 @@ interface TodoProps {
 interface CreateTodoParams {
   readonly id: TodoId;
   readonly userId: UserId;
-  readonly categoryId: number;
+  readonly categoryId: TodoCategoryId;
   readonly title: TodoTitle;
   readonly schedule: TodoSchedule;
   readonly visibility: TodoVisibility;
@@ -90,8 +97,15 @@ interface CreateTodoParams {
   readonly now: Temporal.Instant;
 }
 
+interface SeriesAttachment {
+  readonly seriesId: TodoSeriesId;
+  readonly occurrenceDate: Temporal.PlainDate;
+  readonly schedule: TodoSchedule;
+  readonly now: Temporal.Instant;
+}
+
 export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
-  /** 단일 할 일을 만든다. 반복 회차는 규칙이 한 문장으로 만들어 이 경로를 거치지 않는다. */
+  // 반복 회차는 규칙이 한 문장으로 만들어 이 경로를 거치지 않는다
   static create(params: CreateTodoParams): Todo {
     const todo = new Todo(params.id, {
       userId: params.userId,
@@ -117,7 +131,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
   static reconstitute(primitives: TodoPrimitives): Todo {
     return new Todo(TodoId.reconstitute(primitives.id), {
       userId: UserId.reconstitute(primitives.userId),
-      categoryId: primitives.categoryId,
+      categoryId: TodoCategoryId.reconstitute(primitives.categoryId),
       title: TodoTitle.reconstitute(primitives.title),
       sortOrder: primitives.sortOrder,
       completed: primitives.completed,
@@ -130,7 +144,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
         isAllDay: primitives.isAllDay,
       }),
       visibility: primitives.visibility,
-      seriesId: primitives.seriesId,
+      seriesId: primitives.seriesId == null ? null : TodoSeriesId.reconstitute(primitives.seriesId),
       occurrenceDate: primitives.occurrenceDate,
       items: primitives.items.map((item) => TodoItem.reconstitute(item)),
       createdAt: primitives.createdAt,
@@ -138,11 +152,13 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     });
   }
 
+  #deleted = false;
+
   get userId(): UserId {
     return this.props.userId;
   }
 
-  get categoryId(): number {
+  get categoryId(): TodoCategoryId {
     return this.props.categoryId;
   }
 
@@ -170,7 +186,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return this.props.visibility;
   }
 
-  get seriesId(): string | null {
+  get seriesId(): TodoSeriesId | null {
     return this.props.seriesId;
   }
 
@@ -182,26 +198,41 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return this.props.items;
   }
 
-  /** 칸이 빈 옛 행도 사용자가 보던 시각으로 읽는다. 반복으로 전환할 때 규칙의 시각이 된다. */
+  isOccurrence(): boolean {
+    return this.props.seriesId != null;
+  }
+
+  // 칸이 빈 옛 행도 사용자가 보던 시각으로 읽는다. 반복으로 전환할 때 규칙의 시각이 된다
   localTimeIn(timezone: string): string | null {
     return this.props.schedule.localTimeIn(timezone);
   }
 
-  /** timezone은 스트릭의 "오늘" 경계다. */
-  toggleComplete(completed: boolean, timezone: string, now: Temporal.Instant): boolean {
-    if (!this.#applyCompletion(completed, now)) {
+  // timezone은 스트릭의 "오늘" 경계다. 완료하면 리마인더가 취소된다
+  complete(timezone: string, now: Temporal.Instant): boolean {
+    if (this.props.completed) {
       return false;
     }
-    this.raise(new TodoToggledEvent(this.id.value, this.props.userId.value, completed, timezone));
-    if (!completed) {
-      this.#restoreReminders();
-    }
+    this.props.completed = true;
+    this.props.completedAt = now;
+    this.props.updatedAt = now;
+    this.raise(new TodoToggledEvent(this.id.value, this.props.userId.value, true, timezone));
     return true;
   }
 
-  /** 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 완료를 유지하면 "완료 + 0/N"이 된다(QA #37). */
-  reopenForAddedItem(timezone: string, now: Temporal.Instant): boolean {
-    return this.toggleComplete(false, timezone, now);
+  // 완료하면 예약이 지워지므로 되돌리면 지금 시각으로 다시 잡는다
+  reopen(timezone: string, now: Temporal.Instant): boolean {
+    if (!this.props.completed) {
+      return false;
+    }
+    this.props.completed = false;
+    this.props.completedAt = null;
+    this.props.updatedAt = now;
+    this.raise(new TodoToggledEvent(this.id.value, this.props.userId.value, false, timezone));
+    const { scheduledTime } = this.props.schedule;
+    if (scheduledTime != null) {
+      this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
+    }
+    return true;
   }
 
   rename(title: TodoTitle, now: Temporal.Instant): boolean {
@@ -214,7 +245,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return true;
   }
 
-  /** 검증을 모두 통과한 뒤에만 상태를 바꾼다(부분 변경 방지). 같은 값만 보냈으면 false다. */
+  // 검증을 모두 통과한 뒤에만 바꾼다. 완료 칸은 complete·reopen을 거쳐 전용 완료 경로와 같은 사실을 낸다
   updateDetails(patch: TodoDetailsPatch, timezone: string, now: Temporal.Instant): boolean {
     const title = patch.title == null ? null : TodoTitle.create(patch.title);
     const schedulePatch = toSchedulePatch(patch);
@@ -224,41 +255,37 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
         : null;
     const previousScheduledTime = this.props.schedule.scheduledTime;
 
-    let changed = false;
+    let detailsChanged = false;
     if (title != null && !title.equals(this.props.title)) {
       this.props.title = title;
-      changed = true;
+      detailsChanged = true;
     }
-    if (patch.categoryId != null && patch.categoryId !== this.props.categoryId) {
+    if (patch.categoryId != null && !patch.categoryId.equals(this.props.categoryId)) {
       this.props.categoryId = patch.categoryId;
-      changed = true;
+      detailsChanged = true;
     }
     if (nextSchedule != null && !nextSchedule.equals(this.props.schedule)) {
       this.props.schedule = nextSchedule;
-      changed = true;
+      detailsChanged = true;
     }
     if (patch.visibility != null && patch.visibility !== this.props.visibility) {
       this.props.visibility = patch.visibility;
-      changed = true;
-    }
-    const reopened = patch.completed === false && this.props.completed;
-    if (patch.completed != null && this.#applyCompletion(patch.completed, now)) {
-      changed = true;
-    }
-    if (!changed) {
-      return false;
+      detailsChanged = true;
     }
 
-    this.props.updatedAt = now;
-    this.raise(new TodoUpdatedEvent(this.id.value, this.props.userId.value, this.props.completed));
-    const scheduledTime = this.props.schedule.scheduledTime;
-    if (reopened) {
-      this.#restoreReminders();
-    } else if (!isSameInstant(scheduledTime, previousScheduledTime)) {
-      // 수정 화면의 일반 PATCH로 시각을 바꿔도 옛 시각의 예약이 남지 않게 한다.
-      this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
+    const reopens = patch.completed === false && this.props.completed;
+    if (detailsChanged) {
+      this.props.updatedAt = now;
+      const completedAfter = patch.completed ?? this.props.completed;
+      this.raise(new TodoUpdatedEvent(this.id.value, this.props.userId.value, completedAfter));
+      const { scheduledTime } = this.props.schedule;
+      // 되돌리기는 reopen이 새 시각으로 다시 잡는다. 시각만 바꾼 PATCH도 옛 시각의 예약이 남지 않게 한다
+      if (!reopens && !isSameInstant(scheduledTime, previousScheduledTime)) {
+        this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
+      }
     }
-    return true;
+    const completionChanged = this.#changeCompletion(patch.completed, timezone, now);
+    return detailsChanged || completionChanged;
   }
 
   reschedule(schedule: TodoSchedule, now: Temporal.Instant): boolean {
@@ -283,24 +310,54 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return true;
   }
 
-  changeCategory(categoryId: number, now: Temporal.Instant): boolean {
-    if (this.props.categoryId === categoryId) {
+  changeCategory(categoryId: TodoCategoryId, now: Temporal.Instant): boolean {
+    if (this.props.categoryId.equals(categoryId)) {
       return false;
     }
     this.props.categoryId = categoryId;
     this.props.updatedAt = now;
-    this.raise(new TodoCategoryChangedEvent(this.id.value, this.props.userId.value, categoryId));
+    this.raise(
+      new TodoCategoryChangedEvent(this.id.value, this.props.userId.value, categoryId.value),
+    );
     return true;
   }
 
-  markDeleted(): void {
-    this.raise(new TodoDeletedEvent(this.id.value, this.props.userId.value));
+  // 순서 바꾸기는 사용자 순서 잠금 아래에서 이웃 사이 값을 정해 넘긴다
+  moveTo(sortOrder: number, now: Temporal.Instant): boolean {
+    if (this.props.sortOrder === sortOrder) {
+      return false;
+    }
+    this.props.sortOrder = sortOrder;
+    this.props.updatedAt = now;
+    return true;
   }
 
-  /** 끝에 붙인다. 상한에 닿았으면 TODO_0821이다. */
+  // 단일 할 일을 반복의 첫 회차로 삼는다. id·댓글·진행은 그대로이고 리마인더는 반복 시작이 다시 잡는다
+  attachToSeries(attachment: SeriesAttachment): boolean {
+    if (this.props.seriesId != null) {
+      return false;
+    }
+    this.props.seriesId = attachment.seriesId;
+    this.props.occurrenceDate = attachment.occurrenceDate;
+    this.props.schedule = attachment.schedule;
+    this.props.updatedAt = attachment.now;
+    return true;
+  }
+
+  markDeleted(): boolean {
+    if (this.#deleted) {
+      return false;
+    }
+    this.#deleted = true;
+    this.raise(new TodoDeletedEvent(this.id.value, this.props.userId.value));
+    return true;
+  }
+
+  // 끝에 붙인다. 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 다시 연다("완료 + 0/N"을 막는다, QA #37)
   addItem(params: {
     readonly id: TodoItemId;
     readonly title: TodoTitle;
+    readonly timezone: string;
     readonly now: Temporal.Instant;
   }): TodoItem {
     const { items } = this.props;
@@ -315,85 +372,86 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       now: params.now,
     });
     this.props.items = [...items, item];
+    this.reopen(params.timezone, params.now);
     return item;
   }
 
-  /** 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다. 바뀐 값이 없으면 false다. */
-  updateItem(
-    itemId: number,
-    patch: { readonly title?: string; readonly completed?: boolean },
-    now: Temporal.Instant,
-  ): boolean {
+  // 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다
+  updateItem(itemId: TodoItemId, change: TodoItemChange, now: Temporal.Instant): boolean {
     const item = this.#requireItem(itemId);
-    const title = patch.title == null ? null : TodoTitle.create(patch.title);
+    const title = change.title == null ? null : TodoTitle.create(change.title);
     const renamed = title != null && item.rename(title, now);
-    const completionChanged = patch.completed != null && item.changeCompleted(patch.completed, now);
+    const completionChanged =
+      change.completed != null && item.changeCompleted(change.completed, now);
     return renamed || completionChanged;
   }
 
-  removeItem(itemId: number): void {
+  removeItem(itemId: TodoItemId): boolean {
     this.#requireItem(itemId);
-    this.props.items = this.props.items.filter((item) => item.id.value !== itemId);
+    this.props.items = this.props.items.filter((item) => !item.id.equals(itemId));
+    return true;
   }
 
-  validateItemsReorder(itemIds: readonly number[]): void {
-    const currentIds = new Set(this.props.items.map((item) => item.id.value));
-    const uniqueItemIds = new Set(itemIds);
-    if (uniqueItemIds.size !== itemIds.length) {
-      throw duplicateChecklistItemIds(itemIds.length, uniqueItemIds.size);
-    }
-    if (itemIds.length !== currentIds.size) {
-      throw incompleteChecklistItemIds(currentIds.size, itemIds.length);
-    }
-    for (const id of itemIds) {
-      if (!currentIds.has(id)) {
-        throw checklistItemNotFound(id);
-      }
-    }
+  // 모든 하위 항목 id를 한 번씩 받아야 한다. 배열 순서가 새 순서다
+  reorderItems(itemIds: readonly TodoItemId[], now: Temporal.Instant): boolean {
+    this.#assertCompleteItemOrder(itemIds);
+    const moved = itemIds.map((itemId, sortOrder) =>
+      this.#requireItem(itemId).moveTo(sortOrder, now),
+    );
+    this.props.items = itemIds.map((itemId) => this.#requireItem(itemId));
+    return moved.some(Boolean);
   }
 
   toPrimitives(): TodoPrimitives {
     return {
       id: this.id.value,
       userId: this.props.userId.value,
-      categoryId: this.props.categoryId,
+      categoryId: this.props.categoryId.value,
       title: this.props.title.value,
       sortOrder: this.props.sortOrder,
       completed: this.props.completed,
       completedAt: this.props.completedAt,
       ...this.props.schedule.toPrimitives(),
       visibility: this.props.visibility,
-      seriesId: this.props.seriesId,
-      occurrenceDate: this.occurrenceDate,
+      seriesId: this.props.seriesId?.value ?? null,
+      occurrenceDate: this.props.occurrenceDate,
       items: this.props.items.map((item) => item.toPrimitives()),
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
     };
   }
 
-  /** 바뀌었으면 true다. 완료하면 그 시각을 남기고 되돌리면 지운다. */
-  #applyCompletion(completed: boolean, now: Temporal.Instant): boolean {
-    if (this.props.completed === completed) {
+  #changeCompletion(
+    completed: boolean | undefined,
+    timezone: string,
+    now: Temporal.Instant,
+  ): boolean {
+    if (completed == null) {
       return false;
     }
-    this.props.completed = completed;
-    this.props.completedAt = completed ? now : null;
-    this.props.updatedAt = now;
-    return true;
+    return completed ? this.complete(timezone, now) : this.reopen(timezone, now);
   }
 
-  /** 완료하면 예약이 지워지므로 되돌릴 때 다시 잡는다. 순간은 재계산이 늘 맞춰 둔다. */
-  #restoreReminders(): void {
-    const scheduledTime = this.props.schedule.scheduledTime;
-    if (scheduledTime != null) {
-      this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));
+  #assertCompleteItemOrder(itemIds: readonly TodoItemId[]): void {
+    const uniqueItemIds = new Set(itemIds.map((itemId) => itemId.value));
+    if (uniqueItemIds.size !== itemIds.length) {
+      throw duplicateChecklistItemIds(itemIds.length, uniqueItemIds.size);
+    }
+    const currentIds = new Set(this.props.items.map((item) => item.id.value));
+    if (itemIds.length !== currentIds.size) {
+      throw incompleteChecklistItemIds(currentIds.size, itemIds.length);
+    }
+    for (const itemId of itemIds) {
+      if (!currentIds.has(itemId.value)) {
+        throw checklistItemNotFound(itemId.value);
+      }
     }
   }
 
-  #requireItem(itemId: number): TodoItem {
-    const item = this.props.items.find((entry) => entry.id.value === itemId);
+  #requireItem(itemId: TodoItemId): TodoItem {
+    const item = this.props.items.find((entry) => entry.id.equals(itemId));
     if (item == null) {
-      throw checklistItemNotFound(itemId);
+      throw checklistItemNotFound(itemId.value);
     }
     return item;
   }

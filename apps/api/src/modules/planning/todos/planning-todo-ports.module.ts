@@ -9,6 +9,7 @@ import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-e
 
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
+import { TodoOccurrenceWriterPort } from "./application/ports/todo-occurrence-writer.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
@@ -19,6 +20,7 @@ import { CategoryOwnershipAdapter } from "./infrastructure/adapters/category-own
 import { TodoCacheAdapter } from "./infrastructure/adapters/todo-cache.adapter.js";
 import { TodoOwnerTimezoneAdapter } from "./infrastructure/adapters/todo-owner-timezone.adapter.js";
 import { ReminderSchedulerAdapter } from "./infrastructure/adapters/todo-reminder-scheduler.adapter.js";
+import { DrizzleTodoOccurrenceWriterAdapter } from "./infrastructure/persistence/drizzle-todo-occurrence-writer.adapter.js";
 import { DrizzleTodoReadRepository } from "./infrastructure/persistence/drizzle-todo-read.repository.js";
 import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo.repository.js";
 
@@ -32,6 +34,7 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
   ],
   providers: [
     { provide: TodoRepositoryPort, useClass: DrizzleTodoRepository },
+    { provide: TodoOccurrenceWriterPort, useClass: DrizzleTodoOccurrenceWriterAdapter },
     { provide: TodoReadRepositoryPort, useClass: DrizzleTodoReadRepository },
     { provide: TodoCachePort, useClass: TodoCacheAdapter },
     { provide: TodoReminderSchedulerPort, useClass: ReminderSchedulerAdapter },
@@ -46,6 +49,7 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
   ],
   exports: [
     TodoRepositoryPort,
+    TodoOccurrenceWriterPort,
     TodoReadRepositoryPort,
     TodoCachePort,
     TodoReminderSchedulerPort,

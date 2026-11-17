@@ -9,7 +9,6 @@ import {
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoId } from "../../domain/todo-id.vo.js";
-import { TodoItemId } from "../../domain/todo-item-id.vo.js";
 import { UpdateTodoItemUseCase } from "./update-todo-item.use-case.js";
 
 describe("하위 항목 수정", () => {
@@ -32,7 +31,10 @@ describe("하위 항목 수정", () => {
       { title: "첫 항목" },
       { title: "둘째 항목" },
     ]);
-    await fixture.todoRepository.updateItem(TodoItemId.reconstitute(1), { completed: true });
+    const item = fixture.records.get(1)?.items.find(({ id }) => id === 1);
+    if (item != null) {
+      item.completed = true;
+    }
     // When
     const result = await useCase.execute({
       todoId: 1,

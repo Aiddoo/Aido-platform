@@ -5,14 +5,12 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
+import type { CreatedOccurrence } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
-import type {
-  CreatedOccurrence,
-  TodoRepositoryPort,
-} from "../../../todos/application/ports/todo.repository.port.js";
+import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
+import { TodoSchedule } from "../../../todos/domain/todo-schedule.vo.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";
@@ -39,7 +37,10 @@ export interface StartedSeriesFromTodo {
 }
 
 interface StartSeriesFromTodoDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "attachToSeries">;
+  readonly todoRepository: Pick<
+    TodoRepositoryPort,
+    "findByIdAndUserId" | "lockByIdAndUserId" | "save"
+  >;
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "countActiveByUserId" | "insert">;
   readonly materializer: Pick<MaterializeTodoOccurrencesUseCase, "planFirstRun" | "persist">;
   readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders" | "scheduleReminders">;
@@ -67,7 +68,7 @@ export class StartSeriesFromTodoUseCase {
     if (todo == null) {
       throw todoNotFound(todoId);
     }
-    if (todo.seriesId != null) {
+    if (todo.isOccurrence()) {
       throw invalidRepeatRule("scope");
     }
     const activeCount = await seriesRepository.countActiveByUserId(ownerId);
@@ -87,7 +88,7 @@ export class StartSeriesFromTodoUseCase {
       TodoLockKeys.todo(todoId),
     ]);
     await this.assertCanStart(todoId, userId);
-    const todo = await todoRepository.findByIdAndUserId(
+    const todo = await todoRepository.lockByIdAndUserId(
       TodoId.reconstitute(todoId),
       UserId.reconstitute(userId),
     );
@@ -100,7 +101,7 @@ export class StartSeriesFromTodoUseCase {
     const series = TodoSeries.create({
       id: TodoSeriesId.generate(),
       userId: todo.userId,
-      categoryId: todo.categoryId,
+      categoryId: todo.categoryId.value,
       title: todo.title,
       visibility: todo.visibility,
       scheduledLocalTime,
@@ -117,13 +118,18 @@ export class StartSeriesFromTodoUseCase {
       throw noRepeatDates(startDate, repeat);
     }
     await seriesRepository.insert(series);
-    // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다.
-    const firstTime = resolveScheduledInstant(first.occurrenceDate, scheduledLocalTime, timezone);
-    await todoRepository.attachToSeries(todo.id, series.id, {
-      occurrenceDate: first.occurrenceDate,
+    // 시작일이 규칙에 맞지 않으면 다음 맞는 날로 옮겨 그 할 일을 첫 회차로 쓴다
+    const occurrenceDate = Temporal.PlainDate.from(first.occurrenceDate);
+    const schedule = TodoSchedule.create({
+      startDate: occurrenceDate,
+      endDate: null,
       scheduledLocalTime,
-      scheduledTime: firstTime,
+      isAllDay: scheduledLocalTime == null,
+      timezone,
     });
+    todo.attachToSeries({ seriesId: series.id, occurrenceDate, schedule, now });
+    await todoRepository.save(todo);
+    const firstTime = schedule.scheduledTime;
     // 첫 회차 날짜가 옮겨졌을 수 있어 옛 시각의 예약을 지우고 새 시각으로 다시 잡는다.
     await todoReminder.cancelReminders([todoId]);
     if (firstTime != null && !todo.completed) {

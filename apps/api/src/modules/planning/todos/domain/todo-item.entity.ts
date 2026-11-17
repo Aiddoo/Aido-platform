@@ -15,7 +15,7 @@ export interface TodoItemPrimitives {
 interface TodoItemProps {
   title: TodoTitle;
   completed: boolean;
-  readonly sortOrder: number;
+  sortOrder: number;
   readonly createdAt: Temporal.Instant;
   updatedAt: Temporal.Instant;
 }
@@ -74,6 +74,15 @@ export class TodoItem extends Entity<TodoItemId, TodoItemProps> {
       return false;
     }
     this.props.completed = completed;
+    this.props.updatedAt = now;
+    return true;
+  }
+
+  moveTo(sortOrder: number, now: Temporal.Instant): boolean {
+    if (this.props.sortOrder === sortOrder) {
+      return false;
+    }
+    this.props.sortOrder = sortOrder;
     this.props.updatedAt = now;
     return true;
   }

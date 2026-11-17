@@ -1,7 +1,6 @@
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
 
 import type { RepeatRuleRow } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
-import type { TodoItem } from "../../domain/todo-item.entity.js";
 import { Todo } from "../../domain/todo.aggregate.js";
 
 type TodoCategoryRow = typeof todoCategory.$inferSelect;
@@ -24,11 +23,10 @@ export function toTodo(row: TodoAggregateRow): Todo {
   return Todo.reconstitute(row);
 }
 
-export function toTodoRow(entity: Todo): typeof todo.$inferInsert {
+// 할 일 행의 Aggregate 칸만 담는다. 댓글·조회 수는 engagement 칸이라 넣지 않는다
+export function toTodoRow(
+  entity: Todo,
+): Omit<typeof todo.$inferInsert, "commentCount" | "viewCount"> {
   const { items: _items, ...primitives } = entity.toPrimitives();
   return primitives;
-}
-
-export function toTodoItemRow(todoId: number, item: TodoItem): typeof todoItem.$inferInsert {
-  return { ...item.toPrimitives(), todoId };
 }

@@ -4,12 +4,12 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
+import type { TodoOccurrenceWriterPort } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
-import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import {
@@ -33,10 +33,11 @@ export interface StoppedSeries {
 }
 
 interface StopTodoSeriesDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteOccurrences">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId">;
+  readonly occurrenceWriter: Pick<TodoOccurrenceWriterPort, "deleteOccurrences">;
   readonly seriesRepository: Pick<
     TodoSeriesRepositoryPort,
-    "lockForUpdate" | "lockFollowingSegments" | "update"
+    "lockForUpdate" | "lockFollowingSegments" | "save"
   >;
   readonly todoReminder: Pick<TodoReminderSchedulerPort, "cancelReminders">;
   readonly effects: Pick<PublishTodoSeriesEditUseCase, "execute">;
@@ -66,22 +67,23 @@ export class StopTodoSeriesUseCase {
     }
     const { seriesId, occurrenceDate } = todo;
     if (seriesId == null || occurrenceDate == null) {
-      throw todoNotRepeating(todoId);
+      throw todoNotRepeating(todoId, "THIS_AND_FOLLOWING");
     }
-    const series = await seriesRepository.lockForUpdate(TodoSeriesId.reconstitute(seriesId));
-    if (series == null || series.userId.value !== userId) {
-      throw todoSeriesNotFound(seriesId);
+    const series = await seriesRepository.lockForUpdate(seriesId);
+    if (series == null || !series.userId.equals(ownerId)) {
+      throw todoSeriesNotFound(seriesId.value);
     }
     const lastDate = occurrenceDate.toString();
     const following = await seriesRepository.lockFollowingSegments(series);
     const stopped = [series, ...following].filter((segment) => segment.stopAfter(lastDate));
+    // 이미 끝난 반복에 다시 끝내기를 보내면 stopAfter는 false지만, 출시 앱이 받던 TODO_0846을 계약으로 지켜 거절한다
     if (stopped.length === 0) {
-      throw todoSeriesEnded(seriesId);
+      throw todoSeriesEnded(seriesId.value);
     }
     for (const segment of stopped) {
-      await seriesRepository.update(segment);
+      await seriesRepository.save(segment);
     }
-    const deletedTodoIds = await todoRepository.deleteOccurrences({
+    const deletedTodoIds = await this.#dependencies.occurrenceWriter.deleteOccurrences({
       userId: ownerId,
       seriesIds: [series.id, ...following.map((segment) => segment.id)],
       fromDate: addDaysToKey(lastDate, 1),
@@ -89,7 +91,7 @@ export class StopTodoSeriesUseCase {
     });
     await todoReminder.cancelReminders(deletedTodoIds);
     await this.#dependencies.applyTodoEvents.execute([
-      new TodoOccurrencesChangedEvent(seriesId, userId),
+      new TodoOccurrencesChangedEvent(seriesId.value, userId),
     ]);
     return { series, userId, deletedTodoIds };
   }

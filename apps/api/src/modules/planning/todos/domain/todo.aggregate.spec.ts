@@ -12,6 +12,7 @@ import {
 } from "#test/fixtures/planning/todo.fixture";
 
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
+import { TodoCategoryId } from "../../todo-categories/domain/todo-category-id.vo.js";
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
 import { TodoCreatedEvent } from "./todo-created.event.js";
 import { TodoId } from "./todo-id.vo.js";
@@ -32,11 +33,15 @@ function itemsWithSortOrders(...sortOrders: number[]) {
   );
 }
 
+function itemIds(...ids: number[]): TodoItemId[] {
+  return ids.map((id) => TodoItemId.reconstitute(id));
+}
+
 function createTodo(overrides: { scheduledLocalTime?: string | null } = {}): Todo {
   return Todo.create({
     id: TodoId.reconstitute(1),
     userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
-    categoryId: 1,
+    categoryId: TodoCategoryId.reconstitute(1),
     title: TodoTitle.create("새 할 일"),
     schedule: TodoSchedule.create({
       startDate: Temporal.PlainDate.from("2026-11-10"),
@@ -83,13 +88,13 @@ describe("Todo — 할 일 애그리게잇", () => {
     });
   });
 
-  describe("toggleComplete", () => {
+  describe("complete·reopen", () => {
     it("완료로 전환하면 true를 반환하고 completedAt이 설정되며 TodoToggledEvent를 적립한다", () => {
       // Given
       const todo = createTodoFixture({ completed: false });
 
       // When
-      const changed = todo.toggleComplete(true, "Asia/Seoul", LATER);
+      const changed = todo.complete("Asia/Seoul", LATER);
 
       // Then
       expect(changed).toBe(true);
@@ -111,7 +116,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ completed: true, completedAt: NOW });
 
       // When
-      const changed = todo.toggleComplete(false, "UTC", LATER);
+      const changed = todo.reopen("UTC", LATER);
 
       // Then
       expect(changed).toBe(true);
@@ -129,7 +134,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ completed: true, completedAt: NOW });
 
       // When
-      const changed = todo.toggleComplete(true, "UTC", LATER);
+      const changed = todo.complete("UTC", LATER);
 
       // Then
       expect(changed).toBe(false);
@@ -228,7 +233,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const changed = todo.updateDetails(
         {
           title: "장보기",
-          categoryId: 3,
+          categoryId: TodoCategoryId.reconstitute(3),
           visibility: "PRIVATE",
           startDate: Temporal.PlainDate.from("2026-11-10"),
           completed: false,
@@ -255,7 +260,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       expect(todo.completedAt).toEqual(LATER);
     });
 
-    it("완료→미완료 전이 시 completedAt을 null로 초기화하고 시각이 있으면 리마인더를 다시 잡는다", () => {
+    it("완료 칸을 false로 보내면 reopen과 같은 사실(TodoToggledEvent)을 내고 시각이 있으면 리마인더를 다시 잡는다", () => {
       // Given
       const scheduledTime = Temporal.Instant.from("2026-11-10T09:00:00.000Z");
       const todo = createTodoFixture({
@@ -274,12 +279,45 @@ describe("Todo — 할 일 애그리게잇", () => {
       expect(todo.completedAt).toBeNull();
       const events = todo.pullDomainEvents();
       expect(events.map((event) => event.constructor)).toEqual([
-        TodoUpdatedEvent,
+        TodoToggledEvent,
         TodoRescheduledEvent,
       ]);
-      const rescheduled = events[1];
+      const [toggled, rescheduled] = events;
+      if (toggled instanceof TodoToggledEvent) {
+        expect(toggled.completed).toBe(false);
+        expect(toggled.timezone).toBe("UTC");
+      }
       if (rescheduled instanceof TodoRescheduledEvent) {
         expect(rescheduled.scheduledTime).toEqual(scheduledTime);
+      }
+    });
+
+    it("완료 칸을 true로 보내면 complete와 같은 TodoToggledEvent를 내고 다른 칸도 바꿨으면 TodoUpdatedEvent를 함께 낸다", () => {
+      // Given
+      const todo = createTodoFixture({ completed: false, title: "장보기" });
+
+      // When
+      const changed = todo.updateDetails(
+        { title: "마트 가기", completed: true },
+        "Asia/Seoul",
+        LATER,
+      );
+
+      // Then
+      expect(changed).toBe(true);
+      expect(todo.toPrimitives()).toMatchObject({ completed: true, completedAt: LATER });
+      const events = todo.pullDomainEvents();
+      expect(events.map((event) => event.constructor)).toEqual([
+        TodoUpdatedEvent,
+        TodoToggledEvent,
+      ]);
+      const [updated, toggled] = events;
+      if (updated instanceof TodoUpdatedEvent) {
+        expect(updated.completed).toBe(true);
+      }
+      if (toggled instanceof TodoToggledEvent) {
+        expect(toggled.completed).toBe(true);
+        expect(toggled.timezone).toBe("Asia/Seoul");
       }
     });
 
@@ -464,11 +502,11 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ id: 3, categoryId: 1 });
 
       // When
-      const changed = todo.changeCategory(7, LATER);
+      const changed = todo.changeCategory(TodoCategoryId.reconstitute(7), LATER);
 
       // Then
       expect(changed).toBe(true);
-      expect(todo.categoryId).toBe(7);
+      expect(todo.categoryId.value).toBe(7);
       const event = todo.pullDomainEvents()[0];
       expect(event).toBeInstanceOf(TodoCategoryChangedEvent);
       if (event instanceof TodoCategoryChangedEvent) {
@@ -483,7 +521,10 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ categoryId: 1, visibility: "PUBLIC" });
 
       // When
-      const changes = [todo.changeVisibility("PUBLIC", LATER), todo.changeCategory(1, LATER)];
+      const changes = [
+        todo.changeVisibility("PUBLIC", LATER),
+        todo.changeCategory(TodoCategoryId.reconstitute(1), LATER),
+      ];
 
       // Then
       expect(changes).toEqual([false, false]);
@@ -500,6 +541,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const item = todo.addItem({
         id: TodoItemId.reconstitute(12),
         title: TodoTitle.create("새 항목"),
+        timezone: "UTC",
         now: LATER,
       });
 
@@ -524,6 +566,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const item = todo.addItem({
         id: TodoItemId.reconstitute(1),
         title: TodoTitle.create("첫 항목"),
+        timezone: "UTC",
         now: LATER,
       });
 
@@ -544,6 +587,7 @@ describe("Todo — 할 일 애그리게잇", () => {
         todo.addItem({
           id: TodoItemId.reconstitute(999),
           title: TodoTitle.create("초과 항목"),
+          timezone: "UTC",
           now: LATER,
         });
 
@@ -567,7 +611,11 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0) });
 
       // When
-      const changed = todo.updateItem(1, { title: "수정", completed: true }, LATER);
+      const changed = todo.updateItem(
+        TodoItemId.reconstitute(1),
+        { title: "수정", completed: true },
+        LATER,
+      );
 
       // Then
       expect(changed).toBe(true);
@@ -579,7 +627,11 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0) });
 
       // When
-      const changed = todo.updateItem(1, { title: "항목 1", completed: false }, LATER);
+      const changed = todo.updateItem(
+        TodoItemId.reconstitute(1),
+        { title: "항목 1", completed: false },
+        LATER,
+      );
 
       // Then
       expect(changed).toBe(false);
@@ -590,7 +642,8 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0) });
 
       // When
-      const update = () => todo.updateItem(999, { completed: true }, LATER);
+      const update = () =>
+        todo.updateItem(TodoItemId.reconstitute(999), { completed: true }, LATER);
 
       // Then
       expect(update).toThrow(DomainException);
@@ -607,7 +660,12 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0) });
 
       // When
-      const update = () => todo.updateItem(1, { title: "가".repeat(201), completed: true }, LATER);
+      const update = () =>
+        todo.updateItem(
+          TodoItemId.reconstitute(1),
+          { title: "가".repeat(201), completed: true },
+          LATER,
+        );
 
       // Then
       expect(update).toThrow(DomainException);
@@ -621,7 +679,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
 
       // When
-      todo.removeItem(1);
+      todo.removeItem(TodoItemId.reconstitute(1));
 
       // Then
       expect(todo.items.map((item) => item.id.value)).toEqual([2]);
@@ -632,7 +690,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0) });
 
       // When
-      const remove = () => todo.removeItem(999);
+      const remove = () => todo.removeItem(TodoItemId.reconstitute(999));
 
       // Then
       expect(remove).toThrow(DomainException);
@@ -640,16 +698,33 @@ describe("Todo — 할 일 애그리게잇", () => {
     });
   });
 
-  describe("validateItemsReorder", () => {
-    it("전체 항목 ID 집합이 일치하면 통과한다", () => {
+  describe("reorderItems", () => {
+    it("전체 항목 ID를 받으면 배열 순서대로 sortOrder를 매기고 옮긴 항목만 수정 시각을 바꾼다", () => {
       // Given
       const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1, 2) });
 
       // When
-      const validate = () => todo.validateItemsReorder([3, 1, 2]);
+      const changed = todo.reorderItems(itemIds(3, 1, 2), LATER);
 
       // Then
-      expect(validate).not.toThrow();
+      expect(changed).toBe(true);
+      expect(todo.items.map((item) => item.toPrimitives())).toEqual([
+        createTodoItemFixture({ id: 3, title: "항목 3", sortOrder: 0, updatedAt: LATER }),
+        createTodoItemFixture({ id: 1, title: "항목 1", sortOrder: 1, updatedAt: LATER }),
+        createTodoItemFixture({ id: 2, title: "항목 2", sortOrder: 2, updatedAt: LATER }),
+      ]);
+    });
+
+    it("지금과 같은 순서면 false이고 수정 시각을 바꾸지 않는다", () => {
+      // Given
+      const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
+
+      // When
+      const changed = todo.reorderItems(itemIds(1, 2), LATER);
+
+      // Then
+      expect(changed).toBe(false);
+      expect(todo.items.map((item) => item.toPrimitives().updatedAt)).toEqual([NOW, NOW]);
     });
 
     it("중복 ID가 포함되면 길이가 같아도 DomainException(SYS_0002)을 던진다 (정합성 가드)", () => {
@@ -657,7 +732,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
 
       // When
-      const validate = () => todo.validateItemsReorder([1, 1]);
+      const validate = () => todo.reorderItems(itemIds(1, 1), LATER);
 
       // Then
       expect(validate).toThrow(DomainException);
@@ -669,7 +744,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1, 2) });
 
       // When
-      const validate = () => todo.validateItemsReorder([3, 1]);
+      const validate = () => todo.reorderItems(itemIds(3, 1), LATER);
 
       // Then
       expect(validate).toThrow("모든 하위 항목 ID를 전달해야 합니다");
@@ -686,7 +761,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       const todo = createTodoFixture({ items: itemsWithSortOrders(0, 1) });
 
       // When
-      const validate = () => todo.validateItemsReorder([999, 1]);
+      const validate = () => todo.reorderItems(itemIds(999, 1), LATER);
 
       // Then
       expect(validate).toThrow(

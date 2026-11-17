@@ -22,7 +22,7 @@ export interface UpdateTodoItemInput {
 }
 
 interface UpdateTodoItemDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateItem">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -45,15 +45,20 @@ export class UpdateTodoItemUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);
       }
 
-      if (!todo.updateItem(itemId, data, this.#dependencies.clock.now())) {
+      const changed = todo.updateItem(
+        TodoItemId.reconstitute(itemId),
+        data,
+        this.#dependencies.clock.now(),
+      );
+      if (!changed) {
         return;
       }
-      await this.#dependencies.todoRepository.updateItem(TodoItemId.reconstitute(itemId), data);
+      await this.#dependencies.todoRepository.save(todo);
     });
 
     this.#dependencies.logger.log({

@@ -13,7 +13,6 @@ import {
   max,
   sql,
 } from "drizzle-orm";
-import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import {
   requireRecord,
@@ -28,7 +27,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type {
   CategoryTodoCount,
   TodoCategoryRepositoryPort,
-  UpdateCategoryInput,
 } from "../../application/ports/todo-category.repository.port.js";
 import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 import { duplicateCategoryName } from "../../application/todo-categories.errors.js";
@@ -88,26 +86,18 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     }
   }
 
-  async update(categoryId: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
-    const id = categoryId.value;
+  async save(category: TodoCategory): Promise<void> {
+    const { name, color, sortOrder, updatedAt } = toTodoCategoryRow(category);
     try {
-      const values = omitBy(
-        { name: input.name, color: input.color, sortOrder: input.sortOrder },
-        isUndefined,
-      );
-      if (isEmptyObject(values)) {
-        const current = await this.#db.query.todoCategory.findFirst({ where: { id } });
-        return toTodoCategory(requireRecord(current));
-      }
       const [row] = await this.#db
         .update(todoCategory)
-        .set({ ...values, updatedAt: this.#clock.now() })
-        .where(eq(todoCategory.id, id))
-        .returning();
-      return toTodoCategory(requireRecord(row));
+        .set({ name, color, sortOrder, updatedAt })
+        .where(eq(todoCategory.id, category.id.value))
+        .returning({ id: todoCategory.id });
+      requireRecord(row);
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        throw duplicateCategoryName(input.name ?? "");
+        throw duplicateCategoryName(name);
       }
       throw error;
     }

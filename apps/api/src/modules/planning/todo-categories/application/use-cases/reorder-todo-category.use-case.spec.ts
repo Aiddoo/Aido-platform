@@ -4,16 +4,16 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
 import { InMemoryTodoCategoryRepository } from "#test/doubles/planning/in-memory-todo-category.repository";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
-import { TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
+import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
 import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
-import type { UpdateCategoryInput } from "../ports/todo-category.repository.port.js";
 import { ReorderTodoCategoryUseCase } from "./reorder-todo-category.use-case.js";
 
 const USER_ID = TODO_FIXTURE_USER_ID;
@@ -39,6 +39,7 @@ function setUp(
   const todoCache = new FakeTodoCache();
   const afterCommit = new RecordingAfterCommitRegistry();
   const useCase = new ReorderTodoCategoryUseCase({
+    clock: new FixedClock(TODO_FIXTURE_NOW),
     repository,
     cache,
     todoCache,
@@ -197,9 +198,9 @@ describe("카테고리 재정렬", () => {
         events.push("shift");
         return super.shiftSortOrders(userId, fromSortOrder, toSortOrder, delta);
       }
-      override async update(id: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
-        events.push("update");
-        return super.update(id, input);
+      override async save(category: TodoCategory): Promise<void> {
+        events.push("save");
+        await super.save(category);
       }
     }
     class OrderedCache extends FakeTodoCategoryCache {
@@ -232,7 +233,7 @@ describe("카테고리 재정렬", () => {
       "category-read",
       "target-read",
       "shift",
-      "update",
+      "save",
       "uow:resolved",
       "cache",
     ]);

@@ -6,6 +6,7 @@ import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-u
 import { PlanningTodoPortsModule } from "../todos/planning-todo-ports.module.js";
 import { TodoSeriesRepositoryPort } from "./application/ports/todo-series.repository.port.js";
 import { CatchUpTodoSeriesUseCase } from "./application/use-cases/catch-up-todo-series.use-case.js";
+import { DeleteTodoOccurrencesUseCase } from "./application/use-cases/delete-todo-occurrences.use-case.js";
 import { MaterializeTodoOccurrencesUseCase } from "./application/use-cases/materialize-todo-occurrences.use-case.js";
 import { PublishTodoCreationUseCase } from "./application/use-cases/publish-todo-creation.use-case.js";
 import { PublishTodoSeriesEditUseCase } from "./application/use-cases/publish-todo-series-edit.use-case.js";
@@ -25,6 +26,7 @@ import { TodoSeriesController } from "./presentation/http/v1/todo-series.control
     PublishTodoCreationUseCase,
     PublishTodoSeriesEditUseCase,
     CatchUpTodoSeriesUseCase,
+    DeleteTodoOccurrencesUseCase,
     StartSeriesFromTodoUseCase,
     StopTodoSeriesUseCase,
     UpdateFollowingTodosUseCase,

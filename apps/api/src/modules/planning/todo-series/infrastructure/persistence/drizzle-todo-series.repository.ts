@@ -55,7 +55,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
       .values({ ...toTodoSeriesRow(series), updatedAt: series.updatedAt });
   }
 
-  async update(series: TodoSeries): Promise<void> {
+  async save(series: TodoSeries): Promise<void> {
     const { id, userId: _userId, createdAt: _createdAt, ...values } = toTodoSeriesRow(series);
     const updated = await this.#db
       .update(todoSeries)

@@ -4,6 +4,7 @@ import { PgBoss } from "pg-boss";
 
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
+import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
@@ -206,7 +207,7 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
 
   it("지우는 트랜잭션을 기다린 할 일 수정은 행을 되살리지 못하고 부재 오류로 롤백된다", async () => {
     // Given
-    // 할 일 수정은 할 일 잠금만 잡아 카테고리 삭제 잠금과 겹치지 않는다. 행 잠금에서 만난다
+    // 저장소 save는 upsert하지 않아, 행 잠금을 기다린 수정은 지운 행을 되살리지 못한다
     const [targetId = 0] = removed.todoIds;
     const deleted = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -218,9 +219,16 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     await deleted.promise;
 
     // When
-    const update = uow.run(() =>
-      todoRepository.updateTitle(TodoId.reconstitute(targetId), "고친 제목"),
-    );
+    const update = uow.run(async () => {
+      const target = await todoRepository.findByIdAndUserId(
+        TodoId.reconstitute(targetId),
+        UserId.reconstitute(ownerId),
+      );
+      target?.rename(TodoTitle.create("고친 제목"), Temporal.Now.instant());
+      if (target != null) {
+        await todoRepository.save(target);
+      }
+    });
     await vi.waitFor(
       async () => {
         const waiting = await client.execute<{ count: number }>(sql`

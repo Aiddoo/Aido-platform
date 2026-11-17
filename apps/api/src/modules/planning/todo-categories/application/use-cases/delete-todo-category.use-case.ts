@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import type { CategoryTodoHandling } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
@@ -16,7 +14,6 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { CategoryChangedEvent } from "../../domain/category-changed.event.js";
 import { planCategoryDeletion } from "../../domain/category-deletion.domain-service.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
@@ -137,15 +134,8 @@ export class DeleteTodoCategoryUseCase {
         .exhaustive();
 
       await repository.delete(categoryId);
-      await eventPublisher.publish([
-        new CategoryChangedEvent({
-          eventName: "planning.todo-category.deleted",
-          eventId: randomUUID(),
-          occurredAt: clock.now(),
-          categoryId: input.categoryId,
-          userId: input.userId,
-        }),
-      ]);
+      category.markDeleted(clock.now());
+      await eventPublisher.publish(category.pullDomainEvents());
       return {
         ...result,
         todoCount: todoCount.total,

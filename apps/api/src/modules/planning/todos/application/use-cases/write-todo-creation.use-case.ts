@@ -20,7 +20,8 @@ import { TodoSchedule } from "../../domain/todo-schedule.vo.js";
 import { Todo, type TodoEvent } from "../../domain/todo.aggregate.js";
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
-import type { CreatedOccurrence, TodoRepositoryPort } from "../ports/todo.repository.port.js";
+import type { CreatedOccurrence } from "../ports/todo-occurrence-writer.port.js";
+import type { TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import {
   categoryTodoLimitReached,
   invalidRepeatRule,
@@ -101,7 +102,7 @@ export class WriteTodoCreationUseCase {
     const todo = Todo.create({
       id: await todoRepository.nextId(),
       userId: spec.userId,
-      categoryId: spec.categoryId.value,
+      categoryId: spec.categoryId,
       title: spec.title,
       schedule: spec.schedule,
       visibility: spec.visibility,

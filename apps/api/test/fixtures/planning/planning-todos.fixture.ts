@@ -1,5 +1,6 @@
 import type { Todo as TodoResponse } from "@aido/api";
 
+import { DeleteTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/delete-todo-occurrences.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
@@ -8,11 +9,13 @@ import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/applicat
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
+import { InMemoryTodoOccurrenceWriter } from "#test/doubles/planning/in-memory-todo-occurrence-writer";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { InMemoryTodoSeriesRepository } from "#test/doubles/planning/in-memory-todo-series.repository";
 import {
   copyTodoRecord,
   InMemoryTodoRepository,
+  InMemoryTodoSequence,
 } from "#test/doubles/planning/in-memory-todo.repository";
 import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
 import { RecordingTodoCompletionEffects } from "#test/doubles/planning/recording-todo-completion-effects";
@@ -55,7 +58,9 @@ export function createPlanningTodoFixture(
   const eventPublisher = new RecordingDomainEventPublisher();
   const logger = new SilentLogger();
   const seriesStore = new Map<string, TodoSeries>();
-  const todoRepository = new InMemoryTodoRepository(records, seriesStore);
+  const sequence = new InMemoryTodoSequence();
+  const todoRepository = new InMemoryTodoRepository(records, seriesStore, sequence);
+  const occurrenceWriter = new InMemoryTodoOccurrenceWriter(records, sequence);
   const todoReadRepository = new InMemoryTodoReadRepository(records, categories, seriesStore);
   const todoSeriesRepository = new InMemoryTodoSeriesRepository(seriesStore);
   const seriesOwner = new StubTodoSeriesOwner();
@@ -68,6 +73,7 @@ export function createPlanningTodoFixture(
   });
   const occurrenceMaterializer = new MaterializeTodoOccurrencesUseCase({
     todoRepository,
+    occurrenceWriter,
     todoReminder,
     applyTodoEvents,
   });
@@ -94,6 +100,17 @@ export function createPlanningTodoFixture(
       return { ...streakContext };
     },
   };
+  const deleteOccurrences = new DeleteTodoOccurrencesUseCase({
+    todoRepository,
+    occurrenceWriter,
+    seriesRepository: todoSeriesRepository,
+    todoReminder,
+    applyTodoEvents,
+    effects: seriesEffects,
+    unitOfWork,
+    mutationLock,
+    logger,
+  });
   return {
     userId,
     records,
@@ -101,6 +118,7 @@ export function createPlanningTodoFixture(
     categoryOwners,
     seriesStore,
     todoRepository,
+    occurrenceWriter,
     todoReadRepository,
     todoSeriesRepository,
     todoReminder,
@@ -110,6 +128,7 @@ export function createPlanningTodoFixture(
     seriesOwner,
     seriesEffects,
     occurrenceMaterializer,
+    deleteOccurrences,
     todoCache,
     eventPublisher,
     completionEffects,

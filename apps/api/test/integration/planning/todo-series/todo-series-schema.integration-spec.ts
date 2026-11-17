@@ -594,7 +594,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await repository().insert(finished);
       // When
       finished.planOccurrences("2026-12-31");
-      await repository().update(finished);
+      await repository().save(finished);
       // Then
       expect(await repository().countActiveByUserId(UserId.reconstitute(userId))).toBe(1);
     });

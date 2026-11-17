@@ -40,6 +40,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 - 사례: 메모 수정(`RewriteMemoUseCase`)·고정(`ChangeMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
 - 할 일 순서는 사이를 띄운 정수(간격 1024, [todo-sort-order.domain-service.ts](../src/modules/planning/shared/domain/todo-sort-order.domain-service.ts))다. 새 할 일·순서 바꾸기는 이웃 사이 값 한 행만 쓰고, 사이가 없을 때만 그 사용자 할 일을 지금 순서대로 다시 번호 매긴다. 둘 다 사용자 순서 잠금(`TodoLockKeys.sortOrder`) 아래에서 한다.
+- 할 일은 사용자마다 할 일이 많아 사용자 잠금으로 줄 세우지 않는다. `save`하는 UseCase는 할 일 잠금(`TodoLockKeys.todo`)을 잡고 그 행을 `FOR UPDATE`로 읽는다(`TodoRepositoryPort.lockByIdAndUserId`). 순서 다시 매기기·회차 묶음·카테고리 옮기기·시간대 재계산의 집합 update가 같은 행을 쓰면 기다렸다가 그 값 위에 저장한다. `save`는 댓글·조회 수(engagement 칸)를 쓰지 않는다.
 - 예외: 한 칸만 조건부로 바꾸는 갱신(`readAt`을 `WHERE "readAt" IS NULL`일 때만 채우기)은 잠금 없이 저장소의 전용 메서드로 둔다. 조건이 경합을 막고 다른 칸을 덮지 않기 때문이다.
 
 ## raw SQL

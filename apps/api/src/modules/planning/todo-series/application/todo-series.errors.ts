@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
+import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoEditScope } from "@aido/api/vocabulary";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
@@ -17,9 +17,9 @@ export function todoSeriesEnded(seriesId: string): ApplicationException {
   return new ApplicationException(ErrorCode.TODO_0846, { seriesId });
 }
 
-/** 반복 할 일이 아니라 "이후 모두" 범위를 고를 수 없다 */
-export function todoNotRepeating(todoId: number): ApplicationException {
-  return new ApplicationException(ErrorCode.TODO_0844, { todoId, scope: "THIS_AND_FOLLOWING" });
+// 반복 할 일이 아니라 범위를 고를 수 없다
+export function todoNotRepeating(todoId: number, scope: TodoEditScope): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_0844, { todoId, scope });
 }
 
 export function invalidRepeatRule(field: string): ApplicationException {

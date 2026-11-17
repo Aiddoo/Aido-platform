@@ -345,7 +345,7 @@ describe("할 일 생성", () => {
       // Given
       for (const series of fixture.seriesStore.values()) {
         series.stopAfter("2026-12-31");
-        await fixture.todoSeriesRepository.update(series);
+        await fixture.todoSeriesRepository.save(series);
       }
       // When
       const finishedResult = useCase.execute(seriesInput({ repeat: finished }));

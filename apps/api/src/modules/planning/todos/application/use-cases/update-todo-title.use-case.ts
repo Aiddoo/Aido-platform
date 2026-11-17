@@ -22,7 +22,7 @@ export interface UpdateTodoTitleInput {
 }
 
 interface UpdateTodoTitleDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateTitle">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -46,7 +46,7 @@ export class UpdateTodoTitleUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
@@ -54,7 +54,7 @@ export class UpdateTodoTitleUseCase {
       if (!todo.rename(TodoTitle.create(title), this.#dependencies.clock.now())) {
         return;
       }
-      await this.#dependencies.todoRepository.updateTitle(todoId, todo.title.value);
+      await this.#dependencies.todoRepository.save(todo);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 

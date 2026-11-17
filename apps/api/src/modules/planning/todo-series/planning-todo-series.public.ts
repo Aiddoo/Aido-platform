@@ -6,6 +6,7 @@ export {
 } from "./application/read-models/todo-series.read-model.js";
 export { todoSeriesChangedPayloadSchema } from "./application/todo-series-published-events.constants.js";
 export { CatchUpTodoSeriesUseCase } from "./application/use-cases/catch-up-todo-series.use-case.js";
+export { DeleteTodoOccurrencesUseCase } from "./application/use-cases/delete-todo-occurrences.use-case.js";
 export { MaterializeTodoOccurrencesUseCase } from "./application/use-cases/materialize-todo-occurrences.use-case.js";
 export { PublishTodoCreationUseCase } from "./application/use-cases/publish-todo-creation.use-case.js";
 export { PublishTodoSeriesEditUseCase } from "./application/use-cases/publish-todo-series-edit.use-case.js";

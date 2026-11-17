@@ -28,7 +28,8 @@ export abstract class TodoSeriesRepositoryPort {
 
   abstract insert(series: TodoSeries): Promise<void>;
 
-  abstract update(series: TodoSeries): Promise<void>;
+  // 있는 규칙 행의 Aggregate 칸을 모두 쓴다. 같은 규칙을 바꾸는 UseCase는 규칙 행 잠금(lockForUpdate) 아래에서 읽는다
+  abstract save(series: TodoSeries): Promise<void>;
 
   /** 분할로 이어진 규칙을 모두 잠그고 id를 돌려준다. 원본 id가 같은 규칙이 한 묶음이다. */
   abstract lockFamilyIds(

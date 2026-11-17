@@ -31,7 +31,7 @@ export interface UpdateTodoScheduleInput {
 }
 
 interface UpdateTodoScheduleDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateSchedule">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -57,7 +57,7 @@ export class UpdateTodoScheduleUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
@@ -75,7 +75,7 @@ export class UpdateTodoScheduleUseCase {
       if (!rescheduled) {
         return;
       }
-      await this.#dependencies.todoRepository.updateSchedule(todoId, todo.schedule.toPrimitives());
+      await this.#dependencies.todoRepository.save(todo);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 

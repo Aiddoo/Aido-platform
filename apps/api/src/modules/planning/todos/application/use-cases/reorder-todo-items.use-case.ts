@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -20,10 +21,11 @@ export interface ReorderTodoItemsInput {
 }
 
 interface ReorderTodoItemsDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "reorderItems">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -42,16 +44,19 @@ export class ReorderTodoItemsUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);
       }
 
-      todo.validateItemsReorder(itemIds);
-
-      await this.#dependencies.todoRepository.reorderItems(
+      const reordered = todo.reorderItems(
         itemIds.map((itemId) => TodoItemId.reconstitute(itemId)),
+        this.#dependencies.clock.now(),
       );
+      if (!reordered) {
+        return;
+      }
+      await this.#dependencies.todoRepository.save(todo);
     });
 
     this.#dependencies.logger.log({ event: TodoLogEvent.ITEMS_REORDERED, todoId, userId });

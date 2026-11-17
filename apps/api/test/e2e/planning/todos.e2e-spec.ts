@@ -9,6 +9,8 @@
 import type { Todo } from "@aido/api";
 import request from "supertest";
 
+import { todayIn } from "#test/fixtures/clock.fixture";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 describe("할 일 E2E", () => {
@@ -634,6 +636,39 @@ describe("할 일 E2E", () => {
       // Then
       expect(response.body.data.todo.completed).toBe(false);
       expect(response.body.data.todo.completedAt).toBeNull();
+    });
+
+    it("일반 PATCH의 completed도 전용 완료 경로처럼 연속 기록을 올린다", async () => {
+      // Given
+      const timezone = "Asia/Seoul";
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-patch-complete@example.com",
+        testPassword,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const createResponse = await request(testContext.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone)
+        .send({ title: "오늘 할 일", categoryId, startDate: todayIn(timezone).toString() })
+        .expect(201);
+      const todoId = createResponse.body.data.todo.id;
+
+      // When
+      await request(testContext.app.getHttpServer())
+        .patch(`/v1/todos/${todoId}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone)
+        .send({ completed: true })
+        .expect(200);
+      const summary = await request(testContext.app.getHttpServer())
+        .get("/v1/todos/summary")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone)
+        .expect(200);
+
+      // Then
+      expect(summary.body.data).toMatchObject({ isComplete: true, currentStreak: 1 });
     });
 
     it("존재하지 않는 Todo는 404 에러", async () => {

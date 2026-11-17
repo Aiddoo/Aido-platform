@@ -23,7 +23,7 @@ export interface UpdateTodoVisibilityInput {
 }
 
 interface UpdateTodoVisibilityDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateVisibility">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -47,7 +47,7 @@ export class UpdateTodoVisibilityUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
@@ -55,7 +55,7 @@ export class UpdateTodoVisibilityUseCase {
       if (!todo.changeVisibility(visibility, this.#dependencies.clock.now())) {
         return;
       }
-      await this.#dependencies.todoRepository.updateVisibility(todoId, todo.visibility);
+      await this.#dependencies.todoRepository.save(todo);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 

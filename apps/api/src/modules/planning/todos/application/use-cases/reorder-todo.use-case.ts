@@ -1,6 +1,7 @@
 import type { ReorderPosition } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -15,7 +16,11 @@ import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
-import { reorderTargetTodoNotFound, todoNotFound } from "../todos.errors.js";
+import {
+  reorderTargetTodoNotFound,
+  todoNotFound,
+  todoSortOrderExhausted,
+} from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import { TodoLogEvent } from "../todos.log-events.js";
 
@@ -30,14 +35,16 @@ interface ReorderTodoDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
     | "findByIdAndUserId"
+    | "lockByIdAndUserId"
     | "findAdjacentSortOrder"
     | "findEdgeSortOrder"
     | "renumberSortOrders"
-    | "updateSortOrder"
+    | "save"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
+  readonly clock: ClockPort;
   readonly todoCache: Pick<TodoCachePort, "invalidateFriendTodos">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -60,7 +67,7 @@ export class ReorderTodoUseCase {
         TodoLockKeys.todo(id),
         ...(targetTodoId == null ? [] : [TodoLockKeys.todo(targetTodoId)]),
       ]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
@@ -81,9 +88,11 @@ export class ReorderTodoUseCase {
         sortOrder = await this.#planSortOrder(ownerId, todoId, renumberedTarget, position);
       }
       if (sortOrder == null) {
-        throw new Error("todo sortOrder has no room after renumbering");
+        throw todoSortOrderExhausted();
       }
-      await this.#dependencies.todoRepository.updateSortOrder(todoId, sortOrder);
+      if (todo.moveTo(sortOrder, this.#dependencies.clock.now())) {
+        await this.#dependencies.todoRepository.save(todo);
+      }
 
       this.#dependencies.logger.log({
         event: TodoLogEvent.REORDERED,

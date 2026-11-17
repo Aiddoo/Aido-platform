@@ -2,9 +2,9 @@ import type { Provider } from "@nestjs/common";
 
 import {
   CatchUpTodoSeriesUseCase,
+  DeleteTodoOccurrencesUseCase,
   MaterializeTodoOccurrencesUseCase,
   PublishTodoCreationUseCase,
-  PublishTodoSeriesEditUseCase,
   StartSeriesFromTodoUseCase,
   StopTodoSeriesUseCase,
   TodoSeriesRepositoryPort,
@@ -106,9 +106,7 @@ export const PLANNING_TODOS_PROVIDERS = [
   provideUseCase(CreateTodoUseCase, { todoCreator: StagedTodoCreatorPort, ...MUTATION }),
   provideUseCase(DeleteTodoUseCase, {
     todoRepository: TodoRepositoryPort,
-    seriesRepository: TodoSeriesRepositoryPort,
-    seriesEffects: PublishTodoSeriesEditUseCase,
-    todoReminder: TodoReminderSchedulerPort,
+    deleteOccurrences: DeleteTodoOccurrencesUseCase,
     todoCache: TodoCachePort,
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
@@ -120,6 +118,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
     categoryOwnership: CategoryOwnershipPort,
     todoCache: TodoCachePort,
     logger: loggerFor(UpdateTodoUseCase),
@@ -133,6 +132,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     ...MUTATION,
     timezoneResolver: ResolveTodoTimezoneUseCase,
     applyTodoEvents: ApplyTodoEventsUseCase,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
   }),
   provideUseCase(ApplyTodoCompletionEffectsUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
@@ -170,6 +170,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(DeleteTodoItemUseCase),
   }),
   provideUseCase(ReorderTodoUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -177,6 +178,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(ReorderTodoUseCase),
   }),
   provideUseCase(ReorderTodoItemsUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,

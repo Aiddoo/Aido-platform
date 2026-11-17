@@ -50,6 +50,7 @@ describe("할 일 순서 바꾸기 — 간격 정수 (실제 PostgreSQL)", () =>
     client = await database.start();
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     useCase = new ReorderTodoUseCase({
+      clock: new DateClock(),
       todoRepository: new DrizzleTodoRepository(transactionHost, new DateClock()),
       todoReadRepository: new DrizzleTodoReadRepository(transactionHost),
       unitOfWork: uow,

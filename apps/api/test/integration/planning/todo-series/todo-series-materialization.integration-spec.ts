@@ -14,6 +14,7 @@ import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series
 import { TodoSeriesOwnerAdapter } from "#api/modules/planning/todo-series/infrastructure/adapters/todo-series-owner.adapter";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import type { TodoReminderSchedulerPort } from "#api/modules/planning/todos/application/ports/todo-reminder-scheduler.port";
+import { DrizzleTodoOccurrenceWriterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-occurrence-writer.adapter";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -84,6 +85,10 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
     const todoRepository = new DrizzleTodoRepository(fixture.transactionHost, new DateClock());
+    const occurrenceWriter = new DrizzleTodoOccurrenceWriterAdapter(
+      fixture.transactionHost,
+      new DateClock(),
+    );
     const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
       publishOccurrences: async (series) => {
         published.push(series.id.value);
@@ -106,6 +111,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         seriesRepository,
         materializer: new MaterializeTodoOccurrencesUseCase({
           todoRepository,
+          occurrenceWriter,
           todoReminder: { scheduleReminders },
           applyTodoEvents: { execute: async () => undefined },
         }),

@@ -20,7 +20,7 @@ export interface DeleteTodoItemInput {
 }
 
 interface DeleteTodoItemDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteItem">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -42,14 +42,13 @@ export class DeleteTodoItemUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);
       }
 
-      todo.removeItem(itemId);
-
-      await this.#dependencies.todoRepository.deleteItem(TodoItemId.reconstitute(itemId));
+      todo.removeItem(TodoItemId.reconstitute(itemId));
+      await this.#dependencies.todoRepository.save(todo);
     });
 
     this.#dependencies.logger.log({

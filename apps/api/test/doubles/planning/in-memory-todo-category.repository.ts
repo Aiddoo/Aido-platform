@@ -1,7 +1,6 @@
 import {
   type CategoryTodoCount,
   TodoCategoryRepositoryPort,
-  type UpdateCategoryInput,
 } from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
 import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/todo-categories/application/read-models/todo-category-with-count.read-model";
 import { duplicateCategoryName } from "#api/modules/planning/todo-categories/application/todo-categories.errors";
@@ -50,21 +49,12 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     this.#categories.set(category.id.value, copyOf(category));
   }
 
-  async update(categoryId: TodoCategoryId, input: UpdateCategoryInput): Promise<TodoCategory> {
-    const id = categoryId.value;
-    const current = this.#require(id);
-    const primitives = current.toPrimitives();
-    if (input.name != null) {
-      this.#assertUniqueName(primitives.userId, input.name, id);
-    }
-    const updated = TodoCategory.reconstitute({
-      ...primitives,
-      name: input.name ?? primitives.name,
-      color: input.color ?? primitives.color,
-      sortOrder: input.sortOrder ?? primitives.sortOrder,
-    });
-    this.#categories.set(id, updated);
-    return copyOf(updated);
+  async save(category: TodoCategory): Promise<void> {
+    const id = category.id.value;
+    this.#require(id);
+    const primitives = category.toPrimitives();
+    this.#assertUniqueName(primitives.userId, primitives.name, id);
+    this.#categories.set(id, copyOf(category));
   }
 
   async delete(categoryId: TodoCategoryId): Promise<void> {
