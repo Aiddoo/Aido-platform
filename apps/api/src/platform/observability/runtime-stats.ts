@@ -1,3 +1,5 @@
+import type { CacheStats } from "../cache/cache-store.port.js";
+
 export interface PoolStats {
   readonly totalCount: number;
   readonly idleCount: number;
@@ -11,6 +13,8 @@ export interface RuntimeSample {
   readonly heapLimitBytes: number;
   readonly rssBytes: number;
   readonly pool: PoolStats | null;
+  // 시작 뒤 누적 적중·미스와 지금 키 수(Redis는 -1)
+  readonly cache: CacheStats;
 }
 
 const RUNTIME_BREACH_KINDS = ["pool-waiting", "event-loop-delay", "heap-usage"] as const;

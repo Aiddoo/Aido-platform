@@ -11,4 +11,7 @@ export const NotificationCacheKey = {
     scope === "all"
       ? cacheKey("notification", "unread-count", userId)
       : cacheKey("notification", "unread-count", userId, scope),
+  // 두 범위의 미읽음 수가 한 세대를 함께 쓴다
+  unreadCountGeneration: (userId: string) =>
+    cacheKey("notification", "unread-count-generation", userId),
 } as const;

@@ -38,6 +38,7 @@ export const PlatformLogEvent = {
   EXCEPTION_REPORTED: "observability.exception.reported",
   EXCEPTION_REPORT_FAILED: "observability.exception-report.failed",
   RUNTIME_STATS_SAMPLE_FAILED: "observability.runtime-stats.sample.failed",
+  RUNTIME_STATS_CACHE_SAMPLED: "observability.runtime-stats.cache.sampled",
   OUTBOUND_CIRCUIT_OPENED: "outbound.circuit.opened",
   OUTBOUND_CIRCUIT_HALF_OPEN: "outbound.circuit.half-open.entered",
   OUTBOUND_CIRCUIT_CLOSED: "outbound.circuit.closed",

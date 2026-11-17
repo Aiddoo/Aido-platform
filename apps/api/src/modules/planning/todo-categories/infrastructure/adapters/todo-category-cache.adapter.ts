@@ -6,6 +6,10 @@ import {
   TODO_CATEGORY_CACHE_TTL_MS,
 } from "#api/modules/planning/todo-categories/infrastructure/cache/todo-category-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryCachePort } from "../../application/ports/todo-category-cache.port.js";
@@ -24,23 +28,28 @@ const TODO_CATEGORY_LIST_SCHEMA = z.array(
   }),
 ) satisfies z.ZodType<TodoCategoryWithCountReadModel[]>;
 
-/**
- * TodoCategoryCachePort의 어댑터 — 공유 CacheStorePort에 위임한다(키·TTL은 CacheStorePort가 소유).
- */
+function listKey(userId: UserId): GenerationGuardedCacheKey {
+  return {
+    valueKey: TodoCategoryCacheKey.list(userId.value),
+    generationKey: TodoCategoryCacheKey.listGeneration(userId.value),
+  };
+}
+
+// 카테고리·할 일 쓰기의 커밋 전에 읽은 목록이 무효화 뒤 다시 저장되지 않도록 세대를 확인한다
 @Injectable()
 export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
-  readonly #cacheService: CacheStorePort;
+  readonly #lists: GenerationGuardedCache;
 
   constructor(cacheService: CacheStorePort) {
-    this.#cacheService = cacheService;
+    this.#lists = new GenerationGuardedCache(cacheService, TODO_CATEGORY_CACHE_TTL_MS);
   }
 
   wrapList(
     userId: UserId,
     factory: () => Promise<TodoCategoryWithCountReadModel[]>,
   ): Promise<TodoCategoryWithCountReadModel[]> {
-    return this.#cacheService.wrap(
-      TodoCategoryCacheKey.list(userId.value),
+    return this.#lists.wrap(
+      listKey(userId),
       TODO_CATEGORY_LIST_SCHEMA,
       factory,
       TODO_CATEGORY_CACHE_TTL_MS,
@@ -48,6 +57,6 @@ export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
   }
 
   invalidate(userId: UserId): Promise<void> {
-    return this.#cacheService.del(TodoCategoryCacheKey.list(userId.value));
+    return this.#lists.invalidate(listKey(userId));
   }
 }

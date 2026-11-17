@@ -15,6 +15,7 @@ function sample(overrides: Partial<RuntimeSample> = {}): RuntimeSample {
     heapLimitBytes: 384 * MB,
     rssBytes: 200 * MB,
     pool: { totalCount: 3, idleCount: 2, waitingCount: 0 },
+    cache: { hits: 10, misses: 2, keys: 8 },
     ...overrides,
   };
 }

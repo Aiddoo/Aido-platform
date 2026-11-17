@@ -5,6 +5,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
 
+import { PushTokenCacheAdapter } from "../cache/push-token-cache.adapter.js";
 import { PUSH_TOKEN_CACHE_TTL_MS, PushTokenCacheKey } from "../cache/push-token-cache.keyspace.js";
 import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter.js";
 
@@ -63,7 +64,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     expect(result).toEqual(["ExponentPushToken[cached]"]);
   });
 
-  it("배치는 캐시 누락 사용자만 한 번에 조회하고 토큰이 없는 사용자도 음수 캐시한다", async () => {
+  it("배치는 캐시 누락 사용자만 한 번에 조회하고 묶음 발송이 공용 LRU를 밀어내지 않도록 캐시에 쓰지 않는다", async () => {
     // Given
     const cachedUserId = "user-cached";
     const loadedUserId = "user-loaded";
@@ -104,13 +105,32 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const missedKeys = [loadedUserId, tokenlessUserId].map((userId) =>
       PushTokenCacheKey.pushTokens(userId),
     );
-    await expect(cache.mget(missedKeys, TOKENS_SCHEMA)).resolves.toEqual([
-      ["ExponentPushToken[loaded-first]", "ExponentPushToken[loaded-second]"],
-      [],
+    await expect(cache.mget(missedKeys, TOKENS_SCHEMA)).resolves.toEqual([undefined, undefined]);
+  });
+
+  it("토큰을 읽는 동안 등록·해제가 커밋해 무효화되면 읽은 토큰을 캐시에 남기지 않는다", async () => {
+    // Given
+    const userId = "user-racing";
+    const { cache, pushTokenRepository, reader } = createFixture([
+      { userId, token: "ExponentPushToken[before-commit]" },
     ]);
-    for (const key of missedKeys) {
-      expect(await cache.ttl(key)).toBeGreaterThan(PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS - 1000);
-    }
+    const invalidator = new PushTokenCacheAdapter(cache, {
+      invalidateUserPreference: async () => {},
+    });
+    const findTokens = pushTokenRepository.findPushTokensByUser.bind(pushTokenRepository);
+    vi.spyOn(pushTokenRepository, "findPushTokensByUser").mockImplementationOnce(async (query) => {
+      const stale = await findTokens(query);
+      await invalidator.invalidatePushTokens(UserId.reconstitute(userId));
+      return stale;
+    });
+
+    // When
+    await reader.findByUserId(UserId.reconstitute(userId));
+
+    // Then
+    await expect(
+      cache.get(PushTokenCacheKey.pushTokens(userId), TOKENS_SCHEMA),
+    ).resolves.toBeUndefined();
   });
 
   it("배치 캐시 히트는 빈 토큰 배열을 유지하면서 저장소와 캐시 쓰기를 생략한다", async () => {

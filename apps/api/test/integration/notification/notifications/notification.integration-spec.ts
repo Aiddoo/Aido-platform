@@ -768,7 +768,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(releasedUnreadCount).toBe(3);
       expect(currentUnreadCount).toBe(5);
-      expect(cacheStore.wrapped).toEqual([
+      expect(cacheStore.stored).toEqual([
         { key: `aido:v1:notification:unread-count:${mockUserId}:legacy`, ttlMs: 120_000 },
         { key: `aido:v1:notification:unread-count:${mockUserId}`, ttlMs: 120_000 },
       ]);

@@ -10,5 +10,7 @@ export const FriendshipCacheKey = {
   mutual: (userId: string, targetUserId: string) =>
     cacheKey("follow", "mutual", userId, targetUserId),
   ids: (userId: string) => cacheKey("follow", "ids", userId),
+  idsGeneration: (userId: string) => cacheKey("follow", "ids-generation", userId),
   count: (userId: string) => cacheKey("follow", "count", userId),
+  countGeneration: (userId: string) => cacheKey("follow", "count-generation", userId),
 } as const;

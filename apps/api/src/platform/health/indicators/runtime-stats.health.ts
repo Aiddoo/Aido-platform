@@ -4,7 +4,7 @@ import { type HealthIndicatorResult, HealthIndicatorService } from "@nestjs/term
 import { RuntimeStatsSampler } from "#api/platform/observability/runtime-stats.sampler";
 
 /**
- * 마지막 런타임 표본(이벤트 루프 p99·힙·RSS·DB 풀)을 싣는다. 포화는 경보로 알리고 프로세스 재시작으로
+ * 마지막 런타임 표본(이벤트 루프 p99·힙·RSS·DB 풀·캐시 적중)을 싣는다. 포화는 경보로 알리고 프로세스 재시작으로
  * 풀리지 않으므로 503을 만들지 않고 항상 up이다.
  */
 @Injectable()

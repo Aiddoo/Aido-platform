@@ -5,14 +5,15 @@ import {
   UserSettingsCachePort,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { GenerationGuardedCache } from "#api/platform/cache/generation-guarded-cache";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PushTokenCachePort } from "../../application/ports/push-token-cache.port.js";
-import { PushTokenCacheKey } from "./push-token-cache.keyspace.js";
+import { PUSH_TOKEN_CACHE_TTL_MS, pushTokensCacheKey } from "./push-token-cache.keyspace.js";
 
 @Injectable()
 export class PushTokenCacheAdapter implements PushTokenCachePort {
-  readonly #cacheService: CacheStorePort;
+  readonly #pushTokens: GenerationGuardedCache;
   readonly #preferenceCache: UserPreferenceCacheInvalidatorPort;
 
   constructor(
@@ -20,12 +21,15 @@ export class PushTokenCacheAdapter implements PushTokenCachePort {
     @Inject(UserSettingsCachePort)
     preferenceCache: UserPreferenceCacheInvalidatorPort,
   ) {
-    this.#cacheService = cacheService;
+    this.#pushTokens = new GenerationGuardedCache(
+      cacheService,
+      PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS,
+    );
     this.#preferenceCache = preferenceCache;
   }
 
   invalidatePushTokens(userId: UserId): Promise<void> {
-    return this.#cacheService.del(PushTokenCacheKey.pushTokens(userId.value));
+    return this.#pushTokens.invalidate(pushTokensCacheKey(userId.value));
   }
 
   invalidateUserPreference(userId: UserId): Promise<void> {
