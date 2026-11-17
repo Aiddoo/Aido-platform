@@ -183,7 +183,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     }).execute();
     const retried = await useCase({
       scheduleReminders: async (reminders) => {
-        scheduled.push(...reminders.map(({ todoId }) => todoId));
+        scheduled.push(...reminders.map(({ todoId }) => todoId.value));
       },
     }).execute();
     // Then

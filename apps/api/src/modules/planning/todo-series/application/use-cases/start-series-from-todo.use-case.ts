@@ -127,9 +127,11 @@ export class StartSeriesFromTodoUseCase {
     await todoRepository.save(todo);
     const firstTime = schedule.scheduledTime;
     // 첫 회차 날짜가 옮겨졌을 수 있어 옛 시각의 예약을 지우고 새 시각으로 다시 잡는다.
-    await todoReminder.cancelReminders([todoId]);
+    await todoReminder.cancelReminders([todo.id]);
     if (firstTime != null && !todo.completed) {
-      await todoReminder.scheduleReminders([{ todoId, scheduledTime: firstTime, userId }]);
+      await todoReminder.scheduleReminders([
+        { todoId: todo.id, scheduledTime: firstTime, userId: todo.userId },
+      ]);
     }
     const occurrences = await materializer.persist(series, following);
     return { series, occurrences };

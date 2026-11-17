@@ -8,6 +8,7 @@ import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo-schedule.use-case";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
@@ -19,6 +20,7 @@ import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -215,9 +217,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
       {
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
-        userId,
+        userId: UserId.reconstitute(userId),
       },
     ]);
     publisher.failsOnPublish = true;
@@ -242,9 +244,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
       {
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
-        userId,
+        userId: UserId.reconstitute(userId),
       },
     ]);
 

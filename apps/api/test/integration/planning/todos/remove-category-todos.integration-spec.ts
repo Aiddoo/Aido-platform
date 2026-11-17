@@ -128,8 +128,9 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     });
     await reminders.scheduleReminders(
       [...removed.scheduledTodos, ...kept.scheduledTodos].map((scheduled) => ({
-        ...scheduled,
-        userId: ownerId,
+        todoId: TodoId.reconstitute(scheduled.todoId),
+        scheduledTime: scheduled.scheduledTime,
+        userId: UserId.reconstitute(ownerId),
       })),
     );
   });

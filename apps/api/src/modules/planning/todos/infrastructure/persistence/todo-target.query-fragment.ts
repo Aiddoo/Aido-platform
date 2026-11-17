@@ -1,15 +1,23 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { QueryBuilder } from "drizzle-orm/pg-core";
+import { uniq } from "es-toolkit";
 
 import { todo } from "#api/platform/database/schema/index";
 
+import type { TodoId } from "../../domain/todo-id.vo.js";
+
 // 다른 Context가 할 일 id 묶음으로 알림·리마인더 대상을 한 SQL로 읽는 하위 질의다
 
-export function todoOwnerDates(todoIds: readonly number[]) {
+export function todoOwnerDates(todoIds: readonly TodoId[]) {
   return new QueryBuilder()
     .select({ id: todo.id, userId: todo.userId, startDate: todo.startDate })
     .from(todo)
-    .where(inArray(todo.id, [...todoIds]))
+    .where(
+      inArray(
+        todo.id,
+        todoIds.map((todoId) => todoId.value),
+      ),
+    )
     .as("todo_owner_dates");
 }
 
@@ -19,7 +27,7 @@ export function todoOwners(alias: string) {
 }
 
 // 리마인더를 울릴 수 있는(끝내지 않은) 할 일이다
-export function openReminderTodos(todoIds: readonly number[]) {
+export function openReminderTodos(todoIds: readonly TodoId[]) {
   return new QueryBuilder()
     .select({
       id: todo.id,
@@ -30,6 +38,8 @@ export function openReminderTodos(todoIds: readonly number[]) {
       scheduledTime: todo.scheduledTime,
     })
     .from(todo)
-    .where(and(inArray(todo.id, [...todoIds]), eq(todo.completed, false)))
+    .where(
+      and(inArray(todo.id, uniq(todoIds.map((todoId) => todoId.value))), eq(todo.completed, false)),
+    )
     .as("open_reminder_todos");
 }

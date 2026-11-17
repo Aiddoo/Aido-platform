@@ -19,6 +19,7 @@ import {
 import { acceptedFriendshipsOf } from "#api/modules/social/friendships/social-friendships.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
 import type {
@@ -111,7 +112,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
   }
 
   countCompletedTodosByUsers(userIds: string[]): Promise<UserTodoCountReadModel[]> {
-    const counts = completedTodoCountsByUser(userIds);
+    const counts = completedTodoCountsByUser(userIds.map((userId) => UserId.reconstitute(userId)));
     return this.#db.select({ userId: counts.userId, count: counts.count }).from(counts);
   }
 

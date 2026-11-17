@@ -64,14 +64,15 @@ export class RemapFollowingOccurrencesUseCase {
     if (plan.pivotMoveDate != null) {
       const localTime = target.scheduledLocalTime;
       const scheduledTime = resolveScheduledInstant(plan.pivotMoveDate, localTime, target.timezone);
-      await occurrenceWriter.moveOccurrence(TodoId.reconstitute(pivotTodoId), {
+      const pivotId = TodoId.reconstitute(pivotTodoId);
+      await occurrenceWriter.moveOccurrence(pivotId, {
         occurrenceDate: plan.pivotMoveDate,
         scheduledLocalTime: localTime,
         scheduledTime,
       });
       movedTodoIds.push(pivotTodoId);
       if (scheduledTime != null) {
-        reminders.push({ todoId: pivotTodoId, scheduledTime, userId: target.userId.value });
+        reminders.push({ todoId: pivotId, scheduledTime, userId: target.userId });
       }
     }
 

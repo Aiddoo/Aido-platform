@@ -86,7 +86,7 @@ export class DeleteTodoOccurrencesUseCase {
           return this.#deleteFollowing(ownerId, seriesId, series, occurrenceDate.toString());
         })
         .exhaustive();
-      await todoReminder.cancelReminders(deletedTodoIds);
+      await todoReminder.cancelReminders(deletedTodoIds.map((id) => TodoId.reconstitute(id)));
       await this.#dependencies.applyTodoEvents.execute([
         new TodoOccurrencesChangedEvent(seriesId.value, userId),
       ]);

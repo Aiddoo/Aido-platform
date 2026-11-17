@@ -1,7 +1,11 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { TodoId } from "../../domain/todo-id.vo.js";
+
 export interface TodoReminderSchedule {
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly scheduledTime: Temporal.Instant;
-  readonly userId: string;
+  readonly userId: UserId;
 }
 
 /**
@@ -16,14 +20,14 @@ export abstract class TodoReminderSchedulerPort {
    * 기존 예약 취소나 새 작업 등록 실패는 reject됩니다.
    */
   abstract scheduleReminder(
-    todoId: number,
+    todoId: TodoId,
     scheduledTime: Temporal.Instant,
-    userId: string,
+    userId: UserId,
   ): Promise<void>;
 
   /** 새로 만든 회차의 리마인더를 한 번에 등록한다. 이미 지난 시각은 등록하지 않는다. */
   abstract scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void>;
 
   /** 예약을 한 번에 지운다. 없는 작업은 무시하고 인프라 실패만 reject된다. */
-  abstract cancelReminders(todoIds: readonly number[]): Promise<void>;
+  abstract cancelReminders(todoIds: readonly TodoId[]): Promise<void>;
 }

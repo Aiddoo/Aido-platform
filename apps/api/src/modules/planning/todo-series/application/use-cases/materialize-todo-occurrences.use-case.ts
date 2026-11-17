@@ -6,6 +6,7 @@ import type {
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
+import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { TodoOccurrencesCreatedEvent } from "../../domain/todo-occurrences-created.event.js";
 import type { TodoSeries, TodoOccurrenceDraft } from "../../domain/todo-series.aggregate.js";
@@ -71,7 +72,9 @@ export class MaterializeTodoOccurrencesUseCase {
     );
     await this.#dependencies.todoReminder.scheduleReminders(
       created.flatMap(({ todoId, scheduledTime }) =>
-        scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
+        scheduledTime == null
+          ? []
+          : [{ todoId: TodoId.reconstitute(todoId), scheduledTime, userId: series.userId }],
       ),
     );
     if (created.length > 0) {

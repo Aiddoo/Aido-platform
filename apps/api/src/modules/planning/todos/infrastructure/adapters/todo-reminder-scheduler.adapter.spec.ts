@@ -1,7 +1,9 @@
 import { vi } from "vitest";
 
 import type { TodoReminderSchedulerPort } from "#api/modules/notification/reminders/notification-reminders.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { ReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 
 describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
@@ -23,7 +25,11 @@ describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
     const scheduledTime = Temporal.Instant.from("2026-03-01T06:00:00.000Z");
 
     // When
-    const result = adapter.scheduleReminder(42, scheduledTime, "user-123");
+    const result = adapter.scheduleReminder(
+      TodoId.reconstitute(42),
+      scheduledTime,
+      UserId.reconstitute("user-123"),
+    );
 
     // Then
     await expect(result).resolves.toBeUndefined();
@@ -38,9 +44,9 @@ describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
 
     // When
     const result = adapter.scheduleReminder(
-      42,
+      TodoId.reconstitute(42),
       Temporal.Instant.from("2026-03-01T06:00:00Z"),
-      "user-123",
+      UserId.reconstitute("user-123"),
     );
 
     // Then
@@ -53,7 +59,7 @@ describe("ReminderSchedulerAdapter — scheduler 경계 위임", () => {
     vi.mocked(scheduler.cancelReminders).mockRejectedValue(error);
 
     // When
-    const result = adapter.cancelReminders([42]);
+    const result = adapter.cancelReminders([TodoId.reconstitute(42)]);
 
     // Then
     await expect(result).rejects.toBe(error);

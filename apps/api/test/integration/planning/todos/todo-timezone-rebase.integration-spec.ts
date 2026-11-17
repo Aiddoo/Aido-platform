@@ -16,6 +16,7 @@ import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/i
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { EditTodoUseCase } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { TodoTimezoneRebaseQueueService } from "#api/modules/planning/todos/infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter";
 import {
@@ -202,7 +203,13 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
     const seoulInstant = wallClockInstant(date, "10:00", SEOUL);
-    await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
+    await reminderAdapter.scheduleReminders([
+      {
+        todoId: TodoId.reconstitute(id),
+        scheduledTime: seoulInstant,
+        userId: UserId.reconstitute(userId),
+      },
+    ]);
     // When
     const result = await useCase.execute({ userId });
     // Then
@@ -223,7 +230,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
     await reminderAdapter.scheduleReminders([
-      { todoId: id, scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }), userId },
+      {
+        todoId: TodoId.reconstitute(id),
+        scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
+        userId: UserId.reconstitute(userId),
+      },
     ]);
     // When
     const result = await useCase.execute({ userId });
@@ -241,7 +252,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
     });
     await reminderAdapter.scheduleReminders([
-      { todoId: id, scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }), userId },
+      {
+        todoId: TodoId.reconstitute(id),
+        scheduledTime: nowInstant().add({ milliseconds: 5 * HOUR_MS }),
+        userId: UserId.reconstitute(userId),
+      },
     ]);
     // When
     const result = await useCase.execute({ userId });
@@ -283,7 +298,13 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const date = shiftDateKey(today, 3);
     const id = await seedTodo(date, "10:00");
     const seoulInstant = wallClockInstant(date, "10:00", SEOUL);
-    await reminderAdapter.scheduleReminders([{ todoId: id, scheduledTime: seoulInstant, userId }]);
+    await reminderAdapter.scheduleReminders([
+      {
+        todoId: TodoId.reconstitute(id),
+        scheduledTime: seoulInstant,
+        userId: UserId.reconstitute(userId),
+      },
+    ]);
     // When
     await useCase.execute({ userId });
     await useCase.execute({ userId });
@@ -439,9 +460,9 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       const id = await seedTodo(date, "10:00");
       await reminderAdapter.scheduleReminders([
         {
-          todoId: id,
+          todoId: TodoId.reconstitute(id),
           scheduledTime: wallClockInstant(date, "10:00", SEOUL),
-          userId,
+          userId: UserId.reconstitute(userId),
         },
       ]);
       await setStoredTimezone(SEOUL);

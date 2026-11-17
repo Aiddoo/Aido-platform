@@ -262,7 +262,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       })
       .returning();
     const id = row?.id ?? 0;
-    await reminderAdapter.scheduleReminder(id, scheduledTime, userId);
+    await reminderAdapter.scheduleReminder(
+      TodoId.reconstitute(id),
+      scheduledTime,
+      UserId.reconstitute(userId),
+    );
     return id;
   }
 

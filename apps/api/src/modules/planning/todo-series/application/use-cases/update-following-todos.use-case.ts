@@ -241,7 +241,7 @@ export class UpdateFollowingTodosUseCase {
         pivot,
       );
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId.value));
-      reminders.push(...toReminders(rescheduled, series.userId.value));
+      reminders.push(...toReminders(rescheduled, series.userId));
     }
 
     if (ruleChanged || split) {
@@ -256,7 +256,7 @@ export class UpdateFollowingTodosUseCase {
       cancelledTodoIds.push(...remapped.deletedTodoIds, ...remapped.movedTodoIds);
       const deleted = new Set(remapped.deletedTodoIds);
       reminders = [
-        ...reminders.filter(({ todoId }) => !deleted.has(todoId)),
+        ...reminders.filter(({ todoId }) => !deleted.has(todoId.value)),
         ...remapped.reminders,
       ];
       responseTodoId = remapped.responseTodoId;
@@ -272,7 +272,7 @@ export class UpdateFollowingTodosUseCase {
     if (details.scheduledLocalTime !== undefined) {
       const rescheduled = await this.#rescheduleRows(target, pivot, details.scheduledLocalTime);
       cancelledTodoIds.push(...rescheduled.map(({ todoId }) => todoId.value));
-      reminders.push(...toReminders(rescheduled, series.userId.value));
+      reminders.push(...toReminders(rescheduled, series.userId));
     }
 
     const drafts = ruleChanged || split ? materializer.planFirstRun(target, now) : [];
@@ -290,8 +290,10 @@ export class UpdateFollowingTodosUseCase {
     }
     await materializer.persist(target, drafts);
     // 지운 회차와 시각이 바뀐 회차의 예약을 지우고 새 시각으로 다시 잡는다. 행과 함께 커밋한다.
-    await todoReminder.cancelReminders(uniq(cancelledTodoIds));
-    await todoReminder.scheduleReminders(uniqBy(reminders, ({ todoId }) => todoId));
+    await todoReminder.cancelReminders(
+      uniq(cancelledTodoIds).map((todoId) => TodoId.reconstitute(todoId)),
+    );
+    await todoReminder.scheduleReminders(uniqBy(reminders, ({ todoId }) => todoId.value));
     await this.#dependencies.applyTodoEvents.execute([
       new TodoOccurrencesChangedEvent(target.id.value, target.userId.value),
     ]);
@@ -356,10 +358,10 @@ export class UpdateFollowingTodosUseCase {
 
 function toReminders(
   times: readonly TodoOccurrenceTime[],
-  userId: string,
+  userId: UserId,
 ): readonly TodoReminderSchedule[] {
   return times.flatMap(({ todoId, scheduledTime }) =>
-    scheduledTime == null ? [] : [{ todoId: todoId.value, scheduledTime, userId }],
+    scheduledTime == null ? [] : [{ todoId, scheduledTime, userId }],
   );
 }
 

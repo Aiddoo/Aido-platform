@@ -42,7 +42,7 @@ export class RemoveCategoryTodosUseCase {
     // 리마인더 작업은 시각이 있는 할 일에만 있다. 결정적 작업 id로 한 문장에 지운다
     const scheduledTodoIds = removed.todos
       .filter((removedTodo) => removedTodo.scheduledTime != null)
-      .map((removedTodo) => removedTodo.id.value);
+      .map((removedTodo) => removedTodo.id);
     if (scheduledTodoIds.length > 0) {
       await reminderScheduler.cancelReminders(scheduledTodoIds);
     }

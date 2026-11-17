@@ -2,6 +2,7 @@ import { and, count, eq, exists, gte, inArray, isNull, lt, sql, type SQL } from 
 import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { todo } from "#api/platform/database/schema/index";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 다른 Context가 사람 id 칸 옆에 그 사람의 할 일(시작일 구간)을 한 SQL로 붙이는 조건·하위 질의다. 구간은 [from, until)이다
 
@@ -61,11 +62,19 @@ export function hasNonRepeatingTodoFrom(userIdColumn: AnyPgColumn, from: Tempora
 }
 
 // 사람마다 끝낸 할 일 수다. 끝낸 할 일이 없는 사람은 행이 없다
-export function completedTodoCountsByUser(userIds: readonly string[]) {
+export function completedTodoCountsByUser(userIds: readonly UserId[]) {
   return new QueryBuilder()
     .select({ userId: todo.userId, count: count().as("completed_count") })
     .from(todo)
-    .where(and(inArray(todo.userId, [...userIds]), eq(todo.completed, true)))
+    .where(
+      and(
+        inArray(
+          todo.userId,
+          userIds.map((userId) => userId.value),
+        ),
+        eq(todo.completed, true),
+      ),
+    )
     .groupBy(todo.userId)
     .as("completed_todo_counts");
 }

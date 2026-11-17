@@ -27,7 +27,7 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
       return new Map();
     }
 
-    const targets = todoOwnerDates(todoIds.map((todoId) => todoId.value));
+    const targets = todoOwnerDates(todoIds);
     const rows = await this.#transactionHost.tx.select().from(targets);
 
     return new Map(

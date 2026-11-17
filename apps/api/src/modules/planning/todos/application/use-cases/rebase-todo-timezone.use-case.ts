@@ -144,13 +144,9 @@ export class RebaseTodoTimezoneUseCase {
     const now = this.#dependencies.clock.now();
     const reminders = rebased.filter((row) => hasPendingReminder(row, now));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
-    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId.value));
+    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));
     await todoReminder.scheduleReminders(
-      reminders.map(({ todoId, scheduledTime }) => ({
-        todoId: todoId.value,
-        scheduledTime,
-        userId,
-      })),
+      reminders.map(({ todoId, scheduledTime }) => ({ todoId, scheduledTime, userId: ownerId })),
     );
     return {
       superseded: false,

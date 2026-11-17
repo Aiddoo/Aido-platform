@@ -1,6 +1,5 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { uniq } from "es-toolkit";
 
 import {
   openReminderTodos,
@@ -25,7 +24,7 @@ export class DrizzleTodoReminderReader implements TodoReminderReaderPort {
     if (todoIds.length === 0) {
       return new Map();
     }
-    const targets = openReminderTodos(uniq(todoIds.map((todoId) => todoId.value)));
+    const targets = openReminderTodos(todoIds);
     const rows = await this.#db.select().from(targets);
     return new Map(
       rows.map(({ scheduledTime, ...rest }) => [

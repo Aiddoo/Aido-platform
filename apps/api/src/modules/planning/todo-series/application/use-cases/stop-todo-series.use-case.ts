@@ -85,7 +85,7 @@ export class StopTodoSeriesUseCase {
       fromDate: addDaysToKey(lastDate, 1),
       includeCompleted: false,
     });
-    await todoReminder.cancelReminders(deletedTodoIds);
+    await todoReminder.cancelReminders(deletedTodoIds.map((id) => TodoId.reconstitute(id)));
     await this.#dependencies.applyTodoEvents.execute([
       new TodoOccurrencesChangedEvent(seriesId.value, userId),
     ]);

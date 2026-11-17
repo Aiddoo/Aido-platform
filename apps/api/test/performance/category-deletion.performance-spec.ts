@@ -9,6 +9,7 @@ import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notific
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/delete-todo-category.use-case";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/todo-categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -20,6 +21,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
@@ -155,7 +157,11 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       startDate: FUTURE_DATE,
     });
     await reminders.scheduleReminders(
-      seeded.scheduledTodos.map((scheduled) => ({ ...scheduled, userId })),
+      seeded.scheduledTodos.map((scheduled) => ({
+        todoId: TodoId.reconstitute(scheduled.todoId),
+        scheduledTime: scheduled.scheduledTime,
+        userId: UserId.reconstitute(userId),
+      })),
     );
     await client.execute(sql`ANALYZE`);
     return { userId, categoryId, targetId, seeded };

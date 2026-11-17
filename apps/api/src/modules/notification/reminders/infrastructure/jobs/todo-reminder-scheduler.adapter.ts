@@ -1,7 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type EnqueueManyJob, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type ReminderSchedule,
@@ -28,9 +30,9 @@ export class TodoReminderSchedulerAdapter extends TodoReminderSchedulerPort {
   }
 
   async scheduleReminder(
-    todoId: number,
+    todoId: TodoId,
     scheduledTime: Temporal.Instant,
-    userId: string,
+    userId: UserId,
   ): Promise<void> {
     await this.cancelReminders([todoId]);
     await this.scheduleReminders([{ todoId, scheduledTime, userId }]);
@@ -43,9 +45,9 @@ export class TodoReminderSchedulerAdapter extends TodoReminderSchedulerPort {
         (job): EnqueueManyJob<TodoReminderRuntimeJob> => ({
           payload: {
             name: TODO_REMINDER_JOB_NAME,
-            data: { todoId, userId, stageLabel: job.label },
+            data: { todoId: todoId.value, userId: userId.value, stageLabel: job.label },
           },
-          idempotencyKey: todoReminderJobKey(todoId, job.label),
+          idempotencyKey: todoReminderJobKey(todoId.value, job.label),
           startAfter: now.add({ milliseconds: job.delay }),
         }),
       ),
@@ -55,9 +57,9 @@ export class TodoReminderSchedulerAdapter extends TodoReminderSchedulerPort {
     }
   }
 
-  async cancelReminders(todoIds: readonly number[]): Promise<void> {
+  async cancelReminders(todoIds: readonly TodoId[]): Promise<void> {
     const keys = todoIds.flatMap((todoId) =>
-      allReminderLabels().map((label) => todoReminderJobKey(todoId, label)),
+      allReminderLabels().map((label) => todoReminderJobKey(todoId.value, label)),
     );
     try {
       await this.#jobQueue.cancel(TODO_REMINDER_QUEUE, keys);
