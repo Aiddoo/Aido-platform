@@ -7,13 +7,16 @@ import { RecordingOperationalAlert } from "#test/doubles/platform/recording-oper
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/index";
 
+import {
+  type RecipientLocaleOf,
+  recipientLocaleOf,
+} from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import {
   type TargetedSocialDigestJobData,
   TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
-import type { UserLocaleMapReadModel } from "../read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
@@ -81,8 +84,8 @@ class StubPreferenceReader extends SchedulerPreferenceReaderPort {
     return this.timezones;
   }
 
-  async findUserLocales(): Promise<UserLocaleMapReadModel> {
-    return new Map();
+  async findUserLocales(): Promise<RecipientLocaleOf> {
+    return recipientLocaleOf(new Map());
   }
 }
 

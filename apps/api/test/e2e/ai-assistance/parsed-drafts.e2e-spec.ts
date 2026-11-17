@@ -1,6 +1,6 @@
 import { parseTodoResponseSchema } from "@aido/api/contracts/ai/v1";
 import { notChargedErrorDetailsSchema, ErrorCode, Errors } from "@aido/api/errors";
-import { PLAN_CATALOG } from "@aido/api/vocabulary";
+import { PLAN_CATALOG, SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
@@ -969,7 +969,7 @@ describe("AI E2E", () => {
     },
   );
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s parsing은 locale prompt를 선택하고 요청당 quota 한 회만 쓴다",
     async (locale) => {
       // Given
@@ -994,7 +994,7 @@ describe("AI E2E", () => {
     },
   );
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s Memo의 다중 결과도 실제 quota는 한 회만 증가한다",
     async (locale) => {
       // Given

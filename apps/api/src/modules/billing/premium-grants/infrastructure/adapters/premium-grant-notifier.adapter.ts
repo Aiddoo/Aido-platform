@@ -6,7 +6,6 @@ import {
   SCHEDULER_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { PremiumGrantNotifierPort } from "../../application/ports/premium-grant-notifier.port.js";
 import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
@@ -29,11 +28,11 @@ export class PremiumGrantNotifierAdapter implements PremiumGrantNotifierPort {
     if (notices.length === 0) {
       return;
     }
-    const locales = await this.#localeReader.getLocales(notices.map((notice) => notice.userId));
+    const localeOf = await this.#localeReader.getLocales(notices.map((notice) => notice.userId));
     await this.#notificationPublisher.execute(
       notices.map((notice) => {
         const message = createPremiumGrantEndingNotificationMessage({
-          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
+          locale: localeOf(notice.userId.value),
         });
         return {
           userId: notice.userId.value,

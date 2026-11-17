@@ -1,6 +1,7 @@
 import {
   buildWeatherRescheduleDeepLink,
   NOTIFICATION_ACTION_TYPE,
+  type SupportedLocale,
   type WeatherRescheduleReason,
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
@@ -9,7 +10,6 @@ import type {
   EveningWeatherBriefing,
   MorningWeatherBriefing,
 } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { NotificationAction } from "../../domain/notification-draft.constants.js";
@@ -21,7 +21,7 @@ import { WEATHER_COPY, WEATHER_FALLBACK_COPY } from "./notification-copy-templat
 import { renderNotificationTemplate } from "./notification-copy.messages.js";
 
 interface LocalizedWeatherInput {
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly variantContext?: NotificationVariantContext;
 }
 
@@ -51,7 +51,7 @@ export function createWeatherMorningNotificationMessage({
   briefing,
   formatTime,
   timezone,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: WeatherBriefingMessageInput<MorningWeatherBriefing>): NotificationMessage {
   const options = { locale, variantContext, overrides: { formatTime } };
@@ -121,7 +121,7 @@ export function createWeatherMorningNotificationMessage({
 
 export function createWeatherEveningNotificationMessage({
   briefing,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: Omit<
   WeatherBriefingMessageInput<EveningWeatherBriefing>,
@@ -154,9 +154,9 @@ export function createWeatherEveningNotificationMessage({
 
 /** 날씨 위치가 없을 때 */
 export function createWeatherMorningFallbackNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedWeatherInput = {}): NotificationMessage {
+}: LocalizedWeatherInput): NotificationMessage {
   return renderNotificationTemplate(WEATHER_FALLBACK_COPY.MORNING, {
     facts: {},
     locale,
@@ -166,9 +166,9 @@ export function createWeatherMorningFallbackNotificationMessage({
 }
 
 export function createWeatherEveningFallbackNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedWeatherInput = {}): NotificationMessage {
+}: LocalizedWeatherInput): NotificationMessage {
   return renderNotificationTemplate(WEATHER_FALLBACK_COPY.EVENING, {
     facts: {},
     locale,
@@ -179,9 +179,9 @@ export function createWeatherEveningFallbackNotificationMessage({
 
 /** 위치는 있지만 캐시·마지막 스냅샷까지 예보가 없을 때. 틀린 날씨 대신 앱에서 확인하도록 안내한다 */
 export function createWeatherMorningUnavailableNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedWeatherInput = {}): NotificationMessage {
+}: LocalizedWeatherInput): NotificationMessage {
   return renderNotificationTemplate(WEATHER_FALLBACK_COPY.MORNING_UNAVAILABLE, {
     facts: {},
     locale,
@@ -191,9 +191,9 @@ export function createWeatherMorningUnavailableNotificationMessage({
 }
 
 export function createWeatherEveningUnavailableNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedWeatherInput = {}): NotificationMessage {
+}: LocalizedWeatherInput): NotificationMessage {
   return renderNotificationTemplate(WEATHER_FALLBACK_COPY.EVENING_UNAVAILABLE, {
     facts: {},
     locale,

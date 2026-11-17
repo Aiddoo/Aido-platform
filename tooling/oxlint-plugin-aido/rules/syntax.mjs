@@ -203,7 +203,54 @@ const noRoleComparison = {
   },
 };
 
+const LANGUAGE_TAG = /^[a-z]{2,3}(?:[-_][A-Za-z]{2,4})*$/;
+const LOCALE_NAME = /(?:locale|language|lang)$/i;
+
+function isLanguageTagLiteral(node) {
+  return node.type === 'Literal' && typeof node.value === 'string' && LANGUAGE_TAG.test(node.value);
+}
+
+function isLocaleValue(node) {
+  const target = unwrap(node);
+  const name = getCalleeName(target) ?? (target?.type === 'Identifier' ? target.name : null);
+  return target?.type !== 'CallExpression' && name != null && LOCALE_NAME.test(name);
+}
+
+const LOCALE_COMPARISON_MESSAGE =
+  '언어마다 다른 값은 Localized<T> 표(`{ ko: …, en: … }`)나 ts-pattern .exhaustive()로 고릅니다. 언어를 더하면 컴파일 오류가 나야 합니다. (apps/api/docs/i18n.md)';
+
+// 언어 문자열과 비교하면 새 언어가 조용히 한쪽 분기로 떨어진다
+const noLocaleLiteralComparison = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      BinaryExpression(node) {
+        const isEquality =
+          STRICT_EQUALITY.has(node.operator) || ['==', '!='].includes(node.operator);
+        const [left, right] = [unwrap(node.left), unwrap(node.right)];
+        if (
+          isEquality &&
+          ((isLanguageTagLiteral(left) && isLocaleValue(right)) ||
+            (isLanguageTagLiteral(right) && isLocaleValue(left)))
+        ) {
+          context.report({ node, message: LOCALE_COMPARISON_MESSAGE });
+        }
+      },
+      SwitchCase(node) {
+        if (
+          node.test != null &&
+          isLanguageTagLiteral(node.test) &&
+          isLocaleValue(node.parent.discriminant)
+        ) {
+          context.report({ node, message: LOCALE_COMPARISON_MESSAGE });
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'no-locale-literal-comparison': noLocaleLiteralComparison,
   'no-strict-nullish': noStrictNullish,
   'range-comparison-order': rangeComparisonOrder,
   'function-declaration': functionDeclaration,

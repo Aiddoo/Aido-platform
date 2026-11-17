@@ -30,7 +30,7 @@ export function describeSchedulerPreferenceReaderContract(
       expect(timezones.toSorted()).toEqual(["America/New_York", "Asia/Seoul", "US/Eastern"]);
     });
 
-    it("사용자별 푸시 언어는 저장한 앱 언어로 정하고 지원하지 않는 언어는 en, 설정이 없는 사용자는 빠진다", async () => {
+    it("사용자별 푸시 언어는 저장한 앱 언어로 정하고 지원하지 않는 언어는 en, 설정이 없는 사용자는 ko다", async () => {
       // Given
       const subject = await createSubject();
       const korean = await subject.givenPreference({ timezone: "Asia/Seoul", locale: "ko" });
@@ -42,7 +42,7 @@ export function describeSchedulerPreferenceReaderContract(
       const withoutPreference = await subject.givenUserWithoutPreference();
 
       // When
-      const locales = await subject.reader.findUserLocales([
+      const localeOf = await subject.reader.findUserLocales([
         korean,
         regionalEnglish,
         french,
@@ -50,27 +50,12 @@ export function describeSchedulerPreferenceReaderContract(
       ]);
 
       // Then
-      expect(
-        [...locales.entries()].toSorted(([left], [right]) => left.localeCompare(right)),
-      ).toEqual(
-        [
-          [korean, "ko"],
-          [regionalEnglish, "en"],
-          [french, "en"],
-        ].toSorted(([left = ""], [right = ""]) => left.localeCompare(right)),
-      );
-    });
-
-    it("묻는 사용자가 없으면 빈 결과를 준다", async () => {
-      // Given
-      const subject = await createSubject();
-      await subject.givenPreference({ timezone: "Asia/Seoul", locale: "ko" });
-
-      // When
-      const locales = await subject.reader.findUserLocales([]);
-
-      // Then
-      expect(locales.size).toBe(0);
+      expect([korean, regionalEnglish, french, withoutPreference].map(localeOf)).toEqual([
+        "ko",
+        "en",
+        "en",
+        "ko",
+      ]);
     });
   });
 }

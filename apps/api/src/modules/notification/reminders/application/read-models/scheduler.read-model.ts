@@ -5,7 +5,6 @@
  * 어댑터가 이 형태로 투영(projection)하고, 전략은 이 타입만 소비한다.
  */
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 
@@ -151,6 +150,3 @@ export interface SnoozeNotificationReadModel {
   readonly stage: string | null;
   readonly createdAt: Temporal.Instant;
 }
-
-/** 유저 ID → 푸시 로케일 매핑 */
-export type UserLocaleMapReadModel = Map<string, SupportedLocale>;

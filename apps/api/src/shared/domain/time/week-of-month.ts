@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 
 const DAYS_PER_WEEK = 7;
 const MONDAY_TO_THURSDAY_DAYS = 3;
@@ -25,7 +25,7 @@ interface WeekLabelParts {
   readonly year: number | null;
 }
 
-const WEEK_LABELS: Record<SupportedLocale, (parts: WeekLabelParts) => string> = {
+const WEEK_LABELS: Localized<(parts: WeekLabelParts) => string> = {
   ko: ({ month, weekOfMonth, year }) =>
     year == null ? `${month}월 ${weekOfMonth}주차` : `${year}년 ${month}월 ${weekOfMonth}주차`,
   en: ({ month, weekOfMonth, year }) =>

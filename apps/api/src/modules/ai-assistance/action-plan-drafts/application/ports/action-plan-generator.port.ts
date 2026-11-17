@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { AiGenerationMeta } from "../../../ai-generations/domain/ai-generation.aggregate.js";
 import type { ActionPlanDraftPrimitives } from "../../domain/action-plan-draft.aggregate.js";

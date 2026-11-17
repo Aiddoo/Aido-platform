@@ -1,6 +1,4 @@
-import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { ACTION_PLAN_LIMITS, type Localized } from "@aido/api/vocabulary";
 
 import {
   composeUserTurn,
@@ -15,15 +13,15 @@ import {
   type ActionPlanNormalizeContext,
   normalizeActionPlan,
 } from "../action-plan-draft.mapper.js";
+import { QUICK_PLAN_SYSTEM_EN } from "./locales/en/quick-plan-system.messages.js";
+import { QUICK_PLAN_SYSTEM_KO } from "./locales/ko/quick-plan-system.messages.js";
 import { type PlanningContextInput, buildPlanningContext } from "./planning-context.messages.js";
-import { QUICK_PLAN_SYSTEM_EN } from "./quick-plan-system-en.messages.js";
-import { QUICK_PLAN_SYSTEM_KO } from "./quick-plan-system-ko.messages.js";
 
 export interface QuickPlanPromptInput extends PlanningContextInput {
   readonly text: string;
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: QUICK_PLAN_SYSTEM_KO,
   en: QUICK_PLAN_SYSTEM_EN,
 };

@@ -233,7 +233,7 @@ describe("알림 E2E", () => {
         expect(preference?.locale).toBe("en");
       });
 
-      it("미지원 언어(Accept-Language: ja)는 ko로 폴백된다", async () => {
+      it("앱 버전을 보내지 않은 1.4.0 전 앱의 미지원 언어(ja)는 ko로 저장한다", async () => {
         // Given
         const user = await testContext.helpers.createVerifiedUser(
           "notif-locale-ja@test.com",
@@ -257,6 +257,33 @@ describe("알림 E2E", () => {
           where: { userId: user.userId },
         });
         expect(preference?.locale).toBe("ko");
+      });
+
+      it("1.4.0 이후 앱의 미지원 언어(ja)는 앱과 같이 en으로 저장한다", async () => {
+        // Given
+        const user = await testContext.helpers.createVerifiedUser(
+          "notif-locale-ja-current@test.com",
+          password,
+        );
+
+        // When
+        await request(testContext.app.getHttpServer())
+          .post("/v1/notifications/token")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set("Accept-Language", "ja-JP")
+          .set("X-App-Version", "1.16.0")
+          .send({
+            token: "ExponentPushToken[locale-ja-current-xxxx]",
+            deviceId: "ios_test-device-locale-ja-current",
+          })
+          .expect(201);
+
+        // Then
+        const client = testContext.testDatabase.getClient();
+        const preference = await client.query.userPreference.findFirst({
+          where: { userId: user.userId },
+        });
+        expect(preference?.locale).toBe("en");
       });
 
       it("언어 변경 후 재등록하면 locale이 갱신된다", async () => {

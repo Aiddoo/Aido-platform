@@ -21,6 +21,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
 
     // When
     const payload = factory.createSingle({
+      locale: "ko",
       data: {
         userId: "user-1",
         type: "TODO_SHARED",
@@ -83,12 +84,14 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
 
     // When
     const single = factory.createSingle({
+      locale: "ko",
       data: reminder,
       notificationId: 1,
       dispatchId: 2,
       ttlSeconds: 540,
     });
     const batch = factory.createBatch({
+      locale: "ko",
       data: reminder,
       notificationId: 3,
       dispatchId: 4,
@@ -105,6 +108,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   it("마케팅 단건은 opt-out token과 interactive category를 포함한다", () => {
     // When
     const payload = factory.createSingle({
+      locale: "ko",
       data: {
         userId: "user-1",
         type: "LUNCH_NUDGE",
@@ -175,6 +179,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   it("마케팅 배치도 단건과 같은 interactive category와 opt-out data를 싣는다", () => {
     // When
     const payload = factory.createBatch({
+      locale: "ko",
       data: {
         userId: "user-1",
         type: "SYSTEM_NOTICE",
@@ -207,6 +212,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   it("명시 action URL은 타입과 함께 보존한다", () => {
     // When
     const payload = factory.createSingle({
+      locale: "ko",
       data: {
         userId: "user-1",
         type: "SYSTEM_NOTICE",
@@ -239,6 +245,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
 
     // When
     const payload = factory.createBatch({
+      locale: "ko",
       data,
       notificationId: 1,
       dispatchId: 2,
@@ -278,6 +285,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
 
       // When
       const payload = factory.createSingle({
+        locale: "ko",
         data,
         notificationId: 7,
         dispatchId: 8,
@@ -378,6 +386,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
 
       // When
       const payload = factory.createSingle({
+        locale: "ko",
         data,
         notificationId: 1,
         dispatchId: 2,

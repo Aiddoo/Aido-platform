@@ -299,7 +299,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     // When
     await expect(
       unitOfWork.run(async () => {
-        await provisioner.seed(UserId.reconstitute(userId));
+        await provisioner.seed(UserId.reconstitute(userId), "ko");
         throw failure;
       }),
     ).rejects.toBe(failure);
@@ -309,7 +309,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
   });
 
   it.each([
-    { why: "언어를 모르는 구 앱은 한국어", locale: undefined, names: ["중요한 일", "할 일"] },
+    { why: "한국어로 가입하면 한국어", locale: "ko", names: ["중요한 일", "할 일"] },
     { why: "영어로 가입하면 영어", locale: "en", names: ["Important", "To-do"] },
   ] as const)("기본 카테고리 이름은 $why로 만든다", async ({ locale, names }) => {
     // Given

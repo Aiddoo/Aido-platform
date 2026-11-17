@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type {
   RetentionStageName,

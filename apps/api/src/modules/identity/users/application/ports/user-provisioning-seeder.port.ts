@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /** 회원가입 시딩할 초기 약관 동의 값. */
 export interface ProvisioningConsent {
@@ -18,5 +19,5 @@ export interface ProvisioningConsent {
  */
 export abstract class UserProvisioningSeederPort {
   abstract seedDefaultSettings(userId: UserId, consent: ProvisioningConsent): Promise<void>;
-  abstract seedDefaultCategories(userId: UserId, locale?: SupportedLocale): Promise<void>;
+  abstract seedDefaultCategories(userId: UserId, locale: SupportedLocale): Promise<void>;
 }

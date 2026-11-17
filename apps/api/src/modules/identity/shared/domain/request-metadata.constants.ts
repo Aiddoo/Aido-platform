@@ -1,6 +1,4 @@
-import type { DeviceType } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { DeviceType, SupportedLocale } from "@aido/api/vocabulary";
 
 /** 요청에 IP·User-Agent가 없을 때 보안 기록에 남기는 값 */
 export const REQUEST_ORIGIN_DEFAULTS = {

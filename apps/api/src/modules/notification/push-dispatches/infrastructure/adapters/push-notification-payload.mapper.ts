@@ -6,7 +6,6 @@ import {
 } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { withMarketingPushLabel } from "../../../shared/application/messages/marketing-push-label.messages.js";
 import {
@@ -66,7 +65,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
     const categoryId = pushCategoryIdOf(data, isMarketing);
     // 광고성 표기는 푸시 문구에만 붙인다. 알림함 기록은 원래 문구 그대로다
     const content = isMarketing
-      ? withMarketingPushLabel(data, input.locale ?? DEFAULT_LOCALE)
+      ? withMarketingPushLabel(data, input.locale)
       : { title: data.title, body: data.body };
     return {
       title: content.title,

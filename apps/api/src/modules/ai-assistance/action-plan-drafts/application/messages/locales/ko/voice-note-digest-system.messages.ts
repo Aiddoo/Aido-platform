@@ -1,11 +1,11 @@
 import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
 
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SCHEDULE_RULES_KO } from "../../../parsed-drafts/application/messages/schedule-rules.messages.js";
-import { PLANNING_RULES_KO } from "./planning-rules.messages.js";
-import { VOICE_NOTE_DIGEST_EXAMPLES_KO } from "./voice-note-digest-examples-ko.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_KO } from "../../../../../parsed-drafts/application/messages/schedule-rules.messages.js";
+import { PLANNING_RULES_KO } from "../../planning-rules.messages.js";
+import { VOICE_NOTE_DIGEST_EXAMPLES_KO } from "./voice-note-digest-examples.messages.js";
 
 export const VOICE_NOTE_DIGEST_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 녹음 정리 도우미다. 사용자가 녹음한 말의 받아쓰기(transcript)를 읽고 제목·요약·핵심 포인트를 정리한 뒤, 사용자가 할 일과 기록할 메모를 실행 계획(todos·memo)으로 구조화한다.

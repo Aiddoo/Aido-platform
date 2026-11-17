@@ -1,6 +1,4 @@
-import { MEMO_LIMITS } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { type Localized, MEMO_LIMITS, type SupportedLocale } from "@aido/api/vocabulary";
 
 import {
   type PlanningContextInput,
@@ -19,8 +17,8 @@ import type { DateRef } from "../../../shared/domain/todo-draft.constants.js";
 import { ParsedDraft } from "../../domain/parsed-draft.aggregate.js";
 import type { ParsedMemoTodo } from "../../domain/parsed-drafts.constants.js";
 import { normalizeMemoDraft } from "../todo-draft.mapper.js";
-import { PARSE_MEMO_SYSTEM_EN } from "./parse-memo-system-en.messages.js";
-import { PARSE_MEMO_SYSTEM_KO } from "./parse-memo-system-ko.messages.js";
+import { PARSE_MEMO_SYSTEM_EN } from "./locales/en/parse-memo-system.messages.js";
+import { PARSE_MEMO_SYSTEM_KO } from "./locales/ko/parse-memo-system.messages.js";
 
 export interface ParseMemoPromptInput extends PlanningContextInput {
   readonly content: string;
@@ -45,7 +43,7 @@ export interface ParseMemoOutcome {
   readonly dateRefs: readonly Pick<DateRef, "kind" | "weekOffset">[];
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: PARSE_MEMO_SYSTEM_KO,
   en: PARSE_MEMO_SYSTEM_EN,
 };

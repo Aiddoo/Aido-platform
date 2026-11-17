@@ -1,7 +1,5 @@
-import type { DayOfWeek } from "@aido/api/vocabulary";
+import type { DayOfWeek, Localized, SupportedLocale } from "@aido/api/vocabulary";
 import { maxBy, minBy } from "es-toolkit";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { suggestionContextTranslations } from "../../../suggestions/application/messages/suggestion-context.messages.js";
 import type { AggregatedReportData, ReportType } from "../../domain/ai-reports.constants.js";
@@ -9,7 +7,7 @@ import type { AggregatedReportData, ReportType } from "../../domain/ai-reports.c
 const DAY_LABELS = {
   ko: (day: DayOfWeek) => `${suggestionContextTranslations.ko.days[day]}요일`,
   en: (day: DayOfWeek) => suggestionContextTranslations.en.days[day],
-} satisfies Record<SupportedLocale, (day: DayOfWeek) => string>;
+} satisfies Localized<(day: DayOfWeek) => string>;
 
 /** strongest·weakest 후보가 되는 항목의 최소 할 일 수. 더 적으면 한두 개로 달성률이 크게 흔들린다 */
 const MIN_FOCUS_ITEM_TODOS = 3;

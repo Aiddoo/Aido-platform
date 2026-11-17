@@ -3,8 +3,8 @@ import { mapValues } from "es-toolkit";
 import type {
   NotificationLocaleGrammar,
   NotificationNameForm,
-} from "../notification-copy-catalog.messages.js";
-import { formatNotificationCopyText } from "../notification-copy-format.messages.js";
+} from "../../notification-copy-catalog.messages.js";
+import { formatNotificationCopyText } from "../../notification-copy-format.messages.js";
 
 const NAME_POSITIONS = ["clauseSubject", "inSentence"] as const;
 

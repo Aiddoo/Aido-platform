@@ -1,3 +1,5 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
+
 import {
   createAiAssistanceFixture,
   pauseAiResponse,
@@ -35,7 +37,12 @@ describe("GenerateReportUseCase", () => {
         // Given - 3월 DST 전환을 걸치는 실제 리포트 기간
         const f = useReportResponse(createAiAssistanceFixture());
         // When - 실제 GenerateReportUseCase가 StatsReader에 범위를 전달
-        await f.generateReport.execute({ userId: f.userId, timezone: "America/New_York", type });
+        await f.generateReport.execute({
+          locale: "ko",
+          userId: f.userId,
+          timezone: "America/New_York",
+          type,
+        });
         // Then - UTC timestamp와 배타적 종료를 모두 보존
         expect(f.todoStatsReader.calls[0]).toMatchObject({
           startDate: new Date(start),
@@ -194,7 +201,7 @@ describe("GenerateReportUseCase", () => {
       // Given - 고정된 현재 순간과 사용자 시간대
       const f = useReportResponse(createAiAssistanceFixture());
       // When
-      await f.generateReport.execute({ userId: f.userId, timezone, type });
+      await f.generateReport.execute({ locale: "ko", userId: f.userId, timezone, type });
       // Then - 사용자 로컬 달력 기준 마지막으로 완료된 주기와 배타적 종료
       expect(f.reportRepository.saved[0]).toMatchObject({ type, year, period });
       expect(f.todoStatsReader.calls[0]).toMatchObject({
@@ -213,7 +220,12 @@ describe("GenerateReportUseCase", () => {
       f.reportRepository.duplicate = true;
       // When - 실제 생성 요청
       expect(
-        await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type }),
+        await f.generateReport.execute({
+          locale: "ko",
+          userId: f.userId,
+          timezone: "Asia/Seoul",
+          type,
+        }),
       ).toBeNull();
       // Then - 집계·AI·저장 모두 생략
       expect(f.todoStatsReader.calls).toEqual([]);
@@ -277,6 +289,7 @@ describe("GenerateReportUseCase", () => {
       f.access.subscriptionStatus = "FREE";
       // When - 실제 생성
       const report = await f.generateReport.execute({
+        locale: "ko",
         userId: f.userId,
         timezone: "Asia/Seoul",
         type: "WEEKLY",
@@ -300,6 +313,7 @@ describe("GenerateReportUseCase", () => {
       // When - 실제 생성
       expect(
         await f.generateReport.execute({
+          locale: "ko",
           userId: f.userId,
           timezone: "Asia/Seoul",
           type: "WEEKLY",
@@ -320,6 +334,7 @@ describe("GenerateReportUseCase", () => {
         const f = useReportResponse(createAiAssistanceFixture());
         const gate = pauseAiResponse(f.generator);
         const pending = f.generateReport.execute({
+          locale: "ko",
           userId: f.userId,
           timezone: "Asia/Seoul",
           type: "WEEKLY",
@@ -346,7 +361,7 @@ describe("GenerateReportUseCase", () => {
       }),
   );
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s에서 실제 schema가 거절한 출력은 locale fallback으로 저장한다",
     (locale) =>
       withAiAssistanceTime(async () => {
@@ -380,6 +395,7 @@ describe("GenerateReportUseCase", () => {
       // When - 실제 생성
       expect(
         await f.generateReport.execute({
+          locale: "ko",
           userId: f.userId,
           timezone: "Asia/Seoul",
           type: "WEEKLY",
@@ -396,7 +412,12 @@ describe("GenerateReportUseCase", () => {
       const f = useReportActivity(createAiAssistanceFixture());
       f.aiDataSharingConsent.decision = "DECLINED";
       // When
-      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      await f.generateReport.execute({
+        locale: "ko",
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+      });
       // Then - 공급자를 부르지 않고 출처를 구분해 저장
       expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({
@@ -411,7 +432,12 @@ describe("GenerateReportUseCase", () => {
       const f = useReportActivity(createAiAssistanceFixture());
       f.clientAppVersion.latestAppVersion = "1.13.0";
       // When
-      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      await f.generateReport.execute({
+        locale: "ko",
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+      });
       // Then
       expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "NO_AI_CONSENT" });
@@ -439,7 +465,12 @@ describe("GenerateReportUseCase", () => {
       // Given - 기록 없는 집계
       const f = createAiAssistanceFixture();
       // When
-      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      await f.generateReport.execute({
+        locale: "ko",
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+      });
       // Then
       expect(f.generator.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({
@@ -460,6 +491,7 @@ describe("GenerateReportUseCase", () => {
         f.generator.setInvalidResponse(failure);
         // When
         const execution = f.generateReport.execute({
+          locale: "ko",
           userId: f.userId,
           timezone: "Asia/Seoul",
           type: "WEEKLY",
@@ -479,6 +511,7 @@ describe("GenerateReportUseCase", () => {
       f.generator.setInvalidResponse(createAiGenerationError("RATE_LIMITED"));
       // When
       await f.generateReport.execute({
+        locale: "ko",
         userId: f.userId,
         timezone: "Asia/Seoul",
         type: "WEEKLY",
@@ -508,6 +541,7 @@ describe("GenerateReportUseCase", () => {
       f.generator.setInvalidResponse(createAiGenerationError("CIRCUIT_OPEN"));
       // When
       await f.generateReport.execute({
+        locale: "ko",
         userId: f.userId,
         timezone: "Asia/Seoul",
         type: "WEEKLY",
@@ -524,6 +558,7 @@ describe("GenerateReportUseCase", () => {
       f.generator.setInvalidResponse(createAiGenerationError("TRUNCATED"));
       // When
       const result = await f.generateReport.execute({
+        locale: "ko",
         userId: f.userId,
         timezone: "Asia/Seoul",
         type: "WEEKLY",
@@ -543,6 +578,7 @@ describe("GenerateReportUseCase", () => {
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
         const result = await f.generateReport.execute({
+          locale: "ko",
           userId: f.userId,
           timezone: "Asia/Seoul",
           type: "WEEKLY",
@@ -566,7 +602,12 @@ describe("GenerateReportUseCase", () => {
       const f = useReportActivity(createAiAssistanceFixture());
       f.generator.setRawResponse({ insightKey: null, insight: " ", tips: [] });
       // When
-      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      await f.generateReport.execute({
+        locale: "ko",
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+      });
       // Then
       expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
     }));

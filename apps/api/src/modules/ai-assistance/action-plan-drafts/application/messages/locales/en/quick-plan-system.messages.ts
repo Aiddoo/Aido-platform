@@ -1,9 +1,9 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SCHEDULE_RULES_EN } from "../../../parsed-drafts/application/messages/schedule-rules.messages.js";
-import { PLANNING_RULES_EN } from "./planning-rules.messages.js";
-import { QUICK_PLAN_EXAMPLES_EN } from "./quick-plan-examples-en.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_EN } from "../../../../../parsed-drafts/application/messages/schedule-rules.messages.js";
+import { PLANNING_RULES_EN } from "../../planning-rules.messages.js";
+import { QUICK_PLAN_EXAMPLES_EN } from "./quick-plan-examples.messages.js";
 
 export const QUICK_PLAN_SYSTEM_EN = composeSystem({
   role: `You are the quick planner for Aido, a to-do app. From a short spoken or typed request, find the to-dos and notes to keep and structure them as an action plan (todos and memo).

@@ -4,6 +4,7 @@ import {
   IDEMPOTENCY_KEY_HEADER,
   IDEMPOTENCY_KEY_MAX_LENGTH,
   PLAN_CATALOG,
+  type SupportedLocale,
 } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
@@ -31,7 +32,6 @@ import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-h
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { RateLimit } from "#api/platform/throttle/rate-limits";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsageUseCase } from "../../../application/use-cases/get-ai-usage.use-case.js";
 import { ParseMemoUseCase } from "../../../application/use-cases/parse-memo.use-case.js";

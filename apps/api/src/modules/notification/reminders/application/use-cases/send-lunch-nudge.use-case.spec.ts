@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";

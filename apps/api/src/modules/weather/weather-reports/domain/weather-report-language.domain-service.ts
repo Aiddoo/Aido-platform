@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { FALLBACK_LOCALE, type SupportedLocale } from "@aido/api/vocabulary";
 
 export type WeatherReportLanguage = SupportedLocale;
 
@@ -9,7 +9,7 @@ export type WeatherReportLanguage = SupportedLocale;
 export function resolveWeatherReportLanguage(
   locale: SupportedLocale | undefined,
 ): WeatherReportLanguage {
-  return locale ?? "en";
+  return locale ?? FALLBACK_LOCALE;
 }
 
 /** 번역 문구가 없는 지역의 리포트는 언어와 관계없이 한 캐시를 같이 쓴다. */

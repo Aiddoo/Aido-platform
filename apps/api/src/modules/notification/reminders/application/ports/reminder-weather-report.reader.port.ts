@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { WeatherBriefingForecast } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 export interface ReminderWeatherReportRequest {
   /** 결과를 다시 찾을 키. 날씨 알림은 사용자 ID를 쓴다 */

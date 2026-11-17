@@ -1,6 +1,5 @@
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { PromptDefinition } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import { wrapUntrusted } from "../../../ai-generations/application/messages/untrusted-input.messages.js";
@@ -14,17 +13,17 @@ import {
 } from "../../domain/suggestion-candidates.domain-service.js";
 import type { DetectedPattern } from "../../domain/suggestions.constants.js";
 import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
+import { SUGGESTION_SYSTEM_EN } from "./locales/en/suggestion-system.messages.js";
+import { SUGGESTION_SYSTEM_KO } from "./locales/ko/suggestion-system.messages.js";
 import { buildSuggestionData } from "./suggestion-data.messages.js";
 import { suggestionReasonCopy } from "./suggestion-reason.messages.js";
-import { SUGGESTION_SYSTEM_EN } from "./suggestion-system-en.messages.js";
-import { SUGGESTION_SYSTEM_KO } from "./suggestion-system-ko.messages.js";
 
 export interface SuggestionNormalizeContext {
   readonly context: SuggestionContextReadModel;
   readonly locale: SupportedLocale;
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: SUGGESTION_SYSTEM_KO,
   en: SUGGESTION_SYSTEM_EN,
 };

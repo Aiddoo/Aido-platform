@@ -1,7 +1,5 @@
-import { completionRate, weeklyAchievementBadge } from "@aido/api/vocabulary";
+import { completionRate, type SupportedLocale, weeklyAchievementBadge } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
-
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   NotificationMessage,
@@ -15,7 +13,7 @@ import {
 import { renderNotificationTemplate, toNameFact } from "./notification-copy.messages.js";
 
 interface LocalizedVariantInput {
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly variantContext?: NotificationVariantContext;
 }
 
@@ -57,7 +55,7 @@ export interface NudgeSuggestionNotificationInput extends LocalizedVariantInput 
 export function createTodoReminderNotificationMessage({
   todoTitle,
   stage,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: TodoReminderNotificationInput): NotificationMessage {
   return renderNotificationTemplate(
@@ -75,7 +73,7 @@ export interface TodoReminderSnoozedNotificationInput extends LocalizedVariantIn
 export function createTodoReminderSnoozedNotificationMessage({
   todoTitle,
   timing,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: TodoReminderSnoozedNotificationInput): NotificationMessage {
   return renderNotificationTemplate(
@@ -87,9 +85,9 @@ export function createTodoReminderSnoozedNotificationMessage({
 }
 
 export function createTodoSeriesPausedNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedVariantInput = {}): NotificationMessage {
+}: LocalizedVariantInput): NotificationMessage {
   return renderNotificationTemplate(SCHEDULER_COPY.TODO_SERIES_PAUSED, {
     facts: {},
     locale,
@@ -99,9 +97,9 @@ export function createTodoSeriesPausedNotificationMessage({
 }
 
 export function createMorningNoTodoNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedVariantInput = {}): NotificationMessage {
+}: LocalizedVariantInput): NotificationMessage {
   return renderNotificationTemplate(SCHEDULER_COPY.MORNING_NO_TODO, {
     facts: {},
     locale,
@@ -112,7 +110,7 @@ export function createMorningNoTodoNotificationMessage({
 
 export function createMorningReminderNotificationMessage({
   count,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: MorningReminderNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SCHEDULER_COPY.MORNING_REMINDER, {
@@ -128,7 +126,7 @@ export function createEveningReminderNotificationMessage({
   total,
   streak = 0,
   isStreakAtRisk = false,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: EveningReminderNotificationInput): NotificationMessage {
   const options = { locale, variantContext };
@@ -202,7 +200,7 @@ export function createEveningReminderNotificationMessage({
 export function createWeeklyAchievementNotificationMessage({
   completedCount,
   totalCount,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: WeeklyAchievementNotificationInput): NotificationMessage {
   return match(weeklyAchievementBadge(completedCount, totalCount))
@@ -236,7 +234,7 @@ export function createWeeklyAchievementNotificationMessage({
 export function createSocialDigestNotificationMessage(
   input: SocialDigestNotificationInput,
 ): NotificationMessage {
-  const locale = input.locale ?? DEFAULT_LOCALE;
+  const { locale } = input;
   if (input.kind === "single") {
     return renderNotificationTemplate(SOCIAL_COPY.SOCIAL_DIGEST_SINGLE, {
       facts: { friendName: toNameFact(input.friendName, locale) },
@@ -254,9 +252,9 @@ export function createSocialDigestNotificationMessage(
 }
 
 export function createLunchNudgeNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedVariantInput = {}): NotificationMessage {
+}: LocalizedVariantInput): NotificationMessage {
   return renderNotificationTemplate(SCHEDULER_COPY.LUNCH_NUDGE, {
     facts: {},
     locale,
@@ -266,7 +264,7 @@ export function createLunchNudgeNotificationMessage({
 
 export function createStreakAtRiskNotificationMessage({
   streak,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: StreakAtRiskNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SCHEDULER_COPY.STREAK_AT_RISK, {
@@ -278,7 +276,7 @@ export function createStreakAtRiskNotificationMessage({
 
 export function createNudgeSuggestionNotificationMessage({
   friendName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: NudgeSuggestionNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.NUDGE_SUGGEST, {

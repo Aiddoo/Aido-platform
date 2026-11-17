@@ -112,7 +112,8 @@
       "files": ["apps/api/src/**/*.{ts,tsx}", "packages/*/src/**/*.ts"],
       "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
       "rules": {
-        "aido/time-constant-unit": "error"
+        "aido/time-constant-unit": "error",
+        "aido/no-locale-literal-comparison": "error"
       }
     },
     {

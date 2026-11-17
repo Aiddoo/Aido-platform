@@ -1,4 +1,8 @@
-import { type OAUTH_PROVIDERS } from "@aido/api/vocabulary";
+import {
+  type OAUTH_PROVIDERS,
+  resolveSupportedLocale,
+  type SupportedLocale,
+} from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
@@ -22,7 +26,6 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { unsupportedOAuthProvider } from "../../../linked-accounts/application/linked-accounts.errors.js";
 import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
@@ -172,7 +175,8 @@ export class LoginWithOAuthTokenUseCase {
         providerAccountId,
         userName: options.userName,
         profileImage: options.profileImage,
-        locale: options.metadata?.locale,
+        // 언어를 보내지 않은 가입 요청은 옛 앱이라 한국어 카테고리로 시작한다
+        locale: resolveSupportedLocale(options.metadata?.locale),
       });
     } catch (error) {
       const linkedMeanwhile = await this.#findUserLinkedMeanwhile(
@@ -239,7 +243,7 @@ export class LoginWithOAuthTokenUseCase {
     providerAccountId: string;
     userName?: string;
     profileImage?: string;
-    locale?: SupportedLocale;
+    locale: SupportedLocale;
   }) {
     return this.#dependencies.unitOfWork.run(async () => {
       const maximumNameLength = 20;

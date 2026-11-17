@@ -1,8 +1,8 @@
+import { resolveSupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { GenerateReportUseCase } from "../../application/use-cases/generate-report.use-case.js";
@@ -56,7 +56,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
     }
 
     const { userId, timezone, locale, reportType } = job.data;
-    const reportLocale = toSupportedLocale(locale);
+    const reportLocale = resolveSupportedLocale(locale);
 
     this.#logger.debug({
       event: AiGenerationLogEvent.JOB_STARTED,

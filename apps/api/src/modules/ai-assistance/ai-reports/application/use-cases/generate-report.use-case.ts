@@ -1,10 +1,11 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   AiGenerationError,
@@ -78,11 +79,11 @@ export class GenerateReportUseCase {
     userId: string;
     timezone: string;
     type: ReportType;
-    locale?: SupportedLocale;
+    locale: SupportedLocale;
     /** 잡의 마지막 시도인지. 아니면 AI 일시 오류를 던져 잡이 다시 시도하게 한다. */
     isFinalAttempt?: boolean;
   }): Promise<AiReport | null> {
-    const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
+    const { userId, timezone, type, locale, isFinalAttempt = true } = input;
     if (
       !(await this.#dependencies.entitlementReader.canInTransaction(
         UserId.reconstitute(userId),

@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 
 /**
  * 출력 언어 규칙. 할 일 제목은 말한 언어 그대로, 설명 문장은 앱 언어로 쓴다.
@@ -15,9 +15,7 @@ const LANGUAGE_POLICY_RULES = [
 
 export type LanguagePolicyRule = (typeof LANGUAGE_POLICY_RULES)[number];
 
-const LANGUAGE_POLICY: Readonly<
-  Record<SupportedLocale, Readonly<Record<LanguagePolicyRule, string>>>
-> = {
+const LANGUAGE_POLICY: Readonly<Localized<Readonly<Record<LanguagePolicyRule, string>>>> = {
   ko: {
     TITLES_AS_SPOKEN:
       '할 일·하위 할 일·메모 제목은 사용자가 말하거나 쓴 언어 그대로 쓰고 번역하지 않는다. 한국어와 영어를 섞어 말했으면 섞인 그대로 둔다(예: "팀 standup 준비").',

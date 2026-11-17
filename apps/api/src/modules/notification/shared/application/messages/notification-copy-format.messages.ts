@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
+
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
@@ -52,6 +53,38 @@ export function formatNotificationCopyText(
   });
 }
 
+interface LocalizedInstantFormat {
+  readonly instant: Date;
+  readonly locale: SupportedLocale;
+  readonly timeZone: string;
+}
+
+const NOTIFICATION_TIME_FORMAT: Localized<(input: LocalizedInstantFormat) => string> = {
+  ko: ({ instant, locale, timeZone }) => {
+    // Intl ko는 분이 있으면 "오후 3:30"이라 정시 표기("오후 3시")와 섞이므로 시·분을 직접 붙인다
+    const parts = new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      minute: "numeric",
+      timeZone,
+    }).formatToParts(instant);
+    const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+    const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value;
+    const hour = parts.find((part) => part.type === "hour")?.value;
+    const time = minute === 0 ? `${hour}시` : `${hour}시 ${minute}분`;
+    return dayPeriod == null ? time : `${dayPeriod} ${time}`;
+  },
+  en: ({ instant, locale, timeZone }) => {
+    const minute = Number(
+      new Intl.DateTimeFormat(locale, { minute: "numeric", timeZone }).format(instant),
+    );
+    return new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      ...(minute !== 0 && { minute: "2-digit" }),
+      timeZone,
+    }).format(instant);
+  },
+};
+
 /**
  * 알림 시간대·언어의 짧은 시각 표시. 정시가 아니면 분까지 쓴다(ko "오후 3시"·"오후 3시 30분", en "3 PM"·"3:30 PM").
  * 할 일 시각과 시간별 예보는 절대 시각이므로 기기 시간대로 보여 줘야 앱 화면과 같다.
@@ -60,31 +93,13 @@ export function formatWeatherNotificationTime(
   instant: Date,
   { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
 ): string {
-  const timeZone = resolveTimezone(timezone);
-  const parts = new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    minute: "numeric",
-    timeZone,
-  }).formatToParts(instant);
-  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
-  if (locale === "ko") {
-    // Intl ko는 분이 있으면 "오후 3:30"이라 정시 표기("오후 3시")와 섞이므로 시·분을 직접 붙인다
-    const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value;
-    const hour = parts.find((part) => part.type === "hour")?.value;
-    const time = minute === 0 ? `${hour}시` : `${hour}시 ${minute}분`;
-    return dayPeriod == null ? time : `${dayPeriod} ${time}`;
-  }
-  return new Intl.DateTimeFormat(locale, {
-    hour: "numeric",
-    ...(minute !== 0 && { minute: "2-digit" }),
-    timeZone,
-  }).format(instant);
+  return NOTIFICATION_TIME_FORMAT[locale]({ instant, locale, timeZone: resolveTimezone(timezone) });
 }
 
 const BILLING_DATE_FORMAT = {
   ko: { month: "long", day: "numeric" },
   en: { month: "short", day: "numeric" },
-} as const satisfies Record<SupportedLocale, Intl.DateTimeFormatOptions>;
+} as const satisfies Localized<Intl.DateTimeFormatOptions>;
 
 /** 결제·체험 종료 날짜를 받는 사람 시간대 달력으로 쓴다(ko "12월 9일", en "Dec 9"). */
 export function formatBillingDate(
@@ -97,18 +112,23 @@ export function formatBillingDate(
   }).format(instant);
 }
 
+const CONSENT_DATE_FORMAT: Localized<(input: LocalizedInstantFormat) => string> = {
+  // 한국어 동의 안내의 출시 표기는 점으로 나눈 숫자 날짜다
+  ko: ({ instant, timeZone }) =>
+    localDateIn(instantFromDate(instant), timeZone).toString().replaceAll("-", "."),
+  en: ({ instant, locale, timeZone }) =>
+    new Intl.DateTimeFormat(locale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone,
+    }).format(instant),
+};
+
 /** 동의한 날을 받는 사람 시간대로 쓴다(ko "2024.11.09", en "Nov 9, 2024"). */
 export function formatConsentDate(
   instant: Date,
   { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
 ): string {
-  const timeZone = resolveTimezone(timezone);
-  return locale === "ko"
-    ? localDateIn(instantFromDate(instant), timeZone).toString().replaceAll("-", ".")
-    : new Intl.DateTimeFormat("en", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        timeZone,
-      }).format(instant);
+  return CONSENT_DATE_FORMAT[locale]({ instant, locale, timeZone: resolveTimezone(timezone) });
 }

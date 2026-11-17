@@ -2,7 +2,6 @@ import { groupBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -117,7 +116,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
         .map((friend) => [friend.id, { name: friend.profile?.name ?? null }]),
     );
 
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       candidates.map((u) => u.id),
     );
 
@@ -138,7 +137,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
         continue;
       }
 
-      const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
+      const locale = localeOf(user.id);
       const fallbackName = getNotificationFriendFallback(locale);
       const variantContext = {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,

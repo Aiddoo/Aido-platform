@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
+
 import { countGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import type { PromptDefinition } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
@@ -19,16 +20,16 @@ import {
 } from "../../domain/report-grounding.domain-service.js";
 import { normalizeReportPersona } from "../../domain/report-persona.domain-service.js";
 import { reportDraftRejected } from "../ai-reports.errors.js";
+import { REPORT_SYSTEM_EN } from "./locales/en/report-system.messages.js";
+import { REPORT_SYSTEM_KO } from "./locales/ko/report-system.messages.js";
 import type { ReportContext } from "./report-context.messages.js";
-import { REPORT_SYSTEM_EN } from "./report-system-en.messages.js";
-import { REPORT_SYSTEM_KO } from "./report-system-ko.messages.js";
 
 export interface ReportNormalizeContext {
   readonly context: ReportContext;
   readonly locale: SupportedLocale;
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: REPORT_SYSTEM_KO,
   en: REPORT_SYSTEM_EN,
 };

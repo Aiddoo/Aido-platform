@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -100,14 +99,14 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 알림 데이터 생성
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       filteredUsers.map(({ user }) => user.id),
     );
     const notifications: CreateNotificationData[] = [];
     for (const { user, day } of filteredUsers) {
       const completedCount = completedCountMap.get(user.id) ?? 0;
       const notificationContext = {
-        locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+        locale: localeOf(user.id),
         variantContext: {
           campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
           recipientId: user.id,

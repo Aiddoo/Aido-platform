@@ -156,6 +156,16 @@ ls:
     .constants.ts: kebab-case
     .messages.ts: kebab-case
 
+  # 언어별 TS 자원(조사·AI 지시문)은 locales/<언어>/에 언어마다 같은 이름의 .messages.ts로 둔다
+  apps/api/src/modules/**/locales:
+    .dir: regex:(locales|[a-z]{2,3}(-[A-Z][a-z]{3})?)
+    .gitkeep: regex:[^\s\S]
+    .ts: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+    .messages.ts: kebab-case
+
   packages/api/src:
     .gitkeep: regex:[^\s\S]
 

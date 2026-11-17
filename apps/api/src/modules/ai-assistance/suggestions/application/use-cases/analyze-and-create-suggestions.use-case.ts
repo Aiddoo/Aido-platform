@@ -1,4 +1,4 @@
-import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
+import { AI_SUGGESTION_LIMITS, type SupportedLocale } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
@@ -10,7 +10,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   type AiFailureKind,
@@ -74,7 +73,7 @@ interface AnalyzeAndCreateSuggestionsDependencies {
 export interface AnalyzeAndCreateSuggestionsCommand {
   readonly userId: string;
   readonly timezone: string;
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly localDate: Temporal.PlainDate;
   readonly trigger: SuggestionAnalysisTrigger;
   readonly isFinalAttempt: boolean;
@@ -178,7 +177,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     context: SuggestionContextReadModel,
     consent: ScheduledAiConsentReadModel,
   ): Promise<GenerationOutcome> {
-    const { userId, locale = "ko" } = command;
+    const { userId, locale } = command;
     const definition = suggestionPromptFor(command.trigger);
     const logBase = {
       task: definition.id,

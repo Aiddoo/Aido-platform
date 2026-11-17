@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,

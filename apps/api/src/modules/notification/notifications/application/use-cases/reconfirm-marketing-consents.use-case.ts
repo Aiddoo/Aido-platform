@@ -8,7 +8,6 @@ import {
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
@@ -110,7 +109,7 @@ export class ReconfirmMarketingConsentsUseCase {
     now: Temporal.Instant,
   ): Promise<number> {
     const recipientIds = userIds.map((userId) => UserId.reconstitute(userId));
-    const [locales, timezones] = await Promise.all([
+    const [localeOf, timezones] = await Promise.all([
       this.#dependencies.localeReader.getLocales(recipientIds),
       this.#dependencies.timezoneReader.getTimezones(userIds),
     ]);
@@ -124,7 +123,7 @@ export class ReconfirmMarketingConsentsUseCase {
       );
       const notices = claimed.flatMap((recipient) =>
         this.#notice(recipient, {
-          locale: locales.get(recipient.userId) ?? DEFAULT_LOCALE,
+          locale: localeOf(recipient.userId),
           timezone: timezones.get(recipient.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
         }),
       );

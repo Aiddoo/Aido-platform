@@ -1,6 +1,4 @@
-import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { ACTION_PLAN_LIMITS, type Localized, PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import {
   composeUserTurn,
@@ -16,9 +14,9 @@ import {
   normalizeVoiceNoteDigest,
   type VoiceNoteDigestNormalizeContext,
 } from "../action-plan-draft.mapper.js";
+import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "./locales/en/voice-note-digest-system.messages.js";
+import { VOICE_NOTE_DIGEST_SYSTEM_KO } from "./locales/ko/voice-note-digest-system.messages.js";
 import { type PlanningContextInput, buildPlanningContext } from "./planning-context.messages.js";
-import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "./voice-note-digest-system-en.messages.js";
-import { VOICE_NOTE_DIGEST_SYSTEM_KO } from "./voice-note-digest-system-ko.messages.js";
 
 /** 앱이 기기에서 전사한 문장 하나. 시각은 서버가 index로 다시 찾으므로 프롬프트에 넣지 않는다. */
 export interface TranscriptSentence {
@@ -35,7 +33,7 @@ export interface VoiceNoteDigestPromptInput extends PlanningContextInput {
 /** 전사 글자 상한은 등급별 1회 상한 중 가장 큰 값이다. 요청 검증이 등급별 값으로 먼저 거절한다. */
 const TRANSCRIPT_MAX_LENGTH = PLAN_CATALOG.VOICE_NOTE.perUse.maxCharacters.premium;
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: VOICE_NOTE_DIGEST_SYSTEM_KO,
   en: VOICE_NOTE_DIGEST_SYSTEM_EN,
 };

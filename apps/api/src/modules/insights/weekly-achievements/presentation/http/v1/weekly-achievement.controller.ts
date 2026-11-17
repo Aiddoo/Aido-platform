@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { resolveSupportedLocale, type SupportedLocale } from "@aido/api/vocabulary";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -12,7 +13,6 @@ import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.const
 import { ApiUnauthorizedError } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetWeeklyAchievementUseCase } from "../../../application/use-cases/get-weekly-achievement.use-case.js";
 import { ListWeeklyAchievementYearsUseCase } from "../../../application/use-cases/list-weekly-achievement-years.use-case.js";
@@ -96,7 +96,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
       cursor: query.cursor,
       size: query.size,
     });
-    return toWeeklyAchievementListResponse(list, locale ?? DEFAULT_LOCALE);
+    return toWeeklyAchievementListResponse(list, resolveSupportedLocale(locale));
   }
 
   @Get("years")
@@ -162,6 +162,6 @@ GET /weekly-achievements/2026/10
       year: params.year,
       week: params.week,
     });
-    return toWeeklyAchievementResponse(achievement, locale ?? DEFAULT_LOCALE, localToday);
+    return toWeeklyAchievementResponse(achievement, resolveSupportedLocale(locale), localToday);
   }
 }

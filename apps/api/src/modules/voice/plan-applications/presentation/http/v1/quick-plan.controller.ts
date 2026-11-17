@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { PLAN_CATALOG } from "@aido/api/vocabulary";
+import { PLAN_CATALOG, type SupportedLocale } from "@aido/api/vocabulary";
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -26,7 +26,6 @@ import { ApiIdempotencyKeyHeader } from "#api/platform/http/swagger/decorators/a
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { RateLimit } from "#api/platform/throttle/rate-limits";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { CreateQuickPlanUseCase } from "../../../application/use-cases/create-quick-plan.use-case.js";
 import { PlanApplicationRateLimits } from "../plan-applications.rate-limits.js";

@@ -1,9 +1,10 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import {
-  parseAcceptLanguage,
   parseRequestClient,
   type RequestClient,
+  requestedAppLocale,
+  resolvePreI18nAppLocale,
   resolveResponseLocale,
 } from "./request-client.js";
 import { requestTimezoneIfSent, requestTimezoneOrUtc } from "./request-timezone.js";
@@ -103,7 +104,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
   );
 });
 
-describe("parseAcceptLanguage", () => {
+describe("requestedAppLocale — 저장하는 앱 언어", () => {
   it.each([
     ["ko", "ko"],
     ["en", "en"],
@@ -112,24 +113,53 @@ describe("parseAcceptLanguage", () => {
     ["en-US,en;q=0.9,ko;q=0.8", "en"],
     ["ko-KR,ko;q=0.9", "ko"],
     ["EN-us", "en"],
-  ])("'%s' 헤더는 %s로 파싱된다", (header, expected) => {
+    ["ja-JP,ja;q=0.9", "en"],
+  ])("1.4.0 이상 앱의 '%s' 헤더는 %s다", (header, expected) => {
     // When
-    const locale = parseAcceptLanguage(header);
+    const locale = requestedAppLocale(header, "1.4.0");
 
     // Then
     expect(locale).toBe(expected);
   });
 
-  it.each([undefined, null, "", 123, ["en"]])(
-    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다",
+  it.each([
+    ["ja-JP,ja;q=0.9", null, "ko"],
+    ["ja-JP", "1.3.9", "ko"],
+    ["en-US", null, "en"],
+    ["ko-KR", "1.3.0", "ko"],
+  ])("1.4.0 전 앱의 '%s' 헤더(앱 버전 %s)는 %s다", (header, appVersion, expected) => {
+    // When
+    const locale = requestedAppLocale(header, appVersion);
+
+    // Then
+    expect(locale).toBe(expected);
+  });
+
+  it.each([undefined, null, "", " , en", 123, ["en"]])(
+    "헤더 미전송/비정상 값(%s)은 null — 저장된 locale을 덮어쓰지 않는다",
     (header) => {
       // When
-      const locale = parseAcceptLanguage(header);
+      const locale = requestedAppLocale(header, "1.16.0");
 
       // Then
-      expect(locale).toBeUndefined();
+      expect(locale).toBeNull();
     },
   );
+});
+
+describe("resolvePreI18nAppLocale — 1.4.0 전 앱의 언어", () => {
+  it.each([
+    ["ja-JP", "ko"],
+    ["zh_CN", "ko"],
+    ["en-US", "en"],
+    ["ko", "ko"],
+  ])("'%s'는 %s다", (tag, expected) => {
+    // When
+    const locale = resolvePreI18nAppLocale(tag);
+
+    // Then
+    expect(locale).toBe(expected);
+  });
 });
 
 describe("resolveResponseLocale — 응답 문구 언어", () => {

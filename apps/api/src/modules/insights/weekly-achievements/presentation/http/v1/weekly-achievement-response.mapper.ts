@@ -3,8 +3,8 @@ import type {
   WeeklyAchievementListResponse,
   WeeklyAchievementYearsResponse,
 } from "@aido/api/contracts/weekly-achievement/v1";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { formatIsoWeekLabel } from "#api/shared/domain/time/week-of-month";
 

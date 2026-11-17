@@ -1,7 +1,7 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { describe, it, expect } from "vitest";
 
 import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import {
@@ -17,7 +17,7 @@ import {
   createMonthlyReportNotificationMessage,
 } from "./system-notification.messages.js";
 
-const locales: SupportedLocale[] = ["ko", "en"];
+const locales = SUPPORTED_LOCALES;
 const today = Temporal.PlainDate.from("2026-07-27");
 const yesterday = Temporal.PlainDate.from("2026-07-26");
 const totalCompletionClaim = /모두|every\s+(?:planned\s+)?to-do|all\s+(?:done|complete)/i;

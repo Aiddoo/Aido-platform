@@ -5,6 +5,7 @@ import {
   AI_REPORT_TYPES,
   AI_SUGGESTION_STATUSES,
   DAYS_OF_WEEK,
+  SUPPORTED_LOCALES,
   TODO_VISIBILITIES,
 } from "@aido/api/vocabulary";
 import { z } from "zod";
@@ -42,7 +43,7 @@ export type GoldenTask = (typeof GOLDEN_TASKS)[number];
 
 const goldenBase = {
   id: z.string(),
-  locale: z.enum(["ko", "en"]),
+  locale: z.enum(SUPPORTED_LOCALES),
   timezone: z.string(),
   now: z.iso.datetime(),
 };
@@ -182,7 +183,7 @@ const rateItem = { total: z.number().int(), completed: z.number().int(), rate: z
 /** 리포트 golden 한 줄. input은 서버 집계(ReportPromptInput), draft는 이상적인 모델 출력이다. */
 export const reportGoldenCaseSchema = z.object({
   id: z.string(),
-  locale: z.enum(["ko", "en"]),
+  locale: z.enum(SUPPORTED_LOCALES),
   input: z.object({
     type: z.enum(AI_REPORT_TYPES),
     periodLabel: z.string(),

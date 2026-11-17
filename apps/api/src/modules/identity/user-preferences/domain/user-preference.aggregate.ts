@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
+import { DEFAULT_LOCALE, USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { omit, pickBy } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -64,7 +64,7 @@ export const DEFAULT_USER_PREFERENCE_SETTINGS: UserPreferenceSettings = {
   nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
   timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
   // 언어는 푸시 기기 등록이 곧 실제 값으로 바꾼다
-  locale: "ko",
+  locale: DEFAULT_LOCALE,
   morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
   morningReminderMinute: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
   eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,

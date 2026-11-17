@@ -1,3 +1,4 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
 
@@ -6,7 +7,6 @@ import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { buildWithinLimit } from "../../../action-plan-drafts/application/messages/planning-context.messages.js";

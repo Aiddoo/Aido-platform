@@ -1,8 +1,8 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { PARSE_TODO_EXAMPLES_KO } from "./parse-todo-examples-ko.messages.js";
-import { SCHEDULE_RULES_KO } from "./schedule-rules.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_KO } from "../../schedule-rules.messages.js";
+import { PARSE_TODO_EXAMPLES_KO } from "./parse-todo-examples.messages.js";
 
 const TITLE_RULES = `<title_rules>
 - title은 핵심 행동만 짧게 쓴다. 날짜·시각·반복 표현, "~하기로 함", "~해야 함" 같은 어미, 이모지는 뺀다.

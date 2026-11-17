@@ -1,11 +1,11 @@
 import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
 
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SCHEDULE_RULES_EN } from "../../../parsed-drafts/application/messages/schedule-rules.messages.js";
-import { PLANNING_RULES_EN } from "./planning-rules.messages.js";
-import { VOICE_NOTE_DIGEST_EXAMPLES_EN } from "./voice-note-digest-examples-en.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_EN } from "../../../../../parsed-drafts/application/messages/schedule-rules.messages.js";
+import { PLANNING_RULES_EN } from "../../planning-rules.messages.js";
+import { VOICE_NOTE_DIGEST_EXAMPLES_EN } from "./voice-note-digest-examples.messages.js";
 
 export const VOICE_NOTE_DIGEST_SYSTEM_EN = composeSystem({
   role: `You are the recording organizer for Aido, a to-do app. Read the transcript of what the user recorded, write a title, summary, and key points, then structure the to-dos and notes to keep as an action plan (todos and memo).

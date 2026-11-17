@@ -1,8 +1,8 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { I18nService } from "@nestjs/i18n";
 import { Test } from "@nestjs/testing";
 
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   NOTIFICATION_COPY_CATALOG,
@@ -11,7 +11,7 @@ import {
 } from "./notification-copy-catalog.messages.js";
 import { formatNotificationCopyText } from "./notification-copy-format.messages.js";
 
-const LOCALES: readonly SupportedLocale[] = ["ko", "en"];
+const LOCALES = SUPPORTED_LOCALES;
 const PLURAL_CATEGORIES = new Set(["zero", "one", "two", "few", "many", "other"]);
 
 function isObject(value: unknown): value is { readonly [key: string]: unknown } {

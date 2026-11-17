@@ -989,7 +989,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("MORNING_REMINDER publishBatch 시 title에 {count}가 치환된 값이 저장되어야 함", async () => {
       // Given
-      const message = createMorningReminderNotificationMessage({ count: 3 });
+      const message = createMorningReminderNotificationMessage({ locale: "ko", count: 3 });
       const dataList = [
         {
           userId: mockUserId,
@@ -1017,7 +1017,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("할일 없는 사용자에게 MORNING_NO_TODO 메시지로 알림이 정상 생성되어야 함", async () => {
       // Given
-      const message = createMorningNoTodoNotificationMessage();
+      const message = createMorningNoTodoNotificationMessage({ locale: "ko" });
       await seedPreference(mockUserId, { pushEnabled: true, nightPushEnabled: true });
       await seedPushToken(mockUserId, mockPushToken);
 
@@ -1048,8 +1048,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
       // Given
       const userWithTodos = "user-with-todos";
       const userWithoutTodos = "user-without-todos";
-      const messageWithTodos = createMorningReminderNotificationMessage({ count: 5 });
-      const messageNoTodos = createMorningNoTodoNotificationMessage();
+      const messageWithTodos = createMorningReminderNotificationMessage({ locale: "ko", count: 5 });
+      const messageNoTodos = createMorningNoTodoNotificationMessage({ locale: "ko" });
       const dataList = [
         {
           userId: userWithTodos,

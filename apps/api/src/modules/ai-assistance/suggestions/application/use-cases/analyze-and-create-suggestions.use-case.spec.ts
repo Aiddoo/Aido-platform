@@ -1,3 +1,4 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { assert } from "vitest";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -324,7 +325,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       expect(prompt).not.toContain('"weather"');
     }));
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s 월요일 실제 세 기록은 모델의 일요일·시각 선택을 서버 근거로 교정한다",
     (locale) =>
       withAiAssistanceTime(async () => {

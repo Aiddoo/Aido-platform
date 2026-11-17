@@ -5,9 +5,9 @@ import {
   type NotificationMetadata,
   notificationMetadataSchema,
 } from "@aido/api/contracts/notification/v1";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type { CursorPage } from "#api/shared/application/cursor-page";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import {

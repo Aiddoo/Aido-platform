@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -57,12 +56,12 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       filteredUsers.map((u) => u.id),
     );
     const notifications = filteredUsers.map((user) => {
       const message = createMonthlyReportNotificationMessage({
-        locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+        locale: localeOf(user.id),
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.MONTHLY_REPORT,
           recipientId: user.id,

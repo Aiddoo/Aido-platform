@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
+
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { sundayBasedDayIndex } from "../../../shared/domain/user-calendar.domain-service.js";
@@ -8,7 +9,7 @@ export interface PromptCategory {
   readonly name: string;
 }
 
-const WEEKDAY_LABELS: Readonly<Record<SupportedLocale, readonly string[]>> = {
+const WEEKDAY_LABELS: Localized<readonly string[]> = {
   ko: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
   en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
 };

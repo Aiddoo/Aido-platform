@@ -4,14 +4,14 @@ import { z } from "zod";
 
 import { exampleOutputs } from "#test/fixtures/ai-prompt.fixture";
 
-import { QUICK_PLAN_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/quick-plan-system-en.messages.js";
-import { QUICK_PLAN_SYSTEM_KO } from "../../../action-plan-drafts/application/messages/quick-plan-system-ko.messages.js";
-import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/voice-note-digest-system-en.messages.js";
-import { VOICE_NOTE_DIGEST_SYSTEM_KO } from "../../../action-plan-drafts/application/messages/voice-note-digest-system-ko.messages.js";
-import { PARSE_MEMO_SYSTEM_EN } from "../../../parsed-drafts/application/messages/parse-memo-system-en.messages.js";
-import { PARSE_MEMO_SYSTEM_KO } from "../../../parsed-drafts/application/messages/parse-memo-system-ko.messages.js";
-import { PARSE_TODO_SYSTEM_EN } from "../../../parsed-drafts/application/messages/parse-todo-system-en.messages.js";
-import { PARSE_TODO_SYSTEM_KO } from "../../../parsed-drafts/application/messages/parse-todo-system-ko.messages.js";
+import { QUICK_PLAN_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/locales/en/quick-plan-system.messages.js";
+import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/locales/en/voice-note-digest-system.messages.js";
+import { QUICK_PLAN_SYSTEM_KO } from "../../../action-plan-drafts/application/messages/locales/ko/quick-plan-system.messages.js";
+import { VOICE_NOTE_DIGEST_SYSTEM_KO } from "../../../action-plan-drafts/application/messages/locales/ko/voice-note-digest-system.messages.js";
+import { PARSE_MEMO_SYSTEM_EN } from "../../../parsed-drafts/application/messages/locales/en/parse-memo-system.messages.js";
+import { PARSE_TODO_SYSTEM_EN } from "../../../parsed-drafts/application/messages/locales/en/parse-todo-system.messages.js";
+import { PARSE_MEMO_SYSTEM_KO } from "../../../parsed-drafts/application/messages/locales/ko/parse-memo-system.messages.js";
+import { PARSE_TODO_SYSTEM_KO } from "../../../parsed-drafts/application/messages/locales/ko/parse-todo-system.messages.js";
 import { AI_TASK_OUTPUT_SCHEMAS } from "./ai-task-output.wire.js";
 import { llmInteger, llmObject, nullableLlmObject } from "./llm-output.wire.js";
 import { dateRefSchema, nullableTimeRefSchema } from "./schedule-expression.wire.js";

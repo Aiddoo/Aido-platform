@@ -1,8 +1,11 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { REPORT_MAX_TIPS, REPORT_TEXT_MAX_LENGTH } from "../../domain/ai-reports.constants.js";
-import { REPORT_EXAMPLES_EN } from "./report-examples-en.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import {
+  REPORT_MAX_TIPS,
+  REPORT_TEXT_MAX_LENGTH,
+} from "../../../../domain/ai-reports.constants.js";
+import { REPORT_EXAMPLES_EN } from "./report-examples.messages.js";
 
 export const REPORT_SYSTEM_EN = composeSystem({
   role: `You write a short coach card in the Aido to-do app from last period's records.

@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import type {

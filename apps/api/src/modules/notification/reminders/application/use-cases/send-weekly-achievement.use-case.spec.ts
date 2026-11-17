@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
 import { previousIsoWeekOf } from "#api/modules/notification/reminders/domain/reminder-day.domain-service";
@@ -198,7 +198,7 @@ type PublishedBatch = Parameters<
   WeeklyAchievementStrategyDependencies["notificationPublisher"]["execute"]
 >[0];
 
-describe.each<SupportedLocale>(["ko", "en"])("%s 주간 성취 문구의 기간", (locale) => {
+describe.each(SUPPORTED_LOCALES)("%s 주간 성취 문구의 기간", (locale) => {
   it("월요일 실제 전략의 이전 주 집계를 이번 주 성과로 안내하지 않는다", async () => {
     // Given
     const userId = "synthetic-notification-user";
@@ -214,7 +214,7 @@ describe.each<SupportedLocale>(["ko", "en"])("%s 주간 성취 문구의 기간"
         groupCompletedTodosByUser: async () => [{ userId, count: 3 }],
         findFreeRecipientIds: async () => new Set([userId]),
       },
-      preferenceReader: { findUserLocales: async () => new Map([[userId, locale]]) },
+      preferenceReader: { findUserLocales: async () => () => locale },
       notificationHistoryReader: { findAlreadyNotifiedUserIds: async () => new Set() },
       weeklyAchievementWriter: {
         execute: async (input) => {

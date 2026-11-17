@@ -1,6 +1,4 @@
-import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { AI_PARSE_LIMITS, type Localized, type SupportedLocale } from "@aido/api/vocabulary";
 
 import {
   composeUserTurn,
@@ -12,8 +10,8 @@ import {
 } from "../../../ai-generations/application/messages/untrusted-input.messages.js";
 import { ParsedDraft } from "../../domain/parsed-draft.aggregate.js";
 import { normalizeTodoDraft } from "../todo-draft.mapper.js";
-import { PARSE_TODO_SYSTEM_EN } from "./parse-todo-system-en.messages.js";
-import { PARSE_TODO_SYSTEM_KO } from "./parse-todo-system-ko.messages.js";
+import { PARSE_TODO_SYSTEM_EN } from "./locales/en/parse-todo-system.messages.js";
+import { PARSE_TODO_SYSTEM_KO } from "./locales/ko/parse-todo-system.messages.js";
 import {
   type PromptCategory,
   toPromptCategories,
@@ -43,7 +41,7 @@ export interface ParseTodoOutcome {
   readonly warnings: readonly string[];
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: PARSE_TODO_SYSTEM_KO,
   en: PARSE_TODO_SYSTEM_EN,
 };

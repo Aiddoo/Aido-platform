@@ -1,3 +1,4 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
@@ -5,7 +6,6 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todoCategory } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type { TodoCategoryProvisionerPort } from "../../application/ports/todo-category-provisioner.port.js";
 import { DEFAULT_CATEGORIES } from "../../domain/todo-categories.constants.js";
@@ -21,7 +21,7 @@ export class DefaultTodoCategoryProvisionerAdapter implements TodoCategoryProvis
     this.#clock = clock;
   }
 
-  async seed(userId: UserId, locale: SupportedLocale = DEFAULT_LOCALE): Promise<number> {
+  async seed(userId: UserId, locale: SupportedLocale): Promise<number> {
     const updatedAt = this.#clock.now();
     const rows = await this.#transactionHost.tx
       .insert(todoCategory)

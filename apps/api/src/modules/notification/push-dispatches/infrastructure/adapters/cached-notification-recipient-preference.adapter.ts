@@ -4,14 +4,17 @@ import { uniq } from "es-toolkit";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import {
   type NotificationDeliveryPreference,
   UserNotificationSettingsPort,
 } from "../../../shared/application/ports/user-notification-settings.port.js";
-import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
+import {
+  type RecipientLocaleOf,
+  recipientLocaleOf,
+  resolveRecipientLocale,
+} from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { NotificationRecipientLocaleReaderPort } from "../../application/ports/notification-recipient-locale.reader.port.js";
 import type { NotificationRecipientPreferenceReaderPort } from "../../application/ports/notification-recipient-preference.reader.port.js";
 import type { NotificationRecipientTimezoneReaderPort } from "../../application/ports/notification-recipient-timezone.reader.port.js";
@@ -39,7 +42,10 @@ export class CachedNotificationRecipientPreferenceAdapter
     const preference = await this.#preferenceReader.read(userId);
     return {
       ...preference,
-      locale: preference.locale ?? DEFAULT_LOCALE,
+      locale: resolveRecipientLocale({
+        storedLocale: preference.locale ?? null,
+        lastRequestLocale: null,
+      }),
     };
   }
 
@@ -52,25 +58,16 @@ export class CachedNotificationRecipientPreferenceAdapter
     });
   }
 
-  async getLocales(userIds: readonly UserId[]): Promise<ReadonlyMap<string, SupportedLocale>> {
+  async getLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf> {
     const uniqueUserIds = uniq(userIds.map((userId) => userId.value));
     if (uniqueUserIds.length === 0) {
-      return new Map();
+      return recipientLocaleOf(new Map());
     }
     const preferences = await this.#userSettings.findPreferenceReadModelsByUserIds(
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
-    const storedLocales = new Map(
-      preferences.map((preference) => [preference.userId, preference.locale]),
-    );
-    return new Map(
-      uniqueUserIds.map((userId) => [
-        userId,
-        resolveRecipientLocale({
-          storedLocale: storedLocales.get(userId) ?? null,
-          lastRequestLocale: null,
-        }),
-      ]),
+    return recipientLocaleOf(
+      new Map(preferences.map((preference) => [preference.userId, preference.locale])),
     );
   }
 

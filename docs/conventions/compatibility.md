@@ -29,6 +29,7 @@
 구 앱 경로를 남긴 경우 지원 범위는 여기에 적는다.
 
 - `POST /v1/todos/recurring`: 마지막 지원 앱 1.14.x. 내부는 `POST /v1/todos`의 `repeat`(매주 + 날짜까지)와 같은 경로다. 날짜 없음은 이 경로에서만 옛 코드 `SYS_0002`다. 1.16.0 확인(2026-11-16 운영 읽기 전용, `User.lastSeenAppVersion`·`lastActiveAt`): 7일 활성 20명 중 1.14 이하 5명, 30일 활성 57명 중 35명이라 남긴다. 1.17.0에서 다시 보고, 7일 활성 중 1.14 이하가 5% 아래면 지운다. 최소 지원 버전·강제 업데이트는 없다. 앱 버전 관리(`app-config/app-releases`)는 설정의 업데이트 확인이 읽는 스토어 최신 버전(`latestVersion`)만 둔다. 진행 중 반복 상한은 이 경로(메모 변환의 `isRecurring`, AI 제안 수락도 같다)에서 `TODO_SERIES_LIMITS.MAX_ACTIVE_PER_USER_LEGACY`(300개)이고 거절 코드는 `TODO_0813`이다. 옛 앱이 `TODO_0842`를 몰라 `SYS_0001`로 보이기 때문이고, `TODO_0813`은 옛 서버도 이 경로에서 보내던 코드라 옛 앱에 전용 문구("카테고리 한도")가 있다. 새 경로의 30개는 그대로 `TODO_0842`다. `TODO_0812`와 `RECURRING_TODO_LIMITS.MAX_DAYS_RANGE`는 이 경로와 함께 지운다.
+- 1.4.0 전 앱의 저장 언어(`resolvePreI18nAppLocale`, `request-client.ts`): 1.4.0 전 앱은 Accept-Language를 직접 보내지 않았지만 iOS URLSession이 기기 언어(`ja-JP` 등)를 붙였고 화면은 한국어뿐이었다. 그래서 `X-App-Version`이 없거나 1.4.0보다 낮은 요청만 지원하지 않는 언어를 `ko`로 저장하고, 나머지는 앱과 같은 `resolveSupportedLocale`(`en`)이다. 1.4.0 미만 요청이 없어지거나 최소 지원 버전을 1.4.0 이상으로 올리면 지운다.
 - `GET /v1/ai/usage`: 마지막 지원 앱 1.14.x(1.15 앱은 안 쓴다). 1.17.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/ai/parse-todo`: 마지막 지원 앱 1.14.x(1.15 앱은 `POST /v1/quick-plans`를 쓴다). 응답의 `meta`도 출시 계약이다. 1.17.0에서 `/recurring`과 같이 판단한다.
 - `POST /v1/ai/parse-memo`의 `Idempotency-Key` 생략: 마지막 지원 앱 1.14.x. 헤더가 없으면 요청마다 차감한다. 1.15 앱은 항상 보낸다. 생략을 막는 것은 1.14.x 사용자가 사라진 뒤에 판단한다.

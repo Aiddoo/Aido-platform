@@ -1,4 +1,4 @@
-import type { UserRole } from "@aido/api/vocabulary";
+import type { SupportedLocale, UserRole } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
@@ -7,7 +7,6 @@ import { oauthAccountLinkConflict } from "#api/modules/identity/shared/domain/id
 import type { UserStatus } from "#api/modules/identity/users/domain/users.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { type LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import { type RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
@@ -32,7 +31,7 @@ export interface ProvisionUserCommand {
   /** 동의한 약관 버전(TERMS_VERSION.CURRENT)은 약관에 동의하지 않았으면 비운다 */
   consent: ProvisioningConsent;
   /** 가입 요청의 앱 언어. 기본 카테고리 이름에 쓴다. */
-  locale?: SupportedLocale;
+  locale: SupportedLocale;
 }
 
 /** 프로비저닝 결과 — 호출측이 사용하는 최소 신원 정보 */

@@ -206,6 +206,7 @@ export function createAnalyzeCommand(
   return {
     userId: fixture.userId,
     timezone: "Asia/Seoul",
+    locale: "ko",
     localDate: AI_ASSISTANCE_TODAY,
     trigger: "SCHEDULED",
     isFinalAttempt: false,

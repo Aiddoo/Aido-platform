@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { AiReportId } from "./ai-report-id.vo.js";

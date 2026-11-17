@@ -1,7 +1,7 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SUGGESTION_EXAMPLES_KO } from "./suggestion-examples-ko.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SUGGESTION_EXAMPLES_KO } from "./suggestion-examples.messages.js";
 
 export const SUGGESTION_SYSTEM_KO = composeSystem({
   role: `할 일 앱 아이두에서 반복 할 일을 골라 주는 역할이에요. 서버가 사용자의 최근 2주 기록으로 후보를 만들어 두었어요. 그중 반복 할 일로 등록하면 매번 다시 입력하는 수고를 덜어 줄 활동을 골라요.

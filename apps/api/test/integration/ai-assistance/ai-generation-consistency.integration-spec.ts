@@ -230,6 +230,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     return {
       userId,
       timezone: "Asia/Seoul",
+      locale: "ko",
       localDate: Temporal.PlainDate.from("2026-10-08"),
       trigger: "SCHEDULED",
       isFinalAttempt: false,
@@ -397,6 +398,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
       // When
       const report = await generation(provider).report.execute({
+        locale: "ko",
         userId,
         timezone,
         type: "WEEKLY",

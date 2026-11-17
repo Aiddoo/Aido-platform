@@ -4,8 +4,8 @@ import { mapValues } from "es-toolkit";
 import type {
   NotificationLocaleGrammar,
   NotificationNameForm,
-} from "../notification-copy-catalog.messages.js";
-import { formatNotificationCopyText } from "../notification-copy-format.messages.js";
+} from "../../notification-copy-catalog.messages.js";
+import { formatNotificationCopyText } from "../../notification-copy-format.messages.js";
 
 type JosaParticle = Parameters<typeof josa>[1];
 

@@ -1,9 +1,10 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { describeGenerationFailure } from "../../../ai-generations/application/ai-generation-failure.mapper.js";

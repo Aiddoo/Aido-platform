@@ -1,13 +1,12 @@
-import { NOTIFICATION_LIMITS } from "@aido/api/vocabulary";
+import { type Localized, NOTIFICATION_LIMITS, type SupportedLocale } from "@aido/api/vocabulary";
 import { capitalize } from "es-toolkit";
 import type { z } from "zod";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
 import { notificationCopyNotRenderable } from "../notification-copy.errors.js";
-import { EN_NOTIFICATION_GRAMMAR } from "./locales/en.messages.js";
-import { KO_NOTIFICATION_GRAMMAR } from "./locales/ko.messages.js";
+import { EN_NOTIFICATION_GRAMMAR } from "./locales/en/notification-grammar.messages.js";
+import { KO_NOTIFICATION_GRAMMAR } from "./locales/ko/notification-grammar.messages.js";
 import {
   NOTIFICATION_COPY_CATALOG,
   type NotificationCopy,
@@ -21,14 +20,13 @@ import {
 } from "./notification-copy-catalog.messages.js";
 import { formatNotificationCopyText } from "./notification-copy-format.messages.js";
 
-const KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES = 24;
-const ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES = 16;
+const NOTIFICATION_LABEL_MAX_GRAPHEMES: Localized<number> = { ko: 24, en: 16 };
 const ELLIPSIS = "…";
 
 const NOTIFICATION_GRAMMAR = {
   ko: KO_NOTIFICATION_GRAMMAR,
   en: EN_NOTIFICATION_GRAMMAR,
-} satisfies Record<SupportedLocale, NotificationLocaleGrammar>;
+} satisfies Localized<NotificationLocaleGrammar>;
 
 interface NotificationLabelPreviewInput {
   readonly label: string;
@@ -45,10 +43,7 @@ export function createNotificationLabelPreview({
   locale,
 }: NotificationLabelPreviewInput): string {
   const normalizedLabel = label.trim();
-  const maxGraphemes =
-    locale === "en"
-      ? ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES
-      : KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES;
+  const maxGraphemes = NOTIFICATION_LABEL_MAX_GRAPHEMES[locale];
   const graphemes = Array.from(
     new Intl.Segmenter(locale, { granularity: "grapheme" }).segment(normalizedLabel),
     ({ segment }) => segment,

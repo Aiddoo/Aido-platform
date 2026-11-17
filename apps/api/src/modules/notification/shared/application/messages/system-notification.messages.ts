@@ -1,6 +1,5 @@
-import type { SubscriptionPlanType } from "@aido/api/vocabulary";
+import { type SubscriptionPlanType, type SupportedLocale } from "@aido/api/vocabulary";
 
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
@@ -13,7 +12,7 @@ import { SYSTEM_COPY } from "./notification-copy-templates.messages.js";
 import { renderNotificationTemplate } from "./notification-copy.messages.js";
 
 interface LocalizedVariantInput {
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly variantContext?: NotificationVariantContext;
 }
 
@@ -33,13 +32,13 @@ type OnboardingNotificationInput =
 
 export interface MilestoneNotificationInput {
   readonly milestone: NotificationMilestone;
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
 }
 
 export function createWeeklyReportNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedVariantInput = {}): NotificationMessage {
+}: LocalizedVariantInput): NotificationMessage {
   return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_REPORT, {
     facts: {},
     locale,
@@ -48,9 +47,9 @@ export function createWeeklyReportNotificationMessage({
 }
 
 export function createMonthlyReportNotificationMessage({
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
-}: LocalizedVariantInput = {}): NotificationMessage {
+}: LocalizedVariantInput): NotificationMessage {
   return renderNotificationTemplate(SYSTEM_COPY.MONTHLY_REPORT, {
     facts: {},
     locale,
@@ -59,20 +58,20 @@ export function createMonthlyReportNotificationMessage({
 }
 
 export function createAiSuggestionNotificationMessage({
-  locale = DEFAULT_LOCALE,
-}: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
+  locale,
+}: Pick<LocalizedVariantInput, "locale">): NotificationMessage {
   return renderNotificationTemplate(SYSTEM_COPY.AI_SUGGESTION, { facts: {}, locale });
 }
 
 export function createBillingIssueNotificationMessage({
-  locale = DEFAULT_LOCALE,
-}: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
+  locale,
+}: Pick<LocalizedVariantInput, "locale">): NotificationMessage {
   return renderNotificationTemplate(SYSTEM_COPY.BILLING_ISSUE, { facts: {}, locale });
 }
 
 export function createPremiumGrantEndingNotificationMessage({
-  locale = DEFAULT_LOCALE,
-}: Pick<LocalizedVariantInput, "locale"> = {}): NotificationMessage {
+  locale,
+}: Pick<LocalizedVariantInput, "locale">): NotificationMessage {
   return renderNotificationTemplate(SYSTEM_COPY.PREMIUM_GRANT_ENDING, { facts: {}, locale });
 }
 
@@ -159,7 +158,7 @@ export function createMarketingConsentReconfirmNotificationMessage(input: {
 
 export function createWinbackNotificationMessage({
   inactiveDays,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: WinbackNotificationInput): NotificationMessage {
   const selection =
@@ -184,7 +183,7 @@ export function createWinbackNotificationMessage({
 export function createOnboardingNotificationMessage(
   input: OnboardingNotificationInput,
 ): NotificationMessage {
-  const { day, locale = DEFAULT_LOCALE, variantContext } = input;
+  const { day, locale, variantContext } = input;
   const options = { locale, variantContext };
   switch (day) {
     case 0:
@@ -237,7 +236,7 @@ const MILESTONE_COPY = {
 
 export function createMilestoneNotificationMessage({
   milestone,
-  locale = DEFAULT_LOCALE,
+  locale,
 }: MilestoneNotificationInput): NotificationMessage {
   return renderNotificationTemplate(MILESTONE_COPY[milestone], { facts: {}, locale });
 }

@@ -8,9 +8,11 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
+import {
+  type RecipientLocaleOf,
+  recipientLocaleOf,
+} from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { SchedulerPreferenceReaderPort } from "../../application/ports/scheduler-preference-reader.port.js";
-import type { UserLocaleMapReadModel } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderCacheKey, REMINDER_CACHE_TTL_MS } from "../cache/reminder-cache.keyspace.js";
 
 @Injectable()
@@ -43,20 +45,17 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
     );
   }
 
-  async findUserLocales(userIds: string[]): Promise<UserLocaleMapReadModel> {
+  async findUserLocales(userIds: string[]): Promise<RecipientLocaleOf> {
     if (userIds.length === 0) {
-      return new Map();
+      return recipientLocaleOf(new Map());
     }
     const preference = userDeliveryPreference();
     const preferences = await this.#db
       .select({ userId: preference.userId, locale: preference.locale })
       .from(preference)
       .where(inArray(preference.userId, userIds));
-    return new Map(
-      preferences.map((preference) => [
-        preference.userId,
-        resolveRecipientLocale({ storedLocale: preference.locale, lastRequestLocale: null }),
-      ]),
+    return recipientLocaleOf(
+      new Map(preferences.map((preference) => [preference.userId, preference.locale])),
     );
   }
 

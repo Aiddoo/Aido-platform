@@ -1,9 +1,9 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SCHEDULE_RULES_KO } from "../../../parsed-drafts/application/messages/schedule-rules.messages.js";
-import { PLANNING_RULES_KO } from "./planning-rules.messages.js";
-import { QUICK_PLAN_EXAMPLES_KO } from "./quick-plan-examples-ko.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_KO } from "../../../../../parsed-drafts/application/messages/schedule-rules.messages.js";
+import { PLANNING_RULES_KO } from "../../planning-rules.messages.js";
+import { QUICK_PLAN_EXAMPLES_KO } from "./quick-plan-examples.messages.js";
 
 export const QUICK_PLAN_SYSTEM_KO = composeSystem({
   role: `너는 할 일 앱 아이두의 빠른 계획 도우미다. 사용자가 말하거나 입력한 짧은 문장에서 할 일과 기록할 메모를 찾아 실행 계획(todos·memo)으로 구조화한다.

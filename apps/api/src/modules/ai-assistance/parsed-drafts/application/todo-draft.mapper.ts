@@ -5,9 +5,8 @@ import {
   type ParsedTodoData,
   parsedTodoDataSchema,
 } from "@aido/api/contracts/ai/v1";
-import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
+import { AI_PARSE_LIMITS, type Localized, type SupportedLocale } from "@aido/api/vocabulary";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { removeInvisibleCharacters } from "../../ai-generations/application/messages/untrusted-input.messages.js";
@@ -36,7 +35,7 @@ const TITLE_MAX_LENGTH = 200;
 const MEMO_TOTAL_TASK_COUNT_MAX = 100;
 
 /** 모델 대상 명령만 있는 입력에 앱 언어로 보여 줄 제목 */
-const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
+const NO_ACTION_TITLE: Localized<string> = {
   ko: "입력 확인 필요",
   en: "Needs review",
 };

@@ -31,6 +31,7 @@ describe("createRetentionNotificationMessage", () => {
     // When
     const messages = Array.from({ length: 30 }, (_, user) =>
       createRetentionNotificationMessage({
+        locale: "ko",
         stage: "D3",
         copyKey: "d3_restart",
         selectionContext: context(user),

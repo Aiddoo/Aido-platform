@@ -1,9 +1,9 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UserSettingsProvisionerPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { TodoCategoryProvisionerPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   ProvisioningConsent,
@@ -33,7 +33,7 @@ export class UserProvisioningSeederAdapter implements UserProvisioningSeederPort
     return this.#userSettingsProvisioner.seedDefaults(userId, consent);
   }
 
-  async seedDefaultCategories(userId: UserId, locale?: SupportedLocale): Promise<void> {
+  async seedDefaultCategories(userId: UserId, locale: SupportedLocale): Promise<void> {
     await this.#categoryProvisioner.seed(userId, locale);
   }
 }

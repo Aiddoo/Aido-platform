@@ -5,10 +5,10 @@ import {
   reportStatsSchema,
   timePatternItemSchema,
 } from "@aido/api/contracts/ai/v1";
+import { resolveSupportedLocale } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import type { aiReport } from "#api/platform/database/schema/ai-assistance.schema";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import {
@@ -60,7 +60,7 @@ export function toAiReport(row: AiReportRow): AiReport {
     timePatterns: parseArray(z.array(timePatternItemSchema), row.timePatterns),
     aiSummary: row.aiSummary,
     aiTips: parseArray(z.array(z.string()), row.aiTips),
-    locale: toSupportedLocale(row.locale),
+    locale: resolveSupportedLocale(row.locale),
     hasActivity: row.hasActivity,
     generatedAt: row.generatedAt,
     contentSource: contentSource.success ? contentSource.data : null,

@@ -140,19 +140,14 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     });
 
     // When
-    const locales = await fixture.reader.getLocales([
+    const localeOf = await fixture.reader.getLocales([
       UserId.reconstitute("english"),
       UserId.reconstitute("legacy"),
       UserId.reconstitute("english"),
     ]);
 
     // Then
-    expect(locales).toEqual(
-      new Map([
-        ["english", "en"],
-        ["legacy", "ko"],
-      ]),
-    );
+    expect(["english", "legacy"].map(localeOf)).toEqual(["en", "ko"]);
     expect(fixture.userSettings.batchRequests).toEqual([["english", "legacy"]]);
     expect(fixture.userSettings.singleRequests).toEqual([]);
   });
@@ -162,10 +157,9 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     const fixture = createFixture();
 
     // When
-    const locales = await fixture.reader.getLocales([]);
+    await fixture.reader.getLocales([]);
 
     // Then
-    expect(locales.size).toBe(0);
     expect(fixture.userSettings.batchRequests).toEqual([]);
   });
 });

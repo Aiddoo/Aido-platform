@@ -1,4 +1,4 @@
-import { AI_REPORT_TYPES } from "@aido/api/vocabulary";
+import { AI_REPORT_TYPES, resolveSupportedLocale } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
@@ -119,7 +119,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
               data: {
                 userId: user.id,
                 timezone,
-                locale: user.preference?.locale ?? "ko",
+                locale: resolveSupportedLocale(user.preference?.locale),
                 reportType: type,
               },
             },

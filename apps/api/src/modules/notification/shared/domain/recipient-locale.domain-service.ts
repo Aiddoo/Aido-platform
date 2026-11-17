@@ -10,3 +10,16 @@ export function resolveRecipientLocale(params: {
   );
   return resolveSupportedLocale(reported);
 }
+
+// 여러 수신자의 언어. 저장값이 없는 수신자도 resolveRecipientLocale 규칙으로 언어가 정해진다
+export type RecipientLocaleOf = (userId: string) => SupportedLocale;
+
+export function recipientLocaleOf(
+  storedLocales: ReadonlyMap<string, string | null>,
+): RecipientLocaleOf {
+  return (userId) =>
+    resolveRecipientLocale({
+      storedLocale: storedLocales.get(userId) ?? null,
+      lastRequestLocale: null,
+    });
+}

@@ -1,3 +1,4 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { omit } from "es-toolkit";
 
 import type {
@@ -30,7 +31,6 @@ import type { OperationalAlertPort } from "#api/shared/application/ports/operati
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { VoiceDigest } from "../../domain/voice-digest.aggregate.js";
 import { VOICE_NOTE_DURATION_TOLERANCE_SECONDS } from "../../domain/voice-digests.constants.js";

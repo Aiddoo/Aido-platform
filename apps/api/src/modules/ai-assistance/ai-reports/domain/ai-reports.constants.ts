@@ -1,12 +1,10 @@
-import type { AI_REPORT_TYPES, DayOfWeek } from "@aido/api/vocabulary";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { AI_REPORT_TYPES, DayOfWeek, Localized } from "@aido/api/vocabulary";
 
 /** 코치 카드(393pt 폭·13pt) 글자 수: ko 두 줄, en tip 두 줄·insight 세 줄. 넘는 문장은 자르지 않고 버린다 */
 export const REPORT_TEXT_MAX_LENGTH = {
   ko: { insight: 70, tip: 55 },
   en: { insight: 120, tip: 90 },
-} as const satisfies Record<SupportedLocale, { insight: number; tip: number }>;
+} as const satisfies Localized<{ insight: number; tip: number }>;
 export const REPORT_MAX_TIPS = 2;
 
 export interface ReportStats {

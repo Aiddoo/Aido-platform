@@ -1,3 +1,4 @@
+import { type SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
@@ -11,7 +12,6 @@ import {
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   type NudgeInteractionNotification,
@@ -63,15 +63,12 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
     if (notifications.length === 0) {
       return;
     }
-    const locales = await this.#notificationRecipientLocaleReader.getLocales(
+    const localeOf = await this.#notificationRecipientLocaleReader.getLocales(
       notifications.map((notification) => notification.recipientId),
     );
     await this.#notificationBatchPublisher.execute(
       notifications.map((notification) =>
-        this.#toNotificationData(
-          notification,
-          locales.get(notification.recipientId.value) ?? DEFAULT_LOCALE,
-        ),
+        this.#toNotificationData(notification, localeOf(notification.recipientId.value)),
       ),
     );
   }

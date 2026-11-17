@@ -13,7 +13,6 @@ import {
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   PublishNotificationBatchUseCase,
@@ -29,6 +28,7 @@ import { NotificationJobLogEvent } from "../../../shared/application/notificatio
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import type { RecipientLocaleOf } from "../../../shared/domain/recipient-locale.domain-service.js";
 import {
   createReminderOccurrenceKey,
   createSnoozedReminderMetadata,
@@ -77,7 +77,7 @@ const LATE_SKIP_COUNTER_KEY = "late-skip";
 // 묶음 작업이 함께 쓰는 조회 결과. 휴면은 반복 회차가 있을 때만 소유자마다 한 번 묻는다
 interface ReminderBatchContext {
   readonly todos: ReadonlyMap<number, ActiveTodoReadModel>;
-  readonly locales: ReadonlyMap<string, SupportedLocale>;
+  readonly localeOf: RecipientLocaleOf;
   readonly dormantSince: (userId: string) => Promise<string | null>;
 }
 
@@ -196,13 +196,13 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     );
     const userIds = uniq(jobs.map(({ data: job }) => job.data.userId));
     // 트랜잭션 밖의 서로 다른 읽기라 함께 보낸다
-    const [todos, locales] = await Promise.all([
+    const [todos, localeOf] = await Promise.all([
       this.#reader.findActiveTodos(reminderTodoIds),
       this.#recipientLocaleReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
     ]);
     return {
       todos,
-      locales,
+      localeOf,
       dormantSince: memoize((userId: string): Promise<string | null> =>
         this.#seriesOwnerDormancy.findDormantSince(UserId.reconstitute(userId)),
       ),
@@ -256,7 +256,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const message = createTodoReminderNotificationMessage({
       todoTitle: todo.title,
       stage,
-      locale: context.locales.get(userId),
+      locale: context.localeOf(userId),
       variantContext: {
         campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
         recipientId: userId,
@@ -320,7 +320,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const message = createTodoReminderSnoozedNotificationMessage({
       todoTitle: todo.title,
       timing: snoozedReminderTiming({ sentAt: now, scheduledAt: todo.scheduledAt }),
-      locale: context.locales.get(userId),
+      locale: context.localeOf(userId),
       variantContext: {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
         recipientId: userId,
@@ -461,7 +461,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   ) {
     const { todoId, userId } = job;
     const message = createTodoSeriesPausedNotificationMessage({
-      locale: context.locales.get(userId),
+      locale: context.localeOf(userId),
       variantContext: {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
         recipientId: userId,

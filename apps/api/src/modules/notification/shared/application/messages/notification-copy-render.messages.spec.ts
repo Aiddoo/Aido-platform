@@ -1,11 +1,12 @@
 import {
   NUDGE_REPLY_KINDS,
   SUBSCRIPTION_PLAN_TYPES,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
   WEATHER_CONDITIONS,
   type WeatherCondition,
 } from "@aido/api/vocabulary";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { NOTIFICATION_MILESTONES } from "../../domain/notification-milestone.constants.js";
@@ -75,7 +76,7 @@ type CopyCase = readonly [
   ) => NotificationMessage,
 ];
 
-const LOCALES: readonly SupportedLocale[] = ["ko", "en"];
+const LOCALES = SUPPORTED_LOCALES;
 const SEED_COUNT = 200;
 const TIMEZONE = "Asia/Seoul";
 

@@ -1,6 +1,8 @@
-import type { NudgeReplyKind, TodoCommentKind } from "@aido/api/vocabulary";
-
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import {
+  type NudgeReplyKind,
+  type SupportedLocale,
+  type TodoCommentKind,
+} from "@aido/api/vocabulary";
 
 import type {
   NotificationMessage,
@@ -14,12 +16,12 @@ import {
 } from "./notification-copy.messages.js";
 
 /** 친구 이름이 없을 때에도 사용자 언어에 맞는 중립적인 라벨을 쓴다. */
-export function getNotificationFriendFallback(locale: SupportedLocale = DEFAULT_LOCALE): string {
+export function getNotificationFriendFallback(locale: SupportedLocale): string {
   return notificationFriendFallback(locale);
 }
 
 interface LocalizedVariantInput {
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly variantContext?: NotificationVariantContext;
 }
 
@@ -33,7 +35,7 @@ export function createNudgeReplyNotificationMessage(
     readonly replyKind: NudgeReplyKind;
   },
 ): NotificationMessage {
-  const locale = input.locale ?? DEFAULT_LOCALE;
+  const { locale } = input;
   return renderNotificationTemplate(SOCIAL_COPY.NUDGE_REPLIED, {
     facts: {
       senderName: toNameFact(input.senderName, locale),
@@ -51,7 +53,7 @@ export function createNudgeThanksNotificationMessage(
     readonly todoTitle: string;
   },
 ): NotificationMessage {
-  const locale = input.locale ?? DEFAULT_LOCALE;
+  const { locale } = input;
   return renderNotificationTemplate(SOCIAL_COPY.NUDGE_THANKED, {
     facts: { senderName: toNameFact(input.senderName, locale), todoTitle: input.todoTitle },
     locale,
@@ -105,7 +107,7 @@ export type TodoCommentNotificationCopyInput =
 
 export function createFollowRequestNotificationMessage({
   senderName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: FollowRequestNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
@@ -118,7 +120,7 @@ export function createFollowRequestNotificationMessage({
 
 export function createFollowAcceptedNotificationMessage({
   senderName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: FollowAcceptedNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
@@ -135,7 +137,7 @@ export interface InviteJoinedNotificationInput extends LocalizedVariantInput {
 
 export function createInviteJoinedNotificationMessage({
   inviteeName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: InviteJoinedNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.INVITE_JOINED, {
@@ -152,7 +154,7 @@ export interface InviteProgressNotificationInput extends LocalizedVariantInput {
 
 export function createInviteProgressNotificationMessage({
   inviteeName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: InviteProgressNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.INVITE_PROGRESS, {
@@ -169,7 +171,7 @@ export interface InviteQualifyReminderNotificationInput extends LocalizedVariant
 
 export function createInviteQualifyReminderNotificationMessage({
   inviterName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: InviteQualifyReminderNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.INVITE_QUALIFY_REMINDER, {
@@ -188,7 +190,7 @@ export interface InviteRewardedNotificationInput extends LocalizedVariantInput {
 export function createInviteRewardedNotificationMessage({
   premiumDays,
   friendSlots,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: InviteRewardedNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.INVITE_REWARDED, {
@@ -203,7 +205,7 @@ export function createNudgeReceivedNotificationMessage({
   senderName,
   todoTitle,
   message,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: NudgeReceivedNotificationInput): NotificationMessage {
   const facts = { senderName: toNameFact(senderName, locale), todoTitle: todoTitle || null };
@@ -228,7 +230,7 @@ export function createNudgeReceivedNotificationMessage({
 export function createTodoCreationNudgeNotificationMessage({
   senderName,
   message,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: TodoCreationNudgeNotificationInput): NotificationMessage {
   if (message) {
@@ -251,7 +253,7 @@ export function createTodoCreationNudgeNotificationMessage({
 export function createCheerReceivedNotificationMessage({
   senderName,
   message,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: CheerReceivedNotificationInput): NotificationMessage {
   if (message) {
@@ -273,7 +275,7 @@ export function createCheerReceivedNotificationMessage({
 
 export function createFriendCompletedNotificationMessage({
   friendName,
-  locale = DEFAULT_LOCALE,
+  locale,
   variantContext,
 }: FriendCompletedNotificationInput): NotificationMessage {
   return renderNotificationTemplate(SOCIAL_COPY.FRIEND_COMPLETED, {
@@ -287,7 +289,7 @@ export function createFriendCompletedNotificationMessage({
 export function createTodoCommentNotificationMessage(
   input: TodoCommentNotificationCopyInput,
 ): NotificationMessage {
-  const locale = input.locale ?? DEFAULT_LOCALE;
+  const { locale } = input;
   const options = { locale, variantContext: input.variantContext };
   const senderName = toNameFact(input.senderName?.trim() || null, locale);
 

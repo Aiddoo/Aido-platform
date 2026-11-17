@@ -1,4 +1,4 @@
-import { type SupportedLocale } from "@aido/api/vocabulary";
+import { resolveSupportedLocale, type SupportedLocale } from "@aido/api/vocabulary";
 
 import { Email } from "#api/modules/identity/shared/domain/email.vo";
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
@@ -94,7 +94,8 @@ export class RegisterUseCase {
             marketingAgreedAt: marketingAgreed ? currentTime : undefined,
             marketingPushAgreedAt: marketingPushAgreed ? currentTime : undefined,
           },
-          locale: metadata?.locale,
+          // 언어를 보내지 않은 가입 요청은 옛 앱이라 한국어 카테고리로 시작한다
+          locale: resolveSupportedLocale(metadata?.locale),
         });
 
         const verificationResult = await this.#dependencies.issueVerificationCode.execute({

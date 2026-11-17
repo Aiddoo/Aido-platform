@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import { SUPPORTED_LOCALES, type SupportedLocale } from "@aido/api/vocabulary";
 
 import {
   NOTIFICATION_COPY_CATALOG,
@@ -6,7 +6,7 @@ import {
 } from "./notification-copy-catalog.messages.js";
 import { STORED_NOTIFICATION_COPY_TEMPLATES } from "./notification-copy-render.messages.js";
 
-const LOCALES: readonly SupportedLocale[] = ["ko", "en"];
+const LOCALES = SUPPORTED_LOCALES;
 
 // 기존 선택 계약 스냅샷의 그룹 이름 → notification.json 그룹
 const CATALOG_GROUPS = {

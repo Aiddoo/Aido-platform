@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -95,7 +94,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     const activeChecks = checks.filter(
       ({ userId, stage }) => sentStages.get(userId)?.has(stage) !== true,
     );
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       activeChecks.map((check) => check.userId),
     );
 
@@ -103,7 +102,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     for (const check of activeChecks) {
       const message = createWinbackNotificationMessage({
         inactiveDays: check.inactiveDays,
-        locale: locales.get(check.userId) ?? DEFAULT_LOCALE,
+        locale: localeOf(check.userId),
         variantContext: {
           campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
           recipientId: check.userId,

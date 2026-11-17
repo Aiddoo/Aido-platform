@@ -10,7 +10,6 @@ import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
@@ -40,14 +39,14 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
       return;
     }
     const userIds = notices.map((notice) => notice.userId);
-    const [locales, timezones] = await Promise.all([
+    const [localeOf, timezones] = await Promise.all([
       this.#localeReader.getLocales(userIds),
       this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
     ]);
     await this.#notificationPublisher.execute(
       notices.map((notice) => {
         const message = createPremiumTrialEndingNotificationMessage({
-          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
+          locale: localeOf(notice.userId.value),
           timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
           endsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),

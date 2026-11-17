@@ -1,7 +1,5 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
+import { DEFAULT_LOCALE, USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
-
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type { StreakState } from "../../domain/streak.vo.js";
 import type { UserPreferenceSettings } from "../../domain/user-preference.aggregate.js";

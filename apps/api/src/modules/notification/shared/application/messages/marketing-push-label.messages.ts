@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import { NOTIFICATION_COPY_CATALOG } from "./notification-copy-catalog.messages.js";
 

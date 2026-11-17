@@ -1,4 +1,4 @@
-import { resolveRecipientLocale } from "./recipient-locale.domain-service.js";
+import { recipientLocaleOf, resolveRecipientLocale } from "./recipient-locale.domain-service.js";
 
 describe("resolveRecipientLocale — 알림 수신 언어", () => {
   it.each([
@@ -60,5 +60,27 @@ describe("resolveRecipientLocale — 알림 수신 언어", () => {
 
     // Then
     expect(locale).toBe("en");
+  });
+});
+
+describe("recipientLocaleOf — 여러 수신자의 언어", () => {
+  it("저장값이 있는 수신자는 그 언어, 없는 수신자는 ko다", () => {
+    // Given
+    const storedLocales = new Map([
+      ["english", "en-US"],
+      ["korean", "ko"],
+      ["unset", null],
+    ]);
+
+    // When
+    const localeOf = recipientLocaleOf(storedLocales);
+
+    // Then
+    expect(["english", "korean", "unset", "missing"].map(localeOf)).toEqual([
+      "en",
+      "ko",
+      "ko",
+      "ko",
+    ]);
   });
 });

@@ -1,6 +1,6 @@
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import { formatIsoWeekLabel } from "#api/shared/domain/time/week-of-month";
 
 import type { ReportType } from "../../domain/ai-reports.constants.js";
@@ -21,7 +21,7 @@ const MONTH_NAMES_EN = [
   "December",
 ] as const;
 
-const MONTHLY_LABELS: Readonly<Record<SupportedLocale, (year: number, month: number) => string>> = {
+const MONTHLY_LABELS: Localized<(year: number, month: number) => string> = {
   ko: (year, month) => `${year}년 ${month}월`,
   en: (year, month) => `${MONTH_NAMES_EN[month - 1]} ${year}`,
 };

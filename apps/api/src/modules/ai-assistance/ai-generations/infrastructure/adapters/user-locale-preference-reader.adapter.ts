@@ -1,8 +1,8 @@
+import { resolveSupportedLocale } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { UserLocalePreferenceReaderPort } from "../../application/ports/user-locale-preference.reader.port.js";
@@ -21,7 +21,7 @@ export class UserLocalePreferenceReaderAdapter extends UserLocalePreferenceReade
     const preference = await this.#preferenceReader.read(userId);
     return {
       timezone: resolveTimezone(preference.timezone),
-      locale: toSupportedLocale(preference.locale),
+      locale: resolveSupportedLocale(preference.locale),
     };
   }
 }

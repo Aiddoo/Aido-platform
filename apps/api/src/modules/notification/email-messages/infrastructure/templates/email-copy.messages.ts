@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 
 import enEmail from "../../../../../i18n/en/email.json" with { type: "json" };
 import koEmail from "../../../../../i18n/ko/email.json" with { type: "json" };
@@ -9,7 +9,7 @@ type EmailCopy = typeof koEmail;
 export const EMAIL_COPY = {
   ko: koEmail,
   en: enEmail,
-} satisfies Readonly<Record<SupportedLocale, EmailCopy>>;
+} satisfies Localized<EmailCopy>;
 
 const PLACEHOLDER = /\{(\w+)\}/g;
 

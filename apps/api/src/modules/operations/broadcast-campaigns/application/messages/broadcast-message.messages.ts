@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, type SupportedLocale } from "@aido/api/vocabulary";
+import { resolveSupportedLocale, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -60,7 +60,7 @@ export function buildCampaignMessages(params: {
   };
 
   return userIds.map((userId) => {
-    const locale = recipients.get(userId.value)?.locale ?? DEFAULT_LOCALE;
+    const locale = resolveSupportedLocale(recipients.get(userId.value)?.locale);
     return toMessage(
       {
         content: contentOf(locale),

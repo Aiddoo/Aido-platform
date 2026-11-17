@@ -1,8 +1,9 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { RetentionAssignmentRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention-assignment.repository.port";
 import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
 import { RetentionD7Result } from "#api/modules/notification/retention-assignments/domain/retention-d7-result.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
   activateRetentionAssignment,
   enrollRetentionAssignment,

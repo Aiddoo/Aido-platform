@@ -1,5 +1,6 @@
 import type { WeatherReportResponse } from "@aido/api/contracts/weather/v2";
 import { ErrorCode } from "@aido/api/errors";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -20,7 +21,6 @@ import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.deco
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
 import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { type SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetWeatherReportUseCase } from "../../../application/use-cases/get-weather-report.use-case.js";
 import { resolveWeatherReportLanguage } from "../../../domain/weather-report-language.domain-service.js";

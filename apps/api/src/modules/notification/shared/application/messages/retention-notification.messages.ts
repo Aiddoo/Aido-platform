@@ -1,4 +1,5 @@
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+import { type SupportedLocale } from "@aido/api/vocabulary";
+
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
 import type {
@@ -10,7 +11,7 @@ import { RETENTION_COPY } from "./notification-copy-templates.messages.js";
 import { renderNotificationVariant } from "./notification-copy.messages.js";
 
 export type RetentionNotificationInput = RetentionNotificationCopySelection & {
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   readonly selectionContext: {
     readonly recipientId: string;
     readonly occurrenceKey: string;
@@ -20,7 +21,7 @@ export type RetentionNotificationInput = RetentionNotificationCopySelection & {
 export function createRetentionNotificationMessage(
   input: RetentionNotificationInput,
 ): NotificationMessage {
-  const locale = input.locale ?? DEFAULT_LOCALE;
+  const { locale } = input;
   const templateKey = retentionTemplateKey(input);
   const template = RETENTION_COPY[templateKey];
 

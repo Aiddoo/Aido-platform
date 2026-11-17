@@ -11,6 +11,7 @@ describe("ProvisionUser — 신규 계정과 기본 설정 생성", () => {
 
     // When
     const result = await fixture.provisionUserUseCase.execute({
+      locale: "ko",
       email: "new@example.com",
       status: "PENDING_VERIFY",
       account: { kind: "credential", hashedPassword: "digest:password" },
@@ -54,6 +55,7 @@ describe("ProvisionUser — 신규 계정과 기본 설정 생성", () => {
 
     // When
     const result = await fixture.provisionUserUseCase.execute({
+      locale: "ko",
       email: "social@example.com",
       status: "ACTIVE",
       emailVerifiedAt: AUTH_CREDENTIAL_NOW,

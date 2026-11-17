@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -117,7 +116,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         end: week.end,
       });
 
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       candidates.map((u) => u.id),
     );
 
@@ -145,7 +144,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         continue;
       }
 
-      const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
+      const locale = localeOf(user.id);
       const message = createNudgeSuggestionNotificationMessage({
         friendName: target.name ?? getNotificationFriendFallback(locale),
         locale,

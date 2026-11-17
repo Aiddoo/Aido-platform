@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 
 import type {
   AggregatedReportData,
@@ -23,7 +23,7 @@ interface ReportFallbackCopy {
 }
 
 // 차트가 숫자를 보여 주므로 AI 카드처럼 통계를 되풀이하지 않는 한 문장 + 팁 하나다.
-const reportFallbackCopy: Readonly<Record<SupportedLocale, ReportFallbackCopy>> = {
+const reportFallbackCopy: Localized<ReportFallbackCopy> = {
   ko: {
     nextPeriod: { WEEKLY: "다음 주", MONTHLY: "다음 달" },
     emptySummary: "등록된 할 일이 없어 흐름은 다음 리포트에서 함께 볼 수 있어요.",

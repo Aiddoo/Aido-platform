@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type { AiGenerationMeta } from "../../domain/ai-generation.aggregate.js";
 import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";

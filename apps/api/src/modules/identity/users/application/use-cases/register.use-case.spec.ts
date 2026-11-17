@@ -52,6 +52,15 @@ describe("Register — 이메일 계정 등록", () => {
     expect(fixture.seeder.categoryLocales).toEqual(["en"]);
   });
 
+  it("언어를 보내지 않은 가입 요청은 한국어 기본 카테고리로 시작한다", async () => {
+    // Given
+    const fixture = given();
+    // When
+    await fixture.useCase.execute({ ...input, metadata: {} });
+    // Then
+    expect(fixture.seeder.categoryLocales).toEqual(["ko"]);
+  });
+
   it("미인증 계정·프로필·동의를 저장하고 인증 메일과 등록 알림을 발송한다", async () => {
     // Given
     const fixture = given({ empty: true });

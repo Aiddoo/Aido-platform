@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { PushPayload } from "./push-provider.port.js";
@@ -8,7 +8,7 @@ export interface CreatePushNotificationPayloadInput {
   readonly notificationId: number;
   readonly dispatchId: number;
   /** 받는 사람 언어. 광고성 표기 문구에 쓴다. */
-  readonly locale?: SupportedLocale;
+  readonly locale: SupportedLocale;
   /** 발송 판단이 받는 사람 시간대로 정한 공급자 보관 시간(초) */
   readonly ttlSeconds: number;
 }

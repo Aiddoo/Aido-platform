@@ -24,10 +24,10 @@ import {
   retentionExperimentStage,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { toSupportedLocale } from "#api/shared/domain/locale";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../../application/ports/retention-assignment.repository.port.js";
 import type {
   RetentionStageCandidateReadModel,
@@ -64,7 +64,7 @@ const stageRowSchema = z.object({
   stage: z.enum(RETENTION_STAGE_NAMES),
   startedAt: rawInstantSchema,
   timezone: z.string(),
-  locale: z.string(),
+  locale: z.string().nullable(),
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
   marketingPushAgreedAt: nullableRawInstantSchema,
@@ -320,7 +320,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
 				due."stage",
 				assignment."startedAt" AT TIME ZONE 'UTC' AS "startedAt",
 				due.timezone AS "timezone",
-				COALESCE(${preference.locale}, 'ko') AS "locale",
+				${preference.locale} AS "locale",
 				COALESCE(${preference.pushEnabled}, FALSE) AS "pushEnabled",
 				COALESCE(${preference.nightPushEnabled}, FALSE) AS "nightPushEnabled",
 				${consent.marketingPushAgreedAt} AT TIME ZONE 'UTC' AS "marketingPushAgreedAt",
@@ -369,7 +369,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
 
     return rows.map((row) => ({
       ...row,
-      locale: toSupportedLocale(row.locale),
+      locale: resolveRecipientLocale({ storedLocale: row.locale, lastRequestLocale: null }),
       incompleteCount: row.todoCount - row.completedCount,
     }));
   }

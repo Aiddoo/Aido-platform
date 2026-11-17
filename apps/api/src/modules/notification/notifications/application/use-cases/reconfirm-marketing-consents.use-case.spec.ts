@@ -32,8 +32,7 @@ function createReconfirm(
       },
     },
     localeReader: {
-      getLocales: async (users) =>
-        new Map(users.map(({ value: userId }) => [userId, userId.endsWith("en") ? "en" : "ko"])),
+      getLocales: async () => (userId) => (userId.endsWith("en") ? "en" : "ko"),
     },
     timezoneReader: {
       getTimezones: async (userIds) => new Map(userIds.map((userId) => [userId, "Asia/Seoul"])),

@@ -1,3 +1,4 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
@@ -195,7 +196,7 @@ describe("AI 리포트 E2E", () => {
     await client.insert(todo).values(row);
   }
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s 리포트는 실제 생성·저장 후 소유자 HTTP에 같은 문구로 전달된다",
     async (locale) => {
       // Given

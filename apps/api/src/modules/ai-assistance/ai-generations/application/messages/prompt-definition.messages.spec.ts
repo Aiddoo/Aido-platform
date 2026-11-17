@@ -1,3 +1,5 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { topLevelTags } from "#test/fixtures/ai-prompt.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
@@ -51,7 +53,7 @@ describe("프롬프트 kit", () => {
     expect(prompt.match(/<\/transcript>/g)).toHaveLength(1);
   });
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "%s 보안 규칙은 데이터 블록·스키마 규칙과 고른 음성 규칙만 담는다",
     (locale) => {
       // Given

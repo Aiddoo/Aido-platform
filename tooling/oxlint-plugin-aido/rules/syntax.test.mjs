@@ -58,3 +58,18 @@ tester.run('no-role-comparison', rules['no-role-comparison'], {
     { code: 'const isTrial = PREMIUM_SOURCE.TRIAL !== source;', errors: 1 },
   ],
 });
+
+tester.run('no-locale-literal-comparison', rules['no-locale-literal-comparison'], {
+  valid: [
+    'const label = LABELS[locale];',
+    "const isEmpty = name === '';",
+    "const same = status === 'ok';",
+    "const plan = type === 'en';",
+  ],
+  invalid: [
+    { code: "if (locale === 'ko') {}", errors: 1 },
+    { code: "const english = 'en' !== input.locale;", errors: 1 },
+    { code: "const korean = request.language == 'ko-KR';", errors: 1 },
+    { code: "switch (locale) { case 'en': break; }", errors: 1 },
+  ],
+});

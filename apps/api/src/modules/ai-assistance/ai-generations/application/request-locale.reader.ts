@@ -1,5 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { UserLocalePreferenceReaderPort } from "./ports/user-locale-preference.reader.port.js";
 import type { UserLocalePreferenceReadModel } from "./read-models/user-locale-preference.read-model.js";

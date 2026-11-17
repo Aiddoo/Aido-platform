@@ -1,9 +1,9 @@
-import { PLANNING_RULES_KO } from "../../../action-plan-drafts/application/messages/planning-rules.messages.js";
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { PARSE_MEMO_EXAMPLES_KO } from "./parse-memo-examples-ko.messages.js";
-import { SCHEDULE_RULES_KO } from "./schedule-rules.messages.js";
+import { PLANNING_RULES_KO } from "../../../../../action-plan-drafts/application/messages/planning-rules.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_KO } from "../../schedule-rules.messages.js";
+import { PARSE_MEMO_EXAMPLES_KO } from "./parse-memo-examples.messages.js";
 
 const SPLIT_RULES = `<split_rules>
 - 서로 다른 주제나 맥락은 별도의 할 일로 나눈다.

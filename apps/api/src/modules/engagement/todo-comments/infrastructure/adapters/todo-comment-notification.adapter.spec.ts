@@ -36,9 +36,8 @@ class RecordingLocaleReader implements NotificationRecipientLocaleReaderPort {
     return "ko";
   }
 
-  async getLocales(users: readonly UserId[]): Promise<ReadonlyMap<string, SupportedLocale>> {
-    const userIds = users.map((user) => user.value);
-    return new Map(userIds.map((userId) => [userId, "ko"]));
+  async getLocales(): Promise<() => SupportedLocale> {
+    return () => "ko";
   }
 }
 

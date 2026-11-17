@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { Localized } from "@aido/api/vocabulary";
 
 import enNotification from "../../../../../i18n/en/notification.json" with { type: "json" };
 import koNotification from "../../../../../i18n/ko/notification.json" with { type: "json" };
@@ -10,7 +10,7 @@ export type NotificationCopyCatalog = typeof koNotification;
 export const NOTIFICATION_COPY_CATALOG = {
   ko: koNotification,
   en: enNotification,
-} satisfies Record<SupportedLocale, NotificationCopyCatalog>;
+} satisfies Localized<NotificationCopyCatalog>;
 
 /** 카탈로그 문구 하나. 복수형은 `count` 인자로 CLDR 범주를 고른다. */
 export type NotificationCopyText = string | { readonly other: string };

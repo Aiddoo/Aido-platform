@@ -1,4 +1,3 @@
-import { DEFAULT_LOCALE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
@@ -32,7 +31,7 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
     userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, BroadcastRecipientReadModel>> {
     const ids = userIds.map((userId) => userId.value);
-    const [locales, timezones] = await Promise.all([
+    const [localeOf, timezones] = await Promise.all([
       this.#localeReader.getLocales(ids.map((userId) => UserId.reconstitute(userId))),
       this.#timezoneReader.getTimezones(ids),
     ]);
@@ -40,7 +39,7 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
       ids.map((id) => [
         id,
         {
-          locale: locales.get(id) ?? DEFAULT_LOCALE,
+          locale: localeOf(id),
           timeZone: TimeZone.reconstitute(timezones.get(id) ?? TimeZone.SEOUL.value),
         },
       ]),

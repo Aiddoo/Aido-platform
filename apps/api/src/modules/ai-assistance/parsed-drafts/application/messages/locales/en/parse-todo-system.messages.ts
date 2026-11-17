@@ -1,8 +1,8 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { PARSE_TODO_EXAMPLES_EN } from "./parse-todo-examples-en.messages.js";
-import { SCHEDULE_RULES_EN } from "./schedule-rules.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SCHEDULE_RULES_EN } from "../../schedule-rules.messages.js";
+import { PARSE_TODO_EXAMPLES_EN } from "./parse-todo-examples.messages.js";
 
 const TITLE_RULES = `<title_rules>
 - title is the core action only, kept short. Remove date, time, and repetition phrases, filler such as "I need to" or "remember to", and emojis.

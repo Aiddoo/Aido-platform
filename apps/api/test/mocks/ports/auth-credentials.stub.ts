@@ -106,7 +106,7 @@ export class StubUserProvisioningSeeder implements UserProvisioningSeederPort {
   }
   async seedDefaultCategories(
     userId: UserId,
-    locale?: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1],
+    locale: Parameters<UserProvisioningSeederPort["seedDefaultCategories"]>[1],
   ): Promise<void> {
     this.categoryUserIds.push(userId.value);
     this.categoryLocales.push(locale);

@@ -1,7 +1,7 @@
-import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
-import { SUGGESTION_EXAMPLES_EN } from "./suggestion-examples-en.messages.js";
+import { buildLanguagePolicy } from "../../../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../../../ai-generations/application/messages/security-rules.messages.js";
+import { SUGGESTION_EXAMPLES_EN } from "./suggestion-examples.messages.js";
 
 export const SUGGESTION_SYSTEM_EN = composeSystem({
   role: `You pick repeating to-dos in the Aido to-do app. The server has already built candidates from the user's last two weeks of records. Pick the activities that would save the user from adding them again each time if they repeated automatically.

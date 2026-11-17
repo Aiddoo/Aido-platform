@@ -1,6 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
   NotificationHistoryReader,
@@ -103,14 +102,14 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       return { sent: 0 };
     }
 
-    const locales = await this.#dependencies.preferenceReader.findUserLocales(
+    const localeOf = await this.#dependencies.preferenceReader.findUserLocales(
       finalRecords.map((r) => r.userId),
     );
     const notifications = finalRecords.map((r) => {
       const message = createWeeklyAchievementNotificationMessage({
         completedCount: r.completedTodos,
         totalCount: r.totalTodos,
-        locale: locales.get(r.userId) ?? DEFAULT_LOCALE,
+        locale: localeOf(r.userId),
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
           recipientId: r.userId,

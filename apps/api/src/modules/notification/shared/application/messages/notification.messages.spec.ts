@@ -1,3 +1,5 @@
+import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
+
 import { createNotificationLabelPreview } from "./notification-copy.messages.js";
 import {
   createEveningReminderNotificationMessage,
@@ -106,10 +108,12 @@ describe("알림 문구 생성", () => {
   it("같은 variant context는 재시도에도 같은 결과를 만든다", () => {
     // When
     const first = createMorningReminderNotificationMessage({
+      locale: "ko",
       count: 4,
       variantContext: VARIANT_CONTEXT,
     });
     const retry = createMorningReminderNotificationMessage({
+      locale: "ko",
       count: 4,
       variantContext: VARIANT_CONTEXT,
     });
@@ -143,6 +147,7 @@ describe("알림 문구 생성", () => {
 
     // When
     const message = createTodoReminderNotificationMessage({
+      locale: "ko",
       todoTitle,
       stage: "60min",
     });
@@ -160,7 +165,11 @@ describe("알림 문구 생성", () => {
     const todoTitle = "🏃‍♀️".repeat(40);
 
     // When
-    const message = createNudgeReceivedNotificationMessage({ senderName: "민재", todoTitle });
+    const message = createNudgeReceivedNotificationMessage({
+      locale: "ko",
+      senderName: "민재",
+      todoTitle,
+    });
 
     // Then
     expect(message.title).not.toContain(todoTitle);
@@ -200,6 +209,7 @@ describe("알림 문구 생성", () => {
 
     // When
     const message = createNudgeReceivedNotificationMessage({
+      locale: "ko",
       senderName: "민재",
       message: userMessage,
     });
@@ -211,6 +221,7 @@ describe("알림 문구 생성", () => {
   it("공유 schema 최대 입력을 렌더링한다", () => {
     // When
     const message = createNudgeReceivedNotificationMessage({
+      locale: "ko",
       senderName: "가".repeat(20),
       todoTitle: "나".repeat(200),
       message: "다".repeat(200),
@@ -226,6 +237,7 @@ describe("알림 문구 생성", () => {
     // When
     const create = () =>
       createNudgeReceivedNotificationMessage({
+        locale: "ko",
         senderName: "민재",
         message: "가".repeat(501),
       });
@@ -238,14 +250,18 @@ describe("알림 문구 생성", () => {
     "%s activity를 의미에 맞게 렌더링한다 (%o)",
     (_label, activity, text) => {
       // When
-      const message = createTodoCommentNotificationMessage({ ...activity, senderName: "민재" });
+      const message = createTodoCommentNotificationMessage({
+        locale: "ko",
+        ...activity,
+        senderName: "민재",
+      });
 
       // Then
       expect(`${message.title} ${message.body}`).toContain(text);
     },
   );
 
-  it.each(["ko", "en"] as const)(
+  it.each(SUPPORTED_LOCALES)(
     "답글에 단 답글은 내 댓글이 아니라 내 답글로 알린다 (%s)",
     (locale) => {
       // Given
@@ -392,6 +408,7 @@ describe("알림 문구 생성", () => {
     // When
     const create = () =>
       createTodoCommentNotificationMessage({
+        locale: "ko",
         activityKind: "COMMENT",
         senderName: "민재",
         commentCount: 0,
@@ -420,7 +437,7 @@ describe("알림 문구 생성", () => {
     };
 
     // When
-    const message = createBillingIssueNotificationMessage();
+    const message = createBillingIssueNotificationMessage({ locale: "ko" });
 
     // Then
     expect(message).toEqual(expected);
@@ -431,6 +448,7 @@ describe("알림 문구 생성", () => {
     (templateKey, input) => {
       // When
       const message = createEveningReminderNotificationMessage({
+        locale: "ko",
         ...input,
         variantContext: VARIANT_CONTEXT,
       });
@@ -445,6 +463,7 @@ describe("알림 문구 생성", () => {
   it.each(ONBOARDING_CASES)("%s 온보딩 알림을 지원한다", (templateKey, input) => {
     // When
     const message = createOnboardingNotificationMessage({
+      locale: "ko",
       ...input,
       variantContext: VARIANT_CONTEXT,
     });
@@ -456,10 +475,12 @@ describe("알림 문구 생성", () => {
   it("완료율에 맞는 주간 성취 copy를 선택한다", () => {
     // When
     const allCompleted = createWeeklyAchievementNotificationMessage({
+      locale: "ko",
       completedCount: 10,
       totalCount: 10,
     });
     const mostCompleted = createWeeklyAchievementNotificationMessage({
+      locale: "ko",
       completedCount: 9,
       totalCount: 10,
     });
