@@ -1,6 +1,6 @@
 import type { QuickPlanSource } from "@aido/api/vocabulary";
 
-import type { MeteredFeatureQuota } from "#api/modules/access/quotas/access-quotas.public";
+import type { MeteredFeatureQuotaReadModel } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
@@ -40,7 +40,7 @@ export interface CreateQuickPlanCommand {
 export interface CreatedQuickPlan {
   readonly plan: ActionPlanReadModel;
   /** 이 요청을 반영한 AI_PARSE 한도. 결과는 주되 한도를 읽지 못했으면 null이다 */
-  readonly featureQuota: MeteredFeatureQuota | null;
+  readonly featureQuota: MeteredFeatureQuotaReadModel | null;
   readonly charged: boolean;
 }
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { UserProfileInvalidatorPort } from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

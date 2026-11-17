@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { z } from "zod";
 
-import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
+import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { AI_SUGGESTION_QUEUE } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/ai-suggestion.queue";
 import {

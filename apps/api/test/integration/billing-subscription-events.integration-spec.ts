@@ -2,7 +2,7 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { StoreEntitlementReaderPort } from "#api/modules/billing/premium-grants/application/ports/store-entitlement.reader.port";
 import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";

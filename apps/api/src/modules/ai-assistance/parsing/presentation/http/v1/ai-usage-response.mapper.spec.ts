@@ -1,10 +1,12 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import type { MeteredFeatureQuota } from "#api/modules/access/quotas/access-quotas.public";
+import type { MeteredFeatureQuotaReadModel } from "#api/modules/access/quota-charges/access-quota-charges.public";
 
 import { toAiUsageData } from "./ai-usage-response.mapper.js";
 
-function featureQuota(overrides: Partial<MeteredFeatureQuota>): MeteredFeatureQuota {
+function featureQuota(
+  overrides: Partial<MeteredFeatureQuotaReadModel>,
+): MeteredFeatureQuotaReadModel {
   return {
     feature: "AI_PARSE",
     allowed: true,

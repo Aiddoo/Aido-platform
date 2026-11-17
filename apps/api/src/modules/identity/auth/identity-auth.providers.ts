@@ -1,4 +1,4 @@
-import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";

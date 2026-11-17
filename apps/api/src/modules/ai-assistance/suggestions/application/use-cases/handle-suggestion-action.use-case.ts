@@ -3,7 +3,7 @@ import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import {
   TodoCategoryId,

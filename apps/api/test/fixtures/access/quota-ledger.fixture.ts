@@ -1,10 +1,10 @@
-import { CommitQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/commit-quota-reservation.use-case";
-import { GetMeteredFeatureQuotaUseCase } from "#api/modules/access/quotas/application/use-cases/get-metered-feature-quota.use-case";
-import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quotas/application/use-cases/refund-abandoned-quota-reservations.use-case";
-import { RefundQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/refund-quota-reservation.use-case";
-import { ReopenQuotaReservationUseCase } from "#api/modules/access/quotas/application/use-cases/reopen-quota-reservation.use-case";
-import { ReserveQuotaUseCase } from "#api/modules/access/quotas/application/use-cases/reserve-quota.use-case";
-import { QuotaLedgerAdapter } from "#api/modules/access/quotas/infrastructure/adapters/quota-ledger.adapter";
+import { CommitQuotaReservationUseCase } from "#api/modules/access/quota-charges/application/use-cases/commit-quota-reservation.use-case";
+import { GetMeteredFeatureQuotaUseCase } from "#api/modules/access/quota-charges/application/use-cases/get-metered-feature-quota.use-case";
+import { RefundAbandonedQuotaReservationsUseCase } from "#api/modules/access/quota-charges/application/use-cases/refund-abandoned-quota-reservations.use-case";
+import { RefundQuotaReservationUseCase } from "#api/modules/access/quota-charges/application/use-cases/refund-quota-reservation.use-case";
+import { ReopenQuotaReservationUseCase } from "#api/modules/access/quota-charges/application/use-cases/reopen-quota-reservation.use-case";
+import { ReserveQuotaUseCase } from "#api/modules/access/quota-charges/application/use-cases/reserve-quota.use-case";
+import { QuotaLedgerAdapter } from "#api/modules/access/quota-charges/infrastructure/adapters/quota-ledger.adapter";
 import {
   NO_FEATURE_GRANTS,
   type FeatureGrants,

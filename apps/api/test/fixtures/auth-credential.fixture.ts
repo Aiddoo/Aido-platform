@@ -2,12 +2,12 @@ import type { AccessTier } from "@aido/api/vocabulary";
 
 import type {
   EntitlementReaderPort,
-  UserEntitlements,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+  UserEntitlementsReadModel,
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type {
-  MeteredFeatureQuota,
+  MeteredFeatureQuotaReadModel,
   QuotaLedgerPort,
-} from "#api/modules/access/quotas/access-quotas.public";
+} from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { planOfTier } from "#api/modules/access/shared/domain/entitlement.domain-service";
 import type {
   PremiumAccess,
@@ -172,7 +172,7 @@ export class StubCurrentUserAccess implements Pick<EntitlementReaderPort, "getEn
   readonly tiers = new Map<string, AccessTier>();
   readonly activeSubscriptionUserIds = new Set<string>();
 
-  async getEntitlements(userId: UserId): Promise<UserEntitlements> {
+  async getEntitlements(userId: UserId): Promise<UserEntitlementsReadModel> {
     const tier = this.tiers.get(userId.value) ?? "FREE";
     return {
       tier,
@@ -187,7 +187,7 @@ class StubCurrentUserQuotaLedger implements Pick<QuotaLedgerPort, "read"> {
   used = 0;
   resetsAt = "2026-11-30T15:00:00.000Z";
 
-  async read(_userId: UserId): Promise<MeteredFeatureQuota> {
+  async read(_userId: UserId): Promise<MeteredFeatureQuotaReadModel> {
     return {
       feature: "AI_PARSE",
       allowed: true,

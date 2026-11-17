@@ -1,6 +1,6 @@
 import { type FactoryProvider, Logger, type Provider } from "@nestjs/common";
 
-import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
+import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

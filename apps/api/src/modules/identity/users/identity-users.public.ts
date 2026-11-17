@@ -1,4 +1,5 @@
 export { UserActivityReaderPort } from "./application/ports/user-activity.reader.port.js";
+export { UserAiUsageCounterPort } from "./application/ports/user-ai-usage-counter.port.js";
 export { UserAppVersionReaderPort } from "./application/ports/user-app-version.reader.port.js";
 export { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 export { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";

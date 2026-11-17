@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { ReminderTimezoneCachePort as NotificationReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

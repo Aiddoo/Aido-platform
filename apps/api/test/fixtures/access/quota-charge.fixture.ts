@@ -1,7 +1,7 @@
 import {
   QuotaCharge,
   type QuotaChargePrimitives,
-} from "#api/modules/access/quotas/domain/quota-charge.aggregate";
+} from "#api/modules/access/quota-charges/domain/quota-charge.aggregate";
 
 import { ACCESS_FIXTURE_NOW, ACCESS_FIXTURE_USER_ID } from "./access-user.fixture.js";
 

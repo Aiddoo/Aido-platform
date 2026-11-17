@@ -175,7 +175,7 @@ sequenceDiagram
 
 | Context                           | slice                                                                                                              |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| identity · access · billing       | `auth`·`users`·`preferences` · `entitlements`·`quotas` · `subscriptions`·`premium-grants`                          |
+| identity · access · billing       | `auth`·`users`·`preferences` · `feature-grants`·`quota-charges` · `subscriptions`·`premium-grants`                 |
 | planning · notes · engagement     | `todos`·`todo-series`·`categories` · `memos` · `comments`                                                          |
 | social                            | `friends`·`blocks`·`cheers`·`nudges`·`invites`·`reports`                                                           |
 | notification · insights           | `inbox`·`push`·`email`·`reminders`·`retention` · `daily-completions`·`weekly-achievements`                         |

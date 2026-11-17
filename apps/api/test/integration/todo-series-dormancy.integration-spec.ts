@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/reminders/infrastructure/adapters/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";

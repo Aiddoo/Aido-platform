@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
+import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { AiAssistanceGenerationModule } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
@@ -13,7 +13,7 @@ import { VOICE_VOICE_DIGESTS_PROVIDERS } from "./voice-voice-digests.providers.j
 /** 녹음 정리. 기기가 전사한 글자만 받고 녹음도 전사도 저장하지 않는다. */
 @Module({
   imports: [
-    AccessQuotasModule,
+    AccessQuotaChargesModule,
     AiAssistanceGenerationModule,
     AiAssistanceParsingModule,
     AiAssistancePlanningModule,

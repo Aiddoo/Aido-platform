@@ -1,4 +1,4 @@
-import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // identity가 읽는 공개 모양이라 resetsAt은 아직 Date다

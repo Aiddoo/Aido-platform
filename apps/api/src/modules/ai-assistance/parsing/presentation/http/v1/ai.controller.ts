@@ -8,7 +8,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
-import { RequireQuota } from "#api/modules/access/quotas/access-quotas.public";
+import { RequireQuota } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import {
   CurrentUser,
   type CurrentUserPayload,

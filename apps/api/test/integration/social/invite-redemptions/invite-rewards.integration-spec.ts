@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { and, count, eq, inArray } from "drizzle-orm";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { InviteNotifierPort } from "#api/modules/social/invite-redemptions/application/ports/invite-notifier.port";
@@ -27,7 +27,7 @@ import {
   inviteRedemption,
   notification,
   premiumGrant,
-  resourceBonus,
+  featureGrant,
   rewardGrant,
   user as userTable,
 } from "#api/platform/database/schema/index";
@@ -220,9 +220,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
   });
 
@@ -259,9 +259,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     });
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([
       { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요" },
@@ -464,9 +464,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([{ userId: inviterId, body: expect.any(String) }]);
     expect(

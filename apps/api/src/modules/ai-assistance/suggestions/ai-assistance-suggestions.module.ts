@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessQuotasModule } from "#api/modules/access/quotas/access-quotas.public";
+import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
@@ -21,7 +21,7 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
 @Module({
   imports: [
     ConfigModule.forFeature(aiAssistanceSuggestionsConfig),
-    AccessQuotasModule,
+    AccessQuotaChargesModule,
     IdentitySettingsModule,
     IdentityUserAccessModule,
     AiAssistanceGenerationModule,

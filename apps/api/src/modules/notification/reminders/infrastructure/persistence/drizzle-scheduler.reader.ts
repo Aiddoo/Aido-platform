@@ -8,7 +8,7 @@ import { z } from "zod";
 import {
   freeAccessCondition,
   premiumAccessCondition,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,

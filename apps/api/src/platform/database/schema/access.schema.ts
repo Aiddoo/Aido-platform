@@ -17,7 +17,7 @@ import { instant } from "../columns/temporal-columns.js";
 import { quotaChargeStatus, quotaMeter, resourceType } from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
-export const resourceBonus = pgTable(
+export const featureGrant = pgTable(
   "ResourceBonus",
   {
     createdAt: instant()

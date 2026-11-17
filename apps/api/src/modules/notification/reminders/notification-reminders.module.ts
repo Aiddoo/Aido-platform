@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
@@ -27,7 +27,7 @@ import {
     NotificationPushModule,
     WeatherForecastsModule,
     InsightsWeeklyAchievementsModule,
-    AccessEntitlementsModule,
+    AccessFeatureGrantsQueriesModule,
     IdentityUserAccessModule,
     PlanningTodoQueriesModule,
     ConfigModule.forFeature(notificationRetentionConfig),

@@ -1,4 +1,4 @@
-import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";

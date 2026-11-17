@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import {

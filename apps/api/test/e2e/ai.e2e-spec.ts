@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
-import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
+import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 /**
  * AI 모듈 E2E 테스트

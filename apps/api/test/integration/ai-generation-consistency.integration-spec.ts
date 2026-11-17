@@ -2,10 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 
-import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
-import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
-import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
-import { DrizzleAccessStateReader } from "#api/modules/access/entitlements/infrastructure/persistence/drizzle-access-state.reader";
+import { GetResolvedAccessUseCase } from "#api/modules/access/feature-grants/application/use-cases/get-resolved-access.use-case";
+import { EntitlementCacheAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-cache.adapter";
+import { EntitlementReaderAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-reader.adapter";
+import { DrizzleAccessStateReader } from "#api/modules/access/feature-grants/infrastructure/persistence/drizzle-access-state.reader";
 import type {
   AiGenerationRequest,
   AiGenerationResult,

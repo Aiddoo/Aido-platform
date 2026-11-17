@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 import { assert } from "vitest";
 
-import { EntitlementCacheKey } from "#api/modules/access/entitlements/infrastructure/cache/entitlement-cache.keyspace";
+import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
 import { toAiReportResponse } from "#api/modules/ai-assistance/reports/presentation/http/v1/ai-report-response.mapper";

@@ -13,7 +13,7 @@ import request from "supertest";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
-import { resourceBonus, user as userTable } from "#api/platform/database/schema/index";
+import { featureGrant, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
@@ -109,7 +109,7 @@ describe("팔로우 리소스 제한 E2E", () => {
         "follow-limit-bonus@test.com",
         password,
       );
-      await testContext.testDatabase.getClient().insert(resourceBonus).values({
+      await testContext.testDatabase.getClient().insert(featureGrant).values({
         userId: user.userId,
         resource: "FRIEND",
         quantity: 1,
@@ -152,7 +152,7 @@ describe("팔로우 리소스 제한 E2E", () => {
       try {
         const email = "follow-limit-grant@test.com";
         const user = await testContext.helpers.createVerifiedUser(email, password);
-        await testContext.testDatabase.getClient().insert(resourceBonus).values({
+        await testContext.testDatabase.getClient().insert(featureGrant).values({
           userId: user.userId,
           resource: "FRIEND",
           quantity: 1,

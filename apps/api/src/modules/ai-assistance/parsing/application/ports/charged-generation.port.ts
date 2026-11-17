@@ -1,9 +1,9 @@
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
 import type {
-  MeteredFeatureQuota,
-  QuotaReservation,
-} from "#api/modules/access/quotas/access-quotas.public";
+  MeteredFeatureQuotaReadModel,
+  QuotaReservationReadModel,
+} from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { AiTaskId } from "../../../generation/application/ports/ai-generator.port.js";
@@ -23,11 +23,11 @@ export interface ChargedGenerationResult<T> {
   /** 끝난 뒤에도 횟수가 차감된 상태인지. 환불·확정을 마치지 못했으면 실제 상태에 맞춰 답한다. */
   readonly charged: boolean;
   /** 결과를 준 뒤 한도를 읽지 못했으면 null이다. 차감한 결과를 잃지 않으려고 오류로 바꾸지 않는다. */
-  readonly featureQuota: MeteredFeatureQuota | null;
+  readonly featureQuota: MeteredFeatureQuotaReadModel | null;
 }
 
 export interface SettleChargedGenerationInput<T> {
-  readonly reservation: QuotaReservation;
+  readonly reservation: QuotaReservationReadModel;
   readonly userId: UserId;
   readonly feature: MeteredFeatureKey;
   readonly task: AiTaskId;
@@ -44,7 +44,7 @@ export abstract class ChargedGenerationPort {
   abstract settle<T>(input: SettleChargedGenerationInput<T>): Promise<ChargedGenerationResult<T>>;
   /** 이미 있는 결과를 돌려주며 그 결과의 예약을 확정한다. 확정했으면 true */
   abstract commit(input: {
-    readonly reservation: QuotaReservation;
+    readonly reservation: QuotaReservationReadModel;
     readonly task: AiTaskId;
   }): Promise<boolean>;
   /** 확정·환불 뒤의 한도 읽기. 실패해도 이미 만든 결과를 잃지 않게 null을 돌려준다(응답 칸은 optional이다). */
@@ -52,5 +52,5 @@ export abstract class ChargedGenerationPort {
     readonly userId: UserId;
     readonly feature: MeteredFeatureKey;
     readonly task: AiTaskId;
-  }): Promise<MeteredFeatureQuota | null>;
+  }): Promise<MeteredFeatureQuotaReadModel | null>;
 }

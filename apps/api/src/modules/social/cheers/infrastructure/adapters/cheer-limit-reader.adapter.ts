@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 

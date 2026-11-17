@@ -152,8 +152,8 @@ export const relations = defineRelations(schema, (r) => ({
       alias: "ReminderNudge_senderId_fkey",
     }),
   },
-  resourceBonus: {
-    user: r.one.user({ from: r.resourceBonus.userId, to: r.user.id, optional: false }),
+  featureGrant: {
+    user: r.one.user({ from: r.featureGrant.userId, to: r.user.id, optional: false }),
   },
   retentionExperimentAssignment: {
     user: r.one.user({
@@ -278,7 +278,7 @@ export const relations = defineRelations(schema, (r) => ({
     inviteeRedemption: r.one.inviteRedemption({ alias: "InviteRedemption_inviteeId_fkey" }),
     rewardGrants: r.many.rewardGrant(),
     premiumGrants: r.many.premiumGrant(),
-    resourceBonuses: r.many.resourceBonus(),
+    featureGrants: r.many.featureGrant(),
     initiatedBlocks: r.many.userBlock({ alias: "UserBlock_blockerId_fkey" }),
     receivedBlocks: r.many.userBlock({ alias: "UserBlock_blockedId_fkey" }),
     filedReports: r.many.userReport({ alias: "UserReport_reporterId_fkey" }),

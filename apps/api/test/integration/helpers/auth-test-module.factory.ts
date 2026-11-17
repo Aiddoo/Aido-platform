@@ -3,8 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
 
-import { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { EntitlementCacheAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-cache.adapter";
+import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { EntitlementCacheAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-cache.adapter";
 import { AuthAccountRepositoryPort } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
 import {
   AuthCachePort,

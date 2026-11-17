@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import { UserSubscriptionProjectionRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/user-subscription-projection.repository.port";
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";

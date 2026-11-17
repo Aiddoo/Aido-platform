@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   EntitlementReaderPort,
   isExemptFromDormancy,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series-dormancy.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

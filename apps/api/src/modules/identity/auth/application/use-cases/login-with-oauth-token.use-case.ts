@@ -1,6 +1,6 @@
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import {
   AuthPersistenceConflict,
   emailAlreadyRegistered,

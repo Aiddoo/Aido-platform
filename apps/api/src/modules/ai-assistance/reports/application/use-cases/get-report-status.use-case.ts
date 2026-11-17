@@ -1,7 +1,7 @@
 import {
   assertEntitled,
   type EntitlementReaderPort,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/notification-reminders.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

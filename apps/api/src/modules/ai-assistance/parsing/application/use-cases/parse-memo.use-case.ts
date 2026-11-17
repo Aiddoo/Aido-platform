@@ -4,9 +4,9 @@ import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
 
 import type {
-  MeteredFeatureQuota,
+  MeteredFeatureQuotaReadModel,
   QuotaLedgerPort,
-} from "#api/modules/access/quotas/access-quotas.public";
+} from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -42,7 +42,7 @@ export interface ParseMemoResult {
   data: ParsedMemoData;
   meta: ParseMemoMeta;
   /** 이번 요청의 확정·환불을 반영한 AI_PARSE 한도·사용량. 읽지 못했으면 null이고 응답에서 빠진다 */
-  featureQuota: MeteredFeatureQuota | null;
+  featureQuota: MeteredFeatureQuotaReadModel | null;
 }
 
 /**

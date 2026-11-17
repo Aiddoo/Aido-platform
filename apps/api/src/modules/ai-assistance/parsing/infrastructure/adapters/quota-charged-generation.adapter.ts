@@ -2,10 +2,10 @@ import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type {
-  MeteredFeatureQuota,
+  MeteredFeatureQuotaReadModel,
   QuotaLedgerPort,
-  QuotaReservation,
-} from "#api/modules/access/quotas/access-quotas.public";
+  QuotaReservationReadModel,
+} from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -72,7 +72,7 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
   }
 
   async commit(input: {
-    readonly reservation: QuotaReservation;
+    readonly reservation: QuotaReservationReadModel;
     readonly task: AiTaskId;
   }): Promise<boolean> {
     const committed = await this.#dependencies.quota.commit(input.reservation);
@@ -80,7 +80,7 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
       this.#dependencies.logger.warn({
         event: AiGenerationLogEvent.COMMIT_MISSED,
         task: input.task,
-        chargeId: input.reservation.chargeId,
+        chargeId: input.reservation.chargeId.value,
       });
     }
     return committed;
@@ -90,7 +90,7 @@ export class QuotaChargedGenerationAdapter extends ChargedGenerationPort {
     readonly userId: UserId;
     readonly feature: MeteredFeatureKey;
     readonly task: AiTaskId;
-  }): Promise<MeteredFeatureQuota | null> {
+  }): Promise<MeteredFeatureQuotaReadModel | null> {
     try {
       return await this.#dependencies.quota.read(input.userId, input.feature);
     } catch (error) {

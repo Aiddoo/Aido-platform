@@ -2,7 +2,7 @@ import { quickPlanResponseSchema } from "@aido/api/contracts/voice";
 import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 
-import { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
+import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { UserLocalePreferenceReaderPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
 import { ChargedGenerationPort } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
 import { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";

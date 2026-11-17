@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
@@ -20,7 +20,7 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     SocialFriendsModule,
     NotificationPushModule,
     IdentitySettingsModule,
-    AccessEntitlementsModule,
+    AccessFeatureGrantsQueriesModule,
   ],
   controllers: [TodoController],
   providers: [...PLANNING_TODOS_PROVIDERS],

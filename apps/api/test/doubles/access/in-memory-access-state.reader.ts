@@ -1,6 +1,6 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
-import { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
+import { AccessStateReaderPort } from "#api/modules/access/feature-grants/application/ports/access-state.reader.port";
 import type { FeatureGrants } from "#api/modules/access/shared/domain/access.constants";
 import type { AccessState } from "#api/modules/access/shared/domain/entitlement.domain-service";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -43,7 +43,7 @@ export class InMemoryAccessStateReader extends AccessStateReaderPort {
     return user == null ? null : toAccessState(user);
   }
 
-  async findFeatureGrants(userId: UserId): Promise<FeatureGrants> {
+  async sumFeatureGrants(userId: UserId): Promise<FeatureGrants> {
     return this.featureGrants.totalFor(userId.value);
   }
 }

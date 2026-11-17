@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
 import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
@@ -36,7 +36,7 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
 
 @Module({
   imports: [
-    AccessEntitlementsModule,
+    AccessFeatureGrantsQueriesModule,
     NotificationQueueModule,
     TimezoneReminderQueueModule,
     TodoTimezoneRebaseQueueModule,

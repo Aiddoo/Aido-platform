@@ -1,6 +1,6 @@
 import type { QuotaMeter } from "@aido/api/vocabulary";
 
-import type { QuotaUsageRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-usage.repository.port";
+import type { QuotaUsageRepositoryPort } from "#api/modules/access/quota-charges/application/ports/quota-usage.repository.port";
 import { QuotaWindow } from "#api/modules/access/shared/domain/quota-window.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {

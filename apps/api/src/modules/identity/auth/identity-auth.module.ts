@@ -3,7 +3,7 @@ import { ConfigModule, type ConfigType } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
@@ -125,7 +125,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
       inject: [jwtConfig.KEY],
       useFactory: (jwt: ConfigType<typeof jwtConfig>) => ({ secret: jwt.secret }),
     }),
-    AccessEntitlementsModule,
+    AccessFeatureGrantsQueriesModule,
     OperationsAdminNoticesModule,
     NotificationPushModule,
     NotificationEmailModule,

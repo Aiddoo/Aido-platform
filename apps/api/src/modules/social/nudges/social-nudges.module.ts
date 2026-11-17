@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
 
@@ -14,7 +14,7 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
 
 @Module({
   imports: [
-    AccessEntitlementsModule,
+    AccessFeatureGrantsQueriesModule,
     SocialFriendsModule,
     NotificationPushModule,
     ConfigModule.forFeature(socialNudgesConfig),

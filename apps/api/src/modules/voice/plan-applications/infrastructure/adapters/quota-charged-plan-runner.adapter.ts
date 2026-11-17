@@ -1,7 +1,7 @@
 import type {
   QuotaLedgerPort,
-  QuotaReservation,
-} from "#api/modules/access/quotas/access-quotas.public";
+  QuotaReservationReadModel,
+} from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type {
   ChargedGenerationPort,
   ChargedGenerationResult,
@@ -57,7 +57,7 @@ export class QuotaChargedPlanRunnerAdapter implements ChargedPlanRunnerPort {
 
   async #returnRemembered<T>(
     request: ChargedPlanRequest<T>,
-    reservation: QuotaReservation,
+    reservation: QuotaReservationReadModel,
     result: T,
   ): Promise<ChargedGenerationResult<T>> {
     const { chargedGeneration } = this.#dependencies;
