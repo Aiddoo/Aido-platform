@@ -52,6 +52,7 @@ const at = "2026-07-16T03:30:00.000Z";
 const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFacts[]>> = {
   "scheduler.TODO_REMINDER_60MIN": [{ todoTitle }],
   "scheduler.TODO_REMINDER_10MIN": [{ todoTitle }],
+  "scheduler.TODO_REMINDER_SNOOZED": [{ todoTitle }],
   "scheduler.MORNING_REMINDER": [{ count: 999 }],
   "scheduler.EVENING_PARTIAL": [{ remaining: 999 }],
   "scheduler.EVENING_STREAK": [{ streak: 999 }],

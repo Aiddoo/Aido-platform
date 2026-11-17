@@ -102,6 +102,12 @@ export type NoticeDeepLinkPath = (typeof NOTICE_DEEP_LINK_PATH)[keyof typeof NOT
 /** 마케팅 푸시 payload의 categoryId. 앱은 같은 id로 수신 거부 버튼 카테고리를 등록한다. */
 export const MARKETING_PUSH_CATEGORY_ID = "MARKETING";
 
+/** 할 일 리마인드 푸시 payload의 categoryId. 앱은 같은 id로 완료·다시 알림 버튼 카테고리를 등록한다. */
+export const TODO_REMINDER_PUSH_CATEGORY_ID = "TODO_REMINDER";
+
+/** 리마인드 알림의 다시 알림 버튼을 누른 뒤 다시 울릴 때까지의 분. 서버 예약과 앱 버튼 문구가 같은 값을 쓴다. */
+export const TODO_REMINDER_SNOOZE_MINUTES = 10;
+
 export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,
   DEFAULT_FETCH_LIMIT: 20,

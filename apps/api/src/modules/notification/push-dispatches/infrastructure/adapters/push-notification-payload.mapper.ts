@@ -1,5 +1,9 @@
 import type { PushNotificationData } from "@aido/api/contracts/notification/v1";
-import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
+import {
+  MARKETING_PUSH_CATEGORY_ID,
+  NOTIFICATION_ACTION_TYPE,
+  TODO_REMINDER_PUSH_CATEGORY_ID,
+} from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
@@ -28,6 +32,17 @@ function isMarketingPush(data: CreateNotificationData): boolean {
   return data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
 }
 
+/** 버튼 카테고리. 앱이 같은 id로 버튼을 등록하고, 등록하지 않은 앱은 버튼 없이 보여 앱 버전으로 나누지 않는다 */
+function pushCategoryIdOf(data: CreateNotificationData, isMarketing: boolean): string | null {
+  if (isMarketing) {
+    return MARKETING_PUSH_CATEGORY_ID;
+  }
+  if (data.type === "TODO_REMINDER") {
+    return TODO_REMINDER_PUSH_CATEGORY_ID;
+  }
+  return null;
+}
+
 /** 모바일 라우팅·컨텍스트·마케팅 메타데이터를 푸시 provider payload로 변환한다. */
 interface PushNotificationPayloadFactoryDependencies {
   readonly marketingOptOutTokens: Pick<MarketingPushOptOutTokenPort, "issue">;
@@ -44,6 +59,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
   createSingle(input: CreatePushNotificationPayloadInput): Omit<PushPayload, "token"> {
     const { data, notificationId, dispatchId } = input;
     const isMarketing = isMarketingPush(data);
+    const categoryId = pushCategoryIdOf(data, isMarketing);
     // 광고성 표기는 푸시 문구에만 붙인다. 알림함 기록은 원래 문구 그대로다
     const content = isMarketing
       ? withMarketingPushLabel(data, input.locale ?? DEFAULT_LOCALE)
@@ -56,7 +72,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
         dispatchId,
       },
       ...pushDeliveryOptions(data.type),
-      ...(isMarketing && { categoryId: "MARKETING" }),
+      ...(categoryId != null && { categoryId }),
     };
   }
 

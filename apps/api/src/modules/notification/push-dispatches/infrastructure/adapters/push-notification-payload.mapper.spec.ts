@@ -118,6 +118,36 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
     expect(optOutTokens.issuedUserIds).toEqual(["user-1"]);
   });
 
+  it.each([
+    { type: "TODO_REMINDER" as const, categoryId: "TODO_REMINDER" },
+    { type: "TODO_SHARED" as const, categoryId: undefined },
+    { type: "MORNING_REMINDER" as const, categoryId: undefined },
+    { type: "EVENING_REMINDER" as const, categoryId: undefined },
+  ])(
+    "$type의 버튼 카테고리는 $categoryId이고 광고 표기·수신 거부 토큰은 없다",
+    ({ type, categoryId }) => {
+      // Given
+      const data = {
+        userId: "user-1",
+        type,
+        purpose: "SCHEDULED_SERVICE" as const,
+        title: "10분 뒤 시작이에요",
+        body: "‘저녁 운동’ 준비됐나요?",
+        todoId: 42,
+      };
+
+      // When
+      const single = factory.createSingle({ data, notificationId: 1, dispatchId: 2, locale: "ko" });
+      const batch = factory.createBatch({ data, notificationId: 3, dispatchId: 4, locale: "ko" });
+
+      // Then
+      expect([single.categoryId, batch.categoryId]).toEqual([categoryId, categoryId]);
+      expect(single.title).toBe("10분 뒤 시작이에요");
+      expect(single.data).not.toHaveProperty("marketingOptOutToken");
+      expect(optOutTokens.issuedUserIds).toEqual([]);
+    },
+  );
+
   it("마케팅 배치도 단건과 같은 interactive category와 opt-out data를 싣는다", () => {
     // When
     const payload = factory.createBatch({

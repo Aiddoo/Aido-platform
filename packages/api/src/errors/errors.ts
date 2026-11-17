@@ -185,6 +185,7 @@ export const ErrorCode = {
   NOTIFICATION_1004: "NOTIFICATION_1004",
   NOTIFICATION_1005: "NOTIFICATION_1005",
   NOTIFICATION_1006: "NOTIFICATION_1006",
+  NOTIFICATION_1007: "NOTIFICATION_1007",
 
   // 콕 찌르기 (NUDGE_1100-1199)
   NUDGE_1101: "NUDGE_1101",
@@ -1055,6 +1056,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "푸시를 받을 수 없는 기기입니다.",
     description: "deviceId가 ios_ 또는 android_로 시작하지 않아 기기 플랫폼을 알 수 없습니다.",
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NOTIFICATION_1007]: {
+    code: "NOTIFICATION_1007",
+    message: "이미 완료한 할 일입니다.",
+    description: "완료한 할 일은 리마인드 알림을 다시 예약하지 않습니다.",
+    httpStatus: HttpStatus.CONFLICT,
   },
 
   // 콕 찌르기 (NUDGE_1100-1199)

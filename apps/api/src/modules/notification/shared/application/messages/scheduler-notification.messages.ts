@@ -66,6 +66,18 @@ export function createTodoReminderNotificationMessage({
   );
 }
 
+export function createTodoReminderSnoozedNotificationMessage({
+  todoTitle,
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: Omit<TodoReminderNotificationInput, "stage">): NotificationMessage {
+  return renderNotificationTemplate(SCHEDULER_COPY.TODO_REMINDER_SNOOZED, {
+    facts: { todoTitle },
+    locale,
+    variantContext,
+  });
+}
+
 export function createTodoSeriesPausedNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,

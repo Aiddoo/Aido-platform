@@ -186,6 +186,7 @@
   "TODO_0845": "This repeat setting isn't valid",
   "TODO_0846": "This repeat has already ended",
   "NOTIFICATION_1006": "This device can't get push notifications",
+  "NOTIFICATION_1007": "This to-do is already done",
   "AI_1312": "It's over the length we can summarize at once",
   "AI_1315": "Some cards can't be saved",
   "AI_1316": "Something went wrong. Please try again.",

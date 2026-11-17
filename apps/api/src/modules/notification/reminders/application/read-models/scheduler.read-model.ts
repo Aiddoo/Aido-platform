@@ -4,6 +4,7 @@
  * ORM 조회 형태를 애플리케이션 레이어에 노출하지 않기 위한 명시적 계약.
  * 어댑터가 이 형태로 투영(projection)하고, 전략은 이 타입만 소비한다.
  */
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /** 아침 리마인더 수신자 (오늘 시작 투두 개수 포함) */
@@ -132,6 +133,12 @@ export interface ActiveTodoReadModel {
   readonly scheduledLocalTime: string | null;
   /** 종일 할 일은 null이다. 리마인더가 울려야 했던 시각을 여기서 계산한다 */
   readonly scheduledAt: Temporal.Instant | null;
+}
+
+/** 다시 알림을 걸 할 일의 주인과 완료 여부 */
+export interface SnoozeTodoReadModel {
+  readonly ownerId: UserId;
+  readonly completed: boolean;
 }
 
 /** 유저 ID → 푸시 로케일 매핑 */

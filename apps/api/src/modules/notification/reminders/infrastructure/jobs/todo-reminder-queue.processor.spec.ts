@@ -27,6 +27,7 @@ import {
   type TodoReminderRuntimeJob,
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,
+  TODO_REMINDER_SNOOZE_JOB_NAME,
   TODO_SERIES_PAUSED_JOB_NAME,
 } from "./todo-reminder.queue.js";
 
@@ -479,6 +480,88 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect([...failures.keys()]).toEqual(["job-1"]);
       expect(publisher.published.map(({ data }) => data.todoId)).toEqual([2]);
+    });
+  });
+
+  describe("다시 알림", () => {
+    const NOTIFICATION_ID = 1024;
+    const snoozeJob = (remindAt: Temporal.Instant = NOW): TodoReminderRuntimeJob => ({
+      name: TODO_REMINDER_SNOOZE_JOB_NAME,
+      data: {
+        todoId: 1,
+        userId: USER_ID,
+        notificationId: NOTIFICATION_ID,
+        remindAt: remindAt.toString(),
+      },
+    });
+
+    it.each([
+      { locale: "ko", title: "다시 알려드려요 ⏰", body: `‘${TODO_TITLE}’ 이제 시작해볼까요?` },
+      { locale: "en", title: "Reminding you again ⏰", body: `Ready to start “${TODO_TITLE}”?` },
+    ] as const)(
+      "할 일 시각이 지났어도 $locale 다시 알림을 리마인더와 같은 종류·목적으로 보낸다",
+      async ({ locale, title, body }) => {
+        // Given
+        // 10분 전 알림에서 눌러 할 일이 시작된 뒤에 울린다
+        reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 1 }) }));
+        localeReader.locale = locale;
+        // When
+        await processor.process(snoozeJob());
+        // Then
+        expect(publisher.published).toEqual([
+          {
+            mode: "batch",
+            data: expect.objectContaining({
+              userId: USER_ID,
+              type: "TODO_REMINDER",
+              purpose: "SCHEDULED_SERVICE",
+              campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
+              todoId: 1,
+              title,
+              body,
+              metadata: { stage: "snooze" },
+              reminderOccurrenceKey: String(NOTIFICATION_ID),
+            }),
+          },
+        ]);
+      },
+    );
+
+    it("반복 회차라도 방금 누른 소유자라 휴면을 묻지 않는다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      seriesOwnerDormancy.dormantSince = "2026-08-01";
+      // When
+      await processor.process(snoozeJob());
+      // Then
+      expect(seriesOwnerDormancy.askedUserIds).toEqual([]);
+      expect(publisher.published).toHaveLength(1);
+    });
+
+    it("울리기 전에 할 일을 완료·삭제했으면 보내지 않는다", async () => {
+      // Given
+      reader.todos.clear();
+      // When
+      await processor.process(snoozeJob());
+      // Then
+      expect(publisher.published).toEqual([]);
+    });
+
+    it("울릴 시각보다 15분을 넘게 늦으면 보내지 않고 사유를 남긴다", async () => {
+      // Given
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      // When
+      await processor.process(snoozeJob(NOW.subtract({ minutes: 16 })));
+      // Then
+      expect(publisher.published).toEqual([]);
+      expect(warn).toHaveBeenCalledExactlyOnceWith({
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        todoId: 1,
+        userId: USER_ID,
+        stage: "snooze",
+        reason: "late-over-15m",
+        lateMinutes: 16,
+      });
     });
   });
 

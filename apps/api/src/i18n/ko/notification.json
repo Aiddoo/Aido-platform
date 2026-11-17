@@ -10,6 +10,9 @@
       "v2": { "title": "곧 시작할 시간이에요", "body": "‘{todoTitle}’까지 10분 남았어요" },
       "v3": { "title": "슬슬 준비해볼까요? 🐾", "body": "10분 뒤 ‘{todoTitle}’ 시작이에요" }
     },
+    "TODO_REMINDER_SNOOZED": {
+      "v1": { "title": "다시 알려드려요 ⏰", "body": "‘{todoTitle}’ 이제 시작해볼까요?" }
+    },
     "TODO_SERIES_PAUSED": {
       "v1": { "title": "반복 할 일 알림을 잠시 멈췄어요", "body": "앱을 열면 다시 시작돼요" }
     },

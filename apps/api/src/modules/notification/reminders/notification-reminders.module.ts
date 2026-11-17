@@ -20,6 +20,7 @@ import {
   NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
   NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,
 } from "./notification-reminders.providers.js";
+import { TodoReminderController } from "./presentation/http/v1/todo-reminder.controller.js";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import {
     PlanningTodosQueriesModule,
     ConfigModule.forFeature(notificationRetentionAssignmentsConfig),
   ],
+  controllers: [TodoReminderController],
   providers: [
     ...NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
     ...NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,

@@ -18,12 +18,14 @@ import { PublishNotificationUseCase } from "#api/modules/notification/notificati
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TodoReminderSnoozeSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-snooze-scheduler.adapter";
 import {
   TODO_REMINDER_QUEUE as TODO_REMINDER_QUEUE_DEFINITION,
   todoReminderJobSchema,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DrizzleTodoReminderReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-todo-reminder.reader";
 import { notificationRetentionAssignmentsConfig } from "#api/modules/notification/retention-assignments/notification-retention-assignments.config";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";
@@ -32,6 +34,7 @@ import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/applicati
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
@@ -47,7 +50,7 @@ import {
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
@@ -455,6 +458,75 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     await runSteps(id, steps);
     // Then
     expect(await readSent(id)).toEqual({ sent, dispatches: sent.length });
+  });
+
+  describe("다시 알림", () => {
+    async function latestNotificationId(todoId: number): Promise<number> {
+      const rows = await client.query.notification.findMany({
+        where: { todoId, type: "TODO_REMINDER" },
+        orderBy: { id: "desc" },
+      });
+      return rows[0]?.id ?? 0;
+    }
+
+    function snoozeFrom(todoId: number, notificationId: number): Promise<boolean> {
+      return new TodoReminderSnoozeSchedulerAdapter(jobQueue).scheduleSnooze({
+        todoId: TodoId.reconstitute(todoId),
+        userId: UserId.reconstitute(userId),
+        notificationId: NotificationId.reconstitute(notificationId),
+        remindAt: nowInstant(),
+      });
+    }
+
+    /** 다시 알림 작업을 실제 큐에서 꺼내 처리하고 끝낸다. 재시도처럼 같은 작업을 한 번 더 처리할 수 있다 */
+    async function fireSnooze(todoId: number, notificationId: number, times = 1): Promise<void> {
+      const jobs = await boss.fetch<unknown>(TODO_REMINDER_QUEUE, {
+        includeMetadata: true,
+        batchSize: 10,
+      });
+      const job = jobs.find(
+        ({ singletonKey }) => singletonKey === `reminder-snooze_${todoId}_${notificationId}`,
+      );
+      if (job == null) {
+        throw new Error("다시 알림 작업이 없다");
+      }
+      for (let attempt = 0; attempt < times; attempt++) {
+        await processor.process(todoReminderJobSchema.parse(job.data));
+      }
+      await boss.complete(TODO_REMINDER_QUEUE, job.id);
+    }
+
+    it("회차 알림을 막지도 막히지도 않고, 누른 알림마다 한 번씩 울린다", async () => {
+      // Given
+      const id = await seedTodo(0, "10:00");
+      await fireStage(id, "10min");
+      const reminderId = await latestNotificationId(id);
+      // When
+      const scheduled = [await snoozeFrom(id, reminderId), await snoozeFrom(id, reminderId)];
+      await fireSnooze(id, reminderId, 2);
+      const snoozedId = await latestNotificationId(id);
+      await snoozeFrom(id, snoozedId);
+      await fireSnooze(id, snoozedId);
+      // Then
+      expect(scheduled).toEqual([true, false]);
+      expect(await readSent(id)).toEqual({
+        sent: ["D0 10min", "D0 snooze", "D0 snooze"],
+        dispatches: 3,
+      });
+    });
+
+    it("울리기 전에 끝낸 할 일은 보내지 않는다", async () => {
+      // Given
+      const id = await seedTodo(0, "10:00");
+      await fireStage(id, "10min");
+      const reminderId = await latestNotificationId(id);
+      await snoozeFrom(id, reminderId);
+      await client.update(todo).set({ completed: true }).where(eq(todo.id, id));
+      // When
+      await fireSnooze(id, reminderId);
+      // Then
+      expect((await readSent(id)).sent).toEqual(["D0 10min"]);
+    });
   });
 
   describe("반복 회차", () => {

@@ -117,6 +117,7 @@
   "NOTIFICATION_1004": "Notification not found",
   "NOTIFICATION_1005": "You can't access this notification",
   "NOTIFICATION_1006": "This device can't get push notifications",
+  "NOTIFICATION_1007": "This to-do is already done",
   "NUDGE_1101": "You've used all your nudges today",
   "NUDGE_1102": "You've already nudged this to-do",
   "NUDGE_1103": "You can only nudge friends",

@@ -10,6 +10,9 @@
       "v2": { "title": "10-minute heads-up", "body": "“{todoTitle}” is almost here" },
       "v3": { "title": "Almost time 🐾", "body": "“{todoTitle}” starts in 10 minutes" }
     },
+    "TODO_REMINDER_SNOOZED": {
+      "v1": { "title": "Reminding you again ⏰", "body": "Ready to start “{todoTitle}”?" }
+    },
     "TODO_SERIES_PAUSED": {
       "v1": {
         "title": "Repeating reminders paused",

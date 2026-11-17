@@ -115,6 +115,13 @@ export const SCHEDULER_COPY = {
     render: (variant, facts, context) =>
       context.copy(variant, { todoTitle: context.preview(facts.todoTitle) }),
   }),
+  TODO_REMINDER_SNOOZED: defineNotificationCopy({
+    key: "scheduler.TODO_REMINDER_SNOOZED",
+    variants: (catalog) => catalog.scheduler.TODO_REMINDER_SNOOZED,
+    facts: z.object({ todoTitle: z.string() }),
+    render: (variant, facts, context) =>
+      context.copy(variant, { todoTitle: context.preview(facts.todoTitle) }),
+  }),
   TODO_SERIES_PAUSED: staticCopy(
     "scheduler.TODO_SERIES_PAUSED",
     (catalog) => catalog.scheduler.TODO_SERIES_PAUSED,

@@ -7,3 +7,8 @@ export function todoReminderJobKey(todoId: number, stageLabel: string): string {
 export function todoSeriesPausedJobKey(userId: string, dormantSince: string): string {
   return `series-paused_${userId}_${dormantSince}`;
 }
+
+/** 누른 알림 하나에 다시 알림 하나. 같은 알림을 두 번 눌러도 작업은 하나다. */
+export function todoReminderSnoozeJobKey(todoId: number, notificationId: number): string {
+  return `reminder-snooze_${todoId}_${notificationId}`;
+}
