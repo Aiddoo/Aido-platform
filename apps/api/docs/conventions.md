@@ -133,6 +133,6 @@
 | `@nestjs/outbox`·`@nestjs/cache-manager`            | 쓰지 않음 | pg-boss 트랜잭션 enqueue가 이미 아웃박스, Keyv에 패턴 삭제 없음(`lru-cache` 사용)    |
 | `@nestjs/schedule`·`@nestjs/cqrs`·`@nestjs/observe` | 쓰지 않음 | 메모리 cron은 중복·유실, 버스가 호출 경로를 숨김, 별도 APM 필요                      |
 | `@nestjs/throttler`                                 | 사용      | 전역 `UserAwareThrottlerGuard`, 한도는 slice `*.rate-limits.ts`                      |
-| `@nestjs/platform-node`                             | 도입 예정 | Nest 12.3+ 권장·13 기본 어댑터. Express 전용 API를 platform 한 곳으로 모은 뒤 바꾼다 |
+| `@nestjs/platform-node`                             | 사용      | Nest 12.3+ 권장·13 기본 어댑터. 만들기·옵션은 `platform/http/http-adapter.ts` 한 곳. |
 
 0.0.x 공식 패키지는 catalog에 정확히 고정하고 사용처를 어댑터 한 파일로 가둔다.

@@ -31,6 +31,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { createCachedUserProfileFixture } from "#test/fixtures/identity/cached-user-profile.fixture";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
@@ -56,7 +57,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       ],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication(createHttpAdapter());
     await app.init();
 
     cacheService = moduleFixture.get(CacheStorePort);
@@ -117,7 +118,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ],
       }).compile();
 
-      const shortTtlApp = shortTtlModule.createNestApplication();
+      const shortTtlApp = shortTtlModule.createNestApplication(createHttpAdapter());
       try {
         await shortTtlApp.init();
         const shortTtlCache = shortTtlModule.get(CacheStorePort);
@@ -458,7 +459,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ],
       }).compile();
 
-      const smallCacheApp = smallCacheModule.createNestApplication();
+      const smallCacheApp = smallCacheModule.createNestApplication(createHttpAdapter());
       await smallCacheApp.init();
       const smallCache = smallCacheModule.get(CacheStorePort);
 

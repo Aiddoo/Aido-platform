@@ -46,12 +46,12 @@ module.exports = {
       },
     },
     {
-      name: "express-only-in-platform-http",
+      name: "http-adapter-only-in-platform-http",
       comment:
-        "Express 전용 API는 platform/http에만 둔다. 요청·응답 타입은 platform/http/http-request.ts를 쓴다.",
+        "HTTP 어댑터(@nestjs/platform-node) API는 platform/http에만 둔다. 요청·응답 타입은 platform/http/http-request.ts를 쓴다.",
       severity: "error",
       from: { path: "^src/", pathNot: "^src/platform/http/" },
-      to: { path: "node_modules/(?:@types/express|express|@nestjs/platform-express)/" },
+      to: { path: "node_modules/@nestjs/platform-node/" },
     },
     {
       name: "react-only-in-email-templates",

@@ -5,13 +5,14 @@ import { Logger } from "nestjs-pino";
 
 import { appConfig } from "#api/platform/config/app.config";
 import { configureApplication } from "#api/platform/http/configure-application";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 
 import { setupApiDocs } from "./api-docs.js";
 import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, createHttpAdapter(), { bufferLogs: true });
 
   const { port, corsOrigins } = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
 

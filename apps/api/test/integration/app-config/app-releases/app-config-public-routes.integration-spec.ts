@@ -9,6 +9,7 @@ import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-releases/a
 import { AppConfigFeatureDiscoveryCampaignsModule } from "#api/modules/app-config/feature-discovery-campaigns/app-config-feature-discovery-campaigns.module";
 import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery-campaigns/application/ports/feature-discovery-campaign.repository.port";
 import { API_VERSIONING_OPTIONS } from "#api/platform/http/api-versioning";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { ResponseTransformInterceptor } from "#api/platform/http/interceptors/response-transform.interceptor";
 import { InMemoryAppReleaseRepository } from "#test/doubles/app-config/in-memory-app-release.repository";
 import { InMemoryFeatureDiscoveryCampaignRepository } from "#test/doubles/app-config/in-memory-feature-discovery-campaign.repository";
@@ -40,7 +41,7 @@ describe("app-config 공개 조회 route (Integration)", () => {
       .useValue(appReleaseRepository)
       .compile();
 
-    app = module.createNestApplication();
+    app = module.createNestApplication(createHttpAdapter());
     app.enableVersioning(API_VERSIONING_OPTIONS);
     app.useGlobalInterceptors(module.get(ResponseTransformInterceptor));
     await app.init();

@@ -19,7 +19,8 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 - `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다. 버전은 폴더로만 나누고 클래스·Swagger 태그·상수 이름에 넣지 않으며, 버전 폴더끼리 import하지 않는다. 사례: [MemoController](../src/modules/notes/memos/presentation/http/v1/memo.controller.ts).
 - 공용 데코레이터는 `platform/http/decorators`(`@Timezone`·`@Locale`·`@IdempotencyKey`·`@RawResponse`·`@RedirectResponse`·`@ClientAbortSignal`)와 `platform/http/request-client`(`@AppVersion`·`@CurrentRequestClient`)에 있다. 인증(`@CurrentUser`·`@Public`·`@Admin`)은 identity sessions가 `identity-sessions.public.ts`로 연다.
 - redirect는 `@RedirectResponse()`(Nest `@Redirect()`, 302)를 붙이고 handler가 `{ url }`을 돌려준다. `@Res()`로 응답을 직접 보내지 않는다.
-- guard·interceptor·decorator가 읽는 요청·응답 타입은 `platform/http/http-request.ts`의 `HttpRequest`·`HttpResponse`다. Express 타입·API(`trust proxy`, route별 본문 한도)는 `platform/http` 안에만 둔다(`lint:deps`의 `express-only-in-platform-http`).
+- guard·interceptor·decorator가 읽는 요청·응답 타입은 `platform/http/http-request.ts`의 `HttpRequest`·`HttpResponse`다. HTTP 어댑터(`@nestjs/platform-node`) API(`trustProxy`·`maxParamLength`, route별 본문 한도)는 `platform/http` 안에만 둔다(`lint:deps`의 `http-adapter-only-in-platform-http`).
+- HTTP 어댑터는 `NodeAdapter`(node:http)이고 운영·테스트 앱이 `createHttpAdapter()` 하나로 만든다. 경로는 대소문자를 구분하고 등록 순서가 아니라 특이성(리터럴 > `:param`)으로 고른다. 응답에 ETag가 없어 304를 주지 않는다. `__proto__`·`constructor.prototype` 키가 있는 JSON 본문과 퍼센트 인코딩이 깨진 경로는 400, 100KB(녹음 정리 256KB)를 넘는 본문은 413, 디코딩해 256자를 넘는 경로 파라미터는 414이고 모두 전역 필터의 `SYS_0002` envelope다.
 
 ## 요청 헤더와 throttle
 

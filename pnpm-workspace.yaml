@@ -36,7 +36,6 @@ overrides:
   # pnpm audit --fix 결과. 상위 패키지가 패치 버전을 받으면 해당 항목을 제거한다.
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   '@hono/node-server@<1.19.15': ^1.19.15
-  body-parser@<2.4.0: ^2.4.0
   fast-uri@<3.1.9: ^3.1.9
   # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
   '@nestjs/terminus@12.2.0>@prisma/client': '-'
@@ -96,9 +95,7 @@ catalog:
   'dependency-cruiser': '18.7.2'
   'es-toolkit': '1.53.2'
   'expo-server-sdk': '8.0.0'
-  'express': '5.3.0'
   'google-auth-library': '11.3.4'
-  'helmet': '8.3.0'
   'ioredis': '6.0.0'
   'jose': '6.2.17'
   'knip': '6.45.1'
@@ -207,7 +204,7 @@ catalogs:
     '@nestjs/i18n': '0.0.3'
     '@nestjs/jwt': '12.0.5'
     '@nestjs/mail': '0.0.2'
-    '@nestjs/platform-express': '12.5.1'
+    '@nestjs/platform-node': '12.5.1'
     '@nestjs/schematics': '12.0.13'
     '@nestjs/swagger': '12.1.2'
     '@nestjs/terminus': '12.2.0'

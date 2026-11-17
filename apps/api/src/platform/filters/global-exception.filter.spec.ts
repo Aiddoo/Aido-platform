@@ -10,11 +10,11 @@ import {
 } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
-import { ExpressAdapter } from "@nestjs/platform-express";
 import { Test } from "@nestjs/testing";
 import { vi, type Mock } from "vitest";
 
 import { resolveDevTools } from "#api/platform/config/app.config";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
@@ -29,7 +29,7 @@ import { GlobalExceptionFilter } from "./global-exception.filter.js";
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
   let logger: RecordingPinoLogger;
-  let mockResponse: { status: Mock; json: Mock; getHeader: Mock };
+  let mockResponse: { statusCode: number; json: Mock; getHeader: Mock };
   let mockRequest: {
     method: string;
     url: string;
@@ -47,7 +47,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
     const adapterHost = new HttpAdapterHost();
-    adapterHost.httpAdapter = new ExpressAdapter();
+    adapterHost.httpAdapter = createHttpAdapter();
     return new GlobalExceptionFilter(adapterHost, logger, { devTools }, messages, reporter, alerts);
   };
 
@@ -61,7 +61,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     logger = new RecordingPinoLogger();
 
     mockResponse = {
-      status: vi.fn().mockReturnThis(),
+      statusCode: HttpStatus.OK,
       json: vi.fn(),
       getHeader: vi.fn(),
     };
@@ -86,7 +86,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+      expect(mockResponse.statusCode).toBe(HttpStatus.CONFLICT);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
       expect(logger.warnings).toContainEqual([
@@ -108,7 +108,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(mockResponse.statusCode).toBe(HttpStatus.BAD_REQUEST);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
@@ -126,7 +126,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(mockResponse.statusCode).toBe(HttpStatus.SERVICE_UNAVAILABLE);
       const body = errorEnvelopeSchema.parse(mockResponse.json.mock.calls[0]?.[0]);
       expect(body.error.code).toBe(ErrorCode.SYS_0005);
       expect(body.error.message).toBe(Errors[ErrorCode.SYS_0005].message);
@@ -141,7 +141,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
     });
@@ -156,7 +156,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(Errors[exception.errorCode].httpStatus);
+      expect(mockResponse.statusCode).toBe(Errors[exception.errorCode].httpStatus);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.TODO_CATEGORY_0851);
     });
@@ -169,7 +169,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(mockResponse.statusCode).toBe(HttpStatus.BAD_REQUEST);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
@@ -197,7 +197,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(status);
+      expect(mockResponse.statusCode).toBe(status);
       const body = errorEnvelopeSchema.parse(mockResponse.json.mock.calls[0]?.[0]);
       expect(body.error.code).toBe(code);
     });
@@ -210,7 +210,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
     });
@@ -440,7 +440,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(Errors[expected.errorCode].httpStatus);
+      expect(mockResponse.statusCode).toBe(Errors[expected.errorCode].httpStatus);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(expected.errorCode);
       expect(jsonArg?.error.message).toBe(expected.message);
@@ -501,7 +501,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     filter.catch(exception, host);
 
     // Then
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.statusCode).toBe(500);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         error: expect.objectContaining({ code: ErrorCode.SYS_0001, details: exception.message }),

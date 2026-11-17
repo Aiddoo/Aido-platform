@@ -4,6 +4,8 @@ import { Test } from "@nestjs/testing";
 import { Logger as PinoNestLogger, LoggerModule as PinoLoggerModule } from "nestjs-pino";
 import request from "supertest";
 
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
+
 import { HttpLogEvent } from "./http-log.js";
 import { createLoggerOptions } from "./logger.options.js";
 
@@ -41,7 +43,7 @@ describe("HTTP 로그 — 공식 Pino 연동과 인증 정보 비노출", () => 
       ],
       controllers: [CallbackController],
     }).compile();
-    app = module.createNestApplication({ bufferLogs: true });
+    app = module.createNestApplication(createHttpAdapter(), { bufferLogs: true });
     app.useLogger(app.get(PinoNestLogger));
     await app.init();
     logs.length = 0;

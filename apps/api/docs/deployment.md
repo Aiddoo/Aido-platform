@@ -38,7 +38,12 @@ deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 �
 
 서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·운영 env(`apps/api/.env`, 600)를 확인한다. 이미지는 GHCR의 SHA 태그를 pull만 하고(`--pull never`로 준비된 이미지만 기동) 서버에서 빌드하지 않는다. 성공 뒤 현재와 직전 배포 이미지만 남긴다.
 
-API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 읽기 전용 루트(`/tmp`만 tmpfs)·capability 전부 제거·`no-new-privileges`로 돈다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다.
+API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 읽기 전용 루트(`/tmp`만 tmpfs)·capability 전부 제거·`no-new-privileges`로 돈다. 공개 경로는 host Nginx→loopback API 한 홉이다. 컨테이너에는 docker bridge 게이트웨이(사설 주소)로 닿아 HTTP 어댑터가 loopback·사설 대역 peer의 `X-Forwarded-For`만 믿고 Nginx가 붙인 클라이언트 IP를 `request.ip`로 쓴다(전제는 [보안](security.md#서버와-네트워크)). 인증 전 요청 한도가 이 값으로 센다. HTTP 어댑터·proxy를 바꾼 배포 뒤에는 다음을 본다.
+
+- 새 `Session`·`LoginAttempt` 행의 `ipAddress`가 게이트웨이·loopback 주소가 아닌 실제 접속 IP다. `X-Forwarded-For`를 꾸며 보낸 로그인 시도도 실제 접속 IP로 남는다.
+- Sentry 트랜잭션 이름이 `GET /v1/todos/:id`처럼 경로 템플릿으로 남는다(실제 id가 든 URL이 아니다).
+
+HTTP 어댑터를 Express에서 `NodeAdapter`(`@nestjs/platform-node` 12.5.1)로 바꾼 커밋은 12.5.1 배포 2주 뒤인 2026-11-30 이후에 운영에 배포한다. 스키마 변화가 없어 되돌리기는 이전 SHA 재배포다.
 
 ## 수동 배포
 

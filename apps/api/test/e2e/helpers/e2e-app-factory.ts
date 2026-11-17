@@ -61,6 +61,7 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
@@ -283,7 +284,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 
   try {
     module = await builder.compile();
-    app = module.createNestApplication();
+    app = module.createNestApplication(createHttpAdapter());
     configureApplication(app, { corsOrigins: ["http://localhost:3000"] });
     // main.ts와 같은 순서로 문서를 붙여, 개발 도구가 꺼진 설정에서 문서 경로가 열리지 않는지 E2E가 본다
     setupApiDocs(app);

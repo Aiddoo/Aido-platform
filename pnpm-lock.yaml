@@ -254,15 +254,9 @@ catalogs:
     expo-server-sdk:
       specifier: 8.0.0
       version: 8.0.0
-    express:
-      specifier: 5.3.0
-      version: 5.3.0
     google-auth-library:
       specifier: 11.3.4
       version: 11.3.4
-    helmet:
-      specifier: 8.3.0
-      version: 8.3.0
     ioredis:
       specifier: 6.0.0
       version: 6.0.0
@@ -575,7 +569,7 @@ catalogs:
     '@nestjs/mail':
       specifier: 0.0.2
       version: 0.0.2
-    '@nestjs/platform-express':
+    '@nestjs/platform-node':
       specifier: 12.5.1
       version: 12.5.1
     '@nestjs/schematics':
@@ -603,7 +597,6 @@ catalogs:
 overrides:
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   '@hono/node-server@<1.19.15': ^1.19.15
-  body-parser@<2.4.0: ^2.4.0
   fast-uri@<3.1.9: ^3.1.9
   '@nestjs/terminus@12.2.0>@prisma/client': '-'
   decode-uri-component@<=0.4.2: ^0.5.0
@@ -698,55 +691,55 @@ importers:
         version: link:../../packages/api
       '@nestjs-cls/transactional':
         specifier: catalog:nest12
-        version: 4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs-cls/transactional-adapter-drizzle-orm':
         specifier: catalog:drizzle1
-        version: 2.0.2(@nestjs-cls/transactional@4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))
+        version: 2.0.2(fa1852af5706068eaec21da4d9ff9a84)
       '@nestjs/common':
         specifier: catalog:nest12
-        version: 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+        version: 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
       '@nestjs/config':
         specifier: catalog:nest12
-        version: 12.1.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)
+        version: 12.1.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: catalog:nest12
-        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/drizzle':
         specifier: catalog:nest12
-        version: 0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)
+        version: 0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)
       '@nestjs/event-emitter':
         specifier: catalog:nest12
-        version: 12.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)
+        version: 12.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))
       '@nestjs/http-client':
         specifier: catalog:nest12
-        version: 0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)
+        version: 0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
       '@nestjs/i18n':
         specifier: catalog:nest12
-        version: 0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@standard-schema/spec@1.1.0)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@standard-schema/spec@1.1.0)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/jwt':
         specifier: catalog:nest12
-        version: 12.0.5(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))
+        version: 12.0.5(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))
       '@nestjs/mail':
         specifier: catalog:nest12
-        version: 0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/platform-express':
+        version: 0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-node':
         specifier: catalog:nest12
-        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rxjs@7.8.2)(supports-color@8.1.1)
+        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)(supports-color@9.4.0)
       '@nestjs/swagger':
         specifier: catalog:nest12
-        version: 12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)
+        version: 12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)
       '@nestjs/terminus':
         specifier: catalog:nest12
-        version: 12.2.0(@grpc/grpc-js@1.14.5)(@grpc/proto-loader@0.8.1)(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 12.2.0(@grpc/grpc-js@1.14.5)(@grpc/proto-loader@0.8.1)(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/throttler':
         specifier: catalog:nest12
-        version: 6.8.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)
+        version: 6.8.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
       '@photostructure/tz-lookup':
         specifier: 'catalog:'
         version: 11.8.0
       '@sentry/nestjs':
         specifier: 'catalog:'
-        version: 11.12.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        version: 11.12.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       ai:
         specifier: 'catalog:'
         version: 7.0.172(zod@4.6.7)
@@ -774,18 +767,12 @@ importers:
       expo-server-sdk:
         specifier: 'catalog:'
         version: 8.0.0
-      express:
-        specifier: 'catalog:'
-        version: 5.3.0(supports-color@8.1.1)
       google-auth-library:
         specifier: 'catalog:'
-        version: 11.3.4(supports-color@8.1.1)
-      helmet:
-        specifier: 'catalog:'
-        version: 8.3.0
+        version: 11.3.4(supports-color@9.4.0)
       ioredis:
         specifier: 'catalog:'
-        version: 6.0.0(supports-color@8.1.1)
+        version: 6.0.0(supports-color@9.4.0)
       jose:
         specifier: 'catalog:'
         version: 6.2.17
@@ -797,10 +784,10 @@ importers:
         version: 2.1.3
       nestjs-cls:
         specifier: catalog:nest12
-        version: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+        version: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       nestjs-pino:
         specifier: catalog:nest12
-        version: 5.3.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2)
+        version: 5.3.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2)
       ngeohash:
         specifier: 'catalog:'
         version: 0.6.4
@@ -821,7 +808,7 @@ importers:
         version: 19.3.0(react@19.3.0)
       react-email:
         specifier: 'catalog:'
-        version: 6.11.14(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)
+        version: 6.11.14(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@9.4.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -843,25 +830,22 @@ importers:
         version: link:../../tooling/typescript
       '@nestjs/cli':
         specifier: catalog:nest12
-        version: 12.0.13(@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1))(@swc/core@1.16.22)(@types/node@26.6.6)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(prettier@3.9.9)(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
+        version: 12.0.13(@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@9.4.0))(@swc/core@1.16.22)(@types/node@26.6.6)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(prettier@3.9.9)(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       '@nestjs/schematics':
         specifier: catalog:nest12
         version: 12.0.13(chokidar@5.0.0)(prettier@3.9.9)(typescript@6.0.3)
       '@nestjs/testing':
         specifier: catalog:nest12
-        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@nestjs/platform-express@12.5.1)
+        version: 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))
       '@swc/cli':
         specifier: 'catalog:'
-        version: 0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1)
+        version: 0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@9.4.0)
       '@swc/core':
         specifier: 'catalog:'
         version: 1.16.22
       '@testcontainers/postgresql':
         specifier: 'catalog:'
-        version: 12.2.1(supports-color@8.1.1)
-      '@types/express':
-        specifier: 5.0.6
-        version: 5.0.6
+        version: 12.2.1(supports-color@9.4.0)
       '@types/ms':
         specifier: 'catalog:'
         version: 2.1.0
@@ -894,10 +878,10 @@ importers:
         version: 13.2.0
       supertest:
         specifier: 'catalog:'
-        version: 7.3.2(supports-color@8.1.1)
+        version: 7.3.2(supports-color@9.4.0)
       testcontainers:
         specifier: 'catalog:'
-        version: 12.2.1(supports-color@8.1.1)
+        version: 12.2.1(supports-color@9.4.0)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -906,7 +890,7 @@ importers:
         version: 2.0.0(@swc/core@1.16.22)(esbuild@0.28.2)(rolldown@1.2.18)(rollup@4.62.2)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       vitest:
         specifier: 'catalog:'
-        version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@9.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/mobile:
     dependencies:
@@ -2388,6 +2372,15 @@ packages:
     resolution: {integrity: sha512-EbxYllZ7/ozONVZd425cm4XnolfW+AmSFT5aP7Jdno6oc3WrYQcHz2CO20z/2rwWwYgztmV2PXvYH+BQ8YFjqg==}
     hasBin: true
 
+  '@fastify/deepmerge@3.2.4':
+    resolution: {integrity: sha512-kc8GQq5gX9RRhw0rov3DMrN8wS8yRlxJRdDzsYwwdBV/wazuVgc/1K7CKL90tlvu3RlHan6Y0R0aE3nJtBz2eQ==}
+
+  '@fastify/forwarded@3.1.2':
+    resolution: {integrity: sha512-89WiRG+hW3VQSfCwg4Hb8b43PeyEX15K5+lEfsZ4EUth/FyOjS/lv8HsVuswUNXWiSnxMGNouE/fq/0w3VumHQ==}
+
+  '@fastify/proxy-addr@5.1.2':
+    resolution: {integrity: sha512-uqB4QsgVoro0XDC+DIftIMGXHdBPn+lK6Ek3xXAIxPMCJfqxnbtyEoMCm2KPUVOuIosd7Cyw9HawEqMFM/UA+g==}
+
   '@firebase/ai@2.14.0':
     resolution: {integrity: sha512-TYEQqCQUTyVHuG/HVi9vau6F9kvEaS49o/hmdn/yUuN6ZXQkwIml2nNJTIBfjNl/r9LOxwUNILgcOY16nxObug==}
     engines: {node: '>=20.0.0'}
@@ -3689,8 +3682,8 @@ packages:
       class-validator:
         optional: true
 
-  '@nestjs/platform-express@12.5.1':
-    resolution: {integrity: sha512-pl/ZPErFFsWRaqcKlbQQyME5Zup9GmdBYDy4Vqh0NHoe2LEz0au78OMDNFytuHx2VDvxn6oBiFYigKXrS9embg==}
+  '@nestjs/platform-node@12.5.1':
+    resolution: {integrity: sha512-vApF3hejf9eR/nung5TKaklonNipVb5oPqAUZaJx8nAq0Jhzf8Mw0l7GGBPPkjlqBVcWfZ0L9Yam/Luf4NZhcA==}
     peerDependencies:
       '@nestjs/common': ^12.0.0
       '@nestjs/core': ^12.0.0
@@ -5889,17 +5882,11 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/body-parser@1.19.6':
-    resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
-
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
   '@types/concat-stream@2.0.3':
     resolution: {integrity: sha512-3qe4oQAPNwVNwK4C9c8u+VJqv9kez+2MR4qJpoPFfXtgxxif1QbFusvXzK0/Wra2VX07smostI2VMmJNSpZjuQ==}
-
-  '@types/connect@3.4.38':
-    resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
   '@types/cookiejar@2.1.5':
     resolution: {integrity: sha512-he+DHOWReW0nghN24E1WUqM0efK4kI9oTqDm6XmK8ZPe2djZ90BSNdGnIyCLzCPw7/pogPlGbzI2wHGGmi4O/Q==}
@@ -5934,12 +5921,6 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/express-serve-static-core@5.1.3':
-    resolution: {integrity: sha512-dPfW8NFiOF4wOHc7+N/QSxlY9cfSsenewGbAz8C8U/MULPd/YZ27LvJUIlzaXie7e6Ove9YunJGgC9tbHD2cKw==}
-
-  '@types/express@5.0.6':
-    resolution: {integrity: sha512-sKYVuV7Sv9fbPIt/442koC7+IIwK5olP1KWeD88e/idgoJqDm3JV/YUiPwkoKK92ylff2MGxSz1CSjsXelx0YA==}
-
   '@types/graceful-fs@4.1.9':
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
 
@@ -5951,9 +5932,6 @@ packages:
 
   '@types/http-cache-semantics@4.2.0':
     resolution: {integrity: sha512-L3LgimLHXtGkWikKnsPg0/VFx9OGZaC+eN1u4r+OB1XRqH3meBIAVC2zr1WdMH+RHmnRkqliQAOHNJ/E0j/e0Q==}
-
-  '@types/http-errors@2.0.5':
-    resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
   '@types/is-empty@1.2.3':
     resolution: {integrity: sha512-4J1l5d79hoIvsrKh5VUKVRA1aIdsOb10Hu5j3J2VfP/msDnfTdGPmNp2E1Wg+vs97Bktzo+MZePFFXSGoykYJw==}
@@ -6003,12 +5981,6 @@ packages:
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
-  '@types/qs@6.15.1':
-    resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
-
-  '@types/range-parser@1.2.7':
-    resolution: {integrity: sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==}
-
   '@types/react-reconciler@0.33.1':
     resolution: {integrity: sha512-0kF59ji2mKuHUd5wytHSpmORybMYVerJvq0K10pz9ZFoOlJ3e+w1LBjLshWpCrokeyQOioRodNbO4PH4ddvRfg==}
     peerDependencies:
@@ -6024,12 +5996,6 @@ packages:
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
-
-  '@types/send@1.2.1':
-    resolution: {integrity: sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==}
-
-  '@types/serve-static@2.2.0':
-    resolution: {integrity: sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==}
 
   '@types/ssh2-streams@0.1.13':
     resolution: {integrity: sha512-faHyY3brO9oLEA0QlcO8N2wT7R0+1sHWZvQ+y3rMLwdY1ZyS1z0W3t65j9PqT4HmQ6ALzNe7RZlNuCNE0wBSWA==}
@@ -6723,10 +6689,6 @@ packages:
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
-  body-parser@2.4.0:
-    resolution: {integrity: sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==}
-    engines: {node: '>=18'}
-
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
 
@@ -7108,6 +7070,10 @@ packages:
   cookie@0.7.2:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
+
+  cookie@2.0.2:
+    resolution: {integrity: sha512-SL0cVuEdETEp7pN0FuZb01toc3vnODEfVUCooxG1SJN0yIirh7JMb9X9bvfCFf0vzzbT68RdbKDHYTiWy7a7iw==}
+    engines: {node: '>=22'}
 
   cookiejar@2.1.4:
     resolution: {integrity: sha512-LDx6oHrK+PhzLKJU9j5S7/Y3jM/mUHvD/DeI1WQmJn652iPC5Y4TBzC9l+5OMOXlyTTA+SmVUPm0HQUwpD5Jqw==}
@@ -7622,6 +7588,10 @@ packages:
 
   encodeurl@2.0.0:
     resolution: {integrity: sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==}
+    engines: {node: '>= 0.8'}
+
+  encodeurl@2.0.1:
+    resolution: {integrity: sha512-Ev/hIyePLZtpL98x562lvPtenrUfGr0lfaf44HFZ+hDEwso7ccV9QAZrEVLg0hxNAzygaAFxy2dYaAKKM0G06A==}
     engines: {node: '>= 0.8'}
 
   end-of-stream@1.4.5:
@@ -8182,10 +8152,6 @@ packages:
   exponential-backoff@3.1.3:
     resolution: {integrity: sha512-ZgEeZXj30q+I0EN+CbSSpIyPaJ5HVQD18Z1m+u1FXbAeT94mr1zw50q4q6jiiC447Nl/YTcIYSAftiGqetwXCA==}
 
-  express@5.3.0:
-    resolution: {integrity: sha512-qCqy1xSoaugxOD4IVHb1ZWdkvCF2W3aE2okKouWj8VwJ+ztskSiXoBnCSJqfKT+cVPJhuJqe9YLbY425+Zh00g==}
-    engines: {node: '>= 18'}
-
   ext-list@2.2.2:
     resolution: {integrity: sha512-u+SQgsubraE6zItfVA0tBuCBhfU9ogSRnsvygI7wht9TS510oLkBRXBsqopeUG/GBOIQyKZO9wjTqIu/sf5zFA==}
     engines: {node: '>=0.10.0'}
@@ -8200,6 +8166,9 @@ packages:
   fast-copy@4.1.1:
     resolution: {integrity: sha512-A4QTJmuiztpGtr6AMeJts9R4hbj2ZBUwtOaKrG6rw2y7t6+IaJKjz5M3XDs8BUznxDH43FVc6A0y/gWlMl4UtA==}
 
+  fast-decode-uri-component@1.0.1:
+    resolution: {integrity: sha512-WKgKWg5eUxvRZGwW8FvfbaH7AXSh2cL+3j5fMGzUMCxWBJ3dV3a7Wz8y2f/uQ0e3B6WmodD3oS54jTQ9HVTIIg==}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -8208,6 +8177,9 @@ packages:
 
   fast-json-stable-stringify@2.1.0:
     resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
+
+  fast-querystring@1.1.2:
+    resolution: {integrity: sha512-g6KuKWmFXc0fID8WWH0jit4g0AGBoJhCkJMb1RmbsSEUNvQ+ZC8D6CUZ+GtF8nMzSPXnhiePyyqqipzNNEnHjg==}
 
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
@@ -8297,9 +8269,9 @@ packages:
     resolution: {integrity: sha512-aAWcW57uxVNrQZqFXjITpW3sIUQmHGG3qSb9mUah9MgMC4NeWhNOlNjXEYq3HjRAvL6arUviZGGJsBg6z0zsWA==}
     engines: {node: '>= 0.8'}
 
-  finalhandler@2.1.1:
-    resolution: {integrity: sha512-S8KoZgRZN+a5rNwqTxlZZePjT/4cnm0ROV70LedRHZ0p8u9fRID0hJUZQpkKLzro8LfmC8sx23bY6tVNxv8pQA==}
-    engines: {node: '>= 18.0.0'}
+  find-my-way@9.10.0:
+    resolution: {integrity: sha512-eru+uCPQ2g+nLBkf84MHP/KyNNMar0BDy0j+i8Fb72GF9/YHBZ58q7FODUtfVV7XU9nfRUHXSmaM8NmZcIbZ4Q==}
+    engines: {node: '>=20'}
 
   find-node-modules@2.1.3:
     resolution: {integrity: sha512-UC2I2+nx1ZuOBclWVNdcnbDR5dlrOdVb7xNjmT/lHE+LsgztWks3dG7boJ37yTS/venXw84B/mAW9uHVoC5QRg==}
@@ -8376,10 +8348,6 @@ packages:
   formidable@3.5.4:
     resolution: {integrity: sha512-YikH+7CUTOtP44ZTnUhR7Ic2UASBPOqmaRkRKxRbywPTe5VxF7RRCck4af9wutiZ/QKM5nME9Bie2fFaPz5Gug==}
     engines: {node: '>=14.0.0'}
-
-  forwarded@0.2.0:
-    resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
-    engines: {node: '>= 0.6'}
 
   fresh@0.5.2:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
@@ -8554,10 +8522,6 @@ packages:
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
-
-  helmet@8.3.0:
-    resolution: {integrity: sha512-Qgpiaws3Sm30Av8Eah6sjMCZZwjlBu+E68rhpCWBshY1lb09HtLwj5GviX0OyQIn+ulUS0iX0AxN5n3tLZzz1w==}
-    engines: {node: '>=18.0.0'}
 
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
@@ -8764,9 +8728,9 @@ packages:
     resolution: {integrity: sha512-f+Dtubxfpf6KYFq7WVXJoOLn0bk4TJrMrN9SzeE+jrWrCWj7XX3fA6vkryafhADX+GMymRxgDJDOI33COkJc0w==}
     engines: {node: '>=20.0.0'}
 
-  ipaddr.js@1.9.1:
-    resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
-    engines: {node: '>= 0.10'}
+  ipaddr.js@2.5.0:
+    resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
+    engines: {node: '>= 10'}
 
   is-arrayish@0.2.1:
     resolution: {integrity: sha512-zz06S8t0ozoDXMG+ube26zeCTNXcKIPJZJi8hBrF4idCLms4CG9QtK7qBl1boi5ODzFpjswb5JPmHCbMpjaYzg==}
@@ -8836,9 +8800,6 @@ packages:
 
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
-
-  is-promise@4.0.0:
-    resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
 
   is-stream@2.0.1:
     resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
@@ -9313,6 +9274,9 @@ packages:
     cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
+  light-my-request@6.8.0:
+    resolution: {integrity: sha512-5Q8PjoSEdtGIB8fikZsTem5vgRo4F2mR6vUKTDW/H1g6MtAt8e3duQbg/QxL5yzg6BZhor2KOUm3hhWMWLTZwg==}
+
   lightningcss-android-arm64@1.32.0:
     resolution: {integrity: sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg==}
     engines: {node: '>= 12.0.0'}
@@ -9725,10 +9689,6 @@ packages:
 
   memoize-one@6.0.0:
     resolution: {integrity: sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==}
-
-  merge-descriptors@2.0.0:
-    resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
-    engines: {node: '>=18'}
 
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
@@ -10179,6 +10139,10 @@ packages:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
 
+  on-finished@2.4.2:
+    resolution: {integrity: sha512-ATWUv387i+nLD49EiDoOft5scf32Vsdz3ktrQJG9bi7jRFmaXTssvyvj1EmeKVVgvesbqUtvQQvaS2TpTukAZQ==}
+    engines: {node: '>= 0.8'}
+
   on-headers@1.1.0:
     resolution: {integrity: sha512-737ZY3yNnXy37FHkQxPzt4UZ2UWPWiCZWLvFZ4fu5cueciegX0zGPnrlY6bwRg4FdQOe9YU8MkmJwGhoMybl8A==}
     engines: {node: '>= 0.8'}
@@ -10578,10 +10542,6 @@ packages:
     resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
     engines: {node: '>=12.0.0'}
 
-  proxy-addr@2.0.8:
-    resolution: {integrity: sha512-5nnx0yGyVUcY6t9RnWcARWtwT9F1D8O9rt08htPvnd49W1IgZtmLkhu9WfMzQj1cFxjHIO6connUNVW5k7AVyQ==}
-    engines: {node: '>= 0.10'}
-
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
@@ -10595,8 +10555,8 @@ packages:
   pure-rand@7.0.1:
     resolution: {integrity: sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ==}
 
-  qs@6.16.1:
-    resolution: {integrity: sha512-5Px6J7rfHBAGUhNQ3es4YzcOdBBw0SDcVtThJml4RdnKw4tKs2epA0kPZ+K8X+WiHktT93RHVcQ/3ym5aTCgtg==}
+  qs@6.17.1:
+    resolution: {integrity: sha512-jd3COkaKVgGUW+ZHyEHCG9bH7RoaaiWuMgzsIBjUMVjLAaWGWpoUAVwljVvBHxRu/2qEHnadLGZrkutYUBPQJA==}
     engines: {node: '>=0.6'}
 
   query-string@9.5.1:
@@ -10617,10 +10577,6 @@ packages:
   range-parser@1.3.0:
     resolution: {integrity: sha512-hek2mFQpPuI4E1BBKrSto+BU3e3x4xuarsbiwr3+lf7p44juvFMV0XFWQAP3xUyqXA4RrXLIoaSUGbSt056ZMw==}
     engines: {node: '>= 0.6'}
-
-  raw-body@3.0.2:
-    resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
-    engines: {node: '>= 0.10'}
 
   re2js@2.9.1:
     resolution: {integrity: sha512-JIT3bEEUZTOR2YS1walNEIfH4cF/cQeZcBUFq7ldqO6lR6g0X5CBq/S8rsa9omzZcsNf8qc36jCkWpKKtncrZg==}
@@ -11015,6 +10971,10 @@ packages:
     resolution: {integrity: sha512-oMA2dcrw6u0YfxJQXm342bFKX/E4sG9rbTzO9ptUcR/e8A33cHuvStiYOwH7fszkZlZ1z/ta9AAoPk2F4qIOHA==}
     engines: {node: '>=18'}
 
+  ret@0.5.1:
+    resolution: {integrity: sha512-Z/nyvABwcRnRD2mMP7Kz6G1dFZZqX1mNErOnxF42OCQKE07b9k9hK9SQxHL3LFEZUdzQaLM4dId1E/E6Vm4WhA==}
+    engines: {node: '>=10'}
+
   retry@0.12.0:
     resolution: {integrity: sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow==}
     engines: {node: '>= 4'}
@@ -11031,10 +10991,6 @@ packages:
     resolution: {integrity: sha512-RFnrW4lhXA3s3eqHDZvN654g8OTjzRfqpIRJYczCGB6HzphckVAi/Qh4tbPUbRuDi7s1Llv8g/NspLkttY3gTA==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
-
-  router@2.2.0:
-    resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
-    engines: {node: '>= 18'}
 
   rrule-temporal@2.2.8:
     resolution: {integrity: sha512-+wWUe0J02oMh1UWKIt1RTu2H0Cz+gP11O/iweK0MN2UP6JLGeepTUkbSBa90Hxq0W+ywSxM9IlJNouIUdMOwhg==}
@@ -11057,6 +11013,10 @@ packages:
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
+
+  safe-regex2@5.1.2:
+    resolution: {integrity: sha512-tAtCGFPPP02VroDVzp4daGi6bC7jWG+41D47GKf18FeH/ubvKQHT9VmhAkvtjNOmJwqtApzWeUpEhkyEYULvmw==}
+    hasBin: true
 
   safe-regex@2.1.1:
     resolution: {integrity: sha512-rx+x8AMzKb5Q5lQ95Zoi6ZbJqwCLkqi3XuJXp5P3rT8OEc6sZCJG5AE5dU3lsgRr/F4Bs31jSlVN+j5KrsGu9A==}
@@ -11095,8 +11055,8 @@ packages:
     resolution: {integrity: sha512-zJlMCZ0cAR5p/Y4oVpRoqioDMJcGxaXRrQ/4rP4WyR84vc5z/DolXdbvXeDpTwbtocDFr2rhPqHPErDCUtz2kA==}
     engines: {node: '>= 10.13.0'}
 
-  secure-json-parse@4.1.0:
-    resolution: {integrity: sha512-l4KnYfEyqYJxDwlNVyRfO2E4NTHfMKAWdUuA8J0yve2Dz/E/PdBepY03RvyJpssIpRFwJoCD55wA+mEDs6ByWA==}
+  secure-json-parse@4.1.1:
+    resolution: {integrity: sha512-lnd81MQEZKjhW/Gd2TQqdd4XP6QYNdDW/EP+I7nTrFHP9y2LmaGPIHk9xsnzcOiEr1c39c/e84xFgGviQKBTRw==}
 
   seek-bzip@2.0.0:
     resolution: {integrity: sha512-SMguiTnYrhpLdk3PwfzHeotrcwi8bNV4iemL9tx9poR/yeaMYwB9VzR1w7b57DuWpuqR8n6oZboi0hj3AxZxQg==}
@@ -11158,6 +11118,9 @@ packages:
 
   server-only@0.0.1:
     resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
+
+  set-cookie-parser@3.2.3:
+    resolution: {integrity: sha512-bDO7NdAkLprNt3BNl3LAh0oVnOS5+WspzxOxiboo7vRIyTqj2pvFmNWYEFynSGQgpJ+7yG/9nc/aSG20UDBUpg==}
 
   setimmediate@1.0.5:
     resolution: {integrity: sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==}
@@ -13069,7 +13032,7 @@ snapshots:
       '@babel/parser': 7.29.9
       '@babel/types': 7.29.8
 
-  '@babel/traverse@7.29.0(supports-color@8.1.1)':
+  '@babel/traverse@7.29.0(supports-color@9.4.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.8
@@ -13077,7 +13040,7 @@ snapshots:
       '@babel/parser': 7.29.2
       '@babel/template': 7.29.7
       '@babel/types': 7.29.8
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -13836,6 +13799,15 @@ snapshots:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
       js-yaml: 4.3.2
+
+  '@fastify/deepmerge@3.2.4': {}
+
+  '@fastify/forwarded@3.1.2': {}
+
+  '@fastify/proxy-addr@5.1.2':
+    dependencies:
+      '@fastify/forwarded': 3.1.2
+      ipaddr.js: 2.5.0
 
   '@firebase/ai@2.14.0(@firebase/app-types@0.9.5)(@firebase/app@0.16.0)':
     dependencies:
@@ -14879,9 +14851,9 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@kwsites/file-exists@1.1.1(supports-color@8.1.1)':
+  '@kwsites/file-exists@1.1.1(supports-color@9.4.0)':
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -15044,21 +15016,21 @@ snapshots:
   '@neon-rs/load@0.0.4':
     optional: true
 
-  ? '@nestjs-cls/transactional-adapter-drizzle-orm@2.0.2(@nestjs-cls/transactional@4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))'
-  : dependencies:
-      '@nestjs-cls/transactional': 4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      drizzle-orm: 1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
-      nestjs-cls: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-
-  '@nestjs-cls/transactional@4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs-cls/transactional-adapter-drizzle-orm@2.0.2(fa1852af5706068eaec21da4d9ff9a84)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      nestjs-cls: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs-cls/transactional': 4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      drizzle-orm: 1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
+      nestjs-cls: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+
+  '@nestjs-cls/transactional@4.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+    dependencies:
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      nestjs-cls: 7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
 
-  '@nestjs/cli@12.0.13(@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1))(@swc/core@1.16.22)(@types/node@26.6.6)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(prettier@3.9.9)(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@nestjs/cli@12.0.13(@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@9.4.0))(@swc/core@1.16.22)(@types/node@26.6.6)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(prettier@3.9.9)(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
       '@angular-devkit/core': 22.2.6(chokidar@5.0.0)
       '@angular-devkit/schematics': 22.2.6(chokidar@5.0.0)
@@ -15076,7 +15048,7 @@ snapshots:
       tsconfig-paths: 4.2.0
       typescript: 6.0.3
     optionalDependencies:
-      '@swc/cli': 0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1)
+      '@swc/cli': 0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@9.4.0)
       '@swc/core': 1.16.22
       fork-ts-checker-webpack-plugin: 9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
       ts-loader: 9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
@@ -15087,10 +15059,10 @@ snapshots:
       - '@types/node'
       - prettier
 
-  '@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)':
+  '@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      file-type: 22.3.0(supports-color@8.1.1)
+      file-type: 22.3.0(supports-color@9.4.0)
       iterare: 1.2.1
       load-esm: 1.0.3
       reflect-metadata: 0.2.2
@@ -15103,18 +15075,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@nestjs/config@12.1.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(rxjs@7.8.2)':
+  '@nestjs/config@12.1.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
       '@standard-schema/spec': 1.1.0
       dotenv: 18.0.3
       dotenv-expand: 13.0.0
       es-toolkit: 1.53.1
       rxjs: 7.8.2
 
-  '@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
       fast-safe-stringify: 2.1.1
       iterare: 1.2.1
       path-to-regexp: 8.4.2
@@ -15122,69 +15094,81 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.9.1
       uid: 2.0.2
-    optionalDependencies:
-      '@nestjs/platform-express': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rxjs@7.8.2)(supports-color@8.1.1)
 
-  '@nestjs/drizzle@0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)':
+  '@nestjs/drizzle@0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(drizzle-orm@1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7))(reflect-metadata@0.2.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       drizzle-orm: 1.0.0-rc.5(@cloudflare/workers-types@5.20261006.1)(@effect/sql-d1@4.0.3(effect@4.0.3))(@effect/sql-sqlite-do@4.0.3(effect@4.0.3))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(@types/pg@8.23.1)(arktype@2.2.7)(effect@4.0.3)(pg@8.23.1)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
       reflect-metadata: 0.2.2
 
-  '@nestjs/event-emitter@12.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)':
+  '@nestjs/event-emitter@12.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       eventemitter2: 6.4.9
 
-  '@nestjs/http-client@0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)':
+  '@nestjs/http-client@0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
 
-  '@nestjs/i18n@0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@standard-schema/spec@1.1.0)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs/i18n@0.0.3(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@standard-schema/spec@1.1.0)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
       class-validator: 0.14.3
 
-  '@nestjs/jwt@12.0.5(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))':
+  '@nestjs/jwt@12.0.5(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
       '@types/jsonwebtoken': 9.0.10
       jsonwebtoken: 9.0.3
 
-  '@nestjs/mail@0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs/mail@0.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
 
-  '@nestjs/mapped-types@12.0.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)':
+  '@nestjs/mapped-types@12.0.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
       reflect-metadata: 0.2.2
     optionalDependencies:
       class-transformer: 0.5.1
       class-validator: 0.14.3
 
-  '@nestjs/platform-express@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rxjs@7.8.2)(supports-color@8.1.1)':
+  '@nestjs/platform-node@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)(supports-color@9.4.0)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@fastify/proxy-addr': 5.1.2
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      content-type: 2.1.0
+      cookie: 0.7.2
+      cookie-signature: 1.2.2
       cors: 2.8.6
-      express: 5.3.0(supports-color@8.1.1)
+      encodeurl: 2.0.1
+      fast-querystring: 1.1.2
+      find-my-way: 9.10.0
+      light-my-request: 6.8.0
+      mime-types: 3.0.2
       multer: 2.5.0
+      on-finished: 2.4.2
       path-to-regexp: 8.4.2
+      qs: 6.17.1
       rxjs: 7.8.2
+      secure-json-parse: 4.1.1
+      send: 1.2.1(supports-color@9.4.0)
+      serve-static: 2.2.1(supports-color@9.4.0)
       tslib: 2.9.1
+      type-is: 2.1.0
     transitivePeerDependencies:
       - supports-color
 
@@ -15201,12 +15185,12 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)':
+  '@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)':
     dependencies:
       '@microsoft/tsdoc': 0.17.1
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/mapped-types': 12.0.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/mapped-types': 12.0.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)
       '@standard-schema/spec': 1.1.0
       es-toolkit: 1.53.1
       js-yaml: 5.5.0
@@ -15218,29 +15202,27 @@ snapshots:
       class-validator: 0.14.3
       typescript: 6.0.3
 
-  '@nestjs/terminus@12.2.0(@grpc/grpc-js@1.14.5)(@grpc/proto-loader@0.8.1)(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
+  '@nestjs/terminus@12.2.0(@grpc/grpc-js@1.14.5)(@grpc/proto-loader@0.8.1)(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/swagger@12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3))(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
     optionalDependencies:
       '@grpc/grpc-js': 1.14.5
       '@grpc/proto-loader': 0.8.1
-      '@nestjs/swagger': 12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)
+      '@nestjs/swagger': 12.1.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(typescript@6.0.3)
 
-  '@nestjs/testing@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(@nestjs/platform-express@12.5.1)':
+  '@nestjs/testing@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       tslib: 2.9.1
-    optionalDependencies:
-      '@nestjs/platform-express': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rxjs@7.8.2)(supports-color@8.1.1)
 
-  '@nestjs/throttler@6.8.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)':
+  '@nestjs/throttler@6.8.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
 
   '@noble/hashes@1.8.0': {}
@@ -16345,10 +16327,10 @@ snapshots:
     dependencies:
       '@sentry/core': 10.75.2
 
-  '@sentry/nestjs@11.12.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
+  '@sentry/nestjs@11.12.0(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))':
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@sentry/conventions': 0.32.0
       '@sentry/core': 11.12.0
       '@sentry/node': 11.12.0(rollup@4.62.2)(webpack@5.106.2(@swc/core@1.16.22)(csso@5.0.5)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32))
@@ -16567,15 +16549,15 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@8.1.1)':
+  '@swc/cli@0.8.2(@swc/core@1.16.22)(chokidar@5.0.0)(supports-color@9.4.0)':
     dependencies:
       '@swc/core': 1.16.22
       '@swc/counter': 0.1.3
-      '@xhmikosr/bin-wrapper': 14.5.1(supports-color@8.1.1)
+      '@xhmikosr/bin-wrapper': 14.5.1(supports-color@9.4.0)
       commander: 8.3.0
       minimatch: 9.0.9
       piscina: 4.9.4
-      semver: 7.8.5
+      semver: 7.8.6
       slash: 3.0.0
       source-map: 0.7.6
       tinyglobby: 0.2.17
@@ -16734,9 +16716,9 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@testcontainers/postgresql@12.2.1(supports-color@8.1.1)':
+  '@testcontainers/postgresql@12.2.1(supports-color@9.4.0)':
     dependencies:
-      testcontainers: 12.2.1(supports-color@8.1.1)
+      testcontainers: 12.2.1(supports-color@9.4.0)
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -16755,16 +16737,16 @@ snapshots:
     optionalDependencies:
       jest: 30.5.2(@types/node@26.6.6)(supports-color@8.1.1)(ts-node@10.9.2(@swc/core@1.16.22)(@types/node@26.6.6)(typescript@6.0.3))
 
-  '@tokenizer/inflate@0.4.1(supports-color@8.1.1)':
+  '@tokenizer/inflate@0.4.1(supports-color@9.4.0)':
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       token-types: 6.1.2
     transitivePeerDependencies:
       - supports-color
 
-  '@tokenizer/inflate@0.6.0(supports-color@8.1.1)':
+  '@tokenizer/inflate@0.6.0(supports-color@9.4.0)':
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       strtok3: 10.6.3
       token-types: 6.1.2
     transitivePeerDependencies:
@@ -16835,21 +16817,12 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
-  '@types/body-parser@1.19.6':
-    dependencies:
-      '@types/connect': 3.4.38
-      '@types/node': 26.6.6
-
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
 
   '@types/concat-stream@2.0.3':
-    dependencies:
-      '@types/node': 26.6.6
-
-  '@types/connect@3.4.38':
     dependencies:
       '@types/node': 26.6.6
 
@@ -16896,19 +16869,6 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/express-serve-static-core@5.1.3':
-    dependencies:
-      '@types/node': 26.6.6
-      '@types/qs': 6.15.1
-      '@types/range-parser': 1.2.7
-      '@types/send': 1.2.1
-
-  '@types/express@5.0.6':
-    dependencies:
-      '@types/body-parser': 1.19.6
-      '@types/express-serve-static-core': 5.1.3
-      '@types/serve-static': 2.2.0
-
   '@types/graceful-fs@4.1.9':
     dependencies:
       '@types/node': 26.6.6
@@ -16920,8 +16880,6 @@ snapshots:
   '@types/hosted-git-info@3.0.5': {}
 
   '@types/http-cache-semantics@4.2.0': {}
-
-  '@types/http-errors@2.0.5': {}
 
   '@types/is-empty@1.2.3': {}
 
@@ -16981,10 +16939,6 @@ snapshots:
       pg-protocol: 1.16.1
       pg-types: 2.2.0
 
-  '@types/qs@6.15.1': {}
-
-  '@types/range-parser@1.2.7': {}
-
   '@types/react-reconciler@0.33.1(@types/react@19.3.0)':
     dependencies:
       '@types/react': 19.3.0
@@ -17000,15 +16954,6 @@ snapshots:
   '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
-
-  '@types/send@1.2.1':
-    dependencies:
-      '@types/node': 26.6.6
-
-  '@types/serve-static@2.2.0':
-    dependencies:
-      '@types/http-errors': 2.0.5
-      '@types/node': 26.6.6
 
   '@types/ssh2-streams@0.1.13':
     dependencies:
@@ -17142,7 +17087,7 @@ snapshots:
       obug: 3.0.0
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@9.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   '@vitest/istanbul-lib-coverage@2.1.0': {}
 
@@ -17256,9 +17201,9 @@ snapshots:
 
   '@workflow/serde@4.1.0': {}
 
-  '@xhmikosr/archive-type@8.1.0(supports-color@8.1.1)':
+  '@xhmikosr/archive-type@8.1.0(supports-color@9.4.0)':
     dependencies:
-      file-type: 21.3.4(supports-color@8.1.1)
+      file-type: 21.3.4(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -17267,10 +17212,10 @@ snapshots:
       execa: 9.6.1
       isexe: 4.0.0
 
-  '@xhmikosr/bin-wrapper@14.5.1(supports-color@8.1.1)':
+  '@xhmikosr/bin-wrapper@14.5.1(supports-color@9.4.0)':
     dependencies:
       '@xhmikosr/bin-check': 8.2.2
-      '@xhmikosr/downloader': 16.3.1(supports-color@8.1.1)
+      '@xhmikosr/downloader': 16.3.1(supports-color@9.4.0)
       '@xhmikosr/os-filter-obj': 4.1.0
       binary-version-check: 6.1.0
     transitivePeerDependencies:
@@ -17278,9 +17223,9 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@xhmikosr/decompress-tar@9.0.2(supports-color@8.1.1)':
+  '@xhmikosr/decompress-tar@9.0.2(supports-color@9.4.0)':
     dependencies:
-      file-type: 21.3.4(supports-color@8.1.1)
+      file-type: 21.3.4(supports-color@9.4.0)
       is-stream: 4.0.1
       tar-stream: 3.1.7
     transitivePeerDependencies:
@@ -17288,10 +17233,10 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@xhmikosr/decompress-tarbz2@9.0.2(supports-color@8.1.1)':
+  '@xhmikosr/decompress-tarbz2@9.0.2(supports-color@9.4.0)':
     dependencies:
-      '@xhmikosr/decompress-tar': 9.0.2(supports-color@8.1.1)
-      file-type: 21.3.4(supports-color@8.1.1)
+      '@xhmikosr/decompress-tar': 9.0.2(supports-color@9.4.0)
+      file-type: 21.3.4(supports-color@9.4.0)
       is-stream: 4.0.1
       seek-bzip: 2.0.0
       unbzip2-stream: 1.4.3
@@ -17300,30 +17245,30 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@xhmikosr/decompress-targz@9.0.1(supports-color@8.1.1)':
+  '@xhmikosr/decompress-targz@9.0.1(supports-color@9.4.0)':
     dependencies:
-      '@xhmikosr/decompress-tar': 9.0.2(supports-color@8.1.1)
-      file-type: 21.3.4(supports-color@8.1.1)
+      '@xhmikosr/decompress-tar': 9.0.2(supports-color@9.4.0)
+      file-type: 21.3.4(supports-color@9.4.0)
       is-stream: 4.0.1
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
       - supports-color
 
-  '@xhmikosr/decompress-unzip@8.2.1(supports-color@8.1.1)':
+  '@xhmikosr/decompress-unzip@8.2.1(supports-color@9.4.0)':
     dependencies:
-      file-type: 21.3.4(supports-color@8.1.1)
+      file-type: 21.3.4(supports-color@9.4.0)
       get-stream: 9.0.1
       yauzl: 3.4.0
     transitivePeerDependencies:
       - supports-color
 
-  '@xhmikosr/decompress@11.1.4(supports-color@8.1.1)':
+  '@xhmikosr/decompress@11.1.4(supports-color@9.4.0)':
     dependencies:
-      '@xhmikosr/decompress-tar': 9.0.2(supports-color@8.1.1)
-      '@xhmikosr/decompress-tarbz2': 9.0.2(supports-color@8.1.1)
-      '@xhmikosr/decompress-targz': 9.0.1(supports-color@8.1.1)
-      '@xhmikosr/decompress-unzip': 8.2.1(supports-color@8.1.1)
+      '@xhmikosr/decompress-tar': 9.0.2(supports-color@9.4.0)
+      '@xhmikosr/decompress-tarbz2': 9.0.2(supports-color@9.4.0)
+      '@xhmikosr/decompress-targz': 9.0.1(supports-color@9.4.0)
+      '@xhmikosr/decompress-unzip': 8.2.1(supports-color@9.4.0)
       graceful-fs: 4.2.11
       strip-dirs: 3.0.0
     transitivePeerDependencies:
@@ -17331,13 +17276,13 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@xhmikosr/downloader@16.3.1(supports-color@8.1.1)':
+  '@xhmikosr/downloader@16.3.1(supports-color@9.4.0)':
     dependencies:
-      '@xhmikosr/archive-type': 8.1.0(supports-color@8.1.1)
-      '@xhmikosr/decompress': 11.1.4(supports-color@8.1.1)
+      '@xhmikosr/archive-type': 8.1.0(supports-color@9.4.0)
+      '@xhmikosr/decompress': 11.1.4(supports-color@9.4.0)
       content-disposition: 2.0.1
       ext-name: 5.0.0
-      file-type: 21.3.4(supports-color@8.1.1)
+      file-type: 21.3.4(supports-color@9.4.0)
       filenamify: 7.0.3
       got: 14.6.6
     transitivePeerDependencies:
@@ -17804,7 +17749,7 @@ snapshots:
   binary-version-check@6.1.0:
     dependencies:
       binary-version: 7.1.0
-      semver: 7.8.5
+      semver: 7.8.6
       semver-truncate: 3.0.0
 
   binary-version@7.1.0:
@@ -17817,20 +17762,6 @@ snapshots:
       buffer: 5.7.1
       inherits: 2.0.4
       readable-stream: 3.6.2
-
-  body-parser@2.4.0(supports-color@8.1.1):
-    dependencies:
-      bytes: 3.1.2
-      content-type: 2.1.0
-      debug: 4.4.3(supports-color@8.1.1)
-      http-errors: 2.0.1
-      iconv-lite: 0.7.3
-      on-finished: 2.4.1
-      qs: 6.16.1
-      raw-body: 3.0.2
-      type-is: 2.1.0
-    transitivePeerDependencies:
-      - supports-color
 
   boolbase@1.0.0: {}
 
@@ -18217,6 +18148,8 @@ snapshots:
 
   cookie@0.7.2: {}
 
+  cookie@2.0.2: {}
+
   cookiejar@2.1.4: {}
 
   core-js-compat@3.50.0:
@@ -18480,21 +18413,21 @@ snapshots:
     dependencies:
       yaml: 2.9.1
 
-  docker-modem@5.0.7(supports-color@8.1.1):
+  docker-modem@5.0.7(supports-color@9.4.0):
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       readable-stream: 3.6.2
       split-ca: 1.0.1
       ssh2: 1.17.0
     transitivePeerDependencies:
       - supports-color
 
-  dockerode@5.0.1(supports-color@8.1.1):
+  dockerode@5.0.1(supports-color@9.4.0):
     dependencies:
       '@balena/dockerignore': 1.0.2
       '@grpc/grpc-js': 1.14.5
       '@grpc/proto-loader': 0.7.15
-      docker-modem: 5.0.7(supports-color@8.1.1)
+      docker-modem: 5.0.7(supports-color@9.4.0)
       protobufjs: 7.6.6
       tar-fs: 2.1.5
     transitivePeerDependencies:
@@ -18588,13 +18521,15 @@ snapshots:
 
   encodeurl@2.0.0: {}
 
+  encodeurl@2.0.1: {}
+
   end-of-stream@1.4.5:
     dependencies:
       once: 1.4.0
 
   engine.io-parser@5.2.3: {}
 
-  engine.io@6.6.11(supports-color@8.1.1):
+  engine.io@6.6.11(supports-color@9.4.0):
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 26.6.6
@@ -18602,7 +18537,7 @@ snapshots:
       accepts: 1.3.8
       cookie: 0.7.2
       cors: 2.8.6
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       engine.io-parser: 5.2.3
       ws: 8.21.3
     transitivePeerDependencies:
@@ -19250,39 +19185,6 @@ snapshots:
 
   exponential-backoff@3.1.3: {}
 
-  express@5.3.0(supports-color@8.1.1):
-    dependencies:
-      accepts: 2.0.0
-      body-parser: 2.4.0(supports-color@8.1.1)
-      content-disposition: 2.0.1
-      content-type: 2.1.0
-      cookie: 0.7.2
-      cookie-signature: 1.2.2
-      debug: 4.4.3(supports-color@8.1.1)
-      depd: 2.0.0
-      encodeurl: 2.0.0
-      escape-html: 1.0.3
-      etag: 1.8.1
-      finalhandler: 2.1.1(supports-color@8.1.1)
-      fresh: 2.0.0
-      http-errors: 2.0.1
-      merge-descriptors: 2.0.0
-      mime-types: 3.0.2
-      on-finished: 2.4.1
-      once: 1.4.0
-      parseurl: 1.3.3
-      proxy-addr: 2.0.8
-      qs: 6.16.1
-      range-parser: 1.3.0
-      router: 2.2.0(supports-color@8.1.1)
-      send: 1.2.1(supports-color@8.1.1)
-      serve-static: 2.2.1(supports-color@8.1.1)
-      statuses: 2.0.2
-      type-is: 2.1.0
-      vary: 1.1.2
-    transitivePeerDependencies:
-      - supports-color
-
   ext-list@2.2.2:
     dependencies:
       mime-db: 1.54.0
@@ -19296,11 +19198,17 @@ snapshots:
 
   fast-copy@4.1.1: {}
 
+  fast-decode-uri-component@1.0.1: {}
+
   fast-deep-equal@3.1.3: {}
 
   fast-fifo@1.3.2: {}
 
   fast-json-stable-stringify@2.1.0: {}
+
+  fast-querystring@1.1.2:
+    dependencies:
+      fast-decode-uri-component: 1.0.1
 
   fast-safe-stringify@2.1.1: {}
 
@@ -19365,18 +19273,18 @@ snapshots:
     dependencies:
       is-unicode-supported: 2.1.0
 
-  file-type@21.3.4(supports-color@8.1.1):
+  file-type@21.3.4(supports-color@9.4.0):
     dependencies:
-      '@tokenizer/inflate': 0.4.1(supports-color@8.1.1)
+      '@tokenizer/inflate': 0.4.1(supports-color@9.4.0)
       strtok3: 10.6.3
       token-types: 6.1.2
       uint8array-extras: 1.6.0
     transitivePeerDependencies:
       - supports-color
 
-  file-type@22.3.0(supports-color@8.1.1):
+  file-type@22.3.0(supports-color@9.4.0):
     dependencies:
-      '@tokenizer/inflate': 0.6.0(supports-color@8.1.1)
+      '@tokenizer/inflate': 0.6.0(supports-color@9.4.0)
       strtok3: 10.6.3
       token-types: 6.1.2
       uint8array-extras: 1.6.0
@@ -19407,16 +19315,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  finalhandler@2.1.1(supports-color@8.1.1):
+  find-my-way@9.10.0:
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
-      escape-html: 1.0.3
-      on-finished: 2.4.1
-      parseurl: 1.3.3
-      statuses: 2.0.2
-    transitivePeerDependencies:
-      - supports-color
+      fast-deep-equal: 3.1.3
+      fast-querystring: 1.1.2
+      safe-regex2: 5.1.2
 
   find-node-modules@2.1.3:
     dependencies:
@@ -19542,8 +19445,6 @@ snapshots:
       dezalgo: 1.0.4
       once: 1.4.0
 
-  forwarded@0.2.0: {}
-
   fresh@0.5.2: {}
 
   fresh@2.0.0: {}
@@ -19576,17 +19477,17 @@ snapshots:
 
   function-timeout@1.0.2: {}
 
-  gaxios@8.3.1(supports-color@8.1.1):
+  gaxios@8.3.1(supports-color@9.4.0):
     dependencies:
       extend: 3.0.2
-      https-proxy-agent: 7.0.6(supports-color@8.1.1)
+      https-proxy-agent: 7.0.6(supports-color@9.4.0)
       node-fetch: 3.3.2
     transitivePeerDependencies:
       - supports-color
 
-  gcp-metadata@9.2.3(supports-color@8.1.1):
+  gcp-metadata@9.2.3(supports-color@9.4.0):
     dependencies:
-      gaxios: 8.3.1(supports-color@8.1.1)
+      gaxios: 8.3.1(supports-color@9.4.0)
       google-logging-utils: 2.1.1
       json-bigint: 1.0.0
     transitivePeerDependencies:
@@ -19696,12 +19597,12 @@ snapshots:
       is-windows: 1.0.2
       which: 1.3.1
 
-  google-auth-library@11.3.4(supports-color@8.1.1):
+  google-auth-library@11.3.4(supports-color@9.4.0):
     dependencies:
       base64-js: 1.5.1
       ecdsa-sig-formatter: 1.0.11
-      gaxios: 8.3.1(supports-color@8.1.1)
-      gcp-metadata: 9.2.3(supports-color@8.1.1)
+      gaxios: 8.3.1(supports-color@9.4.0)
+      gcp-metadata: 9.2.3(supports-color@9.4.0)
       google-logging-utils: 2.1.1
       jws: 4.0.1
     transitivePeerDependencies:
@@ -19741,8 +19642,6 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
-
-  helmet@8.3.0: {}
 
   help-me@5.0.0: {}
 
@@ -19855,7 +19754,6 @@ snapshots:
       debug: 4.4.3(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   human-signals@2.1.0: {}
 
@@ -19956,18 +19854,18 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  ioredis@6.0.0(supports-color@8.1.1):
+  ioredis@6.0.0(supports-color@9.4.0):
     dependencies:
       '@ioredis/commands': 2.0.0
       cluster-key-slot: 1.1.1
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       denque: 2.1.0
       redis-errors: 1.2.0
       standard-as-callback: 2.1.0
     transitivePeerDependencies:
       - supports-color
 
-  ipaddr.js@1.9.1: {}
+  ipaddr.js@2.5.0: {}
 
   is-arrayish@0.2.1: {}
 
@@ -20013,8 +19911,6 @@ snapshots:
   is-plain-obj@4.1.0: {}
 
   is-potential-custom-element-name@1.0.1: {}
-
-  is-promise@4.0.0: {}
 
   is-stream@2.0.1: {}
 
@@ -20779,6 +20675,13 @@ snapshots:
       '@libsql/win32-x64-msvc': 0.5.29
     optional: true
 
+  light-my-request@6.8.0:
+    dependencies:
+      '@fastify/deepmerge': 3.2.4
+      cookie: 2.0.2
+      process-warning: 5.1.0
+      set-cookie-parser: 3.2.3
+
   lightningcss-android-arm64@1.32.0:
     optional: true
 
@@ -21126,8 +21029,6 @@ snapshots:
 
   memoize-one@6.0.0:
     optional: true
-
-  merge-descriptors@2.0.0: {}
 
   merge-stream@2.0.0: {}
 
@@ -21542,17 +21443,17 @@ snapshots:
   neo-async@2.6.2:
     optional: true
 
-  nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2):
+  nestjs-cls@7.0.2(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2):
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
 
-  nestjs-pino@5.3.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@12.5.1)(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2):
+  nestjs-pino@5.3.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(@nestjs/core@12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2):
     dependencies:
-      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
-      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@12.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/common': 12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0)
+      '@nestjs/core': 12.5.1(@nestjs/common@12.5.1(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@9.4.0))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       pino: 10.4.0
       pino-http: 11.0.0
       rxjs: 7.8.2
@@ -21694,6 +21595,10 @@ snapshots:
       ee-first: 1.1.1
 
   on-finished@2.4.1:
+    dependencies:
+      ee-first: 1.1.1
+
+  on-finished@2.4.2:
     dependencies:
       ee-first: 1.1.1
 
@@ -22054,7 +21959,7 @@ snapshots:
       on-exit-leak-free: 2.1.2
       pino-abstract-transport: 3.0.0
       pump: 3.0.4
-      secure-json-parse: 4.1.0
+      secure-json-parse: 4.1.1
       sonic-boom: 5.0.1
       strip-json-comments: 5.0.3
 
@@ -22173,9 +22078,9 @@ snapshots:
       retry: 0.12.0
       signal-exit: 3.0.7
 
-  properties-reader@3.0.1(supports-color@8.1.1):
+  properties-reader@3.0.1(supports-color@9.4.0):
     dependencies:
-      '@kwsites/file-exists': 1.1.1(supports-color@8.1.1)
+      '@kwsites/file-exists': 1.1.1(supports-color@9.4.0)
       mkdirp: 3.0.1
     transitivePeerDependencies:
       - supports-color
@@ -22198,11 +22103,6 @@ snapshots:
       '@types/node': 26.6.6
       long: 5.3.2
 
-  proxy-addr@2.0.8:
-    dependencies:
-      forwarded: 0.2.0
-      ipaddr.js: 1.9.1
-
   proxy-from-env@1.1.0: {}
 
   pump@3.0.4:
@@ -22214,7 +22114,7 @@ snapshots:
 
   pure-rand@7.0.1: {}
 
-  qs@6.16.1:
+  qs@6.17.1:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1
@@ -22233,13 +22133,6 @@ snapshots:
 
   range-parser@1.3.0: {}
 
-  raw-body@3.0.2:
-    dependencies:
-      bytes: 3.1.2
-      http-errors: 2.0.1
-      iconv-lite: 0.7.3
-      unpipe: 1.0.0
-
   re2js@2.9.1: {}
 
   react-devtools-core@6.1.5:
@@ -22255,10 +22148,10 @@ snapshots:
       react: 19.3.0
       scheduler: 0.28.0
 
-  react-email@6.11.14(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1):
+  react-email@6.11.14(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@9.4.0):
     dependencies:
       '@babel/parser': 7.29.2
-      '@babel/traverse': 7.29.0(supports-color@8.1.1)
+      '@babel/traverse': 7.29.0(supports-color@9.4.0)
       '@react-email/render': 2.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       chokidar: 5.0.0
       commander: 13.1.0
@@ -22276,7 +22169,7 @@ snapshots:
       prompts: 2.4.2
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      socket.io: 4.8.4(supports-color@8.1.1)
+      socket.io: 4.8.4(supports-color@9.4.0)
       tailwindcss: 4.3.5
       tsconfig-paths: 4.2.0
     transitivePeerDependencies:
@@ -22723,6 +22616,8 @@ snapshots:
       onetime: 7.0.0
       signal-exit: 4.1.0
 
+  ret@0.5.1: {}
+
   retry@0.12.0: {}
 
   return-fetch@0.4.13: {}
@@ -22780,16 +22675,6 @@ snapshots:
       fsevents: 2.3.3
     optional: true
 
-  router@2.2.0(supports-color@8.1.1):
-    dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-      depd: 2.0.0
-      is-promise: 4.0.0
-      parseurl: 1.3.3
-      path-to-regexp: 8.4.2
-    transitivePeerDependencies:
-      - supports-color
-
   rrule-temporal@2.2.8:
     dependencies:
       temporal-spec: 1.0.1
@@ -22807,6 +22692,10 @@ snapshots:
   safe-buffer@5.1.2: {}
 
   safe-buffer@5.2.1: {}
+
+  safe-regex2@5.1.2:
+    dependencies:
+      ret: 0.5.1
 
   safe-regex@2.1.1:
     dependencies:
@@ -22842,7 +22731,7 @@ snapshots:
       ajv-formats: 3.0.1(ajv@8.20.0)
       ajv-keywords: 5.1.0(ajv@8.20.0)
 
-  secure-json-parse@4.1.0: {}
+  secure-json-parse@4.1.1: {}
 
   seek-bzip@2.0.0:
     dependencies:
@@ -22856,7 +22745,7 @@ snapshots:
 
   semver-truncate@3.0.0:
     dependencies:
-      semver: 7.8.5
+      semver: 7.8.6
 
   semver@6.3.1: {}
 
@@ -22882,17 +22771,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  send@1.2.1(supports-color@8.1.1):
+  send@1.2.1(supports-color@9.4.0):
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-      encodeurl: 2.0.0
+      debug: 4.4.3(supports-color@9.4.0)
+      encodeurl: 2.0.1
       escape-html: 1.0.3
       etag: 1.8.1
       fresh: 2.0.0
       http-errors: 2.0.1
       mime-types: 3.0.2
       ms: 2.1.3
-      on-finished: 2.4.1
+      on-finished: 2.4.2
       range-parser: 1.3.0
       statuses: 2.0.2
     transitivePeerDependencies:
@@ -22916,16 +22805,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  serve-static@2.2.1(supports-color@8.1.1):
+  serve-static@2.2.1(supports-color@9.4.0):
     dependencies:
-      encodeurl: 2.0.0
+      encodeurl: 2.0.1
       escape-html: 1.0.3
       parseurl: 1.3.3
-      send: 1.2.1(supports-color@8.1.1)
+      send: 1.2.1(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
   server-only@0.0.1: {}
+
+  set-cookie-parser@3.2.3: {}
 
   setimmediate@1.0.5:
     optional: true
@@ -23036,30 +22927,30 @@ snapshots:
       dot-case: 3.0.4
       tslib: 2.8.1
 
-  socket.io-adapter@2.5.8(supports-color@8.1.1):
+  socket.io-adapter@2.5.8(supports-color@9.4.0):
     dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  socket.io-parser@4.2.7(supports-color@8.1.1):
+  socket.io-parser@4.2.7(supports-color@9.4.0):
     dependencies:
       '@socket.io/component-emitter': 3.1.2
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.8.4(supports-color@8.1.1):
+  socket.io@4.8.4(supports-color@9.4.0):
     dependencies:
       accepts: 1.3.8
       cors: 2.8.6
-      debug: 4.4.3(supports-color@8.1.1)
-      engine.io: 6.6.11(supports-color@8.1.1)
-      socket.io-adapter: 2.5.8(supports-color@8.1.1)
-      socket.io-parser: 4.2.7(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
+      engine.io: 6.6.11(supports-color@9.4.0)
+      socket.io-adapter: 2.5.8(supports-color@9.4.0)
+      socket.io-parser: 4.2.7(supports-color@9.4.0)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -23285,27 +23176,27 @@ snapshots:
       make-asynchronous: 1.1.0
       time-span: 5.1.0
 
-  superagent@10.4.1(supports-color@8.1.1):
+  superagent@10.4.1(supports-color@9.4.0):
     dependencies:
       component-emitter: 1.3.1
       cookiejar: 2.1.4
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       fast-safe-stringify: 2.1.1
       form-data: 4.0.6
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
-      qs: 6.16.1
+      qs: 6.17.1
     transitivePeerDependencies:
       - supports-color
 
   superstruct@2.0.2: {}
 
-  supertest@7.3.2(supports-color@8.1.1):
+  supertest@7.3.2(supports-color@9.4.0):
     dependencies:
       cookie-signature: 1.2.2
       methods: 1.1.2
-      superagent: 10.4.1(supports-color@8.1.1)
+      superagent: 10.4.1(supports-color@9.4.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -23480,19 +23371,19 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  testcontainers@12.2.1(supports-color@8.1.1):
+  testcontainers@12.2.1(supports-color@9.4.0):
     dependencies:
       '@balena/dockerignore': 1.0.2
       '@types/dockerode': 4.0.1
       archiver: 7.0.1
       async-lock: 1.4.1
       byline: 5.0.0
-      debug: 4.4.3(supports-color@8.1.1)
+      debug: 4.4.3(supports-color@9.4.0)
       docker-compose: 1.5.0
-      dockerode: 5.0.1(supports-color@8.1.1)
+      dockerode: 5.0.1(supports-color@9.4.0)
       get-port: 5.1.1
       proper-lockfile: 4.1.2
-      properties-reader: 3.0.1(supports-color@8.1.1)
+      properties-reader: 3.0.1(supports-color@9.4.0)
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.3
       tmp: 0.2.7
@@ -23963,30 +23854,6 @@ snapshots:
       terser: 5.51.2
       tsx: 4.23.15
       yaml: 2.9.1
-
-  vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.1.0(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 3.0.0
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.2
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.1
-      '@types/node': 26.6.6
-      '@vitest/coverage-v8': 5.1.0(vitest@5.1.0)
-      jsdom: 26.1.0(supports-color@8.1.1)
-    transitivePeerDependencies:
-      - msw
 
   vitest@5.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(jsdom@26.1.0(supports-color@9.4.0))(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:

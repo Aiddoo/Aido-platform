@@ -8,6 +8,7 @@ import { z } from "zod";
 import { HttpLogEvent } from "#api/platform/logging/http-log";
 
 import { RawResponse } from "../decorators/raw-response.decorator.js";
+import { createHttpAdapter } from "../http-adapter.js";
 import { ApiSuccessResponse } from "../swagger/decorators/api-response.decorator.js";
 import { ResponseContractInterceptor } from "./response-contract.interceptor.js";
 import { ResponseTransformInterceptor } from "./response-transform.interceptor.js";
@@ -60,7 +61,7 @@ describe("ResponseContractInterceptor", () => {
       controllers: [ContractFixtureController],
       providers: [{ provide: APP_INTERCEPTOR, useClass: ResponseTransformInterceptor }],
     }).compile();
-    app = module.createNestApplication();
+    app = module.createNestApplication(createHttpAdapter());
     app.useGlobalInterceptors(new ResponseContractInterceptor(app.get(Reflector)));
     await app.init();
   });

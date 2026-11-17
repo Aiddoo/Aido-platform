@@ -5,13 +5,11 @@ import {
   StandardSchemaValidationPipe,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import helmet from "helmet";
 
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { createCorsOptions } from "#api/platform/config/utils/cors-options";
 
 import { API_VERSIONING_OPTIONS } from "./api-versioning.js";
-import { configureRequestIdentity } from "./configure-request-identity.js";
 import { ResponseContractInterceptor } from "./interceptors/response-contract.interceptor.js";
 import { configureRouteBodyLimits } from "./route-body-limits.js";
 
@@ -30,8 +28,8 @@ export function configureApplication(
   config: ApplicationConfiguration,
 ): void {
   const { devTools, responseContractCheck } = app.get<AppSettings>(appConfig.KEY);
-  configureRequestIdentity(app);
-  app.use(helmet());
+  // 라우터가 경로를 디코딩하지 못해 미들웨어 전에 거절한 요청(400)에도 붙도록 Nest 보안 hook을 쓴다(helmet 8 기본값)
+  app.useSecurityHeaders();
   app.enableCors(
     createCorsOptions({
       corsOrigins: config.corsOrigins,
