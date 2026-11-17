@@ -1,6 +1,7 @@
 import { match, P } from "ts-pattern";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   judgeVerificationEmailCap,
@@ -39,7 +40,7 @@ function cappedBucketsFor(
   return match(command)
     .with({ purpose: "PASSWORD_SETUP" }, ({ purpose, userId }) => [
       {
-        bucket: { scope: "user" as const, purpose, userId },
+        bucket: { scope: "user" as const, purpose, userId: UserId.reconstitute(userId) },
         maxCodes: VERIFICATION_EMAIL_CAP.MAX_CODES_PER_USER,
       },
     ])

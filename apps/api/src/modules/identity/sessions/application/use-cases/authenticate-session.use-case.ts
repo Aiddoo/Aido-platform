@@ -106,7 +106,7 @@ export class AuthenticateSessionUseCase {
 
     const user = await this.#dependencies.userRepository.findById(session.userId);
     const loaded: CachedSession = {
-      userId: session.userId.value,
+      userId: session.userId,
       expiresAt: toIsoString(session.expiresAt),
       revokedAt: session.revokedAt == null ? null : toIsoString(session.revokedAt),
       userStatus: user?.status,

@@ -63,7 +63,7 @@ export class VerificationEmailCapAdapter extends VerificationEmailCapPort {
         ),
       )
       .with({ scope: "user" }, ({ purpose, userId }) =>
-        VerificationEmailCapKey.user(purpose, userId),
+        VerificationEmailCapKey.user(purpose, userId.value),
       )
       .exhaustive();
   }

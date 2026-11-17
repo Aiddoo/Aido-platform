@@ -7,6 +7,7 @@ import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comm
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
@@ -14,6 +15,7 @@ import { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { LinkedAccountsRepositoryPort } from "../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import { PasswordHasherPort } from "../linked-accounts/application/ports/password-hasher.port.js";
@@ -60,16 +62,31 @@ export const accountNotificationCleanupProvider: FactoryProvider<AccountNotifica
   provide: AccountNotificationCleanupPort,
   inject: [DeleteActorNotificationsUseCase],
   useFactory: (cleanup: DeleteActorNotificationsUseCase): AccountNotificationCleanupPort => ({
-    cleanupInTransaction: (userId) => cleanup.cleanupInTransaction(userId.value),
-    settleAfterCommit: (result) => cleanup.settleAfterCommit(result),
+    cleanupInTransaction: async (userId) => {
+      const { affectedUserIds } = await cleanup.cleanupInTransaction(userId.value);
+      return { affectedUserIds: affectedUserIds.map((affected) => UserId.reconstitute(affected)) };
+    },
+    settleAfterCommit: (result) =>
+      cleanup.settleAfterCommit({
+        affectedUserIds: result.affectedUserIds.map((affected) => affected.value),
+      }),
   }),
 };
 
 export const accountTodoCommentCleanupProvider: FactoryProvider<AccountTodoCommentCleanupPort> = {
   provide: AccountTodoCommentCleanupPort,
   inject: [TodoCommentAccountCleanupPort],
-  // 두 포트가 같은 UserId 시그니처라 그대로 넘긴다. useExisting과 달리 반환 타입이 시그니처를 검사한다
-  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
+  // engagement 결과는 아직 원시 할 일 id라 경계에서 TodoId로 바꾼다
+  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => ({
+    cleanupInTransaction: async (userId) => {
+      const { affectedTodoIds } = await cleanup.cleanupInTransaction(userId);
+      return { affectedTodoIds: affectedTodoIds.map((todoId) => TodoId.reconstitute(todoId)) };
+    },
+    settleAfterCommit: (result) =>
+      cleanup.settleAfterCommit({
+        affectedTodoIds: result.affectedTodoIds.map((todoId) => todoId.value),
+      }),
+  }),
 };
 
 export const accountUsageCleanupProvider: FactoryProvider<AccountUsageCleanupPort> = {

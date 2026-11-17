@@ -6,6 +6,7 @@ import {
   GenerationGuardedCache,
   type GenerationGuardedCacheKey,
 } from "#api/platform/cache/generation-guarded-cache";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   CachedSession,
@@ -27,7 +28,9 @@ const CACHED_SESSION_SCHEMA = z.looseObject({
   revokedAt: CACHED_TIMESTAMP_SCHEMA.nullable(),
   userStatus: z.string().optional(),
   userDeletedAt: z.string().nullable().optional(),
-}) satisfies z.ZodType<CachedSession>;
+});
+
+type CachedSessionValue = z.infer<typeof CACHED_SESSION_SCHEMA>;
 
 function sessionKey(sessionId: SessionId): GenerationGuardedCacheKey {
   return {
@@ -46,13 +49,20 @@ export class SessionCacheAdapter implements SessionCachePort {
     this.#cacheService = cacheService;
   }
 
-  wrapSession(sessionId: SessionId, factory: () => Promise<CachedSession>): Promise<CachedSession> {
-    return this.#sessions.wrap<CachedSession>(
+  async wrapSession(
+    sessionId: SessionId,
+    factory: () => Promise<CachedSession>,
+  ): Promise<CachedSession> {
+    const value = await this.#sessions.wrap<CachedSessionValue>(
       sessionKey(sessionId),
       CACHED_SESSION_SCHEMA,
-      factory,
+      async () => {
+        const session = await factory();
+        return { ...session, userId: session.userId.value };
+      },
       SESSION_CACHE_TTL_MS,
     );
+    return { ...value, userId: UserId.reconstitute(value.userId) };
   }
 
   invalidateSession(sessionId: SessionId): Promise<void> {

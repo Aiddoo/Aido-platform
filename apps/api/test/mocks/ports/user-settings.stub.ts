@@ -53,9 +53,9 @@ export class StubPreferenceEntitlement implements PreferenceEntitlementPort {
 }
 
 export class StubReminderScheduleEnqueuer implements ReminderScheduleEnqueuerPort {
-  readonly jobs: ReminderHourChangedPayload[] = [];
+  readonly jobs: (Omit<ReminderHourChangedPayload, "userId"> & { userId: string })[] = [];
   enqueueReminderHourChanged(payload: ReminderHourChangedPayload): void {
-    this.jobs.push({ ...payload });
+    this.jobs.push({ ...payload, userId: payload.userId.value });
   }
 }
 export class StubStreakMilestoneNotifier implements StreakMilestoneNotifierPort {

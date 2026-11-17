@@ -15,7 +15,7 @@ import {
   type GenerationGuardedCacheKey,
 } from "#api/platform/cache/generation-guarded-cache";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
@@ -50,7 +50,7 @@ const CACHED_USER_PROFILE_SCHEMA = z.looseObject({
   premiumGrantEndedAt: z.string().nullable().optional(),
   premiumIsTrial: z.boolean().optional(),
   premiumPlanType: subscriptionPlanTypeSchema.nullable().optional(),
-}) satisfies z.ZodType<CachedUserProfile>;
+});
 
 function userProfileKey(userId: UserId): GenerationGuardedCacheKey {
   return {
@@ -80,9 +80,12 @@ export class UserProfileCacheAdapter implements UserProfileCachePort, UserProfil
     const profile = await this.#userProfiles.wrap(
       userProfileKey(userId),
       CACHED_USER_PROFILE_SCHEMA.optional(),
-      async () => (await factory()) ?? undefined,
+      async () => {
+        const loaded = await factory();
+        return loaded == null ? undefined : { ...loaded, id: loaded.id.value };
+      },
       (cached) => userProfileTtlMs(cached ?? null, instantToDate(this.#clock.now())),
     );
-    return profile ?? null;
+    return profile == null ? null : { ...profile, id: UserId.reconstitute(profile.id) };
   }
 }

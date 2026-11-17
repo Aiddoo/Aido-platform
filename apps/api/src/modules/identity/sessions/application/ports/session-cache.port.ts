@@ -1,7 +1,9 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { SessionId } from "../../domain/session-id.vo.js";
 
 export interface CachedSession {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly expiresAt: Date | string;
   readonly revokedAt: Date | string | null;
   readonly userStatus?: string;

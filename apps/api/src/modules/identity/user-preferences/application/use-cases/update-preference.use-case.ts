@@ -113,7 +113,7 @@ export class UpdatePreferenceUseCase {
     // 변경한 시각의 cron이 이미 지난 경우에도 리마인더를 즉시 반영한다.
     if (changesReminder) {
       this.#dependencies.reminderEnqueuer.enqueueReminderHourChanged({
-        userId: input.userId,
+        userId: UserId.reconstitute(input.userId),
         timezone: updated.timezone,
         morningReminderHour: input.morningReminderHour,
         morningReminderMinute: input.morningReminderMinute,

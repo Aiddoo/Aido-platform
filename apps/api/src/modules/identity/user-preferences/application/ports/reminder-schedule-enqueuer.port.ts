@@ -1,10 +1,8 @@
-/**
- * 리마인더 시간 변경 페이로드.
- *
- * scheduler의 ReminderHourChangedJobData와 동일 계약(어댑터가 위임).
- */
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+/** 리마인더 시간 변경. 어댑터가 notification 큐 payload로 옮긴다. */
 export interface ReminderHourChangedPayload {
-  userId: string;
+  userId: UserId;
   timezone: string;
   morningReminderHour?: number;
   morningReminderMinute?: number;

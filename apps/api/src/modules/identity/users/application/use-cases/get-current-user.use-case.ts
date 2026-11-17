@@ -59,7 +59,7 @@ export class GetCurrentUserUseCase {
         const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
 
         return {
-          id: user.id,
+          id: userId,
           email: user.email,
           role: user.role,
           userTag: user.userTag,
@@ -91,7 +91,7 @@ export class GetCurrentUserUseCase {
     const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);
 
     return {
-      userId: cachedProfile.id,
+      userId: cachedProfile.id.value,
       email: cachedProfile.email,
       sessionId,
       role: cachedProfile.role,

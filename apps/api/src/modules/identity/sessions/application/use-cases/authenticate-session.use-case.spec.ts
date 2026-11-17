@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
@@ -99,7 +100,7 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
       role: "USER",
     });
     expect(cache.entries.get(AUTH_FIXTURE_SESSION_ID)).toEqual({
-      userId: AUTH_FIXTURE_USER_ID,
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       expiresAt: "2026-11-17T00:00:00.000Z",
       revokedAt: null,
       userStatus: "ACTIVE",
@@ -111,7 +112,7 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
     // Given
     const cache = new MemorySessionCache();
     cache.entries.set(AUTH_FIXTURE_SESSION_ID, {
-      userId: AUTH_FIXTURE_USER_ID,
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       expiresAt: new Date("2026-11-17T00:00:00.000Z"),
       revokedAt: null,
       userStatus: "ACTIVE",
@@ -135,7 +136,7 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
     // Given
     const cache = new MemorySessionCache();
     cache.entries.set(AUTH_FIXTURE_SESSION_ID, {
-      userId: AUTH_FIXTURE_USER_ID,
+      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
       expiresAt: "2026-11-17T00:00:00.000Z",
       revokedAt: null,
       userStatus: "ACTIVE",

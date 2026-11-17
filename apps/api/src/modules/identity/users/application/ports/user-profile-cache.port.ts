@@ -11,7 +11,7 @@ import type { AccountProvider } from "../../../linked-accounts/domain/linked-acc
 import type { UserStatus } from "../../domain/users.constants.js";
 
 export interface CachedUserProfile {
-  id: string;
+  id: UserId;
   email: string;
   userTag: string;
   role: UserRole;

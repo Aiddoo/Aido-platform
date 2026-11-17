@@ -8,6 +8,7 @@ import type {
   AccountUsageCleanupPort,
 } from "#api/modules/identity/users/application/ports/account-cleanup.port";
 import type { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StubSessionCache } from "./auth-session.stub.js";
@@ -39,15 +40,15 @@ export class StubAccountLifecycleCache
 
 export class StubAccountNotificationCleanup implements AccountNotificationCleanupPort {
   readonly cleanedUserIds: string[] = [];
-  readonly settlements: AccountNotificationCleanupResult[] = [];
+  readonly settlements: { affectedUserIds: string[] }[] = [];
 
   async cleanupInTransaction(userId: UserId): Promise<AccountNotificationCleanupResult> {
     this.cleanedUserIds.push(userId.value);
-    return { affectedUserIds: [userId.value] };
+    return { affectedUserIds: [userId] };
   }
 
   async settleAfterCommit(result: AccountNotificationCleanupResult): Promise<void> {
-    this.settlements.push(result);
+    this.settlements.push({ affectedUserIds: result.affectedUserIds.map((user) => user.value) });
   }
 }
 
@@ -61,14 +62,14 @@ export class StubAccountUsageCleanup implements AccountUsageCleanupPort {
 
 export class StubAccountTodoCommentCleanup implements AccountTodoCommentCleanupPort {
   readonly cleanedUserIds: string[] = [];
-  readonly settlements: AccountTodoCommentCleanupResult[] = [];
+  readonly settlements: { affectedTodoIds: number[] }[] = [];
 
   async cleanupInTransaction(userId: UserId): Promise<AccountTodoCommentCleanupResult> {
     this.cleanedUserIds.push(userId.value);
-    return { affectedTodoIds: [101] };
+    return { affectedTodoIds: [TodoId.reconstitute(101)] };
   }
 
   async settleAfterCommit(result: AccountTodoCommentCleanupResult): Promise<void> {
-    this.settlements.push(result);
+    this.settlements.push({ affectedTodoIds: result.affectedTodoIds.map((todo) => todo.value) });
   }
 }

@@ -1,4 +1,5 @@
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CachedSession } from "../../application/ports/session-cache.port.js";
 import { SessionId } from "../../domain/session-id.vo.js";
@@ -7,7 +8,7 @@ import { SessionCacheAdapter } from "./session-cache.adapter.js";
 
 const SESSION_ID = SessionId.reconstitute("session-1");
 const VALID_SESSION: CachedSession = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   expiresAt: "2026-11-20T00:00:00.000Z",
   revokedAt: null,
 };
