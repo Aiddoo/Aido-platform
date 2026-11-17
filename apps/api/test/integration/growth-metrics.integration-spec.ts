@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
-import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleGrowthMetricsReader } from "#api/modules/operations/metrics/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";

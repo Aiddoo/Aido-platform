@@ -1,7 +1,7 @@
-import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
-import { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
-import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
+import { todoCommentIdempotencyRace } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
+import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -27,7 +27,7 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
 
   async findByIdAndTodoId(commentId: TodoCommentId, todoId: TodoId): Promise<TodoComment | null> {
     const comment = this.#comments.get(commentId.value);
-    return comment != null && comment.todoId === todoId.value ? copyOf(comment) : null;
+    return comment != null && comment.todoId.equals(todoId) ? copyOf(comment) : null;
   }
 
   async listByAuthorIdAndClientRequestIds(
@@ -59,7 +59,7 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
         stored.clientRequestId === comment.clientRequestId,
     );
     if (isNew && isDuplicateRequest) {
-      throw new TodoCommentIdempotencyRace();
+      throw todoCommentIdempotencyRace();
     }
     const stored = this.#comments.get(comment.id.value);
     // 다시 저장해도 생성 때 정한 칸은 그대로 둔다(Drizzle 저장소와 같다)

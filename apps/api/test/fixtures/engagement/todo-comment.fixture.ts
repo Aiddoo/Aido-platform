@@ -1,15 +1,11 @@
 import type {
   TodoCommentReadModel,
-  TodoCommentViewer,
-} from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
-import {
-  TodoCommentLike,
-  type TodoCommentLikePrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment-like.aggregate";
+  TodoCommentViewerReadModel,
+} from "#api/modules/engagement/todo-comments/application/read-models/todo-comment.read-model";
 import {
   TodoComment,
   type TodoCommentPrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+} from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 
 export const TODO_COMMENT_FIXTURE_NOW = Temporal.Instant.from("2026-08-26T00:00:00Z");
 export const TODO_COMMENT_FIXTURE_TODO_ID = 1;
@@ -46,20 +42,6 @@ export function createTodoCommentFixture(
   });
 }
 
-export function createTodoCommentLikeFixture(
-  overrides: Partial<TodoCommentLikePrimitives> = {},
-): TodoCommentLike {
-  return TodoCommentLike.reconstitute({
-    commentId: "cm1rootcomment000000000001",
-    userId: TODO_COMMENT_FIXTURE_VIEWER_ID,
-    isActive: true,
-    notifiedAt: null,
-    createdAt: TODO_COMMENT_FIXTURE_NOW,
-    updatedAt: TODO_COMMENT_FIXTURE_NOW,
-    ...overrides,
-  });
-}
-
 export function createTodoCommentReadModelFixture(
   overrides: Partial<TodoCommentReadModel> = {},
 ): TodoCommentReadModel {
@@ -86,8 +68,8 @@ export function createTodoCommentReadModelFixture(
 }
 
 export function createTodoCommentViewerFixture(
-  overrides: Partial<TodoCommentViewer> = {},
-): TodoCommentViewer {
+  overrides: Partial<TodoCommentViewerReadModel> = {},
+): TodoCommentViewerReadModel {
   return {
     viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
     likedCommentIds: new Set(),

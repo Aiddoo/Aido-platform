@@ -68,7 +68,7 @@ apps/api/src/
 | billing       | `subscriptions`, `premium-grants` (+ `shared/`)                                                                      |
 | planning      | `todos`, `todo-series`, `categories` (+ `shared/`)                                                                   |
 | notes         | `memos`                                                                                                              |
-| engagement    | `comments`                                                                                                           |
+| engagement    | `todo-comments`, `todo-comment-likes` (+ `shared/`)                                                                  |
 | social        | `friends`, `blocks`, `cheers`, `nudges`, `reminder-nudges`, `invites`, `invite-redemptions`, `reports` (+ `shared/`) |
 | notification  | `inbox`, `push`, `email`, `reminders`, `retention`                                                                   |
 | insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                             |

@@ -1,20 +1,20 @@
 import type { TodoCommentSort } from "@aido/api/vocabulary";
 
-import { invalidCommentRequest } from "#api/modules/engagement/comments/application/comments.errors";
 import {
   TodoCommentCursorCodecPort,
   type TodoCommentRepliesCursor,
   type TodoCommentThreadCursor,
   type TodoConversationCursor,
-} from "#api/modules/engagement/comments/application/ports/todo-comment-cursor-codec.port";
+} from "#api/modules/engagement/todo-comments/application/ports/todo-comment-cursor-codec.port";
 import type {
   TodoCommentReadModel,
   TodoConversationReadModel,
-} from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
+} from "#api/modules/engagement/todo-comments/application/read-models/todo-comment.read-model";
 import type {
   TodoCommentPageDirection,
   TodoConversationScope,
-} from "#api/modules/engagement/comments/application/todo-comment-page.constants";
+} from "#api/modules/engagement/todo-comments/application/todo-comment-page.constants";
+import { invalidCommentRequest } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
 
 /** 읽은 cursor는 테스트가 정하고, 만든 cursor는 무엇을 담았는지 읽을 수 있는 문자열로 돌려준다 */
 export class StubTodoCommentCursorCodec extends TodoCommentCursorCodecPort {

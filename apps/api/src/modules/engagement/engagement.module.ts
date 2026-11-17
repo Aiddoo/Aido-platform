@@ -1,9 +1,10 @@
 import { Module } from "@nestjs/common";
 
-import { EngagementCommentsModule } from "./comments/engagement-comments.module.js";
+import { EngagementTodoCommentLikesModule } from "./todo-comment-likes/engagement-todo-comment-likes.module.js";
+import { EngagementTodoCommentsModule } from "./todo-comments/engagement-todo-comments.module.js";
 
 @Module({
-  imports: [EngagementCommentsModule],
-  exports: [EngagementCommentsModule],
+  imports: [EngagementTodoCommentsModule, EngagementTodoCommentLikesModule],
+  exports: [EngagementTodoCommentsModule, EngagementTodoCommentLikesModule],
 })
 export class EngagementModule {}

@@ -1,8 +1,7 @@
 import type {
   TodoComment,
   TodoCommentPrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { FakeTodoCommentReader } from "#test/doubles/engagement/fake-todo-comment.reader";
 import { FakeTodoEngagementCounter } from "#test/doubles/engagement/fake-todo-engagement-counter";
 import { InMemoryTodoCommentLikeRepository } from "#test/doubles/engagement/in-memory-todo-comment-like.repository";
@@ -26,7 +25,7 @@ import {
   TODO_COMMENT_FIXTURE_VIEWER_ID,
 } from "./todo-comment.fixture.js";
 
-/** 댓글 UseCase를 InMemory 저장소와 기록용 대역으로 조립하는 의존성 묶음 */
+/** 댓글 UseCase를 InMemory 저장소와 기록용 대역으로 조립하는 의존성 묶음. 조회 포트는 대역 하나가 모두 맡는다 */
 export function createTodoCommentsFixture() {
   const repository = new InMemoryTodoCommentRepository();
   const likeRepository = new InMemoryTodoCommentLikeRepository();
@@ -48,7 +47,7 @@ export function createTodoCommentsFixture() {
       ...overrides,
     });
     await repository.save(comment);
-    await engagementCounter.increaseCommentCount(TodoId.reconstitute(comment.todoId), 1);
+    await engagementCounter.increaseCommentCount(comment.todoId, 1);
     return comment;
   }
 
@@ -57,6 +56,11 @@ export function createTodoCommentsFixture() {
     likeRepository,
     purgeRepository: new InMemoryTodoCommentPurgeRepository(repository, likeRepository),
     reader,
+    accessReader: reader,
+    threadReader: reader,
+    replyReader: reader,
+    conversationReader: reader,
+    likeReader: reader,
     engagementCounter,
     notification: new RecordingTodoCommentNotification(),
     blockReader: new StubTodoCommentBlockReader(),

@@ -66,7 +66,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 - 출시 계약을 helper로 옮길 때는 그 계약의 설명 문구를 세 번째 인자로 넘겨 생성된 JSON Schema를 바이트 단위로 같게 두고, OpenAPI 지문으로 확인한다.
 - 다른 모양의 출시 계약(알림·친구·응원·찌르기·초대·댓글)은 그대로 두고, 서버 내부는 `CursorPage`로 통일한 뒤 매퍼가 옛 모양을 만든다.
 - 서버가 발급한 문자열 ID는 [`entityIdSchema`](../../../packages/api/src/common/entity-id.ts)로 검증한다(`z.cuid()` 금지). 모양 규칙은 `@aido/api/vocabulary`의 `ENTITY_ID_PATTERN` 하나이고 서버 도메인은 `isEntityId`로 같은 규칙을 쓴다.
-- 문자열 커서는 서명한다. 댓글 커서는 [HmacTodoCommentCursorCodecAdapter](../src/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter.ts)가 `CURSOR_SIGNING_KEYS` key ring으로 서명한다([보안](security.md#서명-키-회전)). 숫자 커서 계약은 숫자를 유지한다.
+- 문자열 커서는 서명한다. 댓글 커서는 [HmacTodoCommentCursorCodecAdapter](../src/modules/engagement/todo-comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter.ts)가 `CURSOR_SIGNING_KEYS` key ring으로 서명한다([보안](security.md#서명-키-회전)). 숫자 커서 계약은 숫자를 유지한다.
 
 ## 타입 안전 체크리스트
 
