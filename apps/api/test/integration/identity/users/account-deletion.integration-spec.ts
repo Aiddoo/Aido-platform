@@ -45,8 +45,10 @@ import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infras
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
 import { VerificationCodeSecurityPort } from "#api/modules/identity/verifications/application/ports/verification-code-security.port";
+import { VerificationEmailCapPort } from "#api/modules/identity/verifications/application/ports/verification-email-cap.port";
 import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/node-verification-code-security.adapter";
+import { VerificationEmailCapAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/verification-email-cap.adapter";
 import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
@@ -84,6 +86,7 @@ import {
 } from "../../../../src/modules/identity/users/identity-users.providers.js";
 import {
   issueVerificationCodeProvider,
+  reserveVerificationEmailSlotProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../../../src/modules/identity/verifications/identity-verifications.providers.js";
@@ -150,6 +153,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         createSessionProvider,
         JwtTokenIssuerAdapter,
         issueVerificationCodeProvider,
+        reserveVerificationEmailSlotProvider,
         sendVerificationCodeProvider,
         consumeVerificationCodeProvider,
         {
@@ -191,6 +195,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         { provide: SessionCachePort, useClass: SessionCacheAdapter },
         { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },
         { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },
+        { provide: VerificationEmailCapPort, useClass: VerificationEmailCapAdapter },
         { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
           provide: UserRegistrationNotifierPort,

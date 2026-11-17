@@ -188,4 +188,32 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     expect(known).toEqual(unknown);
     expect(fixture.verificationRepository.all).toHaveLength(1);
   });
+
+  it("가입한 이메일과 없는 이메일은 24시간 상한에서 같은 VERIFY_0753과 남은 초를 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    const emails = [fixture.user.email, "nobody@example.com"];
+    for (let request = 0; request < 10; request += 1) {
+      for (const email of emails) {
+        await useCase.execute({ email, emailLocale: "ko" });
+      }
+      fixture.clock.advanceBy({ seconds: 61 });
+    }
+
+    // When
+    const capped = await Promise.all(
+      emails.map((email) =>
+        useCase.execute({ email, emailLocale: "ko" }).catch((error: unknown) => error),
+      ),
+    );
+
+    // Then
+    const remainingSeconds = 24 * 60 * 60 - 10 * 61;
+    expect(capped).toEqual([
+      expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
+      expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
+    ]);
+    expect(fixture.verificationRepository.all).toHaveLength(10);
+  });
 });

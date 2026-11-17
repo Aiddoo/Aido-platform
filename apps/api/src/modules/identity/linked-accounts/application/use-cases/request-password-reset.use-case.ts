@@ -13,6 +13,7 @@ import type {
   IssueVerificationCodeUseCase,
   IssuedVerificationCode,
 } from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
+import type { ReserveVerificationEmailSlotUseCase } from "../../../verifications/application/use-cases/reserve-verification-email-slot.use-case.js";
 import type { SendVerificationCodeUseCase } from "../../../verifications/application/use-cases/send-verification-code.use-case.js";
 import { verificationResendCooldown } from "../../../verifications/application/verifications.errors.js";
 import { resendCooldownRemainingSeconds } from "../../../verifications/domain/verification.domain-service.js";
@@ -30,6 +31,7 @@ export interface RequestPasswordResetCommand {
 
 interface RequestPasswordResetDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
+  readonly reserveVerificationEmailSlot: Pick<ReserveVerificationEmailSlotUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
@@ -50,12 +52,13 @@ export class RequestPasswordResetUseCase {
     const ip = metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;
 
-    // 대기는 계정을 찾기 전에 이메일마다 잡는다. 없는 이메일도 같은 VERIFY_0753·남은 초를 받는다
+    // 대기·상한은 계정을 찾기 전에 이메일마다 잡는다. 없는 이메일도 같은 VERIFY_0753·남은 초를 받는다
     const now = this.#dependencies.clock.now();
     const cooldownStartedAt = await this.#dependencies.resetCooldown.findStartedAt(email, now);
     if (cooldownStartedAt != null) {
       throw verificationResendCooldown(resendCooldownRemainingSeconds(cooldownStartedAt, now));
     }
+    await this.#dependencies.reserveVerificationEmailSlot.execute({ email });
     await this.#dependencies.resetCooldown.start(email, now);
 
     const user = await this.#dependencies.userRepository.findByEmail(email);

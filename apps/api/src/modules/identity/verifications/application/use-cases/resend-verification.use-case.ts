@@ -8,6 +8,7 @@ import type { UserRepositoryPort } from "../../../users/application/ports/user.r
 import { emailAlreadyVerified } from "../verifications.errors.js";
 import { VerificationLogEvent } from "../verifications.log-events.js";
 import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
+import type { ReserveVerificationEmailSlotUseCase } from "./reserve-verification-email-slot.use-case.js";
 import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface ResendVerificationCommand {
@@ -18,6 +19,7 @@ export interface ResendVerificationCommand {
 
 interface ResendVerificationDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
+  readonly reserveVerificationEmailSlot: Pick<ReserveVerificationEmailSlotUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -33,6 +35,8 @@ export class ResendVerificationUseCase {
 
   async execute(input: ResendVerificationCommand): Promise<{ message: string }> {
     const { email, emailLocale } = input;
+    // 상한은 계정을 찾기 전에 이메일마다 센다. 없는 이메일도 같은 VERIFY_0753·남은 초를 받는다
+    await this.#dependencies.reserveVerificationEmailSlot.execute({ email });
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
       return {

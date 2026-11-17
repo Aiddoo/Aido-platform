@@ -1,7 +1,15 @@
 import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/session.fixture";
 
-import { judgeVerificationAttempt, resendCooldownStartsAt } from "./verification.domain-service.js";
+import {
+  judgeVerificationAttempt,
+  judgeVerificationEmailCap,
+  resendCooldownStartsAt,
+} from "./verification.domain-service.js";
+
+function sentEveryHour(count: number): Temporal.Instant[] {
+  return Array.from({ length: count }, (_, index) => AUTH_FIXTURE_NOW.add({ hours: index }));
+}
 
 describe("인증 코드 판단 — 재발송 대기와 시도 판정", () => {
   const correctHash = "digest:123456";
@@ -56,5 +64,42 @@ describe("인증 코드 판단 — 재발송 대기와 시도 판정", () => {
 
     // Then
     expect(judgement).toEqual({ ok: true, verification });
+  });
+});
+
+describe("이메일 코드 상한 — 24시간 창 안 10개", () => {
+  it("창 안에 9개면 보낼 수 있고 이번 시각을 기록에 더한다", () => {
+    // Given
+    const sentAts = sentEveryHour(9);
+    const now = AUTH_FIXTURE_NOW.add({ hours: 9 });
+
+    // When
+    const judgement = judgeVerificationEmailCap(sentAts, now);
+
+    // Then
+    expect(judgement).toEqual({ ok: true, sentAts: [...sentAts, now] });
+  });
+
+  it("창 안에 10개면 가장 오래된 코드가 창을 벗어나는 시각까지 막는다", () => {
+    // Given
+    const sentAts = sentEveryHour(10).toReversed();
+
+    // When
+    const judgement = judgeVerificationEmailCap(sentAts, AUTH_FIXTURE_NOW.add({ hours: 10 }));
+
+    // Then
+    expect(judgement).toEqual({ ok: false, availableAt: AUTH_FIXTURE_NOW.add({ hours: 24 }) });
+  });
+
+  it("보낸 지 24시간 정각부터 창 밖이라 다시 보낼 수 있고 창 밖 기록은 버린다", () => {
+    // Given
+    const sentAts = sentEveryHour(10);
+    const now = AUTH_FIXTURE_NOW.add({ hours: 24 });
+
+    // When
+    const judgement = judgeVerificationEmailCap(sentAts, now);
+
+    // Then
+    expect(judgement).toEqual({ ok: true, sentAts: [...sentAts.slice(1), now] });
   });
 });

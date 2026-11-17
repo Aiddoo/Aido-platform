@@ -14,6 +14,8 @@ import {
 
 const STARTED_AT_SCHEMA = z.string();
 
+// @nestjs/throttler는 429 SYS_0001로 거절해 앱 타이머가 읽는 VERIFY_0753·remainingSeconds를 줄 수 없어 캐시로 센다.
+// 읽고 쓰기가 원자적이지 않지만 동시 요청은 가입 여부와 상관없이 같은 응답이다
 @Injectable()
 export class PasswordResetCooldownAdapter extends PasswordResetCooldownPort {
   readonly #cacheService: CacheStorePort;

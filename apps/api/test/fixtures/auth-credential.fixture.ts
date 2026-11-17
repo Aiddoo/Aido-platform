@@ -19,6 +19,7 @@ import { ProvisionUserUseCase } from "#api/modules/identity/users/application/us
 import { RestoreAccountUseCase } from "#api/modules/identity/users/application/use-cases/restore-account.use-case";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
 import { IssueVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/issue-verification-code.use-case";
+import { ReserveVerificationEmailSlotUseCase } from "#api/modules/identity/verifications/application/use-cases/reserve-verification-email-slot.use-case";
 import { SendVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/send-verification-code.use-case";
 import type {
   DailySendUsage,
@@ -33,6 +34,7 @@ import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserMutationLock } from "#test/doubles/identity/in-memory-user-mutation-lock";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
+import { InMemoryVerificationEmailCap } from "#test/doubles/identity/in-memory-verification-email-cap";
 import { InMemoryVerificationRepository } from "#test/doubles/identity/in-memory-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -102,6 +104,10 @@ export function createAuthCredentialFixture(
   const unitOfWork = new ImmediateUnitOfWork();
   const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
   const sessionService = new CreateSessionUseCase({ sessionRepository, tokenService, clock });
+  const reserveVerificationEmailSlot = new ReserveVerificationEmailSlotUseCase({
+    verificationEmailCap: new InMemoryVerificationEmailCap(),
+    clock,
+  });
   const issueVerificationCode = new IssueVerificationCodeUseCase({
     verificationRepository,
     verificationCodeSecurity,
@@ -155,6 +161,7 @@ export function createAuthCredentialFixture(
     unitOfWork,
     clock,
     sessionService,
+    reserveVerificationEmailSlot,
     issueVerificationCode,
     sendVerificationCode,
     consumeVerificationCode,

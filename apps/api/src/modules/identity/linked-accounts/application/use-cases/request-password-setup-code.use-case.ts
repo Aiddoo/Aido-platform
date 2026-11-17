@@ -6,6 +6,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { userNotFound } from "../../../users/application/users.errors.js";
 import type { IssueVerificationCodeUseCase } from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
+import type { ReserveVerificationEmailSlotUseCase } from "../../../verifications/application/use-cases/reserve-verification-email-slot.use-case.js";
 import type { SendVerificationCodeUseCase } from "../../../verifications/application/use-cases/send-verification-code.use-case.js";
 import { passwordAlreadySet } from "../linked-accounts.errors.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
@@ -19,6 +20,7 @@ export interface RequestPasswordSetupCodeCommand {
 interface RequestPasswordSetupCodeDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
   readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
+  readonly reserveVerificationEmailSlot: Pick<ReserveVerificationEmailSlotUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
 }
@@ -45,6 +47,7 @@ export class RequestPasswordSetupCodeUseCase {
       throw passwordAlreadySet(input.userId);
     }
 
+    await this.#dependencies.reserveVerificationEmailSlot.execute({ email: user.email });
     const issued = await this.#dependencies.issueVerificationCode.execute({
       userId: input.userId,
       type: "PASSWORD_SETUP",
