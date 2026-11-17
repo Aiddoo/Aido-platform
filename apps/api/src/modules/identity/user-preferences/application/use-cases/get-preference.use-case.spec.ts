@@ -23,7 +23,7 @@ describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게�
     // When
     const free = await useCase.execute({ userId: fixture.userId });
     // 캐시를 비우지 않고 원본만 바꿔 이후 응답이 캐시에서 오는지 본다
-    const preference = await fixture.preferenceRepository.findByUserId(
+    const preference = await fixture.preferenceRepository.getByUserId(
       UserId.reconstitute(fixture.userId),
     );
     preference.changeSettings({ morningReminderHour: 9 });

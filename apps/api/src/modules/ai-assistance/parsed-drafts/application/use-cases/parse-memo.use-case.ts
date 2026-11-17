@@ -56,7 +56,7 @@ type ParsedMemo = Omit<ParsedDraftReadModel<ParsedMemoTodo>, "featureQuota">;
 
 interface ParseMemoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen">;
@@ -138,7 +138,7 @@ export class ParseMemoUseCase {
     };
     const logBase = { task: definition.id, promptVersion: definition.version, userId } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(owner);
+    const consent = await this.#dependencies.consentReader.getAiDataSharingConsent(owner);
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(this.#dependencies.generator, definition, {

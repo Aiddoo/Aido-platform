@@ -37,12 +37,12 @@ type NotificationMarketingConsentWithUserId = NotificationMarketingConsent & {
 export abstract class UserNotificationSettingsPort {
   abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
   abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
-  abstract getPreferenceRecord(userId: UserId): Promise<NotificationDeliveryPreference | null>;
-  abstract getPreferenceRecordsByUserIds(
+  abstract findPreferenceReadModel(userId: UserId): Promise<NotificationDeliveryPreference | null>;
+  abstract findPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]>;
-  abstract getConsentRecord(userId: UserId): Promise<NotificationMarketingConsent | null>;
-  abstract getConsentRecordsByUserIds(
+  abstract findConsentReadModel(userId: UserId): Promise<NotificationMarketingConsent | null>;
+  abstract findConsentReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]>;
   abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;

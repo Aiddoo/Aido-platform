@@ -5,7 +5,7 @@ import { PushQuietHoursReader } from "./push-quiet-hours.reader.js";
 function createReader(timezones: Readonly<Record<string, string>>) {
   return new PushQuietHoursReader({
     userSettings: {
-      getPreferenceRecordsByUserIds: async (users) =>
+      findPreferenceReadModelsByUserIds: async (users) =>
         users.flatMap(({ value: userId }) => {
           const timezone = timezones[userId];
           if (timezone == null) {

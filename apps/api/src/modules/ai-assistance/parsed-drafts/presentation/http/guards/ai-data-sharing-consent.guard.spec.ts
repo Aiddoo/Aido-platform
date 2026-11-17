@@ -73,7 +73,7 @@ describe("AiDataSharingConsentGuard", () => {
     async (header) => {
       // Given
       const guard = createGuard("UNDECIDED");
-      const consent = await new StubAiDataSharingConsentReader().findAiDataSharingConsent(
+      const consent = await new StubAiDataSharingConsentReader().getAiDataSharingConsent(
         UserId.reconstitute("user"),
       );
 

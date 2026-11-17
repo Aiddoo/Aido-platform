@@ -46,7 +46,7 @@ class RecordingHistoryReader implements Pick<
 
 class RecordingPreferenceReader implements Pick<
   UserNotificationSettingsPort,
-  "getPreferenceRecordsByUserIds"
+  "findPreferenceReadModelsByUserIds"
 > {
   readonly #events: string[];
 
@@ -54,7 +54,7 @@ class RecordingPreferenceReader implements Pick<
     this.#events = events;
   }
 
-  async getPreferenceRecordsByUserIds(): Promise<never[]> {
+  async findPreferenceReadModelsByUserIds(): Promise<never[]> {
     this.#events.push("preference-read");
     return [];
   }

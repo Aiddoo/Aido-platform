@@ -57,7 +57,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+    const preferences = await this.#userSettings.findPreferenceReadModelsByUserIds(
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     const storedLocales = new Map(
@@ -79,7 +79,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.getPreferenceRecordsByUserIds(
+    const preferences = await this.#userSettings.findPreferenceReadModelsByUserIds(
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     const timezones = new Map(

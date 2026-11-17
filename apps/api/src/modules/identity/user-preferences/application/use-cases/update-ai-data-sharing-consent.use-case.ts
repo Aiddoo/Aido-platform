@@ -6,8 +6,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import {
-  buildAiDataSharingConsentView,
-  type AiDataSharingConsentView,
+  toAiDataSharingConsentReadModel,
+  type AiDataSharingConsentReadModel,
 } from "../read-models/consent.read-model.js";
 import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
@@ -20,7 +20,7 @@ export interface UpdateAiDataSharingConsentCommand {
 }
 
 interface UpdateAiDataSharingConsentDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -35,13 +35,13 @@ export class UpdateAiDataSharingConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateAiDataSharingConsentCommand): Promise<AiDataSharingConsentView> {
+  async execute(input: UpdateAiDataSharingConsentCommand): Promise<AiDataSharingConsentReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const processedAt = this.#dependencies.clock.now();
     const { preferenceRepository } = this.#dependencies;
     const consent = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       if (
         preference.answerAiDataSharing({
           agreed: input.agreed,
@@ -59,6 +59,6 @@ export class UpdateAiDataSharingConsentUseCase {
       agreed: input.agreed,
       version: input.version,
     });
-    return buildAiDataSharingConsentView(consent, input.version);
+    return toAiDataSharingConsentReadModel(consent, input.version);
   }
 }

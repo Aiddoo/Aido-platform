@@ -60,7 +60,7 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
     return record == null ? undefined : { ...record };
   }
 
-  async findByUserId(userId: UserId): Promise<UserPreference> {
+  async getByUserId(userId: UserId): Promise<UserPreference> {
     const record = this.#records.get(userId.value);
     const consent = this.#consents.stored(userId.value);
     return UserPreference.reconstitute({

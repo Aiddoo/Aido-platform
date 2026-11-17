@@ -63,7 +63,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     return row == null ? null : toUserConsentReadModel(row);
   }
 
-  async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
+  async getAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     const row = await this.#db.query.userConsent.findFirst({
       columns: { aiDataSharingAgreedAt: true, aiDataSharingVersion: true },
       where: { userId: userId.value },

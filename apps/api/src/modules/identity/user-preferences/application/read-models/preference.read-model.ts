@@ -11,7 +11,7 @@ import type { TimeFormatValue } from "../../domain/user-preference.constants.js"
 export type UserPreferenceReadModel = UserPreferenceSettings &
   StreakState & { readonly userId: string };
 
-export interface PreferenceSnapshot {
+export interface PreferenceSettingsReadModel {
   pushEnabled: boolean;
   nightPushEnabled: boolean;
   timezone: string;
@@ -31,8 +31,8 @@ export interface PreferenceSnapshot {
 }
 
 /** 앱에 돌려주는 설정 값(locale 제외). 변경 요청은 이 필드 중 일부만 보낸다 */
-export type PreferenceView = Omit<PreferenceSnapshot, "locale">;
-export type PreferenceChanges = Partial<PreferenceView>;
+export type PreferenceReadModel = Omit<PreferenceSettingsReadModel, "locale">;
+export type PreferenceChanges = Partial<PreferenceReadModel>;
 
 const PREFERENCE_RESPONSE_FIELDS = [
   "pushEnabled",
@@ -50,13 +50,15 @@ const PREFERENCE_RESPONSE_FIELDS = [
   "weatherEveningHour",
   "weatherEveningMinute",
   "aiPushEnabled",
-] satisfies (keyof PreferenceView)[];
+] satisfies (keyof PreferenceReadModel)[];
 
-export function buildUpdatedPreferenceView(record: PreferenceSnapshot): PreferenceView {
+export function toUpdatedPreferenceReadModel(
+  record: PreferenceSettingsReadModel,
+): PreferenceReadModel {
   return pick(record, PREFERENCE_RESPONSE_FIELDS);
 }
 
-export const DEFAULT_PREFERENCE_SNAPSHOT: PreferenceSnapshot = {
+export const DEFAULT_PREFERENCE_SETTINGS: PreferenceSettingsReadModel = {
   pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
   nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
   timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
@@ -75,12 +77,12 @@ export const DEFAULT_PREFERENCE_SNAPSHOT: PreferenceSnapshot = {
   aiPushEnabled: USER_PREFERENCE_DEFAULTS.AI_PUSH_ENABLED,
 };
 
-export function buildPreferenceView(
-  snapshot: PreferenceSnapshot,
+export function toPreferenceReadModel(
+  snapshot: PreferenceSettingsReadModel,
   hasPremium: boolean,
-): PreferenceView {
+): PreferenceReadModel {
   return {
-    ...buildUpdatedPreferenceView(snapshot),
+    ...toUpdatedPreferenceReadModel(snapshot),
     morningReminderHour: hasPremium
       ? snapshot.morningReminderHour
       : USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
@@ -96,6 +98,8 @@ export function buildPreferenceView(
   };
 }
 
-export function buildPreferenceSnapshot(record: UserPreferenceSettings): PreferenceSnapshot {
+export function toPreferenceSettingsReadModel(
+  record: UserPreferenceSettings,
+): PreferenceSettingsReadModel {
   return { ...pick(record, PREFERENCE_RESPONSE_FIELDS), locale: record.locale };
 }

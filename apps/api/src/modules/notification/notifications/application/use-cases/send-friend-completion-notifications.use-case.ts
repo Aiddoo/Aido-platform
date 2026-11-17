@@ -29,7 +29,7 @@ interface SendFriendCompletionNotificationsDependencies {
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userNotificationSettings: Pick<
     UserNotificationSettingsPort,
-    "getPreferenceRecordsByUserIds"
+    "findPreferenceReadModelsByUserIds"
   >;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
@@ -72,7 +72,7 @@ export class SendFriendCompletionNotificationsUseCase {
     }
 
     const preferences =
-      await this.#dependencies.userNotificationSettings.getPreferenceRecordsByUserIds(
+      await this.#dependencies.userNotificationSettings.findPreferenceReadModelsByUserIds(
         recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(

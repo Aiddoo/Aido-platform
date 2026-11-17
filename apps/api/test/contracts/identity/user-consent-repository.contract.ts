@@ -49,7 +49,7 @@ async function changeConsent(
   userId: string,
   change: (preference: UserPreference) => boolean,
 ): Promise<void> {
-  const preference = await preferences.findByUserId(UserId.reconstitute(userId));
+  const preference = await preferences.getByUserId(UserId.reconstitute(userId));
   change(preference);
   await preferences.save(preference);
 }
@@ -67,7 +67,7 @@ export function describeUserConsentRepositoryContract(
 
       // When
       const record = await repository.findByUserId(UserId.reconstitute(USER_ID));
-      const aiConsent = await repository.findAiDataSharingConsent(UserId.reconstitute(USER_ID));
+      const aiConsent = await repository.getAiDataSharingConsent(UserId.reconstitute(USER_ID));
 
       // Then
       expect(record).toBeNull();

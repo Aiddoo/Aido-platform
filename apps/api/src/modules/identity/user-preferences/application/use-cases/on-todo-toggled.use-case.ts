@@ -23,7 +23,7 @@ export interface OnTodoToggledCommand {
 }
 
 interface OnTodoToggledDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly statsReader: Pick<TodoCompletionStatsReaderPort, "countForDay">;
   readonly milestoneNotifier: Pick<StreakMilestoneNotifierPort, "notifyStreak3Reached">;
   readonly clock: ClockPort;
@@ -52,7 +52,7 @@ export class OnTodoToggledUseCase {
         }
 
         // 설정 행이 없는 옛 사용자는 연속 완료를 세지 않는다
-        const preference = await this.#dependencies.preferenceRepository.findByUserId(userId);
+        const preference = await this.#dependencies.preferenceRepository.getByUserId(userId);
         if (!preference.isStreakTracked()) {
           return;
         }

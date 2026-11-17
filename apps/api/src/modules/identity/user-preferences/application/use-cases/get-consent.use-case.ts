@@ -1,7 +1,10 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
-import { buildConsentView, type ConsentView } from "../read-models/consent.read-model.js";
+import {
+  toConsentSummaryReadModel,
+  type ConsentSummaryReadModel,
+} from "../read-models/consent.read-model.js";
 
 export interface GetConsentQuery {
   readonly userId: string;
@@ -17,10 +20,10 @@ export class GetConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetConsentQuery): Promise<ConsentView> {
+  async execute(input: GetConsentQuery): Promise<ConsentSummaryReadModel> {
     const consent = await this.#dependencies.consentRepository.findByUserId(
       UserId.reconstitute(input.userId),
     );
-    return buildConsentView(consent);
+    return toConsentSummaryReadModel(consent);
   }
 }

@@ -16,7 +16,7 @@ function toIsoStringOrNull(instant: Temporal.Instant | null): string | null {
 }
 
 /** 시각은 ISO 문자열이고 기록이 없으면 null이다 */
-export interface ConsentView {
+export interface ConsentSummaryReadModel {
   readonly termsAgreedAt: string | null;
   readonly privacyAgreedAt: string | null;
   readonly agreedTermsVersion: string | null;
@@ -27,24 +27,26 @@ export interface ConsentView {
   readonly aiDataSharingConsentVersion: string | null;
 }
 
-export interface AiDataSharingConsentView {
+export interface AiDataSharingConsentReadModel {
   readonly aiDataSharingDecision: AiDataSharingDecision;
   readonly aiDataSharingAgreedAt: string | null;
   readonly aiDataSharingConsentVersion: string;
 }
 
-export interface MarketingConsentView {
+export interface MarketingConsentReadModel {
   readonly marketingAgreedAt: string | null;
   readonly marketingWithdrawnAt: string | null;
 }
 
-export interface MarketingPushConsentView {
+export interface MarketingPushConsentReadModel {
   readonly marketingPushAgreedAt: string | null;
   readonly marketingPushWithdrawnAt: string | null;
 }
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
-export function buildConsentView(consent: UserConsentReadModel | null): ConsentView {
+export function toConsentSummaryReadModel(
+  consent: UserConsentReadModel | null,
+): ConsentSummaryReadModel {
   if (consent == null) {
     return {
       termsAgreedAt: null,
@@ -71,10 +73,10 @@ export function buildConsentView(consent: UserConsentReadModel | null): ConsentV
 }
 
 /** AI 데이터 처리 동의 변경 응답 뷰. 방금 답한 안내 버전을 그대로 돌려준다. */
-export function buildAiDataSharingConsentView(
+export function toAiDataSharingConsentReadModel(
   consent: Pick<UserConsentPrimitives, "aiDataSharingAgreedAt" | "aiDataSharingVersion">,
   answeredVersion: string,
-): AiDataSharingConsentView {
+): AiDataSharingConsentReadModel {
   return {
     aiDataSharingDecision: resolveAiDataSharingConsent(consent).decision,
     aiDataSharingAgreedAt: toIsoStringOrNull(consent.aiDataSharingAgreedAt),
@@ -83,10 +85,10 @@ export function buildAiDataSharingConsentView(
 }
 
 /** 광고성 앱 푸시 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
-export function buildMarketingPushConsentView(
+export function toMarketingPushConsentReadModel(
   consent: Pick<UserConsentPrimitives, "marketingPushAgreedAt">,
   processedAt: Temporal.Instant,
-): MarketingPushConsentView {
+): MarketingPushConsentReadModel {
   return {
     marketingPushAgreedAt: toIsoStringOrNull(consent.marketingPushAgreedAt),
     marketingPushWithdrawnAt:
@@ -95,10 +97,10 @@ export function buildMarketingPushConsentView(
 }
 
 /** 마케팅 동의 변경 응답 뷰. 철회면 처리한 서버 시각을 함께 준다. */
-export function buildMarketingConsentView(
+export function toMarketingConsentReadModel(
   consent: Pick<UserConsentPrimitives, "marketingAgreedAt">,
   processedAt: Temporal.Instant,
-): MarketingConsentView {
+): MarketingConsentReadModel {
   return {
     marketingAgreedAt: toIsoStringOrNull(consent.marketingAgreedAt),
     marketingWithdrawnAt: consent.marketingAgreedAt == null ? toIsoString(processedAt) : null,

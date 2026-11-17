@@ -155,10 +155,10 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
     const userSettings: UserNotificationSettingsPort = {
       upsertPushTimezone: vi.fn(),
       upsertPushLocale: vi.fn(),
-      getPreferenceRecord: vi.fn(),
-      getPreferenceRecordsByUserIds: vi.fn().mockResolvedValue([]),
-      getConsentRecord: vi.fn(),
-      getConsentRecordsByUserIds: vi.fn(),
+      findPreferenceReadModel: vi.fn(),
+      findPreferenceReadModelsByUserIds: vi.fn().mockResolvedValue([]),
+      findConsentReadModel: vi.fn(),
+      findConsentReadModelsByUserIds: vi.fn(),
       updateMarketingPushConsent: vi.fn(),
     };
     const notificationHistoryReader = {

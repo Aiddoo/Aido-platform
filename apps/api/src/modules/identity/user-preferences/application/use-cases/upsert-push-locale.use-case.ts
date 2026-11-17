@@ -12,7 +12,7 @@ export interface UpsertPushLocaleCommand {
 }
 
 interface UpsertPushLocaleDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
@@ -30,7 +30,7 @@ export class UpsertPushLocaleUseCase {
     const { preferenceRepository } = this.#dependencies;
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       if (preference.changeLocale(input.locale)) {
         await preferenceRepository.save(preference);
       }

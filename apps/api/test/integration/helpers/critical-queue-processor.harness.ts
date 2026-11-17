@@ -364,17 +364,17 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
   return {
     upsertPushTimezone: (userId, timezone) => upsertPreference(userId.value, { timezone }),
     upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
-    getPreferenceRecord: async (userId): Promise<UserPreferenceReadModel | null> =>
+    findPreferenceReadModel: async (userId): Promise<UserPreferenceReadModel | null> =>
       (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
-    getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceReadModel[]> =>
+    findPreferenceReadModelsByUserIds: async (userIds): Promise<UserPreferenceReadModel[]> =>
       userIds.length === 0
         ? []
         : database.query.userPreference.findMany({
             where: { userId: { in: userIds.map((userId) => userId.value) } },
           }),
-    getConsentRecord: async (userId): Promise<UserConsentReadModel | null> =>
+    findConsentReadModel: async (userId): Promise<UserConsentReadModel | null> =>
       (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
-    getConsentRecordsByUserIds: async (userIds): Promise<UserConsentReadModel[]> =>
+    findConsentReadModelsByUserIds: async (userIds): Promise<UserConsentReadModel[]> =>
       userIds.length === 0
         ? []
         : database.query.userConsent.findMany({

@@ -14,10 +14,10 @@ import type {
   UserStreakAccessPort,
   UserTimezoneReaderPort,
 } from "../../application/ports/user-settings-access.port.js";
-import { GetConsentRecordUseCase } from "../../application/use-cases/get-consent-record.use-case.js";
-import { GetConsentRecordsUseCase } from "../../application/use-cases/get-consent-records.use-case.js";
-import { GetPreferenceRecordUseCase } from "../../application/use-cases/get-preference-record.use-case.js";
-import { GetPreferenceRecordsUseCase } from "../../application/use-cases/get-preference-records.use-case.js";
+import { GetConsentReadModelUseCase } from "../../application/use-cases/get-consent-read-model.use-case.js";
+import { GetConsentReadModelsUseCase } from "../../application/use-cases/get-consent-read-models.use-case.js";
+import { GetPreferenceReadModelUseCase } from "../../application/use-cases/get-preference-read-model.use-case.js";
+import { GetPreferenceReadModelsUseCase } from "../../application/use-cases/get-preference-read-models.use-case.js";
 import { OnTodoToggledUseCase } from "../../application/use-cases/on-todo-toggled.use-case.js";
 import { SeedUserSettingsUseCase } from "../../application/use-cases/seed-user-settings.use-case.js";
 import { UpdateMarketingPushConsentUseCase } from "../../application/use-cases/update-marketing-push-consent.use-case.js";
@@ -36,10 +36,10 @@ export class UserSettingsAccessAdapter
 {
   readonly #seedUserSettingsUseCase: SeedUserSettingsUseCase;
   readonly #onTodoToggledUseCase: OnTodoToggledUseCase;
-  readonly #getPreferenceRecordUseCase: GetPreferenceRecordUseCase;
-  readonly #getPreferenceRecordsUseCase: GetPreferenceRecordsUseCase;
-  readonly #getConsentRecordUseCase: GetConsentRecordUseCase;
-  readonly #getConsentRecordsUseCase: GetConsentRecordsUseCase;
+  readonly #getPreferenceReadModelUseCase: GetPreferenceReadModelUseCase;
+  readonly #getPreferenceReadModelsUseCase: GetPreferenceReadModelsUseCase;
+  readonly #getConsentReadModelUseCase: GetConsentReadModelUseCase;
+  readonly #getConsentReadModelsUseCase: GetConsentReadModelsUseCase;
   readonly #upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase;
   readonly #upsertPushLocaleUseCase: UpsertPushLocaleUseCase;
   readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase;
@@ -51,10 +51,10 @@ export class UserSettingsAccessAdapter
   constructor(
     seedUserSettingsUseCase: SeedUserSettingsUseCase,
     onTodoToggledUseCase: OnTodoToggledUseCase,
-    getPreferenceRecordUseCase: GetPreferenceRecordUseCase,
-    getPreferenceRecordsUseCase: GetPreferenceRecordsUseCase,
-    getConsentRecordUseCase: GetConsentRecordUseCase,
-    getConsentRecordsUseCase: GetConsentRecordsUseCase,
+    getPreferenceReadModelUseCase: GetPreferenceReadModelUseCase,
+    getPreferenceReadModelsUseCase: GetPreferenceReadModelsUseCase,
+    getConsentReadModelUseCase: GetConsentReadModelUseCase,
+    getConsentReadModelsUseCase: GetConsentReadModelsUseCase,
     upsertPushTimezoneUseCase: UpsertPushTimezoneUseCase,
     upsertPushLocaleUseCase: UpsertPushLocaleUseCase,
     updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
@@ -66,10 +66,10 @@ export class UserSettingsAccessAdapter
   ) {
     this.#seedUserSettingsUseCase = seedUserSettingsUseCase;
     this.#onTodoToggledUseCase = onTodoToggledUseCase;
-    this.#getPreferenceRecordUseCase = getPreferenceRecordUseCase;
-    this.#getPreferenceRecordsUseCase = getPreferenceRecordsUseCase;
-    this.#getConsentRecordUseCase = getConsentRecordUseCase;
-    this.#getConsentRecordsUseCase = getConsentRecordsUseCase;
+    this.#getPreferenceReadModelUseCase = getPreferenceReadModelUseCase;
+    this.#getPreferenceReadModelsUseCase = getPreferenceReadModelsUseCase;
+    this.#getConsentReadModelUseCase = getConsentReadModelUseCase;
+    this.#getConsentReadModelsUseCase = getConsentReadModelsUseCase;
     this.#upsertPushTimezoneUseCase = upsertPushTimezoneUseCase;
     this.#upsertPushLocaleUseCase = upsertPushLocaleUseCase;
     this.#updateMarketingPushConsentUseCase = updateMarketingPushConsentUseCase;
@@ -94,27 +94,27 @@ export class UserSettingsAccessAdapter
     });
   }
 
-  getPreferenceRecord(userId: UserId) {
-    return this.#getPreferenceRecordUseCase.execute({ userId: userId.value });
+  findPreferenceReadModel(userId: UserId) {
+    return this.#getPreferenceReadModelUseCase.execute({ userId: userId.value });
   }
 
   async findStoredTimezone(userId: UserId): Promise<string | null> {
-    const record = await this.#getPreferenceRecordUseCase.execute({ userId: userId.value });
+    const record = await this.#getPreferenceReadModelUseCase.execute({ userId: userId.value });
     return record?.timezone ?? null;
   }
 
-  getPreferenceRecordsByUserIds(userIds: readonly UserId[]) {
-    return this.#getPreferenceRecordsUseCase.execute({
+  findPreferenceReadModelsByUserIds(userIds: readonly UserId[]) {
+    return this.#getPreferenceReadModelsUseCase.execute({
       userIds: userIds.map((userId) => userId.value),
     });
   }
 
-  getConsentRecord(userId: UserId) {
-    return this.#getConsentRecordUseCase.execute({ userId: userId.value });
+  findConsentReadModel(userId: UserId) {
+    return this.#getConsentReadModelUseCase.execute({ userId: userId.value });
   }
 
-  getConsentRecordsByUserIds(userIds: readonly UserId[]) {
-    return this.#getConsentRecordsUseCase.execute({
+  findConsentReadModelsByUserIds(userIds: readonly UserId[]) {
+    return this.#getConsentReadModelsUseCase.execute({
       userIds: userIds.map((userId) => userId.value),
     });
   }

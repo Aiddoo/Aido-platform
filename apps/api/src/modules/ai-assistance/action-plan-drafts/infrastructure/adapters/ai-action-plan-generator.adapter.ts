@@ -54,7 +54,7 @@ interface PlanGenerationOutcome<R, T> {
 
 interface ActionPlanGeneratorDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "error">;
 }
@@ -152,7 +152,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
     const userId = owner.value;
     const startedAt = clock.now().epochMilliseconds;
     const logBase = { task: definition.id, promptVersion: definition.version, userId };
-    const consent = await consentReader.findAiDataSharingConsent(owner);
+    const consent = await consentReader.getAiDataSharingConsent(owner);
     const { agreedVersion } = consent.status();
     try {
       const generation = await generateWithPrompt(generator, definition, {

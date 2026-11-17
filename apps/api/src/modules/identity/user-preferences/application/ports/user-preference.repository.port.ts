@@ -5,7 +5,7 @@ import type { UserPreferenceReadModel } from "../read-models/preference.read-mod
 
 export abstract class UserPreferenceRepositoryPort {
   /** 설정·동의 행이 없으면 그 부분은 기본값이다(옛 사용자). 저장할 때 바꾼 칸으로 행을 만든다 */
-  abstract findByUserId(userId: UserId): Promise<UserPreference>;
+  abstract getByUserId(userId: UserId): Promise<UserPreference>;
   abstract findReadModelByUserId(userId: UserId): Promise<UserPreferenceReadModel | null>;
   abstract findReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]>;
   /**

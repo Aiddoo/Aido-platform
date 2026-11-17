@@ -19,7 +19,7 @@ export class StubAiDataSharingConsentReader extends AiDataSharingConsentReaderPo
   /** AGREED·DECLINED일 때 답한 안내 버전 */
   agreedVersion: AiDataSharingConsentVersion = AI_DATA_SHARING_CONSENT.VERSION;
 
-  async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
+  async getAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     return AiDataSharingConsent.reconstitute({
       userId: userId.value,
       agreedAt: this.decision === "AGREED" ? AGREED_AT : null,

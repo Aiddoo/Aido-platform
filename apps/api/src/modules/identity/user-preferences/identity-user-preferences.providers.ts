@@ -17,11 +17,11 @@ import { UserConsentRepositoryPort } from "./application/ports/user-consent.repo
 import { UserPreferenceRepositoryPort } from "./application/ports/user-preference.repository.port.js";
 import { UserSettingsCachePort } from "./application/ports/user-settings-cache.port.js";
 import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
-import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record.use-case.js";
-import { GetConsentRecordsUseCase } from "./application/use-cases/get-consent-records.use-case.js";
+import { GetConsentReadModelUseCase } from "./application/use-cases/get-consent-read-model.use-case.js";
+import { GetConsentReadModelsUseCase } from "./application/use-cases/get-consent-read-models.use-case.js";
 import { GetConsentUseCase } from "./application/use-cases/get-consent.use-case.js";
-import { GetPreferenceRecordUseCase } from "./application/use-cases/get-preference-record.use-case.js";
-import { GetPreferenceRecordsUseCase } from "./application/use-cases/get-preference-records.use-case.js";
+import { GetPreferenceReadModelUseCase } from "./application/use-cases/get-preference-read-model.use-case.js";
+import { GetPreferenceReadModelsUseCase } from "./application/use-cases/get-preference-read-models.use-case.js";
 import { GetPreferenceUseCase } from "./application/use-cases/get-preference.use-case.js";
 import { OnTodoToggledUseCase } from "./application/use-cases/on-todo-toggled.use-case.js";
 import { ReadUserPreferencesUseCase } from "./application/use-cases/read-user-preferences.use-case.js";
@@ -85,15 +85,15 @@ export const IDENTITY_USER_PREFERENCES_PROVIDERS = [
     preferenceReader: ReadUserPreferencesUseCase,
     entitlement: PreferenceEntitlementPort,
   }),
-  provideUseCase(GetPreferenceRecordUseCase, {
+  provideUseCase(GetPreferenceReadModelUseCase, {
     preferenceRepository: UserPreferenceRepositoryPort,
   }),
-  provideUseCase(GetPreferenceRecordsUseCase, {
+  provideUseCase(GetPreferenceReadModelsUseCase, {
     preferenceRepository: UserPreferenceRepositoryPort,
   }),
   provideUseCase(GetConsentUseCase, { consentRepository: UserConsentRepositoryPort }),
-  provideUseCase(GetConsentRecordUseCase, { consentRepository: UserConsentRepositoryPort }),
-  provideUseCase(GetConsentRecordsUseCase, { consentRepository: UserConsentRepositoryPort }),
+  provideUseCase(GetConsentReadModelUseCase, { consentRepository: UserConsentRepositoryPort }),
+  provideUseCase(GetConsentReadModelsUseCase, { consentRepository: UserConsentRepositoryPort }),
   provideUseCase(GetAiDataSharingConsentUseCase, { consentRepository: UserConsentRepositoryPort }),
   provideUseCase(OnTodoToggledUseCase, {
     preferenceRepository: UserPreferenceRepositoryPort,

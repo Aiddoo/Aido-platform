@@ -15,7 +15,7 @@ export interface UpsertPushTimezoneCommand {
 }
 
 interface UpsertPushTimezoneDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
@@ -37,7 +37,7 @@ export class UpsertPushTimezoneUseCase {
     const { preferenceRepository } = this.#dependencies;
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       if (!preference.changeTimezone(timezone)) {
         return;
       }

@@ -31,20 +31,22 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
     return this.#userSettingsAccess.upsertPushLocale(userId, locale);
   }
 
-  getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null> {
-    return this.#userSettingsAccess.getPreferenceRecord(userId);
+  findPreferenceReadModel(userId: UserId): Promise<UserPreferenceReadModel | null> {
+    return this.#userSettingsAccess.findPreferenceReadModel(userId);
   }
 
-  getPreferenceRecordsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
-    return this.#userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
+  findPreferenceReadModelsByUserIds(
+    userIds: readonly UserId[],
+  ): Promise<UserPreferenceReadModel[]> {
+    return this.#userSettingsAccess.findPreferenceReadModelsByUserIds(userIds);
   }
 
-  getConsentRecord(userId: UserId): Promise<UserConsentReadModel | null> {
-    return this.#userSettingsAccess.getConsentRecord(userId);
+  findConsentReadModel(userId: UserId): Promise<UserConsentReadModel | null> {
+    return this.#userSettingsAccess.findConsentReadModel(userId);
   }
 
-  getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
-    return this.#userSettingsAccess.getConsentRecordsByUserIds(userIds);
+  findConsentReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
+    return this.#userSettingsAccess.findConsentReadModelsByUserIds(userIds);
   }
 
   async updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void> {

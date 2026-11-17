@@ -142,7 +142,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   }
 
   async function loadPreference() {
-    return preferences.findByUserId(UserId.reconstitute(userId));
+    return preferences.getByUserId(UserId.reconstitute(userId));
   }
 
   async function expectTwoUpdateWaiters(table: "UserPreference" | "UserConsent") {

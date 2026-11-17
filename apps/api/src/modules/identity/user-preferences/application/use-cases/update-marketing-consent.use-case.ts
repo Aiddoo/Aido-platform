@@ -6,8 +6,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import {
-  buildMarketingConsentView,
-  type MarketingConsentView,
+  toMarketingConsentReadModel,
+  type MarketingConsentReadModel,
 } from "../read-models/consent.read-model.js";
 import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
@@ -18,7 +18,7 @@ export interface UpdateMarketingConsentCommand {
 }
 
 interface UpdateMarketingConsentDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -32,13 +32,13 @@ export class UpdateMarketingConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateMarketingConsentCommand): Promise<MarketingConsentView> {
+  async execute(input: UpdateMarketingConsentCommand): Promise<MarketingConsentReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const processedAt = this.#dependencies.clock.now();
     const { preferenceRepository } = this.#dependencies;
     const consent = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       if (preference.changeMarketingConsent(input.agreed, processedAt)) {
         await preferenceRepository.save(preference);
       }
@@ -49,6 +49,6 @@ export class UpdateMarketingConsentUseCase {
       userId: input.userId,
       agreed: input.agreed,
     });
-    return buildMarketingConsentView(consent, processedAt);
+    return toMarketingConsentReadModel(consent, processedAt);
   }
 }

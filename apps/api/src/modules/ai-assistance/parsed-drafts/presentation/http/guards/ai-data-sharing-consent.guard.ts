@@ -23,7 +23,7 @@ interface AuthenticatedRequest extends HttpRequest {
  */
 @Injectable()
 export class AiDataSharingConsentGuard implements CanActivate {
-  readonly #consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly #consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
   readonly #requestClientReader: RequestClientReader;
   readonly #clock: ClockPort;
 
@@ -45,7 +45,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
     }
 
     const { appVersion } = this.#requestClientReader.current();
-    const consent = await this.#consentReader.findAiDataSharingConsent(
+    const consent = await this.#consentReader.getAiDataSharingConsent(
       UserId.reconstitute(user.userId),
     );
     if (!canShareWithAi({ consent, appVersion, now: this.#clock.now() })) {

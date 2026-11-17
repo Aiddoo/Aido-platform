@@ -3,22 +3,22 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
 import type { UserConsentReadModel } from "../read-models/consent.read-model.js";
 
-export interface GetConsentRecordQuery {
+export interface GetConsentReadModelQuery {
   readonly userId: string;
 }
 
-interface GetConsentRecordDependencies {
+interface GetConsentReadModelDependencies {
   readonly consentRepository: Pick<UserConsentRepositoryPort, "findByUserId">;
 }
 
-export class GetConsentRecordUseCase {
-  readonly #dependencies: GetConsentRecordDependencies;
+export class GetConsentReadModelUseCase {
+  readonly #dependencies: GetConsentReadModelDependencies;
 
-  constructor(dependencies: GetConsentRecordDependencies) {
+  constructor(dependencies: GetConsentReadModelDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetConsentRecordQuery): Promise<UserConsentReadModel | null> {
+  execute(input: GetConsentReadModelQuery): Promise<UserConsentReadModel | null> {
     return this.#dependencies.consentRepository.findByUserId(UserId.reconstitute(input.userId));
   }
 }

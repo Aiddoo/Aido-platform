@@ -34,7 +34,7 @@ describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
     const useCase = new UpsertPushLocaleUseCase({
       ...fixture,
       preferenceRepository: {
-        findByUserId: (userId) => fixture.preferenceRepository.findByUserId(userId),
+        getByUserId: (userId) => fixture.preferenceRepository.getByUserId(userId),
         save: async () => {
           throw storageError;
         },

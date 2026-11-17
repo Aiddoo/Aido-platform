@@ -42,7 +42,7 @@ interface ResolvedParseTodoCommand extends ParseTodoCommand {
 
 interface ParseTodoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve">;
   readonly chargedGeneration: Pick<ChargedGenerationPort, "settle">;
@@ -106,7 +106,7 @@ export class ParseTodoUseCase {
     const built = definition.build({ text, timezone, now: at, categories: userCategories }, locale);
     const logBase = { task: definition.id, promptVersion: definition.version, userId } as const;
 
-    const consent = await this.#dependencies.consentReader.findAiDataSharingConsent(owner);
+    const consent = await this.#dependencies.consentReader.getAiDataSharingConsent(owner);
     const { agreedVersion } = consent.status();
     try {
       const { value, meta } = await generateWithPrompt(this.#dependencies.generator, definition, {

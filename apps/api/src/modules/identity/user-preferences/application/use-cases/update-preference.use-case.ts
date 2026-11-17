@@ -14,9 +14,9 @@ import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-reba
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 import {
-  buildUpdatedPreferenceView,
+  toUpdatedPreferenceReadModel,
   type PreferenceChanges,
-  type PreferenceView,
+  type PreferenceReadModel,
 } from "../read-models/preference.read-model.js";
 import { invalidTimezone } from "../user-preferences.errors.js";
 import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
@@ -27,7 +27,7 @@ export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
 };
 
 interface UpdatePreferenceDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly entitlement: PreferenceEntitlementPort;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
@@ -46,7 +46,7 @@ export class UpdatePreferenceUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdatePreferenceCommand): Promise<PreferenceView> {
+  async execute(input: UpdatePreferenceCommand): Promise<PreferenceReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const changesReminder =
       input.morningReminderHour != null ||
@@ -68,7 +68,7 @@ export class UpdatePreferenceUseCase {
     const { preferenceRepository, todoTimezoneRebase, clock } = this.#dependencies;
     const updated = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       const previousTimezone = preference.settings.timezone;
       const changed = preference.changeSettings({
         pushEnabled: input.pushEnabled,
@@ -122,6 +122,6 @@ export class UpdatePreferenceUseCase {
       });
     }
 
-    return buildUpdatedPreferenceView(updated);
+    return toUpdatedPreferenceReadModel(updated);
   }
 }

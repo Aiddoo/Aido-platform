@@ -67,7 +67,7 @@ interface PushDeliveryCandidate {
 interface PushDeliveryEligibilityServiceDependencies {
   readonly userSettings: Pick<
     UserNotificationSettingsPort,
-    "getConsentRecord" | "getConsentRecordsByUserIds" | "getPreferenceRecordsByUserIds"
+    "findConsentReadModel" | "findConsentReadModelsByUserIds" | "findPreferenceReadModelsByUserIds"
   >;
   readonly rateLimiter: Pick<
     PushRateLimiterPort,
@@ -107,10 +107,10 @@ export class EvaluatePushDeliveryEligibilityUseCase {
   ): Promise<ReadonlyMap<string, BatchPushDeliveryRecipient>> {
     const uniqueUserIds = uniq(userIds);
     const [preferences, consents] = await Promise.all([
-      this.#dependencies.userSettings.getPreferenceRecordsByUserIds(
+      this.#dependencies.userSettings.findPreferenceReadModelsByUserIds(
         uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
       ),
-      this.#dependencies.userSettings.getConsentRecordsByUserIds(
+      this.#dependencies.userSettings.findConsentReadModelsByUserIds(
         uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
       ),
     ]);
@@ -180,7 +180,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
     }
 
     if (isMarketing) {
-      const consent = await this.#dependencies.userSettings.getConsentRecord(
+      const consent = await this.#dependencies.userSettings.findConsentReadModel(
         UserId.reconstitute(data.userId),
       );
       if (!consent?.marketingPushAgreedAt) {

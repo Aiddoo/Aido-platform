@@ -3,22 +3,22 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserPreferenceReadModel } from "../read-models/preference.read-model.js";
 
-export interface GetPreferenceRecordsQuery {
+export interface GetPreferenceReadModelsQuery {
   readonly userIds: readonly string[];
 }
 
-interface GetPreferenceRecordsDependencies {
+interface GetPreferenceReadModelsDependencies {
   readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findReadModelsByUserIds">;
 }
 
-export class GetPreferenceRecordsUseCase {
-  readonly #dependencies: GetPreferenceRecordsDependencies;
+export class GetPreferenceReadModelsUseCase {
+  readonly #dependencies: GetPreferenceReadModelsDependencies;
 
-  constructor(dependencies: GetPreferenceRecordsDependencies) {
+  constructor(dependencies: GetPreferenceReadModelsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetPreferenceRecordsQuery): Promise<UserPreferenceReadModel[]> {
+  execute(input: GetPreferenceReadModelsQuery): Promise<UserPreferenceReadModel[]> {
     return this.#dependencies.preferenceRepository.findReadModelsByUserIds(
       input.userIds.map((userId) => UserId.reconstitute(userId)),
     );

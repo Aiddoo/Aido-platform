@@ -32,7 +32,7 @@ export class StreakAdapter implements StreakPort {
     currentStreak: number;
     lastCompletedDate: Temporal.PlainDate | null;
   }> {
-    const record = await this.#userStreakAccess.getPreferenceRecord(userId);
+    const record = await this.#userStreakAccess.findPreferenceReadModel(userId);
     return {
       currentStreak: record?.currentStreak ?? 0,
       lastCompletedDate: record?.lastCompletedDate ?? null,

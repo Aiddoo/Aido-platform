@@ -24,7 +24,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     this.#transactionHost = transactionHost;
   }
 
-  async findByUserId(userId: UserId): Promise<UserPreference> {
+  async getByUserId(userId: UserId): Promise<UserPreference> {
     const preference = await this.#db.query.userPreference.findFirst({
       where: { userId: userId.value },
     });

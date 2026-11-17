@@ -12,16 +12,16 @@ import type {
 } from "#api/modules/identity/user-preferences/application/ports/todo-completion-stats.reader.port";
 import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import type { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
-import type { PreferenceSnapshot } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
+import type { PreferenceSettingsReadModel } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
 import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubUserSettingsCache implements UserSettingsCachePort {
-  readonly snapshots = new Map<string, PreferenceSnapshot>();
+  readonly snapshots = new Map<string, PreferenceSettingsReadModel>();
   async wrapUserPreference(
     userId: UserId,
-    factory: () => Promise<PreferenceSnapshot>,
-  ): Promise<PreferenceSnapshot> {
+    factory: () => Promise<PreferenceSettingsReadModel>,
+  ): Promise<PreferenceSettingsReadModel> {
     const snapshot = this.snapshots.get(userId.value);
     if (snapshot !== undefined) {
       return snapshot;

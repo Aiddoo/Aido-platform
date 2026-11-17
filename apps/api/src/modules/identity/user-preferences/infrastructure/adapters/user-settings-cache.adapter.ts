@@ -13,9 +13,9 @@ import {
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserSettingsCachePort } from "../../application/ports/user-settings-cache.port.js";
-import type { PreferenceSnapshot } from "../../application/read-models/preference.read-model.js";
+import type { PreferenceSettingsReadModel } from "../../application/read-models/preference.read-model.js";
 
-const PREFERENCE_SNAPSHOT_SCHEMA = z.looseObject({
+const PREFERENCE_SETTINGS_SCHEMA = z.looseObject({
   pushEnabled: z.boolean(),
   nightPushEnabled: z.boolean(),
   timezone: z.string(),
@@ -32,7 +32,7 @@ const PREFERENCE_SNAPSHOT_SCHEMA = z.looseObject({
   weatherEveningHour: z.number(),
   weatherEveningMinute: z.number(),
   aiPushEnabled: z.boolean(),
-}) satisfies z.ZodType<PreferenceSnapshot>;
+}) satisfies z.ZodType<PreferenceSettingsReadModel>;
 
 function preferenceKey(userId: UserId): GenerationGuardedCacheKey {
   return {
@@ -52,11 +52,11 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
 
   wrapUserPreference(
     userId: UserId,
-    factory: () => Promise<PreferenceSnapshot>,
-  ): Promise<PreferenceSnapshot> {
+    factory: () => Promise<PreferenceSettingsReadModel>,
+  ): Promise<PreferenceSettingsReadModel> {
     return this.#preferences.wrap(
       preferenceKey(userId),
-      PREFERENCE_SNAPSHOT_SCHEMA,
+      PREFERENCE_SETTINGS_SCHEMA,
       factory,
       USER_SETTINGS_CACHE_TTL_MS,
     );

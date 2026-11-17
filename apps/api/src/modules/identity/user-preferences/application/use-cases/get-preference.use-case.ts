@@ -1,7 +1,10 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
-import { buildPreferenceView, type PreferenceView } from "../read-models/preference.read-model.js";
+import {
+  toPreferenceReadModel,
+  type PreferenceReadModel,
+} from "../read-models/preference.read-model.js";
 import type { ReadUserPreferencesUseCase } from "./read-user-preferences.use-case.js";
 
 export interface GetPreferenceQuery {
@@ -20,12 +23,12 @@ export class GetPreferenceUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetPreferenceQuery): Promise<PreferenceView> {
+  async execute(input: GetPreferenceQuery): Promise<PreferenceReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const [snapshot, canCustomizeReminder] = await Promise.all([
       this.#dependencies.preferenceReader.read(userId),
       this.#dependencies.entitlement.can(userId, "CUSTOM_REMINDER_TIME"),
     ]);
-    return buildPreferenceView(snapshot, canCustomizeReminder);
+    return toPreferenceReadModel(snapshot, canCustomizeReminder);
   }
 }

@@ -42,7 +42,7 @@ export function describeUserPreferenceRepositoryContract(
   // 어제까지 연속 완료가 1인 사용자를 만든다
   async function seedWithStreak(repository: UserPreferenceRepositoryPort): Promise<void> {
     await seed(repository, USER);
-    const preference = await repository.findByUserId(USER);
+    const preference = await repository.getByUserId(USER);
     preference.recordAllTodosCompleted(YESTERDAY);
     await repository.save(preference);
   }
@@ -53,7 +53,7 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
       const readModel = await repository.findReadModelByUserId(USER);
 
       // Then
@@ -73,7 +73,7 @@ export function describeUserPreferenceRepositoryContract(
       // When
       await seed(repository, USER, { termsAgreedAt: NOW, agreedTermsVersion: "2.0" });
       const readModel = await repository.findReadModelByUserId(USER);
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
 
       // Then
       expect(readModel).toEqual({ ...COLUMN_DEFAULTS, userId: USER.value });
@@ -87,7 +87,7 @@ export function describeUserPreferenceRepositoryContract(
     it("설정 행이 없는 사용자의 설정 변경은 기본값 위에 행을 만들고 동의 행은 만들지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
 
       // When
       const changed = preference.changeTimezone(DEFAULT_USER_PREFERENCE_SETTINGS.timezone);
@@ -99,7 +99,7 @@ export function describeUserPreferenceRepositoryContract(
         ...COLUMN_DEFAULTS,
         userId: USER.value,
       });
-      expect((await repository.findByUserId(USER)).consent.toPrimitives()).toMatchObject({
+      expect((await repository.getByUserId(USER)).consent.toPrimitives()).toMatchObject({
         termsAgreedAt: null,
       });
     });
@@ -108,7 +108,7 @@ export function describeUserPreferenceRepositoryContract(
       // Given
       const repository = await createRepository();
       await seedWithStreak(repository);
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
 
       // When
       preference.changeSettings({
@@ -134,8 +134,8 @@ export function describeUserPreferenceRepositoryContract(
       // Given
       const repository = await createRepository();
       await seedWithStreak(repository);
-      const settingsRequest = await repository.findByUserId(USER);
-      const completion = await repository.findByUserId(USER);
+      const settingsRequest = await repository.getByUserId(USER);
+      const completion = await repository.getByUserId(USER);
       completion.recordAllTodosCompleted(TODAY);
       await repository.save(completion);
 
@@ -157,8 +157,8 @@ export function describeUserPreferenceRepositoryContract(
       // Given
       const repository = await createRepository();
       await seed(repository, USER);
-      const first = await repository.findByUserId(USER);
-      const late = await repository.findByUserId(USER);
+      const first = await repository.getByUserId(USER);
+      const late = await repository.getByUserId(USER);
       first.recordAllTodosCompleted(TODAY);
       late.recordAllTodosCompleted(TODAY);
 
@@ -178,7 +178,7 @@ export function describeUserPreferenceRepositoryContract(
       // Given
       const repository = await createRepository();
       await seed(repository, USER, { termsAgreedAt: NOW, marketingAgreedAt: NOW });
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
       const later = NOW.add({ hours: 1 });
 
       // When
@@ -186,7 +186,7 @@ export function describeUserPreferenceRepositoryContract(
       await repository.save(preference);
 
       // Then
-      expect((await repository.findByUserId(USER)).consent.toPrimitives()).toMatchObject({
+      expect((await repository.getByUserId(USER)).consent.toPrimitives()).toMatchObject({
         termsAgreedAt: NOW,
         marketingAgreedAt: NOW,
         marketingPushAgreedAt: later,
@@ -196,7 +196,7 @@ export function describeUserPreferenceRepositoryContract(
     it("동의 행이 없는 사용자의 동의 변경은 그 칸만 가진 행을 만들고 설정 행은 만들지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      const preference = await repository.findByUserId(USER);
+      const preference = await repository.getByUserId(USER);
 
       // When
       preference.answerAiDataSharing({
@@ -207,7 +207,7 @@ export function describeUserPreferenceRepositoryContract(
       await repository.save(preference);
 
       // Then
-      const reloaded = await repository.findByUserId(USER);
+      const reloaded = await repository.getByUserId(USER);
       expect(reloaded.consent.aiDataSharing().status().decision).toBe("AGREED");
       expect(reloaded.consent.toPrimitives()).toMatchObject({
         aiDataSharingAgreedAt: NOW,

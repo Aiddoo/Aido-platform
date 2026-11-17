@@ -1,5 +1,5 @@
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
-import type { PreferenceSnapshot } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import type { PreferenceSettingsReadModel } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
@@ -22,23 +22,23 @@ class StubUserNotificationSettings extends UserNotificationSettingsPort {
 
   async upsertPushLocale(): Promise<void> {}
 
-  async getPreferenceRecord(user: UserId): Promise<NotificationDeliveryPreference | null> {
+  async findPreferenceReadModel(user: UserId): Promise<NotificationDeliveryPreference | null> {
     const userId = user.value;
     this.singleRequests.push(userId);
     return this.preferenceRows.find((row) => row.userId === userId) ?? null;
   }
 
-  async getPreferenceRecordsByUserIds(users: readonly UserId[]): Promise<PreferenceRow[]> {
+  async findPreferenceReadModelsByUserIds(users: readonly UserId[]): Promise<PreferenceRow[]> {
     const userIds = users.map((user) => user.value);
     this.batchRequests.push([...userIds]);
     return this.preferenceRows.filter((row) => userIds.includes(row.userId));
   }
 
-  async getConsentRecord(): Promise<NotificationMarketingConsent | null> {
+  async findConsentReadModel(): Promise<NotificationMarketingConsent | null> {
     return null;
   }
 
-  async getConsentRecordsByUserIds(): Promise<
+  async findConsentReadModelsByUserIds(): Promise<
     (NotificationMarketingConsent & { readonly userId: string })[]
   > {
     return [];
@@ -97,7 +97,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     // Given
     const fixture = createFixture();
     const preference = await fixture.reader.getPreference(UserId.reconstitute(fixture.userId));
-    const snapshot: PreferenceSnapshot = { ...preference };
+    const snapshot: PreferenceSettingsReadModel = { ...preference };
     delete snapshot.locale;
     fixture.cache.snapshots.set(fixture.userId, snapshot);
 
@@ -117,7 +117,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   ])("저장 언어 %s를 지원 언어 %s로 읽는다", async (storedLocale, expectedLocale) => {
     // Given
     const fixture = createFixture();
-    const preference = await fixture.preferenceRepository.findByUserId(
+    const preference = await fixture.preferenceRepository.getByUserId(
       UserId.reconstitute(fixture.userId),
     );
     preference.changeLocale(storedLocale);

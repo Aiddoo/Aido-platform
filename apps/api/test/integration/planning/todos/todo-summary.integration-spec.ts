@@ -37,7 +37,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
   const mockReadRepository = createTodoReadRepositoryMock();
 
   const mockUserStreakAccess = {
-    getPreferenceRecord: vi.fn(),
+    findPreferenceReadModel: vi.fn(),
   };
 
   const today = Temporal.PlainDate.from("2026-07-12");
@@ -78,7 +78,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     });
     vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
     // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
-    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
+    mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue({
       currentStreak: 7,
       lastCompletedDate: Temporal.PlainDate.from("2026-07-12"),
     });
@@ -91,7 +91,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
     expect(result.isComplete).toBe(true);
     expect(result.completionRate).toBe(100);
     expect(result.currentStreak).toBe(7);
-    expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith(
+    expect(mockUserStreakAccess.findPreferenceReadModel).toHaveBeenCalledWith(
       UserId.reconstitute("user-123"),
     );
   });
@@ -103,7 +103,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
       completed: 0,
     });
     vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
-    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
+    mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue(null);
 
     // When
     const result = await useCase.execute({ userId: "user-없음", today });

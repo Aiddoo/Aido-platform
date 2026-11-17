@@ -236,24 +236,24 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             consentRepository: DrizzleUserConsentRepository,
           ) => ({
             upsertPushTimezone: async (userId: UserId, timezone: string) => {
-              const preference = await preferenceRepository.findByUserId(userId);
+              const preference = await preferenceRepository.getByUserId(userId);
               preference.changeTimezone(timezone);
               await preferenceRepository.save(preference);
             },
             upsertPushLocale: async (userId: UserId, locale: string) => {
-              const preference = await preferenceRepository.findByUserId(userId);
+              const preference = await preferenceRepository.getByUserId(userId);
               preference.changeLocale(locale);
               await preferenceRepository.save(preference);
             },
-            getPreferenceRecord: (userId: UserId) =>
+            findPreferenceReadModel: (userId: UserId) =>
               preferenceRepository.findReadModelByUserId(userId),
-            getPreferenceRecordsByUserIds: (userIds: readonly UserId[]) =>
+            findPreferenceReadModelsByUserIds: (userIds: readonly UserId[]) =>
               preferenceRepository.findReadModelsByUserIds(userIds),
-            getConsentRecord: (userId: UserId) => consentRepository.findByUserId(userId),
-            getConsentRecordsByUserIds: (userIds: readonly UserId[]) =>
+            findConsentReadModel: (userId: UserId) => consentRepository.findByUserId(userId),
+            findConsentReadModelsByUserIds: (userIds: readonly UserId[]) =>
               consentRepository.findByUserIds(userIds),
             updateMarketingPushConsent: async (userId: UserId, agreed: boolean) => {
-              const preference = await preferenceRepository.findByUserId(userId);
+              const preference = await preferenceRepository.getByUserId(userId);
               preference.changeMarketingPushConsent(
                 agreed,
                 Temporal.Instant.fromEpochMilliseconds(Date.now()),

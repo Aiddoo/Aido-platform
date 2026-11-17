@@ -6,8 +6,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import {
-  buildMarketingPushConsentView,
-  type MarketingPushConsentView,
+  toMarketingPushConsentReadModel,
+  type MarketingPushConsentReadModel,
 } from "../read-models/consent.read-model.js";
 import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
@@ -18,7 +18,7 @@ export interface UpdateMarketingPushConsentCommand {
 }
 
 interface UpdateMarketingPushConsentDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "getByUserId" | "save">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
@@ -32,13 +32,13 @@ export class UpdateMarketingPushConsentUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateMarketingPushConsentCommand): Promise<MarketingPushConsentView> {
+  async execute(input: UpdateMarketingPushConsentCommand): Promise<MarketingPushConsentReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const processedAt = this.#dependencies.clock.now();
     const { preferenceRepository } = this.#dependencies;
     const consent = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
-      const preference = await preferenceRepository.findByUserId(userId);
+      const preference = await preferenceRepository.getByUserId(userId);
       if (preference.changeMarketingPushConsent(input.agreed, processedAt)) {
         await preferenceRepository.save(preference);
       }
@@ -49,6 +49,6 @@ export class UpdateMarketingPushConsentUseCase {
       userId: input.userId,
       agreed: input.agreed,
     });
-    return buildMarketingPushConsentView(consent, processedAt);
+    return toMarketingPushConsentReadModel(consent, processedAt);
   }
 }

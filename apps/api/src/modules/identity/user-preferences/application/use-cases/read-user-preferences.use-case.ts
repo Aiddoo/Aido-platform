@@ -4,9 +4,9 @@ import type { UserPreferenceReaderPort } from "../ports/user-preference.reader.p
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 import {
-  buildPreferenceSnapshot,
-  DEFAULT_PREFERENCE_SNAPSHOT,
-  type PreferenceSnapshot,
+  toPreferenceSettingsReadModel,
+  DEFAULT_PREFERENCE_SETTINGS,
+  type PreferenceSettingsReadModel,
 } from "../read-models/preference.read-model.js";
 
 interface UserPreferenceReaderDependencies {
@@ -21,13 +21,13 @@ export class ReadUserPreferencesUseCase implements UserPreferenceReaderPort {
     this.#dependencies = dependencies;
   }
 
-  read(userId: UserId): Promise<PreferenceSnapshot> {
+  read(userId: UserId): Promise<PreferenceSettingsReadModel> {
     return this.#dependencies.cache.wrapUserPreference(userId, async () => {
       const preference =
         await this.#dependencies.preferenceRepository.findReadModelByUserId(userId);
       return preference == null
-        ? { ...DEFAULT_PREFERENCE_SNAPSHOT }
-        : buildPreferenceSnapshot(preference);
+        ? { ...DEFAULT_PREFERENCE_SETTINGS }
+        : toPreferenceSettingsReadModel(preference);
     });
   }
 }

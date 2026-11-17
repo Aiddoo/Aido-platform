@@ -10,7 +10,7 @@ import {
 import type { PushQuietHoursReaderPort } from "./ports/push-quiet-hours.reader.port.js";
 
 interface PushQuietHoursReaderDependencies {
-  readonly userSettings: Pick<UserNotificationSettingsPort, "getPreferenceRecordsByUserIds">;
+  readonly userSettings: Pick<UserNotificationSettingsPort, "findPreferenceReadModelsByUserIds">;
 }
 
 // 발송 경로와 같은 배송 시간대 해석과 야간 판정으로 사용자를 한 번에 고른다
@@ -30,7 +30,8 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
     }
 
     const userIds = users.map((user) => user.value);
-    const preferences = await this.#dependencies.userSettings.getPreferenceRecordsByUserIds(users);
+    const preferences =
+      await this.#dependencies.userSettings.findPreferenceReadModelsByUserIds(users);
     const timezones = new Map(
       preferences.map((preference) => [preference.userId, preference.timezone]),
     );

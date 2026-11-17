@@ -77,7 +77,7 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     return this.stored(userId.value) ?? null;
   }
 
-  async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
+  async getAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     const record = this.#records.get(userId.value);
     return AiDataSharingConsent.reconstitute({
       userId: userId.value,

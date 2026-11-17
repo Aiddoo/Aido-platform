@@ -8,7 +8,7 @@ import { canShareWithAi } from "../../shared/domain/ai-data-sharing-consent.doma
 import type { AiClientAppVersionReaderPort } from "./ports/client-app-version.reader.port.js";
 
 interface ScheduledAiConsentReaderDependencies {
-  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
+  readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
   readonly clientAppVersion: Pick<AiClientAppVersionReaderPort, "findLatestAppVersion">;
   readonly clock: ClockPort;
 }
@@ -33,7 +33,7 @@ export class ScheduledAiConsentReader {
   async find(userId: UserId): Promise<ScheduledAiConsentReadModel> {
     const { consentReader, clientAppVersion, clock } = this.#dependencies;
     const [consent, appVersion] = await Promise.all([
-      consentReader.findAiDataSharingConsent(userId),
+      consentReader.getAiDataSharingConsent(userId),
       clientAppVersion.findLatestAppVersion(userId),
     ]);
     return {

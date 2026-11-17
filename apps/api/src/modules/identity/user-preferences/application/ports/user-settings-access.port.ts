@@ -19,7 +19,7 @@ export abstract class UserStreakAccessPort {
     timezone: string,
     todayStats: DatedTodoCompletionStats | null,
   ): Promise<void>;
-  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null>;
+  abstract findPreferenceReadModel(userId: UserId): Promise<UserPreferenceReadModel | null>;
 }
 
 /** planning이 벽시계를 순간으로 바꿀 때 최신 저장값을 읽는 capability. 캐시를 거치지 않는다. */
@@ -32,12 +32,14 @@ export abstract class UserTimezoneReaderPort {
 export abstract class UserNotificationSettingsAccessPort {
   abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
   abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
-  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null>;
-  abstract getPreferenceRecordsByUserIds(
+  abstract findPreferenceReadModel(userId: UserId): Promise<UserPreferenceReadModel | null>;
+  abstract findPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<UserPreferenceReadModel[]>;
-  abstract getConsentRecord(userId: UserId): Promise<UserConsentReadModel | null>;
-  abstract getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]>;
+  abstract findConsentReadModel(userId: UserId): Promise<UserConsentReadModel | null>;
+  abstract findConsentReadModelsByUserIds(
+    userIds: readonly UserId[],
+  ): Promise<UserConsentReadModel[]>;
   abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;
   abstract findMarketingReconfirmTargets: UserConsentRepositoryPort["findMarketingReconfirmTargets"];
   abstract claimMarketingReconfirm: UserConsentRepositoryPort["claimMarketingReconfirm"];

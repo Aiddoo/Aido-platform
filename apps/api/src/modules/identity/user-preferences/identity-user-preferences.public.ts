@@ -10,7 +10,7 @@ export type UserPreferenceCacheInvalidatorPort = Pick<
 export { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-sharing-consent.reader.port.js";
 export { AiDataSharingConsent } from "./domain/ai-data-sharing-consent.entity.js";
 export { UserPreferenceReaderPort } from "./application/ports/user-preference.reader.port.js";
-export type { PreferenceSnapshot } from "./application/read-models/preference.read-model.js";
+export type { PreferenceSettingsReadModel } from "./application/read-models/preference.read-model.js";
 export type { MarketingReconfirmTarget } from "./application/ports/user-consent.repository.port.js";
 export type { UserConsentReadModel } from "./application/read-models/consent.read-model.js";
 export type { UserPreferenceReadModel } from "./application/read-models/preference.read-model.js";
