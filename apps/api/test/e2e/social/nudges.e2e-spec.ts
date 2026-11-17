@@ -271,6 +271,46 @@ describe("찔러보기 E2E", () => {
         expect(response.body.error.code).toBe("NUDGE_1106");
       });
 
+      it("출시 앱이 끝낸 Todo에 콕 찌르면 아는 코드 400 NUDGE_1106이고 횟수를 쓰지 않으며 상세도 막는다", async () => {
+        // Given
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-completed-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-completed-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
+        const todoId = await createReceiverTodo(receiver.accessToken);
+        await request(testContext.app.getHttpServer())
+          .patch(`/v1/todos/${todoId}`)
+          .set("Authorization", `Bearer ${receiver.accessToken}`)
+          .send({ completed: true })
+          .expect(200);
+
+        // When
+        const response = await request(testContext.app.getHttpServer())
+          .post("/v1/nudges")
+          .set("Authorization", `Bearer ${sender.accessToken}`)
+          .set("X-App-Version", "1.16.0")
+          .send({ receiverId: receiver.userId, todoId })
+          .expect(400);
+        const limit = await request(testContext.app.getHttpServer())
+          .get("/v1/nudges/limit")
+          .set("Authorization", `Bearer ${sender.accessToken}`)
+          .expect(200);
+        const details = await request(testContext.app.getHttpServer())
+          .get(`/v1/todos/${todoId}/details`)
+          .set("Authorization", `Bearer ${sender.accessToken}`)
+          .expect(200);
+
+        // Then
+        expect(response.body.error.code).toBe("NUDGE_1106");
+        expect(limit.body.data.usedToday).toBe(0);
+        expect(details.body.data.permissions.canNudge).toBe(false);
+      });
+
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
         const response = await request(testContext.app.getHttpServer())

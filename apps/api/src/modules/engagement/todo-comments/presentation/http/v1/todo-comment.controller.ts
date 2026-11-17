@@ -19,6 +19,7 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -124,12 +125,13 @@ export class TodoCommentController {
   async getDetails(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
-
+    @Timezone() timezone: string,
     @AppVersion() appVersion?: string,
   ): Promise<TodoDetailsResponseDto> {
     const result = await this.#getTodoDetails.execute({
       todoId: params.todoId,
       viewerId: user.userId,
+      timezone,
     });
     return toTodoDetailsResponse(result, appVersion);
   }

@@ -63,6 +63,7 @@ export const ENGAGEMENT_TODO_COMMENTS_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     accessReader: TodoCommentAccessReaderPort,
     engagementCounter: TodoEngagementCounterPort,
+    clock: ClockPort,
   }),
   provideUseCase(ListTodoCommentThreadsUseCase, {
     accessReader: TodoCommentAccessReaderPort,

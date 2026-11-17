@@ -259,7 +259,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const getDetails = context.module.get(GetTodoDetailsUseCase);
 
     // When
-    const measured = await measure(() => getDetails.execute({ todoId, viewerId: userId }));
+    const measured = await measure(() =>
+      getDetails.execute({ todoId, viewerId: userId, timezone: "UTC" }),
+    );
 
     // Then
     expect(measured.count).toBe(2);

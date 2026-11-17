@@ -140,11 +140,12 @@ export function describeNudgeRepositoryContract(
       expect(used).toBe(2);
     });
 
-    it("대상 할 일은 소유자·제목·공개 범위·날짜를 읽고 없으면 null이다", async () => {
+    it("대상 할 일은 소유자·제목·공개 범위·완료·날짜를 읽고 없으면 null이다", async () => {
       // Given
       const { repository, addTodo } = await createSubject();
       const seed = createNudgeTodoSeed({
         visibility: "PRIVATE",
+        completed: true,
         startDate: NUDGE_FIXTURE_TODAY.subtract({ days: 1 }),
         endDate: NUDGE_FIXTURE_TODAY.add({ days: 1 }),
       });
@@ -159,6 +160,7 @@ export function describeNudgeRepositoryContract(
         ownerId: seed.ownerId,
         title: seed.title,
         visibility: seed.visibility,
+        completed: true,
         startDate: seed.startDate,
         endDate: seed.endDate,
       });

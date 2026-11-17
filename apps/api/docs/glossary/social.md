@@ -98,17 +98,17 @@
 
 ## nudges
 
-| 용어           | 코드                                                                        | 뜻                                                                                                                                                              |
-| -------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 콕 찌르기      | `Nudge`(Aggregate), `NudgeId`, `SendNudgeUseCase`                           | 친구의 공개 할 일에 보내는 재촉. 메시지는 선택이고 200자 이하(`NudgeMessage`, `social/shared`)                                                                  |
-| 콕 대상 할 일  | `NudgeTargetTodo`(VO), `TodoBriefReaderPort`                                | 받는 친구가 소유한 공개 할 일. 기간 할 일은 시작~종료일, 하루 할 일은 시작일이 요청 시간대 오늘일 때만 찌른다. 답장·감사는 그 할 일 행을 planning 포트로 잠근다 |
-| 콕 한도        | `NudgeLimitReaderPort`, `GetNudgeLimitUseCase`, `GetDailyNudgeUsageUseCase` | 요청 시간대 하루에 보낸 콕 수(리마인드 콕은 세지 않는다). null은 무제한                                                                                         |
-| 콕 쿨다운      | `evaluateNudgeCooldown`, `NudgeLockKeys.dailyQuota`·`cooldown`              | 같은 할 일에 24시간. 조회 API(`GetNudgeCooldownUseCase`)는 그 친구에게 마지막으로 보낸 콕 기준이다(출시 계약)                                                   |
-| 답장           | `reply(kind)`, `ReplyToNudgeUseCase`, `NUDGE_REPLY_KINDS`                   | STARTING·THANKFUL·LATER. 첫 답장 시각은 남기고 변경 시각만 바꾸며 읽음도 겸한다. 알림은 첫 답장에만 간다                                                        |
-| 감사           | `markThanked`, `SendNudgeThanksUseCase`                                     | 완료한 공개 할 일에서 받은 콕 중 지금 친구이고 아직 감사받지 않은 보낸 사람마다 가장 최근 콕 하나에 남긴다. 100명씩 저장·알림                                   |
-| 답장·감사 가능 | `isNudgeInteractionAvailable`, `NudgeInteractionConfigPort`                 | 지금 친구이고 받은 사람의 공개 할 일일 때만. 서버 설정으로 끄면 `NUDGE_1111`(1.15.1 이하 앱에는 `NUDGE_1105`로 바꿔 보낸다)                                     |
-| 감사 미리보기  | `GetNudgeThanksPreviewUseCase`                                              | 완료 전이면 빈 미리보기, 비공개면 감사 수만, 공개면 받을 친구 목록까지 준다                                                                                     |
-| 콕 목록        | `NudgeReaderPort`, `NudgeReadModel`, `NudgeCountCachePort`                  | 받은·보낸 콕을 생성 시각·id 내림차순으로 준다. 차단한 상대와 주고받은 콕은 목록·개수·단건에서 빠지고 수는 1분 캐시한다                                          |
+| 용어           | 코드                                                                        | 뜻                                                                                                                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 콕 찌르기      | `Nudge`(Aggregate), `NudgeId`, `SendNudgeUseCase`                           | 친구의 공개 할 일에 보내는 재촉. 메시지는 선택이고 200자 이하(`NudgeMessage`, `social/shared`)                                                                                                                         |
+| 콕 대상 할 일  | `NudgeTargetTodo`(VO), `canNudgeTodoOn`, `TodoBriefReaderPort`              | 받는 친구가 소유한 공개 할 일. 끝내지 않았고 요청 시간대 오늘이 기간(하루 할 일은 시작일) 안일 때만 찌른다(아니면 `NUDGE_1106`). 할 일 상세 `canNudge`도 같은 함수다. 답장·감사는 그 할 일 행을 planning 포트로 잠근다 |
+| 콕 한도        | `NudgeLimitReaderPort`, `GetNudgeLimitUseCase`, `GetDailyNudgeUsageUseCase` | 요청 시간대 하루에 보낸 콕 수(리마인드 콕은 세지 않는다). null은 무제한                                                                                                                                                |
+| 콕 쿨다운      | `evaluateNudgeCooldown`, `NudgeLockKeys.dailyQuota`·`cooldown`              | 같은 할 일에 24시간. 조회 API(`GetNudgeCooldownUseCase`)는 그 친구에게 마지막으로 보낸 콕 기준이다(출시 계약)                                                                                                          |
+| 답장           | `reply(kind)`, `ReplyToNudgeUseCase`, `NUDGE_REPLY_KINDS`                   | STARTING·THANKFUL·LATER. 첫 답장 시각은 남기고 변경 시각만 바꾸며 읽음도 겸한다. 알림은 첫 답장에만 간다                                                                                                               |
+| 감사           | `markThanked`, `SendNudgeThanksUseCase`                                     | 완료한 공개 할 일에서 받은 콕 중 지금 친구이고 아직 감사받지 않은 보낸 사람마다 가장 최근 콕 하나에 남긴다. 100명씩 저장·알림                                                                                          |
+| 답장·감사 가능 | `isNudgeInteractionAvailable`, `NudgeInteractionConfigPort`                 | 지금 친구이고 받은 사람의 공개 할 일일 때만. 서버 설정으로 끄면 `NUDGE_1111`(1.15.1 이하 앱에는 `NUDGE_1105`로 바꿔 보낸다)                                                                                            |
+| 감사 미리보기  | `GetNudgeThanksPreviewUseCase`                                              | 완료 전이면 빈 미리보기, 비공개면 감사 수만, 공개면 받을 친구 목록까지 준다                                                                                                                                            |
+| 콕 목록        | `NudgeReaderPort`, `NudgeReadModel`, `NudgeCountCachePort`                  | 받은·보낸 콕을 생성 시각·id 내림차순으로 준다. 차단한 상대와 주고받은 콕은 목록·개수·단건에서 빠지고 수는 1분 캐시한다                                                                                                 |
 
 콕 보내기 오류는 출시 앱이 받는 순서다: 자기 자신 `NUDGE_1104` → 친구 아님 `NUDGE_1103` → 메시지 길이 `SYS_0002` → 없거나 남의 것이거나 비공개 할 일 `TODO_0801` → 오늘 할 일 아님 `NUDGE_1106` → 하루 한도 `NUDGE_1101` → 쿨다운 `NUDGE_1102`.
 

@@ -1091,7 +1091,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.NUDGE_1106]: {
     code: "NUDGE_1106",
     message: "오늘의 할 일에만 콕 찌를 수 있습니다.",
-    description: "콕 찌르기는 오늘 날짜에 해당하는 할 일에만 가능합니다.",
+    description: "콕 찌르기는 오늘 날짜에 해당하고 아직 끝내지 않은 할 일에만 가능합니다.",
     httpStatus: HttpStatus.BAD_REQUEST,
   },
   [ErrorCode.NUDGE_1107]: {

@@ -23,9 +23,8 @@ import type {
   TodoCommentWithViewerReadModel,
   TodoCommentViewerReadModel,
   TodoConversationPageReadModel,
-  TodoDetailsReadModel,
+  ViewerTodoDetailsReadModel,
 } from "../../../application/read-models/todo-comment.read-model.js";
-import { getTodoDetailsPermissions } from "../../../domain/todo-comment-permission.domain-service.js";
 import {
   findVisiblePreviewReply,
   toTodoCommentPaginationResponse,
@@ -208,7 +207,7 @@ export function toTodoCommentLikeResponse(
 }
 
 export function toTodoDetailsResponse(
-  details: TodoDetailsReadModel,
+  details: ViewerTodoDetailsReadModel,
   appVersion?: string,
 ): TodoDetailsResponse {
   return {
@@ -218,7 +217,7 @@ export function toTodoDetailsResponse(
       name: details.owner.name,
       profileImage: resolveProfileImage(details.owner.profileImage, appVersion),
     },
-    permissions: getTodoDetailsPermissions(details.isOwner),
+    permissions: { ...details.permissions },
     metrics: { viewCount: details.viewCount, commentCount: details.commentCount },
   };
 }

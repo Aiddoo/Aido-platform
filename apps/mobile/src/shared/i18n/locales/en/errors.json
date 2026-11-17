@@ -134,7 +134,7 @@
   "FOLLOW_0910": "The friend at the target position was not found",
   "FOLLOW_0911": "Please check your search term",
   "FOLLOW_0912": "Couldn't load more results. Please search again",
-  "NUDGE_1106": "You can only nudge today's to-dos",
+  "NUDGE_1106": "You can only nudge today's unfinished to-dos",
   "NUDGE_1107": "Your friend already created today's to-do",
   "NUDGE_1108": "You just nudged them. Please try again in 1 hour.",
   "AI_1304": "Report not found",

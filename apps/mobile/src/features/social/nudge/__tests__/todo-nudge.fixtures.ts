@@ -1,31 +1,11 @@
 import {
   createNudgeResponseSchema,
   nudgeCooldownInfoSchema,
-  nudgeLimitInfoSchema,
   type CreateNudgeResponse,
   type NudgeCooldownInfo,
-  type NudgeLimitInfo,
 } from '@aido/api/contracts/nudge/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-
-import {
-  type NudgeLimitInfo as NudgeLimitInfoModel,
-  nudgeLimitInfoSchema as nudgeLimitInfoModelSchema,
-} from '../domains/todo-nudge.model';
-
-function generateNudgeLimitInfoDto(): NudgeLimitInfo {
-  return {
-    dailyLimit: 5,
-    usedToday: 2,
-    remainingToday: 3,
-    isUnlimited: false,
-  };
-}
-
-export function createNudgeLimitInfoDto(overrides?: Partial<NudgeLimitInfo>): NudgeLimitInfo {
-  return nudgeLimitInfoSchema.parse({ ...generateNudgeLimitInfoDto(), ...overrides });
-}
 
 function generateNudgeCooldownInfoDto(): NudgeCooldownInfo {
   return {
@@ -70,16 +50,4 @@ export function createNudgeApiError(
     overrides?.message ?? '일일 콕 찌르기 횟수를 초과했어요',
     overrides?.status ?? 400,
   );
-}
-
-export function createNudgeLimitInfo(
-  overrides?: Partial<NudgeLimitInfoModel>,
-): NudgeLimitInfoModel {
-  return nudgeLimitInfoModelSchema.parse({
-    dailyLimit: 3,
-    usedToday: 0,
-    remainingToday: 3,
-    isUnlimited: false,
-    ...overrides,
-  });
 }

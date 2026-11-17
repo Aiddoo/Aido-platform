@@ -100,21 +100,28 @@ describe("할 일 댓글 접근 권한", () => {
     });
   });
 
-  it("할 일 소유권으로 상세 화면 권한을 결정한다", () => {
-    // When
-    const ownerPermissions = getTodoDetailsPermissions(true);
-    const viewerPermissions = getTodoDetailsPermissions(false);
-
-    // Then
-    expect(ownerPermissions).toEqual({
-      canEdit: true,
-      canComment: true,
-      canNudge: false,
-    });
-    expect(viewerPermissions).toEqual({
-      canEdit: false,
-      canComment: true,
+  it.each([
+    { name: "내 할 일", isOwner: true, isNudgeableToday: true, canNudge: false },
+    {
+      name: "끝내지 않은 친구의 오늘 할 일",
+      isOwner: false,
+      isNudgeableToday: true,
       canNudge: true,
-    });
-  });
+    },
+    {
+      name: "끝냈거나 오늘이 아닌 친구의 할 일",
+      isOwner: false,
+      isNudgeableToday: false,
+      canNudge: false,
+    },
+  ])(
+    "$name은 콕 보내기 규칙대로 canNudge가 $canNudge다",
+    ({ isOwner, isNudgeableToday, canNudge }) => {
+      // When
+      const permissions = getTodoDetailsPermissions({ isOwner, isNudgeableToday });
+
+      // Then
+      expect(permissions).toEqual({ canEdit: isOwner, canComment: true, canNudge });
+    },
+  );
 });

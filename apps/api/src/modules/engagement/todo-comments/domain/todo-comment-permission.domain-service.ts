@@ -37,10 +37,14 @@ export interface TodoDetailsPermissions {
   readonly canNudge: boolean;
 }
 
-export function getTodoDetailsPermissions(isOwner: boolean): TodoDetailsPermissions {
+/** canNudge는 남의 할 일 중 콕 보내기가 받아 주는 할 일(끝내지 않은 오늘 할 일)일 때만이다 */
+export function getTodoDetailsPermissions(input: {
+  readonly isOwner: boolean;
+  readonly isNudgeableToday: boolean;
+}): TodoDetailsPermissions {
   return {
-    canEdit: isOwner,
+    canEdit: input.isOwner,
     canComment: true,
-    canNudge: !isOwner,
+    canNudge: !input.isOwner && input.isNudgeableToday,
   };
 }

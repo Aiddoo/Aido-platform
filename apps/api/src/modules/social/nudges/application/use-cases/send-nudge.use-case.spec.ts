@@ -173,6 +173,13 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
       todo: { startDate: NUDGE_FIXTURE_TODAY.subtract({ days: 1 }) },
       expected: (todoId: number) => ({ errorCode: ErrorCode.NUDGE_1106, details: { todoId } }),
     },
+    {
+      // 출시 앱도 아는 NUDGE_1106이고, 저장하지 않으니 오늘 횟수에 세지 않는다
+      name: "이미 끝낸 할 일",
+      receiverId: NUDGE_FIXTURE_RECEIVER_ID,
+      todo: { completed: true },
+      expected: (todoId: number) => ({ errorCode: ErrorCode.NUDGE_1106, details: { todoId } }),
+    },
   ])("$name에는 보내지 않고 저장·알림도 남기지 않는다", async ({ receiverId, todo, expected }) => {
     // Given
     const { nudgeRepository, todoId } = await repositoryWithTodo(todo);

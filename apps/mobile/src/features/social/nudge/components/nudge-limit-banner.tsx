@@ -1,9 +1,11 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useFormatRefillSentence } from '@src/features/billing/subscription/hooks/use-format-refill-sentence';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { Trans, useTranslation } from '@src/shared/i18n';
 import {
   HStack,
@@ -15,23 +17,22 @@ import {
   Image,
   QueryErrorFallback,
 } from '@src/shared/ui';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
-import { isLimitReached } from '../domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/todo-nudge.queries';
-
+/** 남은 횟수·초기화 시각은 서버 권한 스냅샷(NUDGE) 하나가 원본이다. 지난 초기화 시각의 0은 믿지 않는다 */
 export function NudgeLimitBanner() {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const { data: limitInfo } = useSuspenseQuery(useGetTodoNudgeLimitQueryOptions());
-  const isReached = isLimitReached(limitInfo);
-
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const gate = useEntitlementGate('NUDGE', { surface: 'poke_banner' });
-  // 다시 생기는 때는 서버 한도 스냅샷이 원본이다. 아직 없으면 제목만 보인다
-  const { data: entitlements } = useQuery(useGetEntitlementsQueryOptions());
   const formatRefillSentence = useFormatRefillSentence();
+  const now = useMinuteNow();
+
+  const quota = EntitlementPolicy.getQuotaStatus(entitlements, 'NUDGE', now);
+  const isReached = quota.type === 'used-up';
+  const usedToday = EntitlementPolicy.getUsedCount(entitlements, 'NUDGE');
   const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (
@@ -61,8 +62,8 @@ export function NudgeLimitBanner() {
     ),
   };
 
-  const bannerText = match({ ...limitInfo, isReached })
-    .with({ isReached: true }, () => ({
+  const bannerText = match(quota)
+    .with({ type: 'used-up' }, () => ({
       title: t('nudge.limitSpentTitle'),
       description: refill != null && (
         <Text size="e1" shade={6}>
@@ -70,16 +71,20 @@ export function NudgeLimitBanner() {
         </Text>
       ),
     }))
-    .with({ isUnlimited: true }, { usedToday: 0 }, () => hint)
-    .with({ remainingToday: P.number }, ({ remainingToday }) => ({
-      title: defaultTitle,
-      description: (
-        <Text size="e1" shade={6}>
-          {t('nudge.remaining', { count: remainingToday })}
-        </Text>
-      ),
-    }))
-    .otherwise(() => hint);
+    .with({ type: 'remaining' }, ({ count }) =>
+      usedToday === 0
+        ? hint
+        : {
+            title: defaultTitle,
+            description: (
+              <Text size="e1" shade={6}>
+                {t('nudge.remaining', { count })}
+              </Text>
+            ),
+          },
+    )
+    .with({ type: 'untracked' }, () => hint)
+    .exhaustive();
 
   return (
     <PressableFeedback

@@ -2,6 +2,7 @@ import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-t
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoDetailsPermissions } from "../../domain/todo-comment-permission.domain-service.js";
 
 /** 댓글 응답을 만드는 데 필요한 저장소 독립 조회 결과 */
 export interface TodoCommentReadModel {
@@ -156,6 +157,11 @@ export interface TodoDetailsReadModel {
   readonly viewCount: number;
   readonly commentCount: number;
   readonly isOwner: boolean;
+}
+
+/** 보는 사람의 오늘(X-Timezone)로 판단한 권한까지 담은 상세 */
+export interface ViewerTodoDetailsReadModel extends TodoDetailsReadModel {
+  readonly permissions: TodoDetailsPermissions;
 }
 
 export function listCommentIds(comments: readonly TodoCommentReadModel[]): TodoCommentId[] {

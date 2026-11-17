@@ -193,6 +193,7 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort {
           ownerId: todo.ownerId,
           title: todo.title,
           visibility: todo.visibility,
+          completed: todo.completed,
           startDate: todo.startDate,
           endDate: todo.endDate,
         });

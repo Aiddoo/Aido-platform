@@ -613,11 +613,11 @@ describe("댓글 읽기 응답 특성 (실제 PostgreSQL)", () => {
 
     // When
     const details = [
-      await v1.getDetails(viewer(OWNER_ID), params),
-      await v1.getDetails(viewer(FRIEND_A_ID), params, "1.15.0"),
-      await v1.getDetails(viewer(FRIEND_A_ID), params, "1.15.0"),
-      await v1.getDetails(viewer(FRIEND_B_ID), params),
-      await capture(() => v1.getDetails(viewer(FRIEND_A_ID), { todoId: 999_999 })),
+      await v1.getDetails(viewer(OWNER_ID), params, "UTC"),
+      await v1.getDetails(viewer(FRIEND_A_ID), params, "UTC", "1.15.0"),
+      await v1.getDetails(viewer(FRIEND_A_ID), params, "UTC", "1.15.0"),
+      await v1.getDetails(viewer(FRIEND_B_ID), params, "UTC"),
+      await capture(() => v1.getDetails(viewer(FRIEND_A_ID), { todoId: 999_999 }, "UTC")),
     ];
     const [stored] = await client
       .select({ viewCount: todo.viewCount, commentCount: todo.commentCount })

@@ -22,6 +22,7 @@ export function toNudgeTargetTodo(todo: TodoBriefReadModel): NudgeTargetTodo {
     ownerId: todo.ownerId.value,
     title: todo.title,
     visibility: todo.visibility,
+    completed: todo.completed,
     startDate: todo.startDate,
     endDate: todo.endDate,
   });

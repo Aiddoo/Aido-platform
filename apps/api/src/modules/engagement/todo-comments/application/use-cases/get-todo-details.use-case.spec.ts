@@ -36,6 +36,7 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
     const details = await new GetTodoDetailsUseCase(fixture).execute({
       todoId: TODO_ID,
       viewerId: TODO_COMMENT_FIXTURE_OWNER_ID,
+      timezone: "UTC",
     });
 
     // Then
@@ -54,14 +55,17 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
     const first = await useCase.execute({
       todoId: TODO_ID,
       viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      timezone: "UTC",
     });
     const second = await useCase.execute({
       todoId: TODO_ID,
       viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      timezone: "UTC",
     });
     const other = await useCase.execute({
       todoId: TODO_ID,
       viewerId: TODO_COMMENT_FIXTURE_FRIEND_ID,
+      timezone: "UTC",
     });
 
     // Then
@@ -76,10 +80,48 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
     const opening = new GetTodoDetailsUseCase(fixture).execute({
       todoId: TODO_ID,
       viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      timezone: "UTC",
     });
 
     // Then
     await expect(opening).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.engagementCounter.viewCounts.get(TODO_ID)).toBe(3);
   });
+
+  it.each([
+    { name: "끝내지 않은 오늘 할 일", todo: { startDate: "2026-08-26" }, canNudge: true },
+    {
+      name: "오늘 끝낸 할 일",
+      todo: { startDate: "2026-08-26", completed: true },
+      canNudge: false,
+    },
+    { name: "내일 할 일", todo: { startDate: "2026-08-27" }, canNudge: false },
+  ])(
+    "친구가 보는 $name은 콕 보내기와 같은 규칙으로 canNudge가 $canNudge다",
+    async ({ todo, canNudge }) => {
+      // Given
+      // 고정 시계는 UTC 2026-08-26 01:00이다
+      fixture.reader.details.set(TODO_ID, {
+        todo: createTodoReadModelFixture({
+          id: TODO_ID,
+          userId: TODO_COMMENT_FIXTURE_OWNER_ID,
+          ...todo,
+        }),
+        owner: { id: TODO_COMMENT_FIXTURE_OWNER_ID, name: "작성자", profileImage: null },
+        viewCount: 3,
+        commentCount: 2,
+        isOwner: false,
+      });
+
+      // When
+      const details = await new GetTodoDetailsUseCase(fixture).execute({
+        todoId: TODO_ID,
+        viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+        timezone: "UTC",
+      });
+
+      // Then
+      expect(details.permissions).toEqual({ canEdit: false, canComment: true, canNudge });
+    },
+  );
 });

@@ -123,7 +123,8 @@ export class SendNudgeUseCase {
     if (target == null || !target.isOwnedBy(receiverId) || !target.isPublic()) {
       throw nudgeTodoNotFound(todoId);
     }
-    if (!target.isActiveOn(request.window.localDate)) {
+    // 끝낸 할 일도 출시 앱이 아는 "오늘 할 일만" 코드로 거절하고, 한도를 세기 전이라 횟수를 쓰지 않는다
+    if (!target.canBeNudgedOn(request.window.localDate)) {
       throw nudgeTodoNotActiveToday(todoId);
     }
     await this.#assertDailyLimit(request);
