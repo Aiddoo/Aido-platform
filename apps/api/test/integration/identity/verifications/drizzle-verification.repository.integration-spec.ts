@@ -57,7 +57,7 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
 
     // When
     const outcome = uow.run(async () => {
-      await repository.incrementAttempts(verification.id);
+      await repository.saveFailedAttempt(verification);
       throw failure;
     });
 

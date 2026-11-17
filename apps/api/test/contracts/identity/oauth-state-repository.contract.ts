@@ -50,6 +50,17 @@ async function saveLoginExchange(
   return exchangeCode;
 }
 
+async function findByCode(
+  repository: OAuthStateRepositoryPort,
+  exchangeCode: string,
+): Promise<OAuthState> {
+  const found = await repository.findByExchangeCode(exchangeCode, AUTH_FIXTURE_NOW);
+  if (found == null) {
+    throw new Error("교환 코드로 OAuth state를 찾지 못했다");
+  }
+  return found;
+}
+
 export function describeOAuthStateRepositoryContract(
   createRepository: () => Promise<OAuthStateRepositoryPort>,
 ): void {
@@ -113,26 +124,28 @@ export function describeOAuthStateRepositoryContract(
       });
     });
 
-    it("교환 코드는 한 번만 소비되고 소비하면 토큰을 지운다", async () => {
+    it("교환한 state 저장은 한 번만 성공하고 저장한 토큰을 지운다", async () => {
       // Given
       const repository = await createRepository();
       const created = await createState(repository);
       const exchangeCode = await saveLoginExchange(repository, created);
-      const input = {
-        id: created.id,
-        exchangeCode,
-        at: AUTH_FIXTURE_NOW,
-        purpose: "login",
-      } as const;
+      const first = await findByCode(repository, exchangeCode);
+      const stale = await findByCode(repository, exchangeCode);
+      first.consume(AUTH_FIXTURE_NOW);
+      stale.consume(AUTH_FIXTURE_NOW);
 
       // When
-      const first = await repository.consumeExchangeCode(input);
-      const second = await repository.consumeExchangeCode(input);
+      const firstSaved = await repository.save(first);
+      const staleSaved = await repository.save(stale);
       const byCode = await repository.findByExchangeCode(exchangeCode, AUTH_FIXTURE_NOW);
       const byState = await repository.findByState(created.state, AUTH_FIXTURE_NOW);
 
       // Then
-      expect({ first, second, byCode }).toEqual({ first: true, second: false, byCode: null });
+      expect({ firstSaved, staleSaved, byCode }).toEqual({
+        firstSaved: true,
+        staleSaved: false,
+        byCode: null,
+      });
       expect(byState?.toPrimitives()).toMatchObject({
         accessToken: null,
         refreshToken: null,
@@ -140,31 +153,26 @@ export function describeOAuthStateRepositoryContract(
       });
     });
 
-    it("만료됐거나 코드가 다르면 소비하지 않는다", async () => {
+    it("교환하지 않은 state와 만료 시각부터의 교환은 저장하지 않는다", async () => {
       // Given
       const repository = await createRepository();
       const created = await createState(repository);
       const exchangeCode = await saveLoginExchange(repository, created);
+      const untouched = await findByCode(repository, exchangeCode);
+      const late = await findByCode(repository, exchangeCode);
 
       // When
-      const expired = await repository.consumeExchangeCode({
-        id: created.id,
-        exchangeCode,
-        at: EXPIRES_AT,
-        purpose: "login",
-      });
-      const wrongCode = await repository.consumeExchangeCode({
-        id: created.id,
-        exchangeCode: "other-code",
-        at: AUTH_FIXTURE_NOW,
-        purpose: "login",
-      });
+      const consumedAtExpiry = late.consume(EXPIRES_AT);
+      const savedUntouched = await repository.save(untouched);
 
       // Then
-      expect({ expired, wrongCode }).toEqual({ expired: false, wrongCode: false });
+      expect({ consumedAtExpiry, savedUntouched }).toEqual({
+        consumedAtExpiry: false,
+        savedUntouched: false,
+      });
     });
 
-    it("연결 교환은 공급자 계정 id를 남기고 시작한 사용자만 소비한다", async () => {
+    it("연결 교환은 공급자 계정 id를 남기고 시작한 사용자만 교환할 수 있다", async () => {
       // Given
       const repository = await createRepository();
       const created = await createState(repository, {
@@ -177,28 +185,21 @@ export function describeOAuthStateRepositoryContract(
         provider: "NAVER",
         providerAccountId: "naver-account",
       });
-      const linkInput = { id: created.id, exchangeCode, at: AUTH_FIXTURE_NOW } as const;
 
       // When
-      const found = await repository.findByExchangeCode(exchangeCode, AUTH_FIXTURE_NOW);
-      const byOther = await repository.consumeExchangeCode({
-        ...linkInput,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
-      });
-      const byOwner = await repository.consumeExchangeCode({
-        ...linkInput,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-      });
+      const found = await findByCode(repository, exchangeCode);
+      const byOther = found.canLinkFor(AUTH_FIXTURE_OTHER_USER_ID);
+      const byOwner = found.canLinkFor(AUTH_FIXTURE_USER_ID);
+      found.consume(AUTH_FIXTURE_NOW);
+      const saved = await repository.save(found);
 
       // Then
-      expect(found?.provider).toBe("NAVER");
-      expect(found?.linkedProviderAccountId()).toBe("naver-account");
-      expect({ byOther, byOwner }).toEqual({ byOther: false, byOwner: true });
+      expect(found.provider).toBe("NAVER");
+      expect(found.linkedProviderAccountId()).toBe("naver-account");
+      expect({ byOther, byOwner, saved }).toEqual({ byOther: false, byOwner: true, saved: true });
     });
 
-    it("시작 사용자가 없는 옛 연결 state는 누구의 연결이든 소비하고 로그인 state는 연결로 소비하지 않는다", async () => {
+    it("시작 사용자가 없는 옛 연결 state는 누구의 연결이든 받고 로그인 state는 연결로 받지 않는다", async () => {
       // Given
       const repository = await createRepository();
       const legacyLink = await createState(repository, { mode: "link" });
@@ -206,27 +207,16 @@ export function describeOAuthStateRepositoryContract(
       const legacyCode = repository.generateExchangeCode();
       const loginCode = repository.generateExchangeCode();
       const linking = { provider: "GOOGLE", providerAccountId: "google-account" } as const;
-      await repository.saveLinkingData(legacyLink.id, {
-        ...linking,
-        exchangeCode: legacyCode,
-      });
+      await repository.saveLinkingData(legacyLink.id, { ...linking, exchangeCode: legacyCode });
       await repository.saveLinkingData(login.id, { ...linking, exchangeCode: loginCode });
 
       // When
-      const legacy = await repository.consumeExchangeCode({
-        id: legacyLink.id,
-        exchangeCode: legacyCode,
-        at: AUTH_FIXTURE_NOW,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
-      });
-      const loginAsLink = await repository.consumeExchangeCode({
-        id: login.id,
-        exchangeCode: loginCode,
-        at: AUTH_FIXTURE_NOW,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-      });
+      const legacy = (await findByCode(repository, legacyCode)).canLinkFor(
+        AUTH_FIXTURE_OTHER_USER_ID,
+      );
+      const loginAsLink = (await findByCode(repository, loginCode)).canLinkFor(
+        AUTH_FIXTURE_USER_ID,
+      );
 
       // Then
       expect({ legacy, loginAsLink }).toEqual({ legacy: true, loginAsLink: false });

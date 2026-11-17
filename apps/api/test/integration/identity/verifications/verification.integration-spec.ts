@@ -6,7 +6,7 @@ import { ResetPasswordUseCase } from "#api/modules/identity/linked-accounts/appl
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
-import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
+import { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/node-verification-code-security.adapter";
 import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
 import { user as userTable, verification } from "#api/platform/database/schema/index";
@@ -76,6 +76,20 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       await database?.stop();
     }
   });
+
+  // 다른 요청이 읽어 둔 사본처럼 저장된 행과 상관없이 소비할 수 있는 상태로 만든다
+  function staleVerification(id: number, tokenHash: string): Verification {
+    return Verification.reconstitute({
+      id,
+      userId,
+      type: "PASSWORD_RESET",
+      tokenHash,
+      expiresAt: atInstant.add({ minutes: 10 }),
+      attempts: 0,
+      usedAt: null,
+      createdAt: atInstant.subtract({ minutes: 1 }),
+    });
+  }
 
   async function givenVerification(
     overrides: Parameters<typeof VerificationFixture.create>[0] = {},
@@ -237,17 +251,11 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     async ({ overrides, errorCode }) => {
       // Given
       const verification = await givenVerification(overrides);
-      const input = {
-        id: VerificationId.reconstitute(verification.id),
-        userId: UserId.reconstitute(userId),
-        type: verification.type,
-        tokenHash: digest,
-        maxAttempts: 5,
-        at: atInstant,
-      };
+      const staleCopy = staleVerification(verification.id, digest);
+      staleCopy.consume(atInstant);
 
       // When
-      const consumed = await repository.consume(input);
+      const consumed = await repository.save(staleCopy);
       const result = consumeCode.execute({ userId, code, type: "PASSWORD_RESET" });
 
       // Then
@@ -262,41 +270,29 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     },
   );
 
-  it("다른 사용자·용도·해시나 시도 한도가 맞지 않으면 선택한 인증을 소비하지 않는다", async () => {
+  it("hash가 다른 사본은 소비 저장을 거부하고 같은 코드의 두 소비 중 하나만 저장한다", async () => {
     // Given
     const verification = await givenVerification({ attempts: 1 });
-    const input = {
-      id: VerificationId.reconstitute(verification.id),
-      userId: UserId.reconstitute(userId),
-      type: verification.type,
-      tokenHash: digest,
-      maxAttempts: 5,
-      at: atInstant,
-    };
+    const otherHash = staleVerification(verification.id, security.hash("654321"));
+    const first = staleVerification(verification.id, digest);
+    const second = staleVerification(verification.id, digest);
+    for (const copy of [otherHash, first, second]) {
+      copy.consume(atInstant);
+    }
 
     // When
-    const otherUserConsumed = await repository.consume({
-      ...input,
-      userId: UserId.reconstitute("other-user"),
-    });
-    const otherTypeConsumed = await repository.consume({ ...input, type: "EMAIL_VERIFY" });
-    const otherHashConsumed = await repository.consume({
-      ...input,
-      tokenHash: security.hash("654321"),
-    });
-    const exhaustedConsumed = await repository.consume({ ...input, maxAttempts: 1 });
-    const afterMismatches = await readVerification(verification.id);
-    const firstConsumed = await repository.consume(input);
-    const secondConsumed = await repository.consume(input);
+    const otherHashConsumed = await repository.save(otherHash);
+    const afterMismatch = await readVerification(verification.id);
+    const firstConsumed = await repository.save(first);
+    const secondConsumed = await repository.save(second);
 
     // Then
-    expect(otherUserConsumed).toBe(false);
-    expect(otherTypeConsumed).toBe(false);
     expect(otherHashConsumed).toBe(false);
-    expect(exhaustedConsumed).toBe(false);
-    expect(afterMismatches?.usedAt).toBeNull();
-    expect(firstConsumed).toBe(true);
-    expect(secondConsumed).toBe(false);
+    expect(afterMismatch?.usedAt).toBeNull();
+    expect({ firstConsumed, secondConsumed }).toEqual({
+      firstConsumed: true,
+      secondConsumed: false,
+    });
   });
 
   it("느린 로그인 rehash는 먼저 저장된 새 비밀번호를 덮어쓰지 않는다", async () => {

@@ -32,15 +32,19 @@ async function saveVerification(
   return verification;
 }
 
-function consumeInput(verification: Verification, at: Temporal.Instant) {
-  return {
-    id: verification.id,
-    userId: verification.userId,
-    type: verification.type,
-    tokenHash: verification.tokenHash,
-    maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
+async function loadVerification(
+  repository: VerificationRepositoryPort,
+  at: Temporal.Instant,
+): Promise<Verification> {
+  const found = await repository.findValidByUserIdAndType(
+    UserId.reconstitute(AUTH_FIXTURE_USER_ID),
+    "PASSWORD_RESET",
     at,
-  };
+  );
+  if (found == null) {
+    throw new Error("저장한 인증 코드를 찾지 못했다");
+  }
+  return found;
 }
 
 export function describeVerificationRepositoryContract(
@@ -157,14 +161,18 @@ export function describeVerificationRepositoryContract(
       ).toBe(otherType.id.value);
     });
 
-    it("소비는 조건이 모두 맞을 때 한 번만 성공하고 사용 시각을 남긴다", async () => {
+    it("소비한 코드 저장은 한 번만 성공하고 사용 시각을 남긴다", async () => {
       // Given
       const repository = await createRepository();
-      const saved = await saveVerification(repository);
+      await saveVerification(repository);
+      const first = await loadVerification(repository, LATER);
+      const stale = await loadVerification(repository, LATER);
+      first.consume(LATER);
+      stale.consume(LATER);
 
       // When
-      const first = await repository.consume(consumeInput(saved, LATER));
-      const second = await repository.consume(consumeInput(saved, LATER));
+      const firstSaved = await repository.save(first);
+      const staleSaved = await repository.save(stale);
       const valid = await repository.findValidByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
@@ -172,57 +180,56 @@ export function describeVerificationRepositoryContract(
       );
 
       // Then
-      expect({ first, second, valid }).toEqual({ first: true, second: false, valid: null });
+      expect({ firstSaved, staleSaved, valid }).toEqual({
+        firstSaved: true,
+        staleSaved: false,
+        valid: null,
+      });
     });
 
-    it("다른 사용자·종류·hash, 만료, 시도 한도 중 하나라도 어긋나면 소비하지 않는다", async () => {
+    it("소비하지 않은 코드, 그 사이 소진된 코드는 저장하지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      const saved = await saveVerification(repository, { attempts: 1 });
-      const input = consumeInput(saved, LATER);
+      await saveVerification(repository, { attempts: VERIFICATION_CODE.MAX_ATTEMPTS - 1 });
+      const untouched = await loadVerification(repository, LATER);
+      const consumer = await loadVerification(repository, LATER);
+      const wrongGuess = await loadVerification(repository, LATER);
+      consumer.consume(LATER);
+      wrongGuess.recordFailedAttempt(LATER);
+      await repository.saveFailedAttempt(wrongGuess);
 
       // When
-      const results = [
-        await repository.consume({
-          ...input,
-          userId: UserId.reconstitute(AUTH_FIXTURE_OTHER_USER_ID),
-        }),
-        await repository.consume({ ...input, type: "EMAIL_VERIFY" }),
-        await repository.consume({ ...input, tokenHash: "other-digest" }),
-        await repository.consume({ ...input, at: saved.expiresAt }),
-        await repository.consume({ ...input, maxAttempts: 1 }),
-      ];
+      const savedUntouched = await repository.save(untouched);
+      const savedAfterExhausted = await repository.save(consumer);
 
       // Then
-      expect(results).toEqual([false, false, false, false, false]);
-      expect(await repository.consume(input)).toBe(true);
+      expect({ savedUntouched, savedAfterExhausted }).toEqual({
+        savedUntouched: false,
+        savedAfterExhausted: false,
+      });
     });
 
-    it("실패 횟수를 하나씩 늘리고 다시 저장한 시도·사용 칸을 덮어쓴다", async () => {
+    it("틀린 시도는 저장할 때마다 하나씩 늘고 소비 저장은 시도 칸을 덮지 않는다", async () => {
       // Given
       const repository = await createRepository();
       const saved = await saveVerification(repository);
 
       // When
-      await repository.incrementAttempts(saved.id);
-      await repository.incrementAttempts(saved.id);
-      const afterIncrements = await repository.findValidByUserIdAndType(
-        UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-        "PASSWORD_RESET",
-        AUTH_FIXTURE_NOW,
-      );
-      await repository.save(
-        createVerificationFixture({ ...saved.toPrimitives(), attempts: 4, usedAt: LATER }),
-      );
-      const afterSave = await repository.findLatestIssuedAtByUserIdAndType(
+      await repository.saveFailedAttempt(saved);
+      await repository.saveFailedAttempt(saved);
+      const afterFailures = await loadVerification(repository, AUTH_FIXTURE_NOW);
+      afterFailures.consume(LATER);
+      const consumed = await repository.save(afterFailures);
+      const afterConsume = await repository.findLatestIssuedAtByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
 
       // Then
-      expect(afterIncrements?.toPrimitives().attempts).toBe(2);
-      expect(afterSave).toEqual(saved.toPrimitives().createdAt);
+      expect(afterFailures.toPrimitives().attempts).toBe(2);
+      expect(consumed).toBe(true);
+      expect(afterConsume).toEqual(saved.toPrimitives().createdAt);
       expect(
         await repository.findValidByUserIdAndType(
           UserId.reconstitute(AUTH_FIXTURE_USER_ID),

@@ -1,11 +1,9 @@
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 
-import {
-  VerificationRepositoryPort,
-  type ConsumeVerificationInput,
-} from "#api/modules/identity/verifications/application/ports/verification.repository.port";
+import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
 import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
 import type { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
 import type { VerificationType } from "#api/modules/identity/verifications/domain/verifications.constants";
@@ -68,15 +66,27 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
     return row?.createdAt ?? null;
   }
 
-  async save(authVerification: Verification): Promise<void> {
-    const row = toVerificationRow(authVerification);
-    await this.#db
+  async save(entity: Verification): Promise<boolean> {
+    const row = toVerificationRow(entity);
+    const usedAt = row.usedAt ?? null;
+    const saved = await this.#db
       .insert(verification)
       .values(row)
       .onConflictDoUpdate({
         target: verification.id,
-        set: { expiresAt: row.expiresAt, attempts: row.attempts, usedAt: row.usedAt },
-      });
+        set: { usedAt },
+        setWhere:
+          usedAt == null
+            ? sql`false`
+            : and(
+                isNull(verification.usedAt),
+                eq(verification.token, row.token),
+                gt(verification.expiresAt, usedAt),
+                lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
+              ),
+      })
+      .returning({ id: verification.id });
+    return saved.length > 0;
   }
 
   async invalidateAllByUserIdAndType(
@@ -99,27 +109,9 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
     return invalidated.length;
   }
 
-  async consume(input: ConsumeVerificationInput): Promise<boolean> {
-    const consumed = await this.#db
-      .update(verification)
-      .set({ usedAt: input.at })
-      .where(
-        and(
-          eq(verification.id, input.id.value),
-          eq(verification.token, input.tokenHash),
-          eq(verification.userId, input.userId.value),
-          eq(verification.type, input.type),
-          isNull(verification.usedAt),
-          gt(verification.expiresAt, input.at),
-          lt(verification.attempts, input.maxAttempts),
-        ),
-      )
-      .returning({ id: verification.id });
-    return consumed.length === 1;
-  }
-
   // 브루트포스 보호를 위해 호출자 트랜잭션(CLS)에 참여하지 않고 베이스 클라이언트로 독립 커밋한다
-  async incrementAttempts(verificationId: VerificationId): Promise<void> {
+  async saveFailedAttempt(entity: Verification): Promise<void> {
+    const verificationId = entity.id;
     await this.#baseDb
       .update(verification)
       .set({ attempts: sql`${verification.attempts} + 1` })

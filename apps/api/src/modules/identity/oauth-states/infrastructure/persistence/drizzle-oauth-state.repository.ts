@@ -2,13 +2,12 @@ import { randomBytes } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 
 import {
   type OAuthLinkingData,
   type OAuthLoginExchangeData,
   OAuthStateRepositoryPort,
-  type ConsumeOAuthStateInput,
   type NewOAuthState,
 } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
 import type { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
@@ -95,30 +94,25 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
       .where(eq(oAuthState.id, oauthStateId.value));
   }
 
-  async consumeExchangeCode(input: ConsumeOAuthStateInput): Promise<boolean> {
-    const consumed = await this.#db
+  // 교환 시각·코드·만료를 조건에 두어 같은 코드의 동시 교환 중 하나만 성공한다
+  async save(state: OAuthState): Promise<boolean> {
+    const { exchangedAt, exchangeCode } = state.toPrimitives();
+    if (exchangedAt == null || exchangeCode == null) {
+      return false;
+    }
+    const saved = await this.#db
       .update(oAuthState)
-      .set({ exchangedAt: input.at, accessToken: null, refreshToken: null })
+      .set({ exchangedAt, accessToken: null, refreshToken: null })
       .where(
         and(
-          eq(oAuthState.id, input.id.value),
-          eq(oAuthState.exchangeCode, input.exchangeCode),
+          eq(oAuthState.id, state.id.value),
+          eq(oAuthState.exchangeCode, exchangeCode),
           isNull(oAuthState.exchangedAt),
-          gt(oAuthState.expiresAt, input.at),
-          input.purpose === "link"
-            ? and(
-                eq(oAuthState.mode, "link"),
-                or(
-                  isNull(oAuthState.initiatingUserId),
-                  eq(oAuthState.initiatingUserId, ""),
-                  eq(oAuthState.initiatingUserId, input.actorUserId.value),
-                ),
-              )
-            : undefined,
+          gt(oAuthState.expiresAt, exchangedAt),
         ),
       )
       .returning({ id: oAuthState.id });
-    return consumed.length === 1;
+    return saved.length === 1;
   }
 
   generateExchangeCode(): string {

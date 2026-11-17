@@ -1,7 +1,6 @@
-import {
-  VerificationRepositoryPort,
-  type ConsumeVerificationInput,
-} from "#api/modules/identity/verifications/application/ports/verification.repository.port";
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
+
+import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
 import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
 import {
   Verification,
@@ -72,20 +71,25 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
     return issuedAts[0] ?? null;
   }
 
-  async save(verification: Verification): Promise<void> {
+  // Drizzle 저장소와 같은 조건이다. 읽은 코드는 소비만 저장하고 쓰였거나 만료·소진됐으면 false다
+  async save(verification: Verification): Promise<boolean> {
     const saved = verification.toPrimitives();
     const prior = this.#verifications.get(saved.id);
-    this.#verifications.set(
-      saved.id,
-      prior == null
-        ? saved
-        : {
-            ...prior,
-            expiresAt: saved.expiresAt,
-            attempts: saved.attempts,
-            usedAt: saved.usedAt,
-          },
-    );
+    if (prior == null) {
+      this.#verifications.set(saved.id, saved);
+      return true;
+    }
+    if (
+      saved.usedAt == null ||
+      prior.usedAt != null ||
+      prior.tokenHash !== saved.tokenHash ||
+      !isAfter(prior.expiresAt, saved.usedAt) ||
+      prior.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS
+    ) {
+      return false;
+    }
+    this.#verifications.set(saved.id, { ...prior, usedAt: saved.usedAt });
+    return true;
   }
 
   async invalidateAllByUserIdAndType(
@@ -106,24 +110,8 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
     return targets.length;
   }
 
-  async consume(input: ConsumeVerificationInput): Promise<boolean> {
-    const verification = this.#verifications.get(input.id.value);
-    if (
-      verification == null ||
-      verification.userId !== input.userId.value ||
-      verification.type !== input.type ||
-      verification.tokenHash !== input.tokenHash ||
-      verification.usedAt != null ||
-      !isAfter(verification.expiresAt, input.at) ||
-      verification.attempts >= input.maxAttempts
-    ) {
-      return false;
-    }
-    this.#verifications.set(input.id.value, { ...verification, usedAt: input.at });
-    return true;
-  }
-
-  async incrementAttempts(verificationId: VerificationId): Promise<void> {
+  async saveFailedAttempt(entity: Verification): Promise<void> {
+    const verificationId = entity.id;
     const verification = this.#verifications.get(verificationId.value);
     if (verification == null) {
       return;

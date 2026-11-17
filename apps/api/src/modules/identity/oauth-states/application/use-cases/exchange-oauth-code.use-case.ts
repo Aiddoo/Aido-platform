@@ -15,10 +15,7 @@ export interface ExchangeOAuthCodeCommand {
 }
 
 interface ExchangeOAuthCodeDependencies {
-  readonly oauthStateRepository: Pick<
-    OAuthStateRepositoryPort,
-    "findByExchangeCode" | "consumeExchangeCode"
-  >;
+  readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "findByExchangeCode" | "save">;
   readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "notify">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -46,12 +43,7 @@ export class ExchangeOAuthCodeUseCase {
     if (!state.consume(at)) {
       throw this.#invalidCode();
     }
-    const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
-      id: state.id,
-      exchangeCode: input.code,
-      at,
-      purpose: "login",
-    });
+    const consumed = await this.#dependencies.oauthStateRepository.save(state);
     if (!consumed) {
       throw this.#invalidCode();
     }

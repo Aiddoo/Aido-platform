@@ -21,10 +21,7 @@ export interface LinkOAuthAccountWithCodeCommand {
 
 interface LinkOAuthAccountWithCodeDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByIdForUpdate">;
-  readonly oauthStateRepository: Pick<
-    OAuthStateRepositoryPort,
-    "findByExchangeCode" | "consumeExchangeCode"
-  >;
+  readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "findByExchangeCode" | "save">;
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
@@ -55,13 +52,7 @@ export class LinkOAuthAccountWithCodeUseCase {
       if (providerAccountId == null || !state.consume(at)) {
         throw this.#invalidCode();
       }
-      const consumed = await this.#dependencies.oauthStateRepository.consumeExchangeCode({
-        id: state.id,
-        exchangeCode: input.code,
-        at,
-        purpose: "link",
-        actorUserId: userId,
-      });
+      const consumed = await this.#dependencies.oauthStateRepository.save(state);
       if (!consumed) {
         throw this.#invalidCode();
       }

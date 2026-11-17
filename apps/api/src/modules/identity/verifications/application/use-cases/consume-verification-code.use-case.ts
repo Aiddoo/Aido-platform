@@ -1,4 +1,3 @@
-import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -21,7 +20,7 @@ export interface ConsumeVerificationCodeCommand {
 interface ConsumeVerificationCodeDependencies {
   readonly verificationRepository: Pick<
     VerificationRepositoryPort,
-    "findValidByUserIdAndType" | "incrementAttempts" | "consume"
+    "findValidByUserIdAndType" | "saveFailedAttempt" | "save"
   >;
   readonly verificationCodeSecurity: Pick<VerificationCodeSecurityPort, "hash">;
   readonly clock: ClockPort;
@@ -47,7 +46,7 @@ export class ConsumeVerificationCodeUseCase {
 
     if (!judgement.ok) {
       if (judgement.reason === "mismatch" && verification?.recordFailedAttempt(now) === true) {
-        await verificationRepository.incrementAttempts(verification.id);
+        await verificationRepository.saveFailedAttempt(verification);
         logger.warn({
           event: VerificationLogEvent.VERIFICATION_FAILED,
           userId: command.userId,
@@ -60,17 +59,9 @@ export class ConsumeVerificationCodeUseCase {
         .exhaustive();
     }
 
-    if (!judgement.verification.consume(now)) {
-      throw invalidVerificationCode();
-    }
-    const consumed = await verificationRepository.consume({
-      id: judgement.verification.id,
-      userId,
-      type,
-      tokenHash,
-      maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
-      at: now,
-    });
+    const consumed =
+      judgement.verification.consume(now) &&
+      (await verificationRepository.save(judgement.verification));
     if (!consumed) {
       throw invalidVerificationCode();
     }

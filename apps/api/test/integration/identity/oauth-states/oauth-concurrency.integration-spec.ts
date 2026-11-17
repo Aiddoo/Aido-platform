@@ -7,7 +7,6 @@ import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/linked-accounts
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/exchange-oauth-code.use-case";
 import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/link-oauth-account-with-code.use-case";
-import { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
 import type { SocialLoginReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-oauth-token.use-case";
@@ -489,7 +488,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
   });
 
   it.each([null, "", "owner"])(
-    "legacy 또는 소유자 actor %s인 link 코드만 소비한다",
+    "legacy 또는 소유자 actor %s인 link 코드는 한 번만 교환한다",
     async (actor) => {
       // Given
       const state = await givenState({
@@ -500,48 +499,38 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
         accessToken: null,
         refreshToken: null,
       });
+      const first = await states.findByExchangeCode(state.exchangeCode ?? "", atInstant);
+      const stale = await states.findByExchangeCode(state.exchangeCode ?? "", atInstant);
+      first?.consume(atInstant);
+      stale?.consume(atInstant);
 
       // When
-      const consumed = await states.consumeExchangeCode({
-        id: OAuthStateId.reconstitute(state.id),
-        exchangeCode: state.exchangeCode ?? "",
-        at: atInstant,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(userId),
-      });
+      const consumed = first == null ? false : await states.save(first);
+      const consumedAgain = stale == null ? false : await states.save(stale);
 
       // Then
-      expect(consumed).toBe(true);
-      expect(
-        await states.consumeExchangeCode({
-          id: OAuthStateId.reconstitute(state.id),
-          exchangeCode: state.exchangeCode ?? "",
-          at: atInstant,
-          purpose: "link",
-          actorUserId: UserId.reconstitute(userId),
-        }),
-      ).toBe(false);
+      expect(first?.canLinkFor(userId)).toBe(true);
+      expect({ consumed, consumedAgain }).toEqual({ consumed: true, consumedAgain: false });
     },
   );
 
-  it("다른 actor와 login 목적 상태를 link로 소비할 수 없고 만료 equality도 거부한다", async () => {
+  it("다른 actor와 login 목적 상태는 link로 받지 않고 만료 시각과 같은 순간도 거부한다", async () => {
     // Given
     const actorMismatch = await givenState({ mode: "link", initiatingUserId: createEntityId() });
     const purposeMismatch = await givenState({ mode: "login" });
     const expired = await givenState({ mode: "link", expiresAt: atInstant });
 
     // When
-    for (const state of [actorMismatch, purposeMismatch, expired]) {
-      const consumed = await states.consumeExchangeCode({
-        id: OAuthStateId.reconstitute(state.id),
-        exchangeCode: state.exchangeCode ?? "",
-        at: atInstant,
-        purpose: "link",
-        actorUserId: UserId.reconstitute(userId),
-      });
+    const linkable = await Promise.all(
+      [actorMismatch, purposeMismatch].map(async (state) =>
+        (await states.findByExchangeCode(state.exchangeCode ?? "", atInstant))?.canLinkFor(userId),
+      ),
+    );
+    const expiredFound = await states.findByExchangeCode(expired.exchangeCode ?? "", atInstant);
 
-      // Then
-      expect(consumed).toBe(false);
+    // Then
+    expect({ linkable, expiredFound }).toEqual({ linkable: [false, false], expiredFound: null });
+    for (const state of [actorMismatch, purposeMismatch, expired]) {
       expect(await savedState(state.id)).toMatchObject({ exchangedAt: null });
     }
   });

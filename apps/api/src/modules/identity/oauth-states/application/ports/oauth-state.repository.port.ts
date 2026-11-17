@@ -31,12 +31,6 @@ export interface OAuthLinkingData {
   readonly providerAccountId: string;
 }
 
-export type ConsumeOAuthStateInput = {
-  readonly id: OAuthStateId;
-  readonly exchangeCode: string;
-  readonly at: Temporal.Instant;
-} & ({ readonly purpose: "login" } | { readonly purpose: "link"; readonly actorUserId: UserId });
-
 export abstract class OAuthStateRepositoryPort {
   abstract create(input: NewOAuthState): Promise<void>;
   /** 만료 전 state. 교환을 마쳤어도 준다(콜백 리다이렉트 주소를 찾을 때 쓴다) */
@@ -51,7 +45,7 @@ export abstract class OAuthStateRepositoryPort {
     data: OAuthLoginExchangeData,
   ): Promise<void>;
   abstract saveLinkingData(oauthStateId: OAuthStateId, data: OAuthLinkingData): Promise<void>;
-  /** 아직 쓸 수 있는 교환 코드만 사용 처리하고 저장한 토큰을 지운다. 경합에 지면 false다 */
-  abstract consumeExchangeCode(input: ConsumeOAuthStateInput): Promise<boolean>;
+  /** 교환(consume)한 state를 저장한다. 그 사이 다른 요청이 교환했거나 만료·코드가 바뀌었으면 false다 */
+  abstract save(state: OAuthState): Promise<boolean>;
   abstract generateExchangeCode(): string;
 }

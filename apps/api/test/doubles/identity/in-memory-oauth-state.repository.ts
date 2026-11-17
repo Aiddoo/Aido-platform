@@ -2,7 +2,6 @@ import {
   type OAuthLinkingData,
   type OAuthLoginExchangeData,
   OAuthStateRepositoryPort,
-  type ConsumeOAuthStateInput,
   type NewOAuthState,
 } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
 import type { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
@@ -106,28 +105,21 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
     });
   }
 
-  async consumeExchangeCode(input: ConsumeOAuthStateInput): Promise<boolean> {
-    const state = this.#states.get(input.id.value);
+  async save(entity: OAuthState): Promise<boolean> {
+    const { exchangedAt, exchangeCode } = entity.toPrimitives();
+    const state = this.#states.get(entity.id.value);
     if (
       state == null ||
-      state.exchangeCode !== input.exchangeCode ||
+      exchangedAt == null ||
+      state.exchangeCode !== exchangeCode ||
       state.exchangedAt != null ||
-      !isAfter(state.expiresAt, input.at)
+      !isAfter(state.expiresAt, exchangedAt)
     ) {
       return false;
     }
-    if (
-      input.purpose === "link" &&
-      (state.mode !== "link" ||
-        (state.initiatingUserId != null &&
-          state.initiatingUserId !== "" &&
-          state.initiatingUserId !== input.actorUserId.value))
-    ) {
-      return false;
-    }
-    this.#states.set(input.id.value, {
+    this.#states.set(entity.id.value, {
       ...state,
-      exchangedAt: input.at,
+      exchangedAt,
       accessToken: null,
       refreshToken: null,
     });
