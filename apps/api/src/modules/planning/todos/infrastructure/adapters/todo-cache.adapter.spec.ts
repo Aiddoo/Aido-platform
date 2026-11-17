@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+import { TodoCategoryCacheAdapter } from "#api/modules/planning/todo-categories/infrastructure/adapters/todo-category-cache.adapter";
+import { TodoCategoryCacheKey } from "#api/modules/planning/todo-categories/infrastructure/cache/todo-category-cache.keyspace";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -38,7 +40,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       defaultTtlMs: 60_000,
       maxItems: 100,
     });
-    adapter = new TodoCacheAdapter(backend);
+    adapter = new TodoCacheAdapter(backend, new TodoCategoryCacheAdapter(backend));
   });
 
   it("cache miss의 DB 조회 중 무효화되면 이전 응답을 stale-fill하지 않는다", async () => {
@@ -193,12 +195,10 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       return value;
     });
 
-    const readPromise = new TodoCacheAdapter(cacheService).readFriendTodosFirstPage(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const readPromise = new TodoCacheAdapter(
+      cacheService,
+      new TodoCategoryCacheAdapter(cacheService),
+    ).readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE);
     await pageReadStarted.promise;
 
     // When
@@ -211,5 +211,27 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     // page GET 이후 순차 재확인이 회전을 관측해 이전 cache hit를 버린다
     expect(result.generation).not.toBe("generation-before-write");
     expect(result.page).toBeUndefined();
+  });
+});
+
+describe("TodoCacheAdapter — 할 일 쓰기의 카테고리 목록 무효화", () => {
+  it("카테고리 목록 세대를 바꿔 쓰기 커밋 전에 센 todoCount가 다시 저장되지 않는다", async () => {
+    // Given
+    const backend = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
+    const categoryCache = new TodoCategoryCacheAdapter(backend);
+    const adapter = new TodoCacheAdapter(backend, categoryCache);
+    const userId = UserId.reconstitute("user-1");
+    const generationKey = TodoCategoryCacheKey.listGeneration(userId.value);
+    const countedBeforeTodoWrite = async () => {
+      await adapter.invalidateTodoCategories(userId);
+      return [];
+    };
+
+    // When
+    await categoryCache.wrapList(userId, countedBeforeTodoWrite);
+
+    // Then
+    expect(await backend.has(generationKey)).toBe(true);
+    expect(await backend.has(TodoCategoryCacheKey.list(userId.value))).toBe(false);
   });
 });

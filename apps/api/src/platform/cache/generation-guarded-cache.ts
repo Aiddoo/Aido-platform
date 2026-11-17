@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
+import { CacheSingleflight } from "./cache-singleflight.js";
 import {
   type CacheStorePort,
   type CacheValueSchema,
@@ -22,10 +23,12 @@ const INITIAL_GENERATION = "initial";
  * 무효화는 세대를 먼저 바꾸고 값을 지운다. 미스는 factory 전에 세대를 읽어 두고 그대로일 때만 저장하며,
  * 확인과 저장 사이에 무효화가 끼면 저장한 뒤 다시 확인해 방금 쓴 값을 지운다.
  * 세대 TTL은 factory 한 번보다 충분히 길기만 하면 된다(만료되면 처음 세대로 읽어 저장을 건너뛴다).
+ * 같은 세대에서 난 동시 미스는 factory를 한 번만 부른다.
  */
 export class GenerationGuardedCache {
   readonly #store: Pick<CacheStorePort, "get" | "set" | "del">;
   readonly #generationTtlMs: number;
+  readonly #singleflight = new CacheSingleflight();
 
   constructor(store: Pick<CacheStorePort, "get" | "set" | "del">, generationTtlMs: number) {
     this.#store = store;
@@ -45,6 +48,23 @@ export class GenerationGuardedCache {
     }
 
     const generation = await this.#generation(key);
+    // 세대를 묶음 key에 넣어 무효화 뒤에 온 미스가 커밋 전에 시작한 factory 결과를 받지 않게 한다
+    return this.#singleflight.coalesce(`${key.valueKey}@${generation}`, schema, () =>
+      this.#loadAndStoreIfCurrent(key, generation, factory, ttlMs),
+    );
+  }
+
+  async invalidate(key: GenerationGuardedCacheKey): Promise<void> {
+    await this.#store.set(key.generationKey, randomUUID(), this.#generationTtlMs);
+    await this.#store.del(key.valueKey);
+  }
+
+  async #loadAndStoreIfCurrent<T>(
+    key: GenerationGuardedCacheKey,
+    generation: string,
+    factory: () => Promise<T>,
+    ttlMs: CacheWrapTtlMs<T>,
+  ): Promise<T> {
     const value = await factory();
     if (value == null || (await this.#generation(key)) !== generation) {
       return value;
@@ -54,11 +74,6 @@ export class GenerationGuardedCache {
       await this.#store.del(key.valueKey);
     }
     return value;
-  }
-
-  async invalidate(key: GenerationGuardedCacheKey): Promise<void> {
-    await this.#store.set(key.generationKey, randomUUID(), this.#generationTtlMs);
-    await this.#store.del(key.valueKey);
   }
 
   async #generation(key: GenerationGuardedCacheKey): Promise<string> {

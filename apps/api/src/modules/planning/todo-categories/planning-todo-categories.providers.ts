@@ -22,13 +22,11 @@ import { GetTodoCategoryUseCase } from "./application/use-cases/get-todo-categor
 import { ListTodoCategoriesUseCase } from "./application/use-cases/list-todo-categories.use-case.js";
 import { ReorderTodoCategoryUseCase } from "./application/use-cases/reorder-todo-category.use-case.js";
 import { UpdateTodoCategoryUseCase } from "./application/use-cases/update-todo-category.use-case.js";
-import { TodoCategoryCacheAdapter } from "./infrastructure/adapters/todo-category-cache.adapter.js";
 import { TodoCategoryLimitReaderAdapter } from "./infrastructure/adapters/todo-category-limit-reader.adapter.js";
 import { DrizzleTodoCategoryRepository } from "./infrastructure/persistence/drizzle-todo-category.repository.js";
 
 export const PLANNING_TODO_CATEGORIES_PROVIDERS = [
   { provide: TodoCategoryRepositoryPort, useClass: DrizzleTodoCategoryRepository },
-  { provide: TodoCategoryCachePort, useClass: TodoCategoryCacheAdapter },
   { provide: TodoCategoryLimitReaderPort, useClass: TodoCategoryLimitReaderAdapter },
   provideUseCase(ListTodoCategoriesUseCase, {
     repository: TodoCategoryRepositoryPort,

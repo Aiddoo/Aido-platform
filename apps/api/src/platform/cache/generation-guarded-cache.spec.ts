@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { z } from "zod";
 
 import { InMemoryCacheStore } from "./adapters/in-memory-cache.store.js";
@@ -85,5 +86,57 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
     // Then
     expect(result).toBeUndefined();
     expect(await store.has(KEY.valueKey)).toBe(false);
+  });
+
+  it("같은 세대의 동시 미스 둘은 factory를 한 번만 부르고 같은 값을 받는다", async () => {
+    // Given
+    const { cache } = setUp();
+    let factoryCalls = 0;
+    const factory = async () => {
+      factoryCalls += 1;
+      await Promise.resolve();
+      return `value-${factoryCalls}`;
+    };
+
+    // When
+    const results = await Promise.all([
+      cache.wrap(KEY, z.string(), factory, TTL_MS),
+      cache.wrap(KEY, z.string(), factory, TTL_MS),
+    ]);
+
+    // Then
+    expect(factoryCalls).toBe(1);
+    expect(results).toEqual(["value-1", "value-1"]);
+  });
+
+  it("무효화 뒤에 온 미스는 커밋 전에 시작한 factory를 기다리지 않고 새로 읽는다", async () => {
+    // Given
+    const { store, cache } = setUp();
+    let staleFactoryStarted = false;
+    let releaseStale: () => void = () => {};
+    const staleGate = new Promise<void>((resolve) => {
+      releaseStale = resolve;
+    });
+    const staleRead = cache.wrap(
+      KEY,
+      z.string(),
+      async () => {
+        staleFactoryStarted = true;
+        await staleGate;
+        return "stale";
+      },
+      TTL_MS,
+    );
+    await vi.waitFor(() => expect(staleFactoryStarted).toBe(true));
+    await cache.invalidate(KEY);
+
+    // When
+    const freshRead = await cache.wrap(KEY, z.string(), async () => "fresh", TTL_MS);
+    releaseStale();
+
+    // Then
+    expect(freshRead).toBe("fresh");
+    expect(await staleRead).toBe("stale");
+    expect(await store.get(KEY.valueKey, z.string())).toBe("fresh");
   });
 });

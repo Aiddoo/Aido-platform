@@ -40,7 +40,7 @@ todos slice의 [RemoveCategoryTodosUseCase](../src/modules/planning/todos/applic
 ## 캐시
 
 - 친구 화면 할 일 캐시(`todo:friend-view-v2:{owner}:{generation}`, 60초)는 할 일마다 카테고리 이름·색·순서를 담고 그 순서로 정렬한다. 이름·색 수정, 재정렬, 옮겨 지우기, 함께 지우기는 같은 트랜잭션에서 `AfterCommitTaskRegistryPort`에 `invalidateFriendTodos`를 등록해 커밋 뒤 지운다. 빈 카테고리 삭제는 친구 화면에 없어 건너뛴다.
-- 카테고리 목록 캐시(`todo-category:list:{userId}`)는 쓰기 use-case가 UoW를 마친 뒤 지운다.
+- 카테고리 목록 캐시(`todo-category:list:{userId}`)는 카테고리 쓰기와 `todoCount`를 바꾸는 할 일 쓰기(만들기·고치기·옮기기·지우기·반복 편집)가 UoW를 마친 뒤 세대(`todo-category:list-generation:{userId}`)를 바꾸고 지운다. 할 일 쓰기는 카테고리 slice의 `TodoCategoryCachePort.invalidate`를 거쳐 커밋 전에 센 목록을 다시 저장하지 않는다.
 
 ## 성능
 

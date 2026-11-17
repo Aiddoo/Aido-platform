@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { friendTodoSchema } from "@aido/api/contracts/todo/v1";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TodoCategoryCacheKey } from "#api/modules/planning/todo-categories/infrastructure/cache/todo-category-cache.keyspace";
+import { TodoCategoryCachePort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -40,13 +40,19 @@ const FRIEND_TODOS_PAGE_SCHEMA = z.object({
 @Injectable()
 export class TodoCacheAdapter implements TodoCachePort {
   readonly #cacheService: CacheStorePort;
+  readonly #categoryCache: Pick<TodoCategoryCachePort, "invalidate">;
 
-  constructor(cacheService: CacheStorePort) {
+  constructor(
+    cacheService: CacheStorePort,
+    @Inject(TodoCategoryCachePort) categoryCache: Pick<TodoCategoryCachePort, "invalidate">,
+  ) {
     this.#cacheService = cacheService;
+    this.#categoryCache = categoryCache;
   }
 
+  // 카테고리 목록의 todoCount가 바뀌므로 카테고리 slice의 세대 무효화를 거친다
   async invalidateTodoCategories(userId: UserId): Promise<void> {
-    await this.#cacheService.del(TodoCategoryCacheKey.list(userId.value));
+    await this.#categoryCache.invalidate(userId);
   }
 
   async readFriendTodosFirstPage(

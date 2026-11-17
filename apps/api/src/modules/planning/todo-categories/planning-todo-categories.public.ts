@@ -1,4 +1,5 @@
 export { TodoCategoryReaderPort } from "./application/ports/todo-category.reader.port.js";
+export { TodoCategoryCachePort } from "./application/ports/todo-category-cache.port.js";
 export { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
 export { TodoCategoryProvisionerPort } from "./application/ports/todo-category-provisioner.port.js";
 export { categoryChangedPayloadSchema } from "./application/todo-category-published-events.constants.js";
