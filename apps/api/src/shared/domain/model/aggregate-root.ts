@@ -8,13 +8,13 @@ export abstract class AggregateRoot<
 > extends Entity<TId, TProps> {
   #domainEvents: TEvent[] = [];
 
-  protected raise(event: TEvent): void {
-    this.#domainEvents.push(event);
-  }
-
   pullDomainEvents(): TEvent[] {
     const events = this.#domainEvents;
     this.#domainEvents = [];
     return events;
+  }
+
+  protected raise(event: TEvent): void {
+    this.#domainEvents.push(event);
   }
 }

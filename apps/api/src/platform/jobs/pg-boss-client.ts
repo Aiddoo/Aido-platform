@@ -131,13 +131,9 @@ export class LazyPgBossClient implements PgBossClient {
     return (await this.#ensureStarted()).insert(name, jobs, options);
   }
 
-  async schedule(
-    name: string,
-    cron: string,
-    data: object,
-    options: ScheduleOptions,
-  ): Promise<void> {
-    await (await this.#ensureStarted()).schedule(name, cron, data, options);
+  // pg-boss schedule 인자 넷을 그대로 넘긴다
+  async schedule(...pgBossArguments: Parameters<PgBossClient["schedule"]>): Promise<void> {
+    await (await this.#ensureStarted()).schedule(...pgBossArguments);
   }
 
   async unschedule(name: string, key?: string): Promise<void> {

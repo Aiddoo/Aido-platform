@@ -6,6 +6,7 @@ import { CacheSingleflight } from "./cache-singleflight.js";
 import {
   type CacheStorePort,
   type CacheValueSchema,
+  type CacheWrapRequest,
   type CacheWrapTtlMs,
   resolveWrapTtlMs,
 } from "./cache-store.port.js";
@@ -50,7 +51,7 @@ export class GenerationGuardedCache {
     const generation = await this.#generation(key);
     // 세대를 묶음 key에 넣어 무효화 뒤에 온 미스가 커밋 전에 시작한 factory 결과를 받지 않게 한다
     return this.#singleflight.coalesce(`${key.valueKey}@${generation}`, schema, () =>
-      this.#loadAndStoreIfCurrent(key, generation, factory, ttlMs),
+      this.#loadAndStoreIfCurrent(key, generation, { factory, ttlMs }),
     );
   }
 
@@ -62,8 +63,7 @@ export class GenerationGuardedCache {
   async #loadAndStoreIfCurrent<T>(
     key: GenerationGuardedCacheKey,
     generation: string,
-    factory: () => Promise<T>,
-    ttlMs: CacheWrapTtlMs<T>,
+    { factory, ttlMs }: Pick<CacheWrapRequest<T>, "factory" | "ttlMs">,
   ): Promise<T> {
     const value = await factory();
     if (value == null || (await this.#generation(key)) !== generation) {

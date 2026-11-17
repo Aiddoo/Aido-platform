@@ -1,7 +1,7 @@
 import {
   type CacheStorePort,
   type CacheValueSchema,
-  type CacheWrapTtlMs,
+  type CacheWrapRequest,
   resolveWrapTtlMs,
 } from "./cache-store.port.js";
 
@@ -14,10 +14,7 @@ export class CacheSingleflight {
 
   async wrap<T>(
     store: Pick<CacheStorePort, "get" | "set">,
-    key: string,
-    schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs: CacheWrapTtlMs<T> | undefined,
+    { key, schema, factory, ttlMs }: CacheWrapRequest<T>,
   ): Promise<T> {
     const cached = await store.get(key, schema);
     // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 cache miss, null은 저장해 둔 값이다

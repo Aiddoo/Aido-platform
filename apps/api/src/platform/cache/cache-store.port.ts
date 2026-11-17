@@ -10,6 +10,14 @@ export type CacheValueSchema<T> = z.ZodType<T>;
 /** 값을 받은 뒤에 보관 시간을 정해야 할 때(예: 곧 비가 오면 더 짧게) 함수로 넘긴다. */
 export type CacheWrapTtlMs<T> = number | ((value: T) => number);
 
+/** cache-aside 미스 한 번에 필요한 것. factory 결과는 schema로 다시 읽을 수 있는 값이어야 한다. */
+export interface CacheWrapRequest<T> {
+  readonly key: string;
+  readonly schema: CacheValueSchema<T>;
+  readonly factory: () => Promise<T>;
+  readonly ttlMs?: CacheWrapTtlMs<T>;
+}
+
 export interface CacheEntry<T> {
   readonly key: string;
   readonly value: T;

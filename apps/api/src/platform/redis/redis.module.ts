@@ -73,17 +73,6 @@ export interface RedisLifecycleClient {
 @Global()
 @Module({})
 export class RedisModule implements OnApplicationShutdown {
-  #shutdownPromise: Promise<void> | null = null;
-  readonly #commandClient: RedisLifecycleClient | null;
-
-  constructor(
-    @Optional()
-    @Inject(REDIS_COMMAND_CLIENT)
-    commandClient: RedisLifecycleClient | null,
-  ) {
-    this.#commandClient = commandClient;
-  }
-
   static forRoot(): DynamicModule {
     const commandProvider: Provider = {
       provide: REDIS_COMMAND_CLIENT,
@@ -107,6 +96,17 @@ export class RedisModule implements OnApplicationShutdown {
       providers: [{ provide: REDIS_COMMAND_CLIENT, useValue: commandClient }],
       exports: [REDIS_COMMAND_CLIENT],
     };
+  }
+
+  #shutdownPromise: Promise<void> | null = null;
+  readonly #commandClient: RedisLifecycleClient | null;
+
+  constructor(
+    @Optional()
+    @Inject(REDIS_COMMAND_CLIENT)
+    commandClient: RedisLifecycleClient | null,
+  ) {
+    this.#commandClient = commandClient;
   }
 
   /** beforeApplicationShutdown에서 worker drain을 마친 뒤 Redis 연결을 닫는다. */

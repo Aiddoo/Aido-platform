@@ -35,6 +35,12 @@ import {
 } from "./jobs.alerts.js";
 import { PG_BOSS_CLIENT, type PgBossClient } from "./pg-boss-client.js";
 import { PgBossErrorLogSampler } from "./pg-boss-error-log-sampler.js";
+import {
+  type JobSettler,
+  settleBatchFailures,
+  settleEachJob,
+  settleWholeBatch,
+} from "./pg-boss-job-settlers.js";
 import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 interface JobTransactionSource {
@@ -183,36 +189,6 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     );
   }
 
-  async #work<TPayload extends object>(
-    queue: QueueDefinition<TPayload>,
-    settle: JobSettler<TPayload>,
-  ): Promise<void> {
-    if (!this.#config.workerEnabled) {
-      // health가 보는 큐 목록에는 남긴다
-      this.#registry.register(queue);
-      return;
-    }
-    await this.#ensure(queue);
-    const { worker } = queue;
-    await this.#boss.work(
-      queue.name,
-      {
-        includeMetadata: true,
-        // 묶음 안의 잘못된 payload 하나가 나머지 작업까지 재시도시키지 않게 작업별로 결과를 돌려준다
-        perJobResults: true,
-        localConcurrency: worker.localConcurrency,
-        pollingIntervalSeconds: worker.pollingIntervalSeconds,
-        ...(worker.batchSize != null && { batchSize: worker.batchSize }),
-        ...(worker.burstWhenBatchFull != null && {
-          burstWhenBatchFull: worker.burstWhenBatchFull,
-        }),
-        ...(worker.minPriority != null && { minPriority: worker.minPriority }),
-        ...(worker.maxPriority != null && { maxPriority: worker.maxPriority }),
-      },
-      async (jobs) => this.#handle(queue, jobs, settle),
-    );
-  }
-
   async registerSchedules(queue: QueueDefinition<object>): Promise<void> {
     if (!this.#config.workerEnabled) {
       this.#registry.register(queue);
@@ -275,6 +251,36 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
         ),
       };
     }
+  }
+
+  async #work<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    settle: JobSettler<TPayload>,
+  ): Promise<void> {
+    if (!this.#config.workerEnabled) {
+      // health가 보는 큐 목록에는 남긴다
+      this.#registry.register(queue);
+      return;
+    }
+    await this.#ensure(queue);
+    const { worker } = queue;
+    await this.#boss.work(
+      queue.name,
+      {
+        includeMetadata: true,
+        // 묶음 안의 잘못된 payload 하나가 나머지 작업까지 재시도시키지 않게 작업별로 결과를 돌려준다
+        perJobResults: true,
+        localConcurrency: worker.localConcurrency,
+        pollingIntervalSeconds: worker.pollingIntervalSeconds,
+        ...(worker.batchSize != null && { batchSize: worker.batchSize }),
+        ...(worker.burstWhenBatchFull != null && {
+          burstWhenBatchFull: worker.burstWhenBatchFull,
+        }),
+        ...(worker.minPriority != null && { minPriority: worker.minPriority }),
+        ...(worker.maxPriority != null && { maxPriority: worker.maxPriority }),
+      },
+      async (jobs) => this.#handle(queue, jobs, settle),
+    );
   }
 
   async #handle<TPayload extends object>(
@@ -360,75 +366,6 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
       backlogWarningSize: resolveBacklogWarningSize(queue),
     });
   }
-}
-
-type JobFailureReporter<TPayload extends object> = (
-  job: JobEnvelope<TPayload>,
-  error: unknown,
-) => void;
-
-type JobSettler<TPayload extends object> = (
-  jobs: readonly JobEnvelope<TPayload>[],
-  onFailure: JobFailureReporter<TPayload>,
-) => Promise<JobResult[]>;
-
-async function settleWholeBatch<TPayload extends object>(
-  jobs: readonly JobEnvelope<TPayload>[],
-  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
-  onFailure: JobFailureReporter<TPayload>,
-): Promise<JobResult[]> {
-  try {
-    await handler(jobs);
-  } catch (error) {
-    for (const job of jobs) {
-      onFailure(job, error);
-    }
-    throw error;
-  }
-  return jobs.map(({ id }) => ({ id, status: "completed" }));
-}
-
-async function settleBatchFailures<TPayload extends object>(
-  jobs: readonly JobEnvelope<TPayload>[],
-  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<JobBatchFailures>,
-  onFailure: JobFailureReporter<TPayload>,
-): Promise<JobResult[]> {
-  let failures: JobBatchFailures;
-  try {
-    failures = await handler(jobs);
-  } catch (error) {
-    for (const job of jobs) {
-      onFailure(job, error);
-    }
-    throw error;
-  }
-  return jobs.map((job): JobResult => {
-    if (!failures.has(job.id)) {
-      return { id: job.id, status: "completed" };
-    }
-    const error = failures.get(job.id);
-    onFailure(job, error);
-    return { id: job.id, status: "failed", output: error };
-  });
-}
-
-async function settleEachJob<TPayload extends object>(
-  jobs: readonly JobEnvelope<TPayload>[],
-  handler: (jobs: readonly JobEnvelope<TPayload>[]) => Promise<void>,
-  onFailure: JobFailureReporter<TPayload>,
-): Promise<JobResult[]> {
-  const results: JobResult[] = [];
-  for (const job of jobs) {
-    try {
-      await handler([job]);
-      results.push({ id: job.id, status: "completed" });
-    } catch (error) {
-      onFailure(job, error);
-      // pg-boss가 handler throw를 기록할 때와 같이 오류 객체를 실패 출력으로 남긴다
-      results.push({ id: job.id, status: "failed", output: error });
-    }
-  }
-  return results;
 }
 
 /** enqueue·enqueueMany·스케줄이 같은 재시도·DLQ·결정적 id 옵션으로 작업을 쓰도록 한 곳에서 변환한다. */

@@ -102,7 +102,7 @@ export class InMemoryCacheStore extends CacheStorePort {
     factory: () => Promise<T>,
     ttlMs?: CacheWrapTtlMs<T>,
   ): Promise<T> {
-    return this.#singleflight.wrap(this, key, schema, factory, ttlMs);
+    return this.#singleflight.wrap(this, { key, schema, factory, ttlMs });
   }
 
   async has(key: string): Promise<boolean> {

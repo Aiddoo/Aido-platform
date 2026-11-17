@@ -117,8 +117,7 @@ export function documentErrors(
 function documentErrorCode(
   status: HttpStatus,
   errorCode: ErrorCodeType,
-  fallback: string,
-  description?: string,
+  { fallback, description }: { readonly fallback: string; readonly description?: string },
 ): MethodDecorator {
   return documentErrors(status, [
     { code: errorCode, message: description ?? messageOf(errorCode, fallback) },
@@ -140,7 +139,7 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
   const { errorCode, description } = options;
   const status = Errors[errorCode]?.httpStatus ?? HttpStatus.BAD_REQUEST;
 
-  return documentErrorCode(status, errorCode, "Unknown error", description);
+  return documentErrorCode(status, errorCode, { fallback: "Unknown error", description });
 }
 
 /**
@@ -152,7 +151,7 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
  * ```
  */
 export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.NOT_FOUND, errorCode, "Not found");
+  return documentErrorCode(HttpStatus.NOT_FOUND, errorCode, { fallback: "Not found" });
 }
 
 /**
@@ -164,11 +163,9 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(
-    HttpStatus.UNAUTHORIZED,
-    errorCode ?? ErrorCode.AUTH_0107,
-    "인증이 필요합니다.",
-  );
+  return documentErrorCode(HttpStatus.UNAUTHORIZED, errorCode ?? ErrorCode.AUTH_0107, {
+    fallback: "인증이 필요합니다.",
+  });
 }
 
 /**
@@ -180,7 +177,7 @@ export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.FORBIDDEN, errorCode, "접근 권한이 없습니다.");
+  return documentErrorCode(HttpStatus.FORBIDDEN, errorCode, { fallback: "접근 권한이 없습니다." });
 }
 
 /**
@@ -192,7 +189,7 @@ export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.CONFLICT, errorCode, "Conflict");
+  return documentErrorCode(HttpStatus.CONFLICT, errorCode, { fallback: "Conflict" });
 }
 
 /**
@@ -204,7 +201,9 @@ export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.UNPROCESSABLE_ENTITY, errorCode, "Unprocessable");
+  return documentErrorCode(HttpStatus.UNPROCESSABLE_ENTITY, errorCode, {
+    fallback: "Unprocessable",
+  });
 }
 
 /**
@@ -216,7 +215,7 @@ export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.BAD_REQUEST, errorCode, "Bad request");
+  return documentErrorCode(HttpStatus.BAD_REQUEST, errorCode, { fallback: "Bad request" });
 }
 
 /**
@@ -228,7 +227,9 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.SERVICE_UNAVAILABLE, errorCode, "Service unavailable");
+  return documentErrorCode(HttpStatus.SERVICE_UNAVAILABLE, errorCode, {
+    fallback: "Service unavailable",
+  });
 }
 
 /**
@@ -243,12 +244,10 @@ export function ApiTooManyRequestsError(
   errorCode: ErrorCodeType,
   description?: string,
 ): MethodDecorator {
-  return documentErrorCode(
-    HttpStatus.TOO_MANY_REQUESTS,
-    errorCode,
-    "Too many requests",
+  return documentErrorCode(HttpStatus.TOO_MANY_REQUESTS, errorCode, {
+    fallback: "Too many requests",
     description,
-  );
+  });
 }
 
 /**
@@ -260,7 +259,7 @@ export function ApiTooManyRequestsError(
  * ```
  */
 export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.GONE, errorCode, "Gone");
+  return documentErrorCode(HttpStatus.GONE, errorCode, { fallback: "Gone" });
 }
 
 /**

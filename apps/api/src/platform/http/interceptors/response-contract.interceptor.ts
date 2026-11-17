@@ -14,11 +14,8 @@ import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 
 import { isRawResponse } from "../decorators/raw-response.decorator.js";
 import type { HttpRequest, HttpResponse } from "../http-request.js";
+import { ResponseContractViolationError } from "./response-contract.errors.js";
 import { toSuccessResponse } from "./response-transform.interceptor.js";
-
-class ResponseContractViolationError extends Error {
-  override readonly name = "ResponseContractViolationError";
-}
 
 function isSuccessStatus(statusCode: number): boolean {
   return statusCode >= 200 && statusCode < 300;
