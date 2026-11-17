@@ -39,7 +39,7 @@
 
 - slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
 - Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 읽는 포트만 담고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`, 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 읽기 포트를 `-queries`로 옮겨 없앤다.
-- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. Context 루트에 public 파일을 두지 않는다.
+- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
 - presentation의 Controller·DTO·응답 매퍼 이름은 HTTP 자원(경로·DTO component id가 계약)을 따르고, domain·application은 Aggregate 이름을 따른다(voice `voice-digests` slice의 `VoiceNoteController`는 `/v1/voice-notes` 자원 이름이다).
 - HTTP 버전은 폴더(`http/v2/`)로만 나눈다. 클래스(`WeatherReportController`)·Swagger 태그·상수 이름에 버전을 넣지 않고, 버전 폴더끼리 import하지 않는다(공용은 버전 밖 `presentation/http/`).
 

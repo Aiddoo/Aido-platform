@@ -27,6 +27,14 @@ module.exports = {
       },
     },
     {
+      name: "presentation-not-to-infrastructure",
+      comment:
+        "presentation은 application의 UseCase·포트·Read Model만 부른다. infrastructure 구현과 상수는 import하지 않는다.",
+      severity: "error",
+      from: { path: "^src/modules/[^/]+/[^/]+/presentation/" },
+      to: { path: "^src/modules/[^/]+/[^/]+/infrastructure/" },
+    },
+    {
       name: "ai-generations-knows-no-consumer",
       comment:
         "ai-generations는 그것을 쓰는 ai-assistance slice를 모른다. 작업 출력 타입은 ai-assistance/shared/domain에 둔다.",
