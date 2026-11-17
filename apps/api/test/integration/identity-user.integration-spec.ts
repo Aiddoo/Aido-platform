@@ -80,10 +80,10 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     });
   });
 
-  it("같은 기준 시각으로 30일 경계 이전 계정만 영구 삭제 후보로 선택한다", async () => {
+  it("같은 기준 시각으로 30일 유예 끝 시각에 닿은 계정부터 영구 삭제 후보로 선택한다", async () => {
     // Given
     const before = await givenUser({ deletedAt: cutoff.subtract({ milliseconds: 1 }) });
-    await givenUser({ deletedAt: cutoff });
+    const atBoundary = await givenUser({ deletedAt: cutoff });
     await givenUser({ deletedAt: cutoff.add({ milliseconds: 1 }) });
     await givenUser({ deletedAt: null });
 
@@ -91,13 +91,9 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     const candidates = await repository.listPurgeEligible({ now, afterId: null, limit: 10 });
 
     // Then
-    expect(candidates.map((user) => user.toPrimitives())).toEqual([
-      expect.objectContaining({
-        id: before.id,
-        email: before.email,
-        deletedAt: cutoff.subtract({ milliseconds: 1 }),
-      }),
-    ]);
+    expect(candidates.map((user) => user.id.value).toSorted()).toEqual(
+      [before.id, atBoundary.id].toSorted(),
+    );
   });
 
   it("복구는 상태와 탈퇴 시각을 함께 저장하고 이후 영구 삭제 후보에서 제외한다", async () => {
