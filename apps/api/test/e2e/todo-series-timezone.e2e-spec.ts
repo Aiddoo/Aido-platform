@@ -27,30 +27,33 @@ const RULE_ZONES = [
 const EDIT_CASES = DEVICES.flatMap((device) => RULE_ZONES.map((rule) => ({ ...device, ...rule })));
 
 describe("반복 할 일의 시간대 규칙 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let accessToken: string;
   let userId: string;
   let categoryId: number;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("series-zone@example.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser(
+      "series-zone@example.com",
+      "Test1234!",
+    );
     accessToken = user.accessToken;
     userId = user.userId;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   const startDate = () => shiftDateKey(todayIn(SEOUL).toString(), 2);
 
   /** 자가 치유는 응답과 따로 돌므로 저장값이 필요한 경우를 정해 둔다. */
   async function storeTimezone(zone: string) {
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userPreference)
       .set({ timezone: zone })
@@ -58,7 +61,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
   }
 
   async function createSeries(zone: string, time: string | null = "09:00") {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", zone)
@@ -75,13 +78,13 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
   }
 
   function occurrences(seriesId: string) {
-    return ctx.testDatabase
+    return testContext.testDatabase
       .getClient()
       .query.todo.findMany({ where: { seriesId }, orderBy: { occurrenceDate: "asc" } });
   }
 
   function patch(id: number, zone: string, body: object) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .patch(`/v1/todos/${id}`)
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", zone)
@@ -90,7 +93,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
   }
 
   async function readSeries(seriesId: string, zone: string) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get(`/v1/todo-series/${seriesId}`)
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", zone)
@@ -214,7 +217,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
           repeat: { frequency: "DAILY", end: { type: "COUNT", count: 5 } },
         });
         // Then
-        const moved = await ctx.testDatabase.getClient().query.todo.findFirst({
+        const moved = await testContext.testDatabase.getClient().query.todo.findFirst({
           where: { id: before[1]?.id ?? 0 },
         });
         const newSeriesId = moved?.seriesId ?? "";
@@ -264,7 +267,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
       "$device: 그 기기의 시각과 시간대를 규칙에 저장한다",
       async ({ header, resolved }) => {
         // Given
-        const created = await request(ctx.app.getHttpServer())
+        const created = await request(testContext.app.getHttpServer())
           .post("/v1/todos")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", header)
@@ -282,7 +285,7 @@ describe("반복 할 일의 시간대 규칙 E2E", () => {
           repeat: { frequency: "DAILY", end: { type: "COUNT", count: 2 } },
         });
         // Then
-        const row = await ctx.testDatabase
+        const row = await testContext.testDatabase
           .getClient()
           .query.todo.findFirst({ where: { id: todo.id } });
         expect(await readSeries(row?.seriesId ?? "", header)).toMatchObject({

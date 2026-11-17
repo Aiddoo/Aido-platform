@@ -61,14 +61,14 @@ describe("drop_retired_columns 마이그레이션 (실제 PostgreSQL)", () => {
       const user = UserFixture.create();
 
       // When
-      const run = client.transaction(async (tx) => {
+      const run = client.transaction(async (transaction) => {
         for (const statement of RECREATE_RETIRED_COLUMNS) {
-          await tx.execute(sql.raw(statement));
+          await transaction.execute(sql.raw(statement));
         }
-        await tx.insert(userTable).values(user);
-        await tx.execute(seed(user.id));
+        await transaction.insert(userTable).values(user);
+        await transaction.execute(seed(user.id));
         for (const statement of readDropStatements()) {
-          await tx.execute(sql.raw(statement));
+          await transaction.execute(sql.raw(statement));
         }
       });
 

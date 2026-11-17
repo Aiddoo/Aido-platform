@@ -56,13 +56,13 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
   });
 
   function createRepository(): DrizzleNudgeRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleNudgeRepository(transactionHost);
   }
 
   function createReader(): DrizzleNudgeReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleNudgeReader(transactionHost);
   }
 
   // DATE 컬럼은 UTC 자정 Date로 넣는다
@@ -164,8 +164,8 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
 
   it("답장 전에 읽기 시작한 읽음 처리가 답장 뒤에 끝나도 답장을 지우지 않는다", async () => {
     // Given
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleNudgeRepository(txHost);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzleNudgeRepository(transactionHost);
     const todoId = await addTodo(createNudgeTodoSeed());
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
@@ -175,7 +175,7 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     const reply = new ReplyToNudgeUseCase({
       unitOfWork: uow,
       nudgeRepository: repository,
-      nudgeReader: new DrizzleNudgeReader(txHost),
+      nudgeReader: new DrizzleNudgeReader(transactionHost),
       interactionConfig: { isEnabled: true },
       mutualFriendReader,
       notifier: new RecordingNudgeNotifier(),

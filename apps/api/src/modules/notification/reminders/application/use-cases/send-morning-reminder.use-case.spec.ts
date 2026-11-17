@@ -26,7 +26,7 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
     occurrenceKey: "2024-01-16",
   } as const;
 
-  const makeCtx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext =>
+  const makeTimezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneContext =>
     createTimezoneContextFixture({ date: "2024-01-16", localHour: 8, ...overrides });
 
   const sent = () => publisher.published.map(({ data }) => data);
@@ -45,11 +45,11 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("프리미엄 사용자에게 고른 시각에 아침 리마인더를 발송한다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 9, localMinute: 30 });
+    const timezoneContext = makeTimezoneContext({ localHour: 9, localMinute: 30 });
     reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -62,18 +62,18 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
       expect.objectContaining({
         userId: TEST_CUID.USER_1,
         type: "MORNING_REMINDER",
-        notificationDate: ctx.today,
+        notificationDate: timezoneContext.today,
       }),
     ]);
   });
 
   it("무료 사용자에게는 08:00에 아침 리마인더를 발송한다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 8, localMinute: 0 });
+    const timezoneContext = makeTimezoneContext({ localHour: 8, localMinute: 0 });
     reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -86,11 +86,11 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("무료 사용자는 08:00이 아니면 조회하지도 보내지도 않는다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 9, localMinute: 30 });
+    const timezoneContext = makeTimezoneContext({ localHour: 9, localMinute: 30 });
     reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -99,11 +99,15 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("특정 사용자만 다시 보는 catch-up에서는 08:00이어도 무료 사용자를 조회하지 않는다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 8, localMinute: 0, userId: TEST_CUID.USER_1 });
+    const timezoneContext = makeTimezoneContext({
+      localHour: 8,
+      localMinute: 0,
+      userId: TEST_CUID.USER_1,
+    });
     reader.freeMorningUsers = [{ id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -117,11 +121,11 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("할 일이 있는 사용자에게 개수를 담은 아침 메시지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 5 } }];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createMorningReminderNotificationMessage({
@@ -134,11 +138,11 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("할 일이 없는 사용자에게 할 일 없음 메시지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumMorningUsers = [{ id: TEST_CUID.USER_1, preference: null, _count: { todos: 0 } }];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createMorningNoTodoNotificationMessage({
@@ -150,13 +154,13 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("저장한 언어로 보내고 지원하지 않는 언어는 영어로 보낸다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumMorningUsers = [
       { id: TEST_CUID.USER_1, preference: { locale: "ja" }, _count: { todos: 5 } },
     ];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createMorningReminderNotificationMessage({
@@ -169,15 +173,15 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("오늘 이미 아침 리마인더를 받은 사용자를 제외한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumMorningUsers = [
       { id: TEST_CUID.USER_1, preference: null, _count: { todos: 3 } },
       { id: TEST_CUID.USER_2, preference: null, _count: { todos: 2 } },
     ];
-    history.notified("MORNING_REMINDER", [TEST_CUID.USER_1], ctx.today);
+    history.notified("MORNING_REMINDER", [TEST_CUID.USER_1], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -186,10 +190,10 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
   it("대상이 없으면 발송하지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

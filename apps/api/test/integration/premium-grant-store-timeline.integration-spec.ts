@@ -91,7 +91,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   }
 
   function isPremium() {
-    return entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT");
+    return entitlement.canInTransaction(UserId.reconstitute(userId), "AI_REPORT");
   }
 
   async function userProjection() {
@@ -218,7 +218,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       isTrial: false,
       planType: null,
     });
-    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTransaction(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   function billingIssue(eventId: string, graceEndsAt: Date) {

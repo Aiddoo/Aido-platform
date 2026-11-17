@@ -154,9 +154,9 @@ export function computeStreakDays(
   let streak = 0;
   let cursor = localDateAt(endDate, timezone).subtract({ days: 1 });
   while (Temporal.PlainDate.compare(cursor, rangeStart) >= 0) {
-    const dateStr = cursor.toString();
-    const total = totalByDate[dateStr] ?? 0;
-    const completed = completedByDate[dateStr] ?? 0;
+    const dateKey = cursor.toString();
+    const total = totalByDate[dateKey] ?? 0;
+    const completed = completedByDate[dateKey] ?? 0;
 
     if (total === 0) {
       // 할 일이 없는 날은 건너뛰기

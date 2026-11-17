@@ -31,8 +31,8 @@ describe("DrizzleAppReleaseRepository (실제 PostgreSQL)", () => {
   function createRepository(
     config: AppConfigAppVersionsConfig = ENVIRONMENT_CHECK_OFF,
   ): DrizzleAppReleaseRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleAppReleaseRepository(txHost, config);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleAppReleaseRepository(transactionHost, config);
   }
 
   describeAppReleaseRepositoryContract(async () => createRepository());

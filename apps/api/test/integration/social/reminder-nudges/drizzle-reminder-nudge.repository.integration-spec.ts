@@ -43,8 +43,8 @@ describe("DrizzleReminderNudgeRepository·DrizzleReminderTargetReader (실제 Po
   });
 
   function createRepository(): DrizzleReminderNudgeRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleReminderNudgeRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleReminderNudgeRepository(transactionHost);
   }
 
   async function addTodo(seed: ReminderTargetTodoSeed): Promise<void> {
@@ -68,10 +68,10 @@ describe("DrizzleReminderNudgeRepository·DrizzleReminderTargetReader (실제 Po
   }
 
   describeReminderNudgeRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleReminderNudgeRepository(txHost),
-      targetReader: new DrizzleReminderTargetReader(txHost),
+      repository: new DrizzleReminderNudgeRepository(transactionHost),
+      targetReader: new DrizzleReminderTargetReader(transactionHost),
       addTodo,
     };
   });

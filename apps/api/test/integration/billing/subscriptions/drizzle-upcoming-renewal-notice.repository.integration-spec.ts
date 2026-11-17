@@ -40,10 +40,10 @@ describe("DrizzleUpcomingRenewalNoticeRepository (실제 PostgreSQL)", () => {
   });
 
   describeUpcomingRenewalNoticeRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleUpcomingRenewalNoticeRepository(txHost),
-      subscriptions: new DrizzleSubscriptionRepository(txHost),
+      repository: new DrizzleUpcomingRenewalNoticeRepository(transactionHost),
+      subscriptions: new DrizzleSubscriptionRepository(transactionHost),
     };
   });
 });

@@ -27,16 +27,19 @@ async function waitForResourcesToSettle(): Promise<string[]> {
 it("실제 작업 큐로 띄운 앱을 닫으면 앱이 만든 타이머·소켓·풀이 하나도 남지 않는다", async () => {
   // Given
   await preparePgBossSchema();
-  const ctx = await createE2eApp({ customizeBuilder: useRealJobQueue });
-  const user = await ctx.helpers.createVerifiedUser("shutdown-handles@example.com", "Test1234!");
-  const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
-  await request(ctx.app.getHttpServer())
+  const testContext = await createE2eApp({ customizeBuilder: useRealJobQueue });
+  const user = await testContext.helpers.createVerifiedUser(
+    "shutdown-handles@example.com",
+    "Test1234!",
+  );
+  const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+  await request(testContext.app.getHttpServer())
     .post("/v1/todos")
     .set("Authorization", `Bearer ${user.accessToken}`)
     .set("X-Timezone", "Asia/Seoul")
     .send({ title: "종료 확인", categoryId, startDate: "2026-11-10" })
     .expect(201);
-  await request(ctx.app.getHttpServer())
+  await request(testContext.app.getHttpServer())
     .get("/v1/todos")
     .set("Authorization", `Bearer ${user.accessToken}`)
     .set("X-Timezone", "Asia/Seoul")
@@ -44,7 +47,7 @@ it("실제 작업 큐로 띄운 앱을 닫으면 앱이 만든 타이머·소켓
   expect(nonStdioResources()).toContain("Timeout");
 
   // When
-  await destroyE2eApp(ctx);
+  await destroyE2eApp(testContext);
 
   // Then
   expect(await waitForResourcesToSettle()).toEqual([]);

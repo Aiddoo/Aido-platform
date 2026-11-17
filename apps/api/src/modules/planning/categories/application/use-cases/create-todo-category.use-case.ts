@@ -54,11 +54,11 @@ export class CreateTodoCategoryUseCase {
         TodoCategoryLockKeys.userCategories(input.userId),
       ]);
 
-      const maxCount = await this.#dependencies.limitReader.readLimitInTx(userId);
+      const maxCount = await this.#dependencies.limitReader.readLimitInTransaction(userId);
       const categoryCount = await this.#dependencies.repository.countByUserId(userId);
       if (maxCount != null && categoryCount >= maxCount) {
         throw todoCategoryLimitReached(
-          await this.#dependencies.limitReader.readFeatureQuotaInTx(userId, categoryCount),
+          await this.#dependencies.limitReader.readFeatureQuotaInTransaction(userId, categoryCount),
         );
       }
 

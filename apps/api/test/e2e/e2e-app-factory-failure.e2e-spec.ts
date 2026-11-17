@@ -22,23 +22,23 @@ describe("E2E 앱 factory의 throttler 생명주기 실패", () => {
 
   it("application teardown이 실패해도 원래 오류를 유지하고 전역 guard를 변경하지 않는다", async () => {
     // Given
-    const ctx = await createE2eApp({ withRealThrottler: true });
+    const testContext = await createE2eApp({ withRealThrottler: true });
     const teardownError = new Error("fault: application close");
-    const closeApplication = ctx.app.close.bind(ctx.app);
-    vi.spyOn(ctx.app, "close").mockImplementation(async () => {
+    const closeApplication = testContext.app.close.bind(testContext.app);
+    vi.spyOn(testContext.app, "close").mockImplementation(async () => {
       await closeApplication();
       throw teardownError;
     });
 
     try {
       // When
-      const closing = ctx.closeApplicationResources();
+      const closing = testContext.closeApplicationResources();
 
       // Then
       await expect(closing).rejects.toBe(teardownError);
       expect(ThrottlerGuard.prototype.canActivate).toBe(realCanActivate);
     } finally {
-      await ctx.closeTestResources();
+      await testContext.closeTestResources();
     }
   });
 });

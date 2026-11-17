@@ -16,7 +16,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   let history: StubNotificationHistoryReader;
   let strategy: SendOnboardingUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 8 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 8 });
   const sent = () => publisher.published.map(({ data }) => data);
 
   const variantContext = (day: number, recipientId = "user-1") => ({
@@ -42,11 +42,11 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   it("Day 0 가입 사용자에게 사용법 안내를 서비스 알림으로 보낸다", async () => {
     // Given
     reader.onboardingCandidates = [
-      { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
+      { id: "user-1", createdAt: timezoneContext.today.toZonedDateTime("UTC").toInstant() },
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     // 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
@@ -78,7 +78,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
     reader.completedTodoCounts = [{ userId: "user-1", count: 3 }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -103,11 +103,11 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   it("완료 수가 필요 없는 날에는 완료 수를 조회하지 않는다", async () => {
     // Given
     reader.onboardingCandidates = [
-      { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
+      { id: "user-1", createdAt: timezoneContext.today.toZonedDateTime("UTC").toInstant() },
     ];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     expect(reader.queriedMethods()).not.toContain("countCompletedTodosByUsers");
@@ -116,12 +116,12 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   it("저장한 언어로 보낸다", async () => {
     // Given
     reader.onboardingCandidates = [
-      { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
+      { id: "user-1", createdAt: timezoneContext.today.toZonedDateTime("UTC").toInstant() },
     ];
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-1");
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createOnboardingNotificationMessage({
@@ -142,7 +142,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -152,13 +152,13 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   it("오늘 이미 안내를 받은 사용자는 건너뛴다", async () => {
     // Given
     reader.onboardingCandidates = [
-      { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
-      { id: "user-2", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
+      { id: "user-1", createdAt: timezoneContext.today.toZonedDateTime("UTC").toInstant() },
+      { id: "user-2", createdAt: timezoneContext.today.toZonedDateTime("UTC").toInstant() },
     ];
-    history.notified("SYSTEM_NOTICE", ["user-1"], ctx.today);
+    history.notified("SYSTEM_NOTICE", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -167,7 +167,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
 
   it("대상이 없으면 발송하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

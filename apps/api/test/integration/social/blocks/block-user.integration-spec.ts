@@ -84,8 +84,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     otherId = other.id;
     otherTag = other.userTag;
 
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const mutationLock = new PostgresMutationLockAdapter(txHost);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const mutationLock = new PostgresMutationLockAdapter(transactionHost);
     const cache: FriendshipCachePort = {
       getMutualFriend: async () => undefined,
       setMutualFriend: async () => {},
@@ -101,13 +101,13 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       async notifyFirstFriendMilestone() {},
     };
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
-    const friendshipRepository = new DrizzleFriendshipRepository(txHost);
-    const profileReader = new DrizzleFriendProfileReader(txHost);
-    friendSearchReader = new DrizzleFriendSearchReader(txHost);
-    const blockRepository = new DrizzleUserBlockRepository(txHost);
-    blockReader = new DrizzleUserBlockReader(txHost);
-    nudgeReader = new DrizzleNudgeReader(txHost);
-    cheerReader = new DrizzleCheerReader(txHost);
+    const friendshipRepository = new DrizzleFriendshipRepository(transactionHost);
+    const profileReader = new DrizzleFriendProfileReader(transactionHost);
+    friendSearchReader = new DrizzleFriendSearchReader(transactionHost);
+    const blockRepository = new DrizzleUserBlockRepository(transactionHost);
+    blockReader = new DrizzleUserBlockReader(transactionHost);
+    nudgeReader = new DrizzleNudgeReader(transactionHost);
+    cheerReader = new DrizzleCheerReader(transactionHost);
     const clock = new DateClock();
     const notifyFirstFriendMilestone = new NotifyFirstFriendMilestoneUseCase({
       friendshipRepository,
@@ -135,7 +135,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       unitOfWork: uow,
       mutationLock,
       friendshipRepository,
-      friendReader: new DrizzleFriendReader(txHost),
+      friendReader: new DrizzleFriendReader(transactionHost),
       profileReader,
       cache,
       notifier,
@@ -149,8 +149,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       friendshipRepository,
       profileReader,
       limitReader: {
-        readLimitInTx: async () => null,
-        readFeatureQuotaInTx: async () => {
+        readLimitInTransaction: async () => null,
+        readFeatureQuotaInTransaction: async () => {
           throw new Error("친구 한도가 없으면 한도 오류 featureQuota를 읽지 않는다");
         },
       },
@@ -185,8 +185,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
     const pairKey = FriendLockKeys.pair(UserId.reconstitute(meId), UserId.reconstitute(otherId));
-    const holding = client.transaction(async (tx) => {
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))`);
+    const holding = client.transaction(async (transaction) => {
+      await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))`);
       acquired.resolve();
       await released.promise;
     });

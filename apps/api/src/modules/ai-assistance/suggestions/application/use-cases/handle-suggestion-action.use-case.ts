@@ -54,7 +54,7 @@ export interface SuggestionActionResult {
 interface HandleSuggestionActionDependencies {
   readonly repository: Pick<SuggestionRepositoryPort, "findByIdAndUserId" | "save">;
   readonly todoCreator: Pick<StagedTodoCreatorPort, "stage">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
@@ -159,7 +159,7 @@ export class HandleSuggestionActionUseCase {
 
   async #enforcePremium(userId: string): Promise<void> {
     if (
-      !(await this.#dependencies.entitlementReader.canInTx(
+      !(await this.#dependencies.entitlementReader.canInTransaction(
         UserId.reconstitute(userId),
         "AI_SUGGESTION",
       ))

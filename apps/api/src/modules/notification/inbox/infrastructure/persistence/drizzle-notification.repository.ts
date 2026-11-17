@@ -49,14 +49,14 @@ function toNotificationInsert(data: CreateNotificationData): NotificationInsert 
 
 @Injectable()
 export class DrizzleNotificationRepository implements NotificationRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findById(notificationId: NotificationId): Promise<Notification | null> {

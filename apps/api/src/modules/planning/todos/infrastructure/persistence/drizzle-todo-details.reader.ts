@@ -13,14 +13,14 @@ import { toFriendTodoReadModel } from "./todo-details-row.mapper.js";
 
 @Injectable()
 export class DrizzleTodoDetailsReader implements TodoDetailsReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async findAccess(todoId: TodoId): Promise<TodoAccessView | null> {
-    const row = await this.#txHost.tx.query.todo.findFirst({
+    const row = await this.#transactionHost.tx.query.todo.findFirst({
       columns: { userId: true, visibility: true },
       where: { id: todoId.value },
     });
@@ -28,7 +28,7 @@ export class DrizzleTodoDetailsReader implements TodoDetailsReaderPort {
   }
 
   async findDetails(todoId: TodoId): Promise<TodoDetailsView | null> {
-    const row = await this.#txHost.tx.query.todo.findFirst({
+    const row = await this.#transactionHost.tx.query.todo.findFirst({
       where: { id: todoId.value },
       with: {
         category: true,

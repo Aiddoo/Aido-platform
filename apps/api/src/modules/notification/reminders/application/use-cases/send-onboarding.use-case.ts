@@ -37,8 +37,8 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
     const cutoffDate = utcStartOf(today.subtract({ days: ONBOARDING_MAX_DAY }));
 
     // 가입 0~7일 + 해당 timezone 유저 조회

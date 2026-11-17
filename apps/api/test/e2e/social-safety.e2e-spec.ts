@@ -19,32 +19,32 @@ import {
 } from "./helpers/index.js";
 
 describe("사용자 차단·신고 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let me: VerifiedUser;
   let other: VerifiedUser;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    me = await ctx.helpers.createVerifiedUser("block-me@example.com", "Test1234!");
-    other = await ctx.helpers.createVerifiedUser("block-other@example.com", "Test1234!");
+    await testContext.reset();
+    me = await testContext.helpers.createVerifiedUser("block-me@example.com", "Test1234!");
+    other = await testContext.helpers.createVerifiedUser("block-other@example.com", "Test1234!");
   });
 
   function server() {
-    return ctx.app.getHttpServer();
+    return testContext.app.getHttpServer();
   }
 
   describe("차단", () => {
     it("친구를 차단하면 친구 목록에서 사라지고 차단 목록에 보인다", async () => {
       // Given
-      await ctx.helpers.createFriendship(me, other);
+      await testContext.helpers.createFriendship(me, other);
 
       // When
       const blocked = await request(server())
@@ -161,7 +161,7 @@ describe("사용자 차단·신고 E2E", () => {
       // Then
       expect(first.body.data.report).toMatchObject({ status: "OPEN" });
       expect(repeated.body.data.report.id).toBe(first.body.data.report.id);
-      expect(ctx.fakeEmailService.getSentUserReports()).toEqual([
+      expect(testContext.fakeEmailService.getSentUserReports()).toEqual([
         expect.objectContaining({
           data: expect.objectContaining({
             reportId: first.body.data.report.id,
@@ -182,7 +182,7 @@ describe("사용자 차단·신고 E2E", () => {
 
       // Then
       expect(response.status).toBe(400);
-      expect(ctx.fakeEmailService.getSentUserReports()).toEqual([]);
+      expect(testContext.fakeEmailService.getSentUserReports()).toEqual([]);
     });
 
     it("댓글 ID 형식이 아니면 REPORT_2253으로 거부한다", async () => {
@@ -216,13 +216,16 @@ describe("사용자 차단·신고 E2E", () => {
   });
   describe("운영자 신고 처리", () => {
     async function createAdmin() {
-      const admin = await ctx.helpers.createVerifiedUser("report-admin@example.com", "Test1234!");
-      await ctx.module
+      const admin = await testContext.helpers.createVerifiedUser(
+        "report-admin@example.com",
+        "Test1234!",
+      );
+      await testContext.module
         .get<Database>(DRIZZLE)
         .update(userTable)
         .set({ role: "ADMIN" })
         .where(eq(userTable.id, admin.userId));
-      const login = await ctx.helpers.loginUser("report-admin@example.com", "Test1234!");
+      const login = await testContext.helpers.loginUser("report-admin@example.com", "Test1234!");
       return { ...admin, accessToken: login.accessToken };
     }
 
@@ -260,7 +263,7 @@ describe("사용자 차단·신고 E2E", () => {
         resolutionNote: "광고 계정이라 이용을 제한했습니다.",
       });
       expect(repeated.body.data.report).toEqual(resolved.body.data.report);
-      expect(ctx.fakeEmailService.getSentUserReports()).toEqual([
+      expect(testContext.fakeEmailService.getSentUserReports()).toEqual([
         expect.objectContaining({
           data: expect.objectContaining({
             resolutionEndpoint: `POST /v1/admin/reports/${reportId}/resolution`,

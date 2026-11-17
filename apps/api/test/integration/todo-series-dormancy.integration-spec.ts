@@ -49,7 +49,7 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
     throw new Error("휴면 판정은 can을 부르지 않는다");
   }
 
-  async canInTx(): Promise<boolean> {
+  async canInTransaction(): Promise<boolean> {
     throw new Error("휴면 판정은 canInTx를 부르지 않는다");
   }
 
@@ -57,11 +57,13 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
     throw new Error("휴면 판정은 getFeatureLimit을 부르지 않는다");
   }
 
-  async getFeatureLimitInTx(): Promise<number | null> {
+  async getFeatureLimitInTransaction(): Promise<number | null> {
     throw new Error("휴면 판정은 getFeatureLimitInTx를 부르지 않는다");
   }
 
-  async getFeatureQuotaInTx(): ReturnType<EntitlementReaderPort["getFeatureQuotaInTx"]> {
+  async getFeatureQuotaInTransaction(): ReturnType<
+    EntitlementReaderPort["getFeatureQuotaInTransaction"]
+  > {
     throw new Error("휴면 판정은 getFeatureQuotaInTx를 부르지 않는다");
   }
 }
@@ -135,10 +137,10 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   }
 
   function dueRunner() {
-    const todoRepository = new DrizzleTodoRepository(fixture.txHost, new DateClock());
+    const todoRepository = new DrizzleTodoRepository(fixture.transactionHost, new DateClock());
     return new MaterializeTodoSeriesUseCase({
       clock: new DateClock(),
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()),
       materializer: new MaterializeTodoOccurrencesUseCase({
         todoRepository,
         todoReminder: new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
@@ -152,7 +154,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         logger: new Logger("DormancyIntegration"),
       }),
       unitOfWork: fixture.uow,
-      mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
+      mutationLock: new PostgresMutationLockAdapter(fixture.transactionHost),
     });
   }
 
@@ -166,7 +168,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   function seriesOwner() {
     return new TodoSeriesOwnerAdapter(
-      new DrizzleUserRepository(fixture.txHost, new DateClock()),
+      new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
       entitlements(),
     );
   }
@@ -175,7 +177,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   function catchUp() {
     return new CatchUpTodoSeriesUseCase({
       clock: new DateClock(),
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
       logger: new Logger("DormancyIntegration"),
@@ -185,7 +187,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   function job() {
     return new MaterializeDueTodoSeriesUseCase({
       clock: new DateClock(),
-      seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()),
       seriesOwner: seriesOwner(),
       dueRunner: dueRunner(),
       alert: new RecordingOperationalAlert(),
@@ -218,7 +220,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       checklistTemplate: [{ title: "항목" }],
       now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
     });
-    await new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).insert(series);
+    await new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()).insert(series);
     await client
       .update(todoSeries)
       .set({
@@ -475,8 +477,8 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const id = await seedStaleSeries();
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
-      const holder = client.transaction(async (tx) => {
-        await tx.execute(sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${id} FOR UPDATE`);
+      const holder = client.transaction(async (transaction) => {
+        await transaction.execute(sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${id} FOR UPDATE`);
         held.resolve();
         await release.promise;
       });
@@ -523,9 +525,9 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         owner: { userId, categoryId: goneCategory.id },
       });
       const aliveId = await seedStaleSeries();
-      await client.transaction(async (tx) => {
-        await tx.execute(sql`SET LOCAL session_replication_role = replica`);
-        await tx.delete(todoCategory).where(eq(todoCategory.id, goneCategory.id));
+      await client.transaction(async (transaction) => {
+        await transaction.execute(sql`SET LOCAL session_replication_role = replica`);
+        await transaction.delete(todoCategory).where(eq(todoCategory.id, goneCategory.id));
       });
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
@@ -547,7 +549,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const id = await seedStaleSeries();
       const broken = new CatchUpTodoSeriesUseCase({
         clock: new DateClock(),
-        seriesRepository: new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()),
+        seriesRepository: new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()),
         seriesOwner: seriesOwner(),
         dueRunner: {
           execute: async () => {
@@ -588,7 +590,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   describe("리마인더 발송 시점의 휴면", () => {
     function dormancy() {
       return new TodoSeriesOwnerDormancyAdapter(
-        new DrizzleUserRepository(fixture.txHost, new DateClock()),
+        new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
         entitlements(),
         new DateClock(),
       );

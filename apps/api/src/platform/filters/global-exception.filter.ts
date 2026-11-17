@@ -97,9 +97,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const httpContext = host.switchToHttp();
+    const response = httpContext.getResponse<Response>();
+    const request = httpContext.getRequest<Request>();
     const { statusCode, errorResponse } = this.#toResponse(exception);
 
     const userId = readRequestUserId(request) ?? "anonymous";

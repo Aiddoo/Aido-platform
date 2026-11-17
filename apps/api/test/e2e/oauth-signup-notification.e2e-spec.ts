@@ -17,11 +17,11 @@ const APP_HEADERS = {
 const BROWSER_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 27_1 like Mac OS X) Safari/604.1";
 
 describe("소셜 가입 관리자 알림 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const notifier = new StubAuthRegistrationNotifier();
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AuthRegistrationNotifierPort).useValue(notifier),
       additionalResetters: [
@@ -33,28 +33,28 @@ describe("소셜 가입 관리자 알림 E2E", () => {
   }, 60_000);
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   async function finishWebCallback(providerAccountId: string, state: string): Promise<string> {
     const authorizationCode = `${providerAccountId}-code`;
     const token = `${providerAccountId}-token`;
-    ctx.fakeOAuthProviderRegistry.setExchangeToken("KAKAO", authorizationCode, token);
-    ctx.fakeOAuthTokenVerifierService.setCustomProfile("kakao", token, {
+    testContext.fakeOAuthProviderRegistry.setExchangeToken("KAKAO", authorizationCode, token);
+    testContext.fakeOAuthTokenVerifierService.setCustomProfile("kakao", token, {
       id: providerAccountId,
       email: `${providerAccountId}@test.com`,
       emailVerified: true,
       name: "웹 가입자",
     });
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .get("/v1/auth/kakao/start")
       .query({ state, redirect_uri: "aido://auth/callback" })
       .expect(302);
-    const callback = await request(ctx.app.getHttpServer())
+    const callback = await request(testContext.app.getHttpServer())
       .get("/v1/auth/kakao/web-callback")
       .set("User-Agent", BROWSER_USER_AGENT)
       .query({ code: authorizationCode, state })
@@ -67,12 +67,12 @@ describe("소셜 가입 관리자 알림 E2E", () => {
     const code = await finishWebCallback("kakao-signup", "signup-state");
     const notificationsAfterCallback = [...notifier.notifications];
     // When
-    const exchanged = await request(ctx.app.getHttpServer())
+    const exchanged = await request(testContext.app.getHttpServer())
       .post("/v1/auth/exchange")
       .set(APP_HEADERS)
       .send({ code })
       .expect(200);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post("/v1/auth/exchange")
       .set(APP_HEADERS)
       .send({ code })
@@ -100,7 +100,7 @@ describe("소셜 가입 관리자 알림 E2E", () => {
   it("기존 사용자의 웹 로그인은 교환해도 알림을 보내지 않는다", async () => {
     // Given
     const firstCode = await finishWebCallback("kakao-returning", "first-state");
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post("/v1/auth/exchange")
       .set(APP_HEADERS)
       .send({ code: firstCode })
@@ -108,7 +108,7 @@ describe("소셜 가입 관리자 알림 E2E", () => {
     notifier.notifications.length = 0;
     const secondCode = await finishWebCallback("kakao-returning", "second-state");
     // When
-    const exchanged = await request(ctx.app.getHttpServer())
+    const exchanged = await request(testContext.app.getHttpServer())
       .post("/v1/auth/exchange")
       .set(APP_HEADERS)
       .send({ code: secondCode })
@@ -120,14 +120,14 @@ describe("소셜 가입 관리자 알림 E2E", () => {
 
   it("앱이 직접 보내는 네이티브 콜백은 그 요청의 앱 헤더로 알림을 보낸다", async () => {
     // Given
-    ctx.fakeOAuthTokenVerifierService.setCustomProfile("google", "native-token", {
+    testContext.fakeOAuthTokenVerifierService.setCustomProfile("google", "native-token", {
       id: "google-native-signup",
       email: "google-native@test.com",
       emailVerified: true,
       name: "네이티브 가입자",
     });
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/auth/google/callback")
       .set(APP_HEADERS)
       .send({ idToken: "native-token" });

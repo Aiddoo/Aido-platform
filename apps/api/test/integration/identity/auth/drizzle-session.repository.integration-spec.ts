@@ -40,8 +40,8 @@ describe("DrizzleSessionRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleSessionRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleSessionRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleSessionRepository(transactionHost);
   }
 
   describeAuthSessionRepositoryContract(async () => createRepository());

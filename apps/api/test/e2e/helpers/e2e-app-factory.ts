@@ -325,13 +325,13 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   }
 }
 
-export async function destroyE2eApp(ctx: E2eTestContext): Promise<void> {
-  await ctx.closeTestResources();
+export async function destroyE2eApp(testContext: E2eTestContext): Promise<void> {
+  await testContext.closeTestResources();
 }
 
 export async function restartE2eAppPreservingDatabase(
-  ctx: E2eTestContext,
+  testContext: E2eTestContext,
 ): Promise<E2eTestContext> {
-  await ctx.closeApplicationResources();
-  return createE2eApp({ testDatabase: ctx.testDatabase });
+  await testContext.closeApplicationResources();
+  return createE2eApp({ testDatabase: testContext.testDatabase });
 }

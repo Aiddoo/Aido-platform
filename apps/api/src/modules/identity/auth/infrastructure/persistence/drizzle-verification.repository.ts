@@ -22,21 +22,21 @@ import { toAuthVerification, toVerificationRow } from "./auth-row.mapper.js";
 
 @Injectable()
 export class DrizzleVerificationRepository extends AuthVerificationRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   // incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다
   readonly #baseDb: Database;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(DRIZZLE) baseDb: Database,
   ) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#baseDb = baseDb;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async nextId(): Promise<VerificationId> {

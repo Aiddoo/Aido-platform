@@ -23,14 +23,14 @@ import type { NotificationType } from "../../domain/notification-type.constants.
 export class DrizzleNotificationReader
   implements NotificationInboxReaderPort, NotificationHistoryReaderPort
 {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]> {

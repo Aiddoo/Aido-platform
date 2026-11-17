@@ -12,33 +12,33 @@ export class FakeLogger {
     // 테스트에서는 컨텍스트 설정 생략
   }
 
-  trace(_message: string, ..._args: unknown[]): void {
+  trace(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 
-  debug(_message: string, ..._args: unknown[]): void {
+  debug(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 
-  info(_message: string, ..._args: unknown[]): void {
+  info(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 
-  warn(_message: string, ..._args: unknown[]): void {
+  warn(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 
-  error(_message: string, ..._args: unknown[]): void {
+  error(_message: string, ..._details: unknown[]): void {
     if (process.env.AIDO_TEST_LOG_ERRORS === "1") {
-      console.error(_message, ..._args);
+      console.error(_message, ..._details);
     }
   }
 
-  fatal(_message: string, ..._args: unknown[]): void {
+  fatal(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 
-  log(_message: string, ..._args: unknown[]): void {
+  log(_message: string, ..._details: unknown[]): void {
     // 테스트에서는 로그 출력 생략
   }
 

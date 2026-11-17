@@ -18,7 +18,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   let dedup: InMemorySchedulerDedup;
   let strategy: SendWinbackUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12 });
   const sent = () => publisher.published.map(({ data }) => data);
 
   beforeEach(() => {
@@ -39,7 +39,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("3~30일 미접속 구간으로 대상을 조회한다", async () => {
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     expect(reader.queries).toEqual([
@@ -69,7 +69,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
       ];
 
       // When
-      const result = await strategy.execute(ctx);
+      const result = await strategy.execute(timezoneContext);
 
       // Then
       expect(result).toEqual({ sent: 1 });
@@ -110,7 +110,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "fr" }, "user-1");
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createWinbackNotificationMessage({
@@ -138,7 +138,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     ]);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 2 });
@@ -156,7 +156,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     await dedup.recordWinbackStages([{ userId: "user-1", stage: "day7" }]);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -168,7 +168,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     reader.winbackUsers = [{ id: "user-1", lastActiveAt: null }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -180,10 +180,10 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     reader.winbackUsers = [
       { id: "user-1", lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z") },
     ];
-    history.notified("WINBACK", ["user-1"], ctx.today);
+    history.notified("WINBACK", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -192,7 +192,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
 
   it("대상이 없으면 발송하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

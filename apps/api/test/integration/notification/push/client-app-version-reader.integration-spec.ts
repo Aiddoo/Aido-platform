@@ -30,9 +30,9 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     const user = UserFixture.create();
     await client.insert(userTable).values({ ...user, status: "ACTIVE" });
     userId = user.id;
-    const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleClientAppVersionReader(txHost);
-    users = new DrizzleUserRepository(txHost, new DateClock());
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    reader = new DrizzleClientAppVersionReader(transactionHost);
+    users = new DrizzleUserRepository(transactionHost, new DateClock());
   });
 
   afterAll(async () => {

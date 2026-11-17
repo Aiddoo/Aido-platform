@@ -161,16 +161,16 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     const hours = trimmed.slice(0, -2).padStart(2, "0");
     const minutes = trimmed.slice(-2);
 
-    const hoursNum = Number(hours);
-    const minutesNum = Number(minutes);
+    const hourNumber = Number(hours);
+    const minuteNumber = Number(minutes);
 
     if (
-      Number.isNaN(hoursNum) ||
-      Number.isNaN(minutesNum) ||
-      hoursNum < 0 ||
-      hoursNum > 23 ||
-      minutesNum < 0 ||
-      minutesNum > 59
+      Number.isNaN(hourNumber) ||
+      Number.isNaN(minuteNumber) ||
+      hourNumber < 0 ||
+      hourNumber > 23 ||
+      minuteNumber < 0 ||
+      minuteNumber > 59
     ) {
       return null;
     }

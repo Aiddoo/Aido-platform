@@ -23,14 +23,14 @@ import type { InviterRewardTotal } from "../../domain/invite-reward.domain-servi
 
 @Injectable()
 export class DrizzleInviteRedemptionReader implements InviteRedemptionReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   #activeDayCount() {

@@ -65,12 +65,12 @@ async function measureLiveMemory(): Promise<NodeJS.MemoryUsage> {
 
 /** 주요 인증 경로(할 일 생성·목록·수정·삭제, 메모 목록, 권한 조회)를 사용자마다 돌려 정확히 total번 보낸다. */
 async function sendRepresentativeRequests(
-  ctx: E2eTestContext,
+  testContext: E2eTestContext,
   users: readonly VerifiedUser[],
   categoryIds: ReadonlyMap<string, number>,
   total: number,
 ): Promise<void> {
-  const server = ctx.app.getHttpServer();
+  const server = testContext.app.getHttpServer();
   let sent = 0;
   const claim = () => {
     if (sent >= total) {
@@ -129,15 +129,21 @@ it(
   { timeout: 600_000 },
   async () => {
     await preparePgBossSchema();
-    const ctx = await createE2eApp({ customizeBuilder: useRealJobQueue });
+    const testContext = await createE2eApp({ customizeBuilder: useRealJobQueue });
     try {
       // Given
       const users: VerifiedUser[] = [];
       const categoryIds = new Map<string, number>();
       for (let index = 0; index < USER_COUNT; index += 1) {
-        const user = await ctx.helpers.createVerifiedUser(`soak-${index}@example.com`, "Test1234!");
+        const user = await testContext.helpers.createVerifiedUser(
+          `soak-${index}@example.com`,
+          "Test1234!",
+        );
         users.push(user);
-        categoryIds.set(user.userId, await ctx.helpers.getDefaultCategoryId(user.accessToken));
+        categoryIds.set(
+          user.userId,
+          await testContext.helpers.getDefaultCategoryId(user.accessToken),
+        );
       }
       const userIdFor = (sequence: number): string => {
         const user = users[sequence % users.length];
@@ -146,8 +152,8 @@ it(
         }
         return user.userId;
       };
-      const database = ctx.testDatabase.getClient();
-      const jobQueue = ctx.app.get(JobQueuePort);
+      const database = testContext.testDatabase.getClient();
+      const jobQueue = testContext.app.get(JobQueuePort);
       let processedJobs = 0;
       await jobQueue.work(SOAK_QUEUE, async (jobs) => {
         for (const job of jobs) {
@@ -175,12 +181,12 @@ it(
         }
         expect(processedJobs).toBe(target);
       };
-      await sendRepresentativeRequests(ctx, users, categoryIds, WARM_UP.requests);
+      await sendRepresentativeRequests(testContext, users, categoryIds, WARM_UP.requests);
       await processJobs(WARM_UP.jobs);
       const baseline = await measureLiveMemory();
 
       // When
-      await sendRepresentativeRequests(ctx, users, categoryIds, SOAK.requests);
+      await sendRepresentativeRequests(testContext, users, categoryIds, SOAK.requests);
       await processJobs(SOAK.jobs);
       const after = await measureLiveMemory();
 
@@ -197,7 +203,7 @@ it(
       );
       expect(heapGrowth).toBeLessThan(HEAP_GROWTH_LIMIT_BYTES);
     } finally {
-      await destroyE2eApp(ctx);
+      await destroyE2eApp(testContext);
     }
   },
 );

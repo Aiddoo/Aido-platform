@@ -67,13 +67,13 @@ class FailableStagedTodoCreator extends StagedTodoCreatorAdapter {
 }
 
 describe("AI 제안 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
 
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
           .overrideProvider(AiGeneratorPort)
@@ -85,48 +85,48 @@ describe("AI 제안 E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   /** 프리미엄 사용자를 생성하고 토큰을 반환하는 헬퍼 */
   async function createPremiumUser(email: string, password: string) {
-    const user = await ctx.helpers.createVerifiedUser(email, password);
-    await ctx.testDatabase
+    const user = await testContext.helpers.createVerifiedUser(email, password);
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheStorePort);
+    const cacheService = testContext.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
 
   async function setSubscriptionStatus(userId: string, subscriptionStatus: "ACTIVE" | "EXPIRED") {
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ subscriptionStatus })
       .where(eq(userTable.id, userId));
-    await ctx.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(userId));
+    await testContext.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(userId));
   }
 
   async function seedRecentTodo(userId: string, accessToken: string) {
-    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
     const { id: _id, ...row } = TodoFixture.create({
       userId,
       categoryId,
       title: "책 읽기",
       startDate: todayUtc(),
     });
-    await ctx.testDatabase.getClient().insert(todo).values(row);
+    await testContext.testDatabase.getClient().insert(todo).values(row);
   }
 
   function analysisJobs() {
-    return ctx.module
+    return testContext.module
       .get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort)
       .jobsIn(AI_SUGGESTION_QUEUE);
   }
@@ -140,7 +140,7 @@ describe("AI 제안 E2E", () => {
       scheduledTime?: string | null;
     },
   ): Promise<number> {
-    const db = ctx.testDatabase.getClient();
+    const db = testContext.testDatabase.getClient();
     const [suggestion] = await db
       .insert(recurringSuggestion)
       .values({
@@ -169,7 +169,7 @@ describe("AI 제안 E2E", () => {
       const user = await createPremiumUser("ai-suggestion-list@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/suggestions")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -188,7 +188,7 @@ describe("AI 제안 E2E", () => {
       // Given
 
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/ai/suggestions");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/ai/suggestions");
 
       // Then
       expect(response.status).toBe(401);
@@ -199,11 +199,11 @@ describe("AI 제안 E2E", () => {
     it("200(accept): 제안 수락 시 ACCEPTED로 전이되고 반복 할 일이 생성된다", async () => {
       // Given
       const user = await createPremiumUser("ai-suggestion-accept@example.com", "Test1234!");
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
       const suggestionId = await seedPendingSuggestion(user.userId);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/ai/suggestions/${suggestionId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -219,9 +219,9 @@ describe("AI 제안 E2E", () => {
     it("403(accept): 옛 경로 상한까지 찬 사용자는 옛 앱이 아는 TODO_0813으로 거절한다", async () => {
       // Given
       const user = await createPremiumUser("ai-suggestion-cap@example.com", "Test1234!");
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
       const suggestionId = await seedPendingSuggestion(user.userId);
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .insert(todoSeries)
         .values(
@@ -243,7 +243,7 @@ describe("AI 제안 E2E", () => {
         );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/ai/suggestions/${suggestionId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -260,7 +260,7 @@ describe("AI 제안 E2E", () => {
       const suggestionId = await seedPendingSuggestion(user.userId);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/ai/suggestions/${suggestionId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -275,13 +275,13 @@ describe("AI 제안 E2E", () => {
     it("409: 이미 처리된 제안 재처리 시 에러를 반환해야 한다 (AI_1306)", async () => {
       // Given
       const user = await createPremiumUser("ai-suggestion-409@example.com", "Test1234!");
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
       const suggestionId = await seedPendingSuggestion(user.userId, {
         status: "ACCEPTED",
       });
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/ai/suggestions/${suggestionId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -298,7 +298,7 @@ describe("AI 제안 E2E", () => {
       const suggestionId = await seedPendingSuggestion(user.userId);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/ai/suggestions/${suggestionId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -314,7 +314,7 @@ describe("AI 제안 E2E", () => {
       const user = await createPremiumUser("ai-suggestion-404@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch("/v1/ai/suggestions/99999")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -329,7 +329,7 @@ describe("AI 제안 E2E", () => {
       // Given
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch("/v1/ai/suggestions/1")
         .send({ action: "dismiss" });
 
@@ -348,7 +348,7 @@ describe("AI 제안 E2E", () => {
       const responses = [];
       for (const _press of [1, 2]) {
         responses.push(
-          await request(ctx.app.getHttpServer())
+          await request(testContext.app.getHttpServer())
             .post("/v1/ai/suggestions/analyses")
             .set("Authorization", `Bearer ${user.accessToken}`),
         );
@@ -379,13 +379,13 @@ describe("AI 제안 E2E", () => {
 
     it("403: 무료 사용자는 AI_1309이고 job을 넣지 않는다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "ai-suggestion-request-free@example.com",
         "Test1234!",
       );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/suggestions/analyses")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -404,7 +404,7 @@ describe("AI 제안 E2E", () => {
       await seedRecentTodo(user.userId, user.accessToken);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/suggestions/analyses")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-App-Version", "1.16.0");
@@ -423,14 +423,14 @@ describe("AI 제안 E2E", () => {
     await setSubscriptionStatus(user.userId, "EXPIRED");
 
     // When
-    const expiredList = await request(ctx.app.getHttpServer())
+    const expiredList = await request(testContext.app.getHttpServer())
       .get("/v1/ai/suggestions")
       .set("Authorization", `Bearer ${user.accessToken}`);
-    const expiredRequest = await request(ctx.app.getHttpServer())
+    const expiredRequest = await request(testContext.app.getHttpServer())
       .post("/v1/ai/suggestions/analyses")
       .set("Authorization", `Bearer ${user.accessToken}`);
     await setSubscriptionStatus(user.userId, "ACTIVE");
-    const renewedList = await request(ctx.app.getHttpServer())
+    const renewedList = await request(testContext.app.getHttpServer())
       .get("/v1/ai/suggestions")
       .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -454,7 +454,7 @@ describe("AI 제안 E2E", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/ai/suggestions")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .set("X-Timezone", "Asia/Seoul");
@@ -468,16 +468,16 @@ describe("AI 제안 E2E", () => {
 
   it("비프리미엄 제안 조회·행동은 없는 ID보다 AI_1309를 우선한다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser(
+    const user = await testContext.helpers.createVerifiedUser(
       "ai-suggestion-free@example.com",
       "Test1234!",
     );
 
     // When
-    const list = await request(ctx.app.getHttpServer())
+    const list = await request(testContext.app.getHttpServer())
       .get("/v1/ai/suggestions")
       .set("Authorization", `Bearer ${user.accessToken}`);
-    const action = await request(ctx.app.getHttpServer())
+    const action = await request(testContext.app.getHttpServer())
       .patch("/v1/ai/suggestions/999999")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ action: "dismiss" });
@@ -496,7 +496,7 @@ describe("AI 제안 E2E", () => {
     const id = await seedPendingSuggestion(owner.userId);
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .patch(`/v1/ai/suggestions/${id}`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ action: "dismiss" });
@@ -504,7 +504,7 @@ describe("AI 제안 E2E", () => {
     // Then
     expect(response.status).toBe(404);
     expect(response.body.error.code).toBe("AI_1305");
-    const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
+    const row = await testContext.testDatabase.getClient().query.recurringSuggestion.findFirst({
       where: { id },
     });
     expect(row?.status).toBe("PENDING");
@@ -513,30 +513,30 @@ describe("AI 제안 E2E", () => {
   it("반복 할 일 생성 실패는 실제 HTTP 뒤에도 pending 행과 Todo 개수를 보존한다", async () => {
     // Given
     const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
-    const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+    const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
     const id = await seedPendingSuggestion(user.userId);
-    const creator = ctx.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
+    const creator = testContext.module.get<StagedTodoCreatorPort>(StagedTodoCreatorPort);
     if (!(creator instanceof FailableStagedTodoCreator)) {
       throw new Error("실패를 넣을 수 있는 할 일 생성기로 바꾸지 않았다");
     }
-    const before = await ctx.testDatabase
+    const before = await testContext.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
     creator.failNextStage(new Error("테스트 생성 실패"));
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .patch(`/v1/ai/suggestions/${id}`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ action: "accept", categoryId });
 
     // Then
     expect(response.status).toBe(500);
-    const row = await ctx.testDatabase.getClient().query.recurringSuggestion.findFirst({
+    const row = await testContext.testDatabase.getClient().query.recurringSuggestion.findFirst({
       where: { id },
     });
     expect(row?.status).toBe("PENDING");
-    const after = await ctx.testDatabase
+    const after = await testContext.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId: user.userId } });
     expect(after).toHaveLength(before.length);

@@ -14,14 +14,14 @@ import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader
 export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -32,12 +32,15 @@ export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
     return this.#entitlementReader.getFeatureLimit(userId, "CHEER");
   }
 
-  readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId, "CHEER");
+  readLimitInTransaction(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "CHEER");
   }
 
-  readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId, "CHEER", {
+  readFeatureQuotaInTransaction(
+    userId: UserId,
+    usage: DailySendQuotaUsage,
+  ): Promise<DailySendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTransaction(userId, "CHEER", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

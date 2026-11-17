@@ -24,23 +24,23 @@ import { toAuthAccountRecord, toIdentityAccounts } from "./auth-row.mapper.js";
 
 @Injectable()
 export class DrizzleAccountRepository extends AuthAccountRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #encryptionService: EncryptionService;
   readonly #clock: ClockPort;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     encryptionService: EncryptionService,
     clock: ClockPort,
   ) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#encryptionService = encryptionService;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findByUserIdAndProvider(

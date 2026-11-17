@@ -15,17 +15,17 @@ import { AdminUserDirectoryReaderPort } from "../../application/ports/admin-user
 
 @Injectable()
 export class DrizzleAdminUserDirectoryReader extends AdminUserDirectoryReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async listTargetUserIdsAfter(params: {

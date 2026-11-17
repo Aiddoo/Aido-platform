@@ -23,20 +23,20 @@ type OAuthStateRow = typeof oAuthState.$inferSelect;
 
 @Injectable()
 export class DrizzleOAuthStateRepository extends AuthOAuthStateRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #encryptionService: EncryptionService;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     encryptionService: EncryptionService,
   ) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#encryptionService = encryptionService;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async create(input: NewAuthOAuthState): Promise<void> {

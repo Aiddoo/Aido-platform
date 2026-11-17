@@ -51,11 +51,11 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepositories() {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      todoRepository: new DrizzleTodoRepository(txHost, new DateClock()),
-      seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
-      todoReadRepository: new DrizzleTodoReadRepository(txHost),
+      todoRepository: new DrizzleTodoRepository(transactionHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(transactionHost, new DateClock()),
+      todoReadRepository: new DrizzleTodoReadRepository(transactionHost),
     };
   }
 

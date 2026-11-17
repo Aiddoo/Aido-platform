@@ -61,11 +61,11 @@ interface GrowthSummaryRow {
  */
 @Injectable()
 export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   async getSummaryCounts(input: {
@@ -77,7 +77,7 @@ export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
     const cohortTo = input.cohortTo.toString();
     const asOfTimestamp = sql.param(input.asOf, user.createdAt);
 
-    const { rows } = await this.#txHost.tx.execute<GrowthSummaryRow>(sql`
+    const { rows } = await this.#transactionHost.tx.execute<GrowthSummaryRow>(sql`
       WITH measurement AS (
         SELECT (
           SELECT ${activity.firstSeenAt}

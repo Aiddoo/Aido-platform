@@ -10,14 +10,14 @@ import type { ClientAppVersionReaderPort } from "../../application/ports/client-
 /** 푸시 토큰에 남은 기기별 앱 버전 중 가장 높은 버전을 고른다. 형식이 틀린 버전은 무시한다 */
 @Injectable()
 export class DrizzleClientAppVersionReader implements ClientAppVersionReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async findLatestAppVersion(userId: UserId): Promise<string | null> {
-    const tokens = await this.#txHost.tx.query.pushToken.findMany({
+    const tokens = await this.#transactionHost.tx.query.pushToken.findMany({
       columns: { appVersion: true },
       where: { userId: userId.value, isActive: true, appVersion: { isNotNull: true } },
     });

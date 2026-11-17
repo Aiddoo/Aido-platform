@@ -20,7 +20,7 @@ export const externalSchema = z.object({
   REDIS_URL: z
     .string()
     .optional()
-    .refine((val) => !val || val.startsWith("redis"), {
+    .refine((value) => !value || value.startsWith("redis"), {
       error: "REDIS_URL must be a valid Redis URL (redis:// or rediss://)",
     }),
 
@@ -28,7 +28,7 @@ export const externalSchema = z.object({
   SENTRY_DSN: z
     .string()
     .optional()
-    .refine((val) => !val || val.startsWith("https://"), {
+    .refine((value) => !value || value.startsWith("https://"), {
       error: "SENTRY_DSN must be a valid HTTPS URL",
     }),
 

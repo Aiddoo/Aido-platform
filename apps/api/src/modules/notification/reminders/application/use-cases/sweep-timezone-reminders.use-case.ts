@@ -128,8 +128,12 @@ export class SweepTimezoneRemindersUseCase {
   async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
     try {
       const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
-      const ctx = timezoneContextAt([payload.timezone], local.toPlainDateTime(), payload.userId);
-      const { localHour, localMinute } = ctx;
+      const timezoneContext = timezoneContextAt(
+        [payload.timezone],
+        local.toPlainDateTime(),
+        payload.userId,
+      );
+      const { localHour, localMinute } = timezoneContext;
 
       const morningMinute = payload.morningReminderMinute ?? 0;
       if (
@@ -143,7 +147,7 @@ export class SweepTimezoneRemindersUseCase {
           localHour,
           localMinute,
         });
-        await this.#dependencies.morningReminder.execute(ctx);
+        await this.#dependencies.morningReminder.execute(timezoneContext);
       }
 
       const eveningMinute = payload.eveningReminderMinute ?? 0;
@@ -158,7 +162,7 @@ export class SweepTimezoneRemindersUseCase {
           localHour,
           localMinute,
         });
-        await this.#dependencies.eveningReminder.execute(ctx);
+        await this.#dependencies.eveningReminder.execute(timezoneContext);
       }
     } catch {
       this.#dependencies.logger.error({
@@ -179,12 +183,12 @@ export class SweepTimezoneRemindersUseCase {
         return;
       }
       const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
-      const ctx = {
+      const timezoneContext = {
         ...timezoneContextAt([payload.timezone], local.toPlainDateTime()),
         localHour: 0,
         localMinute: 0,
       };
-      await this.#dependencies.socialDigest.execute(ctx, payload.recipientUserIds);
+      await this.#dependencies.socialDigest.execute(timezoneContext, payload.recipientUserIds);
     } catch {
       this.#dependencies.logger.error({
         event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_DIGEST_FAILED,
@@ -196,7 +200,9 @@ export class SweepTimezoneRemindersUseCase {
 
   async #sweepMinute(minute: Temporal.Instant, timezones: readonly string[]): Promise<void> {
     const groups = groupTimezonesByLocalClock(minute, timezones);
-    const results = await Promise.allSettled(groups.map(async (ctx) => this.#sweepGroup(ctx)));
+    const results = await Promise.allSettled(
+      groups.map(async (timezoneContext) => this.#sweepGroup(timezoneContext)),
+    );
     results.forEach((result, index) => {
       if (result.status === "rejected") {
         this.#dependencies.logger.error({
@@ -208,14 +214,14 @@ export class SweepTimezoneRemindersUseCase {
     });
   }
 
-  async #sweepGroup(ctx: TimezoneContext): Promise<void> {
-    const { localHour, localMinute, dayOfWeek, today } = ctx;
+  async #sweepGroup(timezoneContext: TimezoneContext): Promise<void> {
+    const { localHour, localMinute, dayOfWeek, today } = timezoneContext;
 
-    await this.#dependencies.morningReminder.execute(ctx);
+    await this.#dependencies.morningReminder.execute(timezoneContext);
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, localHour, localMinute)) {
-      await this.#dependencies.onboarding.execute(ctx);
+      await this.#dependencies.onboarding.execute(timezoneContext);
     }
-    const eveningResult = await this.#dependencies.eveningReminder.execute(ctx);
+    const eveningResult = await this.#dependencies.eveningReminder.execute(timezoneContext);
 
     // 저녁 리마인더를 받은 사용자에게 90분 뒤 소셜 다이제스트를 보낸다. 큐 payload는 시간대 하나씩이다
     const recipientsByTimezone = groupBy(eveningResult.recipients, ({ timezone }) => timezone);
@@ -231,12 +237,12 @@ export class SweepTimezoneRemindersUseCase {
       today.day === FIRST_DAY_OF_MONTH &&
       isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, localHour, localMinute);
     if (isMonthlyReportTime) {
-      await this.#dependencies.monthlyReport.execute(ctx);
+      await this.#dependencies.monthlyReport.execute(timezoneContext);
     } else if (
       dayOfWeek === MONDAY &&
       isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_REPORT, localHour, localMinute)
     ) {
-      await this.#dependencies.weeklyReport.execute(ctx);
+      await this.#dependencies.weeklyReport.execute(timezoneContext);
     }
 
     // 월요일 11:30: 무료 사용자 주간 달성 요약 (전략 내부에서 구독 대상 분리)
@@ -244,24 +250,24 @@ export class SweepTimezoneRemindersUseCase {
       dayOfWeek === MONDAY &&
       isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT, localHour, localMinute)
     ) {
-      await this.#dependencies.weeklyAchievement.execute(ctx);
+      await this.#dependencies.weeklyAchievement.execute(timezoneContext);
     }
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)) {
-      await this.#dependencies.winback.execute(ctx);
+      await this.#dependencies.winback.execute(timezoneContext);
     }
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.NUDGE_SUGGEST, localHour, localMinute)) {
-      await this.#dependencies.nudgeSuggest.execute(ctx);
+      await this.#dependencies.nudgeSuggest.execute(timezoneContext);
     }
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.LUNCH_NUDGE, localHour, localMinute)) {
-      await this.#dependencies.lunchNudge.execute(ctx);
+      await this.#dependencies.lunchNudge.execute(timezoneContext);
     }
     // 야간 21:00 시작 전 마지막 넛지
     if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.STREAK_AT_RISK, localHour, localMinute)) {
-      await this.#dependencies.streakAtRisk.execute(ctx);
+      await this.#dependencies.streakAtRisk.execute(timezoneContext);
     }
     // 날씨 알림은 사용자가 고른 시:분을 전략 안에서 맞춘다
-    await this.#dependencies.weatherMorning.execute(ctx);
-    await this.#dependencies.weatherEvening.execute(ctx);
+    await this.#dependencies.weatherMorning.execute(timezoneContext);
+    await this.#dependencies.weatherEvening.execute(timezoneContext);
   }
 }
 

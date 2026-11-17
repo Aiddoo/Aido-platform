@@ -38,8 +38,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
     const weekAgo = utcStartOf(today.subtract({ days: 7 }));
     const twoDaysAgo = utcStartOf(today.subtract({ days: 2 }));
 

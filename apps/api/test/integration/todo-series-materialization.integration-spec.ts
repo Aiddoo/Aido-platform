@@ -83,19 +83,22 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     } = {},
   ) {
     const { scheduleReminders = async () => undefined, ...budget } = overrides;
-    const todoRepository = new DrizzleTodoRepository(fixture.txHost, new DateClock());
+    const todoRepository = new DrizzleTodoRepository(fixture.transactionHost, new DateClock());
     const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
       publishOccurrences: async (series) => {
         published.push(series.id.value);
       },
     };
-    const seriesRepository = new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock());
+    const seriesRepository = new DrizzleTodoSeriesRepository(
+      fixture.transactionHost,
+      new DateClock(),
+    );
     const entitlements = new StubCurrentUserAccess();
     return new MaterializeDueTodoSeriesUseCase({
       clock: new DateClock(),
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
-        new DrizzleUserRepository(fixture.txHost, new DateClock()),
+        new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
         entitlements,
       ),
       dueRunner: new MaterializeTodoSeriesUseCase({
@@ -108,7 +111,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
         }),
         effects,
         unitOfWork: fixture.uow,
-        mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
+        mutationLock: new PostgresMutationLockAdapter(fixture.transactionHost),
       }),
       alert: new RecordingOperationalAlert(),
       logger: new Logger("SeriesJobIntegration"),
@@ -133,7 +136,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       checklistTemplate: [{ title: "항목" }],
       now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
-    await new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).insert(series);
+    await new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()).insert(series);
     return series;
   }
 
@@ -224,8 +227,8 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
     await seedSeries(id);
     const held = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
-    const holder = client.transaction(async (tx) => {
-      await tx.execute(sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${id} FOR UPDATE`);
+    const holder = client.transaction(async (transaction) => {
+      await transaction.execute(sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${id} FOR UPDATE`);
       held.resolve();
       await release.promise;
     });

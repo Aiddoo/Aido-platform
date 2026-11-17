@@ -47,7 +47,7 @@ describe("DrizzleSuggestionAnalysisRunRepository (실제 PostgreSQL)", () => {
 
   function createRepository(): DrizzleSuggestionAnalysisRunRepository {
     return new DrizzleSuggestionAnalysisRunRepository(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
     );
   }
 

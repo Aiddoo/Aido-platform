@@ -32,8 +32,8 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today, tomorrow } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today, tomorrow } = timezoneContext;
 
     // 오늘 할일이 있지만 완료가 0개인 유저 조회
     const users = await this.#dependencies.reader.findLunchNudgeUsers({

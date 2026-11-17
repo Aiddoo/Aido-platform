@@ -65,8 +65,8 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.start();
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    jobQueue = new PgBossJobQueueAdapter(boss, transactionHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
       workerEnabled: true,
     });
@@ -78,9 +78,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       ),
     );
     publisher = new SwitchablePublisher();
-    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
-    const todoReadRepository = new DrizzleTodoReadRepository(txHost);
-    const mutationLock = new PostgresMutationLockAdapter(txHost);
+    const todoRepository = new DrizzleTodoRepository(transactionHost, new DateClock());
+    const todoReadRepository = new DrizzleTodoReadRepository(transactionHost);
+    const mutationLock = new PostgresMutationLockAdapter(transactionHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
     const applyTodoEvents = new ApplyTodoEventsUseCase({
       reminderScheduler: reminderAdapter,

@@ -20,5 +20,5 @@ export interface DailySendQuotaUsage {
 
 // 한도 오류 details에 그대로 싣는 서버 계산 featureQuota. 모양은 access가 소유한다
 export type DailySendFeatureQuota = Awaited<
-  ReturnType<EntitlementReaderPort["getFeatureQuotaInTx"]>
+  ReturnType<EntitlementReaderPort["getFeatureQuotaInTransaction"]>
 >;

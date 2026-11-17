@@ -3,7 +3,7 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type {
-  NotificationCopyArgs,
+  NotificationCopyValues,
   NotificationCopyText,
 } from "./notification-copy-catalog.messages.js";
 
@@ -34,21 +34,21 @@ function selectPluralForm(
 
 /**
  * 카탈로그 문구를 채운다. `I18nService.translate(key, { locale, args })`와 같은 결과를 낸다
- * (자리표시자 한 번 치환·인자 없는 자리표시자는 그대로·복수형은 `args.count`).
+ * (자리표시자 한 번 치환·인자 없는 자리표시자는 그대로·복수형은 `values.count`).
  * 인자 값은 다시 해석하지 않아 사용자가 쓴 `{}`도 그대로 남는다.
  */
 export function formatNotificationCopyText(
   message: NotificationCopyText,
-  args: NotificationCopyArgs,
+  values: NotificationCopyValues,
   locale: SupportedLocale,
 ): string {
   const text =
-    typeof message === "string" ? message : selectPluralForm(message, args.count, locale);
+    typeof message === "string" ? message : selectPluralForm(message, values.count, locale);
   return text.replace(PLACEHOLDER, (match: string, name: string | undefined) => {
     if (name == null) {
       return match.charAt(0);
     }
-    return Object.hasOwn(args, name) ? String(args[name]) : match;
+    return Object.hasOwn(values, name) ? String(values[name]) : match;
   });
 }
 

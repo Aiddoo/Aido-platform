@@ -4,24 +4,26 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("앱 HTTP 경계 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it("API는 /v1 아래에서만 성공 envelope로 응답한다", async () => {
     // When
-    const versioned = await request(ctx.app.getHttpServer()).get("/v1/invites/availability");
-    const unversioned = await request(ctx.app.getHttpServer()).get("/invites/availability");
+    const versioned = await request(testContext.app.getHttpServer()).get(
+      "/v1/invites/availability",
+    );
+    const unversioned = await request(testContext.app.getHttpServer()).get("/invites/availability");
 
     // Then
     expect(versioned.status).toBe(200);
@@ -38,7 +40,9 @@ describe("앱 HTTP 경계 E2E", () => {
     const tooLarge = { email: "body@test.com", password: "a".repeat(101 * 1024) };
 
     // When
-    const response = await request(ctx.app.getHttpServer()).post("/v1/auth/login").send(tooLarge);
+    const response = await request(testContext.app.getHttpServer())
+      .post("/v1/auth/login")
+      .send(tooLarge);
 
     // Then
     expect(response.status).toBe(413);
@@ -47,7 +51,7 @@ describe("앱 HTTP 경계 E2E", () => {
 
   it("CORS preflight가 X-Timezone 요청 헤더를 허용한다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .options("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
       .set("Access-Control-Request-Method", "GET")

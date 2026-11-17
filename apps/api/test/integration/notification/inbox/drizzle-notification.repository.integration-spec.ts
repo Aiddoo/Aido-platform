@@ -36,10 +36,10 @@ describe("DrizzleNotificationRepository·Reader (실제 PostgreSQL)", () => {
   });
 
   describeNotificationRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    const reader = new DrizzleNotificationReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    const reader = new DrizzleNotificationReader(transactionHost);
     return {
-      repository: new DrizzleNotificationRepository(txHost),
+      repository: new DrizzleNotificationRepository(transactionHost),
       inboxReader: reader,
       historyReader: reader,
     };

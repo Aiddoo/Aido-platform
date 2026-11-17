@@ -27,18 +27,18 @@ const ENQUEUE_BATCH_SIZE = 50;
 export class ReportGenerationScheduler implements OnModuleInit {
   readonly #logger = new Logger(ReportGenerationScheduler.name);
 
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #jobQueue: Pick<JobQueuePort, "registerSchedules" | "enqueue" | "enqueueMany">;
   readonly #processor: ReportGenerationProcessor;
   readonly #clock: ClockPort;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     jobQueue: JobQueuePort,
     processor: ReportGenerationProcessor,
     clock: ClockPort,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#jobQueue = jobQueue;
     this.#processor = processor;
     this.#clock = clock;
@@ -46,7 +46,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
 
   /** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */

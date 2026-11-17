@@ -201,7 +201,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         {
           provide: TransactionHost,
-          useValue: transaction.txHost,
+          useValue: transaction.transactionHost,
         },
         { provide: ClockPort, useClass: DateClock },
         { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },

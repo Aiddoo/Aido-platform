@@ -233,7 +233,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         },
         {
           provide: TransactionHost,
-          useValue: transaction.txHost,
+          useValue: transaction.transactionHost,
         },
         {
           provide: PushProviderPort,
@@ -247,7 +247,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         },
         {
           provide: MutationLockPort,
-          useValue: new PostgresMutationLockAdapter(transaction.txHost),
+          useValue: new PostgresMutationLockAdapter(transaction.transactionHost),
         },
         {
           provide: DedupProviderPort,

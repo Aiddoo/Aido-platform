@@ -32,7 +32,7 @@ const NEW_YORK = "America/New_York";
 const releasedListSchema = z.object({ items: z.array(releasedTodoSchema) });
 
 describe("떠 있는 시각 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let owner: Awaited<ReturnType<E2eTestContext["helpers"]["createVerifiedUser"]>>;
   let accessToken: string;
   let userId: string;
@@ -40,21 +40,21 @@ describe("떠 있는 시각 E2E", () => {
   const date = () => shiftDateKey(todayIn(SEOUL).toString(), 3);
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
   beforeEach(async () => {
-    await ctx.reset();
-    owner = await ctx.helpers.createVerifiedUser("floating@example.com", "Test1234!");
+    await testContext.reset();
+    owner = await testContext.helpers.createVerifiedUser("floating@example.com", "Test1234!");
     accessToken = owner.accessToken;
     userId = owner.userId;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   function rebaseJobQueue(): InMemoryJobQueue {
-    const jobQueue = ctx.module.get(JobQueuePort);
+    const jobQueue = testContext.module.get(JobQueuePort);
     if (!(jobQueue instanceof InMemoryJobQueue)) {
       throw new Error("E2E 앱은 InMemoryJobQueue를 쓴다");
     }
@@ -68,7 +68,7 @@ describe("떠 있는 시각 E2E", () => {
     body?: object,
     token = accessToken,
   ) {
-    const call = request(ctx.app.getHttpServer())
+    const call = request(testContext.app.getHttpServer())
       [method](path)
       .set("Authorization", `Bearer ${token}`);
     if (timezone != null) {
@@ -90,7 +90,7 @@ describe("떠 있는 시각 E2E", () => {
   }
 
   async function storeTimezone(timezone: string) {
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userPreference)
       .set({ timezone })
@@ -123,8 +123,11 @@ describe("떠 있는 시각 E2E", () => {
 
   it("친구 화면도 작성자의 벽시계를 그대로 보여 준다", async () => {
     // Given
-    const friend = await ctx.helpers.createVerifiedUser("floating-friend@example.com", "Test1234!");
-    await ctx.helpers.createFriendship(friend, owner);
+    const friend = await testContext.helpers.createVerifiedUser(
+      "floating-friend@example.com",
+      "Test1234!",
+    );
+    await testContext.helpers.createFriendship(friend, owner);
     await createTimed(SEOUL);
     // When
     const response = await send(
@@ -255,7 +258,7 @@ describe("떠 있는 시각 E2E", () => {
     };
     const rebaseTo = async (timezone: string) => {
       await storeTimezone(timezone);
-      await ctx.module.get(RebaseTodoTimezoneUseCase).execute({ userId });
+      await testContext.module.get(RebaseTodoTimezoneUseCase).execute({ userId });
     };
     // When
     await rebaseTo(NEW_YORK);
@@ -296,7 +299,7 @@ describe("떠 있는 시각 E2E", () => {
       toIsoString(wallClockInstant(date(), "10:00", "Europe/London")),
     );
     expect(jobQueue.jobsIn(TODO_TIMEZONE_REBASE_QUEUE)).toHaveLength(before);
-    const stored = await ctx.testDatabase
+    const stored = await testContext.testDatabase
       .getClient()
       .query.userPreference.findFirst({ where: { userId } });
     expect(stored?.timezone).toBe("Europe/London");
@@ -327,7 +330,7 @@ describe("떠 있는 시각 E2E", () => {
     expect(call?.payload).toEqual({ name: "rebase-todo-timezone", data: { userId } });
     expect(call?.options.startAfter?.epochMilliseconds).toBeGreaterThan(Date.now() - 60_000);
     await vi.waitFor(async () => {
-      const stored = await ctx.testDatabase
+      const stored = await testContext.testDatabase
         .getClient()
         .query.userPreference.findFirst({ where: { userId } });
       expect(stored?.timezone).toBe(NEW_YORK);
@@ -336,7 +339,7 @@ describe("떠 있는 시각 E2E", () => {
 
   it("옛 경로 상한 안에서는 30개를 넘어도 그대로 만들고 벽시계를 채운다", async () => {
     // Given
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .insert(todoSeries)
       .values(
@@ -368,7 +371,7 @@ describe("떠 있는 시각 E2E", () => {
     });
     // Then
     expect(response.status).toBe(201);
-    const rows = await ctx.testDatabase
+    const rows = await testContext.testDatabase
       .getClient()
       .query.todo.findMany({ where: { userId, seriesId: { isNotNull: true } } });
     expect(rows.length).toBeGreaterThan(0);
@@ -377,13 +380,13 @@ describe("떠 있는 시각 E2E", () => {
 });
 
 describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   it.each([
@@ -394,16 +397,19 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
     { name: "잘못된 헤더(저장값 서울)", header: "Mars/Phobos", zone: SEOUL },
   ])("서울에서 만든 뒤 $name: 종류마다 맞는 값이다", async ({ header, zone }) => {
     // Given
-    await ctx.reset();
-    const owner = await ctx.helpers.createVerifiedUser("table@example.com", "Test1234!");
-    const friend = await ctx.helpers.createVerifiedUser("table-friend@example.com", "Test1234!");
-    await ctx.helpers.createFriendship(friend, owner);
-    const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
+    await testContext.reset();
+    const owner = await testContext.helpers.createVerifiedUser("table@example.com", "Test1234!");
+    const friend = await testContext.helpers.createVerifiedUser(
+      "table-friend@example.com",
+      "Test1234!",
+    );
+    await testContext.helpers.createFriendship(friend, owner);
+    const categoryId = await testContext.helpers.getDefaultCategoryId(owner.accessToken);
     const today = todayIn(SEOUL).toString();
     const future = shiftDateKey(today, 5);
     const past = shiftDateKey(today, -5);
-    const client = ctx.testDatabase.getClient();
-    const server = ctx.app.getHttpServer();
+    const client = testContext.testDatabase.getClient();
+    const server = testContext.app.getHttpServer();
     const post = async (body: object) => {
       const response = await request(server)
         .post("/v1/todos")
@@ -443,7 +449,7 @@ describe("떠 있는 시각 표 (시간대 × 할 일 종류)", () => {
       .set({ timezone: zone })
       .where(eq(userPreference.userId, owner.userId));
     // When
-    await ctx.module.get(RebaseTodoTimezoneUseCase).execute({ userId: owner.userId });
+    await testContext.module.get(RebaseTodoTimezoneUseCase).execute({ userId: owner.userId });
     const ownerRows = await request(server)
       .get(`/v1/todos?startDate=${past}&endDate=${shiftDateKey(future, 3)}&size=50`)
       .set("Authorization", `Bearer ${owner.accessToken}`)

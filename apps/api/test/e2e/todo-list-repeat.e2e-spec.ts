@@ -30,27 +30,30 @@ function nextMonday(): string {
 }
 
 describe("할 일 응답의 반복 정보 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let accessToken: string;
   let categoryId: number;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("list-repeat@example.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser(
+      "list-repeat@example.com",
+      "Test1234!",
+    );
     accessToken = user.accessToken;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   function post(body: object) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -58,7 +61,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
   }
 
   function patch(id: number, body: object) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .patch(`/v1/todos/${id}`)
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -66,7 +69,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
   }
 
   async function list(query: object = {}) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -112,7 +115,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
     };
     // When
     const items = await list({ startDate, endDate: startDate });
-    const single = await request(ctx.app.getHttpServer())
+    const single = await request(testContext.app.getHttpServer())
       .get(`/v1/todos/${created.todo.id}`)
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
@@ -144,7 +147,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
   it("규칙이 없는 옛 묶음은 묶음 ID는 남고 repeat는 null이다", async () => {
     // Given
     const created = await createSeries("옛 묶음", { frequency: "DAILY", end: { type: "NEVER" } });
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .delete(todoSeries)
       .where(eq(todoSeries.id, created.series?.id ?? ""));
@@ -181,7 +184,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
     // Given
     await createSeries("출시 앱", { frequency: "DAILY", end: { type: "NEVER" } });
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
@@ -193,17 +196,17 @@ describe("할 일 응답의 반복 정보 E2E", () => {
 
   it("친구에게 보이는 목록에는 repeat와 occurrenceDate 키가 없다", async () => {
     // Given
-    const friend = await ctx.helpers.createVerifiedUser(
+    const friend = await testContext.helpers.createVerifiedUser(
       "list-repeat-friend@example.com",
       "Test1234!",
     );
-    const owner = await ctx.helpers.createVerifiedUser(
+    const owner = await testContext.helpers.createVerifiedUser(
       "list-repeat-owner@example.com",
       "Test1234!",
     );
-    await ctx.helpers.createFriendship(friend, owner);
-    const ownerCategoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
-    await request(ctx.app.getHttpServer())
+    await testContext.helpers.createFriendship(friend, owner);
+    const ownerCategoryId = await testContext.helpers.getDefaultCategoryId(owner.accessToken);
+    await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -215,7 +218,7 @@ describe("할 일 응답의 반복 정보 E2E", () => {
       })
       .expect(201);
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get(`/v1/todos/friends/${owner.userId}`)
       .set("Authorization", `Bearer ${friend.accessToken}`)
       .expect(200);

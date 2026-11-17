@@ -50,12 +50,12 @@ describe("DrizzlePushDeviceRepository·PushTokenRepository (실제 PostgreSQL)",
   });
 
   describePushDeviceRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzlePushDeviceRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzlePushDeviceRepository(transactionHost);
   });
 
   describePushTokenRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzlePushTokenRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzlePushTokenRepository(transactionHost);
   });
 });

@@ -12,6 +12,7 @@ const TRANSACTION_ACTIVE = Symbol("TEST_TRANSACTION_ACTIVE");
 
 class FakeTransactionHost {
   commitError: Error | undefined;
+  // oxlint-disable-next-line aido/no-abbreviation -- @nestjs-cls/transactional TransactionHost.tx 속성 이름을 따른다
   readonly tx = { execute: async () => [] };
 
   readonly #cls: ClsService;
@@ -54,14 +55,14 @@ function createDeferred(): Deferred {
 }
 
 describe("ClsUnitOfWork — commit 후 작업 등록", () => {
-  let txHost: FakeTransactionHost;
+  let transactionHost: FakeTransactionHost;
   let unitOfWork: ClsUnitOfWork;
   let registry: AfterCommitTaskRegistryPort;
 
   beforeEach(() => {
     const cls = new ClsService(new AsyncLocalStorage());
-    txHost = new FakeTransactionHost(cls);
-    unitOfWork = new ClsUnitOfWork(txHost, cls);
+    transactionHost = new FakeTransactionHost(cls);
+    unitOfWork = new ClsUnitOfWork(transactionHost, cls);
     registry = unitOfWork;
     vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
   });
@@ -102,7 +103,7 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   it("commit 자체가 실패해도 등록 작업을 실행하지 않는다", async () => {
     // Given
     const task = vi.fn().mockResolvedValue(undefined);
-    txHost.commitError = new Error("commit failed");
+    transactionHost.commitError = new Error("commit failed");
 
     // When
     const result = unitOfWork.run(async () => {
@@ -222,7 +223,7 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   });
 
   it("active transaction에 registry scope가 없으면 invariant 오류를 낸다", async () => {
-    await txHost.withTransaction(async () => {
+    await transactionHost.withTransaction(async () => {
       // When
       const register = () => registry.register(vi.fn().mockResolvedValue(undefined));
 

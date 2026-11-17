@@ -54,7 +54,7 @@ function memoTodo(title: string, overrides: Record<string, unknown> = {}) {
 }
 
 describe("AI E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
   let accessToken: string;
   let testUserId: string;
@@ -68,7 +68,7 @@ describe("AI E2E", () => {
    * 사용량 리셋 헬퍼
    */
   async function resetUsage(userId: string): Promise<void> {
-    const db = ctx.testDatabase.getClient();
+    const db = testContext.testDatabase.getClient();
     await db
       .update(user)
       .set({
@@ -82,7 +82,7 @@ describe("AI E2E", () => {
    * 사용량 설정 헬퍼
    */
   async function setUsage(userId: string, count: number): Promise<void> {
-    const db = ctx.testDatabase.getClient();
+    const db = testContext.testDatabase.getClient();
     await db
       .update(user)
       .set({
@@ -96,7 +96,7 @@ describe("AI E2E", () => {
    * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
    */
   async function setUsageWithResetAt(userId: string, count: number, resetAt: Date): Promise<void> {
-    const db = ctx.testDatabase.getClient();
+    const db = testContext.testDatabase.getClient();
     await db
       .update(user)
       .set({
@@ -109,7 +109,7 @@ describe("AI E2E", () => {
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
 
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
@@ -117,13 +117,13 @@ describe("AI E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
 
-    const user = await ctx.helpers.createVerifiedUser(testUser.email, testUser.password);
+    const user = await testContext.helpers.createVerifiedUser(testUser.email, testUser.password);
     accessToken = user.accessToken;
     testUserId = user.userId;
   });
@@ -146,7 +146,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -179,11 +179,11 @@ describe("AI E2E", () => {
         // Given
         fakeAiGenerator.setResponse({ title: "회의", date: onDate(2025, 1, 26) });
         // 남은 횟수 선검사(@RequireQuota)는 원장 read를 거치지 않아 확정 뒤 읽기만 실패시킨다
-        const ledger = ctx.module.get(QuotaLedgerPort);
+        const ledger = testContext.module.get(QuotaLedgerPort);
         vi.spyOn(ledger, "read").mockRejectedValueOnce(new TypeError("db down"));
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -204,7 +204,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -224,7 +224,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -247,7 +247,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -269,7 +269,7 @@ describe("AI E2E", () => {
 
         // When
         for (let i = 0; i < 3; i++) {
-          await request(ctx.app.getHttpServer())
+          await request(testContext.app.getHttpServer())
             .post("/v1/ai/parse-todo")
             .set("Authorization", `Bearer ${accessToken}`)
             .set("X-Timezone", "Asia/Seoul")
@@ -278,7 +278,7 @@ describe("AI E2E", () => {
         }
 
         // Then
-        const usageResponse = await request(ctx.app.getHttpServer())
+        const usageResponse = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
@@ -297,7 +297,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -337,7 +337,7 @@ describe("AI E2E", () => {
           fakeAiGenerator.setResponse(testCase.draft);
 
           // When
-          const response = await request(ctx.app.getHttpServer())
+          const response = await request(testContext.app.getHttpServer())
             .post("/v1/ai/parse-todo")
             .set("Authorization", `Bearer ${accessToken}`)
             .set("X-Timezone", "Asia/Seoul")
@@ -359,7 +359,7 @@ describe("AI E2E", () => {
         await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -386,7 +386,7 @@ describe("AI E2E", () => {
         await setUsageWithResetAt(testUserId, FREE_AI_LIMIT, previousMonthFirstDay);
 
         // When
-        const parseResponse = await request(ctx.app.getHttpServer())
+        const parseResponse = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -395,7 +395,7 @@ describe("AI E2E", () => {
         // Then
         expect(parseResponse.status).toBe(200);
 
-        const usageResponse = await request(ctx.app.getHttpServer())
+        const usageResponse = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
@@ -409,7 +409,7 @@ describe("AI E2E", () => {
         await setUsage(testUserId, 2);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
@@ -432,7 +432,7 @@ describe("AI E2E", () => {
 
         // When
         for (let i = 0; i < FREE_AI_LIMIT; i++) {
-          await request(ctx.app.getHttpServer())
+          await request(testContext.app.getHttpServer())
             .post("/v1/ai/parse-todo")
             .set("Authorization", `Bearer ${accessToken}`)
             .set("X-Timezone", "Asia/Seoul")
@@ -441,7 +441,7 @@ describe("AI E2E", () => {
         }
 
         // Then
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -456,7 +456,7 @@ describe("AI E2E", () => {
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .send({ text: "내일 회의" });
 
@@ -467,7 +467,7 @@ describe("AI E2E", () => {
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", "Bearer invalid-token")
           .send({ text: "내일 회의" });
@@ -481,7 +481,7 @@ describe("AI E2E", () => {
     describe("유효성 검증 에러", () => {
       it("빈 텍스트 요청 시 400 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ text: "" });
@@ -494,7 +494,7 @@ describe("AI E2E", () => {
 
       it("text 필드 누락 시 400 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({});
@@ -510,7 +510,7 @@ describe("AI E2E", () => {
         const longText = "가".repeat(501);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ text: longText });
@@ -528,7 +528,7 @@ describe("AI E2E", () => {
         fakeAiGenerator.setAvailable(false);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -545,11 +545,11 @@ describe("AI E2E", () => {
       it("환불이 저장되지 않으면 같은 코드만 주고 차감 없음 상세를 싣지 않는다", async () => {
         // Given
         fakeAiGenerator.setAvailable(false);
-        const ledger = ctx.module.get(QuotaLedgerPort);
+        const ledger = testContext.module.get(QuotaLedgerPort);
         vi.spyOn(ledger, "refund").mockResolvedValueOnce(false);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -566,7 +566,7 @@ describe("AI E2E", () => {
         fakeAiGenerator.setInvalidResponse(new Error("파싱 실패"));
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -591,7 +591,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -611,7 +611,7 @@ describe("AI E2E", () => {
     describe("성공 케이스", () => {
       it("사용량이 0인 경우", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
@@ -631,7 +631,7 @@ describe("AI E2E", () => {
         await setUsage(testUserId, 3);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
@@ -648,7 +648,7 @@ describe("AI E2E", () => {
         await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
@@ -662,7 +662,7 @@ describe("AI E2E", () => {
 
       it("리셋 시간이 ISO 8601 형식임", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
@@ -679,7 +679,7 @@ describe("AI E2E", () => {
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/ai/usage");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/ai/usage");
 
         // Then
         expect(response.status).toBe(401);
@@ -687,7 +687,7 @@ describe("AI E2E", () => {
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", "Bearer invalid-token");
 
@@ -706,7 +706,7 @@ describe("AI E2E", () => {
       });
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -728,7 +728,7 @@ describe("AI E2E", () => {
       });
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ text: "테스트" });
@@ -748,7 +748,7 @@ describe("AI E2E", () => {
       });
 
       // When
-      const initialUsage = await request(ctx.app.getHttpServer())
+      const initialUsage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -757,14 +757,14 @@ describe("AI E2E", () => {
       expect(initialUsage.body.data.data.used).toBe(0);
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
         .send({ text: "테스트 1" })
         .expect(200);
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -772,7 +772,7 @@ describe("AI E2E", () => {
         .expect(200);
 
       // Then
-      const finalUsage = await request(ctx.app.getHttpServer())
+      const finalUsage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -789,7 +789,7 @@ describe("AI E2E", () => {
       await setUsage(testUserId, FREE_AI_LIMIT);
 
       // When
-      const failedResponse = await request(ctx.app.getHttpServer())
+      const failedResponse = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -800,7 +800,7 @@ describe("AI E2E", () => {
 
       // When
       await resetUsage(testUserId);
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -828,7 +828,7 @@ describe("AI E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -855,7 +855,7 @@ describe("AI E2E", () => {
         fakeAiGenerator.setRawResponse({ todos: [memoTodo("할 일")] });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -872,13 +872,13 @@ describe("AI E2E", () => {
         await resetUsage(testUserId);
 
         // When
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
           .send({ content: "테스트", categoryId: 1 });
 
-        const usageResponse = await request(ctx.app.getHttpServer())
+        const usageResponse = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
 
@@ -890,7 +890,7 @@ describe("AI E2E", () => {
     describe("에러 케이스", () => {
       it("인증 없이 요청 시 401", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .send({ content: "테스트", categoryId: 1 });
 
@@ -900,7 +900,7 @@ describe("AI E2E", () => {
 
       it("빈 content 시 400", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ content: "", categoryId: 1 });
@@ -911,7 +911,7 @@ describe("AI E2E", () => {
 
       it("categoryId 누락 시 400", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ content: "테스트" });
@@ -925,7 +925,7 @@ describe("AI E2E", () => {
         await setUsage(testUserId, FREE_AI_LIMIT);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -951,11 +951,11 @@ describe("AI E2E", () => {
       fakeAiGenerator.setRawResponse(memo);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-memo")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ content: "발표 준비", categoryId: 1 });
-      const usage = await request(ctx.app.getHttpServer())
+      const usage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
 
@@ -977,7 +977,7 @@ describe("AI E2E", () => {
       fakeAiGenerator.setResponse({ title });
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-todo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("Accept-Language", locale)
@@ -987,7 +987,7 @@ describe("AI E2E", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.data.title).toBe(title);
       expect(fakeAiGenerator.getLastSystem()).toContain(locale === "en" ? "You are" : "너는");
-      const usage = await request(ctx.app.getHttpServer())
+      const usage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
       expect(usage.body.data.data.used).toBe(1);
@@ -1009,7 +1009,7 @@ describe("AI E2E", () => {
       fakeAiGenerator.setRawResponse(raw);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-memo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("Accept-Language", locale)
@@ -1019,7 +1019,7 @@ describe("AI E2E", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.data.todos).toHaveLength(2);
       expect(fakeAiGenerator.getCallCount()).toBe(1);
-      const usage = await request(ctx.app.getHttpServer())
+      const usage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
       expect(usage.body.data.data.used).toBe(1);
@@ -1039,7 +1039,7 @@ describe("AI E2E", () => {
       if (!item) {
         throw new Error("혼합 지시 회귀 fixture가 필요합니다");
       }
-      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
       const draft = createTodoDraftResponse({
         title: item.title[locale],
         date: { kind: "OFFSET_DAYS", amount: 1 },
@@ -1054,7 +1054,7 @@ describe("AI E2E", () => {
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post(`/v1/ai/${route}`)
           .set("Authorization", `Bearer ${accessToken}`)
           .set("Accept-Language", locale)
@@ -1085,7 +1085,7 @@ describe("AI E2E", () => {
         expect(fakeAiGenerator.getLastSystem()).toContain(
           '"time":{"hour":9,"minute":0,"meridiem":"AM","partOfDay":null,"relativeMinutes":null}',
         );
-        const usage = await request(ctx.app.getHttpServer())
+        const usage = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`);
         expect(usage.body.data.data.used).toBe(1);
@@ -1103,14 +1103,14 @@ describe("AI E2E", () => {
     "$input의 원문과 반환 분량을 보존하고 매일 반복·시간 null·quota 한 회를 유지한다",
     async ({ input, title }) => {
       // Given
-      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
       const dailyDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
       fakeAiGenerator.setResponse({ title, repeat: { pattern: "DAILY" } });
       vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
       try {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/ai/parse-todo")
           .set("Authorization", `Bearer ${accessToken}`)
           .set("Accept-Language", "ko")
@@ -1128,7 +1128,7 @@ describe("AI E2E", () => {
           categoryId,
         });
         expect(fakeAiGenerator.getLastPrompt()).toContain(JSON.stringify(input));
-        const usage = await request(ctx.app.getHttpServer())
+        const usage = await request(testContext.app.getHttpServer())
           .get("/v1/ai/usage")
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
@@ -1147,7 +1147,7 @@ describe("AI E2E", () => {
       fakeAiGenerator.setRawResponse({});
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/v1/ai/${route}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send(route === "parse-todo" ? { text: "회의" } : { content: "회의", categoryId: 1 });
@@ -1156,7 +1156,7 @@ describe("AI E2E", () => {
       expect(response.status).toBe(422);
       expect(response.body.error.code).toBe("AI_1302");
       expect(fakeAiGenerator.getCallCount()).toBe(1);
-      const usage = await request(ctx.app.getHttpServer())
+      const usage = await request(testContext.app.getHttpServer())
         .get("/v1/ai/usage")
         .set("Authorization", `Bearer ${accessToken}`);
       expect(usage.body.data.data.used).toBe(0);

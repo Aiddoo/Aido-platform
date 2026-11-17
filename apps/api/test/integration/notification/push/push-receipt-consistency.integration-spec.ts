@@ -68,9 +68,9 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       userTag: suffix.padEnd(8, "X").slice(0, 8),
     });
     await client.insert(userTable).values(user);
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const tokens = new DrizzlePushTokenRepository(txHost);
-    const receipts = new DrizzlePushReceiptRepository(txHost, new DateClock());
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const tokens = new DrizzlePushTokenRepository(transactionHost);
+    const receipts = new DrizzlePushReceiptRepository(transactionHost, new DateClock());
     const token = await tokens.registerPushToken({
       userId: UserId.reconstitute(user.id),
       token: `ExponentPushToken[${suffix}-old]`,
@@ -115,7 +115,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       attempt: requireRecord(attempt),
       tokens,
       receipts,
-      txHost,
+      transactionHost,
       uow,
       ticketId: `ticket-${suffix}`,
     };
@@ -402,9 +402,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       .values({ userId: f.user.id, type: "SYSTEM_NOTICE", title: "새 알림", body: "새 본문" })
       .returning();
     const notification = requireRecord(created);
-    const staging = new DrizzlePushDispatchStagingRepository(f.txHost, new DateClock());
-    const outbox = new DrizzlePushDeliveryOutboxRepository(f.txHost, new DateClock());
-    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(f.txHost, new DateClock());
+    const staging = new DrizzlePushDispatchStagingRepository(f.transactionHost, new DateClock());
+    const outbox = new DrizzlePushDeliveryOutboxRepository(f.transactionHost, new DateClock());
+    const lifecycle = new DrizzlePushDeliveryLifecycleRepository(
+      f.transactionHost,
+      new DateClock(),
+    );
     const staged = await f.uow.run(() =>
       staging.stage({
         notificationId: notification.id,
@@ -457,7 +460,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         async deactivateInvalidTokens(tokens, deactivatedAt) {
           if (failOnce) {
             failOnce = false;
-            await f.txHost.tx.insert(notificationTable).values({
+            await f.transactionHost.tx.insert(notificationTable).values({
               userId: "missing-receipt-user",
               type: "SYSTEM_NOTICE",
               title: "fixture",

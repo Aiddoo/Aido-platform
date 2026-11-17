@@ -10,31 +10,31 @@ import { releasedAppVersionResponseSchema } from "./fixtures/released-app-config
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("스토어 공개 버전 반영 (E2E)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({ env: { APP_VERSION_CHECK_ENABLED: "false" } });
+    testContext = await createE2eApp({ env: { APP_VERSION_CHECK_ENABLED: "false" } });
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   function server() {
-    return request(ctx.app.getHttpServer());
+    return request(testContext.app.getHttpServer());
   }
 
   async function createAdminAccessToken(): Promise<string> {
     const email = "app-release-admin@example.com";
     const password = "Test1234!";
-    const user = await ctx.helpers.createVerifiedUser(email, password);
-    const database = ctx.module.get<Database>(DRIZZLE);
+    const user = await testContext.helpers.createVerifiedUser(email, password);
+    const database = testContext.module.get<Database>(DRIZZLE);
     await database.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, user.userId));
-    return (await ctx.helpers.loginUser(email, password)).accessToken;
+    return (await testContext.helpers.loginUser(email, password)).accessToken;
   }
 
   it("관리자가 두 플랫폼을 반영하면 재시작 없이 공개 조회가 그 값을 출시 앱 모양으로 돌려준다", async () => {
@@ -75,7 +75,7 @@ describe("스토어 공개 버전 반영 (E2E)", () => {
 
   it("관리자가 아니면 403 ADMIN_1401, 로그인하지 않으면 401이고 값은 바뀌지 않는다", async () => {
     // Given
-    const regularUser = await ctx.helpers.createVerifiedUser(
+    const regularUser = await testContext.helpers.createVerifiedUser(
       "app-release-user@example.com",
       "Test1234!",
     );

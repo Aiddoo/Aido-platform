@@ -4,7 +4,7 @@
  * 전체 결과를 메모리에 적재하지 않고 `id > lastId` 패턴으로
  * 페이지 단위 반복 처리합니다.
  */
-export async function forEachBatch<T extends { id: string }>(opts: {
+export async function forEachBatch<T extends { id: string }>(options: {
   fetchPage: (cursor: string | undefined, take: number) => PromiseLike<T[]>;
   batchSize: number;
   onBatch: (batch: T[]) => Promise<void>;
@@ -12,12 +12,12 @@ export async function forEachBatch<T extends { id: string }>(opts: {
   let cursor: string | undefined;
   // while (true) 와 동일 for(;;)
   for (;;) {
-    const page = await opts.fetchPage(cursor, opts.batchSize);
+    const page = await options.fetchPage(cursor, options.batchSize);
     if (page.length === 0) {
       break;
     }
-    await opts.onBatch(page);
-    if (page.length < opts.batchSize) {
+    await options.onBatch(page);
+    if (page.length < options.batchSize) {
       break;
     }
     const lastItem = page.at(-1);

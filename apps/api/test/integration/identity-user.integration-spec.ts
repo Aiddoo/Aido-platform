@@ -28,7 +28,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
     repository = new DrizzleUserRepository(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new DateClock(),
     );
   });
@@ -129,8 +129,8 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
 
   function givenPurge() {
     const transaction = createDatabaseTransactionFixture(client);
-    const userRepository = new DrizzleUserRepository(transaction.txHost, new DateClock());
-    const securityLogRepository = new DrizzleSecurityLogRepository(transaction.txHost);
+    const userRepository = new DrizzleUserRepository(transaction.transactionHost, new DateClock());
+    const securityLogRepository = new DrizzleSecurityLogRepository(transaction.transactionHost);
     const notificationCleanup = {
       cleanupInTransaction: async () => ({ affectedUserIds: [] }),
       settleAfterCommit: vi.fn(async () => {}),

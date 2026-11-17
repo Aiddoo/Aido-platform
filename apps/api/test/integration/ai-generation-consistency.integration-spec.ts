@@ -113,15 +113,15 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     memory = new InMemoryCacheStore({ defaultTtlMs: 600_000, maxItems: 20 });
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
-        accessStateReader: new DrizzleAccessStateReader(fixture.txHost),
+        accessStateReader: new DrizzleAccessStateReader(fixture.transactionHost),
         entitlementCache: new EntitlementCacheAdapter(memory),
         clock: new DateClock(),
       }),
     );
-    suggestions = new DrizzleSuggestionRepository(fixture.txHost);
-    activity = new DrizzleSuggestionActivityReader(fixture.txHost);
-    reports = new DrizzleAiReportRepository(fixture.txHost);
-    users = new DrizzleUserRepository(fixture.txHost, new DateClock());
+    suggestions = new DrizzleSuggestionRepository(fixture.transactionHost);
+    activity = new DrizzleSuggestionActivityReader(fixture.transactionHost);
+    reports = new DrizzleAiReportRepository(fixture.transactionHost);
+    users = new DrizzleUserRepository(fixture.transactionHost, new DateClock());
     userId = createEntityId();
     await client
       .insert(userTable)
@@ -165,10 +165,10 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   function generation(provider: FakeAiGenerator, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const clock = new DateClock();
-    const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.txHost);
+    const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.transactionHost);
     const scheduledAiConsent = new ScheduledAiConsentReader({
       consentReader: new GetAiDataSharingConsentUseCase({
-        consentRepository: new DrizzleUserConsentRepository(fixture.txHost),
+        consentRepository: new DrizzleUserConsentRepository(fixture.transactionHost),
       }),
       clientAppVersion: {
         findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner),
@@ -177,25 +177,25 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const contextBuilder = new SuggestionContextReader({
       activityReader: activity,
-      repeatingTitleReader: new DrizzleRepeatingTodoTitleReader(fixture.txHost),
+      repeatingTitleReader: new DrizzleRepeatingTodoTitleReader(fixture.transactionHost),
       clock,
     });
     const analyze = new AnalyzeAndCreateSuggestionsUseCase({
       repository,
-      runs: new DrizzleSuggestionAnalysisRunRepository(fixture.txHost),
+      runs: new DrizzleSuggestionAnalysisRunRepository(fixture.transactionHost),
       generator: provider,
       scheduledAiConsent,
       clock,
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
-      mutationLock: new PostgresMutationLockAdapter(fixture.txHost),
+      mutationLock: new PostgresMutationLockAdapter(fixture.transactionHost),
       userMutationLock,
       logger,
     });
     const report = new GenerateReportUseCase({
       aiReportRepository: reports,
-      todoStatsReader: new DrizzleTodoStatsReader(fixture.txHost),
+      todoStatsReader: new DrizzleTodoStatsReader(fixture.transactionHost),
       generator: provider,
       scheduledAiConsent,
       clock,
@@ -484,7 +484,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     });
     const provider = new FakeAiGenerator();
     provider.setRawResponse({ picks: [createSuggestionPick()] });
-    const flow = generation(provider, new FailingSuggestionRepository(fixture.txHost));
+    const flow = generation(provider, new FailingSuggestionRepository(fixture.transactionHost));
 
     // When
     const error = await flow.analyze.execute(analyzeCommand()).catch((failure: unknown) => failure);
@@ -517,8 +517,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     provider.setRawResponse({ picks: [createSuggestionPick()] });
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const changing = client.transaction(async (tx) => {
-      await tx
+    const changing = client.transaction(async (transaction) => {
+      await transaction
         .update(userTable)
         .set({ subscriptionStatus: "FREE" })
         .where(eq(userTable.id, userId));
@@ -597,7 +597,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         title: input.title,
         startDate: Temporal.PlainDate.from("2026-10-12"),
       });
-      await fixture.txHost.tx.insert(todo).values(row);
+      await fixture.transactionHost.tx.insert(todo).values(row);
       return {
         todos: [createTodoReadModelFixture({ id: 1, userId: input.userId.value })],
         series: null,
@@ -615,8 +615,8 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const suggestionId = await seedSuggestion();
     const entered = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = client.transaction(async (tx) => {
-      await tx.execute(
+    const holding = client.transaction(async (transaction) => {
+      await transaction.execute(
         sql`SELECT "id" FROM "RecurringSuggestion" WHERE "id"=${suggestionId} FOR UPDATE`,
       );
       entered.resolve();

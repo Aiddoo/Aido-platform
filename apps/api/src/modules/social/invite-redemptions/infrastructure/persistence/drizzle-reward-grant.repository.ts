@@ -23,14 +23,14 @@ const ERROR_CODE_MAX_LENGTH = 100;
 
 @Injectable()
 export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async addPending(grants: readonly RewardGrant[]): Promise<number> {

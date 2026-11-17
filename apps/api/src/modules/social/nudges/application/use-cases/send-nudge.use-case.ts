@@ -40,7 +40,10 @@ export interface SendNudgeDependencies {
     NudgeRepositoryPort,
     "nextId" | "countSentBetween" | "findLastSentForTodo" | "findTargetTodo" | "save"
   >;
-  readonly limitReader: Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
+  readonly limitReader: Pick<
+    NudgeLimitReaderPort,
+    "readLimitInTransaction" | "readFeatureQuotaInTransaction"
+  >;
   readonly mutualFriendReader: Pick<
     MutualFriendReaderPort,
     "isMutualFriend" | "getUserDisplayName"
@@ -100,11 +103,14 @@ export class SendNudgeUseCase {
         throw nudgeTodoNotActiveToday(todoId);
       }
 
-      const dailyLimit = await limitReader.readLimitInTx(senderId);
+      const dailyLimit = await limitReader.readLimitInTransaction(senderId);
       const used = await nudgeRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
         throw nudgeDailyLimitReached(
-          await limitReader.readFeatureQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+          await limitReader.readFeatureQuotaInTransaction(senderId, {
+            used,
+            resetsAt: window.endsAt,
+          }),
         );
       }
 

@@ -21,22 +21,22 @@ const enabledEnvironment = {
 };
 
 describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({ env: enabledEnvironment });
+    testContext = await createE2eApp({ env: enabledEnvironment });
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   function server() {
-    return request(ctx.app.getHttpServer());
+    return request(testContext.app.getHttpServer());
   }
 
   it("켜진 앱 버전 응답을 1.10.0 이후 출시 앱이 플랫폼별 값 그대로 읽는다", async () => {
@@ -56,9 +56,10 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
 
   it("꺼진 앱 버전 응답도 1.10.0 이후 출시 앱이 읽는다", async () => {
     // Given
-    vi.spyOn(ctx.module.get(AppReleaseRepositoryPort), "listLatestReleases").mockResolvedValueOnce(
-      [],
-    );
+    vi.spyOn(
+      testContext.module.get(AppReleaseRepositoryPort),
+      "listLatestReleases",
+    ).mockResolvedValueOnce([]);
 
     // When
     const response = await server().get("/v1/app-config/app-version").expect(200);
@@ -90,7 +91,7 @@ describe("출시 앱이 strict로 읽는 app-config 응답 (E2E)", () => {
   it("꺼진 기능 발견 응답도 1.8.0 이후 출시 앱이 읽는다", async () => {
     // Given
     vi.spyOn(
-      ctx.module.get(FeatureDiscoveryCampaignRepositoryPort),
+      testContext.module.get(FeatureDiscoveryCampaignRepositoryPort),
       "findActiveCampaign",
     ).mockReturnValueOnce(null);
 

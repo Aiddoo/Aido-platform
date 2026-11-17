@@ -233,7 +233,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(stored?.environment).toBe("SANDBOX");
     expect(receipt?.environment).toBe("SANDBOX");
     expect(events.at(-1)?.environment).toBe("SANDBOX");
-    expect(await entitlement.canInTx(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
+    expect(await entitlement.canInTransaction(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
   });
 
   it("A 만료→B 갱신→동일 A 재전송은 최신 프리미엄 권한을 유지해야 한다", async () => {

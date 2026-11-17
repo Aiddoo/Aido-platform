@@ -22,18 +22,18 @@ import { nowInstant, dayWindowIn } from "#test/fixtures/clock.fixture";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("찔러보기 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const password = "Test1234!";
@@ -50,8 +50,8 @@ describe("찔러보기 E2E", () => {
 
   /** receiver의 오늘 Todo 생성 헬퍼 */
   async function createReceiverTodo(receiverToken: string): Promise<number> {
-    const categoryId = await ctx.helpers.getDefaultCategoryId(receiverToken);
-    const todoResponse = await request(ctx.app.getHttpServer())
+    const categoryId = await testContext.helpers.getDefaultCategoryId(receiverToken);
+    const todoResponse = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${receiverToken}`)
       .send({ title: "테스트 할일", ...activeDateRange(), categoryId });
@@ -62,13 +62,19 @@ describe("찔러보기 E2E", () => {
     describe("POST /nudges - 콕 찌르기", () => {
       it("친구에게 콕 찌르기를 보내고, 쿨다운 기간 내 동일 Todo에 다시 콕 찌르기 시 429 에러 반환", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-sender@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-receiver@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-sender@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-receiver@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
         const receiverTodoId = await createReceiverTodo(receiver.accessToken);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId: receiverTodoId })
@@ -81,7 +87,7 @@ describe("찔러보기 E2E", () => {
         expect(response.body.data.nudge.receiverId).toBe(receiver.userId);
 
         // When
-        const cooldownResponse = await request(ctx.app.getHttpServer())
+        const cooldownResponse = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId: receiverTodoId })
@@ -94,18 +100,18 @@ describe("찔러보기 E2E", () => {
 
       it("하루 한도를 다 쓰면 429 NUDGE_1101과 차감 없음·X-Timezone 자정 기준 featureQuota를 준다", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser(
+        const sender = await testContext.helpers.createVerifiedUser(
           "nudge-limit-sender@test.com",
           password,
         );
-        const receiver = await ctx.helpers.createVerifiedUser(
+        const receiver = await testContext.helpers.createVerifiedUser(
           "nudge-limit-receiver@test.com",
           password,
         );
-        await ctx.helpers.createFriendship(sender, receiver);
+        await testContext.helpers.createFriendship(sender, receiver);
         for (let index = 0; index < PLAN_CATALOG.NUDGE.free; index += 1) {
           const todoId = await createReceiverTodo(receiver.accessToken);
-          await request(ctx.app.getHttpServer())
+          await request(testContext.app.getHttpServer())
             .post("/v1/nudges")
             .set("Authorization", `Bearer ${sender.accessToken}`)
             .set("X-Timezone", "Asia/Seoul")
@@ -116,7 +122,7 @@ describe("찔러보기 E2E", () => {
         const lastTodoId = await createReceiverTodo(receiver.accessToken);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .set("X-Timezone", "Asia/Seoul")
@@ -143,13 +149,19 @@ describe("찔러보기 E2E", () => {
 
       it("친구가 아닌 사용자에게 콕 찌르기 시 403 에러 반환", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-sender2@test.com", password);
-        const stranger = await ctx.helpers.createVerifiedUser("nudge-stranger@test.com", password);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-sender2@test.com",
+          password,
+        );
+        const stranger = await testContext.helpers.createVerifiedUser(
+          "nudge-stranger@test.com",
+          password,
+        );
 
         const strangerTodoId = await createReceiverTodo(stranger.accessToken);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: stranger.userId, todoId: strangerTodoId })
@@ -162,16 +174,19 @@ describe("찔러보기 E2E", () => {
 
       it("자기 자신에게 콕 찌르기 시 400 에러 반환", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-self@test.com", password);
-        const categoryId = await ctx.helpers.getDefaultCategoryId(sender.accessToken);
-        const todoResponse = await request(ctx.app.getHttpServer())
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-self@test.com",
+          password,
+        );
+        const categoryId = await testContext.helpers.getDefaultCategoryId(sender.accessToken);
+        const todoResponse = await request(testContext.app.getHttpServer())
           .post("/v1/todos")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ title: "Self Todo", ...activeDateRange(), categoryId });
         const selfTodoId = todoResponse.body.data?.todo?.id;
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: sender.userId, todoId: selfTodoId })
@@ -184,12 +199,18 @@ describe("찔러보기 E2E", () => {
 
       it("비공개 Todo에 콕 찌르기 시 404 에러 반환", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-private-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-private-r@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-private-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-private-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
 
-        const categoryId = await ctx.helpers.getDefaultCategoryId(receiver.accessToken);
-        const todoResponse = await request(ctx.app.getHttpServer())
+        const categoryId = await testContext.helpers.getDefaultCategoryId(receiver.accessToken);
+        const todoResponse = await request(testContext.app.getHttpServer())
           .post("/v1/todos")
           .set("Authorization", `Bearer ${receiver.accessToken}`)
           .send({
@@ -201,7 +222,7 @@ describe("찔러보기 E2E", () => {
         const privateTodoId = todoResponse.body.data?.todo?.id;
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId: privateTodoId })
@@ -214,18 +235,21 @@ describe("찔러보기 E2E", () => {
 
       it("오늘이 아닌 Todo에 콕 찌르기 시 400 에러 반환", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-yesterday-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser(
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-yesterday-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
           "nudge-yesterday-r@test.com",
           password,
         );
-        await ctx.helpers.createFriendship(sender, receiver);
+        await testContext.helpers.createFriendship(sender, receiver);
 
         const yesterday = new Date();
         yesterday.setUTCDate(yesterday.getUTCDate() - 1);
         const yesterdayDate = yesterday.toISOString().split("T")[0];
-        const categoryId = await ctx.helpers.getDefaultCategoryId(receiver.accessToken);
-        const todoResponse = await request(ctx.app.getHttpServer())
+        const categoryId = await testContext.helpers.getDefaultCategoryId(receiver.accessToken);
+        const todoResponse = await request(testContext.app.getHttpServer())
           .post("/v1/todos")
           .set("Authorization", `Bearer ${receiver.accessToken}`)
           .send({
@@ -236,7 +260,7 @@ describe("찔러보기 E2E", () => {
         const yesterdayTodoId = todoResponse.body.data?.todo?.id;
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId: yesterdayTodoId })
@@ -249,7 +273,7 @@ describe("찔러보기 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .send({ receiverId: "some-user-id", todoId: 1 });
 
@@ -263,18 +287,24 @@ describe("찔러보기 E2E", () => {
     describe("GET /nudges/received - 받은 콕 찌름 목록", () => {
       it("받은 콕 찌름 목록을 조회한다", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-list-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-list-r@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-list-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-list-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
         const todoId = await createReceiverTodo(receiver.accessToken);
 
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/nudges/received")
           .set("Authorization", `Bearer ${receiver.accessToken}`)
           .expect(200);
@@ -288,18 +318,24 @@ describe("찔러보기 E2E", () => {
 
       it("limit 파라미터로 조회 개수를 제한한다", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-limit-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-limit-r@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-limit-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-limit-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
         const todoId = await createReceiverTodo(receiver.accessToken);
 
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/nudges/received")
           .query({ limit: 1 })
           .set("Authorization", `Bearer ${receiver.accessToken}`)
@@ -312,7 +348,7 @@ describe("찔러보기 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/nudges/received");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/nudges/received");
 
         // Then
         expect(response.status).toBe(401);
@@ -322,18 +358,24 @@ describe("찔러보기 E2E", () => {
     describe("GET /nudges/sent - 보낸 콕 찌름 목록", () => {
       it("보낸 콕 찌름 목록을 조회한다", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-sent-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-sent-r@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-sent-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-sent-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
         const todoId = await createReceiverTodo(receiver.accessToken);
 
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/nudges/sent")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .expect(200);
@@ -350,10 +392,13 @@ describe("찔러보기 E2E", () => {
     describe("GET /nudges/limit - 일일 제한 정보 조회", () => {
       it("일일 제한 정보를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("nudge-lim-user@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser(
+          "nudge-lim-user@test.com",
+          password,
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/nudges/limit")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -366,7 +411,7 @@ describe("찔러보기 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/nudges/limit");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/nudges/limit");
 
         // Then
         expect(response.status).toBe(401);
@@ -376,12 +421,18 @@ describe("찔러보기 E2E", () => {
     describe("GET /nudges/cooldown/:userId - 쿨다운 상태 조회", () => {
       it("쿨다운 상태를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("nudge-cd-user@test.com", password);
-        const friend = await ctx.helpers.createVerifiedUser("nudge-cd-friend@test.com", password);
-        await ctx.helpers.createFriendship(user, friend);
+        const user = await testContext.helpers.createVerifiedUser(
+          "nudge-cd-user@test.com",
+          password,
+        );
+        const friend = await testContext.helpers.createVerifiedUser(
+          "nudge-cd-friend@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(user, friend);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get(`/v1/nudges/cooldown/${friend.userId}`)
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -399,13 +450,13 @@ describe("찔러보기 E2E", () => {
         "CUID가 아닌 userId(%s)는 400 SYS_0002를 반환한다",
         async (path) => {
           // Given
-          const user = await ctx.helpers.createVerifiedUser(
+          const user = await testContext.helpers.createVerifiedUser(
             `nudge-cd-invalid-${path.length}@test.com`,
             password,
           );
 
           // When
-          const response = await request(ctx.app.getHttpServer())
+          const response = await request(testContext.app.getHttpServer())
             .get(path)
             .set("Authorization", `Bearer ${user.accessToken}`)
             .expect(400);
@@ -417,7 +468,7 @@ describe("찔러보기 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get(
+        const response = await request(testContext.app.getHttpServer()).get(
           "/v1/nudges/cooldown/some-user-id",
         );
 
@@ -431,19 +482,25 @@ describe("찔러보기 E2E", () => {
     describe("PATCH /nudges/:id/read - 읽음 처리", () => {
       it("받은 콕 찌름을 읽음 처리한다", async () => {
         // Given
-        const sender = await ctx.helpers.createVerifiedUser("nudge-read-s@test.com", password);
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-read-r@test.com", password);
-        await ctx.helpers.createFriendship(sender, receiver);
+        const sender = await testContext.helpers.createVerifiedUser(
+          "nudge-read-s@test.com",
+          password,
+        );
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-read-r@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(sender, receiver);
         const todoId = await createReceiverTodo(receiver.accessToken);
 
-        const nudgeResponse = await request(ctx.app.getHttpServer())
+        const nudgeResponse = await request(testContext.app.getHttpServer())
           .post("/v1/nudges")
           .set("Authorization", `Bearer ${sender.accessToken}`)
           .send({ receiverId: receiver.userId, todoId });
         const nudgeId = nudgeResponse.body.data.nudge.id;
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch(`/v1/nudges/${nudgeId}/read`)
           .set("Authorization", `Bearer ${receiver.accessToken}`)
           .expect(200);
@@ -455,10 +512,13 @@ describe("찔러보기 E2E", () => {
 
       it("존재하지 않는 콕 찌름 읽음 처리 시 404 에러 반환", async () => {
         // Given
-        const receiver = await ctx.helpers.createVerifiedUser("nudge-read-404@test.com", password);
+        const receiver = await testContext.helpers.createVerifiedUser(
+          "nudge-read-404@test.com",
+          password,
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/nudges/99999/read")
           .set("Authorization", `Bearer ${receiver.accessToken}`)
           .expect(404);
@@ -470,7 +530,7 @@ describe("찔러보기 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).patch("/v1/nudges/1/read");
+        const response = await request(testContext.app.getHttpServer()).patch("/v1/nudges/1/read");
 
         // Then
         expect(response.status).toBe(401);

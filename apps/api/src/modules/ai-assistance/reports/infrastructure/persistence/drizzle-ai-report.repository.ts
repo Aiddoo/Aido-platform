@@ -18,15 +18,15 @@ import { toAiReport, toAiReportRow } from "./ai-report-row.mapper.js";
 /** 트랜잭션은 CLS로 전파된다. jsonb 칸의 파싱은 행 매퍼가 소유한다. */
 @Injectable()
 export class DrizzleAiReportRepository extends AiReportRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async nextId(): Promise<AiReportId> {

@@ -16,31 +16,31 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 
 // Passport를 걷어낸 뒤에도 배포 전에 로그인한 사용자가 로그아웃되지 않는지 본다
 describe("배포 전 발급 토큰 호환 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const password = "Test1234!";
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   // 보안 강화(iss·aud) 전 TokenService와 같은 claim·HS256·secret으로 서명하고 iss·aud는 싣지 않는다
   async function givenPreDeployTokens(email: string) {
-    await ctx.helpers.createVerifiedUser(email, password);
-    const login = await request(ctx.app.getHttpServer())
+    await testContext.helpers.createVerifiedUser(email, password);
+    const login = await request(testContext.app.getHttpServer())
       .post("/v1/auth/login")
       .send({ email, password })
       .expect(200);
-    const tokenIssuer = ctx.module.get(AuthTokenIssuerPort);
-    const jwt = ctx.module.get<ConfigType<typeof jwtConfig>>(jwtConfig.KEY);
-    const client = ctx.testDatabase.getClient();
+    const tokenIssuer = testContext.module.get(AuthTokenIssuerPort);
+    const jwt = testContext.module.get<ConfigType<typeof jwtConfig>>(jwtConfig.KEY);
+    const client = testContext.testDatabase.getClient();
     const session = requireRecord(
       await client.query.session.findFirst({
         where: { refreshTokenHash: tokenIssuer.hashRefreshToken(login.body.data.refreshToken) },
@@ -73,10 +73,10 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     const legacy = await givenPreDeployTokens("legacy-token@example.com");
 
     // When
-    const me = await request(ctx.app.getHttpServer())
+    const me = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${legacy.accessToken}`);
-    const refreshed = await request(ctx.app.getHttpServer())
+    const refreshed = await request(testContext.app.getHttpServer())
       .post("/v1/auth/refresh")
       .set("Authorization", `Bearer ${legacy.refreshToken}`);
 
@@ -86,7 +86,7 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     expect(me.status).toBe(200);
     expect(me.body.data.email).toBe("legacy-token@example.com");
     expect(refreshed.status).toBe(200);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${refreshed.body.data.accessToken}`)
       .expect(200);
@@ -95,11 +95,11 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
   it("grace가 지난 뒤 배포 전 refresh 토큰을 다시 쓰면 family 전체를 폐기하고 새 access도 막는다", async () => {
     // Given
     const legacy = await givenPreDeployTokens("legacy-reuse@example.com");
-    const refreshed = await request(ctx.app.getHttpServer())
+    const refreshed = await request(testContext.app.getHttpServer())
       .post("/v1/auth/refresh")
       .set("Authorization", `Bearer ${legacy.refreshToken}`)
       .expect(200);
-    const client = ctx.testDatabase.getClient();
+    const client = testContext.testDatabase.getClient();
     await client
       .update(sessionTable)
       .set({
@@ -110,10 +110,10 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
       .where(eq(sessionTable.id, legacy.sessionId));
 
     // When
-    const reused = await request(ctx.app.getHttpServer())
+    const reused = await request(testContext.app.getHttpServer())
       .post("/v1/auth/refresh")
       .set("Authorization", `Bearer ${legacy.refreshToken}`);
-    const denied = await request(ctx.app.getHttpServer())
+    const denied = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${refreshed.body.data.accessToken}`);
 
@@ -133,11 +133,11 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     const legacy = await givenPreDeployTokens("legacy-logout@example.com");
 
     // When
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post("/v1/auth/logout")
       .set("Authorization", `Bearer ${legacy.accessToken}`)
       .expect(200);
-    const denied = await request(ctx.app.getHttpServer())
+    const denied = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${legacy.accessToken}`);
 
@@ -151,7 +151,7 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     const legacy = await givenPreDeployTokens("legacy-wrong-type@example.com");
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/auth/refresh")
       .set("Authorization", `Bearer ${legacy.accessToken}`);
 

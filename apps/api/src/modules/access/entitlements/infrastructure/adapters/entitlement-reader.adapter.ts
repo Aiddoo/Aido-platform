@@ -39,7 +39,7 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
     return (await this.#featureEntitlement(userId, feature, "cached")).allowed;
   }
 
-  async canInTx(userId: UserId, feature: PlanFeature): Promise<boolean> {
+  async canInTransaction(userId: UserId, feature: PlanFeature): Promise<boolean> {
     return (await this.#featureEntitlement(userId, feature, "latest")).allowed;
   }
 
@@ -47,11 +47,14 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
     return (await this.#featureEntitlement(userId, feature, "cached")).limit;
   }
 
-  async getFeatureLimitInTx(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async getFeatureLimitInTransaction(
+    userId: UserId,
+    feature: PlanLimitFeatureKey,
+  ): Promise<number | null> {
     return (await this.#featureEntitlement(userId, feature, "latest")).limit;
   }
 
-  async getFeatureQuotaInTx(
+  async getFeatureQuotaInTransaction(
     userId: UserId,
     feature: UnmeteredLimitFeatureKey,
     usage: ReportedFeatureUsage,

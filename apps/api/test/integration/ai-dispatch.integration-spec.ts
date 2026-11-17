@@ -66,16 +66,16 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
   });
 
   function createSuggestionScheduler(): SuggestionAnalysisScheduler {
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     return new SuggestionAnalysisScheduler(
-      txHost,
+      transactionHost,
       queue,
       clock,
       new DispatchSuggestionAnalysesUseCase({
-        runs: new DrizzleSuggestionAnalysisRunRepository(txHost),
+        runs: new DrizzleSuggestionAnalysisRunRepository(transactionHost),
         enqueuer: new SuggestionAnalysisQueueAdapter(queue),
         unitOfWork: uow,
-        mutationLock: new PostgresMutationLockAdapter(txHost),
+        mutationLock: new PostgresMutationLockAdapter(transactionHost),
         clock,
       }),
     );
@@ -230,7 +230,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     function reportScheduler() {
       reportQueue = new InMemoryJobQueue();
       return new ReportGenerationScheduler(
-        createDatabaseTransactionFixture(client).txHost,
+        createDatabaseTransactionFixture(client).transactionHost,
         reportQueue,
         new ReportGenerationProcessor({ execute: async () => null }, new DateClock()),
         new DateClock(),

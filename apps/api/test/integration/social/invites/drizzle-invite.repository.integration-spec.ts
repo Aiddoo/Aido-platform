@@ -40,13 +40,13 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleInviteRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleInviteRepository(txHost, new DateClock());
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleInviteRepository(transactionHost, new DateClock());
   }
 
   function createReader(): DrizzleInviteReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleInviteReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleInviteReader(transactionHost);
   }
 
   describeInviteRepositoryContract(async () => ({

@@ -25,9 +25,9 @@ describe("DrizzleSubscriptionUserReader (실제 PostgreSQL)", () => {
   });
 
   describeSubscriptionUserReaderContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      reader: new DrizzleSubscriptionUserReader(txHost),
+      reader: new DrizzleSubscriptionUserReader(transactionHost),
       seedUser: async ({ id, email, name, appUserAlias }) => {
         seeded += 1;
         const { user: userRow, profile } = UserFixture.createWithProfile(

@@ -99,18 +99,18 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
 
   /** 후속 마이그레이션이 바꾼 칸을 당시 모양으로 돌린 뒤 이관과 후속 마이그레이션을 차례로 적용한다. */
   async function runDataMigration() {
-    await client.transaction(async (tx) => {
-      await tx.execute(
+    await client.transaction(async (transaction) => {
+      await transaction.execute(
         sql.raw(
           `ALTER TABLE "TodoSeries" DROP COLUMN "originSeriesId", ADD COLUMN "sortOrder" integer`,
         ),
       );
-      await tx.execute(sql.raw(`DROP INDEX "QuotaCharge_requestHash_createdAt_idx"`));
+      await transaction.execute(sql.raw(`DROP INDEX "QuotaCharge_requestHash_createdAt_idx"`));
       for (const statement of [
         ...readDataMigrationStatements(),
         ...readMigrationStatements("_todo_series_origin"),
       ]) {
-        await tx.execute(sql.raw(statement));
+        await transaction.execute(sql.raw(statement));
       }
     });
   }
@@ -520,7 +520,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
   describe("리포지토리", () => {
     function repository() {
       return new DrizzleTodoSeriesRepository(
-        createDatabaseTransactionFixture(client).txHost,
+        createDatabaseTransactionFixture(client).transactionHost,
         new DateClock(),
       );
     }
@@ -647,8 +647,8 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await repository().insert(
         plan(id, RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } })),
       );
-      const { txHost, uow } = createDatabaseTransactionFixture(client);
-      const locking = new DrizzleTodoSeriesRepository(txHost, new DateClock());
+      const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+      const locking = new DrizzleTodoSeriesRepository(transactionHost, new DateClock());
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
       const holder = uow.run(async () => {
@@ -661,7 +661,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         // When
         const fixture = createDatabaseTransactionFixture(client);
         const skipped = await fixture.uow.run(() =>
-          new DrizzleTodoSeriesRepository(fixture.txHost, new DateClock()).lockForUpdate(
+          new DrizzleTodoSeriesRepository(fixture.transactionHost, new DateClock()).lockForUpdate(
             TodoSeriesId.reconstitute(id),
             {
               skipLocked: true,

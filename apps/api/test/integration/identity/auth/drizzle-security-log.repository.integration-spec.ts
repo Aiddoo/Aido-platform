@@ -46,8 +46,8 @@ describe("DrizzleSecurityLogRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleSecurityLogRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleSecurityLogRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleSecurityLogRepository(transactionHost);
   }
 
   async function listEntries(): Promise<SecurityLogRecord[]> {

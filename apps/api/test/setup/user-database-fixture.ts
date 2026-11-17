@@ -32,8 +32,8 @@ export function createUserDatabaseFixture(
   userInput: UserInput,
   related: RelatedFixtures,
 ) {
-  return client.transaction(async (tx) => {
-    const [created] = await tx
+  return client.transaction(async (transaction) => {
+    const [created] = await transaction
       .insert(user)
       .values({ updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()), ...userInput })
       .returning();
@@ -42,22 +42,24 @@ export function createUserDatabaseFixture(
     }
     const userId = created.id;
     if (related.profile !== undefined) {
-      await tx.insert(userProfile).values({ ...related.profile, userId });
+      await transaction.insert(userProfile).values({ ...related.profile, userId });
     }
     if (related.preference !== undefined) {
-      await tx.insert(userPreference).values({ ...related.preference, userId });
+      await transaction.insert(userPreference).values({ ...related.preference, userId });
     }
     if (related.consent !== undefined) {
-      await tx.insert(userConsent).values({ ...related.consent, userId });
+      await transaction.insert(userConsent).values({ ...related.consent, userId });
     }
     if (related.location !== undefined) {
-      await tx.insert(userLocation).values({ ...related.location, userId });
+      await transaction.insert(userLocation).values({ ...related.location, userId });
     }
     if (related.accounts !== undefined && related.accounts.length > 0) {
-      await tx.insert(account).values(related.accounts.map((item) => ({ ...item, userId })));
+      await transaction
+        .insert(account)
+        .values(related.accounts.map((item) => ({ ...item, userId })));
     }
     if (related.pushTokens !== undefined) {
-      await tx.insert(pushToken).values({ ...related.pushTokens, userId });
+      await transaction.insert(pushToken).values({ ...related.pushTokens, userId });
     }
     return created;
   });

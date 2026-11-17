@@ -25,16 +25,16 @@ const TOKEN_REVOKING_FAILURE_KINDS: ReadonlySet<string> = new Set(
 
 @Injectable()
 export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {

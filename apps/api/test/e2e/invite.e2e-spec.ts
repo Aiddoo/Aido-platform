@@ -16,25 +16,25 @@ const PASSWORD = "Test1234!";
 
 describe("친구 초대 HTTP 계약 (실제 DB)", () => {
   describe("기능이 켜져 있으면", () => {
-    let ctx: E2eTestContext;
+    let testContext: E2eTestContext;
 
     beforeAll(async () => {
-      ctx = await createE2eApp({
+      testContext = await createE2eApp({
         customizeBuilder: (builder) =>
           builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
       });
     }, 60_000);
 
     afterAll(async () => {
-      await destroyE2eApp(ctx);
+      await destroyE2eApp(testContext);
     });
 
     beforeEach(async () => {
-      await ctx.reset();
+      await testContext.reset();
     });
 
     async function getMyInvite(accessToken: string) {
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/invites/me")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -43,7 +43,10 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
 
     it("처음 조회에서 코드를 한 번만 발급하고 다시 조회해도 같은 코드와 빈 요약을 반환한다", async () => {
       // Given
-      const inviter = await ctx.helpers.createVerifiedUser("invite-owner@test.com", PASSWORD);
+      const inviter = await testContext.helpers.createVerifiedUser(
+        "invite-owner@test.com",
+        PASSWORD,
+      );
 
       // When
       const concurrent = await Promise.all(
@@ -74,23 +77,31 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
 
     it("로그인 없이 소문자·하이픈 코드로 미리보기하고, 재발급하면 이전 코드는 INVITE_2102다", async () => {
       // Given
-      const inviter = await ctx.helpers.createVerifiedUser("invite-preview@test.com", PASSWORD, {
-        name: "매튜",
-      });
+      const inviter = await testContext.helpers.createVerifiedUser(
+        "invite-preview@test.com",
+        PASSWORD,
+        {
+          name: "매튜",
+        },
+      );
       const { code } = await getMyInvite(inviter.accessToken);
       const pasted = `${code.slice(0, 3).toLowerCase()}-${code.slice(3).toLowerCase()}`;
 
       // When
-      const preview = await request(ctx.app.getHttpServer())
+      const preview = await request(testContext.app.getHttpServer())
         .get(`/v1/invites/${pasted}`)
         .expect(200);
-      const rotated = await request(ctx.app.getHttpServer())
+      const rotated = await request(testContext.app.getHttpServer())
         .post("/v1/invites/me/rotate")
         .set("Authorization", `Bearer ${inviter.accessToken}`)
         .expect(200);
-      const revoked = await request(ctx.app.getHttpServer()).get(`/v1/invites/${code}`).expect(410);
-      const unknown = await request(ctx.app.getHttpServer()).get("/v1/invites/BBBBBB").expect(404);
-      const malformed = await request(ctx.app.getHttpServer())
+      const revoked = await request(testContext.app.getHttpServer())
+        .get(`/v1/invites/${code}`)
+        .expect(410);
+      const unknown = await request(testContext.app.getHttpServer())
+        .get("/v1/invites/BBBBBB")
+        .expect(404);
+      const malformed = await request(testContext.app.getHttpServer())
         .get("/v1/invites/AB0O1I")
         .expect(400);
 
@@ -109,14 +120,17 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
 
     it("초대한 친구가 없으면 빈 목록과 0명을 반환하고 로그인 없이 본 사용 가능 여부는 true다", async () => {
       // Given
-      const inviter = await ctx.helpers.createVerifiedUser("invite-list@test.com", PASSWORD);
+      const inviter = await testContext.helpers.createVerifiedUser(
+        "invite-list@test.com",
+        PASSWORD,
+      );
 
       // When
-      const invitees = await request(ctx.app.getHttpServer())
+      const invitees = await request(testContext.app.getHttpServer())
         .get("/v1/invites/me/invitees?limit=10")
         .set("Authorization", `Bearer ${inviter.accessToken}`)
         .expect(200);
-      const availability = await request(ctx.app.getHttpServer())
+      const availability = await request(testContext.app.getHttpServer())
         .get("/v1/invites/availability")
         .expect(200);
 
@@ -133,10 +147,13 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
 
     it("상태로 거르면 그 상태만 수락 시각 내림차순으로 겹치지 않게 넘기고 totalCount도 그 상태의 수다", async () => {
       // Given
-      const inviter = await ctx.helpers.createVerifiedUser("invite-filter@test.com", PASSWORD);
+      const inviter = await testContext.helpers.createVerifiedUser(
+        "invite-filter@test.com",
+        PASSWORD,
+      );
       const invitees = await Promise.all(
         ["a", "b", "c", "d"].map((suffix) =>
-          ctx.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
+          testContext.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
         ),
       );
       const sameJoinedAt = Temporal.Instant.from("2026-10-20T00:00:00.000Z");
@@ -154,7 +171,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           joinedAt: Temporal.Instant.from("2026-10-19T00:00:00.000Z"),
         },
       ] as const;
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .insert(inviteRedemption)
         .values(
@@ -171,7 +188,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           })),
         );
       const list = (query: string) =>
-        request(ctx.app.getHttpServer())
+        request(testContext.app.getHttpServer())
           .get(`/v1/invites/me/invitees?${query}`)
           .set("Authorization", `Bearer ${inviter.accessToken}`);
 
@@ -206,40 +223,44 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
   });
 
   describe("기능이 꺼져 있으면", () => {
-    let ctx: E2eTestContext;
+    let testContext: E2eTestContext;
 
     beforeAll(async () => {
-      ctx = await createE2eApp({
+      testContext = await createE2eApp({
         customizeBuilder: (builder) =>
           builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: false }),
       });
     }, 60_000);
 
     afterAll(async () => {
-      await destroyE2eApp(ctx);
+      await destroyE2eApp(testContext);
     });
 
     beforeEach(async () => {
-      await ctx.reset();
+      await testContext.reset();
     });
 
     it("초대 API는 INVITE_2105를 반환하고 사용 가능 여부는 false다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("invite-off@test.com", PASSWORD);
+      const user = await testContext.helpers.createVerifiedUser("invite-off@test.com", PASSWORD);
       const auth = `Bearer ${user.accessToken}`;
 
       // When
       const responses = await Promise.all([
-        request(ctx.app.getHttpServer()).get("/v1/invites/me").set("Authorization", auth),
-        request(ctx.app.getHttpServer()).post("/v1/invites/me/rotate").set("Authorization", auth),
-        request(ctx.app.getHttpServer()).get("/v1/invites/me/invitees").set("Authorization", auth),
-        request(ctx.app.getHttpServer()).get("/v1/invites/K7M2QX"),
-        request(ctx.app.getHttpServer())
+        request(testContext.app.getHttpServer()).get("/v1/invites/me").set("Authorization", auth),
+        request(testContext.app.getHttpServer())
+          .post("/v1/invites/me/rotate")
+          .set("Authorization", auth),
+        request(testContext.app.getHttpServer())
+          .get("/v1/invites/me/invitees")
+          .set("Authorization", auth),
+        request(testContext.app.getHttpServer()).get("/v1/invites/K7M2QX"),
+        request(testContext.app.getHttpServer())
           .post("/v1/invites/K7M2QX/redeem")
           .set("Authorization", auth)
           .send({}),
       ]);
-      const availability = await request(ctx.app.getHttpServer())
+      const availability = await request(testContext.app.getHttpServer())
         .get("/v1/invites/availability")
         .expect(200);
 

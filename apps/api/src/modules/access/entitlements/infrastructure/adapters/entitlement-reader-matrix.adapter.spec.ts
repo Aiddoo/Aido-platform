@@ -66,11 +66,11 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
       const snapshot = await fixture.reader.getEntitlements(fixture.userId);
       const limits = {
         aiParse: await fixture.reader.getFeatureLimit(fixture.userId, "AI_PARSE"),
-        friend: await fixture.reader.getFeatureLimitInTx(fixture.userId, "FRIEND"),
+        friend: await fixture.reader.getFeatureLimitInTransaction(fixture.userId, "FRIEND"),
       };
       const canReport = {
         cached: await fixture.reader.can(fixture.userId, "AI_REPORT"),
-        fresh: await fixture.reader.canInTx(fixture.userId, "AI_REPORT"),
+        fresh: await fixture.reader.canInTransaction(fixture.userId, "AI_REPORT"),
       };
 
       // Then
@@ -93,7 +93,10 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
       // When
       const adminEntitlements = await admin.reader.getEntitlements(admin.userId);
       const premiumEntitlements = await premium.reader.getEntitlements(premium.userId);
-      const categoryLimit = await admin.reader.getFeatureLimitInTx(admin.userId, "TODO_CATEGORY");
+      const categoryLimit = await admin.reader.getFeatureLimitInTransaction(
+        admin.userId,
+        "TODO_CATEGORY",
+      );
 
       // Then
       expect(adminEntitlements).toMatchObject({ tier: "ADMIN", plan: "premium" });

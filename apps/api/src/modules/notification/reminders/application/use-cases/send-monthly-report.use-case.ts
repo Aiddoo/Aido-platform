@@ -26,8 +26,8 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
     const monthAgo = today.subtract({ months: 1 });
 
     // 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 유저 대상

@@ -36,6 +36,7 @@ import { PgBossErrorLogSampler } from "./pg-boss-error-log-sampler.js";
 import { PgBossQueueProvisioner } from "./pg-boss-queue-provisioner.js";
 
 interface JobTransactionSource {
+  // oxlint-disable-next-line aido/no-abbreviation -- @nestjs-cls/transactional TransactionHost.tx 속성 이름을 따른다
   readonly tx: Database;
 }
 
@@ -49,7 +50,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   readonly #logger = new Logger(PgBossJobQueueAdapter.name);
   readonly #runtimeErrorLog = new PgBossErrorLogSampler(this.#logger);
   readonly #boss: PgBossClient;
-  readonly #txHost: JobTransactionSource;
+  readonly #transactionHost: JobTransactionSource;
   readonly #registry: JobQueueRegistry;
   readonly #config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs" | "workerEnabled">;
   readonly #queues: PgBossQueueProvisioner;
@@ -57,7 +58,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
 
   constructor(
     @Inject(PG_BOSS_CLIENT) boss: PgBossClient,
-    @Inject(TransactionHost) txHost: JobTransactionSource,
+    @Inject(TransactionHost) transactionHost: JobTransactionSource,
     registry: JobQueueRegistry,
     @Inject(jobConfig.KEY)
     config: Pick<ConfigType<typeof jobConfig>, "shutdownTimeoutMs" | "workerEnabled">,
@@ -66,7 +67,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
   ) {
     super();
     this.#boss = boss;
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#registry = registry;
     this.#config = config;
     this.#queues = new PgBossQueueProvisioner(boss);
@@ -98,7 +99,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
       ...toPgBossJobOptions(queue, options),
       ...(options.priority != null && { priority: options.priority }),
       ...(options.group != null && { group: { id: options.group } }),
-      db: transactionJobDatabase(this.#txHost.tx),
+      db: transactionJobDatabase(this.#transactionHost.tx),
     });
   }
 
@@ -118,7 +119,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
         ...(job.priority != null && { priority: job.priority }),
         data: job.payload,
       })),
-      { db: transactionJobDatabase(this.#txHost.tx) },
+      { db: transactionJobDatabase(this.#transactionHost.tx) },
     );
   }
 
@@ -132,7 +133,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     await this.#boss.deleteJob(
       queue.name,
       idempotencyKeys.map((key) => deterministicJobId(queue.name, key)),
-      { db: transactionJobDatabase(this.#txHost.tx) },
+      { db: transactionJobDatabase(this.#transactionHost.tx) },
     );
   }
 

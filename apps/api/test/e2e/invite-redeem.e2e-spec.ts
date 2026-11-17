@@ -30,25 +30,25 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const PASSWORD = "Test1234!";
 
 describe("초대 수락 HTTP (실제 DB)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(InviteConfigPort).useValue({ isEnabled: true }),
     });
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   async function inviteCodeOf(inviter: VerifiedUser): Promise<string> {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/invites/me")
       .set("Authorization", `Bearer ${inviter.accessToken}`)
       .expect(200);
@@ -56,14 +56,14 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   }
 
   function redeem(invitee: VerifiedUser, code: string, installationId?: string) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .post(`/v1/invites/${code}/redeem`)
       .set("Authorization", `Bearer ${invitee.accessToken}`)
       .send(installationId == null ? {} : { installationId });
   }
 
   async function rewardGrantsOf(userId: string) {
-    return ctx.testDatabase
+    return testContext.testDatabase
       .getClient()
       .select({
         rewardType: rewardGrant.rewardType,
@@ -75,7 +75,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   }
 
   async function premiumGrantCountOf(userId: string) {
-    const [result] = await ctx.testDatabase
+    const [result] = await testContext.testDatabase
       .getClient()
       .select({ count: count() })
       .from(premiumGrant)
@@ -84,7 +84,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
   }
 
   async function meOf(user: VerifiedUser) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
@@ -93,12 +93,20 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("새 사용자는 친구가 되고 7일 보상을 받으며 다시 수락하면 같은 결과를 isReplay로 알려 돌려준다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("redeem-inviter@test.com", PASSWORD, {
-      name: "매튜",
-    });
-    const invitee = await ctx.helpers.createVerifiedUser("redeem-invitee@test.com", PASSWORD, {
-      name: "존",
-    });
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "redeem-inviter@test.com",
+      PASSWORD,
+      {
+        name: "매튜",
+      },
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "redeem-invitee@test.com",
+      PASSWORD,
+      {
+        name: "존",
+      },
+    );
     const code = await inviteCodeOf(inviter);
 
     // When
@@ -130,7 +138,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       willRenew: false,
       bankedPremiumDays: 0,
     });
-    const joined = await ctx.testDatabase
+    const joined = await testContext.testDatabase
       .getClient()
       .select({ title: notification.title, metadata: notification.metadata })
       .from(notification)
@@ -142,9 +150,12 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("같은 기기로 다른 계정이 수락하면 친구는 되지만 보상은 받지 않는다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("device-inviter@test.com", PASSWORD);
-    const first = await ctx.helpers.createVerifiedUser("device-first@test.com", PASSWORD);
-    const second = await ctx.helpers.createVerifiedUser("device-second@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "device-inviter@test.com",
+      PASSWORD,
+    );
+    const first = await testContext.helpers.createVerifiedUser("device-first@test.com", PASSWORD);
+    const second = await testContext.helpers.createVerifiedUser("device-second@test.com", PASSWORD);
     const code = await inviteCodeOf(inviter);
     await redeem(first, code, "shared-device").expect(200);
 
@@ -162,9 +173,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("가입한 지 7일이 지난 사용자는 보상 없이 CONNECTED로 친구를 맺는다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("old-inviter@test.com", PASSWORD);
-    const veteran = await ctx.helpers.createVerifiedUser("old-invitee@test.com", PASSWORD);
-    await ctx.testDatabase
+    const inviter = await testContext.helpers.createVerifiedUser("old-inviter@test.com", PASSWORD);
+    const veteran = await testContext.helpers.createVerifiedUser("old-invitee@test.com", PASSWORD);
+    await testContext.testDatabase
       .getClient()
       .update(user)
       .set({ createdAt: nowInstant().subtract({ hours: 24 * 8 }) })
@@ -184,15 +195,15 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("초대한 사람 친구 자리가 꽉 차 있으면 친구 요청만 보내고 보상 기록은 남긴다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("full-inviter@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser("full-inviter@test.com", PASSWORD);
     for (let index = 0; index < PLAN_CATALOG.FRIEND.free; index++) {
-      const friend = await ctx.helpers.createVerifiedUser(
+      const friend = await testContext.helpers.createVerifiedUser(
         `full-friend-${index}@test.com`,
         PASSWORD,
       );
-      await ctx.helpers.createFriendship(inviter, friend);
+      await testContext.helpers.createFriendship(inviter, friend);
     }
-    const invitee = await ctx.helpers.createVerifiedUser("full-invitee@test.com", PASSWORD);
+    const invitee = await testContext.helpers.createVerifiedUser("full-invitee@test.com", PASSWORD);
     const code = await inviteCodeOf(inviter);
 
     // When
@@ -208,10 +219,16 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("스토어 구독 중인 새 사용자의 보상은 쌓아 두고 /me가 대기 중인 7일을 바로 보여 준다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("store-inviter@test.com", PASSWORD);
-    const invitee = await ctx.helpers.createVerifiedUser("store-invitee@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "store-inviter@test.com",
+      PASSWORD,
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "store-invitee@test.com",
+      PASSWORD,
+    );
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const subscriptions = ctx.module.get(SubscriptionRepositoryPort);
+    const subscriptions = testContext.module.get(SubscriptionRepositoryPort);
     const now = Temporal.Now.instant();
     await subscriptions.save(
       Subscription.create({
@@ -224,7 +241,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
         now,
       }),
     );
-    await ctx.module
+    await testContext.module
       .get(UserSubscriptionProjectionRepositoryPort)
       .update(UserId.reconstitute(invitee.userId), {
         subscriptionStatus: "ACTIVE",
@@ -246,9 +263,12 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("ADMIN이 초대받아도 보상 기간을 받고 role은 ADMIN 그대로다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("admin-inviter@test.com", PASSWORD);
-    const admin = await ctx.helpers.createVerifiedUser("admin-invitee@test.com", PASSWORD);
-    await ctx.testDatabase
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "admin-inviter@test.com",
+      PASSWORD,
+    );
+    const admin = await testContext.helpers.createVerifiedUser("admin-invitee@test.com", PASSWORD);
+    await testContext.testDatabase
       .getClient()
       .update(user)
       .set({ role: "ADMIN" })
@@ -268,10 +288,16 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("내 코드는 INVITE_2103, 바뀐 코드는 INVITE_2102, 없는 코드는 INVITE_2101이다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("error-inviter@test.com", PASSWORD);
-    const invitee = await ctx.helpers.createVerifiedUser("error-invitee@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "error-inviter@test.com",
+      PASSWORD,
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "error-invitee@test.com",
+      PASSWORD,
+    );
     const oldCode = await inviteCodeOf(inviter);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post("/v1/invites/me/rotate")
       .set("Authorization", `Bearer ${inviter.accessToken}`)
       .expect(200);
@@ -290,10 +316,16 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("초대한 사람이 나를 차단했으면 차단 방향을 알리지 않는 BLOCK_2204로 거부하고 보상도 남기지 않는다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("blocking-inviter@test.com", PASSWORD);
-    const invitee = await ctx.helpers.createVerifiedUser("blocked-invitee@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "blocking-inviter@test.com",
+      PASSWORD,
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "blocked-invitee@test.com",
+      PASSWORD,
+    );
     const code = await inviteCodeOf(inviter);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post(`/v1/blocks/${invitee.userId}`)
       .set("Authorization", `Bearer ${inviter.accessToken}`)
       .expect(200);
@@ -308,14 +340,23 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("이미 다른 초대를 수락했으면 INVITE_2104이고 이미 친구인 초대한 사람은 ALREADY_FRIENDS다", async () => {
     // Given
-    const firstInviter = await ctx.helpers.createVerifiedUser("first-inviter@test.com", PASSWORD);
-    const secondInviter = await ctx.helpers.createVerifiedUser("second-inviter@test.com", PASSWORD);
-    const invitee = await ctx.helpers.createVerifiedUser("double-invitee@test.com", PASSWORD);
+    const firstInviter = await testContext.helpers.createVerifiedUser(
+      "first-inviter@test.com",
+      PASSWORD,
+    );
+    const secondInviter = await testContext.helpers.createVerifiedUser(
+      "second-inviter@test.com",
+      PASSWORD,
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "double-invitee@test.com",
+      PASSWORD,
+    );
     await redeem(invitee, await inviteCodeOf(firstInviter), "double-device").expect(200);
 
     // When
     const other = await redeem(invitee, await inviteCodeOf(secondInviter)).expect(409);
-    await ctx.helpers.createFriendship(invitee, secondInviter);
+    await testContext.helpers.createFriendship(invitee, secondInviter);
     const friends = await redeem(invitee, await inviteCodeOf(secondInviter)).expect(200);
 
     // Then
@@ -325,9 +366,15 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("초대한 사람이 먼저 보낸 친구 요청이 있으면 수락으로 바꿔 친구가 된다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("pending-inviter@test.com", PASSWORD);
-    const invitee = await ctx.helpers.createVerifiedUser("pending-invitee@test.com", PASSWORD);
-    await request(ctx.app.getHttpServer())
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "pending-inviter@test.com",
+      PASSWORD,
+    );
+    const invitee = await testContext.helpers.createVerifiedUser(
+      "pending-invitee@test.com",
+      PASSWORD,
+    );
+    await request(testContext.app.getHttpServer())
       .post(`/v1/follows/${invitee.userTag}`)
       .set("Authorization", `Bearer ${inviter.accessToken}`)
       .expect(201);
@@ -341,7 +388,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       outcome: "REDEEMED",
       friendship: "FRIENDS",
     });
-    const follows = await ctx.testDatabase
+    const follows = await testContext.testDatabase
       .getClient()
       .select({ status: follow.status })
       .from(follow)
@@ -351,16 +398,21 @@ describe("초대 수락 HTTP (실제 DB)", () => {
 
   it("탈퇴 대기 중인 사람의 초대 코드는 없는 코드로 응답한다", async () => {
     // Given
-    const inviter = await ctx.helpers.createVerifiedUser("deleted-inviter@test.com", PASSWORD);
+    const inviter = await testContext.helpers.createVerifiedUser(
+      "deleted-inviter@test.com",
+      PASSWORD,
+    );
     const code = await inviteCodeOf(inviter);
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(user)
       .set({ deletedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()) })
       .where(eq(user.id, inviter.userId));
 
     // When
-    const preview = await request(ctx.app.getHttpServer()).get(`/v1/invites/${code}`).expect(404);
+    const preview = await request(testContext.app.getHttpServer())
+      .get(`/v1/invites/${code}`)
+      .expect(404);
 
     // Then
     expect(preview.body.error.code).toBe(ErrorCode.INVITE_2101);

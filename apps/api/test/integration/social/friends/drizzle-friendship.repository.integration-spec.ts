@@ -38,8 +38,8 @@ describe("DrizzleFriendshipRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleFriendshipRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleFriendshipRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleFriendshipRepository(transactionHost);
   }
 
   describeFriendshipRepositoryContract(async () => createRepository());

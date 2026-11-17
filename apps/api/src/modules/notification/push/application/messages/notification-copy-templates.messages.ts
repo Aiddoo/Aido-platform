@@ -72,12 +72,12 @@ function todoWeatherCopy(
     readonly todoTitle: string;
   },
   context: NotificationCopyContext,
-  args: Readonly<Record<string, string | number>> = {},
+  values: Readonly<Record<string, string | number>> = {},
 ): NotificationCopy | null {
   const time = weatherTime(context, facts.scheduledAt, facts.timezone);
   return time == null
     ? null
-    : context.copy(variant, { ...args, time, todoTitle: context.preview(facts.todoTitle) });
+    : context.copy(variant, { ...values, time, todoTitle: context.preview(facts.todoTitle) });
 }
 
 /** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
@@ -311,14 +311,14 @@ export const WEATHER_COPY = {
       isChilly: z.boolean(),
     }),
     render: (variant, facts, context) => {
-      const args = {
+      const values = {
         condition: context.parts.weatherCondition[facts.condition],
         tempMin: facts.tempMin,
         tempMax: facts.tempMax,
       };
       return facts.isChilly
-        ? context.copy({ title: variant.titleChilly, body: variant.bodyChilly }, args)
-        : context.copy(variant, args);
+        ? context.copy({ title: variant.titleChilly, body: variant.bodyChilly }, values)
+        : context.copy(variant, values);
     },
   }),
 };
@@ -426,7 +426,7 @@ export const SOCIAL_COPY = {
     variants: (catalog) => catalog.social.INVITE_REWARDED,
     facts: z.object({ premiumDays: z.number(), friendSlots: z.number() }),
     render: (variant, { premiumDays, friendSlots }, context) => {
-      const args = {
+      const values = {
         premium: context.text(variant.premium, { count: premiumDays }),
         friends: context.text(variant.friends, { count: friendSlots }),
       };
@@ -436,7 +436,7 @@ export const SOCIAL_COPY = {
           : premiumDays > 0
             ? variant.bodyPremium
             : variant.bodyFriends;
-      return context.copy({ title: variant.title, body }, args);
+      return context.copy({ title: variant.title, body }, values);
     },
   }),
   NUDGE_RECEIVED: defineNotificationCopy({

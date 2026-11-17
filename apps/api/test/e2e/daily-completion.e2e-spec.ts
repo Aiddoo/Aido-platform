@@ -12,7 +12,7 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("일일 달성 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   /**
    * 테스트용 Todo 생성 헬퍼
@@ -27,8 +27,8 @@ describe("일일 달성 E2E", () => {
       visibility?: "PUBLIC" | "PRIVATE";
     },
   ): Promise<{ id: number }> {
-    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
-    const response = await request(ctx.app.getHttpServer())
+    const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
@@ -44,7 +44,7 @@ describe("일일 달성 E2E", () => {
 
     // completed가 true인 경우 업데이트
     if (data.completed) {
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .patch(`/v1/todos/${todoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ completed: true })
@@ -73,15 +73,15 @@ describe("일일 달성 E2E", () => {
   }
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const password = "Test1234!";
@@ -90,7 +90,7 @@ describe("일일 달성 E2E", () => {
     describe("인증", () => {
       it("인증 없이 접근 시 401 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
@@ -100,7 +100,7 @@ describe("일일 달성 E2E", () => {
 
       it("잘못된 토큰으로 접근 시 401 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", "Bearer invalid-token")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
@@ -113,14 +113,17 @@ describe("일일 달성 E2E", () => {
     describe("여러 날 할 일", () => {
       it("기간의 모든 날에 세고 1.15.0 앱이 다시 더하지 않도록 multiDayTodos는 비워 둔다", async () => {
         // Given
-        const { accessToken } = await ctx.helpers.createVerifiedUser("dc-span@test.com", password);
+        const { accessToken } = await testContext.helpers.createVerifiedUser(
+          "dc-span@test.com",
+          password,
+        );
         await createTodo(accessToken, {
           title: "여러 날 할 일",
           startDate: "2026-05-05",
           endDate: "2026-05-07",
         });
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-05-01", endDate: "2026-05-31" });
@@ -145,10 +148,10 @@ describe("일일 달성 E2E", () => {
     describe("파라미터 검증", () => {
       it("startDate 누락 시 400 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-param1@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-param1@test.com", password);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ endDate: "2026-01-31" });
@@ -160,10 +163,10 @@ describe("일일 달성 E2E", () => {
 
       it("endDate 누락 시 400 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-param2@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-param2@test.com", password);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026-01-01" });
@@ -175,10 +178,10 @@ describe("일일 달성 E2E", () => {
 
       it("잘못된 날짜 형식 시 400 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-param3@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-param3@test.com", password);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026/01/01", endDate: "2026-01-31" });
@@ -190,10 +193,10 @@ describe("일일 달성 E2E", () => {
 
       it("endDate가 startDate보다 이전인 경우 400 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-param4@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-param4@test.com", password);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026-01-31", endDate: "2026-01-01" });
@@ -207,7 +210,7 @@ describe("일일 달성 E2E", () => {
     describe("정상 조회", () => {
       it("날짜 범위 내 완료 현황 조회 성공", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-normal1@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-normal1@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodosForDate(accessToken, "2026-01-15", 3, 3);
@@ -216,7 +219,7 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-01-20", 1, 1);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
@@ -243,7 +246,7 @@ describe("일일 달성 E2E", () => {
 
       it("완료 현황 상세 데이터 검증", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-normal2@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-normal2@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodosForDate(accessToken, "2026-01-15", 3, 3);
@@ -251,7 +254,7 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-01-17", 2, 0);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-15", endDate: "2026-01-17" });
@@ -289,13 +292,13 @@ describe("일일 달성 E2E", () => {
 
       it("특정 날짜만 조회", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-normal3@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-normal3@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodosForDate(accessToken, "2026-01-20", 1, 1);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-20", endDate: "2026-01-20" });
@@ -312,11 +315,11 @@ describe("일일 달성 E2E", () => {
 
       it("Todo가 없는 날짜 범위 조회 시 빈 배열 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-normal4@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-normal4@test.com", password);
         const accessToken = user.accessToken;
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-02-01", endDate: "2026-02-28" });
@@ -332,13 +335,13 @@ describe("일일 달성 E2E", () => {
     describe("사용자 격리", () => {
       it("사용자 1은 자신의 데이터만 조회하고, 사용자 2는 자신의 데이터만 조회한다", async () => {
         // Given
-        const user1 = await ctx.helpers.createVerifiedUser("dc-iso1@test.com", password);
-        const user2 = await ctx.helpers.createVerifiedUser("dc-iso2@test.com", password);
+        const user1 = await testContext.helpers.createVerifiedUser("dc-iso1@test.com", password);
+        const user2 = await testContext.helpers.createVerifiedUser("dc-iso2@test.com", password);
         await createTodosForDate(user1.accessToken, "2026-03-01", 3, 3);
         await createTodosForDate(user2.accessToken, "2026-03-01", 2, 1);
 
         // When
-        const response1 = await request(ctx.app.getHttpServer())
+        const response1 = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user1.accessToken}`)
           .query({ startDate: "2026-03-01", endDate: "2026-03-01" });
@@ -351,7 +354,7 @@ describe("일일 달성 E2E", () => {
         expect(response1.body.data.completions[0].isComplete).toBe(true);
 
         // When
-        const response2 = await request(ctx.app.getHttpServer())
+        const response2 = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user2.accessToken}`)
           .query({ startDate: "2026-03-01", endDate: "2026-03-01" });
@@ -368,7 +371,7 @@ describe("일일 달성 E2E", () => {
     describe("Todo 상태 변경 반영", () => {
       it("Todo 완료 상태 변경 시 완료 현황 즉시 반영", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-state@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-state@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodo(accessToken, {
@@ -383,7 +386,7 @@ describe("일일 달성 E2E", () => {
         });
 
         // When
-        let response = await request(ctx.app.getHttpServer())
+        let response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-04-01", endDate: "2026-04-01" });
@@ -394,13 +397,13 @@ describe("일일 달성 E2E", () => {
         expect(response.body.data.completions[0].isComplete).toBe(false);
 
         // When
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .patch(`/v1/todos/${todoId2}`)
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ completed: true })
           .expect(200);
 
-        response = await request(ctx.app.getHttpServer())
+        response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-04-01", endDate: "2026-04-01" });
@@ -415,7 +418,7 @@ describe("일일 달성 E2E", () => {
     describe("GET /daily-completions/friends/:userId - 친구 일일 완료 현황 조회", () => {
       it("인증 없이 접근 시 401 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions/friends/clz7x5p8k0001qz0z8z8z8z8z8")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
@@ -425,14 +428,17 @@ describe("일일 달성 E2E", () => {
 
       it("맞팔 관계가 아니면 403 반환", async () => {
         // Given
-        const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer1@test.com", password);
-        const stranger = await ctx.helpers.createVerifiedUser(
+        const viewer = await testContext.helpers.createVerifiedUser(
+          "dc-friend-viewer1@test.com",
+          password,
+        );
+        const stranger = await testContext.helpers.createVerifiedUser(
           "dc-friend-stranger@test.com",
           password,
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${stranger.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
@@ -445,9 +451,15 @@ describe("일일 달성 E2E", () => {
 
       it("맞팔이면 친구의 PUBLIC 할 일만 집계해 반환한다", async () => {
         // Given
-        const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer2@test.com", password);
-        const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner@test.com", password);
-        await ctx.helpers.createFriendship(viewer, friend);
+        const viewer = await testContext.helpers.createVerifiedUser(
+          "dc-friend-viewer2@test.com",
+          password,
+        );
+        const friend = await testContext.helpers.createVerifiedUser(
+          "dc-friend-owner@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(viewer, friend);
 
         // 6/1: PUBLIC 2개(1개 완료) + PRIVATE 1개(완료) → PUBLIC 기준 2개 중 1개
         await createTodo(friend.accessToken, {
@@ -489,7 +501,7 @@ describe("일일 달성 E2E", () => {
         });
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query({ startDate: "2026-06-01", endDate: "2026-06-30" });
@@ -516,9 +528,15 @@ describe("일일 달성 E2E", () => {
 
       it("내 완료 현황 조회는 PRIVATE을 포함해 친구용 조회와 독립적이다", async () => {
         // Given
-        const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer3@test.com", password);
-        const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner2@test.com", password);
-        await ctx.helpers.createFriendship(viewer, friend);
+        const viewer = await testContext.helpers.createVerifiedUser(
+          "dc-friend-viewer3@test.com",
+          password,
+        );
+        const friend = await testContext.helpers.createVerifiedUser(
+          "dc-friend-owner2@test.com",
+          password,
+        );
+        await testContext.helpers.createFriendship(viewer, friend);
 
         await createTodo(friend.accessToken, {
           title: "공개 완료",
@@ -533,11 +551,11 @@ describe("일일 달성 E2E", () => {
         });
 
         // When
-        const friendView = await request(ctx.app.getHttpServer())
+        const friendView = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query({ startDate: "2026-07-01", endDate: "2026-07-01" });
-        const ownerView = await request(ctx.app.getHttpServer())
+        const ownerView = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${friend.accessToken}`)
           .query({ startDate: "2026-07-01", endDate: "2026-07-01" });
@@ -551,15 +569,15 @@ describe("일일 달성 E2E", () => {
 
       it("친구용 캐시 생성 후 PUBLIC을 PRIVATE으로 바꾸면 같은 범위에서 즉시 사라진다", async () => {
         // Given
-        const viewer = await ctx.helpers.createVerifiedUser(
+        const viewer = await testContext.helpers.createVerifiedUser(
           "dc-visibility-private-viewer@test.com",
           password,
         );
-        const friend = await ctx.helpers.createVerifiedUser(
+        const friend = await testContext.helpers.createVerifiedUser(
           "dc-visibility-private-owner@test.com",
           password,
         );
-        await ctx.helpers.createFriendship(viewer, friend);
+        await testContext.helpers.createFriendship(viewer, friend);
         const todo = await createTodo(friend.accessToken, {
           title: "공개 완료",
           startDate: "2026-08-01",
@@ -568,7 +586,7 @@ describe("일일 달성 E2E", () => {
         });
         const query = { startDate: "2026-08-01", endDate: "2026-08-01" };
 
-        const cached = await request(ctx.app.getHttpServer())
+        const cached = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query(query)
@@ -576,12 +594,12 @@ describe("일일 달성 E2E", () => {
         expect(cached.body.data.completions).toHaveLength(1);
 
         // When
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .patch(`/v1/todos/${todo.id}/visibility`)
           .set("Authorization", `Bearer ${friend.accessToken}`)
           .send({ visibility: "PRIVATE" })
           .expect(200);
-        const refreshed = await request(ctx.app.getHttpServer())
+        const refreshed = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query(query)
@@ -595,15 +613,15 @@ describe("일일 달성 E2E", () => {
 
       it("친구용 빈 캐시 생성 후 PRIVATE을 PUBLIC으로 바꾸면 같은 범위에 즉시 나타난다", async () => {
         // Given
-        const viewer = await ctx.helpers.createVerifiedUser(
+        const viewer = await testContext.helpers.createVerifiedUser(
           "dc-visibility-public-viewer@test.com",
           password,
         );
-        const friend = await ctx.helpers.createVerifiedUser(
+        const friend = await testContext.helpers.createVerifiedUser(
           "dc-visibility-public-owner@test.com",
           password,
         );
-        await ctx.helpers.createFriendship(viewer, friend);
+        await testContext.helpers.createFriendship(viewer, friend);
         const todo = await createTodo(friend.accessToken, {
           title: "비공개 완료",
           startDate: "2026-08-02",
@@ -612,7 +630,7 @@ describe("일일 달성 E2E", () => {
         });
         const query = { startDate: "2026-08-02", endDate: "2026-08-02" };
 
-        const cached = await request(ctx.app.getHttpServer())
+        const cached = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query(query)
@@ -620,12 +638,12 @@ describe("일일 달성 E2E", () => {
         expect(cached.body.data.completions).toEqual([]);
 
         // When
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .patch(`/v1/todos/${todo.id}/visibility`)
           .set("Authorization", `Bearer ${friend.accessToken}`)
           .send({ visibility: "PUBLIC" })
           .expect(200);
-        const refreshed = await request(ctx.app.getHttpServer())
+        const refreshed = await request(testContext.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query(query)
@@ -647,7 +665,7 @@ describe("일일 달성 E2E", () => {
     describe("월간 캘린더 시나리오", () => {
       it("월간 조회 시 물고기 개수 정확히 계산하고 UI 매핑 데이터 검증", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("dc-calendar@test.com", password);
+        const user = await testContext.helpers.createVerifiedUser("dc-calendar@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodosForDate(accessToken, "2026-05-01", 1, 1); // 100%
@@ -659,7 +677,7 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-05-31", 2, 2); // 100%
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-05-01", endDate: "2026-05-31" });

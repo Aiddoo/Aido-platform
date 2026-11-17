@@ -70,9 +70,12 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
         }),
     });
     client = await testDatabase.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    const blockReader = new DrizzleUserBlockReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    const reader = new DrizzleTodoCommentReader(
+      transactionHost,
+      new DrizzleTodoDetailsReader(transactionHost),
+    );
+    const blockReader = new DrizzleUserBlockReader(transactionHost);
     cursorModule = await Test.createTestingModule({
       providers: [
         HmacTodoCommentCursorCodecAdapter,

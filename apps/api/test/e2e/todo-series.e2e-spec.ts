@@ -31,7 +31,7 @@ function dateAfter(days: number): string {
 }
 
 describe("반복 할 일 생성 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
   let accessToken: string;
   let userId: string;
@@ -39,7 +39,7 @@ describe("반복 할 일 생성 E2E", () => {
 
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
@@ -47,19 +47,19 @@ describe("반복 할 일 생성 E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("series@example.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser("series@example.com", "Test1234!");
     accessToken = user.accessToken;
     userId = user.userId;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   function post(path: string, body: object, token = accessToken) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .post(path)
       .set("Authorization", `Bearer ${token}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -91,7 +91,7 @@ describe("반복 할 일 생성 E2E", () => {
         checklist: [{ title: "한 컵" }],
       });
       expect(todoSeriesResponseSchema.safeParse(body.series).success).toBe(true);
-      const rows = await ctx.testDatabase
+      const rows = await testContext.testDatabase
         .getClient()
         .query.todo.findMany({ where: { userId, title: "물 마시기" } });
       expect(rows.length).toBeGreaterThanOrEqual(TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS - 1);
@@ -150,7 +150,7 @@ describe("반복 할 일 생성 E2E", () => {
       { tier: "ADMIN", patch: { role: "ADMIN" } },
     ] as const)("$tier도 진행 중 반복 30개 상한이 같다", async ({ patch }) => {
       // Given
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       if (Object.keys(patch).length > 0) {
         await client.update(userTable).set(patch).where(eq(userTable.id, userId));
       }
@@ -194,7 +194,7 @@ describe("반복 할 일 생성 E2E", () => {
       }).expect(201);
       const body = createTodoResponseSchema.parse(response.body.data);
       const seriesId = body.series?.id ?? "";
-      const rows = await ctx.testDatabase.getClient().query.todo.findMany({
+      const rows = await testContext.testDatabase.getClient().query.todo.findMany({
         where: { seriesId },
         orderBy: { occurrenceDate: "asc" },
       });
@@ -202,7 +202,7 @@ describe("반복 할 일 생성 E2E", () => {
     }
 
     function patch(id: number, body: object) {
-      return request(ctx.app.getHttpServer())
+      return request(testContext.app.getHttpServer())
         .patch(`/v1/todos/${id}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
@@ -210,7 +210,7 @@ describe("반복 할 일 생성 E2E", () => {
     }
 
     function remove(id: number, query = "") {
-      return request(ctx.app.getHttpServer())
+      return request(testContext.app.getHttpServer())
         .delete(`/v1/todos/${id}${query}`)
         .set("Authorization", `Bearer ${accessToken}`);
     }
@@ -226,7 +226,7 @@ describe("반복 할 일 생성 E2E", () => {
       // Then
       const body = updateTodoResponseSchema.parse(response.body.data);
       expect(body.todo.title).toBe("이후 수정");
-      const rows = await ctx.testDatabase.getClient().query.todo.findMany({
+      const rows = await testContext.testDatabase.getClient().query.todo.findMany({
         where: { id: { in: ids } },
         orderBy: { occurrenceDate: "asc" },
       });
@@ -245,7 +245,7 @@ describe("반복 할 일 생성 E2E", () => {
       }).expect(200);
       // Then
       expect(updateTodoResponseSchema.parse(response.body.data).todo.startDate).toBe(moved);
-      const other = await ctx.testDatabase.getClient().query.todo.findFirst({
+      const other = await testContext.testDatabase.getClient().query.todo.findFirst({
         where: { id: ids[2] },
       });
       expect(other?.title).toBe("함께");
@@ -272,7 +272,7 @@ describe("반복 할 일 생성 E2E", () => {
       updateTodoResponseSchema.parse(stopped.body.data);
       expect(again.status).toBe(409);
       expect(again.body.error.code).toBe(ErrorCode.TODO_0846);
-      const series = await request(ctx.app.getHttpServer())
+      const series = await request(testContext.app.getHttpServer())
         .get(`/v1/todo-series/${seriesId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -346,7 +346,7 @@ describe("반복 할 일 생성 E2E", () => {
       const { seriesId, ids } = await createSeries();
       // When
       const response = await remove(ids[1] ?? 0, "?scope=ALL").expect(200);
-      const series = await request(ctx.app.getHttpServer())
+      const series = await request(testContext.app.getHttpServer())
         .get(`/v1/todo-series/${seriesId}`)
         .set("Authorization", `Bearer ${accessToken}`);
       // Then
@@ -358,9 +358,12 @@ describe("반복 할 일 생성 E2E", () => {
     it("다른 사용자의 규칙은 조회할 수 없다", async () => {
       // Given
       const { seriesId } = await createSeries();
-      const other = await ctx.helpers.createVerifiedUser("series-other@example.com", "Test1234!");
+      const other = await testContext.helpers.createVerifiedUser(
+        "series-other@example.com",
+        "Test1234!",
+      );
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get(`/v1/todo-series/${seriesId}`)
         .set("Authorization", `Bearer ${other.accessToken}`);
       // Then
@@ -370,7 +373,7 @@ describe("반복 할 일 생성 E2E", () => {
 
     it("인증 없이는 규칙을 조회할 수 없다", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/todo-series/any");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/todo-series/any");
       // Then
       expect(response.status).toBe(401);
     });
@@ -384,7 +387,7 @@ describe("반복 할 일 생성 E2E", () => {
       expect(releasedCreateTodoResponseSchema.parse(response.body.data).todo.title).toBe(
         "이 회차만",
       );
-      const other = await ctx.testDatabase
+      const other = await testContext.testDatabase
         .getClient()
         .query.todo.findFirst({ where: { id: ids[2] } });
       expect(other?.title).toBe("회차");
@@ -393,7 +396,10 @@ describe("반복 할 일 생성 E2E", () => {
     it("규칙을 지운 뒤 남은 출시 앱 묶음(규칙 없는 옛 행)도 범위 없이 수정·삭제된다", async () => {
       // Given
       const { seriesId, ids } = await createSeries();
-      await ctx.testDatabase.getClient().delete(todoSeries).where(eq(todoSeries.id, seriesId));
+      await testContext.testDatabase
+        .getClient()
+        .delete(todoSeries)
+        .where(eq(todoSeries.id, seriesId));
       // When
       const patched = await patch(ids[0] ?? 0, { title: "고아" });
       const removed = await remove(ids[1] ?? 0);
@@ -415,7 +421,7 @@ describe("반복 할 일 생성 E2E", () => {
         repeat: { frequency: "DAILY", end: { type: "COUNT", count: 3 } },
       }).expect(201);
       const seriesId = createTodoResponseSchema.parse(created.body.data).series?.id ?? "";
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client.delete(todoSeries).where(eq(todoSeries.id, seriesId));
       await client.update(todo).set({ occurrenceDate: null }).where(eq(todo.seriesId, seriesId));
       const rows = await client.query.todo.findMany({ where: { seriesId } });
@@ -423,7 +429,7 @@ describe("반복 할 일 생성 E2E", () => {
     }
 
     function remove(id: number, scope?: string) {
-      return request(ctx.app.getHttpServer())
+      return request(testContext.app.getHttpServer())
         .delete(`/v1/todos/${id}`)
         .query(scope == null ? {} : { scope })
         .set("Authorization", `Bearer ${accessToken}`);
@@ -437,7 +443,7 @@ describe("반복 할 일 생성 E2E", () => {
       const response = await remove(ids[1] ?? 0, "ALL");
       // Then
       expect(response.status).toBe(200);
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       expect(await client.query.todo.findMany({ where: { seriesId } })).toEqual([]);
       expect(
         await client.query.todo.findMany({ where: { seriesId: other.seriesId } }),
@@ -472,7 +478,7 @@ describe("반복 할 일 생성 E2E", () => {
       const body = releasedCreateTodoResponseSchema.parse(response.body.data);
       expect(body.todo).toMatchObject({ startDate, recurrenceGroupId: null, isAllDay: true });
       expect(response.body.data).not.toHaveProperty("series");
-      const series = await ctx.testDatabase.getClient().query.todoSeries.findMany({
+      const series = await testContext.testDatabase.getClient().query.todoSeries.findMany({
         where: { userId },
       });
       expect(series).toEqual([]);
@@ -523,7 +529,7 @@ describe("반복 할 일 생성 E2E", () => {
       // Then
       const body = releasedCreateRecurringTodoResponseSchema.parse(response.body.data);
       expect(body.count).toBeLessThanOrEqual(TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS + 1);
-      const [series] = await ctx.testDatabase.getClient().query.todoSeries.findMany({
+      const [series] = await testContext.testDatabase.getClient().query.todoSeries.findMany({
         where: { userId },
       });
       expect(series?.nextOccurrenceDate).not.toBeNull();
@@ -560,7 +566,7 @@ describe("반복 할 일 생성 E2E", () => {
     });
 
     const seedActiveSeries = (count: number) =>
-      ctx.testDatabase
+      testContext.testDatabase
         .getClient()
         .insert(todoSeries)
         .values(
@@ -602,7 +608,7 @@ describe("반복 할 일 생성 E2E", () => {
 
       it("출시 앱의 메모 변환(isRecurring)도 TODO_0813으로 거절하고 메모를 지키며 제목을 남기지 않는다", async () => {
         // Given
-        const created = await ctx.testDatabase
+        const created = await testContext.testDatabase
           .getClient()
           .insert(memo)
           .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
@@ -622,7 +628,7 @@ describe("반복 할 일 생성 E2E", () => {
         // Then
         expect(response.status).toBe(403);
         expect(response.body.error.code).toBe(ErrorCode.TODO_0813);
-        const memoRow = await ctx.testDatabase
+        const memoRow = await testContext.testDatabase
           .getClient()
           .query.memo.findFirst({ where: { id: created[0]?.id ?? 0 } });
         expect(memoRow).toBeDefined();
@@ -650,7 +656,7 @@ describe("반복 할 일 생성 E2E", () => {
 
       it("출시 앱의 메모 변환(isRecurring)도 옛 서버처럼 만든다", async () => {
         // Given
-        const created = await ctx.testDatabase
+        const created = await testContext.testDatabase
           .getClient()
           .insert(memo)
           .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
@@ -673,7 +679,7 @@ describe("반복 할 일 생성 E2E", () => {
 
       it("메모 변환의 새 repeat는 계속 TODO_0842다", async () => {
         // Given
-        const created = await ctx.testDatabase
+        const created = await testContext.testDatabase
           .getClient()
           .insert(memo)
           .values({ userId, content: "메모", sortOrder: 0, updatedAt: Temporal.Now.instant() })
@@ -715,7 +721,7 @@ describe("반복 할 일 생성 E2E", () => {
 
     it("POST /v1/todos/recurring은 카테고리가 가득 차면 계속 TODO_0813이다", async () => {
       // Given
-      await ctx.testDatabase.getClient().execute(
+      await testContext.testDatabase.getClient().execute(
         sql`INSERT INTO "Todo" ("userId","categoryId","title","startDate","updatedAt")
             SELECT ${userId}, ${categoryId}, 'seed', now(), now()
             FROM generate_series(1, ${TODO_LIMITS.MAX_PER_CATEGORY})`,
@@ -744,13 +750,13 @@ describe("반복 할 일 생성 E2E", () => {
       }).expect(201);
       const { todos, count } = releasedCreateRecurringTodoResponseSchema.parse(created.body.data);
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todos/${todos[0]?.id}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
       // Then
       releasedDeleteTodoResponseSchema.parse(response.body.data);
-      const rows = await ctx.testDatabase
+      const rows = await testContext.testDatabase
         .getClient()
         .query.todo.findMany({ where: { userId, title: "지울 반복" } });
       expect(rows).toHaveLength(count - 1);
@@ -758,7 +764,7 @@ describe("반복 할 일 생성 E2E", () => {
 
     it("메모 변환은 isRecurring + recurrence로 보내도 반복 회차를 만든다", async () => {
       // Given
-      const [seeded] = await ctx.testDatabase
+      const [seeded] = await testContext.testDatabase
         .getClient()
         .insert(memo)
         .values({ userId, content: "운동", sortOrder: 0, updatedAt: Temporal.Now.instant() })

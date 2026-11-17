@@ -34,11 +34,11 @@ function ApiResponseIfUndeclared(options: ApiResponseOptions & { status: HttpSta
 
 /** `@Body/@Query/@Param({ schema })`처럼 Zod schema로 검증하는 입력이 있는지 */
 function hasSchemaValidatedInput(target: object, key: string | symbol): boolean {
-  const routeArgs: unknown = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key);
-  if (typeof routeArgs !== "object" || routeArgs == null) {
+  const routeArguments: unknown = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key);
+  if (typeof routeArguments !== "object" || routeArguments == null) {
     return false;
   }
-  return Object.values(routeArgs).some(
+  return Object.values(routeArguments).some(
     (arg: unknown) =>
       typeof arg === "object" && arg != null && "schema" in arg && arg.schema != null,
   );

@@ -52,7 +52,9 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     context = await createE2eApp({ testDatabase: db });
     weekly = context.module.get(WeeklyAchievementRepositoryPort);
     daily = new PlanningDailyCompletionRepository(
-      new DrizzleTodoCompletionGroupReader(createDatabaseTransactionFixture(client).txHost),
+      new DrizzleTodoCompletionGroupReader(
+        createDatabaseTransactionFixture(client).transactionHost,
+      ),
     );
   });
   beforeEach(async () => {

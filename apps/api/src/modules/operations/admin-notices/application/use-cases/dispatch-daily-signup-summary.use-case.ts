@@ -35,13 +35,13 @@ export class DispatchDailySignupSummaryUseCase {
     try {
       const { start, end, reportDate } = computePreviousKstDayRange(clock.now());
       const { signupsByProvider, totalUsers } = await statsReader.getSignupStats(start, end);
-      const reportDateStr = reportDate.toString();
+      const reportDateKey = reportDate.toString();
 
-      const message = buildDailySummaryMessage({ signupsByProvider, totalUsers, reportDateStr });
+      const message = buildDailySummaryMessage({ signupsByProvider, totalUsers, reportDateKey });
       await queue.enqueueSend(
         "admin",
         { type: "message", message },
-        { jobId: `signup-summary_${reportDateStr}` },
+        { jobId: `signup-summary_${reportDateKey}` },
       );
 
       logger.log({

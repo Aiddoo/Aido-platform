@@ -97,14 +97,14 @@ function orderByIds<Row extends { id: number }>(rows: Row[], ids: readonly numbe
 /** 조회 projection과 집계만 소유하며 활성 CLS transaction에 참여한다. */
 @Injectable()
 export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPlanReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {

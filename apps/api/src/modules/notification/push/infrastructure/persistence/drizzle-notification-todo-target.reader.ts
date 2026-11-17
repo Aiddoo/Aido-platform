@@ -11,10 +11,10 @@ import type {
 
 @Injectable()
 export class DrizzleNotificationTodoTargetReader implements NotificationTodoTargetReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async findTodoTargets(
@@ -24,7 +24,7 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
       return new Map();
     }
 
-    const rows = await this.#txHost.tx.query.todo.findMany({
+    const rows = await this.#transactionHost.tx.query.todo.findMany({
       columns: { id: true, userId: true, startDate: true },
       where: { id: { in: todoIds.map((todoId) => todoId.value) } },
     });

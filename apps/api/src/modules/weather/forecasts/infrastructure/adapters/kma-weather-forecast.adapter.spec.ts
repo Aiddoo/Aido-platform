@@ -199,6 +199,8 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
   });
 });
 
-function providerResultResponse(resultCode: string, resultMsg = "UNKNOWN_ERROR"): Response {
-  return new Response(JSON.stringify({ response: { header: { resultCode, resultMsg } } }));
+function providerResultResponse(resultCode: string, resultMessage = "UNKNOWN_ERROR"): Response {
+  return new Response(
+    JSON.stringify({ response: { header: { resultCode, resultMsg: resultMessage } } }),
+  );
 }

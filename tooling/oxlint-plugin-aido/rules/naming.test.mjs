@@ -142,3 +142,33 @@ tester.run('namespace-function-name', rules['namespace-function-name'], {
     { code: 'TodoList.Error = function TodoListError() { return null; };', errors: 1 },
   ],
 });
+
+tester.run('no-abbreviation', rules['no-abbreviation'], {
+  valid: [
+    'const timezoneContext = read();',
+    'function send(request, response) {}',
+    'try { run(); } catch (error) { report(error); }',
+    'class Repository { #transactionHost; constructor(transactionHost) { this.#transactionHost = transactionHost; } }',
+    'const { userId, items } = command;',
+    'import { ctx } from "library"; use(ctx);',
+    'const payload = { ctx: 1 };',
+    'items.map((item, index) => item + index);',
+    'const userE = createUser();',
+    { code: 'const params = read();', options: [{ allow: ['params'] }] },
+  ],
+  invalid: [
+    { code: 'async function execute(ctx) {}', errors: 1 },
+    { code: 'const txHost = host();', errors: 1 },
+    { code: 'try { run(); } catch (e) { report(e); }', errors: 1 },
+    { code: 'class Adapter { #repo; }', errors: 1 },
+    { code: 'const { a: res } = call();', errors: 1 },
+    { code: 'items.map((val, idx) => val + idx);', errors: 2 },
+    { code: 'interface Options { errorMsg: string }', errors: 1 },
+    { code: 'function handle(...args) {}', errors: 1 },
+    {
+      code: 'const params = read();',
+      options: [{ abbreviations: { params: 'parameters' } }],
+      errors: 1,
+    },
+  ],
+});

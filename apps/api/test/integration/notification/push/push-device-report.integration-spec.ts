@@ -48,11 +48,11 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
       typeof ReportPushDeviceUseCase
     >[0]["pushTokenRepository"],
   ) {
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const warnings: unknown[] = [];
     const reportPushDevice = new ReportPushDeviceUseCase({
-      pushDeviceRepository: new DrizzlePushDeviceRepository(txHost),
-      pushTokenRepository: pushTokenRepository ?? new DrizzlePushTokenRepository(txHost),
+      pushDeviceRepository: new DrizzlePushDeviceRepository(transactionHost),
+      pushTokenRepository: pushTokenRepository ?? new DrizzlePushTokenRepository(transactionHost),
       unitOfWork: uow,
       pushProvider: { validateToken: () => true },
       userSettings: { upsertPushLocale: async () => {}, upsertPushTimezone: async () => {} },
@@ -65,7 +65,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
         },
       },
     });
-    return { reportPushDevice, warnings, txHost };
+    return { reportPushDevice, warnings, transactionHost };
   }
 
   function command(overrides: Partial<ReportPushDeviceCommand>): ReportPushDeviceCommand {
@@ -160,13 +160,13 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     // 갱신 기한(7일)이 지나 앱이 로그인 화면으로 돌아간 세션의 기기
     const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
     await client.insert(session).values(expiredSession);
-    const { reportPushDevice, txHost } = createReportPushDevice();
+    const { reportPushDevice, transactionHost } = createReportPushDevice();
     await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
 
     // When
-    const tokens = await new DrizzlePushTokenRepository(txHost).findActivePushTokensByUsers([
-      UserId.reconstitute(firstUserId),
-    ]);
+    const tokens = await new DrizzlePushTokenRepository(
+      transactionHost,
+    ).findActivePushTokensByUsers([UserId.reconstitute(firstUserId)]);
 
     // Then
     // 재방문 알림을 막지 않으려 세션으로 거르지 않는다. 앱이 공개 해제로 뺀다
@@ -179,7 +179,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
     const activeSession = SessionFixture.create({ userId: firstUserId });
     await client.insert(session).values([expiredSession, activeSession]);
-    const { reportPushDevice, txHost } = createReportPushDevice();
+    const { reportPushDevice, transactionHost } = createReportPushDevice();
     await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
     await reportPushDevice.execute(
       command({
@@ -189,8 +189,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
       }),
     );
     const unregisterByToken = new UnregisterPushDeviceByTokenUseCase({
-      pushDeviceRepository: new DrizzlePushDeviceRepository(txHost),
-      pushTokenRepository: new DrizzlePushTokenRepository(txHost),
+      pushDeviceRepository: new DrizzlePushDeviceRepository(transactionHost),
+      pushTokenRepository: new DrizzlePushTokenRepository(transactionHost),
       unitOfWork: createDatabaseTransactionFixture(client).uow,
       cache: { invalidatePushTokens: async () => {} },
       logger: { log() {} },
@@ -211,8 +211,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   it("해제 직후 다른 요청이 같은 토큰을 먼저 커밋하면 새 트랜잭션에서 한 번 재시도해 토큰을 옮긴다", async () => {
     // Given
     // 첫 해제가 끝난 뒤 다른 연결이 같은 토큰을 다른 사용자로 커밋한다
-    const { txHost } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzlePushTokenRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzlePushTokenRepository(transactionHost);
     let releaseCalls = 0;
     const racingRepository: ConstructorParameters<
       typeof ReportPushDeviceUseCase

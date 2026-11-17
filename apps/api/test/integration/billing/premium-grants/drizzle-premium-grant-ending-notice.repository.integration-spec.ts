@@ -41,11 +41,11 @@ describe("DrizzlePremiumGrantEndingNoticeRepository (실제 PostgreSQL)", () => 
   });
 
   describePremiumGrantEndingNoticeRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzlePremiumGrantEndingNoticeRepository(txHost),
-      grants: new DrizzlePremiumGrantRepository(txHost),
-      subscriptions: new DrizzleSubscriptionRepository(txHost),
+      repository: new DrizzlePremiumGrantEndingNoticeRepository(transactionHost),
+      grants: new DrizzlePremiumGrantRepository(transactionHost),
+      subscriptions: new DrizzleSubscriptionRepository(transactionHost),
     };
   });
 });

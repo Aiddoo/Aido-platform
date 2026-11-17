@@ -32,8 +32,8 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today, tomorrow } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today, tomorrow } = timezoneContext;
 
     // 스트릭 3일+ 유저 중 오늘 미완료 할일이 있는 유저 조회
     const users = await this.#dependencies.reader.findStreakAtRiskUsers({

@@ -74,10 +74,10 @@ describe("알림 중복 방지 동시성 (실제 PostgreSQL)", () => {
 
   it("같은 친구의 팔로우 알림이 동시에 여러 번 와도 하나만 저장한다", async () => {
     // Given
-    const txHost = createTransactionHost(client);
-    const unitOfWork = new ClsUnitOfWork(txHost, ClsServiceManager.getClsService());
-    const repository = new DrizzleNotificationRepository(txHost);
-    const reader = new DrizzleNotificationReader(txHost);
+    const transactionHost = createTransactionHost(client);
+    const unitOfWork = new ClsUnitOfWork(transactionHost, ClsServiceManager.getClsService());
+    const repository = new DrizzleNotificationRepository(transactionHost);
+    const reader = new DrizzleNotificationReader(transactionHost);
     const rendezvous = new ReadRendezvous();
     const useCase = new SendNotificationWithDedupUseCase({
       // SendNotificationUseCase의 저장 단계를 같은 방식(Required 전파)으로 실행한다
@@ -85,7 +85,7 @@ describe("알림 중복 방지 동시성 (실제 PostgreSQL)", () => {
         execute: (data) => unitOfWork.run(() => repository.createNotification(data)),
       },
       unitOfWork,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       notificationHistoryReader: {
         existsRecentNotification: async (query) => {
           const exists = await reader.existsRecentNotification(query);

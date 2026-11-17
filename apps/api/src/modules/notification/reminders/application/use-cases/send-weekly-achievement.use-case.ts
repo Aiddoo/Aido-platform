@@ -33,8 +33,8 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
 
     // 월요일 실행 → 이전 주(월~일) 집계
     const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);

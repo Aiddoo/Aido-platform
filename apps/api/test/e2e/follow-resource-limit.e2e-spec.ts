@@ -23,18 +23,18 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const FREE_LIMIT = PLAN_CATALOG.FRIEND.free;
 
 describe("팔로우 리소스 제한 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const password = "Test1234!";
@@ -42,11 +42,14 @@ describe("팔로우 리소스 제한 E2E", () => {
   describe("Free 유저 친구 제한", () => {
     it(`친구 ${FREE_LIMIT}명 도달 후 추가 요청 시 403 에러, 리소스 제한 조회 확인`, async () => {
       // Given
-      const freeUser = await ctx.helpers.createVerifiedUser("follow-limit-free@test.com", password);
+      const freeUser = await testContext.helpers.createVerifiedUser(
+        "follow-limit-free@test.com",
+        password,
+      );
       const friends: VerifiedUser[] = [];
 
       for (let i = 0; i < FREE_LIMIT + 1; i++) {
-        const friend = await ctx.helpers.createVerifiedUser(
+        const friend = await testContext.helpers.createVerifiedUser(
           `follow-friend-${i}@test.com`,
           password,
         );
@@ -55,14 +58,14 @@ describe("팔로우 리소스 제한 E2E", () => {
 
       // FREE_LIMIT명과 친구 관계 성립
       for (const friend of friends.slice(0, FREE_LIMIT)) {
-        await ctx.helpers.createFriendship(freeUser, friend);
+        await testContext.helpers.createFriendship(freeUser, friend);
       }
 
       // When
       const extraFriend = friends[FREE_LIMIT];
       expect(extraFriend).toBeDefined();
 
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/v1/follows/${extraFriend?.userTag}`)
         .set("Authorization", `Bearer ${freeUser.accessToken}`)
         .expect(403);
@@ -88,7 +91,7 @@ describe("팔로우 리소스 제한 E2E", () => {
       });
 
       // When
-      const limitResponse = await request(ctx.app.getHttpServer())
+      const limitResponse = await request(testContext.app.getHttpServer())
         .get("/v1/follows/resource-limit")
         .set("Authorization", `Bearer ${freeUser.accessToken}`)
         .expect(200);
@@ -102,8 +105,11 @@ describe("팔로우 리소스 제한 E2E", () => {
   describe("초대 보상 친구 자리", () => {
     it("친구 자리 보너스만큼 한도가 늘고, 넘으면 FOLLOW_0909 details에 보너스를 더한 한도를 싣는다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("follow-limit-bonus@test.com", password);
-      await ctx.testDatabase.getClient().insert(resourceBonus).values({
+      const user = await testContext.helpers.createVerifiedUser(
+        "follow-limit-bonus@test.com",
+        password,
+      );
+      await testContext.testDatabase.getClient().insert(resourceBonus).values({
         userId: user.userId,
         resource: "FRIEND",
         quantity: 1,
@@ -112,15 +118,18 @@ describe("팔로우 리소스 제한 E2E", () => {
       const friends: VerifiedUser[] = [];
       for (let i = 0; i < FREE_LIMIT + 2; i++) {
         friends.push(
-          await ctx.helpers.createVerifiedUser(`follow-bonus-friend-${i}@test.com`, password),
+          await testContext.helpers.createVerifiedUser(
+            `follow-bonus-friend-${i}@test.com`,
+            password,
+          ),
         );
       }
       for (const friend of friends.slice(0, FREE_LIMIT + 1)) {
-        await ctx.helpers.createFriendship(user, friend);
+        await testContext.helpers.createFriendship(user, friend);
       }
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/v1/follows/${friends[FREE_LIMIT + 1]?.userTag}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(403);
@@ -142,14 +151,14 @@ describe("팔로우 리소스 제한 E2E", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
       try {
         const email = "follow-limit-grant@test.com";
-        const user = await ctx.helpers.createVerifiedUser(email, password);
-        await ctx.testDatabase.getClient().insert(resourceBonus).values({
+        const user = await testContext.helpers.createVerifiedUser(email, password);
+        await testContext.testDatabase.getClient().insert(resourceBonus).values({
           userId: user.userId,
           resource: "FRIEND",
           quantity: 1,
           sourceKey: "invite:follow-limit-grant",
         });
-        await ctx.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+        await testContext.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
           userId: UserId.reconstitute(user.userId),
           source: "INVITE",
           sourceKey: "invite:limit",
@@ -158,9 +167,11 @@ describe("팔로우 리소스 제한 E2E", () => {
         const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         const maxCountAt = async (at: Date) => {
           vi.setSystemTime(at);
-          await ctx.module.get(SweepPremiumGrantsUseCase).execute({ now: instantFromDate(at) });
-          const { accessToken } = await ctx.helpers.loginUser(email, password);
-          const response = await request(ctx.app.getHttpServer())
+          await testContext.module
+            .get(SweepPremiumGrantsUseCase)
+            .execute({ now: instantFromDate(at) });
+          const { accessToken } = await testContext.helpers.loginUser(email, password);
+          const response = await request(testContext.app.getHttpServer())
             .get("/v1/follows/resource-limit")
             .set("Authorization", `Bearer ${accessToken}`)
             .expect(200);
@@ -183,14 +194,14 @@ describe("팔로우 리소스 제한 E2E", () => {
   describe("Premium 유저 무제한", () => {
     it("Free 한도 초과해도 친구 요청 성공하고 maxCount가 null (무제한)", async () => {
       // Given
-      const premiumUser = await ctx.helpers.createVerifiedUser(
+      const premiumUser = await testContext.helpers.createVerifiedUser(
         "follow-limit-premium@test.com",
         password,
       );
 
       requireRecord(
         (
-          await ctx.testDatabase
+          await testContext.testDatabase
             .getClient()
             .update(userTable)
             .set({ subscriptionStatus: "ACTIVE" })
@@ -201,7 +212,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
       const friends: VerifiedUser[] = [];
       for (let i = 0; i < FREE_LIMIT + 1; i++) {
-        const friend = await ctx.helpers.createVerifiedUser(
+        const friend = await testContext.helpers.createVerifiedUser(
           `follow-premium-friend-${i}@test.com`,
           password,
         );
@@ -209,14 +220,14 @@ describe("팔로우 리소스 제한 E2E", () => {
       }
 
       for (const friend of friends.slice(0, FREE_LIMIT)) {
-        await ctx.helpers.createFriendship(premiumUser, friend);
+        await testContext.helpers.createFriendship(premiumUser, friend);
       }
 
       // When
       const extraFriend = friends[FREE_LIMIT];
       expect(extraFriend).toBeDefined();
 
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/v1/follows/${extraFriend?.userTag}`)
         .set("Authorization", `Bearer ${premiumUser.accessToken}`)
         .expect(201);
@@ -225,7 +236,7 @@ describe("팔로우 리소스 제한 E2E", () => {
       expect(response.body.data.autoAccepted).toBe(false);
 
       // When
-      const limitResponse = await request(ctx.app.getHttpServer())
+      const limitResponse = await request(testContext.app.getHttpServer())
         .get("/v1/follows/resource-limit")
         .set("Authorization", `Bearer ${premiumUser.accessToken}`)
         .expect(200);

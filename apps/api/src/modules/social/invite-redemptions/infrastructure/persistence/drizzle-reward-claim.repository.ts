@@ -11,14 +11,14 @@ import { toRewardClaimRow } from "./reward-claim-row.mapper.js";
 
 @Injectable()
 export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async existsAnyOf(claims: readonly RewardClaim[]): Promise<boolean> {

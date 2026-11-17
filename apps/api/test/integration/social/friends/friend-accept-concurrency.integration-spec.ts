@@ -55,8 +55,8 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
       throw new Error("친구 요청 fixture가 생성되지 않았습니다.");
     }
     requestId = request.id;
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const friendshipRepository = new DrizzleFriendshipRepository(txHost);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const friendshipRepository = new DrizzleFriendshipRepository(transactionHost);
     const cache: FriendshipCachePort = {
       getMutualFriend: async () => undefined,
       setMutualFriend: async () => {},
@@ -78,10 +78,10 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     const logger = { log() {}, debug() {}, warn() {}, error() {} };
     acceptFriendRequest = new AcceptFriendRequestUseCase({
       unitOfWork: uow,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       friendshipRepository,
-      friendReader: new DrizzleFriendReader(txHost),
-      profileReader: new DrizzleFriendProfileReader(txHost),
+      friendReader: new DrizzleFriendReader(transactionHost),
+      profileReader: new DrizzleFriendProfileReader(transactionHost),
       cache,
       notifier,
       notifyFirstFriendMilestone: new NotifyFirstFriendMilestoneUseCase({
@@ -102,15 +102,19 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
   async function hold(kind: "request" | "receiver") {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
-    const holding = client.transaction(async (tx) => {
+    const holding = client.transaction(async (transaction) => {
       if (kind === "request") {
-        await tx
+        await transaction
           .select({ id: follow.id })
           .from(follow)
           .where(eq(follow.id, requestId))
           .for("update");
       } else {
-        await tx.select({ id: user.id }).from(user).where(eq(user.id, receiverId)).for("update");
+        await transaction
+          .select({ id: user.id })
+          .from(user)
+          .where(eq(user.id, receiverId))
+          .for("update");
       }
       acquired.resolve();
       await released.promise;

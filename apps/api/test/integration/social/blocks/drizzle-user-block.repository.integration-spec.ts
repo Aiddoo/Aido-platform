@@ -48,13 +48,13 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleUserBlockRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserBlockRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleUserBlockRepository(transactionHost);
   }
 
   function createBlockedUserReader(): DrizzleBlockedUserReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleBlockedUserReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleBlockedUserReader(transactionHost);
   }
 
   async function insertBlock(blockedId: string, createdAt: Temporal.Instant, id: string) {
@@ -67,8 +67,8 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
   }
 
   function createUserBlockReader(): DrizzleUserBlockReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserBlockReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleUserBlockReader(transactionHost);
   }
 
   describeUserBlockRepositoryContract(async () => createRepository());

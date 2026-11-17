@@ -39,7 +39,7 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
     providers: [ClsUnitOfWork],
   }).compile();
   await module.init();
-  const txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
+  const transactionHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   const uow = module.get(ClsUnitOfWork);
   const committedId = "cdrizzlecommit00000000001";
   const rollbackId = "cdrizzlerollback000000001";
@@ -47,19 +47,19 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
   try {
     // When
     await uow.run(async () => {
-      await txHost.tx.insert(user).values({
+      await transactionHost.tx.insert(user).values({
         id: committedId,
         email: "drizzle-commit@test.aido.app",
         userTag: "DRIZZLC1",
         updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       });
-      const changed = await txHost.tx
+      const changed = await transactionHost.tx
         .update(user)
         .set({ aiUsageCount: 1 })
         .where(eq(user.id, committedId))
         .returning({ id: user.id });
       expect(changed).toHaveLength(1);
-      const counts = await txHost.tx
+      const counts = await transactionHost.tx
         .select({ count: user.aiUsageCount })
         .from(user)
         .where(eq(user.id, committedId));
@@ -68,10 +68,10 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
         expect(await client.query.user.findFirst({ where: { id: committedId } })).toBeDefined();
         tasks.push("root");
       });
-      const rootTx = txHost.tx;
+      const rootTransaction = transactionHost.tx;
       await uow.run(async () => {
-        expect(txHost.tx).toBe(rootTx);
-        const found = await txHost.tx.query.user.findFirst({ where: { id: committedId } });
+        expect(transactionHost.tx).toBe(rootTransaction);
+        const found = await transactionHost.tx.query.user.findFirst({ where: { id: committedId } });
         expect(found?.email).toBe("drizzle-commit@test.aido.app");
         uow.register(async () => {
           tasks.push("nested");
@@ -85,13 +85,16 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
 
     // When
     const result = uow.run(async () => {
-      await txHost.tx.insert(user).values({
+      await transactionHost.tx.insert(user).values({
         id: rollbackId,
         email: "drizzle-rollback@test.aido.app",
         userTag: "DRIZZLR1",
         updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
       });
-      await txHost.tx.update(user).set({ aiUsageCount: 3 }).where(eq(user.id, committedId));
+      await transactionHost.tx
+        .update(user)
+        .set({ aiUsageCount: 3 })
+        .where(eq(user.id, committedId));
       uow.register(async () => {
         tasks.push("rolled-back");
       });

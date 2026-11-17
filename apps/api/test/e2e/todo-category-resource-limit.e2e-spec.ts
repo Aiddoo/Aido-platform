@@ -18,18 +18,18 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const FREE_LIMIT = PLAN_CATALOG.TODO_CATEGORY.free;
 
 describe("할 일 카테고리 리소스 제한 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const password = "Test1234!";
@@ -38,11 +38,14 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
     it("3번째 카테고리 생성 성공 후 4번째 생성 시 403 에러, 리소스 제한 조회 확인", async () => {
       // Given
       // 기본 카테고리 2개가 자동 생성된 Free 유저
-      const user = await ctx.helpers.createVerifiedUser("cat-limit-free@test.com", password);
+      const user = await testContext.helpers.createVerifiedUser(
+        "cat-limit-free@test.com",
+        password,
+      );
       const accessToken = user.accessToken;
 
       // When
-      const createResponse = await request(ctx.app.getHttpServer())
+      const createResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "추가 카테고리", color: "#00FF00" })
@@ -52,7 +55,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
       expect(createResponse.body.data.category.name).toBe("추가 카테고리");
 
       // When
-      const overResponse = await request(ctx.app.getHttpServer())
+      const overResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "초과 카테고리", color: "#0000FF" })
@@ -77,7 +80,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
       });
 
       // When
-      const limitResponse = await request(ctx.app.getHttpServer())
+      const limitResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories/resource-limit")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -91,9 +94,12 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
   describe("Premium 유저 무제한", () => {
     it("Free 한도(3개)를 초과하여 카테고리 생성 성공하고 maxCount가 ACTIVE 구독 한도", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("cat-limit-premium@test.com", password);
+      const user = await testContext.helpers.createVerifiedUser(
+        "cat-limit-premium@test.com",
+        password,
+      );
       const accessToken = user.accessToken;
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .update(userTable)
         .set({ subscriptionStatus: "ACTIVE" })
@@ -101,7 +107,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
       // When
       for (let i = 1; i <= 3; i++) {
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/todo-categories")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ name: `프리미엄 카테고리 ${i}`, color: "#FF0000" })
@@ -112,7 +118,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
       }
 
       // When
-      const limitResponse = await request(ctx.app.getHttpServer())
+      const limitResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories/resource-limit")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -129,8 +135,11 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
     it("한도보다 많이 가진 ADMIN은 목록·수정·순서 변경은 그대로 하고 새로 만들기만 프리미엄 한도로 막힌다", async () => {
       // Given
       // 기본 2개에 더해 프리미엄 한도를 하나 넘게 가진 ADMIN
-      const admin = await ctx.helpers.createVerifiedUser("cat-limit-admin@test.com", password);
-      const client = ctx.testDatabase.getClient();
+      const admin = await testContext.helpers.createVerifiedUser(
+        "cat-limit-admin@test.com",
+        password,
+      );
+      const client = testContext.testDatabase.getClient();
       await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, admin.userId));
       await client.insert(todoCategory).values(
         Array.from({ length: PREMIUM_LIMIT - 1 }, (_, index) => ({
@@ -142,7 +151,7 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
         })),
       );
       const owned = PREMIUM_LIMIT + 1;
-      const server = ctx.app.getHttpServer();
+      const server = testContext.app.getHttpServer();
       const authorization = `Bearer ${admin.accessToken}`;
 
       // When

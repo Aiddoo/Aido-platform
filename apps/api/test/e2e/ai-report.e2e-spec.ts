@@ -28,13 +28,13 @@ import { FakeAiGenerator } from "../mocks/fake-ai.generator.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("AI 리포트 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
 
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
@@ -42,22 +42,22 @@ describe("AI 리포트 E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   /** 프리미엄 사용자를 생성하고 토큰을 반환하는 헬퍼 */
   async function createPremiumUser(email: string, password: string) {
-    const user = await ctx.helpers.createVerifiedUser(email, password);
-    await ctx.testDatabase
+    const user = await testContext.helpers.createVerifiedUser(email, password);
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, user.userId));
-    const cacheService = ctx.module.get(CacheStorePort);
+    const cacheService = testContext.module.get(CacheStorePort);
     await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
@@ -68,7 +68,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser("ai-report-status@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/reports/status")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul");
@@ -87,7 +87,7 @@ describe("AI 리포트 E2E", () => {
 
     it("401: 인증 토큰 없이 요청 시 에러를 반환해야 한다", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports/status");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/ai/reports/status");
 
       // Then
       expect(response.status).toBe(401);
@@ -100,7 +100,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser("ai-report-list@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/reports")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -115,7 +115,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser("ai-report-filter@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/reports?type=WEEKLY&limit=5")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -126,7 +126,7 @@ describe("AI 리포트 E2E", () => {
 
     it("401: 인증 없이 요청 시 에러를 반환해야 한다", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/ai/reports");
 
       // Then
       expect(response.status).toBe(401);
@@ -139,7 +139,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser("ai-report-404@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/reports/99999")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -150,7 +150,7 @@ describe("AI 리포트 E2E", () => {
 
     it("401: 인증 없이 요청 시 에러를 반환해야 한다", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/ai/reports/1");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/ai/reports/1");
 
       // Then
       expect(response.status).toBe(401);
@@ -161,7 +161,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser("ai-report-invalid@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/ai/reports/invalid")
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -172,7 +172,7 @@ describe("AI 리포트 E2E", () => {
 
   /** 서울 기준 지난 주(7일 전 같은 요일)에 할 일 하나를 기록한다. 활동이 없으면 LLM을 부르지 않는다. */
   async function seedLastWeekTodo(userId: string) {
-    const client = ctx.testDatabase.getClient();
+    const client = testContext.testDatabase.getClient();
     const [category] = await client
       .insert(todoCategory)
       .values({
@@ -205,11 +205,11 @@ describe("AI 리포트 E2E", () => {
       await seedLastWeekTodo(user.userId);
 
       // When
-      const report = await ctx.module
+      const report = await testContext.module
         .get(GenerateReportUseCase)
         .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale });
       assert.exists(report);
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -222,14 +222,14 @@ describe("AI 리포트 E2E", () => {
         toAiReportResponse(report, Temporal.Now.plainDateISO("UTC")).periodLabel,
       );
       expect(fakeAiGenerator.getCallCount()).toBe(1);
-      const stored = await ctx.testDatabase
+      const stored = await testContext.testDatabase
         .getClient()
         .query.aiReport.findFirst({ where: { id: report.id.value } });
       expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@5" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
-      const denied = await request(ctx.app.getHttpServer())
+      const denied = await request(testContext.app.getHttpServer())
         .get(`/v1/ai/reports/${report.id.value}`)
         .set("Authorization", `Bearer ${other.accessToken}`);
 
@@ -241,10 +241,13 @@ describe("AI 리포트 E2E", () => {
 
   it("비프리미엄 리포트 조회는 없는 ID보다 AI_1308을 우선한다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("ai-report-free@example.com", "Test1234!");
+    const user = await testContext.helpers.createVerifiedUser(
+      "ai-report-free@example.com",
+      "Test1234!",
+    );
     // When
     for (const route of ["/v1/ai/reports/status", "/v1/ai/reports", "/v1/ai/reports/999999"]) {
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get(route)
         .set("Authorization", `Bearer ${user.accessToken}`);
       // Then
@@ -259,20 +262,20 @@ describe("AI 리포트 E2E", () => {
     const user = await createPremiumUser("ai-report-expired@example.com", "Test1234!");
     fakeAiGenerator.setRawResponse(createReportAiResponse("ko"));
     await seedLastWeekTodo(user.userId);
-    const report = await ctx.module
+    const report = await testContext.module
       .get(GenerateReportUseCase)
       .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale: "ko" });
     assert.exists(report);
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ subscriptionStatus: "EXPIRED" })
       .where(eq(userTable.id, user.userId));
-    await ctx.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(user.userId));
+    await testContext.module.get(CacheStorePort).del(EntitlementCacheKey.subscription(user.userId));
 
     // When
     for (const route of ["/v1/ai/reports", `/v1/ai/reports/${report.id.value}`]) {
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get(route)
         .set("Authorization", `Bearer ${user.accessToken}`);
 
@@ -280,7 +283,7 @@ describe("AI 리포트 E2E", () => {
       expect(response.status).toBe(403);
       expect(response.body.error.code).toBe("AI_1308");
     }
-    const stored = await ctx.testDatabase
+    const stored = await testContext.testDatabase
       .getClient()
       .query.aiReport.findFirst({ where: { id: report.id.value } });
     expect(stored).toBeDefined();

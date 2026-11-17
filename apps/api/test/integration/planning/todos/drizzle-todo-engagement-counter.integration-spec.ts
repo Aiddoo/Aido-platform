@@ -29,7 +29,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     database = new TestDatabase();
     client = await database.start();
     counter = new DrizzleTodoEngagementCounterAdapter(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new DateClock(),
     );
   });

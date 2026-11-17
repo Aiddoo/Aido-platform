@@ -59,10 +59,10 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     readonly reader: DrizzleInviteRedemptionReader;
     readonly unitOfWork: UnitOfWorkPort;
   } {
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     return {
-      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
-      reader: new DrizzleInviteRedemptionReader(txHost),
+      redemptions: new DrizzleInviteRedemptionRepository(transactionHost, new DateClock()),
+      reader: new DrizzleInviteRedemptionReader(transactionHost),
       unitOfWork: uow,
     };
   }

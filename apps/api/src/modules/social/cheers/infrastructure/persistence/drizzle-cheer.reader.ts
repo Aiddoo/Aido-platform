@@ -52,14 +52,14 @@ function toCheerReadModel(row: CheerRowWithUsers): CheerReadModel {
 
 @Injectable()
 export class DrizzleCheerReader implements CheerReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   listReceived(params: ListCheersParams): Promise<CheerReadModel[]> {

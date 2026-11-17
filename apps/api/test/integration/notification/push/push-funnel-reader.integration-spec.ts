@@ -74,8 +74,8 @@ describe("푸시 발송 퍼널 조회 (실제 PostgreSQL)", () => {
       a: requireRecord(tokens.find((row) => row.deviceId === TOKEN_KEYS.a)).id,
       b: requireRecord(tokens.find((row) => row.deviceId === TOKEN_KEYS.b)).id,
     };
-    const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzlePushFunnelReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    reader = new DrizzlePushFunnelReader(transactionHost);
   });
 
   afterAll(async () => {

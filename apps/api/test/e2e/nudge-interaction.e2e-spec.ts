@@ -30,26 +30,26 @@ import {
 } from "./helpers/index.js";
 
 describe("콕 답장·감사 E2E (실제 DB)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const interactionConfig = { isEnabled: true };
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(NudgeInteractionConfigPort).useValue(interactionConfig),
     });
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   async function countNotifications(condition: SQL | undefined): Promise<number> {
-    const [row] = await ctx.testDatabase
+    const [row] = await testContext.testDatabase
       .getClient()
       .select({ count: count() })
       .from(notification)
@@ -58,7 +58,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   async function countThankedNudges(condition?: SQL): Promise<number> {
-    const [row] = await ctx.testDatabase
+    const [row] = await testContext.testDatabase
       .getClient()
       .select({ count: count() })
       .from(nudgeTable)
@@ -67,7 +67,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   async function createNudgeRow(senderId: string, receiverId: string, todoId: number) {
-    const [created] = await ctx.testDatabase
+    const [created] = await testContext.testDatabase
       .getClient()
       .insert(nudgeTable)
       .values({ senderId, receiverId, todoId })
@@ -79,12 +79,12 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   async function createTodo(owner: VerifiedUser) {
-    const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
+    const categoryId = await testContext.helpers.getDefaultCategoryId(owner.accessToken);
     const start = new Date();
     start.setUTCDate(start.getUTCDate() - 1);
     const end = new Date();
     end.setUTCDate(end.getUTCDate() + 1);
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .send({
@@ -98,7 +98,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   async function sendNudge(sender: VerifiedUser, receiver: VerifiedUser, todoId: number) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/nudges")
       .set("Authorization", `Bearer ${sender.accessToken}`)
       .send({ receiverId: receiver.userId, todoId })
@@ -107,21 +107,21 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   function reply(receiver: VerifiedUser, nudgeId: number, replyKind: NudgeReplyKind) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .put(`/v1/nudges/${nudgeId}/reply`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .send({ replyKind });
   }
 
   function sendThanks(receiver: VerifiedUser, todoId: number, throughNudgeId: number) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .put(`/v1/nudges/todos/${todoId}/thanks`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .send({ throughNudgeId });
   }
 
   async function setCompleted(owner: VerifiedUser, todoId: number, completed: boolean) {
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .patch(`/v1/todos/${todoId}`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .send({ completed })
@@ -129,7 +129,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   }
 
   async function getThanksPreview(owner: VerifiedUser, todoId: number) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/todos/${todoId}/thanks`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
@@ -140,10 +140,13 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     "%s 사용자도 답장을 보내며 할 일 완료 상태는 바뀌지 않는다",
     async (subscriptionStatus) => {
       // Given
-      const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-      const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-      await ctx.helpers.createFriendship(sender, receiver);
-      await ctx.testDatabase
+      const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+      const receiver = await testContext.helpers.createVerifiedUser(
+        "receiver@test.com",
+        "Test1234!",
+      );
+      await testContext.helpers.createFriendship(sender, receiver);
+      await testContext.testDatabase
         .getClient()
         .update(userTable)
         .set({ subscriptionStatus })
@@ -174,9 +177,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("같은 답장 동시 요청 20개에도 첫 답장 알림과 push outbox는 한 번만 저장한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
 
@@ -191,7 +194,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
         (response) => nudgeInteractionResponseSchema.parse(response.body.data).replyKind,
       ),
     ).toEqual(Array.from({ length: 20 }, () => "THANKFUL"));
-    const notifications = await ctx.testDatabase.getClient().query.notification.findMany({
+    const notifications = await testContext.testDatabase.getClient().query.notification.findMany({
       where: { nudgeId: nudge.id, type: "NUDGE_REPLIED" },
       with: { pushDispatch: { with: { outbox: true } } },
     });
@@ -204,9 +207,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("답장을 변경해도 첫 답장·읽음 시각을 유지하고 알림을 반복하지 않는다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
     const first = await reply(receiver, nudge.id, "STARTING").expect(200);
@@ -233,17 +236,17 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("보낸 사람·제삼자는 답장을 보낼 수 없고 제삼자는 콕도 조회할 수 없다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    const stranger = await ctx.helpers.createVerifiedUser("stranger@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    const stranger = await testContext.helpers.createVerifiedUser("stranger@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
 
     // When
     const senderReply = await reply(sender, nudge.id, "STARTING").expect(404);
     const strangerReply = await reply(stranger, nudge.id, "STARTING").expect(404);
-    const strangerQuery = await request(ctx.app.getHttpServer())
+    const strangerQuery = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/${nudge.id}/interaction`)
       .set("Authorization", `Bearer ${stranger.accessToken}`)
       .expect(404);
@@ -257,22 +260,22 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("차단하면 받은 사람·보낸 사람 모두 그 콕을 열 수 없고 답장도 NUDGE_1105로 거부한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .post(`/v1/blocks/${sender.userId}`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .expect(200);
 
     // When
-    const receiverQuery = await request(ctx.app.getHttpServer())
+    const receiverQuery = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/${nudge.id}/interaction`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .expect(404);
-    const senderQuery = await request(ctx.app.getHttpServer())
+    const senderQuery = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/${nudge.id}/interaction`)
       .set("Authorization", `Bearer ${sender.accessToken}`)
       .expect(404);
@@ -286,19 +289,19 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("비공개로 변경한 할 일은 보낸 사람에게 가리고 답장을 차단한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .patch(`/v1/todos/${todo.id}`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .send({ visibility: "PRIVATE" })
       .expect(200);
 
     // When
-    const query = await request(ctx.app.getHttpServer())
+    const query = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/${nudge.id}/interaction`)
       .set("Authorization", `Bearer ${sender.accessToken}`)
       .expect(200);
@@ -314,14 +317,14 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("캐시된 친구 정보가 있어도 친구 해제 직후에는 답장·감사를 차단한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
     await setCompleted(receiver, todo.id, true);
     await getThanksPreview(receiver, todo.id);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .delete(`/v1/follows/${sender.userId}`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .expect(200);
@@ -338,13 +341,13 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("완료 저장보다 먼저 온 미리보기는 빈 미리보기이고 완료 뒤에 친구를 보이며, 완료 전 감사 전송은 거절한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
     const getReleasedAppPreview = () =>
-      request(ctx.app.getHttpServer())
+      request(testContext.app.getHttpServer())
         .get(`/v1/nudges/todos/${todo.id}/thanks`)
         .query({ limit: 20 })
         .set("Authorization", `Bearer ${receiver.accessToken}`)
@@ -377,11 +380,14 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("같은 친구의 여러 콕을 묶고 감사 동시 요청 20개에도 친구별 한 번만 전한다", async () => {
     // Given
-    const firstFriend = await ctx.helpers.createVerifiedUser("first@test.com", "Test1234!");
-    const secondFriend = await ctx.helpers.createVerifiedUser("second@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(firstFriend, receiver);
-    await ctx.helpers.createFriendship(secondFriend, receiver);
+    const firstFriend = await testContext.helpers.createVerifiedUser("first@test.com", "Test1234!");
+    const secondFriend = await testContext.helpers.createVerifiedUser(
+      "second@test.com",
+      "Test1234!",
+    );
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(firstFriend, receiver);
+    await testContext.helpers.createFriendship(secondFriend, receiver);
     const todo = await createTodo(receiver);
     await sendNudge(firstFriend, receiver, todo.id);
     await sendNudge(secondFriend, receiver, todo.id);
@@ -418,11 +424,14 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("미리보기 이후의 콕은 제외하고 완료를 취소했다 다시 완료해도 감사를 반복하지 않는다", async () => {
     // Given
-    const firstFriend = await ctx.helpers.createVerifiedUser("first@test.com", "Test1234!");
-    const secondFriend = await ctx.helpers.createVerifiedUser("second@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(firstFriend, receiver);
-    await ctx.helpers.createFriendship(secondFriend, receiver);
+    const firstFriend = await testContext.helpers.createVerifiedUser("first@test.com", "Test1234!");
+    const secondFriend = await testContext.helpers.createVerifiedUser(
+      "second@test.com",
+      "Test1234!",
+    );
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(firstFriend, receiver);
+    await testContext.helpers.createFriendship(secondFriend, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(firstFriend, receiver, todo.id);
     await setCompleted(receiver, todo.id, true);
@@ -451,10 +460,10 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     { name: "1.15.2 앱", appVersion: "1.15.2", code: ErrorCode.NUDGE_1111 },
   ])("기능이 꺼지면 $name은 보낸 콕 목록에서 404 $code를 받는다", async ({ appVersion, code }) => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
     interactionConfig.isEnabled = false;
     try {
-      const pending = request(ctx.app.getHttpServer())
+      const pending = request(testContext.app.getHttpServer())
         .get("/v1/nudges/interactions")
         .query({ direction: "sent" })
         .set("Authorization", `Bearer ${sender.accessToken}`);
@@ -473,9 +482,9 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("다른 할 일의 콕을 감사 기준으로 보내면 거절한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const firstTodo = await createTodo(receiver);
     const secondTodo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, firstTodo.id);
@@ -491,18 +500,18 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("알림 저장이 실패하면 답장도 함께 롤백하고 다음 재시도는 성공한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const nudge = await sendNudge(sender, receiver, todo.id);
-    vi.spyOn(ctx.module.get(NudgeNotifierPort), "recordInteraction").mockRejectedValueOnce(
+    vi.spyOn(testContext.module.get(NudgeNotifierPort), "recordInteraction").mockRejectedValueOnce(
       new Error("알림 저장 실패"),
     );
 
     // When
     await reply(receiver, nudge.id, "THANKFUL").expect(500);
-    const rolledBack = await ctx.testDatabase.getClient().query.nudge.findFirst({
+    const rolledBack = await testContext.testDatabase.getClient().query.nudge.findFirst({
       where: { id: nudge.id },
     });
     const retried = await reply(receiver, nudge.id, "THANKFUL").expect(200);
@@ -519,25 +528,25 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("콕 목록은 관계를 해제해도 조회되며 커서로 중복 없이 다음 페이지를 읽는다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("sender@test.com", "Test1234!");
-    const receiver = await ctx.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, receiver);
+    const sender = await testContext.helpers.createVerifiedUser("sender@test.com", "Test1234!");
+    const receiver = await testContext.helpers.createVerifiedUser("receiver@test.com", "Test1234!");
+    await testContext.helpers.createFriendship(sender, receiver);
     const todo = await createTodo(receiver);
     const firstNudge = await sendNudge(sender, receiver, todo.id);
     const secondNudge = await createNudgeRow(sender.userId, receiver.userId, todo.id);
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .delete(`/v1/follows/${sender.userId}`)
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .expect(200);
 
     // When
-    const firstResponse = await request(ctx.app.getHttpServer())
+    const firstResponse = await request(testContext.app.getHttpServer())
       .get("/v1/nudges/interactions")
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .query({ direction: "received", limit: 1 })
       .expect(200);
     const firstPage = nudgeInteractionsResponseSchema.parse(firstResponse.body.data);
-    const secondResponse = await request(ctx.app.getHttpServer())
+    const secondResponse = await request(testContext.app.getHttpServer())
       .get("/v1/nudges/interactions")
       .set("Authorization", `Bearer ${receiver.accessToken}`)
       .query({ direction: "received", limit: 1, cursor: firstPage.pagination.nextCursor })
@@ -554,8 +563,8 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("구버전 알림 API와 헤더 없는 알림함은 새 유형을 제외하고 최신 알림함만 전체 읽음 처리한다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("user@test.com", "Test1234!");
-    await ctx.testDatabase
+    const user = await testContext.helpers.createVerifiedUser("user@test.com", "Test1234!");
+    await testContext.testDatabase
       .getClient()
       .insert(notification)
       .values([
@@ -570,29 +579,29 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
       ]);
 
     // When
-    const original = await request(ctx.app.getHttpServer())
+    const original = await request(testContext.app.getHttpServer())
       .get("/v1/notifications")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    const missingVersion = await request(ctx.app.getHttpServer())
+    const missingVersion = await request(testContext.app.getHttpServer())
       .get("/v1/notifications/inbox")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    const latest = await request(ctx.app.getHttpServer())
+    const latest = await request(testContext.app.getHttpServer())
       .get("/v1/notifications/inbox")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .set("X-App-Version", "1.11.0")
       .expect(200);
-    const oldReadAll = await request(ctx.app.getHttpServer())
+    const oldReadAll = await request(testContext.app.getHttpServer())
       .patch("/v1/notifications/read-all")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
-    const remaining = await request(ctx.app.getHttpServer())
+    const remaining = await request(testContext.app.getHttpServer())
       .get("/v1/notifications/inbox/unread-count")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .set("X-App-Version", "1.11.0")
       .expect(200);
-    const newReadAll = await request(ctx.app.getHttpServer())
+    const newReadAll = await request(testContext.app.getHttpServer())
       .patch("/v1/notifications/inbox/read-all")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .set("X-App-Version", "1.11.0")
@@ -616,24 +625,30 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
   });
   it("페이지 미리보기는 같은 콕 경계를 유지하고 기존 요청은 모든 친구를 반환한다", async () => {
     // Given
-    const owner = await ctx.helpers.createVerifiedUser("owner-page@test.com", "Test1234!");
-    const firstFriend = await ctx.helpers.createVerifiedUser("first-page@test.com", "Test1234!");
-    const secondFriend = await ctx.helpers.createVerifiedUser("second-page@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(firstFriend, owner);
-    await ctx.helpers.createFriendship(secondFriend, owner);
+    const owner = await testContext.helpers.createVerifiedUser("owner-page@test.com", "Test1234!");
+    const firstFriend = await testContext.helpers.createVerifiedUser(
+      "first-page@test.com",
+      "Test1234!",
+    );
+    const secondFriend = await testContext.helpers.createVerifiedUser(
+      "second-page@test.com",
+      "Test1234!",
+    );
+    await testContext.helpers.createFriendship(firstFriend, owner);
+    await testContext.helpers.createFriendship(secondFriend, owner);
     const todo = await createTodo(owner);
     await sendNudge(firstFriend, owner, todo.id);
     await sendNudge(secondFriend, owner, todo.id);
     await setCompleted(owner, todo.id, true);
 
     // When
-    const firstResponse = await request(ctx.app.getHttpServer())
+    const firstResponse = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/todos/${todo.id}/thanks`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .query({ limit: 1 })
       .expect(200);
     const firstPage = nudgeThanksPreviewResponseSchema.parse(firstResponse.body.data);
-    const secondResponse = await request(ctx.app.getHttpServer())
+    const secondResponse = await request(testContext.app.getHttpServer())
       .get(`/v1/nudges/todos/${todo.id}/thanks`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .query({ limit: 1, cursor: firstPage.nextCursor, throughNudgeId: firstPage.throughNudgeId })
@@ -654,13 +669,19 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
 
   it("감사 배치 알림 저장에 실패하면 모든 감사 상태를 롤백한다", async () => {
     // Given
-    const sender = await ctx.helpers.createVerifiedUser("thanks-sender@test.com", "Test1234!");
-    const owner = await ctx.helpers.createVerifiedUser("thanks-owner@test.com", "Test1234!");
-    await ctx.helpers.createFriendship(sender, owner);
+    const sender = await testContext.helpers.createVerifiedUser(
+      "thanks-sender@test.com",
+      "Test1234!",
+    );
+    const owner = await testContext.helpers.createVerifiedUser(
+      "thanks-owner@test.com",
+      "Test1234!",
+    );
+    await testContext.helpers.createFriendship(sender, owner);
     const todo = await createTodo(owner);
     const nudge = await sendNudge(sender, owner, todo.id);
     await setCompleted(owner, todo.id, true);
-    const notifier = ctx.module.get(NudgeNotifierPort);
+    const notifier = testContext.module.get(NudgeNotifierPort);
     vi.spyOn(notifier, "recordInteractions").mockRejectedValueOnce(
       new Error("감사 알림 저장 실패"),
     );
@@ -669,7 +690,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     await sendThanks(owner, todo.id, nudge.id).expect(500);
 
     // Then
-    const stored = await ctx.testDatabase.getClient().query.nudge.findFirst({
+    const stored = await testContext.testDatabase.getClient().query.nudge.findFirst({
       where: { id: nudge.id },
     });
     expect(stored?.thankedAt).toBeNull();

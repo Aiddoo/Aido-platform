@@ -21,13 +21,13 @@ import {
 } from "./helpers/index.js";
 
 describe("AI 데이터 처리 동의 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
   let user: VerifiedUser;
 
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
@@ -35,12 +35,12 @@ describe("AI 데이터 처리 동의 E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    user = await ctx.helpers.createVerifiedUser("ai-consent@example.com", "Test1234!");
+    await testContext.reset();
+    user = await testContext.helpers.createVerifiedUser("ai-consent@example.com", "Test1234!");
     fakeAiGenerator.setResponse({
       title: "팀 미팅",
       date: { kind: "OFFSET_DAYS", amount: 1 },
@@ -49,7 +49,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
   });
 
   function parseTodo(appVersion?: string) {
-    const call = request(ctx.app.getHttpServer())
+    const call = request(testContext.app.getHttpServer())
       .post("/v1/ai/parse-todo")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .set("X-Timezone", "Asia/Seoul");
@@ -59,7 +59,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
   }
 
   function answerConsent(agreed: boolean, version: string = AI_DATA_SHARING_CONSENT.VERSION) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .patch("/v1/auth/consent/ai-data-sharing")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ agreed, version });
@@ -73,7 +73,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
     expect(response.status).toBe(403);
     expect(response.body.error.code).toBe("AI_1311");
     expect(fakeAiGenerator.getCallCount()).toBe(0);
-    const usage = await request(ctx.app.getHttpServer())
+    const usage = await request(testContext.app.getHttpServer())
       .get("/v1/ai/usage")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
@@ -82,7 +82,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
 
   it("한도를 다 쓴 1.13.0 앱도 동의 전이면 한도 오류보다 동의 오류를 먼저 받는다", async () => {
     // Given
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ aiUsageCount: PLAN_CATALOG.AI_PARSE.free, aiUsageResetAt: Temporal.Now.instant() })
@@ -110,7 +110,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
       aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
     });
     expect(response.status).toBe(200);
-    const consent = await request(ctx.app.getHttpServer())
+    const consent = await request(testContext.app.getHttpServer())
       .get("/v1/auth/consent")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
@@ -149,7 +149,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
     // 1.13.0 앱, 아직 답하지 않은 사용자
     const responses = await Promise.all(
       ["/v1/ai/reports?type=WEEKLY", "/v1/ai/suggestions"].map((path) =>
-        request(ctx.app.getHttpServer())
+        request(testContext.app.getHttpServer())
           .get(path)
           .set("Authorization", `Bearer ${user.accessToken}`)
           .set("X-App-Version", "1.13.0"),
@@ -194,7 +194,7 @@ describe("AI 데이터 처리 동의 E2E", () => {
 
   it("지원하지 않는 안내 버전으로 답하면 400으로 거부한다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .patch("/v1/auth/consent/ai-data-sharing")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ agreed: true, version: "2020-01-01" });

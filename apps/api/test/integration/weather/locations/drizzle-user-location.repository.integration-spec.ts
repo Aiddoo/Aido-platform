@@ -51,7 +51,7 @@ describe("DrizzleUserLocationRepository (실제 PostgreSQL)", () => {
   function createRepository(): DrizzleUserLocationRepository {
     const transaction = createDatabaseTransactionFixture(client);
     uow = transaction.uow;
-    return new DrizzleUserLocationRepository(transaction.txHost);
+    return new DrizzleUserLocationRepository(transaction.transactionHost);
   }
 
   describeUserLocationRepositoryContract(async () => createRepository());
@@ -94,7 +94,7 @@ describe("DrizzleUserLocationRepository (실제 PostgreSQL)", () => {
     const released = Promise.withResolvers<void>();
     const holder = createDatabaseTransactionFixture(client);
     const holding = holder.uow.run(async () => {
-      await new DrizzleUserLocationRepository(holder.txHost).save(seoul);
+      await new DrizzleUserLocationRepository(holder.transactionHost).save(seoul);
       acquired.resolve();
       await released.promise;
     });

@@ -129,7 +129,7 @@ export const getNotificationsQuerySchema = z.object({
     .describe("페이지네이션 커서 (선택, 0 이상의 정수)"),
   unreadOnly: z
     .union([z.boolean(), z.string()])
-    .transform((val) => val === true || val === "true")
+    .transform((value) => value === true || value === "true")
     .default(false)
     .describe("읽지 않은 알림만 조회 여부 (기본값: false)"),
   category: z

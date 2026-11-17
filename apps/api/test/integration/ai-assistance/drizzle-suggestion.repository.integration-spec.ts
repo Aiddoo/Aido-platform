@@ -33,6 +33,7 @@ describe("DrizzleSuggestionRepository (실제 PostgreSQL)", () => {
   });
 
   describeSuggestionRepositoryContract(
-    async () => new DrizzleSuggestionRepository(createDatabaseTransactionFixture(client).txHost),
+    async () =>
+      new DrizzleSuggestionRepository(createDatabaseTransactionFixture(client).transactionHost),
   );
 });

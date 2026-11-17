@@ -14,15 +14,15 @@ import { toSuggestion, toSuggestionRow } from "./suggestion-row.mapper.js";
 
 @Injectable()
 export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async nextIds(count: number): Promise<SuggestionId[]> {

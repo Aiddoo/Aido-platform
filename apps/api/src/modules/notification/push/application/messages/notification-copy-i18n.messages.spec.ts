@@ -6,7 +6,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   NOTIFICATION_COPY_CATALOG,
-  type NotificationCopyArgs,
+  type NotificationCopyValues,
   type NotificationCopyText,
 } from "./notification-copy-catalog.messages.js";
 import { formatNotificationCopyText } from "./notification-copy-format.messages.js";
@@ -46,7 +46,7 @@ function placeholdersOf(message: NotificationCopyText): string[] {
 }
 
 /** 대표 인자. 사용자 글처럼 자리표시자 문법이 든 값도 다시 해석하지 않는지 본다. */
-function argsFor(message: NotificationCopyText, count: number): NotificationCopyArgs {
+function valuesFor(message: NotificationCopyText, count: number): NotificationCopyValues {
   return Object.fromEntries(
     placeholdersOf(message).map((name) => [
       name,
@@ -83,11 +83,11 @@ describe("푸시 문구 렌더러와 @nestjs/i18n", () => {
     (locale, path, message) => {
       for (const count of [0, 1, 2, 5]) {
         // Given
-        const args = argsFor(message, count);
+        const values = valuesFor(message, count);
 
         // When
-        const rendered = formatNotificationCopyText(message, args, locale);
-        const translated = i18n.translate(`notification.${path}`, { locale, args });
+        const rendered = formatNotificationCopyText(message, values, locale);
+        const translated = i18n.translate(`notification.${path}`, { locale, args: values });
 
         // Then
         expect(rendered).toBe(translated);

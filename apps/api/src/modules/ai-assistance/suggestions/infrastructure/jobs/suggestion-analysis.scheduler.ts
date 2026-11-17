@@ -25,19 +25,19 @@ const ENQUEUE_BATCH_SIZE = 50;
 export class SuggestionAnalysisScheduler implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisScheduler.name);
 
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #jobQueue: JobQueuePort;
   readonly #clock: ClockPort;
   readonly #dispatchAnalyses: Pick<DispatchSuggestionAnalysesUseCase, "execute">;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     jobQueue: JobQueuePort,
     clock: ClockPort,
     @Inject(DispatchSuggestionAnalysesUseCase)
     dispatchAnalyses: Pick<DispatchSuggestionAnalysesUseCase, "execute">,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
     this.#dispatchAnalyses = dispatchAnalyses;
@@ -76,7 +76,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
     await forEachBatch({
       batchSize: ENQUEUE_BATCH_SIZE,
       fetchPage: (cursor, take) =>
-        this.#txHost.tx.query.user.findMany({
+        this.#transactionHost.tx.query.user.findMany({
           columns: { id: true },
           with: { preference: { columns: { timezone: true } } },
           where: {

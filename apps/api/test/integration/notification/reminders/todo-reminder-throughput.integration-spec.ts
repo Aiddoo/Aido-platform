@@ -69,8 +69,8 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       max: 3,
       useListenNotify: false,
     });
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    jobQueue = new PgBossJobQueueAdapter(boss, transactionHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
       workerEnabled: true,
     });
@@ -78,8 +78,11 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
 
     const publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
-        notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+        notificationRepository: new DrizzleNotificationRepository(transactionHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+          transactionHost,
+          new DateClock(),
+        ),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -89,8 +92,11 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       sendNotificationWithDeduplication: { execute: async () => null },
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
-          notificationRepository: new DrizzleNotificationRepository(txHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+          notificationRepository: new DrizzleNotificationRepository(transactionHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+            transactionHost,
+            new DateClock(),
+          ),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),
@@ -98,11 +104,11 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
         unitOfWork: uow,
         afterCommitTasks: { register: () => undefined },
       }),
-      todoTargetReader: new DrizzleNotificationTodoTargetReader(txHost),
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
     });
     processor = new TodoReminderQueueProcessor(
       new DrizzleSchedulerReader(
-        txHost,
+        transactionHost,
         new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
         { onboardingV2: { enabled: false, treatmentPercent: 50 } },
         new DateClock(),

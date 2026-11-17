@@ -14,14 +14,14 @@ import { NudgeLimitReaderPort } from "../../application/ports/nudge-limit.reader
 export class NudgeLimitReaderAdapter extends NudgeLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -32,12 +32,15 @@ export class NudgeLimitReaderAdapter extends NudgeLimitReaderPort {
     return this.#entitlementReader.getFeatureLimit(userId, "NUDGE");
   }
 
-  readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId, "NUDGE");
+  readLimitInTransaction(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "NUDGE");
   }
 
-  readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId, "NUDGE", {
+  readFeatureQuotaInTransaction(
+    userId: UserId,
+    usage: DailySendQuotaUsage,
+  ): Promise<DailySendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTransaction(userId, "NUDGE", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

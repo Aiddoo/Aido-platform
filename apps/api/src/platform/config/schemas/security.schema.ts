@@ -9,7 +9,7 @@ export const corsSchema = z.object({
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:3000,http://localhost:8081")
-    .transform((val) => val.split(",").map((origin) => origin.trim())),
+    .transform((value) => value.split(",").map((origin) => origin.trim())),
 });
 
 /**

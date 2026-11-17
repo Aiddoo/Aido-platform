@@ -5,29 +5,29 @@ import { TodoCategoryLimitReaderAdapter } from "./todo-category-limit-reader.ada
 
 type QuotaReader = Pick<
   EntitlementReaderPort,
-  "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+  "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
 >;
 
 // 받은 기능 이름·사용량을 남기고 정한 값을 돌려준다
 class RecordingEntitlementReader implements QuotaReader {
-  readonly limitReads: Parameters<QuotaReader["getFeatureLimitInTx"]>[] = [];
-  readonly quotaReads: Parameters<QuotaReader["getFeatureQuotaInTx"]>[] = [];
+  readonly limitReads: Parameters<QuotaReader["getFeatureLimitInTransaction"]>[] = [];
+  readonly quotaReads: Parameters<QuotaReader["getFeatureQuotaInTransaction"]>[] = [];
 
   async getFeatureLimit(): Promise<number | null> {
     return null;
   }
 
-  async getFeatureLimitInTx(
-    ...args: Parameters<QuotaReader["getFeatureLimitInTx"]>
+  async getFeatureLimitInTransaction(
+    ...parameters: Parameters<QuotaReader["getFeatureLimitInTransaction"]>
   ): Promise<number | null> {
-    this.limitReads.push(args);
+    this.limitReads.push(parameters);
     return 3;
   }
 
-  async getFeatureQuotaInTx(
-    ...args: Parameters<QuotaReader["getFeatureQuotaInTx"]>
-  ): ReturnType<QuotaReader["getFeatureQuotaInTx"]> {
-    this.quotaReads.push(args);
+  async getFeatureQuotaInTransaction(
+    ...parameters: Parameters<QuotaReader["getFeatureQuotaInTransaction"]>
+  ): ReturnType<QuotaReader["getFeatureQuotaInTransaction"]> {
+    this.quotaReads.push(parameters);
     return {
       feature: "TODO_CATEGORY",
       allowed: true,
@@ -49,7 +49,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    const result = await adapter.readLimitInTx(UserId.reconstitute("user-123"));
+    const result = await adapter.readLimitInTransaction(UserId.reconstitute("user-123"));
 
     // Then
     expect(result).toBe(3);
@@ -64,7 +64,7 @@ describe("TodoCategoryLimitReaderAdapter", () => {
     const adapter = new TodoCategoryLimitReaderAdapter(entitlementReader);
 
     // When
-    await adapter.readFeatureQuotaInTx(UserId.reconstitute("user-123"), 3);
+    await adapter.readFeatureQuotaInTransaction(UserId.reconstitute("user-123"), 3);
 
     // Then
     expect(entitlementReader.quotaReads).toEqual([

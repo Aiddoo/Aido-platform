@@ -1391,8 +1391,10 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const { seriesId } = await start();
       const held = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
-      const holder = client.transaction(async (tx) => {
-        await tx.execute(sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${seriesId} FOR UPDATE`);
+      const holder = client.transaction(async (transaction) => {
+        await transaction.execute(
+          sql`SELECT "id" FROM "TodoSeries" WHERE "id" = ${seriesId} FOR UPDATE`,
+        );
         held.resolve();
         await release.promise;
       });
@@ -1422,8 +1424,8 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       ) {
         const held = Promise.withResolvers<void>();
         const release = Promise.withResolvers<void>();
-        const holder = client.transaction(async (tx) => {
-          await tx.execute(
+        const holder = client.transaction(async (transaction) => {
+          await transaction.execute(
             sql`SELECT pg_advisory_xact_lock(hashtextextended(${TodoLockKeys.sortOrder(userId)}, 0))`,
           );
           held.resolve();

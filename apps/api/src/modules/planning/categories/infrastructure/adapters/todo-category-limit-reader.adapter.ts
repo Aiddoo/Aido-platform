@@ -13,14 +13,14 @@ import {
 export class TodoCategoryLimitReaderAdapter extends TodoCategoryLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -31,12 +31,12 @@ export class TodoCategoryLimitReaderAdapter extends TodoCategoryLimitReaderPort 
     return this.#entitlementReader.getFeatureLimit(userId, "TODO_CATEGORY");
   }
 
-  readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId, "TODO_CATEGORY");
+  readLimitInTransaction(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "TODO_CATEGORY");
   }
 
-  readFeatureQuotaInTx(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId, "TODO_CATEGORY", {
+  readFeatureQuotaInTransaction(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTransaction(userId, "TODO_CATEGORY", {
       used: count,
       resetsAt: null,
     });

@@ -25,9 +25,9 @@ describe("DrizzleQuotaUsageRepository (실제 PostgreSQL)", () => {
   });
 
   describeQuotaUsageRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleQuotaUsageRepository(txHost),
+      repository: new DrizzleQuotaUsageRepository(transactionHost),
       seedUser: async ({ id, aiUsageCount, aiUsageResetAt }) => {
         seeded += 1;
         await client.insert(user).values(

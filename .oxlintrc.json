@@ -117,6 +117,18 @@
     },
     {
       "files": [
+        "apps/api/src/**/*.ts",
+        "apps/api/test/**/*.ts",
+        "apps/api/scripts/**/*.ts",
+        "packages/api/src/**/*.ts",
+        "packages/api/test/**/*.ts"
+      ],
+      "rules": {
+        "aido/no-abbreviation": "error"
+      }
+    },
+    {
+      "files": [
         "apps/api/**/*.spec.ts",
         "apps/api/**/*.integration-spec.ts",
         "apps/api/**/*.e2e-spec.ts",

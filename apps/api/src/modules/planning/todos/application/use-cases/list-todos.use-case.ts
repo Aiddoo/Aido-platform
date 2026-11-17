@@ -46,7 +46,7 @@ export class ListTodosUseCase {
     const cursor = input.cursor;
     const size = clampPageSize(input.size);
 
-    const repoParams: FindTodosParams = {
+    const repositoryQuery: FindTodosParams = {
       userId: UserId.reconstitute(input.userId),
       cursor,
       size,
@@ -57,7 +57,7 @@ export class ListTodosUseCase {
       endDate: input.endDate,
     };
 
-    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repoParams);
+    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repositoryQuery);
 
     return toCursorPage({ rows, size, toCursor: (todo) => todo.id });
   }

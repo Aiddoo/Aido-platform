@@ -22,6 +22,7 @@ interface AfterCommitTaskScope {
 }
 
 interface UnitOfWorkTransactionHost {
+  // oxlint-disable-next-line aido/no-abbreviation -- @nestjs-cls/transactional TransactionHost.tx 속성 이름을 따른다
   readonly tx: { execute(query: SQL): PromiseLike<unknown> };
   isTransactionActive(): boolean;
   withTransaction<T>(work: () => Promise<T>): Promise<T>;
@@ -30,17 +31,20 @@ interface UnitOfWorkTransactionHost {
 @Injectable()
 export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPort {
   readonly #logger = new Logger(ClsUnitOfWork.name);
-  readonly #txHost: UnitOfWorkTransactionHost;
+  readonly #transactionHost: UnitOfWorkTransactionHost;
   readonly #cls: ClsService;
 
-  constructor(@Inject(TransactionHost) txHost: UnitOfWorkTransactionHost, cls: ClsService) {
-    this.#txHost = txHost;
+  constructor(
+    @Inject(TransactionHost) transactionHost: UnitOfWorkTransactionHost,
+    cls: ClsService,
+  ) {
+    this.#transactionHost = transactionHost;
     this.#cls = cls;
   }
 
   async run<T>(work: () => Promise<T>, options: UnitOfWorkOptions = {}): Promise<T> {
-    if (this.#txHost.isTransactionActive()) {
-      return this.#txHost.withTransaction(work);
+    if (this.#transactionHost.isTransactionActive()) {
+      return this.#transactionHost.withTransaction(work);
     }
 
     const { statementTimeoutMs } = options;
@@ -52,11 +56,11 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
     }
 
     const scope: AfterCommitTaskScope = { tasks: [] };
-    const result = await this.#txHost.withTransaction(async () => {
+    const result = await this.#transactionHost.withTransaction(async () => {
       this.#cls.set(AFTER_COMMIT_TASK_SCOPE, scope);
       if (statementTimeoutMs != null) {
         // SET은 bind 변수를 받지 않아 set_config(..., is_local => true)로 이 트랜잭션에만 건다
-        await this.#txHost.tx.execute(
+        await this.#transactionHost.tx.execute(
           sql`SELECT set_config('statement_timeout', ${String(statementTimeoutMs)}, true)`,
         );
       }
@@ -68,7 +72,7 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
   }
 
   register(task: AfterCommitTask): void {
-    if (!this.#txHost.isTransactionActive()) {
+    if (!this.#transactionHost.isTransactionActive()) {
       this.#runImmediately(task);
       return;
     }

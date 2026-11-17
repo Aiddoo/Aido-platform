@@ -86,11 +86,14 @@ describe("댓글 작성자 삭제 대비 제약", () => {
 
     // When
     await client
-      .transaction(async (tx) => {
-        await tx.delete(user).where(eq(user.id, DELETED_COMMENT_AUTHOR.id));
-        await tx.execute(sql.raw(seed));
-        seeded = await tx.select().from(user).where(eq(user.id, DELETED_COMMENT_AUTHOR.id));
-        accounts = await tx
+      .transaction(async (transaction) => {
+        await transaction.delete(user).where(eq(user.id, DELETED_COMMENT_AUTHOR.id));
+        await transaction.execute(sql.raw(seed));
+        seeded = await transaction
+          .select()
+          .from(user)
+          .where(eq(user.id, DELETED_COMMENT_AUTHOR.id));
+        accounts = await transaction
           .select({ id: account.id })
           .from(account)
           .where(eq(account.userId, DELETED_COMMENT_AUTHOR.id));

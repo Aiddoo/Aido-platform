@@ -29,7 +29,9 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
 
   beforeAll(async () => {
     client = await database.start();
-    reader = new DrizzleTodoScheduleReader(createDatabaseTransactionFixture(client).txHost);
+    reader = new DrizzleTodoScheduleReader(
+      createDatabaseTransactionFixture(client).transactionHost,
+    );
   });
 
   beforeEach(async () => {

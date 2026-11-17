@@ -16,7 +16,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   let history: StubNotificationHistoryReader;
   let strategy: SendStreakAtRiskUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
   const YESTERDAY = Temporal.PlainDate.from("2024-01-15");
   const sent = () => publisher.published.map(({ data }) => data);
 
@@ -55,14 +55,18 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 5)];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toEqual([
       {
         method: "findStreakAtRiskUsers",
-        params: { timezones: ["Asia/Seoul"], today: ctx.today, tomorrow: ctx.tomorrow },
+        params: {
+          timezones: ["Asia/Seoul"],
+          today: timezoneContext.today,
+          tomorrow: timezoneContext.tomorrow,
+        },
       },
     ]);
     expect(sent()).toEqual([
@@ -76,7 +80,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", streak)];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = expectedMessage("user-1", streak);
@@ -88,7 +92,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 5, "de")];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = expectedMessage("user-1", 5, "en");
@@ -100,7 +104,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 2)];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -118,7 +122,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -136,7 +140,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -146,10 +150,10 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   it("오늘 이미 스트릭 위기 알림을 받은 사용자를 제외한다", async () => {
     // Given
     reader.streakAtRiskUsers = [atRiskUser("user-1"), atRiskUser("user-2")];
-    history.notified("STREAK_AT_RISK", ["user-1"], ctx.today);
+    history.notified("STREAK_AT_RISK", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -158,7 +162,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
 
   it("대상이 없으면 발송 이력도 조회하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

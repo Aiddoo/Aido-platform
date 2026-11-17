@@ -186,19 +186,19 @@ interface ThreadSummary {
 
 @Injectable()
 export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #todoDetails: Pick<TodoDetailsReaderPort, "findAccess" | "findDetails">;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     todoDetails: TodoDetailsReaderPort,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#todoDetails = todoDetails;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async #isAcceptedFriend(firstUserId: string, secondUserId: string): Promise<boolean> {

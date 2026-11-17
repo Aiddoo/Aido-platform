@@ -35,7 +35,7 @@ function mostFrequentCode(counts: Map<string, number>, fallback: string): string
 /**
  * 특정 날짜의 아이템들로부터 DailyForecast를 생성
  */
-function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): DailyForecast {
+function buildDailyForecast(dateKey: string, dateItems: KmaResponseItem[]): DailyForecast {
   let tempMin = Number.POSITIVE_INFINITY;
   let tempMax = Number.NEGATIVE_INFINITY;
   let maxPrecipProb = 0;
@@ -89,7 +89,7 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
   }
 
   return {
-    date: formatDateString(dateStr),
+    date: formatDateString(dateKey),
     skyCondition: SKY_CODE_MAP[mostFrequentCode(skyCounts, "1")] ?? "CLEAR",
     precipitationType: PTY_CODE_MAP[mostFrequentCode(ptyCounts, "0")] ?? "NONE",
     precipitationProbability: maxPrecipProb,
@@ -104,8 +104,8 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
 export function parseKmaResponse(data: KmaApiResponse, target: Temporal.Instant): WeatherForecast {
   const allItems = data.response.body?.items?.item ?? [];
   const localDate = localDateIn(target, KMA_TIMEZONE);
-  const targetDateStr = localDate.toString().replaceAll("-", "");
-  const nextDateStr = localDate.add({ days: 1 }).toString().replaceAll("-", "");
+  const targetDateKey = localDate.toString().replaceAll("-", "");
+  const nextDateKey = localDate.add({ days: 1 }).toString().replaceAll("-", "");
 
   // 시간별 데이터 수집 (대상 날짜 + 다음 날)
   const hourlyMap = new Map<
@@ -130,13 +130,13 @@ export function parseKmaResponse(data: KmaApiResponse, target: Temporal.Instant)
   let windCount = 0;
 
   const relevantItems = allItems.filter(
-    (item) => item.fcstDate === targetDateStr || item.fcstDate === nextDateStr,
+    (item) => item.fcstDate === targetDateKey || item.fcstDate === nextDateKey,
   );
 
   for (const item of relevantItems) {
     const hour = Number.parseInt(item.fcstTime.substring(0, 2), 10);
     const value = item.fcstValue;
-    const isNextDay = item.fcstDate === nextDateStr;
+    const isNextDay = item.fcstDate === nextDateKey;
     const key = isNextDay ? 24 + hour : hour;
 
     const getOrCreate = () =>
@@ -269,7 +269,7 @@ export function parseKmaResponse(data: KmaApiResponse, target: Temporal.Instant)
   // 일별 예보 생성 (모든 날짜 대상)
   const dailyForecasts: DailyForecast[] = [...Map.groupBy(allItems, (item) => item.fcstDate)]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([dateStr, items]) => buildDailyForecast(dateStr, items));
+    .map(([dateKey, items]) => buildDailyForecast(dateKey, items));
 
   return {
     date: target,

@@ -10,7 +10,7 @@ import { KO_NOTIFICATION_GRAMMAR } from "./locales/ko.messages.js";
 import {
   NOTIFICATION_COPY_CATALOG,
   type NotificationCopy,
-  type NotificationCopyArgs,
+  type NotificationCopyValues,
   type NotificationCopyCatalog,
   type NotificationCopyFacts,
   type NotificationCopyText,
@@ -90,14 +90,14 @@ export interface NotificationCopyContext {
   readonly locale: SupportedLocale;
   readonly parts: NotificationCopyCatalog["parts"];
   readonly overrides: NotificationCopyOverrides;
-  text(message: NotificationCopyText, args?: NotificationCopyArgs): string;
+  text(message: NotificationCopyText, values?: NotificationCopyValues): string;
   copy(
     variant: { readonly title: NotificationCopyText; readonly body: NotificationCopyText },
-    args?: NotificationCopyArgs,
+    values?: NotificationCopyValues,
   ): NotificationCopy;
   preview(label: string): string;
   /** `{sender}`·`{senderSubject}`… 이름 자리 인자. null이면 그 언어의 대체 이름이다. */
-  names(role: string, name: string | null): NotificationCopyArgs;
+  names(role: string, name: string | null): NotificationCopyValues;
 }
 
 function createCopyContext(
@@ -105,14 +105,17 @@ function createCopyContext(
   overrides: NotificationCopyOverrides,
 ): NotificationCopyContext {
   const catalog = NOTIFICATION_COPY_CATALOG[locale];
-  const text = (message: NotificationCopyText, args: NotificationCopyArgs = {}) =>
-    formatNotificationCopyText(message, args, locale);
+  const text = (message: NotificationCopyText, values: NotificationCopyValues = {}) =>
+    formatNotificationCopyText(message, values, locale);
   return {
     locale,
     parts: catalog.parts,
     overrides,
     text,
-    copy: (variant, args) => ({ title: text(variant.title, args), body: text(variant.body, args) }),
+    copy: (variant, values) => ({
+      title: text(variant.title, values),
+      body: text(variant.body, values),
+    }),
     preview: (label) => createNotificationLabelPreview({ label, locale }),
     names(role, name) {
       const forms = NOTIFICATION_GRAMMAR[locale].nameForms(

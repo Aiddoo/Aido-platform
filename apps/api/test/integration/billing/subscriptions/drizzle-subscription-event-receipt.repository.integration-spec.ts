@@ -21,7 +21,7 @@ describe("DrizzleSubscriptionEventReceiptRepository (실제 PostgreSQL)", () => 
   });
 
   describeSubscriptionEventReceiptRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleSubscriptionEventReceiptRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleSubscriptionEventReceiptRepository(transactionHost);
   });
 });

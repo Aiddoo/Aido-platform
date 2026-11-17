@@ -28,11 +28,14 @@ class StubTodoCategoryLimitReader extends TodoCategoryLimitReaderPort {
     return this.maxCount;
   }
 
-  async readLimitInTx(): Promise<number | null> {
+  async readLimitInTransaction(): Promise<number | null> {
     return this.maxCount;
   }
 
-  async readFeatureQuotaInTx(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {
+  async readFeatureQuotaInTransaction(
+    userId: UserId,
+    count: number,
+  ): Promise<TodoCategoryFeatureQuota> {
     this.quotaReads.push([userId.value, count]);
     return this.quota;
   }
@@ -162,7 +165,7 @@ describe("카테고리 생성", () => {
       }
     }
     class OrderedLimitReader extends StubTodoCategoryLimitReader {
-      override async readLimitInTx(): Promise<number | null> {
+      override async readLimitInTransaction(): Promise<number | null> {
         events.push("entitlement");
         return 3;
       }

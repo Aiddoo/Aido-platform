@@ -26,7 +26,7 @@ const NOW = new Date("2026-11-01T22:00:00.000Z");
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
-const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
+const timezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
   timezones: ["Asia/Seoul"],
   localHour: 7,
   localMinute: 0,
@@ -95,7 +95,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("대상이 없으면 날씨를 조회하지 않고 보내지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 0 });
     expect(weatherReports.requests).toEqual([]);
@@ -108,7 +108,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     ];
     weatherReports.reports.set("abroad", seoulReport(undefined, "Asia/Tokyo"));
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(weatherReports.requests[0]).toEqual([{ key: "abroad", ...TOKYO, language: "en" }]);
@@ -133,7 +133,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     weatherReports.reports.set("seoul", seoulReport());
     weatherReports.reports.set("shanghai", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(todoReader.queries.map(({ timezone, userIds }) => [timezone, userIds])).toEqual([
       ["Asia/Seoul", [UserId.reconstitute("seoul")]],
@@ -152,7 +152,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     todoReader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]).toMatchObject({
       title: "오후 3시 ‘한강 산책’ 때 비 소식이 있어요 ☔",
@@ -176,7 +176,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     todoReader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]).toMatchObject({
       title: "오후 1시 ‘테니스’ 때 체감 35°C예요 ☀️",
@@ -191,7 +191,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     ];
     weatherReports.reports.set("u1", seoulReport());
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     const [notification] = sent();
     expect(notification).toMatchObject({
@@ -207,7 +207,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
     ];
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(sent()[0]).toMatchObject({
@@ -227,7 +227,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     history.notified("WEATHER_MORNING", ["sent"]);
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(weatherReports.requests).toEqual([]);
     expect(todoReader.queries).toEqual([]);
@@ -240,7 +240,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("catch-up이면 그 사용자만 조회한다", async () => {
     // When
-    await strategy.execute(ctx({ userId: "user-specific" }));
+    await strategy.execute(timezoneContext({ userId: "user-specific" }));
     // Then
     expect(reader.userParams[0]).toMatchObject({
       userId: UserId.reconstitute("user-specific"),
@@ -311,7 +311,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       location: SEOUL,
     }));
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 30 });
     expect(provider.calls).toHaveLength(1);
@@ -323,7 +323,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     reader.usersWithLocation = [
       { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
     ];
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     const later = new Date(NOW.getTime() + 2 * HOUR_MS);
     vi.setSystemTime(later);
     clock.advanceBy({ hours: 2 });
@@ -334,7 +334,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     ];
     publisher.published.splice(0);
     // When
-    await strategy.execute(ctx({ localHour: 9 }));
+    await strategy.execute(timezoneContext({ localHour: 9 }));
     // Then
     const titles = new Map(publisher.published.map(({ data }) => [data.userId, data.title]));
     expect(titles.get("seoul")).toBe("오늘은 구름 조금, 8~16°C예요");
@@ -345,7 +345,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     // Given
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(provider.calls).toEqual([]);
   });

@@ -64,21 +64,26 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const transaction = createDatabaseTransactionFixture(client);
     uow = transaction.uow;
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-      shutdownTimeoutMs: 10_000,
-      workerEnabled: true,
-    });
+    jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      transaction.transactionHost,
+      new JobQueueRegistry(),
+      {
+        shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
+      },
+    );
     await jobQueue.start();
     reminders = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new FixedClock(NOW)),
     );
     useCase = new RemoveCategoryTodosUseCase({
-      bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.txHost),
+      bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.transactionHost),
       reminderScheduler: reminders,
       todoCache: new FakeTodoCache(),
       afterCommit: new RecordingAfterCommitRegistry(),
     });
-    todoRepository = new DrizzleTodoRepository(transaction.txHost, new FixedClock(NOW));
+    todoRepository = new DrizzleTodoRepository(transaction.transactionHost, new FixedClock(NOW));
   });
 
   beforeEach(async () => {

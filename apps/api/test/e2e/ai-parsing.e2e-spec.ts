@@ -9,13 +9,13 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
  * 파싱 HTTP 경로. 모델 출력은 일정 표현(draft)이고, 날짜·시각은 서버가 계산한다.
  */
 describe("AI 파싱 E2E — 서버 일정 계산", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let fakeAiGenerator: FakeAiGenerator;
   let accessToken: string;
 
   beforeAll(async () => {
     fakeAiGenerator = new FakeAiGenerator();
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(fakeAiGenerator),
       additionalResetters: [() => fakeAiGenerator.clear()],
@@ -23,17 +23,17 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("ai-v2@example.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser("ai-v2@example.com", "Test1234!");
     accessToken = user.accessToken;
   });
 
   async function usage() {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/ai/usage")
       .set("Authorization", `Bearer ${accessToken}`);
     return response.body.data.data.used;
@@ -41,7 +41,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
 
   describe("메모 나누기 Idempotency-Key", () => {
     const parseMemo = (key?: string) => {
-      const pending = request(ctx.app.getHttpServer())
+      const pending = request(testContext.app.getHttpServer())
         .post("/v1/ai/parse-memo")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("X-Timezone", "Asia/Seoul");
@@ -100,7 +100,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/ai/parse-todo")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -138,7 +138,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/ai/parse-todo")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("Accept-Language", "en")
@@ -169,7 +169,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/ai/parse-memo")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -204,8 +204,8 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
 
   it("메모 나누기는 이미 있는 같은 제목·날짜의 할 일을 겹침으로 알린다", async () => {
     // Given
-    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
-    const created = await request(ctx.app.getHttpServer())
+    const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
+    const created = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -224,7 +224,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/ai/parse-memo")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")

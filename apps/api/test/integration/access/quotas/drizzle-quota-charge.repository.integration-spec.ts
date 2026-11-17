@@ -35,8 +35,8 @@ describe("DrizzleQuotaChargeRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleQuotaChargeRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleQuotaChargeRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleQuotaChargeRepository(transactionHost);
   }
 
   describeQuotaChargeRepositoryContract(async () => createRepository());

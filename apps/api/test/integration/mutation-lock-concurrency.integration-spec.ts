@@ -172,11 +172,11 @@ class RacingCheerRepository extends DrizzleCheerRepository {
   readonly #cooldownBarrier?: BestEffortRendezvous;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     dailyBarrier?: BestEffortRendezvous,
     cooldownBarrier?: BestEffortRendezvous,
   ) {
-    super(txHost);
+    super(transactionHost);
     this.#dailyBarrier = dailyBarrier;
     this.#cooldownBarrier = cooldownBarrier;
   }
@@ -202,11 +202,11 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
   readonly #todoCooldownBarrier?: BestEffortRendezvous;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     dailyBarrier?: BestEffortRendezvous,
     todoCooldownBarrier?: BestEffortRendezvous,
   ) {
-    super(txHost);
+    super(transactionHost);
     this.#dailyBarrier = dailyBarrier;
     this.#todoCooldownBarrier = todoCooldownBarrier;
   }
@@ -231,10 +231,10 @@ class RacingReminderNudgeRepository extends DrizzleReminderNudgeRepository {
   readonly #cooldownBarrier: BestEffortRendezvous;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     cooldownBarrier: BestEffortRendezvous,
   ) {
-    super(txHost);
+    super(transactionHost);
     this.#cooldownBarrier = cooldownBarrier;
   }
 
@@ -302,18 +302,18 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
   readonly #releaseFirstHolder = createDeferred();
   #hasFirstHolder = false;
 
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #delegate: PostgresMutationLockAdapter;
   readonly #expectedKey: string;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     delegate: PostgresMutationLockAdapter,
     expectedKey: string,
     participants: number,
     timeoutMs = 5000,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#delegate = delegate;
     this.#expectedKey = expectedKey;
     this.#barrier = new RequiredParticipantBarrier(participants, timeoutMs);
@@ -326,13 +326,13 @@ class CoordinatedCategoryMutationLock implements MutationLockPort {
           `received=${JSON.stringify(keys)}`,
       );
     }
-    if (!this.#txHost.isTransactionActive()) {
+    if (!this.#transactionHost.isTransactionActive()) {
       throw new Error(
         `category lock reached outside active UoW: key=${JSON.stringify(this.#expectedKey)}`,
       );
     }
 
-    const { rows } = await this.#txHost.tx.execute<{ pid: number }>(
+    const { rows } = await this.#transactionHost.tx.execute<{ pid: number }>(
       sql`SELECT pg_backend_pid()::int AS pid`,
     );
     const pid = rows[0]?.pid;
@@ -509,11 +509,14 @@ class CategoryDatabaseTestModule {
 }
 
 function createTransactionHarness(client: TestDatabaseClient): {
-  txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   uow: UnitOfWorkPort;
 } {
-  const txHost = createTransactionHost(client);
-  return { txHost, uow: new ClsUnitOfWork(txHost, ClsServiceManager.getClsService()) };
+  const transactionHost = createTransactionHost(client);
+  return {
+    transactionHost,
+    uow: new ClsUnitOfWork(transactionHost, ClsServiceManager.getClsService()),
+  };
 }
 
 interface AdvisoryLockAttempt {
@@ -525,8 +528,8 @@ async function tryAcquireAdvisoryLocks(
   client: TestDatabaseClient,
   keys: readonly string[],
 ): Promise<AdvisoryLockAttempt[]> {
-  return client.transaction(async (tx) => {
-    const { rows } = await tx.execute<AdvisoryLockAttempt>(sql`
+  return client.transaction(async (transaction) => {
+    const { rows } = await transaction.execute<AdvisoryLockAttempt>(sql`
       SELECT
         requested."key",
         pg_try_advisory_xact_lock(hashtextextended(requested."key", 0)) AS acquired
@@ -594,19 +597,19 @@ function fixedDailyQuota(
 
 function createCheerLimitReader(
   limit: number | null,
-): Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx"> {
+): Pick<CheerLimitReaderPort, "readLimitInTransaction" | "readFeatureQuotaInTransaction"> {
   return {
-    readLimitInTx: async () => limit,
-    readFeatureQuotaInTx: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
+    readLimitInTransaction: async () => limit,
+    readFeatureQuotaInTransaction: async (_userId, usage) => fixedDailyQuota("CHEER", limit, usage),
   };
 }
 
 function createNudgeLimitReader(
   limit: number | null,
-): Pick<NudgeLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx"> {
+): Pick<NudgeLimitReaderPort, "readLimitInTransaction" | "readFeatureQuotaInTransaction"> {
   return {
-    readLimitInTx: async () => limit,
-    readFeatureQuotaInTx: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
+    readLimitInTransaction: async () => limit,
+    readFeatureQuotaInTransaction: async (_userId, usage) => fixedDailyQuota("NUDGE", limit, usage),
   };
 }
 
@@ -684,7 +687,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
   let categoryModule: TestingModule;
-  let categoryTxHost: TransactionHost<DrizzleTransactionalAdapter>;
+  let categoryTransactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   let categoryUow: ClsUnitOfWork;
   let categoryRepository: DrizzleTodoCategoryRepository;
   let categoryLockAdapter: PostgresMutationLockAdapter;
@@ -737,7 +740,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     }).compile();
     await categoryModule.init();
 
-    categoryTxHost =
+    categoryTransactionHost =
       categoryModule.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     categoryUow = categoryModule.get(ClsUnitOfWork);
     categoryRepository = categoryModule.get(DrizzleTodoCategoryRepository);
@@ -768,12 +771,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 
     // When
     await categoryUow.run(async () => {
-      expect(categoryTxHost.isTransactionActive()).toBe(true);
-      activeClient = categoryTxHost.tx;
+      expect(categoryTransactionHost.isTransactionActive()).toBe(true);
+      activeClient = categoryTransactionHost.tx;
     });
 
     // Then
-    expect(categoryTxHost).toBeInstanceOf(TransactionHost);
+    expect(categoryTransactionHost).toBeInstanceOf(TransactionHost);
     expect(categoryUow).toBeInstanceOf(ClsUnitOfWork);
     expect(categoryRepository).toBeInstanceOf(DrizzleTodoCategoryRepository);
     expect(categoryLockAdapter).toBeInstanceOf(PostgresMutationLockAdapter);
@@ -797,9 +800,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const keys = ["mutation:v1:comment:batch:b", "mutation:v1:comment:batch:a"];
     const held = createDeferred();
     const release = createDeferred();
-    const { txHost, uow } = createTransactionHarness(client);
+    const { transactionHost, uow } = createTransactionHarness(client);
     const holding = uow.run(async () => {
-      await new PostgresMutationLockAdapter(txHost).acquire(keys);
+      await new PostgresMutationLockAdapter(transactionHost).acquire(keys);
       held.resolve();
       await release.promise;
     });
@@ -835,19 +838,19 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const acquire = (
       participant: string,
       keys: readonly string[],
-      txHost: TransactionHost<DrizzleTransactionalAdapter>,
+      transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
       uow: UnitOfWorkPort,
     ) =>
       uow.run(async () => {
         await barrier.arrive(participant);
-        await new PostgresMutationLockAdapter(txHost).acquire(keys);
+        await new PostgresMutationLockAdapter(transactionHost).acquire(keys);
       });
 
     // When
     await completeWithin(
       Promise.all([
-        acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
-        acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
+        acquire("ascending", ["batch:a", "batch:b"], first.transactionHost, first.uow),
+        acquire("descending", ["batch:b", "batch:a"], second.transactionHost, second.uow),
       ]),
       3000,
     );
@@ -862,14 +865,17 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const receiverIds = await Promise.all(
       Array.from({ length: CONCURRENCY }, (_, index) => createUser(client, index + 1)),
     );
-    const { txHost, uow } = createTransactionHarness(client);
-    const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
+    const { transactionHost, uow } = createTransactionHarness(client);
+    const repository = new RacingCheerRepository(
+      transactionHost,
+      new BestEffortRendezvous(CONCURRENCY),
+    );
     const useCase = new SendCheerUseCase({
       countCache: new PassThroughCountCache(),
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(DAILY_LIMIT),
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
@@ -893,9 +899,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     // Given
     const senderId = await createUser(client, 0, "ACTIVE");
     const receiverId = await createUser(client, 1);
-    const { txHost, uow } = createTransactionHarness(client);
+    const { transactionHost, uow } = createTransactionHarness(client);
     const repository = new RacingCheerRepository(
-      txHost,
+      transactionHost,
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
@@ -904,7 +910,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       cheerRepository: repository,
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(null),
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
@@ -939,14 +945,17 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     for (let index = 0; index < CONCURRENCY; index += 1) {
       todoIds.push(await createTodo(client, receiverId, `Todo ${index}`));
     }
-    const { txHost, uow } = createTransactionHarness(client);
-    const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
+    const { transactionHost, uow } = createTransactionHarness(client);
+    const repository = new RacingNudgeRepository(
+      transactionHost,
+      new BestEffortRendezvous(CONCURRENCY),
+    );
     const useCase = new SendNudgeUseCase({
       countCache: new PassThroughCountCache(),
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(DAILY_LIMIT),
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
@@ -971,9 +980,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const senderId = await createUser(client, 0, "ACTIVE");
     const receiverId = await createUser(client, 1);
     const todoId = await createTodo(client, receiverId, "Same Todo");
-    const { txHost, uow } = createTransactionHarness(client);
+    const { transactionHost, uow } = createTransactionHarness(client);
     const repository = new RacingNudgeRepository(
-      txHost,
+      transactionHost,
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
@@ -982,7 +991,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       nudgeRepository: repository,
       notifier: createNudgeNotifier(),
       limitReader: createNudgeLimitReader(null),
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
@@ -1010,17 +1019,17 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     // Given
     const senderId = await createUser(client, 0);
     const receiverId = await createUser(client, 1);
-    const { txHost, uow } = createTransactionHarness(client);
+    const { transactionHost, uow } = createTransactionHarness(client);
     const reminderNudgeRepository = new RacingReminderNudgeRepository(
-      txHost,
+      transactionHost,
       new BestEffortRendezvous(CONCURRENCY),
     );
     const notifier: ReminderNudgeNotifierPort = { notifyNudgeSent: async () => undefined };
     const useCase = new SendReminderNudgeUseCase({
       reminderNudgeRepository,
-      targetReader: new DrizzleReminderTargetReader(txHost),
+      targetReader: new DrizzleReminderTargetReader(transactionHost),
       notifier,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
       mutualFriendReader: createMutualFriendReaderStub(),
       clock: new DateClock(),
@@ -1052,7 +1061,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const userId = await createUser(client, 0);
     const lockKey = TodoCategoryLockKeys.userCategories(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
-      categoryTxHost,
+      categoryTransactionHost,
       categoryLockAdapter,
       lockKey,
       CONCURRENCY,
@@ -1124,7 +1133,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       .orderBy(asc(todoCategory.sortOrder));
     const lockKey = TodoCategoryLockKeys.userCategories(userId);
     const coordinatedLock = new CoordinatedCategoryMutationLock(
-      categoryTxHost,
+      categoryTransactionHost,
       categoryLockAdapter,
       lockKey,
       CONCURRENCY,
@@ -1192,9 +1201,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         createdAt: Temporal.Instant.from("2026-07-25T15:00:00.001Z"),
       },
     ]);
-    const { txHost } = createTransactionHarness(client);
+    const { transactionHost } = createTransactionHarness(client);
     const reader = new GetCheerLimitUseCase({
-      cheerRepository: new DrizzleCheerRepository(txHost),
+      cheerRepository: new DrizzleCheerRepository(transactionHost),
       limitReader: createDailyLimitReader(3),
       clock: new DateClock(),
     });
@@ -1225,9 +1234,9 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         createdAt: Temporal.Instant.from("2026-07-25T15:00:00.001Z"),
       },
     ]);
-    const { txHost } = createTransactionHarness(client);
+    const { transactionHost } = createTransactionHarness(client);
     const reader = new GetNudgeLimitUseCase({
-      nudgeRepository: new DrizzleNudgeRepository(txHost),
+      nudgeRepository: new DrizzleNudgeRepository(transactionHost),
       limitReader: createDailyLimitReader(3),
       clock: new DateClock(),
     });
@@ -1247,20 +1256,22 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const held = createDeferred();
     const release = createDeferred();
     const dailyKey = CheerLockKeys.dailyQuota(UserId.reconstitute(senderId));
-    const blocker = client.transaction(async (tx) => {
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`);
+    const blocker = client.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`,
+      );
       held.resolve();
       await release.promise;
     });
     await held.promise;
 
-    const { txHost, uow } = createTransactionHarness(client);
+    const { transactionHost, uow } = createTransactionHarness(client);
     const sendingIdentity = createValueDeferred<AdvisoryLockIdentity>();
     const continueLockAttempt = createDeferred();
-    const realLock = new PostgresMutationLockAdapter(txHost);
+    const realLock = new PostgresMutationLockAdapter(transactionHost);
     const mutationLock: MutationLockPort = {
       async acquire(keys) {
-        const { rows: identities } = await txHost.tx.execute<AdvisoryLockIdentity>(sql`
+        const { rows: identities } = await transactionHost.tx.execute<AdvisoryLockIdentity>(sql`
           SELECT
             pg_backend_pid() AS pid,
             (
@@ -1280,7 +1291,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     };
     const useCase = new SendCheerUseCase({
       countCache: new PassThroughCountCache(),
-      cheerRepository: new DrizzleCheerRepository(txHost),
+      cheerRepository: new DrizzleCheerRepository(transactionHost),
       notifier: createCheerNotifier(),
       limitReader: createCheerLimitReader(1),
       mutationLock: mutationLock,

@@ -63,16 +63,16 @@ function selectCompletedTodos(db: Database, period: ReportPeriod) {
 /** 고정된 5개 집계 쿼리를 활성 CLS transaction에서 실행한다. */
 @Injectable()
 export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
     const { userId, startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
-    const db = this.#txHost.tx;
+    const db = this.#transactionHost.tx;
     const day = (value: Date) => localDateAt(value, timezone);
     const current = { userId, start: day(startDate), end: day(endDate) };
     const previous = { userId, start: day(prevStartDate), end: day(prevEndDate) };

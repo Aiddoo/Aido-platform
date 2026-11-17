@@ -9,7 +9,9 @@ describe("DrizzleSweepCursorAdapter (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase();
     const client = await database.start();
-    cursor = new DrizzleSweepCursorAdapter(createDatabaseTransactionFixture(client).txHost);
+    cursor = new DrizzleSweepCursorAdapter(
+      createDatabaseTransactionFixture(client).transactionHost,
+    );
   });
 
   beforeEach(async () => {

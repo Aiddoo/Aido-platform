@@ -34,8 +34,8 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
     const cutoffStart = utcStartOf(today.subtract({ days: 30 }));
     const cutoffEnd = utcStartOf(today.subtract({ days: 3 }));
 

@@ -180,11 +180,11 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
         provide: JobQueuePort,
         inject: [TransactionHost, JobQueueRegistry],
         useFactory: (
-          txHost: TransactionHost<DrizzleTransactionalAdapter>,
+          transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
           registry: JobQueueRegistry,
         ) =>
           new FastJobQueue(
-            new PgBossJobQueueAdapter(boss, txHost, registry, {
+            new PgBossJobQueueAdapter(boss, transactionHost, registry, {
               shutdownTimeoutMs: 10_000,
               workerEnabled: true,
             }),

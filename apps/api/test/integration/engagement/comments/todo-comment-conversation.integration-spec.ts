@@ -71,10 +71,13 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         }),
     });
     client = await testDatabase.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
-    blockReader = new DrizzleUserBlockReader(txHost);
-    repository = new DrizzleTodoCommentRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    reader = new DrizzleTodoCommentReader(
+      transactionHost,
+      new DrizzleTodoDetailsReader(transactionHost),
+    );
+    blockReader = new DrizzleUserBlockReader(transactionHost);
+    repository = new DrizzleTodoCommentRepository(transactionHost);
     cursorModule = await Test.createTestingModule({
       providers: [
         HmacTodoCommentCursorCodecAdapter,

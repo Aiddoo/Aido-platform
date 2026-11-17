@@ -24,7 +24,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | Aggregate 상태       | Repository Port + `*-row.mapper.ts`(행 → 도메인 복원은 매퍼 한 곳)    |
 | join·집계 projection | Reader Port + Read Model(CQRS-lite). 트랜잭션 밖 조회는 복제본 후보다 |
 
-- 구현은 `TransactionHost<DrizzleTransactionalAdapter>`를 받아 `txHost.tx`만 쓴다. 중첩은 `SavepointRunnerPort`(savepoint)다.
+- 구현은 `TransactionHost<DrizzleTransactionalAdapter>`를 받아 `transactionHost.tx`만 쓴다. 중첩은 `SavepointRunnerPort`(savepoint)다.
 - 조회는 RQB v2(`tx.query.<table>.findFirst`·`findMany`)나 query builder, 변경은 `insert/update/delete … returning()`, 충돌은 `onConflictDoUpdate`/`onConflictDoNothing`이다.
 - 조건은 ORM 연산자(`eq`·`and`·`inArray`), 개수는 `$count`, 존재는 `exists`다. 여러 행 upsert는 한 문장(``set: { col: sql`excluded.col` }``)이다.
 - 항목 수에 비례해 쿼리를 퍼뜨리지 않는다. N번 조회는 `inArray` 한 번 + `keyBy`/`groupBy`다. `Promise.all`은 트랜잭션 밖의 독립 읽기에만 쓴다.

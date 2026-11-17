@@ -36,7 +36,10 @@ export interface SendCheerDependencies {
     CheerRepositoryPort,
     "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
-  readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
+  readonly limitReader: Pick<
+    CheerLimitReaderPort,
+    "readLimitInTransaction" | "readFeatureQuotaInTransaction"
+  >;
   readonly mutualFriendReader: Pick<
     MutualFriendReaderPort,
     "isMutualFriend" | "getUserDisplayName"
@@ -86,11 +89,14 @@ export class SendCheerUseCase {
         CheerLockKeys.cooldown(senderId, receiverId),
       ]);
 
-      const dailyLimit = await limitReader.readLimitInTx(senderId);
+      const dailyLimit = await limitReader.readLimitInTransaction(senderId);
       const used = await cheerRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
         throw cheerDailyLimitReached(
-          await limitReader.readFeatureQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+          await limitReader.readFeatureQuotaInTransaction(senderId, {
+            used,
+            resetsAt: window.endsAt,
+          }),
         );
       }
 

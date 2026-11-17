@@ -33,6 +33,7 @@ describe("DrizzleAiReportRepository (실제 PostgreSQL)", () => {
   });
 
   describeAiReportRepositoryContract(
-    async () => new DrizzleAiReportRepository(createDatabaseTransactionFixture(client).txHost),
+    async () =>
+      new DrizzleAiReportRepository(createDatabaseTransactionFixture(client).transactionHost),
   );
 });

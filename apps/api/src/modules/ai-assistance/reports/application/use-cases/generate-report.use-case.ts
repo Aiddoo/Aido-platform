@@ -78,7 +78,7 @@ interface GenerateReportDependencies {
   readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "debug" | "warn" | "error">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
@@ -100,7 +100,7 @@ export class GenerateReportUseCase {
   }): Promise<AiReport | null> {
     const { userId, timezone, type, locale = "ko", isFinalAttempt = true } = input;
     if (
-      !(await this.#dependencies.entitlementReader.canInTx(
+      !(await this.#dependencies.entitlementReader.canInTransaction(
         UserId.reconstitute(userId),
         "AI_REPORT",
       ))
@@ -279,7 +279,7 @@ export class GenerateReportUseCase {
       return await unitOfWork.run(async () => {
         if (
           !(await userMutationLock.lockById(owner)) ||
-          !(await entitlementReader.canInTx(owner, "AI_REPORT"))
+          !(await entitlementReader.canInTransaction(owner, "AI_REPORT"))
         ) {
           return null;
         }

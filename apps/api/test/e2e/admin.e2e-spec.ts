@@ -12,25 +12,25 @@ import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queu
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("관리자 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   async function createAdminUser(email: string, password: string) {
-    const user = await ctx.helpers.createVerifiedUser(email, password);
-    const database = ctx.module.get<Database>(DRIZZLE);
+    const user = await testContext.helpers.createVerifiedUser(email, password);
+    const database = testContext.module.get<Database>(DRIZZLE);
     await database.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, user.userId));
-    const loginResult = await ctx.helpers.loginUser(email, password);
+    const loginResult = await testContext.helpers.loginUser(email, password);
     return { ...user, accessToken: loginResult.accessToken };
   }
 
@@ -41,7 +41,7 @@ describe("관리자 E2E", () => {
         const adminUser = await createAdminUser("admin-e2e@example.com", "Test1234!");
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/admin/notifications/broadcast")
           .set("Authorization", `Bearer ${adminUser.accessToken}`)
           .send({
@@ -60,13 +60,13 @@ describe("관리자 E2E", () => {
 
       it("비관리자가 호출하면 403을 반환한다", async () => {
         // Given
-        const regularUser = await ctx.helpers.createVerifiedUser(
+        const regularUser = await testContext.helpers.createVerifiedUser(
           "regular-e2e@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/admin/notifications/broadcast")
           .set("Authorization", `Bearer ${regularUser.accessToken}`)
           .send({
@@ -82,7 +82,7 @@ describe("관리자 E2E", () => {
 
       it("인증 없이 호출하면 401을 반환한다", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/admin/notifications/broadcast")
           .send({
             title: "인증 없는 알림",
@@ -99,13 +99,13 @@ describe("관리자 E2E", () => {
       it("관리자가 타겟 알림을 발송한다", async () => {
         // Given
         const adminUser = await createAdminUser("admin-target@example.com", "Test1234!");
-        const regularUser = await ctx.helpers.createVerifiedUser(
+        const regularUser = await testContext.helpers.createVerifiedUser(
           "target-user@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/admin/notifications/targeted")
           .set("Authorization", `Bearer ${adminUser.accessToken}`)
           .send({
@@ -133,7 +133,7 @@ describe("관리자 E2E", () => {
     };
 
     function jobQueue(): InMemoryJobQueue {
-      return ctx.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
+      return testContext.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
     }
 
     // 분배·현지 시각 발송·푸시 발송 작업을 모두 새 큐 포트(메모리)에서 돌린다
@@ -144,8 +144,8 @@ describe("관리자 E2E", () => {
     }
 
     async function registerRecipient(email: string, deviceId: string, acceptLanguage = "ko-KR") {
-      const recipient = await ctx.helpers.createVerifiedUser(email, "Test1234!");
-      await request(ctx.app.getHttpServer())
+      const recipient = await testContext.helpers.createVerifiedUser(email, "Test1234!");
+      await request(testContext.app.getHttpServer())
         .post("/v1/notifications/token")
         .set("Authorization", `Bearer ${recipient.accessToken}`)
         .set("Accept-Language", acceptLanguage)
@@ -162,18 +162,18 @@ describe("관리자 E2E", () => {
       jobQueue().clear();
 
       // When
-      const accepted = await request(ctx.app.getHttpServer())
+      const accepted = await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send(campaignBody)
         .expect(202);
-      const queuedBeforeFanOut = await request(ctx.app.getHttpServer())
+      const queuedBeforeFanOut = await request(testContext.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
       expect(await runQueued(BROADCAST_FAN_OUT_QUEUE)).toBe(1);
       await runQueued(PUSH_DELIVERY_QUEUE);
-      const delivered = await request(ctx.app.getHttpServer())
+      const delivered = await request(testContext.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
@@ -198,7 +198,7 @@ describe("관리자 E2E", () => {
       await registerRecipient("replay-recipient@example.com", "ios_device-replay");
       jobQueue().clear();
       const send = () =>
-        request(ctx.app.getHttpServer())
+        request(testContext.app.getHttpServer())
           .post("/v2/admin/notifications/broadcasts")
           .set("Authorization", `Bearer ${admin.accessToken}`)
           .send(campaignBody)
@@ -221,7 +221,7 @@ describe("관리자 E2E", () => {
       jobQueue().clear();
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send({
@@ -232,7 +232,7 @@ describe("관리자 E2E", () => {
       await runQueued(BROADCAST_FAN_OUT_QUEUE);
 
       // Then
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       const notifications = await client.query.notification.findMany({
         where: { type: "ADMIN_BROADCAST" },
       });
@@ -247,7 +247,7 @@ describe("관리자 E2E", () => {
       const admin = await createAdminUser("admin-local-time@example.com", "Test1234!");
       const seoul = await registerRecipient("local-seoul@example.com", "ios_device-seoul");
       const losAngeles = await registerRecipient("local-la@example.com", "ios_device-la");
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client
         .update(userPreference)
         .set({ timezone: "Asia/Seoul" })
@@ -259,7 +259,7 @@ describe("관리자 E2E", () => {
       jobQueue().clear();
 
       // When
-      const accepted = await request(ctx.app.getHttpServer())
+      const accepted = await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send({
@@ -290,7 +290,7 @@ describe("관리자 E2E", () => {
       expect(notifications.map(({ userId }) => userId).toSorted()).toEqual(
         [seoul.userId, losAngeles.userId].toSorted(),
       );
-      const detail = await request(ctx.app.getHttpServer())
+      const detail = await request(testContext.app.getHttpServer())
         .get(`/v2/admin/notifications/broadcasts/${accepted.body.data.campaignId}`)
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);
@@ -304,14 +304,14 @@ describe("관리자 E2E", () => {
       // Given
       const admin = await createAdminUser("admin-conflict@example.com", "Test1234!");
       await registerRecipient("conflict-recipient@example.com", "ios_device-conflict");
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send(campaignBody)
         .expect(202);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send({ ...campaignBody, body: "바뀐 본문" })
@@ -324,19 +324,22 @@ describe("관리자 E2E", () => {
     it("대상이 없으면 404, 없는 캠페인 조회도 404, 비관리자는 403을 반환한다", async () => {
       // Given
       const admin = await createAdminUser("admin-empty@example.com", "Test1234!");
-      const regular = await ctx.helpers.createVerifiedUser("not-admin@example.com", "Test1234!");
+      const regular = await testContext.helpers.createVerifiedUser(
+        "not-admin@example.com",
+        "Test1234!",
+      );
 
       // When
-      const empty = await request(ctx.app.getHttpServer())
+      const empty = await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .send({ ...campaignBody, targetFilter: "SUBSCRIBERS" })
         .expect(404);
-      const missing = await request(ctx.app.getHttpServer())
+      const missing = await request(testContext.app.getHttpServer())
         .get("/v2/admin/notifications/broadcasts/c0000000000000000000000ff")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(404);
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v2/admin/notifications/broadcasts")
         .set("Authorization", `Bearer ${regular.accessToken}`)
         .send(campaignBody)
@@ -354,7 +357,7 @@ describe("관리자 E2E", () => {
       const admin = await createAdminUser("admin-growth@example.com", "Test1234!");
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/admin/growth/summary")
         .set("Authorization", `Bearer ${admin.accessToken}`)
         .expect(200);

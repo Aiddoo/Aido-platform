@@ -18,10 +18,10 @@ import {
 
 @Injectable()
 export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoView[]> {
@@ -29,7 +29,7 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
     if (userIds.length === 0) {
       return [];
     }
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .select({
         id: todo.id,
         userId: todo.userId,

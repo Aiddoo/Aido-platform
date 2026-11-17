@@ -84,17 +84,20 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     client = await database.start();
     transaction = createDatabaseTransactionFixture(client);
-    const { txHost, uow } = transaction;
+    const { transactionHost, uow } = transaction;
     reader = new DrizzleSchedulerReader(
-      txHost,
+      transactionHost,
       new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
       new DateClock(),
     );
     publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
-        notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+        notificationRepository: new DrizzleNotificationRepository(transactionHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+          transactionHost,
+          new DateClock(),
+        ),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -104,8 +107,11 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       sendNotificationWithDeduplication: { execute: async () => null },
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
-          notificationRepository: new DrizzleNotificationRepository(txHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+          notificationRepository: new DrizzleNotificationRepository(transactionHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+            transactionHost,
+            new DateClock(),
+          ),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),
@@ -113,7 +119,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         unitOfWork: uow,
         afterCommitTasks: { register: () => undefined },
       }),
-      todoTargetReader: new DrizzleNotificationTodoTargetReader(txHost),
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
     });
   });
 
@@ -136,7 +142,9 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
 
   function createWorker(now: Temporal.Instant) {
     const clock = new FixedClock(now);
-    const cursor = new InterruptibleSweepCursor(new DrizzleSweepCursorAdapter(transaction.txHost));
+    const cursor = new InterruptibleSweepCursor(
+      new DrizzleSweepCursorAdapter(transaction.transactionHost),
+    );
     const logger = new SilentLogger();
     const sweptMinutes: string[] = [];
     const morningReminder = new SendMorningReminderUseCase({
@@ -148,7 +156,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           readKnownRecipients: async () => null,
           warmRecipients: async () => undefined,
         },
-        notificationHistoryReader: new DrizzleNotificationReader(transaction.txHost),
+        notificationHistoryReader: new DrizzleNotificationReader(transaction.transactionHost),
         logger: new SilentLogger(),
       }),
       logger: new SilentLogger(),

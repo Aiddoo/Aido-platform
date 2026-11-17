@@ -40,10 +40,10 @@ describe("DrizzleTrialEndingNoticeRepository (실제 PostgreSQL)", () => {
   });
 
   describeTrialEndingNoticeRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleTrialEndingNoticeRepository(txHost),
-      subscriptions: new DrizzleSubscriptionRepository(txHost),
+      repository: new DrizzleTrialEndingNoticeRepository(transactionHost),
+      subscriptions: new DrizzleSubscriptionRepository(transactionHost),
     };
   });
 });

@@ -23,14 +23,14 @@ const storeOf = alias(subscription, "store");
 
 @Injectable()
 export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   // 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 resolvePremiumAccess가 같은 규칙으로 다시 한다

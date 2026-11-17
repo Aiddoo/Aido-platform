@@ -9,14 +9,14 @@ import type { InviteeIdentity } from "../../application/read-models/invitee-iden
 
 @Injectable()
 export class DrizzleInviteUserReader implements InviteUserReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findInviteeIdentity(userId: UserId): Promise<InviteeIdentity | null> {

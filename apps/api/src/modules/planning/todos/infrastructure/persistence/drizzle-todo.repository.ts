@@ -43,16 +43,16 @@ type TodoPatch = Partial<typeof todo.$inferInsert>;
 
 @Injectable()
 export class DrizzleTodoRepository implements TodoRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async nextId(): Promise<TodoId> {

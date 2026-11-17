@@ -11,11 +11,11 @@ export class RecordingPinoLogger extends PinoLogger {
 
   override setContext(): void {}
 
-  override warn(...args: unknown[]): void {
-    this.warnings.push(args);
+  override warn(...details: unknown[]): void {
+    this.warnings.push(details);
   }
 
-  override error(...args: unknown[]): void {
-    this.errors.push(args);
+  override error(...details: unknown[]): void {
+    this.errors.push(details);
   }
 }

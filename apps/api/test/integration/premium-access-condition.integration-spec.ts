@@ -46,14 +46,14 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   beforeAll(async () => {
     client = await database.start();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleSchedulerReader(
-      txHost,
+      transactionHost,
       memory,
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
       new DateClock(),
     );
-    entitlementReader = new DrizzleAccessStateReader(txHost);
+    entitlementReader = new DrizzleAccessStateReader(transactionHost);
     entitlement = new EntitlementReaderAdapter(
       new GetResolvedAccessUseCase({
         accessStateReader: entitlementReader,
@@ -173,7 +173,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       Object.entries(userIds).map(async ([scenario, id]) => ({
         scenario,
         sql: !freeIds.has(id),
-        service: await entitlement.canInTx(UserId.reconstitute(id), "AI_REPORT"),
+        service: await entitlement.canInTransaction(UserId.reconstitute(id), "AI_REPORT"),
         plan: (await entitlement.getEntitlements(UserId.reconstitute(id))).plan === "premium",
       })),
     );

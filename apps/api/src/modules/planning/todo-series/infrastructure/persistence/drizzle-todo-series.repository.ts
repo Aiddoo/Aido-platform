@@ -19,16 +19,16 @@ import { toTodoSeries, toTodoSeriesRow } from "./todo-series-row.mapper.js";
 
 @Injectable()
 export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findByIdAndUserId(id: TodoSeriesId, userId: UserId): Promise<TodoSeries | null> {

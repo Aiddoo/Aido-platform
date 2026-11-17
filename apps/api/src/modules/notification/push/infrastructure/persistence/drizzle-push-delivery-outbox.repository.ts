@@ -35,16 +35,16 @@ const FINISHED_DISPATCH_STATUSES: readonly PushDispatchStatus[] = [
 
 @Injectable()
 export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   claimByDispatchIds(

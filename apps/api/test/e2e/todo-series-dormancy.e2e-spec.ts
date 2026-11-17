@@ -15,30 +15,30 @@ function dateAfter(days: number): string {
 }
 
 describe("반복 할 일 복귀 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let accessToken: string;
   let userId: string;
   let categoryId: number;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("dormant@example.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser("dormant@example.com", "Test1234!");
     accessToken = user.accessToken;
     userId = user.userId;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   /** 자리 비운 사이 커서가 멈춘 규칙. 헤더 없는 구버전 앱처럼 UTC 규칙으로 만든다. */
   async function seedAwaySeries() {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
@@ -50,8 +50,8 @@ describe("반복 할 일 복귀 E2E", () => {
       .expect(201);
     const seriesId: string = response.body.data.series.id;
     const lastMovedAt = new Date(Date.now() - 200 * DAY_MS);
-    await ctx.testDatabase.getClient().delete(todo).where(eq(todo.seriesId, seriesId));
-    await ctx.testDatabase
+    await testContext.testDatabase.getClient().delete(todo).where(eq(todo.seriesId, seriesId));
+    await testContext.testDatabase
       .getClient()
       .update(todoSeries)
       .set({
@@ -61,7 +61,7 @@ describe("반복 할 일 복귀 E2E", () => {
         updatedAt: instantFromDate(lastMovedAt),
       })
       .where(eq(todoSeries.id, seriesId));
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ lastActiveAt: instantFromDate(lastMovedAt) })
@@ -73,7 +73,7 @@ describe("반복 할 일 복귀 E2E", () => {
     // Given
     const seriesId = await seedAwaySeries();
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .query({ startDate: dateAfter(0), endDate: dateAfter(0) })
@@ -82,7 +82,7 @@ describe("반복 할 일 복귀 E2E", () => {
     const { items } = todoListResponseSchema.parse(response.body.data);
     expect(items.map((item) => item.title)).toEqual(["물 마시기"]);
     expect(releasedTodoSchema.safeParse(response.body.data.items[0]).success).toBe(true);
-    const rows = await ctx.testDatabase
+    const rows = await testContext.testDatabase
       .getClient()
       .select({ occurrenceDate: todo.occurrenceDate })
       .from(todo)
@@ -96,7 +96,7 @@ describe("반복 할 일 복귀 E2E", () => {
     // Given
     await seedAwaySeries();
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/todos/summary")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
@@ -108,7 +108,7 @@ describe("반복 할 일 복귀 E2E", () => {
     // Given
     const seriesId = await seedAwaySeries();
     const open = () =>
-      request(ctx.app.getHttpServer())
+      request(testContext.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
         .query({ startDate: dateAfter(0), endDate: dateAfter(0) })
@@ -119,7 +119,9 @@ describe("반복 할 일 복귀 E2E", () => {
     for (const response of responses) {
       expect(todoListResponseSchema.parse(response.body.data).items).toHaveLength(1);
     }
-    expect(await ctx.testDatabase.getClient().$count(todo, eq(todo.seriesId, seriesId))).toBe(91);
+    expect(
+      await testContext.testDatabase.getClient().$count(todo, eq(todo.seriesId, seriesId)),
+    ).toBe(91);
   });
 
   it.each([
@@ -128,12 +130,18 @@ describe("반복 할 일 복귀 E2E", () => {
   ])("$name 계정은 세션이 살아 있어도 회차를 만들지 않는다", async ({ patch }) => {
     // Given
     const seriesId = await seedAwaySeries();
-    await ctx.testDatabase.getClient().update(userTable).set(patch).where(eq(userTable.id, userId));
+    await testContext.testDatabase
+      .getClient()
+      .update(userTable)
+      .set(patch)
+      .where(eq(userTable.id, userId));
     // When
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .get("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`);
     // Then
-    expect(await ctx.testDatabase.getClient().$count(todo, eq(todo.seriesId, seriesId))).toBe(0);
+    expect(
+      await testContext.testDatabase.getClient().$count(todo, eq(todo.seriesId, seriesId)),
+    ).toBe(0);
   });
 });

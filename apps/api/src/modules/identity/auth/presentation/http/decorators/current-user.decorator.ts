@@ -22,8 +22,8 @@ import { authenticatedUserSchema } from "./authenticated-user.dto.js";
  * ```
  */
 export const CurrentUser = createParamDecorator(
-  (data: keyof CurrentUserPayload | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest<Request>();
+  (data: keyof CurrentUserPayload | undefined, context: ExecutionContext) => {
+    const request = context.switchToHttp().getRequest<Request>();
     const parsedUser = authenticatedUserSchema.safeParse(request.user);
 
     if (!parsedUser.success) {

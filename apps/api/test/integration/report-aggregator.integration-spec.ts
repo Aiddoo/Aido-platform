@@ -61,7 +61,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
   let reader: TodoStatsReaderPort;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
-  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  let transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   let uow: ClsUnitOfWork;
 
   /**
@@ -120,7 +120,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
     await module.init();
     reader = module.get(TodoStatsReaderPort);
-    txHost = module.get(TransactionHost);
+    transactionHost = module.get(TransactionHost);
     uow = module.get(ClsUnitOfWork);
   }, 60_000); // 컨테이너 시작에 시간이 걸릴 수 있음
 
@@ -381,7 +381,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
 
     // When
     const result = uow.run(async () => {
-      await txHost.tx.insert(todo).values({
+      await transactionHost.tx.insert(todo).values({
         userId: testUserId,
         categoryId: category.id,
         title: "미커밋 할 일",

@@ -36,9 +36,9 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
   beforeAll(async () => {
     testDb = new TestDatabase();
     client = await testDb.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    activityWriter = new DrizzleUserRepository(txHost, new DateClock());
-    growthMetrics = new DrizzleGrowthMetricsReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    activityWriter = new DrizzleUserRepository(transactionHost, new DateClock());
+    growthMetrics = new DrizzleGrowthMetricsReader(transactionHost);
   }, 60_000);
 
   beforeEach(async () => {
@@ -289,7 +289,7 @@ describe("성장 지표 통합 테스트 (실제 DB)", () => {
 
 function createActivityWriter(client: TestDatabaseClient): DrizzleUserRepository {
   return new DrizzleUserRepository(
-    createDatabaseTransactionFixture(client).txHost,
+    createDatabaseTransactionFixture(client).transactionHost,
     new DateClock(),
   );
 }

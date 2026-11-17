@@ -34,8 +34,8 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, localHour, localMinute, userId, today, tomorrow } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, localHour, localMinute, userId, today, tomorrow } = timezoneContext;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
     const premiumUsers = await this.#dependencies.reader.findPremiumMorningReminderUsers({

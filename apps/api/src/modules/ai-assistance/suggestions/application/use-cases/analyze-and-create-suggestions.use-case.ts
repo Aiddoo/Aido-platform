@@ -69,7 +69,7 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly contextBuilder: Pick<SuggestionContextReader, "build">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTx">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
 }
 
@@ -145,7 +145,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
   ): Promise<SuggestionAnalysisResult> {
-    if (!(await this.#dependencies.entitlementReader.canInTx(owner, "AI_SUGGESTION"))) {
+    if (!(await this.#dependencies.entitlementReader.canInTransaction(owner, "AI_SUGGESTION"))) {
       return this.#skip(owner, command, "NOT_PREMIUM", null);
     }
     const consent = await this.#dependencies.scheduledAiConsent.find(command.userId);
@@ -243,7 +243,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       const { userMutationLock, entitlementReader, repository } = this.#dependencies;
       if (
         !(await userMutationLock.lockById(owner)) ||
-        !(await entitlementReader.canInTx(owner, "AI_SUGGESTION"))
+        !(await entitlementReader.canInTransaction(owner, "AI_SUGGESTION"))
       ) {
         return this.#finish(owner, command, {
           outcome: "NOT_PREMIUM",

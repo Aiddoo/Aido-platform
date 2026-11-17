@@ -352,9 +352,9 @@ export class OAuthController {
   })
   async googleOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#authorizationUrl("GOOGLE", query));
+    response.redirect(await this.#authorizationUrl("GOOGLE", query));
   }
 
   @Get("google/web-callback")
@@ -373,9 +373,9 @@ export class OAuthController {
   async googleOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#webCallbackRedirectUrl("GOOGLE", query, source));
+    response.redirect(await this.#webCallbackRedirectUrl("GOOGLE", query, source));
   }
 
   @Post("kakao/callback")
@@ -462,9 +462,9 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   })
   async kakaoOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#authorizationUrl("KAKAO", query));
+    response.redirect(await this.#authorizationUrl("KAKAO", query));
   }
 
   @Get("kakao/web-callback")
@@ -483,9 +483,9 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async kakaoOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#webCallbackRedirectUrl("KAKAO", query, source));
+    response.redirect(await this.#webCallbackRedirectUrl("KAKAO", query, source));
   }
 
   @Post("naver/callback")
@@ -566,9 +566,9 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   })
   async naverOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#authorizationUrl("NAVER", query));
+    response.redirect(await this.#authorizationUrl("NAVER", query));
   }
 
   @Get("naver/web-callback")
@@ -587,9 +587,9 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async naverOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() res: Response,
+    @Res() response: Response,
   ): Promise<void> {
-    res.redirect(await this.#webCallbackRedirectUrl("NAVER", query, source));
+    response.redirect(await this.#webCallbackRedirectUrl("NAVER", query, source));
   }
 
   @Post("link")

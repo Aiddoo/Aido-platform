@@ -22,14 +22,14 @@ const IDEMPOTENCY_KEY_CONSTRAINT = "QuotaCharge_userId_meter_idempotencyKey_key"
 /** 예약·환불은 Application이 잡은 사용자 행 잠금 안에서 실행된다. */
 @Injectable()
 export class DrizzleQuotaChargeRepository implements QuotaChargeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findById(chargeId: QuotaChargeId): Promise<QuotaCharge | null> {

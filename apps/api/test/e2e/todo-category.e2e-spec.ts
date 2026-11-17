@@ -16,26 +16,26 @@ import { user as userTable } from "#api/platform/database/schema/index";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("할 일 카테고리 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   /**
    * 프리미엄 유저 생성 헬퍼
    */
   async function createPremiumUser(email: string, password: string) {
-    const user = await ctx.helpers.createVerifiedUser(email, password);
-    const db = ctx.testDatabase.getClient();
+    const user = await testContext.helpers.createVerifiedUser(email, password);
+    const db = testContext.testDatabase.getClient();
     await db
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
@@ -48,13 +48,13 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      const { accessToken } = await ctx.helpers.createVerifiedUser(
+      const { accessToken } = await testContext.helpers.createVerifiedUser(
         "category-default@example.com",
         "Test1234!",
       );
 
       // Then
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -83,7 +83,7 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("category-crud@example.com", testPassword);
 
       // When
-      const createResponse = await request(ctx.app.getHttpServer())
+      const createResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -103,7 +103,7 @@ describe("할 일 카테고리 E2E", () => {
       const createdCategoryId = createResponse.body.data.category.id;
 
       // When
-      const listResponse = await request(ctx.app.getHttpServer())
+      const listResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -121,14 +121,16 @@ describe("할 일 카테고리 E2E", () => {
       const sortOrders = listResponse.body.data.items.map(
         (c: { sortOrder: number }) => c.sortOrder,
       );
-      const isSorted = sortOrders.every((val: number, i: number, arr: number[]) => {
-        const prev = arr[i - 1];
-        return i === 0 || (prev !== undefined && prev <= val);
-      });
+      const isSorted = sortOrders.every(
+        (sortOrder: number, index: number, allSortOrders: number[]) => {
+          const previous = allSortOrders[index - 1];
+          return index === 0 || (previous !== undefined && previous <= sortOrder);
+        },
+      );
       expect(isSorted).toBe(true);
 
       // When
-      const detailResponse = await request(ctx.app.getHttpServer())
+      const detailResponse = await request(testContext.app.getHttpServer())
         .get(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -139,7 +141,7 @@ describe("할 일 카테고리 E2E", () => {
       expect(detailResponse.body.data.category.todoCount).toBeDefined();
 
       // When
-      const updateNameResponse = await request(ctx.app.getHttpServer())
+      const updateNameResponse = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "수정된 카테고리" })
@@ -150,7 +152,7 @@ describe("할 일 카테고리 E2E", () => {
       expect(updateNameResponse.body.data.category.name).toBe("수정된 카테고리");
 
       // When
-      const updateColorResponse = await request(ctx.app.getHttpServer())
+      const updateColorResponse = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ color: "#0000FF" })
@@ -160,7 +162,7 @@ describe("할 일 카테고리 E2E", () => {
       expect(updateColorResponse.body.data.category.color).toBe("#0000FF");
 
       // When
-      const updateBothResponse = await request(ctx.app.getHttpServer())
+      const updateBothResponse = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "최종 수정", color: "#AABBCC" })
@@ -171,7 +173,7 @@ describe("할 일 카테고리 E2E", () => {
       expect(updateBothResponse.body.data.category.color).toBe("#AABBCC");
 
       // When
-      const deleteResponse = await request(ctx.app.getHttpServer())
+      const deleteResponse = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -179,7 +181,7 @@ describe("할 일 카테고리 E2E", () => {
       // Then
       expect(deleteResponse.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .get(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(404);
@@ -189,14 +191,14 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("category-dup@example.com", testPassword);
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "공부", color: "#00FF00" })
         .expect(201);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "공부", color: "#FF0000" })
@@ -211,7 +213,7 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("category-noname@example.com", testPassword);
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ color: "#00FF00" })
@@ -223,19 +225,19 @@ describe("할 일 카테고리 E2E", () => {
     it("공백만 있는 이름은 생성·수정 모두 400 SYS_0002", async () => {
       // Given
       const { accessToken } = await createPremiumUser("category-blank@example.com", testPassword);
-      const created = await request(ctx.app.getHttpServer())
+      const created = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "공부", color: "#00FF00" })
         .expect(201);
 
       // When
-      const createResponse = await request(ctx.app.getHttpServer())
+      const createResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "   ", color: "#00FF00" })
         .expect(400);
-      const updateResponse = await request(ctx.app.getHttpServer())
+      const updateResponse = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${created.body.data.category.id}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "   " })
@@ -251,12 +253,12 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("category-trim@example.com", testPassword);
 
       // When
-      const trimmedResponse = await request(ctx.app.getHttpServer())
+      const trimmedResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: `  ${"가".repeat(50)}  `, color: "#00FF00" })
         .expect(201);
-      const tooLongResponse = await request(ctx.app.getHttpServer())
+      const tooLongResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "나".repeat(51), color: "#00FF00" })
@@ -272,7 +274,7 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("category-nocolor@example.com", testPassword);
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "새 카테고리" })
@@ -289,7 +291,7 @@ describe("할 일 카테고리 E2E", () => {
       );
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "테스트", color: "not-a-color" })
@@ -302,7 +304,7 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .send({ name: "테스트", color: "#000000" })
         .expect(401);
@@ -315,7 +317,7 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("category-404@example.com", testPassword);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories/999999")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(404);
@@ -328,7 +330,7 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      await request(ctx.app.getHttpServer()).get("/v1/todo-categories").expect(401);
+      await request(testContext.app.getHttpServer()).get("/v1/todo-categories").expect(401);
 
       // Then
     });
@@ -340,7 +342,7 @@ describe("할 일 카테고리 E2E", () => {
         testPassword,
       );
 
-      const createResponse = await request(ctx.app.getHttpServer())
+      const createResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "공부", color: "#00FF00" })
@@ -349,7 +351,7 @@ describe("할 일 카테고리 E2E", () => {
       const createdCategoryId = createResponse.body.data.category.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${createdCategoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "중요한 일" })
@@ -367,7 +369,7 @@ describe("할 일 카테고리 E2E", () => {
       );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch("/v1/todo-categories/999999")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "테스트" })
@@ -381,7 +383,7 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .patch("/v1/todo-categories/1")
         .send({ name: "테스트" })
         .expect(401);
@@ -393,7 +395,7 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      await request(ctx.app.getHttpServer()).get("/v1/todo-categories/1").expect(401);
+      await request(testContext.app.getHttpServer()).get("/v1/todo-categories/1").expect(401);
 
       // Then
     });
@@ -409,20 +411,20 @@ describe("할 일 카테고리 E2E", () => {
         testPassword,
       );
 
-      const res1 = await request(ctx.app.getHttpServer())
+      const res1 = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트 1", color: "#111111" })
         .expect(201);
       const category1Id = res1.body.data.category.id;
 
-      const _res2 = await request(ctx.app.getHttpServer())
+      const _res2 = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트 2", color: "#222222" })
         .expect(201);
 
-      const res3 = await request(ctx.app.getHttpServer())
+      const res3 = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트 3", color: "#333333" })
@@ -430,7 +432,7 @@ describe("할 일 카테고리 E2E", () => {
       const category3Id = res3.body.data.category.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${category3Id}/reorder`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -450,14 +452,14 @@ describe("할 일 카테고리 E2E", () => {
         testPassword,
       );
 
-      const res1 = await request(ctx.app.getHttpServer())
+      const res1 = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트 1", color: "#111111" })
         .expect(201);
       const category1Id = res1.body.data.category.id;
 
-      const res2 = await request(ctx.app.getHttpServer())
+      const res2 = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트 2", color: "#222222" })
@@ -465,7 +467,7 @@ describe("할 일 카테고리 E2E", () => {
       const category2Id = res2.body.data.category.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${category1Id}/reorder`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -485,15 +487,15 @@ describe("할 일 카테고리 E2E", () => {
         testPassword,
       );
 
-      const res = await request(ctx.app.getHttpServer())
+      const createdCategoryResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트", color: "#111111" })
         .expect(201);
-      const categoryId = res.body.data.category.id;
+      const categoryId = createdCategoryResponse.body.data.category.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${categoryId}/reorder`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ position: "before" })
@@ -507,14 +509,14 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("cat-reorder-last@example.com", testPassword);
 
-      const res = await request(ctx.app.getHttpServer())
+      const createdCategoryResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "순서 테스트", color: "#111111" })
         .expect(201);
-      const categoryId = res.body.data.category.id;
+      const categoryId = createdCategoryResponse.body.data.category.id;
 
-      const beforeResponse = await request(ctx.app.getHttpServer())
+      const beforeResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -524,7 +526,7 @@ describe("할 일 카테고리 E2E", () => {
       );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${categoryId}/reorder`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ position: "after" })
@@ -542,15 +544,15 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("cat-del-empty@example.com", testPassword);
 
-      const res = await request(ctx.app.getHttpServer())
+      const createdCategoryResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "삭제될 카테고리", color: "#FF0000" })
         .expect(201);
-      const categoryToDelete = res.body.data.category.id;
+      const categoryToDelete = createdCategoryResponse.body.data.category.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categoryToDelete}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -558,7 +560,7 @@ describe("할 일 카테고리 E2E", () => {
       // Then
       expect(response.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .get(`/v1/todo-categories/${categoryToDelete}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(404);
@@ -568,14 +570,14 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("cat-del-todos@example.com", testPassword);
 
-      const catRes = await request(ctx.app.getHttpServer())
+      const catResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "Todo 있는 카테고리", color: "#00FF00" })
         .expect(201);
-      const categoryWithTodos = catRes.body.data.category.id;
+      const categoryWithTodos = catResponse.body.data.category.id;
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -586,7 +588,7 @@ describe("할 일 카테고리 E2E", () => {
         .expect(201);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categoryWithTodos}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(400);
@@ -599,14 +601,14 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("cat-del-self@example.com", testPassword);
 
-      const catRes = await request(ctx.app.getHttpServer())
+      const catResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "셀프 이동 테스트", color: "#FF0000" })
         .expect(201);
-      const categoryId = catRes.body.data.category.id;
+      const categoryId = catResponse.body.data.category.id;
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -617,7 +619,7 @@ describe("할 일 카테고리 E2E", () => {
         .expect(201);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categoryId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .query({ moveToCategoryId: categoryId })
@@ -631,20 +633,20 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const { accessToken } = await createPremiumUser("cat-del-move@example.com", testPassword);
 
-      const listRes = await request(ctx.app.getHttpServer())
+      const listResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-      const targetCategoryId = listRes.body.data.items[0].id;
+      const targetCategoryId = listResponse.body.data.items[0].id;
 
-      const catRes = await request(ctx.app.getHttpServer())
+      const catResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "이동 후 삭제", color: "#0000FF" })
         .expect(201);
-      const categoryWithTodos = catRes.body.data.category.id;
+      const categoryWithTodos = catResponse.body.data.category.id;
 
-      const todoRes = await request(ctx.app.getHttpServer())
+      const todoResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
@@ -653,10 +655,10 @@ describe("할 일 카테고리 E2E", () => {
           startDate: "2024-01-15",
         })
         .expect(201);
-      const todoId = todoRes.body.data.todo.id;
+      const todoId = todoResponse.body.data.todo.id;
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categoryWithTodos}`)
         .query({ moveToCategoryId: targetCategoryId })
         .set("Authorization", `Bearer ${accessToken}`)
@@ -665,37 +667,37 @@ describe("할 일 카테고리 E2E", () => {
       // Then
       expect(response.body.data.message).toBe("카테고리가 삭제되었습니다.");
 
-      const todoResponse = await request(ctx.app.getHttpServer())
+      const movedTodoResponse = await request(testContext.app.getHttpServer())
         .get(`/v1/todos/${todoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      expect(todoResponse.body.data.category.id).toBe(targetCategoryId);
+      expect(movedTodoResponse.body.data.category.id).toBe(targetCategoryId);
     });
 
     it("마지막 카테고리 삭제 시 400 에러", async () => {
       // Given
-      const { accessToken: newUserToken } = await ctx.helpers.createVerifiedUser(
+      const { accessToken: newUserToken } = await testContext.helpers.createVerifiedUser(
         "last-category@example.com",
         testPassword,
       );
 
-      const listRes = await request(ctx.app.getHttpServer())
+      const listResponse = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${newUserToken}`)
         .expect(200);
 
-      const categories = listRes.body.data.items;
+      const categories = listResponse.body.data.items;
       expect(categories).toHaveLength(2);
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categories[0].id}`)
         .set("Authorization", `Bearer ${newUserToken}`)
         .expect(200);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${categories[1].id}`)
         .set("Authorization", `Bearer ${newUserToken}`)
         .expect(400);
@@ -709,7 +711,7 @@ describe("할 일 카테고리 E2E", () => {
       const { accessToken } = await createPremiumUser("cat-del-404@example.com", testPassword);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete("/v1/todo-categories/999999")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(404);
@@ -722,7 +724,7 @@ describe("할 일 카테고리 E2E", () => {
       // Given
 
       // When
-      await request(ctx.app.getHttpServer()).delete("/v1/todo-categories/1").expect(401);
+      await request(testContext.app.getHttpServer()).delete("/v1/todo-categories/1").expect(401);
 
       // Then
     });
@@ -736,7 +738,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1 = await createPremiumUser("cat-user1-403@example.com", testPassword);
       const user2 = await createPremiumUser("cat-user2-403@example.com", testPassword);
 
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .send({ name: "User1 카테고리", color: "#FF0000" })
@@ -744,7 +746,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1CategoryId = response.body.data.category.id;
 
       // When
-      const getResponse = await request(ctx.app.getHttpServer())
+      const getResponse = await request(testContext.app.getHttpServer())
         .get(`/v1/todo-categories/${user1CategoryId}`)
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .expect(403);
@@ -758,7 +760,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1 = await createPremiumUser("cat-user1-patch@example.com", testPassword);
       const user2 = await createPremiumUser("cat-user2-patch@example.com", testPassword);
 
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .send({ name: "User1 카테고리", color: "#FF0000" })
@@ -766,7 +768,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1CategoryId = response.body.data.category.id;
 
       // When
-      const patchResponse = await request(ctx.app.getHttpServer())
+      const patchResponse = await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${user1CategoryId}`)
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .send({ name: "해킹 시도" })
@@ -781,7 +783,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1 = await createPremiumUser("cat-user1-del@example.com", testPassword);
       const user2 = await createPremiumUser("cat-user2-del@example.com", testPassword);
 
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .send({ name: "User1 카테고리", color: "#FF0000" })
@@ -789,7 +791,7 @@ describe("할 일 카테고리 E2E", () => {
       const user1CategoryId = response.body.data.category.id;
 
       // When
-      const delResponse = await request(ctx.app.getHttpServer())
+      const delResponse = await request(testContext.app.getHttpServer())
         .delete(`/v1/todo-categories/${user1CategoryId}`)
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .expect(404);
@@ -803,14 +805,14 @@ describe("할 일 카테고리 E2E", () => {
       const user1 = await createPremiumUser("cat-user1-same@example.com", testPassword);
       const user2 = await createPremiumUser("cat-user2-same@example.com", testPassword);
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .send({ name: "운동", color: "#00FF00" })
         .expect(201);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .send({ name: "운동", color: "#0000FF" })
@@ -825,20 +827,20 @@ describe("할 일 카테고리 E2E", () => {
       const user1 = await createPremiumUser("cat-user1-list@example.com", testPassword);
       const user2 = await createPremiumUser("cat-user2-list@example.com", testPassword);
 
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .send({ name: "User1 카테고리", color: "#FF0000" })
         .expect(201);
 
       // When
-      const user1List = await request(ctx.app.getHttpServer())
+      const user1List = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .expect(200);
 
       // When
-      const user2List = await request(ctx.app.getHttpServer())
+      const user2List = await request(testContext.app.getHttpServer())
         .get("/v1/todo-categories")
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .expect(200);
@@ -857,24 +859,24 @@ describe("할 일 카테고리 E2E", () => {
       // Given
       const password = "Test1234!";
       const owner = await createPremiumUser("cat-friend-owner@example.com", password);
-      const friend = await ctx.helpers.createVerifiedUser(
+      const friend = await testContext.helpers.createVerifiedUser(
         "cat-friend-viewer@example.com",
         password,
       );
-      await ctx.helpers.createFriendship(owner, friend);
-      const categoryResponse = await request(ctx.app.getHttpServer())
+      await testContext.helpers.createFriendship(owner, friend);
+      const categoryResponse = await request(testContext.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${owner.accessToken}`)
         .send({ name: "공부", color: "#111111" })
         .expect(201);
       const categoryId = z.number().parse(categoryResponse.body.data.category.id);
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${owner.accessToken}`)
         .send({ title: "공개 할 일", categoryId, startDate: "2027-01-15", visibility: "PUBLIC" })
         .expect(201);
       async function friendTodoCategories() {
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get(`/v1/todos/friends/${owner.userId}`)
           .set("Authorization", `Bearer ${friend.accessToken}`)
           .expect(200);
@@ -885,7 +887,7 @@ describe("할 일 카테고리 E2E", () => {
       expect(await friendTodoCategories()).toEqual([{ name: "공부", color: "#111111" }]);
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .patch(`/v1/todo-categories/${categoryId}`)
         .set("Authorization", `Bearer ${owner.accessToken}`)
         .send({ name: "운동", color: "#222222" })

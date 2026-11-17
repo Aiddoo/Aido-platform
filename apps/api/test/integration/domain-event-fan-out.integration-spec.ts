@@ -101,7 +101,7 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
   let module: TestingModule;
   let boss: PgBoss;
   let unitOfWork: UnitOfWorkPort;
-  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  let transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   let eventEmitter: EventEmitter2;
   let publisher: FanOutDomainEventPublisher;
 
@@ -140,11 +140,11 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
       .compile();
     await module.init();
     unitOfWork = module.get(UnitOfWorkPort);
-    txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
+    transactionHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     eventEmitter = new EventEmitter2();
     publisher = new FanOutDomainEventPublisher(
       new EventSubscriptionCatalog(SUBSCRIPTIONS),
-      new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+      new PgBossJobQueueAdapter(boss, transactionHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
         workerEnabled: true,
       }),
@@ -221,7 +221,7 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
 
     // When
     await unitOfWork.run(async () => {
-      await txHost.tx.execute(
+      await transactionHost.tx.execute(
         sql`INSERT INTO public.event_fan_out_probe (memo_id) VALUES ('memo-after-commit')`,
       );
       await publisher.publish([memoPinned("event-after-commit", "memo-after-commit")]);
@@ -232,7 +232,7 @@ describe("도메인 이벤트 fan-out (실제 PostgreSQL·pg-boss)", () => {
     expect(delivered).toEqual([
       { memoId: "memo-after-commit", pinnedAt: "2026-11-10T00:00:00.000Z" },
     ]);
-    const probe = await txHost.tx.execute<{ memo_id: string }>(
+    const probe = await transactionHost.tx.execute<{ memo_id: string }>(
       sql`SELECT memo_id FROM public.event_fan_out_probe WHERE memo_id = 'memo-after-commit'`,
     );
     expect(probe.rows).toHaveLength(1);

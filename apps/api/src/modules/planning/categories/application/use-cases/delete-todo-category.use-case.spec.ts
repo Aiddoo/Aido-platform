@@ -345,9 +345,11 @@ describe("카테고리 삭제", () => {
         events.push("count");
         return super.countByUserId(userId);
       }
-      override async countTodos(...args: Parameters<InMemoryTodoCategoryRepository["countTodos"]>) {
+      override async countTodos(
+        ...parameters: Parameters<InMemoryTodoCategoryRepository["countTodos"]>
+      ) {
         events.push("todo-count");
-        return super.countTodos(...args);
+        return super.countTodos(...parameters);
       }
       override async countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
         events.push("active-series");

@@ -7,19 +7,19 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0
 const APP_REQUEST_ID = "3f2b8c1e-5d4a-4b6f-9e2d-1a7c8b9d0e1f";
 
 describe("요청 ID E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   it("앱이 보낸 X-Request-Id를 응답 헤더로 그대로 돌려준다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/invites/availability")
       .set("X-Request-Id", APP_REQUEST_ID)
       .expect(200);
@@ -33,7 +33,7 @@ describe("요청 ID E2E", () => {
     ["UUID가 아닌 값", "not-a-uuid"],
   ])("%s 요청에는 새 UUID를 만들어 돌려준다", async (_name, requestId) => {
     // Given
-    const call = request(ctx.app.getHttpServer()).get("/v1/invites/availability");
+    const call = request(testContext.app.getHttpServer()).get("/v1/invites/availability");
 
     // When
     const response = await (requestId == null ? call : call.set("X-Request-Id", requestId)).expect(
@@ -46,7 +46,7 @@ describe("요청 ID E2E", () => {
 
   it("guard가 거부한 오류 응답에도 같은 요청 ID를 돌려준다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("X-Request-Id", APP_REQUEST_ID)
       .expect(401);
@@ -58,13 +58,13 @@ describe("요청 ID E2E", () => {
 
   it("CORS가 X-Request-Id 요청 헤더를 받고 응답 헤더를 브라우저에 노출한다", async () => {
     // When
-    const preflight = await request(ctx.app.getHttpServer())
+    const preflight = await request(testContext.app.getHttpServer())
       .options("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
       .set("Access-Control-Request-Method", "GET")
       .set("Access-Control-Request-Headers", "x-request-id")
       .expect(204);
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
       .expect(200);

@@ -56,7 +56,7 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
       createSchema: false,
       max: 3,
     });
-    return new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+    return new PgBossJobQueueAdapter(boss, transaction.transactionHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
       workerEnabled: true,
     });
@@ -247,7 +247,7 @@ describe("PgBossJobQueueAdapter 내구성 통합 테스트 (실제 PostgreSQL)",
 
     // When
     const outcome = transaction.uow.run(async () => {
-      await transaction.txHost.tx.execute(
+      await transaction.transactionHost.tx.execute(
         sql`INSERT INTO public.job_runtime_probe (id) VALUES (${probeId})`,
       );
       await jobQueue.enqueue(queue, { documentId: 6 }, { idempotencyKey: probeId });

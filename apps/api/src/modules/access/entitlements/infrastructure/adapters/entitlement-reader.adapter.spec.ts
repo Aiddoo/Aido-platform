@@ -79,7 +79,7 @@ describe("EntitlementReaderAdapter", () => {
         createAccessUserFixture({ role: "USER", subscriptionStatus: status }),
       );
       // When
-      const limit = await fixture.reader.getFeatureLimitInTx(fixture.userId, "AI_PARSE");
+      const limit = await fixture.reader.getFeatureLimitInTransaction(fixture.userId, "AI_PARSE");
       // Then
       expect(limit).toBe(expected);
     },
@@ -94,7 +94,10 @@ describe("EntitlementReaderAdapter", () => {
       createAccessUserFixture({ role: "USER", subscriptionStatus: "FREE" }),
     );
     // When
-    const limit = await fixture.reader.getFeatureLimitInTx(fixture.userId, "TODO_CATEGORY");
+    const limit = await fixture.reader.getFeatureLimitInTransaction(
+      fixture.userId,
+      "TODO_CATEGORY",
+    );
     // Then
     expect(limit).toBe(PLAN_CATALOG.TODO_CATEGORY.free);
   });
@@ -104,7 +107,7 @@ describe("EntitlementReaderAdapter", () => {
     const fixture = createEntitlementFixture({ exists: false });
     // When
     const cached = await fixture.reader.getFeatureLimit(fixture.userId, "CHEER");
-    const fresh = await fixture.reader.getFeatureLimitInTx(fixture.userId, "CHEER");
+    const fresh = await fixture.reader.getFeatureLimitInTransaction(fixture.userId, "CHEER");
     // Then
     expect([cached, fresh]).toEqual([PLAN_CATALOG.CHEER.free, PLAN_CATALOG.CHEER.free]);
   });
@@ -156,7 +159,7 @@ describe("EntitlementReaderAdapter", () => {
       );
 
       // When
-      const fresh = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+      const fresh = await fixture.reader.canInTransaction(fixture.userId, "AI_REPORT");
       const cached = await fixture.reader.can(fixture.userId, "AI_REPORT");
 
       // Then
@@ -168,11 +171,11 @@ describe("EntitlementReaderAdapter", () => {
   it("fresh premium은 존재하지 않는 사용자와 ADMIN 삭제를 허용하지 않는다", async () => {
     // Given
     const fixture = createEntitlementFixture({ role: "ADMIN" });
-    const beforeDeletion = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+    const beforeDeletion = await fixture.reader.canInTransaction(fixture.userId, "AI_REPORT");
     fixture.users.delete(fixture.userId.value);
 
     // When
-    const afterDeletion = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+    const afterDeletion = await fixture.reader.canInTransaction(fixture.userId, "AI_REPORT");
 
     // Then
     expect(beforeDeletion).toBe(true);
@@ -206,7 +209,10 @@ describe("EntitlementReaderAdapter", () => {
         fixture.users.set(fixture.userId.value, createAccessUserFixture({ role: to }));
 
         // When
-        const fresh = await fixture.reader.getFeatureLimitInTx(fixture.userId, "TODO_CATEGORY");
+        const fresh = await fixture.reader.getFeatureLimitInTransaction(
+          fixture.userId,
+          "TODO_CATEGORY",
+        );
         const stale = await fixture.reader.getFeatureLimit(fixture.userId, "TODO_CATEGORY");
         await fixture.cache.invalidate(fixture.userId);
         const invalidated = await fixture.reader.getEntitlements(fixture.userId);
@@ -230,7 +236,7 @@ describe("EntitlementReaderAdapter", () => {
         const used = PLAN_CATALOG[feature].free;
 
         // When
-        const quota = await fixture.reader.getFeatureQuotaInTx(fixture.userId, feature, {
+        const quota = await fixture.reader.getFeatureQuotaInTransaction(fixture.userId, feature, {
           used,
           resetsAt: RESETS_AT,
         });
@@ -257,7 +263,7 @@ describe("EntitlementReaderAdapter", () => {
       const limit = PLAN_CATALOG.FRIEND.free + 2;
 
       // When
-      const quota = await fixture.reader.getFeatureQuotaInTx(fixture.userId, "FRIEND", {
+      const quota = await fixture.reader.getFeatureQuotaInTransaction(fixture.userId, "FRIEND", {
         used: limit,
         resetsAt: null,
       });
@@ -282,10 +288,14 @@ describe("EntitlementReaderAdapter", () => {
       const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
 
       // When
-      const quota = await fixture.reader.getFeatureQuotaInTx(fixture.userId, "TODO_CATEGORY", {
-        used: 3,
-        resetsAt: null,
-      });
+      const quota = await fixture.reader.getFeatureQuotaInTransaction(
+        fixture.userId,
+        "TODO_CATEGORY",
+        {
+          used: 3,
+          resetsAt: null,
+        },
+      );
 
       // Then
       expect(quota).toMatchObject({ limit, used: 3 });
@@ -301,7 +311,7 @@ describe("EntitlementReaderAdapter", () => {
       );
 
       // When
-      const quota = await fixture.reader.getFeatureQuotaInTx(fixture.userId, "CHEER", {
+      const quota = await fixture.reader.getFeatureQuotaInTransaction(fixture.userId, "CHEER", {
         used: PLAN_CATALOG.CHEER.free,
         resetsAt: RESETS_AT,
       });
@@ -326,7 +336,7 @@ describe("EntitlementReaderAdapter", () => {
       // When
       clock.advanceBy({ milliseconds: 1 });
       const cached = await fixture.reader.can(fixture.userId, "AI_REPORT");
-      const fresh = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+      const fresh = await fixture.reader.canInTransaction(fixture.userId, "AI_REPORT");
       const limit = await fixture.reader.getFeatureLimit(fixture.userId, "AI_PARSE");
 
       // Then

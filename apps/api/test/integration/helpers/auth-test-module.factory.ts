@@ -193,7 +193,7 @@ export async function createAuthTestModule(
       },
       {
         provide: TransactionHost,
-        useValue: transaction.txHost,
+        useValue: transaction.transactionHost,
       },
       {
         provide: UnitOfWorkPort,

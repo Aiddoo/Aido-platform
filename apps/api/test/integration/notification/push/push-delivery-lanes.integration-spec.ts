@@ -43,7 +43,7 @@ describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
     await boss.start();
     jobQueue = new PgBossJobQueueAdapter(
       boss,
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new JobQueueRegistry(),
       { shutdownTimeoutMs: 10_000, workerEnabled: true },
     );

@@ -41,8 +41,8 @@ describe("DrizzleSubscriptionRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleSubscriptionRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleSubscriptionRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleSubscriptionRepository(transactionHost);
   }
 
   describeSubscriptionRepositoryContract(async () => createRepository());

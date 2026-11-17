@@ -110,8 +110,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       createSchema: false,
       max: 3,
     });
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    jobQueue = new PgBossJobQueueAdapter(boss, transactionHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
       workerEnabled: true,
     });
@@ -121,20 +121,20 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     );
     const ownerTimezone = {
       findTimezone: async (id: UserId) => {
-        const row = await txHost.tx.query.userPreference.findFirst({
+        const row = await transactionHost.tx.query.userPreference.findFirst({
           columns: { timezone: true },
           where: { userId: id.value },
         });
         return row?.timezone ?? null;
       },
     };
-    const mutationLock = new PostgresMutationLockAdapter(txHost);
+    const mutationLock = new PostgresMutationLockAdapter(transactionHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
-    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
+    const todoRepository = new DrizzleTodoRepository(transactionHost, new DateClock());
     rebase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
       todoRepository,
-      seriesRepository: new DrizzleTodoSeriesRepository(txHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(transactionHost, new DateClock()),
       ownerTimezone,
       todoReminder: reminderAdapter,
       todoCache,
@@ -145,7 +145,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const eventPublisher = { publish: async () => undefined };
     updateSchedule = new UpdateTodoScheduleUseCase({
       todoRepository,
-      todoReadRepository: new DrizzleTodoReadRepository(txHost),
+      todoReadRepository: new DrizzleTodoReadRepository(transactionHost),
       unitOfWork: uow,
       mutationLock,
       clock: new DateClock(),
@@ -160,8 +160,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     });
     const publisher = new PublishNotificationUseCase({
       sendNotification: new SendNotificationUseCase({
-        notificationRepository: new DrizzleNotificationRepository(txHost),
-        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+        notificationRepository: new DrizzleNotificationRepository(transactionHost),
+        pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+          transactionHost,
+          new DateClock(),
+        ),
         cache: { invalidateUnreadCount: async () => undefined },
         unitOfWork: uow,
         afterCommit: { register: () => undefined },
@@ -171,8 +174,11 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       sendNotificationWithDeduplication: { execute: async () => null },
       sendBatchNotification: new SendBatchNotificationUseCase({
         persistBatchNotificationUseCase: new PersistBatchNotificationUseCase({
-          notificationRepository: new DrizzleNotificationRepository(txHost),
-          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(txHost, new DateClock()),
+          notificationRepository: new DrizzleNotificationRepository(transactionHost),
+          pushDispatchStaging: new DrizzlePushDispatchStagingRepository(
+            transactionHost,
+            new DateClock(),
+          ),
           unitOfWork: uow,
           afterCommitPublisher: { register: () => undefined },
         }),
@@ -180,12 +186,12 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
         unitOfWork: uow,
         afterCommitTasks: { register: () => undefined },
       }),
-      todoTargetReader: new DrizzleNotificationTodoTargetReader(txHost),
+      todoTargetReader: new DrizzleNotificationTodoTargetReader(transactionHost),
     });
     const readerModule = await Test.createTestingModule({
       providers: [
         DrizzleSchedulerReader,
-        { provide: TransactionHost, useValue: txHost },
+        { provide: TransactionHost, useValue: transactionHost },
         { provide: CacheStorePort, useValue: {} },
         { provide: ClockPort, useValue: new DateClock() },
         {

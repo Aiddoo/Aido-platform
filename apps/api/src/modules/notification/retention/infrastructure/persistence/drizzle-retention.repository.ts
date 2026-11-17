@@ -70,22 +70,22 @@ const stageRowSchema = z.object({
 
 @Injectable()
 export class DrizzleRetentionRepository implements RetentionRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #uow: UnitOfWorkPort;
   readonly #cache: Pick<CacheStorePort, "wrap">;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     uow: UnitOfWorkPort,
     cache: CacheStorePort,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#uow = uow;
     this.#cache = cache;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async enroll(input: {

@@ -27,10 +27,10 @@ describe("DrizzleAccessStateReader·DrizzleFeatureGrantRepository (실제 Postgr
   });
 
   describeAccessStateReaderContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      reader: new DrizzleAccessStateReader(txHost),
-      featureGrantRepository: new DrizzleFeatureGrantRepository(txHost),
+      reader: new DrizzleAccessStateReader(transactionHost),
+      featureGrantRepository: new DrizzleFeatureGrantRepository(transactionHost),
       seedFriendGrantRow: async ({ userId, quantity }) => {
         const id = createEntityId();
         await client

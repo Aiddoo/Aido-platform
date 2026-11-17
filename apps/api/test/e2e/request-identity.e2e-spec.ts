@@ -3,24 +3,24 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("신뢰할 수 있는 요청 식별 E2E (실제 throttler, 직렬 실행)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       withRealThrottler: true,
     });
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const rejectedRegistrationFrom = async (forwardedFor: string): Promise<number> => {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/auth/register")
       .set("X-Forwarded-For", forwardedFor)
       .send({});

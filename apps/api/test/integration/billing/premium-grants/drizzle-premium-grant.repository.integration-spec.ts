@@ -39,8 +39,8 @@ describe("DrizzlePremiumGrantRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzlePremiumGrantRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzlePremiumGrantRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzlePremiumGrantRepository(transactionHost);
   }
 
   describePremiumGrantRepositoryContract(async () => createRepository());

@@ -48,12 +48,12 @@ describe("할 일 순서 바꾸기 — 간격 정수 (실제 PostgreSQL)", () =>
 
   beforeAll(async () => {
     client = await database.start();
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     useCase = new ReorderTodoUseCase({
-      todoRepository: new DrizzleTodoRepository(txHost, new DateClock()),
-      todoReadRepository: new DrizzleTodoReadRepository(txHost),
+      todoRepository: new DrizzleTodoRepository(transactionHost, new DateClock()),
+      todoReadRepository: new DrizzleTodoReadRepository(transactionHost),
       unitOfWork: uow,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       todoCache: { invalidateFriendTodos: async () => undefined },
       logger: new SilentLogger(),
     });

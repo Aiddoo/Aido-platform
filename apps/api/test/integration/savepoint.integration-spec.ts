@@ -36,7 +36,7 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   let unitOfWork: UnitOfWorkPort;
   let savepointRunner: SavepointRunnerPort;
   let afterCommitTasks: AfterCommitTaskRegistryPort;
-  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  let transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   let userId: string;
 
   beforeAll(async () => {
@@ -64,7 +64,7 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
     unitOfWork = module.get(UnitOfWorkPort);
     savepointRunner = module.get(SavepointRunnerPort);
     afterCommitTasks = module.get(AfterCommitTaskRegistryPort);
-    txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
+    transactionHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   });
 
   beforeEach(async () => {
@@ -80,14 +80,14 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
   });
 
   async function connectionPid(): Promise<number | undefined> {
-    const { rows } = await txHost.tx.execute<{ pid: number }>(
+    const { rows } = await transactionHost.tx.execute<{ pid: number }>(
       sql`SELECT pg_backend_pid()::int AS "pid"`,
     );
     return rows[0]?.pid;
   }
 
   async function createMemo(content: string, memoUserId = userId): Promise<void> {
-    await txHost.tx
+    await transactionHost.tx
       .insert(memo)
       .values({ userId: memoUserId, content, sortOrder: 0, updatedAt: Temporal.Now.instant() });
   }

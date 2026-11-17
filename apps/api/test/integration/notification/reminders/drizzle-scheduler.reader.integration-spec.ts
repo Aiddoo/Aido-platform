@@ -42,7 +42,7 @@ describe("DrizzleSchedulerReader 주간 달성 집계·설정 조회 (실제 Pos
   // 활성 시간대는 캐시를 거치므로 계약 사례마다 새 캐시로 만든다
   function createReader(): DrizzleSchedulerReader {
     return new DrizzleSchedulerReader(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
       { onboardingV2: { enabled: false, treatmentPercent: 50 } },
       new DateClock(),

@@ -16,7 +16,7 @@ const HOUR_MS = 60 * 60_000;
 const NOW = new Date("2026-11-02T11:00:00.000Z");
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
-const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
+const timezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
   timezones: ["Asia/Seoul"],
   localHour: 20,
   localMinute: 0,
@@ -78,7 +78,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     ];
     weatherReports.reports.set("u1", report({ wetKstHourTomorrow: 10, temperatureMin: 6 }));
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(sent()[0]).toMatchObject({
@@ -96,7 +96,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     ];
     weatherReports.reports.set("u1", report());
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]?.title).toBe("Partly cloudy tomorrow, 12–16°C 🌙");
   });
@@ -107,7 +107,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
       { id: "u1", timezone: "Asia/Seoul", preference: null, location: TOKYO },
     ];
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]?.title).toBe("내일 날씨를 미리 확인해보세요 🌙");
   });
@@ -119,7 +119,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     ];
     history.notified("WEATHER_EVENING", ["u1"]);
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 0 });
     expect(weatherReports.requests).toEqual([]);
@@ -129,7 +129,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
     // Given
     reader.fallbackUsers = [{ id: "u1", preference: null }];
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(weatherReports.requests).toEqual([]);
     expect(sent()[0]?.title).toBe("내일 날씨도 미리 챙겨보세요 🌙");

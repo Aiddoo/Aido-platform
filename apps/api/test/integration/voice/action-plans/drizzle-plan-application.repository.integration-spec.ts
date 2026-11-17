@@ -35,8 +35,8 @@ describe("DrizzlePlanApplicationRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzlePlanApplicationRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzlePlanApplicationRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzlePlanApplicationRepository(transactionHost);
   }
 
   describePlanApplicationRepositoryContract(async () => createRepository());

@@ -65,14 +65,14 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, localHour, localMinute, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, localHour, localMinute, today } = timezoneContext;
 
     // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
-    const weather = await this.#sendWeatherNotifications(ctx, today);
+    const weather = await this.#sendWeatherNotifications(timezoneContext, today);
 
     // 2단계: 위치 없는 유저 → 폴백 알림
-    const fallbackSent = await this.#sendFallbackNotifications(ctx, today);
+    const fallbackSent = await this.#sendFallbackNotifications(timezoneContext, today);
 
     const total = weather.sent + fallbackSent;
     if (total > 0) {
@@ -90,14 +90,15 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #sendWeatherNotifications(
-    ctx: TimezoneContext,
+    timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
-      timezones: ctx.timezones,
-      hour: ctx.localHour,
-      minute: ctx.localMinute,
-      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
+      timezones: timezoneContext.timezones,
+      hour: timezoneContext.localHour,
+      minute: timezoneContext.localMinute,
+      userId:
+        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
     });
     const targets = await filterUnnotifiedWeatherUsers(
       this.#dependencies.notificationHistoryReader,
@@ -194,14 +195,15 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #sendFallbackNotifications(
-    ctx: TimezoneContext,
+    timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
-      timezones: ctx.timezones,
-      hour: ctx.localHour,
-      minute: ctx.localMinute,
-      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
+      timezones: timezoneContext.timezones,
+      hour: timezoneContext.localHour,
+      minute: timezoneContext.localMinute,
+      userId:
+        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
     });
     return sendWeatherFallbackNotifications(this.#dependencies, {
       users,

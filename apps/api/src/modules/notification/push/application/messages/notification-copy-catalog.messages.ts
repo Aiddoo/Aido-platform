@@ -15,7 +15,7 @@ export const NOTIFICATION_COPY_CATALOG = {
 /** 카탈로그 문구 하나. 복수형은 `count` 인자로 CLDR 범주를 고른다. */
 export type NotificationCopyText = string | { readonly other: string };
 
-export type NotificationCopyArgs = Readonly<Record<string, string | number>>;
+export type NotificationCopyValues = Readonly<Record<string, string | number>>;
 
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {

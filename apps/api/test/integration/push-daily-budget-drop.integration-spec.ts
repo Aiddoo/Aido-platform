@@ -51,21 +51,21 @@ describe("drop_push_daily_budget 마이그레이션 (실제 PostgreSQL)", () => 
   });
 
   async function runDrop(seedRow: boolean): Promise<string | null> {
-    return client.transaction(async (tx) => {
+    return client.transaction(async (transaction) => {
       for (const statement of RECREATE_PUSH_DAILY_BUDGET) {
-        await tx.execute(sql.raw(statement));
+        await transaction.execute(sql.raw(statement));
       }
       if (seedRow) {
         const user = UserFixture.create();
-        await tx.insert(userTable).values(user);
-        await tx.execute(
+        await transaction.insert(userTable).values(user);
+        await transaction.execute(
           sql`INSERT INTO "PushDailyBudget" ("localDate", "updatedAt", "userId") VALUES ('2026-11-01', now(), ${user.id})`,
         );
       }
       for (const statement of readDropStatements()) {
-        await tx.execute(sql.raw(statement));
+        await transaction.execute(sql.raw(statement));
       }
-      const result = await tx.execute<{ table: string | null }>(
+      const result = await transaction.execute<{ table: string | null }>(
         sql`SELECT to_regclass('public."PushDailyBudget"')::text AS "table"`,
       );
       return result.rows[0]?.table ?? null;

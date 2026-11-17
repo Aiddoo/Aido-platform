@@ -36,10 +36,10 @@ export abstract class EntitlementReaderPort {
   /** 카탈로그 기능을 쓸 수 있는지. quota·resource는 한도가 남았는지가 아니라 기능 자체의 허용 여부다. */
   abstract can(userId: UserId, feature: PlanFeature): Promise<boolean>;
   /** 활성 UoW에서 캐시 없이 최신 상태로 다시 판단한다. 잠금 뒤 재확인에 쓴다. */
-  abstract canInTx(userId: UserId, feature: PlanFeature): Promise<boolean>;
+  abstract canInTransaction(userId: UserId, feature: PlanFeature): Promise<boolean>;
   /** quota·resource 표시 한도(받은 자리 포함). null은 무제한이다. */
   abstract getFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null>;
-  abstract getFeatureLimitInTx(
+  abstract getFeatureLimitInTransaction(
     userId: UserId,
     feature: PlanLimitFeatureKey,
   ): Promise<number | null>;
@@ -47,7 +47,7 @@ export abstract class EntitlementReaderPort {
    * 한도 오류 details에 싣는 서버 계산 featureQuota. 활성 UoW에서 캐시 없이 최신 권한으로 계산한다.
    * usage는 소유 Context가 센 값이다(일간 quota는 X-Timezone 하루 사용량, resource는 현재 개수).
    */
-  abstract getFeatureQuotaInTx(
+  abstract getFeatureQuotaInTransaction(
     userId: UserId,
     feature: UnmeteredLimitFeatureKey,
     usage: ReportedFeatureUsage,

@@ -8,26 +8,28 @@ import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("기능 발견 설정 (E2E)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it("비활성 기능 설정은 raw로, 일반 endpoint 응답은 기존 envelope로 반환한다", async () => {
     // When
-    const featureDiscovery = await request(ctx.app.getHttpServer())
+    const featureDiscovery = await request(testContext.app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
       .expect(200);
-    const root = await request(ctx.app.getHttpServer()).get("/v1/invites/availability").expect(200);
+    const root = await request(testContext.app.getHttpServer())
+      .get("/v1/invites/availability")
+      .expect(200);
 
     // Then
     // kill switch는 중간 캐시 없이 다음 조회부터 즉시 반영된다
@@ -41,7 +43,7 @@ describe("기능 발견 설정 (E2E)", () => {
   it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
     // Given
     // use the real HTTP/interceptor path with an enabled rollout result
-    const getFeatureDiscoveryCampaign = ctx.module.get(GetFeatureDiscoveryCampaignUseCase);
+    const getFeatureDiscoveryCampaign = testContext.module.get(GetFeatureDiscoveryCampaignUseCase);
     const response = {
       enabled: true as const,
       campaignId: "feature-discovery-2026-08",
@@ -59,7 +61,7 @@ describe("기능 발견 설정 (E2E)", () => {
     );
 
     // When
-    const result = await request(ctx.app.getHttpServer())
+    const result = await request(testContext.app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
       .expect(200);
 

@@ -19,7 +19,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
   let dedup: InMemorySchedulerDedup;
   let strategy: SendNudgeSuggestUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 14 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 14 });
   // 2024-01-16의 ISO 주
   const WEEK_ID = "2024-W03";
   const sent = () => publisher.published.map(({ data }) => data);
@@ -32,7 +32,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     followingId: friend.id,
     follower: {
       id: userId,
-      lastActiveAt: ctx.today.toZonedDateTime("UTC").toInstant(),
+      lastActiveAt: timezoneContext.today.toZonedDateTime("UTC").toInstant(),
       profile: { name: "사용자1" },
     },
     following: {
@@ -66,7 +66,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -112,7 +112,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     ];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     expect(sent().map(({ friendId }) => friendId)).toEqual(["friend-2"]);
@@ -127,7 +127,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     await dedup.recordNudgePairs(WEEK_ID, ["user-1:friend-1"]);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -140,10 +140,10 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
     ];
-    history.notified("NUDGE_SUGGEST", ["user-1"], ctx.today);
+    history.notified("NUDGE_SUGGEST", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -155,7 +155,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     reader.activeUsers = [{ id: "user-1" }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -164,7 +164,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
 
   it("이 시간대에 활성 사용자가 없으면 발송하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

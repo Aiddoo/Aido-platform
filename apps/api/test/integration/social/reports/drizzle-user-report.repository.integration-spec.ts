@@ -51,8 +51,8 @@ describe("DrizzleUserReportRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleUserReportRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserReportRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleUserReportRepository(transactionHost);
   }
 
   describeUserReportRepositoryContract(async () => createRepository());

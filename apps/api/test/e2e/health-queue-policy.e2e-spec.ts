@@ -7,29 +7,29 @@ import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("작업 큐 상태 확인 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const jobQueue = new InMemoryJobQueue();
   let health: MockInstance<typeof jobQueue.health>;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) => builder.overrideProvider(JobQueuePort).useValue(jobQueue),
       additionalResetters: [() => health?.mockClear()],
     });
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
     health = vi.spyOn(jobQueue, "health");
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+    const response = await request(testContext.app.getHttpServer()).get("/health").expect(200);
 
     // Then
     expect(response.body.data.status).toBe("ok");
@@ -50,7 +50,7 @@ describe("작업 큐 상태 확인 E2E", () => {
 
   it("외부 호출 상태는 내부 정책 이름 없이 degraded만 공개한다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+    const response = await request(testContext.app.getHttpServer()).get("/health").expect(200);
 
     // Then
     expect(response.body.data.info.outbound).toEqual({ status: "up", degraded: false });
@@ -67,7 +67,7 @@ describe("작업 큐 상태 확인 E2E", () => {
     });
 
     // When
-    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+    const response = await request(testContext.app.getHttpServer()).get("/health").expect(200);
 
     // Then
     expect(response.body.data.status).toBe("ok");

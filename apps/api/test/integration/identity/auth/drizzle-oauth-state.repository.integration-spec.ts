@@ -29,8 +29,8 @@ describe("DrizzleOAuthStateRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleOAuthStateRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleOAuthStateRepository(txHost, encryption);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleOAuthStateRepository(transactionHost, encryption);
   }
 
   describeAuthOAuthStateRepositoryContract(async () => createRepository());

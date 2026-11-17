@@ -260,7 +260,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       throw new Error("root fixture missing");
     }
     const like = context.module.get(LikeTodoCommentUseCase);
-    const txHost =
+    const transactionHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
     const registration = vi.spyOn(
@@ -278,9 +278,9 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         return saveLike(savedLike);
       }
       hasFailed = true;
-      stagedCounts = await notificationTableCounts(txHost.tx);
+      stagedCounts = await notificationTableCounts(transactionHost.tx);
       try {
-        await txHost.tx.insert(todoCommentLike).values({
+        await transactionHost.tx.insert(todoCommentLike).values({
           commentId: createEntityId(),
           userId,
           isActive: true,
@@ -330,7 +330,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     if (commentId === undefined) {
       throw new Error("root fixture missing");
     }
-    const txHost =
+    const transactionHost =
       context.module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
     const staging = context.module.get(PushDispatchStagingRepositoryPort);
     const stage = staging.stage.bind(staging);
@@ -338,7 +338,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     let stagedNotificationCount = 0;
     let stagingSqlState: string | undefined;
     vi.spyOn(staging, "stage").mockImplementationOnce(async (input) => {
-      stagedNotificationCount = await txHost.tx.$count(notification);
+      stagedNotificationCount = await transactionHost.tx.$count(notification);
       try {
         return await stage({ ...input, notificationId: -1 });
       } catch (error) {
@@ -434,7 +434,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         FollowFixture.create({ followerId: authorId, followingId: userId, status: "ACCEPTED" }),
       ]);
     const outside = new DrizzleTodoCommentRepository(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
     );
     const save = repository.save.bind(repository);
     vi.spyOn(repository, "save").mockImplementationOnce(async (comment) => {

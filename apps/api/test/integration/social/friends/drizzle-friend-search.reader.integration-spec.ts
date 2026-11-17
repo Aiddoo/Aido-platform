@@ -46,9 +46,9 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
       { userId: VIEWER, name: "kim 본인" },
       { userId: NAME_PREFIX, name: "Kim 지수" },
     ]);
-    const { txHost } = createDatabaseTransactionFixture(client);
-    friendshipRepository = new DrizzleFriendshipRepository(txHost);
-    searchReader = new DrizzleFriendSearchReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    friendshipRepository = new DrizzleFriendshipRepository(transactionHost);
+    searchReader = new DrizzleFriendSearchReader(transactionHost);
   });
 
   afterAll(async () => {

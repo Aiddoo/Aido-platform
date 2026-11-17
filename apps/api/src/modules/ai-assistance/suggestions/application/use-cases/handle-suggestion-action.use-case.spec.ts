@@ -38,7 +38,7 @@ function setup(
   const useCase = new HandleSuggestionActionUseCase({
     repository,
     todoCreator,
-    entitlementReader: { canInTx: async () => options.entitled ?? true },
+    entitlementReader: { canInTransaction: async () => options.entitled ?? true },
     unitOfWork: new ImmediateUnitOfWork(),
     userMutationLock: { lockById: async () => true },
     mutationLock: new RecordingMutationLock(),

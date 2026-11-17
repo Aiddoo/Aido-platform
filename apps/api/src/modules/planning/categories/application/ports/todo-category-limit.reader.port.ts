@@ -7,7 +7,10 @@ export type TodoCategoryFeatureQuota = Readonly<Record<string, unknown>>;
 export abstract class TodoCategoryLimitReaderPort {
   /** 화면 표시용이라 캐시를 거쳐도 된다. */
   abstract readLimit(userId: UserId): Promise<number | null>;
-  abstract readLimitInTx(userId: UserId): Promise<number | null>;
+  abstract readLimitInTransaction(userId: UserId): Promise<number | null>;
   /** 한도 오류 details에 싣는 서버 계산 featureQuota. count는 같은 잠금 안에서 센 현재 개수다. */
-  abstract readFeatureQuotaInTx(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota>;
+  abstract readFeatureQuotaInTransaction(
+    userId: UserId,
+    count: number,
+  ): Promise<TodoCategoryFeatureQuota>;
 }

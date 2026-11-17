@@ -65,18 +65,23 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const transaction = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-      shutdownTimeoutMs: 10_000,
-      workerEnabled: true,
-    });
+    jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      transaction.transactionHost,
+      new JobQueueRegistry(),
+      {
+        shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
+      },
+    );
     await jobQueue.start();
     reminders = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
     useCase = new DeleteTodoCategoryUseCase({
-      repository: new DrizzleTodoCategoryRepository(transaction.txHost, new DateClock()),
+      repository: new DrizzleTodoCategoryRepository(transaction.transactionHost, new DateClock()),
       categoryTodos: new RemoveCategoryTodosUseCase({
-        bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.txHost),
+        bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.transactionHost),
         reminderScheduler: reminders,
         todoCache: new FakeTodoCache(),
         afterCommit: new RecordingAfterCommitRegistry(),
@@ -84,7 +89,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       cache: new FakeTodoCategoryCache(),
       todoCache: new FakeTodoCache(),
       afterCommit: new RecordingAfterCommitRegistry(),
-      mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+      mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
       unitOfWork: transaction.uow,
       clock: new DateClock(),
       eventPublisher: new RecordingDomainEventPublisher(),

@@ -35,8 +35,8 @@ describe("DrizzleMemoRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleMemoRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleMemoRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleMemoRepository(transactionHost);
   }
 
   describeMemoRepositoryContract(async () => createRepository());

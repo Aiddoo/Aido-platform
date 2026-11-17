@@ -72,11 +72,11 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
   });
 
   function repositories() {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      comments: new DrizzleTodoCommentRepository(txHost),
-      likes: new DrizzleTodoCommentLikeRepository(txHost),
-      purge: new DrizzleTodoCommentPurgeRepository(txHost),
+      comments: new DrizzleTodoCommentRepository(transactionHost),
+      likes: new DrizzleTodoCommentLikeRepository(transactionHost),
+      purge: new DrizzleTodoCommentPurgeRepository(transactionHost),
     };
   }
 

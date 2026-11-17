@@ -26,8 +26,8 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today } = timezoneContext;
     const weekAgo = today.subtract({ days: 7 });
 
     // 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 유저 대상

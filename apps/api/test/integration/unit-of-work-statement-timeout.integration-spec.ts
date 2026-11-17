@@ -30,7 +30,7 @@ describe("UoW 작업별 쿼리 시간 제한 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
   let module: TestingModule;
   let unitOfWork: UnitOfWorkPort;
-  let txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  let transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   beforeAll(async () => {
     // 연결 하나로 묶어 SET LOCAL이 다음 트랜잭션으로 새지 않는지도 같은 세션에서 본다
@@ -56,7 +56,7 @@ describe("UoW 작업별 쿼리 시간 제한 (실제 PostgreSQL)", () => {
       .compile();
     await module.init();
     unitOfWork = module.get(UnitOfWorkPort);
-    txHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
+    transactionHost = module.get<TransactionHost<DrizzleTransactionalAdapter>>(TransactionHost);
   });
 
   afterAll(async () => {
@@ -67,7 +67,9 @@ describe("UoW 작업별 쿼리 시간 제한 (실제 PostgreSQL)", () => {
   it("statementTimeoutMs를 넘는 쿼리는 문장 시간 초과로 분류된다", async () => {
     // When
     const error = await unitOfWork
-      .run(async () => txHost.tx.execute(sql`SELECT pg_sleep(0.5)`), { statementTimeoutMs: 100 })
+      .run(async () => transactionHost.tx.execute(sql`SELECT pg_sleep(0.5)`), {
+        statementTimeoutMs: 100,
+      })
       .then(
         () => null,
         (rejection: unknown) => rejection,
@@ -80,13 +82,15 @@ describe("UoW 작업별 쿼리 시간 제한 (실제 PostgreSQL)", () => {
   it("옵션 없는 UoW는 짧은 제한이 남지 않아 같은 연결에서 같은 쿼리가 통과한다", async () => {
     // Given
     await unitOfWork
-      .run(async () => txHost.tx.execute(sql`SELECT pg_sleep(0.5)`), { statementTimeoutMs: 100 })
+      .run(async () => transactionHost.tx.execute(sql`SELECT pg_sleep(0.5)`), {
+        statementTimeoutMs: 100,
+      })
       .catch(() => undefined);
 
     // When
     const result = await unitOfWork.run(async () => {
-      await txHost.tx.execute(sql`SELECT pg_sleep(0.5)`);
-      return txHost.tx.execute<{ statement_timeout: string }>(sql`SHOW statement_timeout`);
+      await transactionHost.tx.execute(sql`SELECT pg_sleep(0.5)`);
+      return transactionHost.tx.execute<{ statement_timeout: string }>(sql`SHOW statement_timeout`);
     });
 
     // Then

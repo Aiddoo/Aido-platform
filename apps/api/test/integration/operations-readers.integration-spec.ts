@@ -19,9 +19,9 @@ describe("운영 조회 계약 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase();
     client = await database.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    directory = new DrizzleAdminUserDirectoryReader(txHost, new FixedClock(END));
-    signupStats = new DrizzleSignupStatsReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    directory = new DrizzleAdminUserDirectoryReader(transactionHost, new FixedClock(END));
+    signupStats = new DrizzleSignupStatsReader(transactionHost);
   });
   afterAll(async () => database?.stop());
   beforeEach(async () => {

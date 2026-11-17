@@ -35,14 +35,14 @@ function kstDate(offsetDays: number): string {
 }
 
 describe("날씨 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const weatherProvider = new StubWeatherForecastProvider();
   const airQualityProvider = new StubAirQualityProvider();
   const lifestyleIndexProvider = new StubLifestyleIndexProvider();
   const sunTimeProvider = new StubSunTimeProvider();
 
   beforeAll(async () => {
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder
           .overrideProvider(WeatherForecastProviderPort)
@@ -63,24 +63,24 @@ describe("날씨 E2E", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   describe("위치 등록", () => {
     describe("PUT /weather/location - 위치 등록/수정", () => {
       it("유효한 좌표로 위치를 등록한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-loc-reg@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
@@ -96,18 +96,18 @@ describe("날씨 E2E", () => {
 
       it("위치를 등록한 뒤 수정하면 새 좌표가 반환된다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-loc-mod@example.com",
           "Test1234!",
         );
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 35.1796, longitude: 129.0756 })
@@ -121,13 +121,13 @@ describe("날씨 E2E", () => {
 
       it("범위를 벗어난 위도이면 400 에러 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-loc-badlat@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 50.0, longitude: 126.978 })
@@ -139,13 +139,13 @@ describe("날씨 E2E", () => {
 
       it("범위를 벗어난 경도이면 400 에러 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-loc-badlng@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 100.0 })
@@ -157,7 +157,7 @@ describe("날씨 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .send({ latitude: 37.5665, longitude: 126.978 });
 
@@ -171,13 +171,13 @@ describe("날씨 E2E", () => {
     describe("GET /weather/forecast - 날씨 예보 조회", () => {
       it("위치 미등록 시 WEATHER_1902 에러 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-fc-noloc@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/forecast")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(404);
@@ -189,15 +189,18 @@ describe("날씨 E2E", () => {
 
       it("위치 등록 후 예보를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("weather-fc-ok@example.com", "Test1234!");
-        await request(ctx.app.getHttpServer())
+        const user = await testContext.helpers.createVerifiedUser(
+          "weather-fc-ok@example.com",
+          "Test1234!",
+        );
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/forecast")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -215,18 +218,18 @@ describe("날씨 E2E", () => {
 
       it("date 파라미터로 특정 날짜 예보를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-fc-date@example.com",
           "Test1234!",
         );
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/forecast")
           .query({ date: kstDate(1) })
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -239,13 +242,13 @@ describe("날씨 E2E", () => {
 
       it("잘못된 date 형식이면 400 에러 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-fc-baddate@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/forecast")
           .query({ date: "invalid-date" })
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -257,7 +260,7 @@ describe("날씨 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/weather/forecast");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/weather/forecast");
 
         // Then
         expect(response.status).toBe(401);
@@ -269,13 +272,13 @@ describe("날씨 E2E", () => {
     describe("GET /weather/conditions - 부가 정보 조회", () => {
       it("위치 미등록 시 WEATHER_1902 에러 반환", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-cond-noloc@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/conditions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(404);
@@ -287,18 +290,18 @@ describe("날씨 E2E", () => {
 
       it("위치 등록 후 부가 정보를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "weather-cond-ok@example.com",
           "Test1234!",
         );
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/conditions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -316,7 +319,9 @@ describe("날씨 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/weather/conditions");
+        const response = await request(testContext.app.getHttpServer()).get(
+          "/v1/weather/conditions",
+        );
 
         // Then
         expect(response.status).toBe(401);
@@ -327,11 +332,11 @@ describe("날씨 E2E", () => {
   describe("기존 한국 계약과 날짜 cache 회귀", () => {
     it("같은 격자라도 query 날짜별 일출입을 반환하고 재조회는 해당 날짜 cache를 쓴다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "weather-date-cache@example.com",
         "Test1234!",
       );
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ latitude: 37.5665, longitude: 126.978 })
@@ -339,17 +344,17 @@ describe("날씨 E2E", () => {
       sunTimeProvider.dates.set("2026-07-23", { sunrise: "05:23", sunset: "19:00" });
       sunTimeProvider.dates.set("2026-07-24", { sunrise: "05:24", sunset: "19:01" });
       // When
-      const first = await request(ctx.app.getHttpServer())
+      const first = await request(testContext.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-23" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
-      const next = await request(ctx.app.getHttpServer())
+      const next = await request(testContext.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-24" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
-      const again = await request(ctx.app.getHttpServer())
+      const again = await request(testContext.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-23" })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -365,8 +370,11 @@ describe("날씨 E2E", () => {
 
     it("일부 공급자 장애는 해당 필드만 null이며 유효한 0을 JSON에 보존한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("weather-partial@example.com", "Test1234!");
-      await request(ctx.app.getHttpServer())
+      const user = await testContext.helpers.createVerifiedUser(
+        "weather-partial@example.com",
+        "Test1234!",
+      );
+      await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ latitude: 37.5665, longitude: 126.978 })
@@ -374,7 +382,7 @@ describe("날씨 E2E", () => {
       airQualityProvider.failure = new Error("air unavailable");
       lifestyleIndexProvider.result = { feelsLikeTemperature: 0, uvIndex: 0 };
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-23" })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -394,18 +402,18 @@ describe("날씨 E2E", () => {
 
     it("예보 공급자 장애와 latest 없음은 기존 WEATHER_1901과 503이다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "weather-unavailable@example.com",
         "Test1234!",
       );
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ latitude: 37.5665, longitude: 126.978 })
         .expect(200);
       weatherProvider.failure = new Error("forecast unavailable");
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/weather/forecast")
         .query({ date: kstDate(0) })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -420,20 +428,23 @@ describe("날씨 E2E", () => {
 
     it("이전 발표 예보가 있으면 공급자 장애에도 latest의 기존 응답 계약을 유지한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("weather-latest@example.com", "Test1234!");
-      await request(ctx.app.getHttpServer())
+      const user = await testContext.helpers.createVerifiedUser(
+        "weather-latest@example.com",
+        "Test1234!",
+      );
+      await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ latitude: 37.5665, longitude: 126.978 })
         .expect(200);
-      const first = await request(ctx.app.getHttpServer())
+      const first = await request(testContext.app.getHttpServer())
         .get("/v1/weather/forecast")
         .query({ date: kstDate(0) })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
       weatherProvider.failure = new Error("forecast unavailable");
       // When
-      const fallback = await request(ctx.app.getHttpServer())
+      const fallback = await request(testContext.app.getHttpServer())
         .get("/v1/weather/forecast")
         .query({ date: kstDate(1) })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -451,17 +462,17 @@ describe("날씨 E2E", () => {
       "KMA가 주지 않는 %s 날짜는 공급자를 부르지 않고 400 SYS_0002다 (#1156)",
       async (_case, offset) => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           `weather-range-${offset}@example.com`,
           "Test1234!",
         );
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/forecast")
           .query({ date: kstDate(offset) })
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -474,41 +485,44 @@ describe("날씨 E2E", () => {
 
     it("격자를 옮겨도 이전 격자의 공유 cache를 지우지 않아 남은 사용자는 공급자를 다시 부르지 않고 옮긴 사용자는 새 격자를 조회한다", async () => {
       // Given
-      const mover = await ctx.helpers.createVerifiedUser("weather-move@example.com", "Test1234!");
-      const remaining = await ctx.helpers.createVerifiedUser(
+      const mover = await testContext.helpers.createVerifiedUser(
+        "weather-move@example.com",
+        "Test1234!",
+      );
+      const remaining = await testContext.helpers.createVerifiedUser(
         "weather-remain@example.com",
         "Test1234!",
       );
       for (const user of [mover, remaining]) {
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
       }
       for (const date of ["2026-07-23", "2026-07-24"]) {
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .get("/v1/weather/conditions")
           .query({ date })
           .set("Authorization", `Bearer ${mover.accessToken}`)
           .expect(200);
       }
       // When
-      const moved = await request(ctx.app.getHttpServer())
+      const moved = await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${mover.accessToken}`)
         .send({ latitude: 35.1796, longitude: 129.0756 })
         .expect(200);
       const remainingSunrises: unknown[] = [];
       for (const date of ["2026-07-23", "2026-07-24"]) {
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/weather/conditions")
           .query({ date })
           .set("Authorization", `Bearer ${remaining.accessToken}`)
           .expect(200);
         remainingSunrises.push(response.body.data.sunrise);
       }
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .get("/v1/weather/conditions")
         .query({ date: "2026-07-23" })
         .set("Authorization", `Bearer ${mover.accessToken}`)
@@ -530,12 +544,12 @@ describe("날씨 E2E", () => {
 
     it("해외 좌표는 기존 한국 bbox validation으로 거절하고 날씨 공급자를 호출하지 않는다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "weather-overseas@example.com",
         "Test1234!",
       );
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .put("/v1/weather/location")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ latitude: 40.7128, longitude: -74.006 })

@@ -3,15 +3,15 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("프로필 아이콘 배포 버전 호환", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it.each([
@@ -20,31 +20,31 @@ describe("프로필 아이콘 배포 버전 호환", () => {
     ["tuxedo_cat", "black_cat"],
   ])("새 아이콘 %s를 저장해도 기존 앱에는 %s로 응답한다", async (newIcon, oldIcon) => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("cat@example.com", "Test1234!");
+    const user = await testContext.helpers.createVerifiedUser("cat@example.com", "Test1234!");
     const authorization = `Bearer ${user.accessToken}`;
 
     // When
-    const updated = await request(ctx.app.getHttpServer())
+    const updated = await request(testContext.app.getHttpServer())
       .patch("/v1/auth/profile")
       .set("Authorization", authorization)
       .set("X-App-Version", "1.10.1")
       .send({ profileImage: newIcon })
       .expect(200);
-    const legacy = await request(ctx.app.getHttpServer())
+    const legacy = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", authorization)
       .expect(200);
-    const versioned = await request(ctx.app.getHttpServer())
+    const versioned = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", authorization)
       .set("X-App-Version", "1.10.0")
       .expect(200);
-    const renamed = await request(ctx.app.getHttpServer())
+    const renamed = await request(testContext.app.getHttpServer())
       .patch("/v1/auth/profile")
       .set("Authorization", authorization)
       .send({ name: "고양이" })
       .expect(200);
-    const latest = await request(ctx.app.getHttpServer())
+    const latest = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", authorization)
       .set("X-App-Version", "1.10.1")

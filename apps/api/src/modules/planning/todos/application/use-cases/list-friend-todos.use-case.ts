@@ -74,7 +74,7 @@ export class ListFriendTodosUseCase {
       }
     }
 
-    const repoParams: FindFriendTodosParams = {
+    const repositoryQuery: FindFriendTodosParams = {
       friendUserId: friendId,
       cursor,
       size,
@@ -82,7 +82,8 @@ export class ListFriendTodosUseCase {
       endDate: input.endDate,
     };
 
-    const rows = await this.#dependencies.todoReadRepository.findPublicTodosByUserId(repoParams);
+    const rows =
+      await this.#dependencies.todoReadRepository.findPublicTodosByUserId(repositoryQuery);
 
     const response = toCursorPage({ rows, size, toCursor: (todo) => todo.id });
 

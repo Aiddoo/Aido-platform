@@ -71,7 +71,7 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     registry = new JobQueueRegistry();
     jobQueue = new PgBossJobQueueAdapter(
       boss,
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       registry,
       { shutdownTimeoutMs: 10_000, workerEnabled: true },
     );

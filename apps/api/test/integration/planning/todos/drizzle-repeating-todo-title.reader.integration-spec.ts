@@ -23,7 +23,9 @@ describe("DrizzleRepeatingTodoTitleReader (실제 PostgreSQL)", () => {
 
   beforeAll(async () => {
     client = await database.start();
-    reader = new DrizzleRepeatingTodoTitleReader(createDatabaseTransactionFixture(client).txHost);
+    reader = new DrizzleRepeatingTodoTitleReader(
+      createDatabaseTransactionFixture(client).transactionHost,
+    );
   });
 
   beforeEach(async () => {

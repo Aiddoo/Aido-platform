@@ -24,7 +24,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
   let strategy: SendWeeklyAchievementUseCase;
 
   /** 월요일 07:00 실행 → 지난주 2024-01-08(월)~2024-01-14(일) 집계 */
-  const ctx = createTimezoneContextFixture({ date: "2024-01-15", localHour: 7 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-15", localHour: 7 });
   const sent = () => publisher.published.map(({ data }) => data);
 
   /** 지난주 수요일 하루짜리 할 일 total개 중 completed개를 끝냈다 */
@@ -66,10 +66,10 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     ]);
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
-    const { isoYear, isoWeek } = previousIsoWeekOf(ctx.today);
+    const { isoYear, isoWeek } = previousIsoWeekOf(timezoneContext.today);
     expect(writer.writes).toEqual([
       [
         {
@@ -78,7 +78,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
           week: isoWeek,
           totalTodos: 3,
           completedTodos: 2,
-          achievedAt: ctx.today,
+          achievedAt: timezoneContext.today,
         },
       ],
     ]);
@@ -90,7 +90,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     await givenUser("premium-user", lastWeekTodos(3, 3), "PREMIUM");
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     expect(writer.records.map(({ userId }) => userId).toSorted()).toEqual([
@@ -107,7 +107,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-2");
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 2 });
@@ -141,7 +141,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     await givenUser("user-1", lastWeekTodos(5, 0));
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(writer.records).toEqual([
@@ -155,10 +155,10 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     // Given
     await givenUser("user-1", lastWeekTodos(3, 2));
     await givenUser("user-2", lastWeekTodos(4, 3));
-    history.notified("WEEKLY_ACHIEVEMENT", ["user-1"], ctx.today);
+    history.notified("WEEKLY_ACHIEVEMENT", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(writer.records.map(({ userId }) => userId).toSorted()).toEqual(["user-1", "user-2"]);
@@ -172,7 +172,7 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     await givenUser("user-1", [{ start: "2024-01-15", end: null, completed: true }]);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

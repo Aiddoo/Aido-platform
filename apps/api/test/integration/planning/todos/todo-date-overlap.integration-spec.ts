@@ -97,7 +97,7 @@ describe("할 일 날짜 겹침 조건 — 두 갈래 조건이 옛 조건과 �
   it.each(WINDOWS)("일간 완료 구간 %s~%s의 묶음 합이 옛 조건과 같다", async (start, end) => {
     // Given
     const reader = new DrizzleTodoCompletionGroupReader(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
     );
 
     // When

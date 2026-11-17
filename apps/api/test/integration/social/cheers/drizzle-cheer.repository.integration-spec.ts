@@ -41,13 +41,13 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleCheerRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleCheerRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleCheerRepository(transactionHost);
   }
 
   function createReader(): DrizzleCheerReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleCheerReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleCheerReader(transactionHost);
   }
 
   describeCheerRepositoryContract(async () => ({

@@ -73,7 +73,9 @@ describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () =
 
   describeDailyCompletionRepositoryContract(async (todos) => {
     await seed(todos);
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new PlanningDailyCompletionRepository(new DrizzleTodoCompletionGroupReader(txHost));
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new PlanningDailyCompletionRepository(
+      new DrizzleTodoCompletionGroupReader(transactionHost),
+    );
   });
 });

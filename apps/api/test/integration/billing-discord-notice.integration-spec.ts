@@ -251,8 +251,8 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase();
     client = await database.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleAdminNoticeUserReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    reader = new DrizzleAdminNoticeUserReader(transactionHost);
   });
   afterAll(async () => database?.stop());
   beforeEach(async () => {

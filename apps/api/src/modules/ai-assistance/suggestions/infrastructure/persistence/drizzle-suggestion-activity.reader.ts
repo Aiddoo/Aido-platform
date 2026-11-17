@@ -21,15 +21,15 @@ function toWallClock(local: Temporal.ZonedDateTime): string {
 /** 제안 분석용 활동 projection. planning·제안 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
 @Injectable()
 export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findRecentTodos(

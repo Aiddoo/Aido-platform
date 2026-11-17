@@ -10,14 +10,14 @@ import type { ReminderTargetReaderPort } from "../../application/ports/reminder-
 
 @Injectable()
 export class DrizzleReminderTargetReader implements ReminderTargetReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   countTodosOn(ownerId: UserId, date: Temporal.PlainDate): Promise<number> {

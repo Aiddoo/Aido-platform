@@ -183,7 +183,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     }
   }
   async function usage(kind: "Cheer" | "Nudge") {
-    const repo =
+    const repository =
       kind === "Cheer"
         ? context.module.get(CheerRepositoryPort)
         : context.module.get(NudgeRepositoryPort);
@@ -196,7 +196,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
           localDate: at.toZonedDateTimeISO(tz).toPlainDate().toString(),
           startsAt: toIsoString(window.startsAt),
           endsAt: toIsoString(window.endsAt),
-          used: await repo.countSentBetween(UserId.reconstitute(senderId), window),
+          used: await repository.countSentBetween(UserId.reconstitute(senderId), window),
         };
       }),
     );

@@ -69,10 +69,15 @@ describe("시간대 재계산 규모 측정", () => {
         max: 3,
       });
       const transaction = createDatabaseTransactionFixture(client);
-      const jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-        shutdownTimeoutMs: 10_000,
-        workerEnabled: true,
-      });
+      const jobQueue = new PgBossJobQueueAdapter(
+        boss,
+        transaction.transactionHost,
+        new JobQueueRegistry(),
+        {
+          shutdownTimeoutMs: 10_000,
+          workerEnabled: true,
+        },
+      );
       await jobQueue.start();
       try {
         const user = UserFixture.create({
@@ -125,11 +130,14 @@ describe("시간대 재계산 규모 측정", () => {
         );
         const useCase = new RebaseTodoTimezoneUseCase({
           clock: new DateClock(),
-          todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
-          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
+          todoRepository: new DrizzleTodoRepository(transaction.transactionHost, new DateClock()),
+          seriesRepository: new DrizzleTodoSeriesRepository(
+            transaction.transactionHost,
+            new DateClock(),
+          ),
           ownerTimezone: {
             findTimezone: async (id) => {
-              const row = await transaction.txHost.tx.query.userPreference.findFirst({
+              const row = await transaction.transactionHost.tx.query.userPreference.findFirst({
                 columns: { timezone: true },
                 where: { userId: id.value },
               });
@@ -139,7 +147,7 @@ describe("시간대 재계산 규모 측정", () => {
           todoReminder: reminders,
           todoCache: { invalidateFriendTodos: async () => undefined },
           unitOfWork: transaction.uow,
-          mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+          mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
           logger: { log: () => undefined },
         });
 

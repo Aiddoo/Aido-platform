@@ -5,23 +5,23 @@ import { WEATHER_LOCATION_V2_THROTTLE } from "#api/modules/weather/locations/pre
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("날씨 v2 위치 변경 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   const limit = WEATHER_LOCATION_V2_THROTTLE.UPDATE.default.limit;
 
   beforeAll(async () => {
-    ctx = await createE2eApp({ withRealThrottler: true });
+    testContext = await createE2eApp({ withRealThrottler: true });
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   function updateLocation(accessToken: string, attempt: number) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .put("/v2/weather/location")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Forwarded-For", "198.51.100.60")
@@ -30,7 +30,7 @@ describe("날씨 v2 위치 변경 요청 제한 E2E (실제 throttler, 직렬 �
 
   it("같은 사용자는 분당 10회까지 위치를 바꾸고 11번째는 429다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("v2-throttle@test.com", "Test1234!");
+    const user = await testContext.helpers.createVerifiedUser("v2-throttle@test.com", "Test1234!");
     for (let attempt = 0; attempt < limit; attempt += 1) {
       expect((await updateLocation(user.accessToken, attempt)).status).toBe(200);
     }
@@ -43,8 +43,8 @@ describe("날씨 v2 위치 변경 요청 제한 E2E (실제 throttler, 직렬 �
 
   it("같은 IP를 쓰는 다른 사용자의 한도는 서로 독립이다", async () => {
     // Given
-    const first = await ctx.helpers.createVerifiedUser("v2-first@test.com", "Test1234!");
-    const second = await ctx.helpers.createVerifiedUser("v2-second@test.com", "Test1234!");
+    const first = await testContext.helpers.createVerifiedUser("v2-first@test.com", "Test1234!");
+    const second = await testContext.helpers.createVerifiedUser("v2-second@test.com", "Test1234!");
     for (let attempt = 0; attempt < limit; attempt += 1) {
       expect((await updateLocation(first.accessToken, attempt)).status).toBe(200);
     }

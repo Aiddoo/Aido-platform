@@ -28,9 +28,9 @@ describe("DrizzleUserSubscriptionProjectionRepository (실제 PostgreSQL)", () =
   });
 
   describeUserSubscriptionProjectionRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleUserSubscriptionProjectionRepository(txHost, new DateClock()),
+      repository: new DrizzleUserSubscriptionProjectionRepository(transactionHost, new DateClock()),
       seedUser: async (input) => {
         seeded += 1;
         await client.insert(user).values(

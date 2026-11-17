@@ -53,12 +53,12 @@ describe("DrizzleUserRepository 태그 충돌 (실제 PostgreSQL)", () => {
   it("확인 뒤 다른 가입이 같은 태그를 먼저 넣으면 1.15.0 필터와 같은 500 SYS_0001로 번역한다", async () => {
     // Given
     vi.mocked(generateUserTag).mockReturnValue(CLASHING_TAG);
-    const { txHost } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleUserRepository(txHost, new DateClock());
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzleUserRepository(transactionHost, new DateClock());
 
     // When
-    const { creating } = await competitor.transaction(async (tx) => {
-      await tx.insert(user).values({
+    const { creating } = await competitor.transaction(async (transaction) => {
+      await transaction.insert(user).values({
         email: "first@example.com",
         userTag: CLASHING_TAG,
         updatedAt: Temporal.Now.instant(),

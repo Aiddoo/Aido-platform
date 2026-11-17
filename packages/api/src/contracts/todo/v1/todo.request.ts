@@ -165,14 +165,14 @@ export const getTodosQuerySchema = z.object({
     .default(TODO_PAGE_SIZE.DEFAULT)
     .describe("페이지 크기 (1-200, 기본값: 20)"),
   completed: z
-    .preprocess((val) => {
-      if (val === "true") {
+    .preprocess((value) => {
+      if (value === "true") {
         return true;
       }
-      if (val === "false") {
+      if (value === "false") {
         return false;
       }
-      return val;
+      return value;
     }, z.boolean())
     .optional()
     .describe("완료 상태 필터 (선택, true/false)"),

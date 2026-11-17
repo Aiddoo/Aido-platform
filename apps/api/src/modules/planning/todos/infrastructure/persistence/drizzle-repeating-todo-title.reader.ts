@@ -10,14 +10,14 @@ import { RepeatingTodoTitleReaderPort } from "../../application/ports/repeating-
 
 @Injectable()
 export class DrizzleRepeatingTodoTitleReader implements RepeatingTodoTitleReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async listActiveTitles(userId: UserId): Promise<string[]> {
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .selectDistinct({ title: todoSeries.title })
       .from(todoSeries)
       .where(and(eq(todoSeries.userId, userId.value), isNotNull(todoSeries.nextOccurrenceDate)));

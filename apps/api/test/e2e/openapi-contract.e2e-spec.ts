@@ -111,18 +111,18 @@ function selectReleasedContract(
 }
 
 describe("OpenAPI 계약 (e2e)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it("JSON Schema의 title·description 사용자 필드 변경을 fingerprint에 반영한다", () => {
@@ -161,7 +161,7 @@ describe("OpenAPI 계약 (e2e)", () => {
 
     // When
     const document = normalizeVolatileExamples(
-      SwaggerModule.createDocument(ctx.app, config, {
+      SwaggerModule.createDocument(testContext.app, config, {
         standardSchemaConverter: convertStandardSchema,
       }),
     );
@@ -174,7 +174,7 @@ describe("OpenAPI 계약 (e2e)", () => {
   it("친구 초대 API는 operationId·인증·오류 상태를 문서에 선언한다", () => {
     // Given
     const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-    const document = SwaggerModule.createDocument(ctx.app, config, {
+    const document = SwaggerModule.createDocument(testContext.app, config, {
       standardSchemaConverter: convertStandardSchema,
     });
 
@@ -214,7 +214,7 @@ describe("OpenAPI 계약 (e2e)", () => {
   it("같은 상태 코드로 나가는 오류 코드를 모두 문서에 선언한다", () => {
     // Given
     const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-    const document = SwaggerModule.createDocument(ctx.app, config, {
+    const document = SwaggerModule.createDocument(testContext.app, config, {
       standardSchemaConverter: convertStandardSchema,
     });
     const redeemResponses = document.paths["/v1/invites/{code}/redeem"]?.post?.responses ?? {};
@@ -268,7 +268,7 @@ describe("OpenAPI 계약 (e2e)", () => {
   it("요청 path·query·body를 검증하는 모든 엔드포인트는 400에 검증 실패 SYS_0002를 선언한다", () => {
     // Given
     const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-    const document = SwaggerModule.createDocument(ctx.app, config, {
+    const document = SwaggerModule.createDocument(testContext.app, config, {
       standardSchemaConverter: convertStandardSchema,
     });
     const operationSchema = z.object({
@@ -311,7 +311,7 @@ describe("OpenAPI 계약 (e2e)", () => {
   it("오류 응답 schema는 content 안에만 둔다 (공통 응답이 선언한 응답을 덮지 않는다)", () => {
     // Given
     const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-    const document = SwaggerModule.createDocument(ctx.app, config, {
+    const document = SwaggerModule.createDocument(testContext.app, config, {
       standardSchemaConverter: convertStandardSchema,
     });
 
@@ -337,7 +337,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       // Given
       // 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
       const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
-      const document = SwaggerModule.createDocument(ctx.app, config, {
+      const document = SwaggerModule.createDocument(testContext.app, config, {
         standardSchemaConverter: convertStandardSchema,
       });
       const currentSchemas: Record<string, unknown> = document.components?.schemas ?? {};

@@ -21,7 +21,7 @@ describe("DrizzleBroadcastCampaignRepository (실제 PostgreSQL)", () => {
   });
 
   describeBroadcastCampaignRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleBroadcastCampaignRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleBroadcastCampaignRepository(transactionHost);
   });
 });

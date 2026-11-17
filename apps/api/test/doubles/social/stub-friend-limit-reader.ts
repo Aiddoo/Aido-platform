@@ -16,11 +16,14 @@ export class StubFriendLimitReader extends FriendLimitReaderPort {
     return this.#maxFriendCounts.get(userId.value) ?? null;
   }
 
-  async readLimitInTx(userId: UserId): Promise<number | null> {
+  async readLimitInTransaction(userId: UserId): Promise<number | null> {
     return this.#maxFriendCounts.get(userId.value) ?? null;
   }
 
-  async readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
+  async readFeatureQuotaInTransaction(
+    userId: UserId,
+    friendCount: number,
+  ): Promise<FriendFeatureQuota> {
     return {
       feature: "FRIEND",
       userId: userId.value,

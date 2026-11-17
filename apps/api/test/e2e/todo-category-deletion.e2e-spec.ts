@@ -25,34 +25,37 @@ function dateAfter(days: number): string {
 }
 
 describe("카테고리 삭제 선택 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let accessToken: string;
   let userId: string;
   let defaultCategoryId: number;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("category-deletion@example.com", PASSWORD);
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser(
+      "category-deletion@example.com",
+      PASSWORD,
+    );
     accessToken = user.accessToken;
     userId = user.userId;
-    await ctx.testDatabase
+    await testContext.testDatabase
       .getClient()
       .update(userTable)
       .set({ subscriptionStatus: "ACTIVE" })
       .where(eq(userTable.id, userId));
-    defaultCategoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    defaultCategoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   function api() {
-    return request(ctx.app.getHttpServer());
+    return request(testContext.app.getHttpServer());
   }
 
   async function createCategory(name: string): Promise<number> {
@@ -135,7 +138,7 @@ describe("카테고리 삭제 선택 E2E", () => {
       // Given
       const categoryId = await createCategory("공부");
       const todoId = await createTodo(categoryId);
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .update(todo)
         .set({ updatedAt: LONG_AGO })
@@ -156,7 +159,7 @@ describe("카테고리 삭제 선택 E2E", () => {
         seriesCount: 0,
         moveToCategoryId: defaultCategoryId,
       });
-      const moved = await ctx.testDatabase
+      const moved = await testContext.testDatabase
         .getClient()
         .query.todo.findFirst({ where: { id: todoId } });
       expect(moved?.categoryId).toBe(defaultCategoryId);
@@ -207,7 +210,10 @@ describe("카테고리 삭제 선택 E2E", () => {
 
     it("다른 사용자의 카테고리는 TODO_CATEGORY_0851로 숨긴다", async () => {
       // Given
-      const other = await ctx.helpers.createVerifiedUser("category-other@example.com", PASSWORD);
+      const other = await testContext.helpers.createVerifiedUser(
+        "category-other@example.com",
+        PASSWORD,
+      );
 
       // When
       const response = await previewOf(defaultCategoryId, other.accessToken).expect(404);
@@ -243,7 +249,7 @@ describe("카테고리 삭제 선택 E2E", () => {
         seriesCount: 1,
         moveToCategoryId: null,
       });
-      const db = ctx.testDatabase.getClient();
+      const db = testContext.testDatabase.getClient();
       expect(await db.$count(todo, eq(todo.categoryId, categoryId))).toBe(0);
       expect(await db.$count(todoSeries, eq(todoSeries.categoryId, categoryId))).toBe(0);
       const gone = await api()
@@ -282,7 +288,7 @@ describe("카테고리 삭제 선택 E2E", () => {
       });
       expect(await todoCountIn(defaultCategoryId)).toBe(targetCountBefore + todoCount);
       expect(
-        await ctx.testDatabase
+        await testContext.testDatabase
           .getClient()
           .$count(todoSeries, eq(todoSeries.categoryId, defaultCategoryId)),
       ).toBe(1);
@@ -359,9 +365,9 @@ describe("카테고리 삭제 선택 E2E", () => {
       if (creation.status === 404) {
         expect(creation.body.error.code).toBe(ErrorCode.TODO_CATEGORY_0851);
       }
-      expect(await ctx.testDatabase.getClient().$count(todo, eq(todo.categoryId, categoryId))).toBe(
-        0,
-      );
+      expect(
+        await testContext.testDatabase.getClient().$count(todo, eq(todo.categoryId, categoryId)),
+      ).toBe(0);
     });
 
     it("지우는 동안 고친 할 일은 되살아나지 않는다", async () => {
@@ -388,9 +394,9 @@ describe("카테고리 삭제 선택 E2E", () => {
       for (const update of updates) {
         expect(update.status).toBeLessThan(500);
       }
-      expect(await ctx.testDatabase.getClient().$count(todo, eq(todo.categoryId, categoryId))).toBe(
-        0,
-      );
+      expect(
+        await testContext.testDatabase.getClient().$count(todo, eq(todo.categoryId, categoryId)),
+      ).toBe(0);
     });
   });
 });

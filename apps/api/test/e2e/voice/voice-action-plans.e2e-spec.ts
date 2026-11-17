@@ -20,13 +20,13 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/ind
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 
 describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let aiGenerator: FakeAiGenerator;
   let keySequence = 0;
 
   beforeAll(async () => {
     aiGenerator = new FakeAiGenerator();
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(aiGenerator),
       additionalResetters: [() => aiGenerator.clear()],
@@ -34,11 +34,11 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   function nextKey() {
@@ -47,7 +47,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   }
 
   function post(path: string, accessToken: string, body: object, key: string | null = nextKey()) {
-    const pending = request(ctx.app.getHttpServer())
+    const pending = request(testContext.app.getHttpServer())
       .post(path)
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", "Asia/Seoul")
@@ -76,9 +76,9 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   }
 
   async function createUser(email: string, values: Partial<typeof user.$inferInsert> = {}) {
-    const created = await ctx.helpers.createVerifiedUser(email, "Test1234!");
+    const created = await testContext.helpers.createVerifiedUser(email, "Test1234!");
     if (Object.keys(values).length > 0) {
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .update(user)
         .set(values)
@@ -90,7 +90,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
   it("빠른 계획을 받아 카테고리를 채워 적용하면 할 일과 메모가 저장되고 횟수는 한 번만 쓴다", async () => {
     // Given
     const { accessToken } = await createUser("voice-flow@test.com");
-    const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
     aiGenerator.setRawResponse({
       todos: [todoActionDraft({ time: { hour: 15, minute: 0, meridiem: "NONE" } })],
       memo: memoActionDraft(),
@@ -114,7 +114,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     expect(parsed.featureQuota).toMatchObject({ feature: "AI_PARSE", used: 1 });
     expect(result.todos[0]).toMatchObject({ title: "회의록 보내기", isAllDay: false });
     expect(result.memo?.content).toContain("온보딩 문구");
-    const usage = await request(ctx.app.getHttpServer())
+    const usage = await request(testContext.app.getHttpServer())
       .get("/v1/ai/usage")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
@@ -254,7 +254,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
 
       // When
       const response = await post("/v1/voice-notes/digest", accessToken, digestBody()).expect(422);
-      const entitlements = await request(ctx.app.getHttpServer())
+      const entitlements = await request(testContext.app.getHttpServer())
         .get("/v1/entitlements")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
@@ -374,7 +374,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     it("메모에서 만든 계획을 저장하면 원본 메모가 지워지고 sourceMemoId 없이는 400이다", async () => {
       // Given
       const { accessToken } = await createUser("voice-memo@test.com");
-      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
       const created = await post("/v1/memos", accessToken, { content: "원본 메모" }).expect(201);
       const memoId = memoDetailResponseSchema.parse(created.body.data).memo.id;
       const action = {
@@ -400,7 +400,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
         sourceMemoId: memoId,
         actions: [action],
       });
-      const afterApply = await request(ctx.app.getHttpServer())
+      const afterApply = await request(testContext.app.getHttpServer())
         .get(`/v1/memos/${memoId}`)
         .set("Authorization", `Bearer ${accessToken}`);
 
@@ -413,7 +413,7 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
     it("카테고리가 없는 할 일은 400이고 내 카테고리가 아니면 422 AI_1315다", async () => {
       // Given
       const { accessToken } = await createUser("voice-apply@test.com");
-      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
       const action = {
         type: "CREATE_TODO",
         key: "todo-0",
@@ -449,12 +449,12 @@ describe("빠른 계획·녹음 정리·계획 적용 E2E", () => {
 });
 
 describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let aiGenerator: FakeAiGenerator;
 
   beforeAll(async () => {
     aiGenerator = new FakeAiGenerator();
-    ctx = await createE2eApp({
+    testContext = await createE2eApp({
       withRealThrottler: true,
       customizeBuilder: (builder) =>
         builder.overrideProvider(AiGeneratorPort).useValue(aiGenerator),
@@ -462,17 +462,17 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   it("분당 한도를 넘으면 429이고 하루 한도는 녹음 정리에만 센다", async () => {
     // Given
-    const { accessToken } = await ctx.helpers.createVerifiedUser(
+    const { accessToken } = await testContext.helpers.createVerifiedUser(
       "voice-throttle@test.com",
       "Test1234!",
     );
     const digest = (index: number) =>
-      request(ctx.app.getHttpServer())
+      request(testContext.app.getHttpServer())
         .post("/v1/voice-notes/digest")
         .set("Authorization", `Bearer ${accessToken}`)
         .set("Idempotency-Key", `throttle-${index}`)
@@ -484,7 +484,7 @@ describe("녹음 정리 요청 제한 E2E (실제 throttler, 직렬 실행)", ()
 
     // When
     const throttled = await digest(99);
-    const quick = await request(ctx.app.getHttpServer())
+    const quick = await request(testContext.app.getHttpServer())
       .post("/v1/quick-plans")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ text: "", source: "TEXT" });

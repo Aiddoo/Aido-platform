@@ -14,14 +14,14 @@ import type { AccessStateReaderPort } from "../../application/ports/access-state
 /** 권한 판단 조회는 호출자의 CLS 트랜잭션에 참여한다. */
 @Injectable()
 export class DrizzleAccessStateReader implements AccessStateReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findActiveUserAccessState(userId: UserId): Promise<AccessState | null> {

@@ -31,8 +31,8 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
 
   beforeAll(async () => {
     client = await database.start();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    repository = new DrizzleTodoReadRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    repository = new DrizzleTodoReadRepository(transactionHost);
   }, 60_000);
 
   beforeEach(async () => {

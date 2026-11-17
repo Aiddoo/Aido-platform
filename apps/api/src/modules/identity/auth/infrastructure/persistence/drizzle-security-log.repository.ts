@@ -11,15 +11,15 @@ import { securityLog } from "#api/platform/database/schema/index";
 // 감사 기록이라 시각은 DB now()가 남긴다. 호출자 트랜잭션과 함께 커밋·롤백된다
 @Injectable()
 export class DrizzleSecurityLogRepository extends AuthSecurityLogRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   async create(entry: NewSecurityLog): Promise<void> {
-    await this.#txHost.tx.insert(securityLog).values({
+    await this.#transactionHost.tx.insert(securityLog).values({
       userId: entry.userId?.value,
       event: entry.event,
       ipAddress: entry.ipAddress,

@@ -19,14 +19,14 @@ const IDEMPOTENCY_KEY_CONSTRAINT = "PlanApplication_userId_idempotencyKey_key";
 
 @Injectable()
 export class DrizzlePlanApplicationRepository implements PlanApplicationRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findByIdempotencyKey(

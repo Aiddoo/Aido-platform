@@ -15,18 +15,18 @@ import { nowInstant, todayIn } from "#test/fixtures/clock.fixture";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("오늘의 할 일 요약 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   const password = "Test1234!";
@@ -43,11 +43,11 @@ describe("오늘의 할 일 요약 E2E", () => {
   describe("GET /todos/summary", () => {
     it("오늘 진행률·스트릭·상위 할 일을 요약으로 반환한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary@test.com", password);
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const user = await testContext.helpers.createVerifiedUser("todo-summary@test.com", password);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
 
       const { startDate, endDate } = activeDateRange();
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client.insert(todoTable).values([
         {
           userId: user.userId,
@@ -83,7 +83,7 @@ describe("오늘의 할 일 요약 E2E", () => {
       ]);
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
@@ -122,10 +122,13 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("할 일이 없는 날은 빈 요약(완료율 0)을 반환한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary-empty@test.com", password);
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-summary-empty@test.com",
+        password,
+      );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
@@ -140,10 +143,13 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("상위 할 일은 최대 10개, 미완료가 항상 완료보다 먼저 온다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary-limit@test.com", password);
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-summary-limit@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
       const { startDate, endDate } = activeDateRange();
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client.insert(todoTable).values(
         Array.from({ length: 12 }, (_, i) => ({
           userId: user.userId,
@@ -159,7 +165,7 @@ describe("오늘의 할 일 요약 E2E", () => {
       );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);
@@ -188,11 +194,14 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("date로 내일을 요청하면 내일 할 일 기준 요약을 반환한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary-tomorrow@test.com", password);
-      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-summary-tomorrow@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
       const today = todayIn(timezone);
       const tomorrow = today.add({ days: 1 });
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client.insert(todoTable).values(
         [
           {
@@ -226,7 +235,7 @@ describe("오늘의 할 일 요약 E2E", () => {
       );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .query({ date: tomorrow.toString() })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -250,14 +259,14 @@ describe("오늘의 할 일 요약 E2E", () => {
       { name: "모레", offsetDays: 2 },
     ])("date로 $name를 요청하면 400 SYS_0002를 반환한다", async ({ offsetDays }) => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         `todo-summary-range-${offsetDays}@test.com`,
         password,
       );
       const outOfRange = todayIn(timezone).add({ days: offsetDays }).toString();
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .query({ date: outOfRange })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -270,10 +279,13 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("윤년이 아닌 해의 2월 29일처럼 없는 날짜는 400을 반환한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary-invalid@test.com", password);
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-summary-invalid@test.com",
+        password,
+      );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .query({ date: "2027-02-29" })
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -285,7 +297,7 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("인증 없이 호출하면 401을 반환한다", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).get("/v1/todos/summary");
+      const response = await request(testContext.app.getHttpServer()).get("/v1/todos/summary");
 
       // Then
       expect(response.status).toBe(401);
@@ -293,11 +305,14 @@ describe("오늘의 할 일 요약 E2E", () => {
 
     it("summary 정적 세그먼트가 :id 라우트로 매칭되지 않는다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("todo-summary-route@test.com", password);
+      const user = await testContext.helpers.createVerifiedUser(
+        "todo-summary-route@test.com",
+        password,
+      );
 
       // When
       // :id 라우트였다면 "summary"가 숫자 파싱에 실패해 400이 됐을 것
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/todos/summary")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", timezone);

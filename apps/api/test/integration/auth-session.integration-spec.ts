@@ -33,7 +33,9 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
   beforeAll(async () => {
     testDatabase = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await testDatabase.start();
-    repository = new DrizzleSessionRepository(createDatabaseTransactionFixture(client).txHost);
+    repository = new DrizzleSessionRepository(
+      createDatabaseTransactionFixture(client).transactionHost,
+    );
   });
 
   beforeEach(async () => {

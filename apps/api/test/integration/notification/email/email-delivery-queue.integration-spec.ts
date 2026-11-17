@@ -86,7 +86,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     const jobQueue = new FastJobQueue(
       new PgBossJobQueueAdapter(
         boss,
-        createDatabaseTransactionFixture(client).txHost,
+        createDatabaseTransactionFixture(client).transactionHost,
         new JobQueueRegistry(),
         { shutdownTimeoutMs: 10_000, workerEnabled: true },
       ),

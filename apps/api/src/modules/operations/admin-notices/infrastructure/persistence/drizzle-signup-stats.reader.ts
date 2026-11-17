@@ -12,15 +12,15 @@ import {
 
 @Injectable()
 export class DrizzleSignupStatsReader extends SignupStatsReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   // 가입은 그날 만들어진 사용자이고 가입 방식은 그 사용자의 첫 계정이다(가입 알림과 같은 기준).

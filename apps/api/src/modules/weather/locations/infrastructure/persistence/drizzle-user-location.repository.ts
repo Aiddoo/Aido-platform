@@ -11,14 +11,14 @@ import { toUserLocation, toUserLocationRow } from "./user-location-row.mapper.js
 
 @Injectable()
 export class DrizzleUserLocationRepository implements UserLocationRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async findByUserId(userId: UserId): Promise<UserLocation | null> {

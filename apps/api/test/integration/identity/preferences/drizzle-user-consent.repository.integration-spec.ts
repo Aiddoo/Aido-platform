@@ -24,7 +24,7 @@ describe("DrizzleUserConsentRepository (실제 PostgreSQL)", () => {
   });
 
   describeUserConsentRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserConsentRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleUserConsentRepository(transactionHost);
   });
 });

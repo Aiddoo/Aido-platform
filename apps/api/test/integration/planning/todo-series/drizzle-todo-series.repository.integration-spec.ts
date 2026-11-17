@@ -46,7 +46,7 @@ describe("DrizzleTodoSeriesRepository (실제 PostgreSQL)", () => {
 
   describeTodoSeriesRepositoryContract(async () => ({
     seriesRepository: new DrizzleTodoSeriesRepository(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new DateClock(),
     ),
     categoryId,

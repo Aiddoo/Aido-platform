@@ -90,10 +90,15 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-      shutdownTimeoutMs: 10_000,
-      workerEnabled: true,
-    });
+    jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      transaction.transactionHost,
+      new JobQueueRegistry(),
+      {
+        shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
+      },
+    );
     await jobQueue.start();
     reminderAdapter = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
@@ -101,11 +106,14 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     queue = new TodoTimezoneRebaseQueueService(jobQueue);
     useCase = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
-      todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
-      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
+      todoRepository: new DrizzleTodoRepository(transaction.transactionHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(
+        transaction.transactionHost,
+        new DateClock(),
+      ),
       ownerTimezone: {
         findTimezone: async (id) => {
-          const row = await transaction.txHost.tx.query.userPreference.findFirst({
+          const row = await transaction.transactionHost.tx.query.userPreference.findFirst({
             columns: { timezone: true },
             where: { userId: id.value },
           });
@@ -115,7 +123,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       todoReminder: reminderAdapter,
       todoCache: { invalidateFriendTodos: async () => undefined },
       unitOfWork: transaction.uow,
-      mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+      mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
       logger: { log: () => undefined },
     });
   });
@@ -342,8 +350,11 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     let failed = false;
     const flaky = new RebaseTodoTimezoneUseCase({
       clock: new DateClock(),
-      todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
-      seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
+      todoRepository: new DrizzleTodoRepository(transaction.transactionHost, new DateClock()),
+      seriesRepository: new DrizzleTodoSeriesRepository(
+        transaction.transactionHost,
+        new DateClock(),
+      ),
       ownerTimezone: { findTimezone: async () => NEW_YORK },
       todoReminder: {
         cancelReminders: async () => undefined,
@@ -356,7 +367,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
       },
       todoCache: { invalidateFriendTodos: async () => undefined },
       unitOfWork: transaction.uow,
-      mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+      mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
       logger: { log: () => undefined },
       batchSize: 1,
     });
@@ -438,7 +449,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         Math.floor(Date.now() / TODO_TIMEZONE_REBASE_WINDOW_MS) * TODO_TIMEZONE_REBASE_WINDOW_MS +
           1000,
       );
-      const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.txHost);
+      const preferenceRepository = new DrizzleUserPreferenceRepository(transaction.transactionHost);
       const refresh = new RefreshPushTimezoneUseCase({
         preferenceRepository,
         cache: { invalidateUserPreference: async () => undefined },
@@ -464,7 +475,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     // Given
     const transaction = createDatabaseTransactionFixture(client);
     const localQueue = new TodoTimezoneRebaseQueueService(
-      new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
+      new PgBossJobQueueAdapter(boss, transaction.transactionHost, new JobQueueRegistry(), {
         shutdownTimeoutMs: 10_000,
         workerEnabled: true,
       }),

@@ -10,27 +10,30 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 const TIMEZONE = "Asia/Seoul";
 
 describe("할 일 개요 E2E (GET /v1/todos/overview)", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let accessToken: string;
   let categoryId: number;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
-    const user = await ctx.helpers.createVerifiedUser("todo-overview@test.com", "Test1234!");
+    await testContext.reset();
+    const user = await testContext.helpers.createVerifiedUser(
+      "todo-overview@test.com",
+      "Test1234!",
+    );
     accessToken = user.accessToken;
-    categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+    categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
   });
 
   async function getOverview() {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .get("/v1/todos/overview")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
@@ -39,7 +42,7 @@ describe("할 일 개요 E2E (GET /v1/todos/overview)", () => {
   }
 
   async function createTodo(body: object) {
-    const response = await request(ctx.app.getHttpServer())
+    const response = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${accessToken}`)
       .set("X-Timezone", TIMEZONE)
@@ -62,7 +65,7 @@ describe("할 일 개요 E2E (GET /v1/todos/overview)", () => {
       startDate: todayIn(TIMEZONE).toString(),
       repeat: { frequency: "DAILY", end: { type: "NEVER" } },
     });
-    await request(ctx.app.getHttpServer())
+    await request(testContext.app.getHttpServer())
       .patch(`/v1/todos/${todo.id}/complete`)
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ completed: true })
@@ -95,7 +98,7 @@ describe("할 일 개요 E2E (GET /v1/todos/overview)", () => {
 
   it("토큰이 없으면 401이다", async () => {
     // When
-    const response = await request(ctx.app.getHttpServer()).get("/v1/todos/overview");
+    const response = await request(testContext.app.getHttpServer()).get("/v1/todos/overview");
 
     // Then
     expect(response.status).toBe(401);

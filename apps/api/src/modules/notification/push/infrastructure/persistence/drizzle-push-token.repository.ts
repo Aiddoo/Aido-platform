@@ -25,14 +25,14 @@ const PUSH_TOKEN_TOKEN_UNIQUE_CONSTRAINT = "PushToken_token_key";
 
 @Injectable()
 export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async releasePushTokenHeldElsewhere(

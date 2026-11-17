@@ -30,10 +30,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   beforeAll(async () => {
     testDb = new TestDatabase();
     db = await testDb.start();
-    const { txHost, uow } = createDatabaseTransactionFixture(db);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(db);
     unitOfWork = uow;
     repository = new DrizzleRetentionRepository(
-      txHost,
+      transactionHost,
       uow,
       new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
     );
@@ -248,8 +248,8 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       ["UTC", "US/Eastern"],
       RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
     );
-    const { txHost, uow } = createDatabaseTransactionFixture(db);
-    const staleTzdataRepository = new DrizzleRetentionRepository(txHost, uow, cache);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(db);
+    const staleTzdataRepository = new DrizzleRetentionRepository(transactionHost, uow, cache);
     const userId = await createUser("seoultz1@example.com", { timezone: "Asia/Seoul" });
     await staleTzdataRepository.enroll({
       userId: UserId.reconstitute(userId),

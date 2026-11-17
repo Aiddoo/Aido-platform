@@ -51,10 +51,10 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
       { userId: ME, name: "나" },
       { userId: ALPHA, name: "알파", profileImage: "alpha.png" },
     ]);
-    const { txHost } = createDatabaseTransactionFixture(client);
-    friendshipRepository = new DrizzleFriendshipRepository(txHost);
-    friendReader = new DrizzleFriendReader(txHost);
-    profileReader = new DrizzleFriendProfileReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    friendshipRepository = new DrizzleFriendshipRepository(transactionHost);
+    friendReader = new DrizzleFriendReader(transactionHost);
+    profileReader = new DrizzleFriendProfileReader(transactionHost);
   });
 
   afterAll(async () => {

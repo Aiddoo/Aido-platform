@@ -36,11 +36,11 @@ describe("DrizzleRewardGrantRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepositories() {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      grants: new DrizzleRewardGrantRepository(txHost),
-      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
-      reader: new DrizzleInviteRedemptionReader(txHost),
+      grants: new DrizzleRewardGrantRepository(transactionHost),
+      redemptions: new DrizzleInviteRedemptionRepository(transactionHost, new DateClock()),
+      reader: new DrizzleInviteRedemptionReader(transactionHost),
     };
   }
 

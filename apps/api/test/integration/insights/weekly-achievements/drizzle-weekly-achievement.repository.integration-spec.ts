@@ -36,8 +36,8 @@ describe("DrizzleWeeklyAchievementRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleWeeklyAchievementRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleWeeklyAchievementRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleWeeklyAchievementRepository(transactionHost);
   }
 
   describeWeeklyAchievementRepositoryContract(async () => createRepository());

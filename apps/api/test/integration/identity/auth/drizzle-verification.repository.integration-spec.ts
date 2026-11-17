@@ -41,16 +41,16 @@ describe("DrizzleVerificationRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleVerificationRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleVerificationRepository(txHost, client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleVerificationRepository(transactionHost, client);
   }
 
   describeAuthVerificationRepositoryContract(async () => createRepository());
 
   it("시도 횟수 증가는 바깥 트랜잭션이 롤백돼도 남는다", async () => {
     // Given
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleVerificationRepository(txHost, client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzleVerificationRepository(transactionHost, client);
     const verification = createAuthVerificationFixture({ id: (await repository.nextId()).value });
     await repository.save(verification);
     const failure = new Error("후속 쓰기 실패");

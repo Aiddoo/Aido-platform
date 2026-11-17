@@ -23,28 +23,31 @@ import { userPreference } from "#api/platform/database/schema/index";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("사용자 설정 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   describe("알림 환경설정", () => {
     describe("GET /auth/preference - 환경설정 조회", () => {
       it("사용자의 환경설정을 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("settings-pref@example.com", "Test1234!");
+        const user = await testContext.helpers.createVerifiedUser(
+          "settings-pref@example.com",
+          "Test1234!",
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -57,7 +60,7 @@ describe("사용자 설정 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/auth/preference");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/auth/preference");
 
         // Then
         expect(response.status).toBe(401);
@@ -67,10 +70,13 @@ describe("사용자 설정 E2E", () => {
     describe("PATCH /auth/preference - 환경설정 수정", () => {
       it("푸시 알림 설정을 변경한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("settings-push@example.com", "Test1234!");
+        const user = await testContext.helpers.createVerifiedUser(
+          "settings-push@example.com",
+          "Test1234!",
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ pushEnabled: false })
@@ -82,28 +88,28 @@ describe("사용자 설정 E2E", () => {
 
       it("AI 제안·리포트 알림을 끄면 다시 읽어도 꺼져 있고 출시 앱 모양 요청은 그 값을 두고 저장된다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "settings-ai-push@example.com",
           "Test1234!",
         );
-        const before = await request(ctx.app.getHttpServer())
+        const before = await request(testContext.app.getHttpServer())
           .get("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
         // When
         // 새 앱이 끄고, aiPushEnabled를 모르는 출시 앱이 야간 수신만 바꾼다
-        const turnedOff = await request(ctx.app.getHttpServer())
+        const turnedOff = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ aiPushEnabled: false })
           .expect(200);
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ nightPushEnabled: false })
           .expect(200);
-        const reloaded = await request(ctx.app.getHttpServer())
+        const reloaded = await request(testContext.app.getHttpServer())
           .get("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -116,10 +122,13 @@ describe("사용자 설정 E2E", () => {
 
       it("타임존을 변경한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("settings-tz@example.com", "Test1234!");
+        const user = await testContext.helpers.createVerifiedUser(
+          "settings-tz@example.com",
+          "Test1234!",
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ timezone: "Asia/Seoul" })
@@ -131,7 +140,7 @@ describe("사용자 설정 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/preference")
           .send({ pushEnabled: false });
 
@@ -144,11 +153,11 @@ describe("사용자 설정 E2E", () => {
   describe("설정 저장과 캐시 정합성", () => {
     it("설정 행이 없는 기존 사용자의 첫 날씨 수정에서 false와 분 단위를 저장한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "settings-first-weather@example.com",
         "Test1234!",
       );
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client.delete(userPreference).where(eq(userPreference.userId, user.userId));
       const weather = {
         weatherMorningEnabled: false,
@@ -160,12 +169,12 @@ describe("사용자 설정 E2E", () => {
       };
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send(weather)
         .expect(200);
-      const reloaded = await request(ctx.app.getHttpServer())
+      const reloaded = await request(testContext.app.getHttpServer())
         .get("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
@@ -180,11 +189,11 @@ describe("사용자 설정 E2E", () => {
 
     it("부분 수정의 false와 0을 저장하고 생략한 날씨 필드와 streak는 보존한다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "settings-partial-weather@example.com",
         "Test1234!",
       );
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client
         .update(userPreference)
         .set({
@@ -198,7 +207,7 @@ describe("사용자 설정 E2E", () => {
         .where(eq(userPreference.userId, user.userId));
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ weatherMorningEnabled: false, weatherMorningMinute: 0 })
@@ -222,26 +231,26 @@ describe("사용자 설정 E2E", () => {
 
     it("타임존 헤더로 저장이 끝나면 이미 조회한 설정 캐시에도 변경이 반영된다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "settings-timezone-heal@example.com",
         "Test1234!",
       );
-      const client = ctx.testDatabase.getClient();
-      const warm = await request(ctx.app.getHttpServer())
+      const client = testContext.testDatabase.getClient();
+      const warm = await request(testContext.app.getHttpServer())
         .get("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
       expect(warm.body.data.timezone).toBe("UTC");
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .get("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .set("X-Timezone", "Asia/Seoul")
         .expect(200);
       await expect
         .poll(async () => {
-          const reloaded = await request(ctx.app.getHttpServer())
+          const reloaded = await request(testContext.app.getHttpServer())
             .get("/v1/auth/preference")
             .set("Authorization", `Bearer ${user.accessToken}`)
             .expect(200);
@@ -259,22 +268,22 @@ describe("사용자 설정 E2E", () => {
 
     it("무료 사용자는 조회에서 리마인더 기본 시간을 받고 저장된 사용자 시간은 유지된다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "settings-premium-gate@example.com",
         "Test1234!",
       );
-      const client = ctx.testDatabase.getClient();
+      const client = testContext.testDatabase.getClient();
       await client
         .update(userPreference)
         .set({ morningReminderHour: 6, morningReminderMinute: 37, weatherMorningMinute: 43 })
         .where(eq(userPreference.userId, user.userId));
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ morningReminderHour: 7 })
@@ -299,13 +308,13 @@ describe("사용자 설정 E2E", () => {
     describe("GET /auth/consent - 동의 정보 조회", () => {
       it("사용자의 동의 정보를 조회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "settings-consent@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .get("/v1/auth/consent")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
@@ -318,7 +327,7 @@ describe("사용자 설정 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer()).get("/v1/auth/consent");
+        const response = await request(testContext.app.getHttpServer()).get("/v1/auth/consent");
 
         // Then
         expect(response.status).toBe(401);
@@ -328,13 +337,13 @@ describe("사용자 설정 E2E", () => {
     describe("PATCH /auth/consent/marketing - 마케팅 동의 변경", () => {
       it("마케팅 동의를 활성화한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "settings-mkt-on@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ agreed: true })
@@ -347,18 +356,18 @@ describe("사용자 설정 E2E", () => {
 
       it("마케팅 동의를 철회한다", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "settings-mkt-off@example.com",
           "Test1234!",
         );
-        await request(ctx.app.getHttpServer())
+        await request(testContext.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ agreed: true })
           .expect(200);
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ agreed: false })
@@ -371,7 +380,7 @@ describe("사용자 설정 E2E", () => {
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .send({ agreed: true });
 

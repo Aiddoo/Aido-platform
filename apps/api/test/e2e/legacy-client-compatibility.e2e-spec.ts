@@ -56,18 +56,18 @@ const legacyErrorSchema = z.object({
 });
 
 describe("배포된 구 클라이언트 HTTP 호환성", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   });
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   it.each(["1.7.x", "1.8.2", "1.9.0"])(
@@ -76,22 +76,22 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       // Given
       const email = `legacy-${clientVersion}@example.com`;
       const password = "Test1234!";
-      const user = await ctx.helpers.createVerifiedUser(email, password);
-      const login = await request(ctx.app.getHttpServer())
+      const user = await testContext.helpers.createVerifiedUser(email, password);
+      const login = await request(testContext.app.getHttpServer())
         .post("/v1/auth/login")
         .send({ email, password })
         .expect(200);
       const tokens = legacySuccess(legacyTokensSchema).parse(login.body).data;
-      const refresh = await request(ctx.app.getHttpServer())
+      const refresh = await request(testContext.app.getHttpServer())
         .post("/v1/auth/refresh")
         .set("Authorization", `Bearer ${tokens.refreshToken}`)
         .expect(200);
       const refreshed = legacySuccess(legacyTokensSchema).parse(refresh.body).data;
       const authorization = `Bearer ${refreshed.accessToken}`;
-      const categoryId = await ctx.helpers.getDefaultCategoryId(refreshed.accessToken);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(refreshed.accessToken);
 
       // When
-      const created = await request(ctx.app.getHttpServer())
+      const created = await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", authorization)
         .send({ title: "구 앱의 할 일", categoryId, startDate: "2024-02-29" })
@@ -105,7 +105,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       expect(todo).not.toHaveProperty("commentCount");
 
       // When
-      const updated = await request(ctx.app.getHttpServer())
+      const updated = await request(testContext.app.getHttpServer())
         .patch(`/v1/todos/${todo.id}`)
         .set("Authorization", authorization)
         .send({ startDate: "2024-02-29", scheduledTime: "09:30", isAllDay: false })
@@ -119,7 +119,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       expect(scheduled.scheduledTime).toMatch(/Z$/);
 
       // When
-      const list = await request(ctx.app.getHttpServer())
+      const list = await request(testContext.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", authorization)
         .query({
@@ -138,7 +138,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       expect(page.pagination.size).toBe(1);
 
       // Given
-      await ctx.testDatabase
+      await testContext.testDatabase
         .getClient()
         .insert(notification)
         .values(
@@ -151,7 +151,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         );
 
       // When
-      const notifications = await request(ctx.app.getHttpServer())
+      const notifications = await request(testContext.app.getHttpServer())
         .get("/v1/notifications")
         .set("Authorization", authorization)
         .query({ limit: "1" })
@@ -162,7 +162,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       expect(firstPage.hasMore).toBe(true);
 
       // When
-      const next = await request(ctx.app.getHttpServer())
+      const next = await request(testContext.app.getHttpServer())
         .get("/v1/notifications")
         .set("Authorization", authorization)
         .query({ limit: "1", cursor: String(firstPage.nextCursor) })
@@ -174,7 +174,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       ).toHaveLength(1);
 
       // When
-      const invalid = await request(ctx.app.getHttpServer())
+      const invalid = await request(testContext.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", authorization)
         .send({ title: "잘못된 날짜", categoryId, startDate: "invalid-date" })
@@ -187,9 +187,12 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
 
   it("이전 1.9 댓글 payload와 읽기 응답을 유지한다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("legacy-comments@example.com", "Test1234!");
-    const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
-    const created = await request(ctx.app.getHttpServer())
+    const user = await testContext.helpers.createVerifiedUser(
+      "legacy-comments@example.com",
+      "Test1234!",
+    );
+    const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+    const created = await request(testContext.app.getHttpServer())
       .post("/v1/todos")
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ title: "댓글의 할 일", categoryId, startDate: "2024-02-29" })
@@ -197,7 +200,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
     const todo = legacySuccess(z.object({ todo: legacyTodoSchema })).parse(created.body).data.todo;
 
     // When
-    const written = await request(ctx.app.getHttpServer())
+    const written = await request(testContext.app.getHttpServer())
       .post(`/v1/todos/${todo.id}/comments`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ parentId: null, items: [{ clientRequestId: randomUUID(), content: "이전 앱 댓글" }] })
@@ -210,7 +213,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
     expect(comments[0]?.content).toBe("이전 앱 댓글");
 
     // When
-    const conversation = await request(ctx.app.getHttpServer())
+    const conversation = await request(testContext.app.getHttpServer())
       .get(`/v1/todos/${todo.id}/conversation`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);

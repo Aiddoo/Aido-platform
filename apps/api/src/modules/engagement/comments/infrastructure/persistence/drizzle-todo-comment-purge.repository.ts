@@ -43,14 +43,14 @@ function valuesOf(changes: readonly CounterChange[]): SQL {
 
 @Injectable()
 export class DrizzleTodoCommentPurgeRepository implements TodoCommentPurgeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   /** 잠금 순서를 계획과 정리에서 같게 두려고 글 id 오름차순으로 고정한다 */

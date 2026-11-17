@@ -14,7 +14,7 @@ function text(value: string): AdminNotificationFieldValue {
 export interface DailySignupSummary {
   readonly signupsByProvider: readonly { readonly provider: string; readonly count: number }[];
   readonly totalUsers: number;
-  readonly reportDateStr: string;
+  readonly reportDateKey: string;
 }
 
 export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotification {
@@ -28,7 +28,7 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
     .join("\n");
 
   return createAdminNotification({
-    title: `일일 가입 리포트 | ${summary.reportDateStr} (KST)`,
+    title: `일일 가입 리포트 | ${summary.reportDateKey} (KST)`,
     body:
       previousDayTotal > 0
         ? `전일 신규 가입은 ${previousDayTotal}명입니다.\n\n가입 채널별\n${providerBreakdown}`
@@ -47,7 +47,7 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
       },
       {
         label: "집계 기준",
-        value: text(`${summary.reportDateStr} 00:00 ~ 23:59 (KST)`),
+        value: text(`${summary.reportDateKey} 00:00 ~ 23:59 (KST)`),
         inline: false,
       },
     ],

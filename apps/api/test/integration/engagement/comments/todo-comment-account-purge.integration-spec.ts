@@ -500,8 +500,11 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
 
     // When
     await purgeDeletedAccounts.execute();
-    const { txHost } = createDatabaseTransactionFixture(client);
-    const reader = new DrizzleTodoCommentReader(txHost, new DrizzleTodoDetailsReader(txHost));
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    const reader = new DrizzleTodoCommentReader(
+      transactionHost,
+      new DrizzleTodoDetailsReader(transactionHost),
+    );
     const replyToPurged = await reader.findComment(
       TodoId.reconstitute(fixture.todoId),
       TodoCommentId.reconstitute(fixture.activeGrandchildId),

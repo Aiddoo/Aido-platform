@@ -7,7 +7,10 @@ export type FriendFeatureQuota = Readonly<Record<string, unknown>>;
 export abstract class FriendLimitReaderPort {
   // 표시용이라 캐시한 권한을 읽는다
   abstract readLimit(userId: UserId): Promise<number | null>;
-  abstract readLimitInTx(userId: UserId): Promise<number | null>;
+  abstract readLimitInTransaction(userId: UserId): Promise<number | null>;
   // friendCount는 같은 잠금 안에서 센 지금 친구 수다
-  abstract readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota>;
+  abstract readFeatureQuotaInTransaction(
+    userId: UserId,
+    friendCount: number,
+  ): Promise<FriendFeatureQuota>;
 }

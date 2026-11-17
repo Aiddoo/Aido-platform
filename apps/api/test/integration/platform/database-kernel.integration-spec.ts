@@ -92,7 +92,9 @@ describe("DB 커널 — Temporal column·sequence (실제 PostgreSQL)", () => {
     const first = await nextSequenceValue(client, kernelSample.id);
 
     // When
-    const values = await client.transaction((tx) => nextSequenceValues(tx, kernelSample.id, 3));
+    const values = await client.transaction((transaction) =>
+      nextSequenceValues(transaction, kernelSample.id, 3),
+    );
 
     // Then
     expect(values).toEqual([first + 1, first + 2, first + 3]);

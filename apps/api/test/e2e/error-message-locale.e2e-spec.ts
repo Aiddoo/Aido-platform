@@ -10,20 +10,20 @@ import {
 } from "./helpers/index.js";
 
 describe("오류 응답 message 언어 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
   let user: VerifiedUser;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
-    user = await ctx.helpers.createVerifiedUser("error-locale@test.com", "Test1234!");
+    testContext = await createE2eApp();
+    user = await testContext.helpers.createVerifiedUser("error-locale@test.com", "Test1234!");
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   function failures(acceptLanguage: string | undefined): Promise<Response[]> {
-    const server = ctx.app.getHttpServer();
+    const server = testContext.app.getHttpServer();
     const withLanguage = (call: request.Test) =>
       acceptLanguage == null ? call : call.set("Accept-Language", acceptLanguage);
     return Promise.all([

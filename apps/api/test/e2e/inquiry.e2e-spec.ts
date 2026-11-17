@@ -18,27 +18,30 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("문의 E2E", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
 
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
 
   describe("POST /inquiries - 문의 접수", () => {
     it("인증된 사용자가 문의를 접수한다 (201)", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("inquiry-user@example.com", "Test1234!");
+      const user = await testContext.helpers.createVerifiedUser(
+        "inquiry-user@example.com",
+        "Test1234!",
+      );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/inquiries")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({
@@ -54,10 +57,13 @@ describe("문의 E2E", () => {
 
     it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("inquiry-email@example.com", "Test1234!");
+      const user = await testContext.helpers.createVerifiedUser(
+        "inquiry-email@example.com",
+        "Test1234!",
+      );
 
       // When
-      await request(ctx.app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post("/v1/inquiries")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({
@@ -67,7 +73,7 @@ describe("문의 E2E", () => {
         .expect(201);
 
       // Then
-      const lastInquiry = ctx.fakeEmailService.getLastInquiry();
+      const lastInquiry = testContext.fakeEmailService.getLastInquiry();
       expect(lastInquiry).toBeDefined();
       expect(lastInquiry?.data).toMatchObject({
         userEmail: "inquiry-email@example.com",
@@ -75,18 +81,18 @@ describe("문의 E2E", () => {
         categoryLabel: "버그 신고",
         content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
       });
-      expect(ctx.fakeEmailService.getInquiryCount()).toBe(1);
+      expect(testContext.fakeEmailService.getInquiryCount()).toBe(1);
     });
 
     it("메일 전송 실패는 INQUIRY_1501을 반환하고 접수 성공으로 기록하지 않는다", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser(
+      const user = await testContext.helpers.createVerifiedUser(
         "inquiry-failure@example.test",
         "Test1234!",
       );
-      ctx.fakeEmailService.simulateFailures(1);
+      testContext.fakeEmailService.simulateFailures(1);
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/inquiries")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ category: "OTHER", content: "합성 문의 전송 실패를 확인합니다." })
@@ -95,13 +101,13 @@ describe("문의 E2E", () => {
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("INQUIRY_1501");
       expect(response.body.error.message).toBe("문의 이메일 발송에 실패했습니다.");
-      expect(ctx.fakeEmailService.getFailureCount()).toBe(1);
-      expect(ctx.fakeEmailService.getInquiryCount()).toBe(0);
+      expect(testContext.fakeEmailService.getFailureCount()).toBe(1);
+      expect(testContext.fakeEmailService.getInquiryCount()).toBe(0);
     });
 
     it("인증 없이 요청 시 401 에러 반환", async () => {
       // When
-      const response = await request(ctx.app.getHttpServer()).post("/v1/inquiries").send({
+      const response = await request(testContext.app.getHttpServer()).post("/v1/inquiries").send({
         category: "BUG_REPORT",
         content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
       });
@@ -112,10 +118,13 @@ describe("문의 E2E", () => {
 
     it("잘못된 카테고리 시 400 에러 반환", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("inquiry-badcat@example.com", "Test1234!");
+      const user = await testContext.helpers.createVerifiedUser(
+        "inquiry-badcat@example.com",
+        "Test1234!",
+      );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/inquiries")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({
@@ -130,10 +139,13 @@ describe("문의 E2E", () => {
 
     it("내용이 너무 짧으면 400 에러 반환", async () => {
       // Given
-      const user = await ctx.helpers.createVerifiedUser("inquiry-short@example.com", "Test1234!");
+      const user = await testContext.helpers.createVerifiedUser(
+        "inquiry-short@example.com",
+        "Test1234!",
+      );
 
       // When
-      const response = await request(ctx.app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post("/v1/inquiries")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({
@@ -149,13 +161,13 @@ describe("문의 E2E", () => {
     describe("각 카테고리 타입 정상 작동", () => {
       it("FEATURE_REQUEST 카테고리로 문의 접수", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "inquiry-feature@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/inquiries")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
@@ -171,13 +183,13 @@ describe("문의 E2E", () => {
 
       it("PAYMENT 카테고리로 결제·구독 문의 접수", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser(
+        const user = await testContext.helpers.createVerifiedUser(
           "inquiry-payment@example.com",
           "Test1234!",
         );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/inquiries")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({
@@ -193,10 +205,13 @@ describe("문의 E2E", () => {
 
       it("OTHER 카테고리로 문의 접수", async () => {
         // Given
-        const user = await ctx.helpers.createVerifiedUser("inquiry-other@example.com", "Test1234!");
+        const user = await testContext.helpers.createVerifiedUser(
+          "inquiry-other@example.com",
+          "Test1234!",
+        );
 
         // When
-        const response = await request(ctx.app.getHttpServer())
+        const response = await request(testContext.app.getHttpServer())
           .post("/v1/inquiries")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({

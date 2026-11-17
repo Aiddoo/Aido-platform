@@ -15,19 +15,19 @@ import { toAppRelease, toAppReleaseRow } from "./app-release-row.mapper.js";
 
 @Injectable()
 export class DrizzleAppReleaseRepository implements AppReleaseRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #config: AppConfigAppVersionsConfig;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     @Inject(appConfigAppVersionsConfig.KEY) config: AppConfigAppVersionsConfig,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#config = config;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   async listLatestReleases(): Promise<AppRelease[]> {

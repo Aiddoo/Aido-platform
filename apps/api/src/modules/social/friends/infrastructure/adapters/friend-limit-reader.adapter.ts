@@ -12,14 +12,14 @@ import {
 export class FriendLimitReaderAdapter extends FriendLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -30,12 +30,12 @@ export class FriendLimitReaderAdapter extends FriendLimitReaderPort {
     return this.#entitlementReader.getFeatureLimit(userId, "FRIEND");
   }
 
-  readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId, "FRIEND");
+  readLimitInTransaction(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "FRIEND");
   }
 
-  readFeatureQuotaInTx(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId, "FRIEND", {
+  readFeatureQuotaInTransaction(userId: UserId, friendCount: number): Promise<FriendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTransaction(userId, "FRIEND", {
       used: friendCount,
       resetsAt: null,
     });

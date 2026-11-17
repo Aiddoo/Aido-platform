@@ -81,25 +81,25 @@ export class DrizzleSchedulerReader
     TodoReminderReaderPort,
     SchedulerPreferenceReaderPort
 {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #cacheService: CacheStorePort;
   readonly #retention: RetentionSettings;
   readonly #clock: ClockPort;
 
   constructor(
-    txHost: TransactionHost<DrizzleTransactionalAdapter>,
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     cacheService: CacheStorePort,
     @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
     clock: ClockPort,
   ) {
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#cacheService = cacheService;
     this.#retention = retention;
     this.#clock = clock;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   // access 권한 조건은 아직 Date로 받는다

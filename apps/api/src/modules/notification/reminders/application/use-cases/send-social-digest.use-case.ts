@@ -34,13 +34,13 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(
-    ctx: TimezoneContext,
+    timezoneContext: TimezoneContext,
     recipientUserIds: readonly string[] = [],
   ): Promise<{ sent: number }> {
     if (recipientUserIds.length === 0) {
       return { sent: 0 };
     }
-    const { timezones, today, tomorrow } = ctx;
+    const { timezones, today, tomorrow } = timezoneContext;
 
     // 해당 타임존 + 오늘 투두 미완료인 유저 조회
     const users = await this.#dependencies.reader.findSocialDigestCandidates({

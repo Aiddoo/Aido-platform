@@ -8,32 +8,32 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("가입 약관 기록·광고성 동의 결과 HTTP 계약", () => {
-  let ctx: E2eTestContext;
+  let testContext: E2eTestContext;
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    testContext = await createE2eApp();
   }, 60_000);
   beforeEach(async () => {
-    await ctx.reset();
+    await testContext.reset();
   });
   afterAll(async () => {
-    await destroyE2eApp(ctx);
+    await destroyE2eApp(testContext);
   });
 
   function getConsent(accessToken: string) {
-    return request(ctx.app.getHttpServer())
+    return request(testContext.app.getHttpServer())
       .get("/v1/auth/consent")
       .set("Authorization", `Bearer ${accessToken}`)
       .expect(200);
   }
 
   async function appleSignup(token: string, appVersion?: string) {
-    ctx.fakeOAuthTokenVerifierService.setCustomProfile("apple", token, {
+    testContext.fakeOAuthTokenVerifierService.setCustomProfile("apple", token, {
       id: `${token}-owner`,
       email: `${token}@example.com`,
       emailVerified: true,
     });
-    const call = request(ctx.app.getHttpServer()).post("/v1/auth/apple/callback");
+    const call = request(testContext.app.getHttpServer()).post("/v1/auth/apple/callback");
     const response = await (appVersion == null ? call : call.set("X-App-Version", appVersion))
       .send({ idToken: token })
       .expect(200);
@@ -65,7 +65,10 @@ describe("가입 약관 기록·광고성 동의 결과 HTTP 계약", () => {
 
   it("이메일 가입은 동의한 약관 버전을 기록한다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("consent-email@example.com", "Test1234!");
+    const user = await testContext.helpers.createVerifiedUser(
+      "consent-email@example.com",
+      "Test1234!",
+    );
 
     // When
     const consent = consentResponseSchema.parse((await getConsent(user.accessToken)).body.data);
@@ -77,9 +80,12 @@ describe("가입 약관 기록·광고성 동의 결과 HTTP 계약", () => {
 
   it("광고성 동의 철회 응답은 처리한 서버 시각을, 동의 응답은 동의 시각을 준다", async () => {
     // Given
-    const user = await ctx.helpers.createVerifiedUser("consent-marketing@example.com", "Test1234!");
+    const user = await testContext.helpers.createVerifiedUser(
+      "consent-marketing@example.com",
+      "Test1234!",
+    );
     const patch = (path: string, agreed: boolean) =>
-      request(ctx.app.getHttpServer())
+      request(testContext.app.getHttpServer())
         .patch(path)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ agreed })

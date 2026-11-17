@@ -38,21 +38,21 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
   });
 
   function createRequest() {
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
     const logger = createSpyApplicationLogger();
     const request = new RequestSuggestionAnalysisUseCase({
       entitlementReader: { can: async () => true },
       onDemandConfig: { isEnabled: true },
-      runs: new DrizzleSuggestionAnalysisRunRepository(txHost),
-      suggestions: new DrizzleSuggestionRepository(txHost),
+      runs: new DrizzleSuggestionAnalysisRunRepository(transactionHost),
+      suggestions: new DrizzleSuggestionRepository(transactionHost),
       enqueuer,
       analysisState: {
         readRecentTodoCount: async () => ({ timeZone: "Asia/Seoul", recentTodoCount: 3 }),
         read: async () => ({ state: "ANALYZING", canRequestNow: false, nextAnalysisAt: NOW }),
       },
       unitOfWork: uow,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       clock: new FixedClock(NOW),
       logger,
     });
@@ -77,8 +77,8 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
     const acquired = Promise.withResolvers<void>();
     const released = Promise.withResolvers<void>();
     // 두 요청이 모두 같은 잠금 앞에서 기다리게 먼저 잡아 둔다
-    const holder = client.transaction(async (tx) => {
-      await tx.execute(
+    const holder = client.transaction(async (transaction) => {
+      await transaction.execute(
         sql`SELECT pg_advisory_xact_lock(hashtextextended(${SuggestionLockKeys.analysisRun(USER_ID)}, 0))`,
       );
       acquired.resolve();

@@ -308,10 +308,10 @@ class RacingTodoCommentRepository extends InMemoryTodoCommentRepository {
   }
 
   override listByAuthorIdAndClientRequestIds(
-    ...args: Parameters<InMemoryTodoCommentRepository["listByAuthorIdAndClientRequestIds"]>
+    ...parameters: Parameters<InMemoryTodoCommentRepository["listByAuthorIdAndClientRequestIds"]>
   ) {
     return this.#hasRaced
-      ? this.#inner.listByAuthorIdAndClientRequestIds(...args)
+      ? this.#inner.listByAuthorIdAndClientRequestIds(...parameters)
       : Promise.resolve([]);
   }
 

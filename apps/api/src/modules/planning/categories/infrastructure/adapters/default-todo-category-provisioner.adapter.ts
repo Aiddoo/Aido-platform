@@ -13,17 +13,17 @@ import { DEFAULT_CATEGORIES } from "../../domain/categories.constants.js";
 /** 회원가입의 활성 CLS 트랜잭션에서 기본 카테고리를 일괄 생성한다. */
 @Injectable()
 export class DefaultTodoCategoryProvisionerAdapter implements TodoCategoryProvisionerPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
   async seed(userId: UserId, locale: SupportedLocale = DEFAULT_LOCALE): Promise<number> {
     const updatedAt = this.#clock.now();
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .insert(todoCategory)
       .values(
         DEFAULT_CATEGORIES[locale].map((category) => ({

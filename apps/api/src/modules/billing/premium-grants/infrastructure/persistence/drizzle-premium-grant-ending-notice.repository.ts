@@ -18,14 +18,14 @@ const storeOf = alias(subscription, "store");
 
 @Injectable()
 export class DrizzlePremiumGrantEndingNoticeRepository implements PremiumGrantEndingNoticeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
   // 뒤에 다른 보상 기간이나 스토어 구독이 이어지면 프리미엄이 끝나지 않으므로 마지막 기간만 고른다
