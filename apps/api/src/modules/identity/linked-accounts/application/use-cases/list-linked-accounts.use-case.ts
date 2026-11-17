@@ -19,7 +19,7 @@ export interface LinkedAccountListReadModel {
 }
 
 interface ListLinkedAccountsDependencies {
-  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findLinkedAccounts">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
 }
 
 export class ListLinkedAccountsUseCase {
@@ -30,11 +30,11 @@ export class ListLinkedAccountsUseCase {
   }
 
   async execute(input: ListLinkedAccountsQuery): Promise<LinkedAccountListReadModel> {
-    const identityAccounts = await this.#dependencies.accountRepository.findLinkedAccounts(
+    const linkedAccounts = await this.#dependencies.accountRepository.findByUserId(
       UserId.reconstitute(input.userId),
     );
     const accountsByProvider = new Map(
-      identityAccounts.accounts.map((account) => [account.provider, account]),
+      (linkedAccounts?.accounts ?? []).map((account) => [account.provider, account]),
     );
     return {
       accounts: OAUTH_PROVIDERS.map((provider) => {
@@ -46,7 +46,7 @@ export class ListLinkedAccountsUseCase {
           linkedAt: account?.createdAt ?? null,
         };
       }),
-      canUnlink: identityAccounts.canUnlink,
+      canUnlink: linkedAccounts?.canUnlink() ?? false,
     };
   }
 }

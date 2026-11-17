@@ -90,8 +90,8 @@ function daysBeforeNow(days: number): Temporal.Instant {
 
 describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", () => {
   async function linkExistingIdentity(fixture: OAuthFixture, provider: AccountProvider) {
-    await fixture.accountRepository.createOAuthAccount({
-      userId: UserId.reconstitute(fixture.user.id),
+    fixture.accountRepository.seed({
+      userId: fixture.user.id,
       provider,
       providerAccountId: fixture.identityProvider.profile.id,
     });
@@ -207,7 +207,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
         profileImage: provider === "APPLE" ? null : fixture.identityProvider.profile.picture,
       });
       expect(
-        await fixture.accountRepository.findByProviderAccountId(
+        fixture.accountRepository.storedByProviderAccountId(
           provider,
           fixture.identityProvider.profile.id,
         ),
@@ -334,7 +334,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     expect(fixture.sessionRepository.stored(sessionId)?.revokedAt).toBeNull();
     expect(fixture.cacheService.sessionIds.has(sessionId)).toBe(true);
     expect(
-      await fixture.accountRepository.findByProviderAccountId(
+      fixture.accountRepository.storedByProviderAccountId(
         provider,
         fixture.identityProvider.profile.id,
       ),
@@ -508,8 +508,10 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
       const useCase = new LoginWithOAuthTokenUseCase({
         ...fixture,
         accountRepository: {
-          findByProviderAccountId: async () => null,
-          createOAuthAccount: async () => {
+          findUserIdByProviderAccountId: async () => null,
+          findByUserId: (userId) => fixture.accountRepository.findByUserId(userId),
+          nextId: () => fixture.accountRepository.nextId(),
+          save: async () => {
             throw storageError;
           },
         },

@@ -8,6 +8,7 @@ import { SessionCachePort } from "../sessions/application/ports/session-cache.po
 import { SessionPushDeviceReleaserPort } from "../sessions/application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "../sessions/application/ports/session.repository.port.js";
 import { SecurityLogRepositoryPort } from "../users/application/ports/security-log.repository.port.js";
+import { UserMutationLockPort } from "../users/application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "../users/application/ports/user-profile-invalidator.port.js";
 import { UserRepositoryPort } from "../users/application/ports/user.repository.port.js";
 import { ConsumeVerificationCodeUseCase } from "../verifications/application/use-cases/consume-verification-code.use-case.js";
@@ -42,10 +43,11 @@ export const listLinkedAccountsProvider = provideUseCase(ListLinkedAccountsUseCa
 export const linkOAuthIdentityProvider = provideUseCase(LinkOAuthIdentityUseCase, {
   accountRepository: LinkedAccountsRepositoryPort,
   securityLogRepository: SecurityLogRepositoryPort,
+  clock: ClockPort,
 });
 
 export const linkOAuthAccountProvider = provideUseCase(LinkOAuthAccountUseCase, {
-  userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   registry: OAuthIdentityProviderRegistryPort,
   linkOAuthIdentity: LinkOAuthIdentityUseCase,
   unitOfWork: UnitOfWorkPort,
@@ -54,7 +56,7 @@ export const linkOAuthAccountProvider = provideUseCase(LinkOAuthAccountUseCase, 
 });
 
 export const unlinkOAuthAccountProvider = provideUseCase(UnlinkOAuthAccountUseCase, {
-  userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   securityLogRepository: SecurityLogRepositoryPort,
   unitOfWork: UnitOfWorkPort,
@@ -65,6 +67,7 @@ export const unlinkOAuthAccountProvider = provideUseCase(UnlinkOAuthAccountUseCa
 export const changePasswordProvider = provideUseCase(ChangePasswordUseCase, {
   pushDevices: SessionPushDeviceReleaserPort,
   userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   passwordService: PasswordHasherPort,
   sessionRepository: SessionRepositoryPort,
@@ -88,6 +91,7 @@ export const requestPasswordResetProvider = provideUseCase(RequestPasswordResetU
 export const resetPasswordProvider = provideUseCase(ResetPasswordUseCase, {
   pushDevices: SessionPushDeviceReleaserPort,
   userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   passwordService: PasswordHasherPort,
   consumeVerificationCode: ConsumeVerificationCodeUseCase,
@@ -114,6 +118,7 @@ export const setPasswordProvider = provideUseCase(SetPasswordUseCase, {
   securityLogRepository: SecurityLogRepositoryPort,
   cacheService: UserProfileInvalidatorPort,
   unitOfWork: UnitOfWorkPort,
+  clock: ClockPort,
   logger: loggerFor(SetPasswordUseCase),
 });
 

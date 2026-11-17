@@ -2,7 +2,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { UnlinkOAuthAccountUseCase } from "./unlink-oauth-account.use-case.js";
@@ -28,8 +27,8 @@ describe("UnlinkOAuthAccount — 마지막 로그인 수단 보호", () => {
   it("Credential 로그인을 남긴 채 소셜 연결을 제거하고 커밋 뒤 캐시를 무효화한다", async () => {
     // Given
     const fixture = createAuthOAuthFixture();
-    await fixture.accountRepository.createOAuthAccount({
-      userId: UserId.reconstitute(fixture.user.id),
+    fixture.accountRepository.seed({
+      userId: fixture.user.id,
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });

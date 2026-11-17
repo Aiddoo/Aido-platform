@@ -90,6 +90,7 @@ export const provisionUserProvider = provideUseCase(ProvisionUserUseCase, {
   accountRepository: LinkedAccountsRepositoryPort,
   seeder: UserProvisioningSeederPort,
   retentionEnroller: RetentionEnrollerPort,
+  clock: ClockPort,
 });
 
 export const registerProvider = provideUseCase(RegisterUseCase, {

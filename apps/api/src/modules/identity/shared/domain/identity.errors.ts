@@ -22,3 +22,8 @@ export class IdentityPersistenceConflict extends Error {
     this.name = IdentityPersistenceConflict.name;
   }
 }
+
+// 그사이 다른 요청이 같은 공급자 계정을 먼저 연결했다. 부르는 쪽이 그 연결을 다시 읽어 이어 간다
+export function oauthAccountLinkConflict(): IdentityPersistenceConflict {
+  return new IdentityPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
+}

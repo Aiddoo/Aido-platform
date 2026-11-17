@@ -46,7 +46,7 @@ describe("LinkOAuthAccount — 검증된 토큰으로 소셜 신원 연결", () 
       { token: "id-secret", nonce: "nonce" },
     ]);
     expect(
-      await fixture.accountRepository.findByProviderAccountId(
+      fixture.accountRepository.storedByProviderAccountId(
         "APPLE",
         fixture.identityProvider.profile.id,
       ),

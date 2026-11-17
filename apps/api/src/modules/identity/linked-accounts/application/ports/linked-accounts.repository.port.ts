@@ -1,45 +1,20 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { LinkedAccountId } from "../../domain/linked-account-id.vo.js";
 import type { LinkedAccounts } from "../../domain/linked-accounts.aggregate.js";
 import type { AccountProvider } from "../../domain/linked-accounts.constants.js";
 
-export interface LinkedAccountReadModel {
-  readonly id: number;
-  readonly userId: string;
-  readonly provider: AccountProvider;
-  readonly providerAccountId: string;
-  readonly password: string | null;
-  readonly createdAt: Temporal.Instant;
-}
-
-export interface NewOAuthAccount {
-  readonly userId: UserId;
-  readonly provider: AccountProvider;
-  readonly providerAccountId: string;
-  readonly refreshToken?: string;
-}
-
 export abstract class LinkedAccountsRepositoryPort {
-  abstract findByUserIdAndProvider(
-    userId: UserId,
-    provider: AccountProvider,
-  ): Promise<LinkedAccountReadModel | null>;
-  abstract findByProviderAccountId(
+  abstract nextId(): Promise<LinkedAccountId>;
+  /** 로그인 수단이 하나도 없으면 null이다 */
+  abstract findByUserId(userId: UserId): Promise<LinkedAccounts | null>;
+  abstract findUserIdByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountReadModel | null>;
-  abstract findAllByUserId(userId: UserId): Promise<LinkedAccountReadModel[]>;
-  abstract findLinkedAccounts(userId: UserId): Promise<LinkedAccounts>;
-  /** 같은 사용자에게 이메일 계정이 이미 있으면 USER_0604로 거절한다 */
-  abstract createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void>;
-  abstract updatePassword(userId: UserId, hashedPassword: string): Promise<void>;
-  /** 저장된 hash가 기대한 값일 때만 바꾼다. 그 사이 바뀌었으면 false다 */
-  abstract updatePasswordIfUnchanged(
-    userId: UserId,
-    expectedPasswordHash: string,
-    passwordHash: string,
-  ): Promise<boolean>;
-  /** 같은 공급자 계정이 이미 연결돼 있으면 IdentityPersistenceConflict(OAUTH_ACCOUNT_ALREADY_LINKED)다 */
-  abstract createOAuthAccount(account: NewOAuthAccount): Promise<void>;
-  abstract deleteAccount(userId: UserId, provider: AccountProvider): Promise<void>;
+  ): Promise<UserId | null>;
+  /**
+   * 읽은 뒤 바뀐 계정만 쓴다. 넣을 계정이 유일 제약에 걸리거나(이미 누군가 연결), 뺄 계정이 이미 없거나,
+   * 읽은 뒤 비밀번호가 바뀌었으면 false다. 앞서 쓴 변경이 남을 수 있어 false면 호출자가 트랜잭션을 되돌린다
+   */
+  abstract save(linkedAccounts: LinkedAccounts): Promise<boolean>;
 }

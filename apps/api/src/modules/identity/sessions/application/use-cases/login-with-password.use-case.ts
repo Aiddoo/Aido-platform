@@ -15,6 +15,7 @@ import { LinkedAccountsLogEvent } from "../../../linked-accounts/application/lin
 import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../../../linked-accounts/application/ports/password-hasher.port.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import type { RestoreAccountUseCase } from "../../../users/application/use-cases/restore-account.use-case.js";
@@ -35,10 +36,8 @@ export interface LoginWithPasswordCommand {
 
 interface LoginWithPasswordDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
-  readonly accountRepository: Pick<
-    LinkedAccountsRepositoryPort,
-    "findByUserIdAndProvider" | "updatePasswordIfUnchanged"
-  >;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId" | "save">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly loginAttemptRepository: Pick<
     LoginAttemptRepositoryPort,
     "countRecentFailuresByEmail" | "create"
@@ -99,11 +98,9 @@ export class LoginWithPasswordUseCase {
       throw invalidCredentials();
     }
 
-    const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id,
-      "CREDENTIAL",
-    );
-    if (account == null || account.password == null || account.password === "") {
+    const accounts = await this.#dependencies.accountRepository.findByUserId(user.id);
+    const passwordHash = accounts?.passwordHash;
+    if (accounts == null || passwordHash == null || !accounts.hasPassword()) {
       await this.#recordFailure({
         ...attemptContext,
         failureReason: LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT,
@@ -111,10 +108,7 @@ export class LoginWithPasswordUseCase {
       throw invalidCredentials();
     }
 
-    const isPasswordValid = await this.#dependencies.passwordService.verify(
-      account.password,
-      password,
-    );
+    const isPasswordValid = await this.#dependencies.passwordService.verify(passwordHash, password);
     if (!isPasswordValid) {
       await this.#recordFailure({
         ...attemptContext,
@@ -129,17 +123,18 @@ export class LoginWithPasswordUseCase {
       throw invalidCredentials();
     }
 
-    const expectedPasswordHash = account.password;
-    if (this.#dependencies.passwordService.needsRehash(expectedPasswordHash)) {
+    if (this.#dependencies.passwordService.needsRehash(passwordHash)) {
+      // 응답과 따로 다시 만들고, 그사이 비밀번호가 바뀌었으면 저장이 false라 새 비밀번호를 덮지 않는다
       this.#dependencies.passwordService
         .hash(password)
-        .then((passwordHash) =>
-          this.#dependencies.accountRepository.updatePasswordIfUnchanged(
-            user.id,
-            expectedPasswordHash,
-            passwordHash,
-          ),
-        )
+        .then((rehashed) => {
+          accounts.changePassword(rehashed, this.#dependencies.clock.now());
+          return this.#dependencies.unitOfWork.run(
+            async () =>
+              (await this.#dependencies.userMutationLock.lockById(user.id)) &&
+              this.#dependencies.accountRepository.save(accounts),
+          );
+        })
         .then((updated) => {
           if (updated) {
             this.#dependencies.logger.debug({

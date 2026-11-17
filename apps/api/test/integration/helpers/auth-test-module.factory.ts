@@ -26,9 +26,11 @@ import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrast
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { SecurityLogRepositoryPort } from "#api/modules/identity/users/application/ports/security-log.repository.port";
+import { UserMutationLockPort } from "#api/modules/identity/users/application/ports/user-mutation-lock.port";
 import { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
 import { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
+import { UserMutationLockAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-mutation-lock.adapter";
 import { UserProfileCacheAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-profile-cache.adapter";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
@@ -164,6 +166,7 @@ export async function createAuthTestModule(
       DrizzleLoginAttemptRepository,
       DrizzleVerificationRepository,
       { provide: UserRepositoryPort, useExisting: DrizzleUserRepository },
+      { provide: UserMutationLockPort, useClass: UserMutationLockAdapter },
       { provide: LinkedAccountsRepositoryPort, useExisting: DrizzleLinkedAccountsRepository },
       { provide: SessionRepositoryPort, useExisting: DrizzleSessionRepository },
       {

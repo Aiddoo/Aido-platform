@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
 import {
   AUTH_CREDENTIAL_NOW,
@@ -13,6 +14,20 @@ import { createSessionFixture, createUserFixture } from "#test/fixtures/identity
 import { ChangePasswordUseCase } from "./change-password.use-case.js";
 
 const newPassword = "NewPassword2!";
+
+// 이 요청이 현재 비밀번호를 확인한 뒤 저장하기 전에 다른 기기가 먼저 비밀번호를 바꾼다
+class PasswordChangedMeanwhileRepository extends InMemoryLinkedAccountsRepository {
+  override async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
+    const otherDevice = await super.findByUserId(linkedAccounts.id);
+    if (
+      otherDevice != null &&
+      otherDevice.changePassword("digest:OtherDevice3!", AUTH_CREDENTIAL_NOW)
+    ) {
+      await super.save(otherDevice);
+    }
+    return super.save(linkedAccounts);
+  }
+}
 
 async function givenSessions(
   fixture: ReturnType<typeof createAuthCredentialFixture>,
@@ -157,6 +172,30 @@ describe("ChangePassword — 현재 기기를 유지하는 비밀번호 변경",
     expect(fixture.passwordService.hashes).toEqual([]);
     expect(fixture.sessionRepository.stored("only-device")?.revokedAt).toBeNull();
     expect(fixture.cacheService.sessionIds.has("only-device")).toBe(true);
+    expect(fixture.securityLogRepository.entries).toEqual([]);
+  });
+
+  it("현재 비밀번호를 확인한 뒤 다른 기기가 먼저 바꿨으면 USER_0602로 거절하고 세션을 끊지 않는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const accountRepository = new PasswordChangedMeanwhileRepository(fixture.accountRepository.all);
+    const useCase = new ChangePasswordUseCase({ ...fixture, accountRepository });
+    await givenSessions(fixture, [{ id: "other-device", userId: fixture.user.id }]);
+
+    // When
+    const pending = useCase.execute({
+      userId: fixture.user.id,
+      currentPassword: AUTH_CREDENTIAL_PASSWORD,
+      newPassword,
+      currentSessionId: "current-device",
+    });
+
+    // Then
+    await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
+    expect(accountRepository.all.map((account) => account.password)).toEqual([
+      "digest:OtherDevice3!",
+    ]);
+    expect(fixture.sessionRepository.stored("other-device")?.revokedAt).toBeNull();
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
 });

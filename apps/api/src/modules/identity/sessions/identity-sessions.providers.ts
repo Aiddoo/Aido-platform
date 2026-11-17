@@ -11,6 +11,7 @@ import { OAuthIdentityProviderRegistryPort } from "../linked-accounts/applicatio
 import { PasswordHasherPort } from "../linked-accounts/application/ports/password-hasher.port.js";
 import { RetentionEnrollerPort } from "../users/application/ports/retention-enroller.port.js";
 import { SecurityLogRepositoryPort } from "../users/application/ports/security-log.repository.port.js";
+import { UserMutationLockPort } from "../users/application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "../users/application/ports/user-profile-invalidator.port.js";
 import { UserRepositoryPort } from "../users/application/ports/user.repository.port.js";
 import { NotifyOAuthSignupUseCase } from "../users/application/use-cases/notify-oauth-signup.use-case.js";
@@ -66,6 +67,7 @@ export const issueLoginProvider = provideUseCase(IssueLoginUseCase, {
 
 export const loginWithPasswordProvider = provideUseCase(LoginWithPasswordUseCase, {
   userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   loginAttemptRepository: LoginAttemptRepositoryPort,
   passwordService: PasswordHasherPort,
@@ -82,6 +84,7 @@ export const loginWithPasswordProvider = provideUseCase(LoginWithPasswordUseCase
 export const loginWithOAuthTokenProvider = provideUseCase(LoginWithOAuthTokenUseCase, {
   registry: OAuthIdentityProviderRegistryPort,
   userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   accountRepository: LinkedAccountsRepositoryPort,
   securityLogRepository: SecurityLogRepositoryPort,
   loginAttemptRepository: LoginAttemptRepositoryPort,

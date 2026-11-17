@@ -18,7 +18,7 @@ export interface RequestPasswordSetupCodeCommand {
 
 interface RequestPasswordSetupCodeDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
-  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserIdAndProvider">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
 }
@@ -40,11 +40,8 @@ export class RequestPasswordSetupCodeUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      userId,
-      "CREDENTIAL",
-    );
-    if (account != null) {
+    const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+    if (accounts?.hasCredentialAccount()) {
       throw passwordAlreadySet(input.userId);
     }
 

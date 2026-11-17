@@ -31,6 +31,7 @@ import { InMemoryLoginAttemptRepository } from "#test/doubles/identity/in-memory
 import { InMemoryPasswordResetCooldown } from "#test/doubles/identity/in-memory-password-reset-cooldown";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
+import { InMemoryUserMutationLock } from "#test/doubles/identity/in-memory-user-mutation-lock";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
 import { InMemoryVerificationRepository } from "#test/doubles/identity/in-memory-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -119,6 +120,7 @@ export function createAuthCredentialFixture(
     accountRepository,
     seeder,
     retentionEnroller,
+    clock,
   });
   const issueLoginUseCase = new IssueLoginUseCase({
     sessionService,
@@ -131,6 +133,7 @@ export function createAuthCredentialFixture(
   return {
     user,
     userRepository,
+    userMutationLock: new InMemoryUserMutationLock(userRepository),
     accountRepository,
     sessionRepository,
     securityLogRepository,

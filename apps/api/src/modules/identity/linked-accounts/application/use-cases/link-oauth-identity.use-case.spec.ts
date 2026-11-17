@@ -2,7 +2,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 
 import { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
@@ -20,7 +19,7 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
     // Then
     expect(result).toEqual({ message: "계정이 연결되었습니다.", linked: true });
     expect(
-      await fixture.accountRepository.findByProviderAccountId("GOOGLE", "google-account"),
+      fixture.accountRepository.storedByProviderAccountId("GOOGLE", "google-account"),
     ).toMatchObject({ userId: fixture.user.id, password: null });
     expect(fixture.securityLogRepository.entries).toEqual([
       {
@@ -36,8 +35,8 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
   it("이미 자신의 계정이면 새 연결과 감사 기록을 만들지 않는다", async () => {
     // Given
     const fixture = createAuthOAuthFixture();
-    await fixture.accountRepository.createOAuthAccount({
-      userId: UserId.reconstitute(fixture.user.id),
+    fixture.accountRepository.seed({
+      userId: fixture.user.id,
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });
@@ -71,8 +70,8 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
     async ({ provider, errorCode, details }) => {
       // Given
       const fixture = createAuthOAuthFixture(provider);
-      await fixture.accountRepository.createOAuthAccount({
-        userId: UserId.reconstitute("other-user"),
+      fixture.accountRepository.seed({
+        userId: "other-user",
         provider,
         providerAccountId: "other-account",
       });
@@ -89,9 +88,8 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
     },
   );
 
-  it("조회에 없던 신원이 저장 시 유일 제약에 걸리면 같은 연결 충돌 오류로 정규화한다", async () => {
+  it("이미 같은 공급자의 다른 신원이 있으면 저장하지 않고 같은 연결 충돌 오류를 낸다", async () => {
     // Given
-    // 이미 다른 Google 신원을 가진 사용자라 (userId, provider) 유일 제약이 저장 시점에야 걸린다
     const fixture = createAuthOAuthFixture("GOOGLE", { socialOnly: true });
     // When
     const pending = fixture.linkOAuthIdentity.execute({
@@ -108,15 +106,16 @@ describe("LinkOAuthIdentity — 소셜 신원 연결의 공통 저장 계약", (
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
 
-  it("연결 충돌이 아닌 저장 오류는 바꾸지 않고 그대로 전달한다", async () => {
+  it("저장 오류는 바꾸지 않고 그대로 전달한다", async () => {
     // Given
     const fixture = createAuthOAuthFixture();
     const storageError = new Error("저장 실패");
     const useCase = new LinkOAuthIdentityUseCase({
       ...fixture,
       accountRepository: {
-        findByProviderAccountId: async () => null,
-        createOAuthAccount: async () => {
+        findByUserId: async () => null,
+        nextId: () => fixture.accountRepository.nextId(),
+        save: async () => {
           throw storageError;
         },
       },

@@ -1,4 +1,3 @@
-import type { LinkedAccountReadModel } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import {
   OAuthState,
   type OAuthStatePrimitives,
@@ -7,6 +6,7 @@ import {
   Verification,
   type VerificationPrimitives,
 } from "#api/modules/identity/verifications/domain/verification.aggregate";
+import type { InMemoryLinkedAccountRow } from "#test/doubles/identity/in-memory-linked-accounts.repository";
 
 import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "./session.fixture.js";
 
@@ -49,8 +49,8 @@ export function createOAuthStateFixture(overrides: Partial<OAuthStatePrimitives>
 }
 
 export function createLinkedAccountFixture(
-  overrides: Partial<LinkedAccountReadModel> = {},
-): LinkedAccountReadModel {
+  overrides: Partial<InMemoryLinkedAccountRow> = {},
+): InMemoryLinkedAccountRow {
   return {
     id: 1,
     userId: AUTH_FIXTURE_USER_ID,

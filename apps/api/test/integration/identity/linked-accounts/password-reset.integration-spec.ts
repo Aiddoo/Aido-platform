@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 import type { TestingModule } from "@nestjs/testing";
 import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
@@ -274,8 +275,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const result = resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
       // Then
-      // resetPassword에서 USER_0613 에러
-      await expect(result).rejects.toThrow(ApplicationException);
+      await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.USER_0613 });
     });
 
     it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {

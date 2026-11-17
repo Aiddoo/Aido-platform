@@ -7,9 +7,9 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { LinkedAccountsLogEvent } from "../../../linked-accounts/application/linked-accounts.log-events.js";
 import type { LinkOAuthIdentityUseCase } from "../../../linked-accounts/application/use-cases/link-oauth-identity.use-case.js";
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
-import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
-import { invalidCredentials } from "../../../users/application/users.errors.js";
+import { invalidCredentials, userNotFound } from "../../../users/application/users.errors.js";
 import { OAuthStateLogEvent } from "../oauth-states.log-events.js";
 import type { OAuthStateRepositoryPort } from "../ports/oauth-state.repository.port.js";
 
@@ -20,7 +20,7 @@ export interface LinkOAuthAccountWithCodeCommand {
 }
 
 interface LinkOAuthAccountWithCodeDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "findByIdForUpdate">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "findByExchangeCode" | "save">;
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -39,7 +39,9 @@ export class LinkOAuthAccountWithCodeUseCase {
   async execute(input: LinkOAuthAccountWithCodeCommand): Promise<{ message: string }> {
     const userId = UserId.reconstitute(input.userId);
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.findByIdForUpdate(userId);
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
       const at = this.#dependencies.clock.now();
       const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(
         input.code,

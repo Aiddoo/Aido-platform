@@ -1,9 +1,6 @@
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
-import { linkedAccount, user } from "#api/platform/database/schema/index";
-import { EncryptionService } from "#api/platform/encryption/encryption.service";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { user } from "#api/platform/database/schema/index";
 import { describeLinkedAccountsRepositoryContract } from "#test/contracts/identity/linked-accounts-repository.contract";
-import { DateClock } from "#test/doubles/platform/date-clock";
 import {
   AUTH_FIXTURE_OTHER_USER_ID,
   AUTH_FIXTURE_USER_ID,
@@ -41,33 +38,10 @@ describe("DrizzleLinkedAccountsRepository (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  const encryption = new EncryptionService({
-    key: "test-token-encryption-key-minimum-32-characters-long",
-    salt: undefined,
-  });
-
   function createRepository(): DrizzleLinkedAccountsRepository {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleLinkedAccountsRepository(transactionHost, encryption, new DateClock());
+    return new DrizzleLinkedAccountsRepository(transactionHost);
   }
 
   describeLinkedAccountsRepositoryContract(async () => createRepository());
-
-  it("공급자 refresh 토큰은 암호문으로 저장한다", async () => {
-    // Given
-    const repository = createRepository();
-
-    // When
-    await repository.createOAuthAccount({
-      userId: UserId.reconstitute(AUTH_FIXTURE_USER_ID),
-      provider: "APPLE",
-      providerAccountId: "apple-account",
-      refreshToken: "plain-refresh",
-    });
-    const [row] = await client.select().from(linkedAccount);
-
-    // Then
-    expect(row?.refreshToken).not.toBeNull();
-    expect(row?.refreshToken).not.toBe("plain-refresh");
-  });
 });

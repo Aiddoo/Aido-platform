@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import type { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -40,21 +40,19 @@ class DeferredRehashPasswordHasher extends StubPasswordHasher {
   }
 }
 
-class CasObservingAccountRepository extends InMemoryLinkedAccountsRepository {
-  readonly casSettled = Promise.withResolvers<boolean>();
+// 다음 저장의 결과를 기다린다. 로그인 뒤 rehash 저장은 응답과 따로 끝난다
+class SaveObservingAccountRepository extends InMemoryLinkedAccountsRepository {
+  #nextSave = Promise.withResolvers<boolean>();
 
-  override async updatePasswordIfUnchanged(
-    userId: UserId,
-    expectedPasswordHash: string,
-    passwordHash: string,
-  ): Promise<boolean> {
-    const updated = await super.updatePasswordIfUnchanged(
-      userId,
-      expectedPasswordHash,
-      passwordHash,
-    );
-    this.casSettled.resolve(updated);
-    return updated;
+  get nextSave(): Promise<boolean> {
+    return this.#nextSave.promise;
+  }
+
+  override async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
+    const saved = await super.save(linkedAccounts);
+    this.#nextSave.resolve(saved);
+    this.#nextSave = Promise.withResolvers<boolean>();
+    return saved;
   }
 }
 
@@ -297,7 +295,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     // Given
     const fixture = createAuthCredentialFixture();
     const passwordService = new DeferredRehashPasswordHasher(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
-    const accountRepository = new CasObservingAccountRepository(fixture.accountRepository.all);
+    const accountRepository = new SaveObservingAccountRepository(fixture.accountRepository.all);
     const dependencies = { ...fixture, passwordService, accountRepository };
     const login = await new LoginWithPasswordUseCase(dependencies).execute({
       email: fixture.user.email,
@@ -311,8 +309,9 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       newPassword: "new-password",
       currentSessionId: login.sessionId,
     });
+    const rehashSettled = accountRepository.nextSave;
     passwordService.rehash.resolve("upgraded:old-password");
-    const rehashSaved = await accountRepository.casSettled.promise;
+    const rehashSaved = await rehashSettled;
 
     // Then
     expect(rehashSaved).toBe(false);
@@ -354,7 +353,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     // Given
     const fixture = createAuthCredentialFixture();
     const passwordService = new DeferredRehashPasswordHasher(`digest:${AUTH_CREDENTIAL_PASSWORD}`);
-    const accountRepository = new CasObservingAccountRepository(fixture.accountRepository.all);
+    const accountRepository = new SaveObservingAccountRepository(fixture.accountRepository.all);
     const useCase = new LoginWithPasswordUseCase({
       ...fixture,
       passwordService,
@@ -366,8 +365,9 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
       email: fixture.user.email,
       password: AUTH_CREDENTIAL_PASSWORD,
     });
+    const rehashSettled = accountRepository.nextSave;
     passwordService.rehash.resolve("upgraded:current-password");
-    const rehashSaved = await accountRepository.casSettled.promise;
+    const rehashSaved = await rehashSettled;
 
     // Then
     expect(rehashSaved).toBe(true);

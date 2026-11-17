@@ -13,9 +13,10 @@ import type { SessionPushDeviceReleaserPort } from "../../../sessions/applicatio
 import type { SessionRepositoryPort } from "../../../sessions/application/ports/session.repository.port.js";
 import { SessionId } from "../../../sessions/domain/session-id.vo.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { invalidCredentials, userNotFound } from "../../../users/application/users.errors.js";
-import { socialAccountPasswordUnchangeable } from "../linked-accounts.errors.js";
+import { socialAccountPasswordUnchangeable } from "../../domain/linked-accounts.errors.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../ports/password-hasher.port.js";
@@ -30,10 +31,8 @@ export interface ChangePasswordCommand {
 
 interface ChangePasswordDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
-  readonly accountRepository: Pick<
-    LinkedAccountsRepositoryPort,
-    "findByUserIdAndProvider" | "updatePassword"
-  >;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId" | "save">;
   readonly passwordService: Pick<PasswordHasherPort, "verify" | "hash">;
   readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
   readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
@@ -65,31 +64,30 @@ export class ChangePasswordUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      userId,
-      "CREDENTIAL",
-    );
-    if (account == null || account.password == null || account.password === "") {
+    // argon2 확인·hash는 잠금 밖에서 한다. 저장은 확인한 hash가 그대로일 때만 써서 그사이 바뀌었으면 거절한다
+    const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+    const passwordHash = accounts?.passwordHash;
+    if (accounts == null || passwordHash == null || !accounts.hasPassword()) {
       throw socialAccountPasswordUnchangeable(input.userId);
     }
-
-    const isValid = await this.#dependencies.passwordService.verify(
-      account.password,
-      currentPassword,
-    );
-    if (!isValid) {
+    if (!(await this.#dependencies.passwordService.verify(passwordHash, currentPassword))) {
       throw invalidCredentials();
     }
-
-    const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
+    const now = this.#dependencies.clock.now();
+    accounts.changePassword(await this.#dependencies.passwordService.hash(newPassword), now);
 
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.accountRepository.updatePassword(userId, hashedPassword);
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
+      if (!(await this.#dependencies.accountRepository.save(accounts))) {
+        throw invalidCredentials();
+      }
 
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
         userId,
         reason: REVOKE_REASON.PASSWORD_CHANGED,
-        now: this.#dependencies.clock.now(),
+        now,
         exceptSessionId:
           currentSessionId == null ? undefined : SessionId.reconstitute(currentSessionId),
       });

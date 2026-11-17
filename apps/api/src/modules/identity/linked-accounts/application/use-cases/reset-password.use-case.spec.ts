@@ -2,7 +2,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
@@ -54,12 +53,9 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
 
     // Then
     expect(result.message).toBe("비밀번호가 재설정되었습니다. 다시 로그인해주세요.");
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toMatchObject({ password: `digest:${newPassword}` });
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toMatchObject(
+      { password: `digest:${newPassword}` },
+    );
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ usedAt: AUTH_CREDENTIAL_NOW }),
     ]);
@@ -135,12 +131,9 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toMatchObject({ password: `digest:${AUTH_CREDENTIAL_PASSWORD}` });
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toMatchObject(
+      { password: `digest:${AUTH_CREDENTIAL_PASSWORD}` },
+    );
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ attempts: 1, usedAt: null }),
     ]);
@@ -163,12 +156,9 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toMatchObject({ password: `digest:${newPassword}` });
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toMatchObject(
+      { password: `digest:${newPassword}` },
+    );
     expect(fixture.securityLogRepository.entries).toHaveLength(1);
   });
 });

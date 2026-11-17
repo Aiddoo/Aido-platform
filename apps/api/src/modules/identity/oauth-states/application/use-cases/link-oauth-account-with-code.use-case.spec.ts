@@ -66,7 +66,7 @@ describe("LinkOAuthAccountWithCode — 사용자에게 귀속된 일회용 연�
         { exchangedAt: AUTH_CREDENTIAL_NOW, auditCount: 1, cached: true },
       ]);
       expect(
-        await fixture.accountRepository.findByProviderAccountId("GOOGLE", "provider-account"),
+        fixture.accountRepository.storedByProviderAccountId("GOOGLE", "provider-account"),
       ).toMatchObject({ userId: fixture.user.id });
       expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(false);
       await expect(
@@ -119,6 +119,7 @@ describe("LinkOAuthAccountWithCode — 사용자에게 귀속된 일회용 연�
     const auditError = new Error("감사 저장 실패");
     const linkOAuthIdentity = new LinkOAuthIdentityUseCase({
       accountRepository: fixture.accountRepository,
+      clock: fixture.clock,
       securityLogRepository: {
         create: async () => {
           throw auditError;

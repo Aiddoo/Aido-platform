@@ -1,137 +1,140 @@
-import { accountAlreadyExists } from "#api/modules/identity/linked-accounts/application/linked-accounts.errors";
-import {
-  type LinkedAccountReadModel,
-  LinkedAccountsRepositoryPort,
-  type NewOAuthAccount,
-} from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
+import { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
+import { LinkedAccountId } from "#api/modules/identity/linked-accounts/domain/linked-account-id.vo";
+import type { LinkedAccount } from "#api/modules/identity/linked-accounts/domain/linked-account.entity";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
-import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
+/** `Account` 행과 같은 모양이다. password 칸이 비밀번호 hash다 */
+export interface InMemoryLinkedAccountRow {
+  readonly id: number;
+  readonly userId: string;
+  readonly provider: AccountProvider;
+  readonly providerAccountId: string;
+  readonly password: string | null;
+  readonly createdAt: Temporal.Instant;
+}
+
 export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPort {
-  readonly #accounts = new Map<number, LinkedAccountReadModel>();
+  readonly #rows = new Map<number, InMemoryLinkedAccountRow>();
   #sequence: number;
 
-  constructor(accounts: readonly LinkedAccountReadModel[] = []) {
+  constructor(rows: readonly InMemoryLinkedAccountRow[] = []) {
     super();
-    for (const account of accounts) {
-      this.#accounts.set(account.id, account);
+    for (const row of rows) {
+      this.#rows.set(row.id, row);
     }
-    this.#sequence = Math.max(0, ...this.#accounts.keys());
+    this.#sequence = Math.max(0, ...this.#rows.keys());
   }
 
-  get all(): readonly LinkedAccountReadModel[] {
-    return [...this.#accounts.values()].toSorted((left, right) => left.id - right.id);
+  get all(): readonly InMemoryLinkedAccountRow[] {
+    return [...this.#rows.values()].toSorted((left, right) => left.id - right.id);
   }
 
-  async findByUserIdAndProvider(
-    userId: UserId,
-    provider: AccountProvider,
-  ): Promise<LinkedAccountReadModel | null> {
-    return (
-      this.all.find(
-        (account) => account.userId === userId.value && account.provider === provider,
-      ) ?? null
-    );
-  }
-
-  async findByProviderAccountId(
-    provider: AccountProvider,
-    providerAccountId: string,
-  ): Promise<LinkedAccountReadModel | null> {
-    return (
-      this.all.find(
-        (account) =>
-          account.provider === provider && account.providerAccountId === providerAccountId,
-      ) ?? null
-    );
-  }
-
-  async findAllByUserId(userId: UserId): Promise<LinkedAccountReadModel[]> {
-    return this.all.filter((account) => account.userId === userId.value);
-  }
-
-  async findLinkedAccounts(userId: UserId): Promise<LinkedAccounts> {
-    return LinkedAccounts.reconstitute({
-      userId: userId.value,
-      accounts: (await this.findAllByUserId(userId)).map((account) => ({
-        id: account.id,
-        provider: account.provider,
-        providerAccountId: account.providerAccountId,
-        createdAt: account.createdAt,
-      })),
-    });
-  }
-
-  async createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void> {
-    if (this.#isTaken(userId.value, "CREDENTIAL", userId.value)) {
-      throw accountAlreadyExists();
-    }
-    this.#insert({
-      userId: userId.value,
-      provider: "CREDENTIAL",
-      providerAccountId: userId.value,
-      password: hashedPassword,
-    });
-  }
-
-  async updatePassword(userId: UserId, hashedPassword: string): Promise<void> {
-    const account = await this.findByUserIdAndProvider(userId, "CREDENTIAL");
-    if (account != null) {
-      this.#accounts.set(account.id, { ...account, password: hashedPassword });
-    }
-  }
-
-  async updatePasswordIfUnchanged(
-    userId: UserId,
-    expectedPasswordHash: string,
-    passwordHash: string,
-  ): Promise<boolean> {
-    const account = await this.findByUserIdAndProvider(userId, "CREDENTIAL");
-    if (account == null || account.password !== expectedPasswordHash) {
-      return false;
-    }
-    this.#accounts.set(account.id, { ...account, password: passwordHash });
-    return true;
-  }
-
-  async createOAuthAccount(account: NewOAuthAccount): Promise<void> {
-    if (this.#isTaken(account.userId.value, account.provider, account.providerAccountId)) {
-      throw new IdentityPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
-    }
-    this.#insert({
-      userId: account.userId.value,
-      provider: account.provider,
-      providerAccountId: account.providerAccountId,
-      password: null,
-    });
-  }
-
-  async deleteAccount(userId: UserId, provider: AccountProvider): Promise<void> {
-    const account = await this.findByUserIdAndProvider(userId, provider);
-    if (account != null) {
-      this.#accounts.delete(account.id);
-    }
-  }
-
-  // Account_userId_provider_key·Account_provider_providerAccountId_key 두 유일 제약과 같다
-  #isTaken(userId: string, provider: AccountProvider, providerAccountId: string): boolean {
-    return this.all.some(
-      (account) =>
-        account.provider === provider &&
-        (account.userId === userId || account.providerAccountId === providerAccountId),
-    );
-  }
-
-  #insert(account: Omit<LinkedAccountReadModel, "id" | "createdAt">): void {
+  seed(account: {
+    readonly userId: string;
+    readonly provider: AccountProvider;
+    readonly providerAccountId: string;
+    readonly password?: string | null;
+  }): void {
     this.#sequence += 1;
-    this.#accounts.set(this.#sequence, {
+    this.#rows.set(this.#sequence, {
+      password: null,
       ...account,
       id: this.#sequence,
       createdAt: IN_MEMORY_ACCOUNT_CREATED_AT,
     });
+  }
+
+  storedByProvider(userId: string, provider: AccountProvider): InMemoryLinkedAccountRow | null {
+    return this.all.find((row) => row.userId === userId && row.provider === provider) ?? null;
+  }
+
+  storedByProviderAccountId(
+    provider: AccountProvider,
+    providerAccountId: string,
+  ): InMemoryLinkedAccountRow | null {
+    return (
+      this.all.find(
+        (row) => row.provider === provider && row.providerAccountId === providerAccountId,
+      ) ?? null
+    );
+  }
+
+  async nextId(): Promise<LinkedAccountId> {
+    this.#sequence += 1;
+    return LinkedAccountId.reconstitute(this.#sequence);
+  }
+
+  async findByUserId(userId: UserId): Promise<LinkedAccounts | null> {
+    const rows = this.all.filter((row) => row.userId === userId.value);
+    if (rows.length === 0) {
+      return null;
+    }
+    return LinkedAccounts.reconstitute({
+      userId: userId.value,
+      accounts: rows.map((row) => ({
+        id: row.id,
+        provider: row.provider,
+        providerAccountId: row.providerAccountId,
+        passwordHash: row.password,
+        createdAt: row.createdAt,
+        updatedAt: row.createdAt,
+      })),
+    });
+  }
+
+  async findUserIdByProviderAccountId(
+    provider: AccountProvider,
+    providerAccountId: string,
+  ): Promise<UserId | null> {
+    const row = this.all.find(
+      (candidate) =>
+        candidate.provider === provider && candidate.providerAccountId === providerAccountId,
+    );
+    return row == null ? null : UserId.reconstitute(row.userId);
+  }
+
+  async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
+    const userId = linkedAccounts.id.value;
+    for (const account of linkedAccounts.unlinkedSinceLoad()) {
+      if (!this.#rows.delete(account.id.value)) {
+        return false;
+      }
+    }
+    for (const account of linkedAccounts.linkedSinceLoad()) {
+      if (this.#isTaken(userId, account)) {
+        return false;
+      }
+      this.#rows.set(account.id.value, {
+        id: account.id.value,
+        userId,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        password: account.passwordHash,
+        createdAt: account.createdAt,
+      });
+    }
+    const changed = linkedAccounts.passwordChangedSinceLoad();
+    if (changed == null) {
+      return true;
+    }
+    const stored = this.#rows.get(changed.id.value);
+    if (stored == null || stored.password !== changed.persistedPasswordHash) {
+      return false;
+    }
+    this.#rows.set(stored.id, { ...stored, password: changed.passwordHash });
+    return true;
+  }
+
+  // Account_userId_provider_key·Account_provider_providerAccountId_key 두 유일 제약과 같다
+  #isTaken(userId: string, account: LinkedAccount): boolean {
+    return this.all.some(
+      (row) =>
+        row.provider === account.provider &&
+        (row.userId === userId || row.providerAccountId === account.providerAccountId),
+    );
   }
 }

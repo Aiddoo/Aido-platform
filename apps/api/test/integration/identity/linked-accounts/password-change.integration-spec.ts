@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 import type { TestingModule } from "@nestjs/testing";
 import { omit } from "es-toolkit";
 
@@ -236,7 +237,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       });
 
       // Then
-      await expect(result).rejects.toThrow(ApplicationException);
+      await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.USER_0613 });
     });
 
     it("SecurityLog에 PASSWORD_CHANGED 이벤트와 metadata가 기록된다", async () => {

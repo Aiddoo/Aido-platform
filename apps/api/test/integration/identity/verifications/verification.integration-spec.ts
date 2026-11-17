@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { vi } from "vitest";
 
 import { ResetPasswordUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/reset-password.use-case";
+import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
 import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
@@ -110,6 +111,23 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     return client.query.verification.findFirst({ where: { id } });
   }
 
+  async function givenCredentialAccount(passwordHash: string): Promise<LinkedAccounts> {
+    const accounts = LinkedAccounts.create(UserId.reconstitute(userId));
+    accounts.setPassword({ id: await accountRepository.nextId(), passwordHash, now: atInstant });
+    await accountRepository.save(accounts);
+    const saved = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    if (saved == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
+    return saved;
+  }
+
+  async function storedPasswordHash(): Promise<string | null> {
+    return (
+      (await accountRepository.findByUserId(UserId.reconstitute(userId)))?.passwordHash ?? null
+    );
+  }
+
   async function competeForRow<T>(
     table: "Verification" | "Account",
     id: number,
@@ -155,10 +173,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
   it("같은 OTP의 동시 비밀번호 재설정은 하나만 성공하고 승자의 비밀번호와 감사 기록을 저장한다", async () => {
     // Given
-    await accountRepository.createCredentialAccount(
-      UserId.reconstitute(userId),
-      await passwordService.hash("OriginalPassword123!"),
-    );
+    await givenCredentialAccount(await passwordService.hash("OriginalPassword123!"));
     const verification = await givenVerification();
     const nextPasswords = ["FirstNewPassword123!", "SecondNewPassword123!"];
 
@@ -171,14 +186,10 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     const rejected = results.find((result) => result.status === "rejected");
     expect(rejected?.reason).toMatchObject({ errorCode: "VERIFY_0751" });
-    const account = await accountRepository.findByUserIdAndProvider(
-      UserId.reconstitute(userId),
-      "CREDENTIAL",
-    );
-    if (account?.password === null || account?.password === undefined) {
+    const passwordHash = await storedPasswordHash();
+    if (passwordHash == null) {
       throw new Error("성공한 요청의 credential 비밀번호가 저장되지 않았습니다.");
     }
-    const passwordHash = account.password;
     const matches = await Promise.all(
       nextPasswords.map((password) => passwordService.verify(passwordHash, password)),
     );
@@ -313,53 +324,40 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
 
   it("느린 로그인 rehash는 먼저 저장된 새 비밀번호를 덮어쓰지 않는다", async () => {
     // Given
-    await accountRepository.createCredentialAccount(
-      UserId.reconstitute(userId),
-      "old-password-hash",
-    );
-    await accountRepository.updatePassword(UserId.reconstitute(userId), "new-password-hash");
+    await givenCredentialAccount("old-password-hash");
+    const slowRehash = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    const changed = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    slowRehash?.changePassword("slow-rehash", atInstant);
+    changed?.changePassword("new-password-hash", atInstant);
+    if (slowRehash == null || changed == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
+    await accountRepository.save(changed);
 
     // When
-    const updated = await accountRepository.updatePasswordIfUnchanged(
-      UserId.reconstitute(userId),
-      "old-password-hash",
-      "slow-rehash",
-    );
+    const saved = await accountRepository.save(slowRehash);
 
     // Then
-    expect(updated).toBe(false);
-    expect(
-      (await accountRepository.findByUserIdAndProvider(UserId.reconstitute(userId), "CREDENTIAL"))
-        ?.password,
-    ).toBe("new-password-hash");
+    expect(saved).toBe(false);
+    expect(await storedPasswordHash()).toBe("new-password-hash");
   });
 
   it("같은 기존 해시의 두 rehash 중 하나만 변경하고 실제 승자의 해시를 저장한다", async () => {
     // Given
-    await accountRepository.createCredentialAccount(
-      UserId.reconstitute(userId),
-      "old-password-hash",
-    );
-    const account = await accountRepository.findByUserIdAndProvider(
-      UserId.reconstitute(userId),
-      "CREDENTIAL",
-    );
-    if (account == null) {
+    const loaded = await givenCredentialAccount("old-password-hash");
+    const accountId = loaded.accounts.at(0)?.id.value ?? 0;
+    const first = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    const second = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    if (first == null || second == null) {
       throw new Error("credential 계정이 만들어지지 않았습니다.");
     }
+    first.changePassword("first-rehash", atInstant);
+    second.changePassword("second-rehash", atInstant);
 
     // When
-    const results = await competeForRow("Account", account.id, () => [
-      accountRepository.updatePasswordIfUnchanged(
-        UserId.reconstitute(userId),
-        "old-password-hash",
-        "first-rehash",
-      ),
-      accountRepository.updatePasswordIfUnchanged(
-        UserId.reconstitute(userId),
-        "old-password-hash",
-        "second-rehash",
-      ),
+    const results = await competeForRow("Account", accountId, () => [
+      accountRepository.save(first),
+      accountRepository.save(second),
     ]);
 
     // Then
@@ -370,9 +368,6 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       return result.value;
     });
     expect(updated.filter(Boolean)).toHaveLength(1);
-    expect(
-      (await accountRepository.findByUserIdAndProvider(UserId.reconstitute(userId), "CREDENTIAL"))
-        ?.password,
-    ).toBe(updated[0] ? "first-rehash" : "second-rehash");
+    expect(await storedPasswordHash()).toBe(updated[0] ? "first-rehash" : "second-rehash");
   });
 });

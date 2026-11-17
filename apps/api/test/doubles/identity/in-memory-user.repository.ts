@@ -19,13 +19,13 @@ export class InMemoryUserRepository extends UserRepositoryPort {
   readonly #users = new Map<string, UserPrimitives>();
   readonly #profiles = new Map<string, UserProfile>();
   // 프로필 조회의 연결 계정 목록은 Account 테이블에서 오므로 같은 시나리오의 계정 저장소를 읽는다
-  readonly #accounts: Pick<LinkedAccountsRepositoryPort, "findAllByUserId"> | null;
+  readonly #accounts: Pick<LinkedAccountsRepositoryPort, "findByUserId"> | null;
   #sequence = 0;
 
   constructor(
     users: readonly User[] = [],
     options: {
-      readonly accounts?: Pick<LinkedAccountsRepositoryPort, "findAllByUserId">;
+      readonly accounts?: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
       readonly profiles?: ReadonlyMap<string, UserProfile>;
     } = {},
   ) {
@@ -70,7 +70,8 @@ export class InMemoryUserRepository extends UserRepositoryPort {
     if (user == null) {
       return null;
     }
-    const accounts = this.#accounts == null ? [] : await this.#accounts.findAllByUserId(id);
+    const linkedAccounts = await this.#accounts?.findByUserId(id);
+    const accounts = linkedAccounts?.accounts ?? [];
     return {
       id: user.id,
       email: user.email,

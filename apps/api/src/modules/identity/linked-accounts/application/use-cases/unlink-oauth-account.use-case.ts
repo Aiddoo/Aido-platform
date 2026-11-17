@@ -8,8 +8,10 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
-import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
+import { userNotFound } from "../../../users/application/users.errors.js";
+import { linkedAccountNotFound } from "../linked-accounts.errors.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
 
@@ -20,11 +22,8 @@ export interface UnlinkOAuthAccountCommand {
 }
 
 interface UnlinkOAuthAccountDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "findByIdForUpdate">;
-  readonly accountRepository: Pick<
-    LinkedAccountsRepositoryPort,
-    "findLinkedAccounts" | "deleteAccount"
-  >;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId" | "save">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
@@ -42,10 +41,16 @@ export class UnlinkOAuthAccountUseCase {
     const { provider, metadata } = input;
     const userId = UserId.reconstitute(input.userId);
     await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.findByIdForUpdate(userId);
-      const accounts = await this.#dependencies.accountRepository.findLinkedAccounts(userId);
-      accounts.unlink(provider);
-      await this.#dependencies.accountRepository.deleteAccount(userId, provider);
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
+      const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+      if (accounts == null || !accounts.unlink(provider)) {
+        throw linkedAccountNotFound();
+      }
+      if (!(await this.#dependencies.accountRepository.save(accounts))) {
+        throw linkedAccountNotFound();
+      }
       await this.#dependencies.securityLogRepository.create({
         userId,
         event: SECURITY_EVENT.OAUTH_UNLINKED,

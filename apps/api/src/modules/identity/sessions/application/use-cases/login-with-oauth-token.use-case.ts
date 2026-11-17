@@ -1,13 +1,17 @@
 import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { oauthAccountAlreadyLinked } from "#api/modules/identity/linked-accounts/application/linked-accounts.errors";
+import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import {
   TRUSTED_EMAIL_PROVIDERS,
   type AccountProvider,
 } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { oauthAccountAlreadyLinked } from "#api/modules/identity/linked-accounts/domain/linked-accounts.errors";
 import { LOGIN_FAILURE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
-import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
+import {
+  IdentityPersistenceConflict,
+  oauthAccountLinkConflict,
+} from "#api/modules/identity/shared/domain/identity.errors";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { emailAlreadyRegistered } from "#api/modules/identity/users/application/users.errors";
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
@@ -20,10 +24,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { unsupportedOAuthProvider } from "../../../linked-accounts/application/linked-accounts.errors.js";
-import type {
-  LinkedAccountReadModel,
-  LinkedAccountsRepositoryPort,
-} from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
+import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import type {
   OAuthIdentityProviderRegistryPort,
   SocialLoginOptions,
@@ -31,6 +32,7 @@ import type {
 } from "../../../linked-accounts/application/ports/oauth-identity-provider.port.js";
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import type { ProvisionUserUseCase } from "../../../users/application/use-cases/provision-user.use-case.js";
@@ -53,13 +55,11 @@ export interface LoginWithOAuthTokenCommand {
 
 interface LoginWithOAuthTokenDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
-  readonly userRepository: Pick<
-    UserRepositoryPort,
-    "findById" | "findByEmail" | "findByIdForUpdate"
-  >;
+  readonly userRepository: Pick<UserRepositoryPort, "findById" | "findByEmail">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly accountRepository: Pick<
     LinkedAccountsRepositoryPort,
-    "findByProviderAccountId" | "createOAuthAccount"
+    "findUserIdByProviderAccountId" | "findByUserId" | "nextId" | "save"
   >;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly loginAttemptRepository: Pick<LoginAttemptRepositoryPort, "create">;
@@ -128,12 +128,12 @@ export class LoginWithOAuthTokenUseCase {
     const userAgent = options.metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;
     const request = { ip, userAgent, provider };
 
-    const existingAccount = await accountRepository.findByProviderAccountId(
+    const linkedUserId = await accountRepository.findUserIdByProviderAccountId(
       provider,
       providerAccountId,
     );
-    if (existingAccount != null) {
-      return this.#loginLinkedUser(existingAccount.userId, request);
+    if (linkedUserId != null) {
+      return this.#loginLinkedUser(linkedUserId.value, request);
     }
 
     if (email) {
@@ -148,9 +148,13 @@ export class LoginWithOAuthTokenUseCase {
           );
           return { ...loginResult, isNewUser: false };
         } catch (error) {
-          const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
+          const linkedMeanwhile = await this.#findUserLinkedMeanwhile(
+            error,
+            provider,
+            providerAccountId,
+          );
           // 이 사용자에게 같은 공급자의 다른 계정이 있거나 다른 사용자에게 연결됐으면 진짜 충돌이다
-          if (linked?.userId !== existingUser.id.value) {
+          if (linkedMeanwhile == null || !linkedMeanwhile.equals(existingUser.id)) {
             throw oauthAccountAlreadyLinked(provider, providerAccountId);
           }
           return this.#loginLinkedUser(existingUser.id.value, request);
@@ -170,12 +174,16 @@ export class LoginWithOAuthTokenUseCase {
         locale: options.metadata?.locale,
       });
     } catch (error) {
-      const linked = await this.#findAccountLinkedMeanwhile(error, provider, providerAccountId);
-      if (linked == null) {
+      const linkedMeanwhile = await this.#findUserLinkedMeanwhile(
+        error,
+        provider,
+        providerAccountId,
+      );
+      if (linkedMeanwhile == null) {
         // 그사이 다른 가입이 이메일을 가져갔다. 1.15.0이 User_email_key 제약에 주던 응답이다
         throw emailAlreadyRegistered(effectiveEmail);
       }
-      return this.#loginLinkedUser(linked.userId, request);
+      return this.#loginLinkedUser(linkedMeanwhile.value, request);
     }
     logger.log({ event: UserLogEvent.USER_REGISTERED, userId: newUser.id, provider });
 
@@ -210,15 +218,15 @@ export class LoginWithOAuthTokenUseCase {
 
   // 같은 공급자 계정의 첫 로그인이 동시에 오면 늦은 요청은 사용자·계정 INSERT의 유일 제약에 걸린다.
   // 먼저 커밋한 요청이 만든 연결을 한 번만 다시 읽어 그 사용자로 이어서 로그인하게 한다
-  async #findAccountLinkedMeanwhile(
+  async #findUserLinkedMeanwhile(
     error: unknown,
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountReadModel | null> {
+  ): Promise<UserId | null> {
     if (!(error instanceof IdentityPersistenceConflict)) {
       throw error;
     }
-    return this.#dependencies.accountRepository.findByProviderAccountId(
+    return this.#dependencies.accountRepository.findUserIdByProviderAccountId(
       provider,
       providerAccountId,
     );
@@ -276,12 +284,25 @@ export class LoginWithOAuthTokenUseCase {
     providerAccountId: string,
     options: { ip: string; userAgent: string },
   ): Promise<void> {
-    await this.#dependencies.userRepository.findByIdForUpdate(userId);
-    await this.#dependencies.accountRepository.createOAuthAccount({
-      userId,
+    const { accountRepository, userMutationLock } = this.#dependencies;
+    if (!(await userMutationLock.lockById(userId))) {
+      throw userNotFound(userId.value);
+    }
+    const accounts =
+      (await accountRepository.findByUserId(userId)) ?? LinkedAccounts.create(userId);
+    const linked = accounts.link({
+      id: await accountRepository.nextId(),
       provider,
       providerAccountId,
+      now: this.#dependencies.clock.now(),
     });
+    // 같은 자동 연결 로그인이 먼저 커밋했으면 이미 연결돼 있어 그대로 로그인한다
+    if (!linked) {
+      return;
+    }
+    if (!(await accountRepository.save(accounts))) {
+      throw oauthAccountLinkConflict();
+    }
 
     await this.#dependencies.securityLogRepository.create({
       userId,

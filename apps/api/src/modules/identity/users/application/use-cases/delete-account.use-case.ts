@@ -30,7 +30,7 @@ export interface DeleteAccountCommand {
 
 interface DeleteAccountDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findById" | "save">;
-  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findAllByUserId">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
   readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
   readonly passwordService: Pick<PasswordHasherPort, "verify">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
@@ -59,19 +59,16 @@ export class DeleteAccountUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const accounts = await this.#dependencies.accountRepository.findAllByUserId(userId);
-    const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
-    if (credentialAccount != null) {
+    const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+    if (accounts?.hasCredentialAccount()) {
       if (!input.password) {
         throw deletionPasswordRequired();
       }
-      if (!credentialAccount.password) {
+      const passwordHash = accounts.passwordHash;
+      if (passwordHash == null || !accounts.hasPassword()) {
         throw invalidCredentials();
       }
-      const isValid = await this.#dependencies.passwordService.verify(
-        credentialAccount.password,
-        input.password,
-      );
+      const isValid = await this.#dependencies.passwordService.verify(passwordHash, input.password);
       if (!isValid) {
         throw invalidCredentials();
       }
@@ -95,7 +92,7 @@ export class DeleteAccountUseCase {
         metadata: {
           reason: input.reason ?? null,
           gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-          providers: accounts.map((account) => account.provider),
+          providers: (accounts?.accounts ?? []).map((account) => account.provider),
         },
       });
       return revokedSessionIds;

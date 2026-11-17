@@ -1,9 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import type { LinkedAccountReadModel } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
-import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
+import {
+  type InMemoryLinkedAccountRow,
+  InMemoryLinkedAccountsRepository,
+} from "#test/doubles/identity/in-memory-linked-accounts.repository";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
@@ -32,7 +34,7 @@ const userId = AUTH_FIXTURE_USER_ID;
 const password = "CorrectPassword1!";
 const allSessionIds = ["my-session-1", "my-session-2", "expired-session", "other-session"];
 
-function accountOf(provider: AccountProvider): LinkedAccountReadModel {
+function accountOf(provider: AccountProvider): InMemoryLinkedAccountRow {
   return createLinkedAccountFixture({
     provider,
     password: provider === "CREDENTIAL" ? `digest:${password}` : null,
@@ -48,7 +50,7 @@ class FailingSecurityLogRepository extends InMemorySecurityLogRepository {
 describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", () => {
   function given(
     options: {
-      readonly accounts?: readonly LinkedAccountReadModel[];
+      readonly accounts?: readonly InMemoryLinkedAccountRow[];
       readonly users?: readonly User[];
       readonly securityLogRepository?: InMemorySecurityLogRepository;
     } = {},

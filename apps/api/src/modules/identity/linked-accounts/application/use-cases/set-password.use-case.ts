@@ -4,6 +4,7 @@ import type { RequestMetadata } from "#api/modules/identity/shared/domain/reques
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { accountDeleted } from "#api/modules/identity/users/application/users.errors";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -12,7 +13,8 @@ import type { UserProfileInvalidatorPort } from "../../../users/application/port
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { userNotFound } from "../../../users/application/users.errors.js";
 import type { ConsumeVerificationCodeUseCase } from "../../../verifications/application/use-cases/consume-verification-code.use-case.js";
-import { passwordAlreadySet } from "../linked-accounts.errors.js";
+import { LinkedAccounts } from "../../domain/linked-accounts.aggregate.js";
+import { accountAlreadyExists, passwordAlreadySet } from "../linked-accounts.errors.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../ports/password-hasher.port.js";
@@ -25,17 +27,17 @@ export interface SetPasswordCommand {
 }
 
 interface SetPasswordDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "findById"> &
-    Pick<UserRepositoryPort, "findByIdForUpdate">;
+  readonly userRepository: Pick<UserRepositoryPort, "findById" | "findByIdForUpdate">;
   readonly accountRepository: Pick<
     LinkedAccountsRepositoryPort,
-    "findByUserIdAndProvider" | "createCredentialAccount"
+    "findByUserId" | "nextId" | "save"
   >;
   readonly passwordService: Pick<PasswordHasherPort, "hash">;
   readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -60,17 +62,15 @@ export class SetPasswordUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const existingAccount = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      userId,
-      "CREDENTIAL",
-    );
-    if (existingAccount != null) {
+    const { accountRepository } = this.#dependencies;
+    if ((await accountRepository.findByUserId(userId))?.hasCredentialAccount()) {
       throw passwordAlreadySet(input.userId);
     }
 
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
 
     await this.#dependencies.unitOfWork.run(async () => {
+      // 사용자 잠금(UserMutationLockPort와 같은 행 잠금)을 잡으며 그사이 탈퇴했는지 다시 본다
       const lockedUser = await this.#dependencies.userRepository.findByIdForUpdate(userId);
       if (lockedUser == null) {
         throw userNotFound(input.userId);
@@ -78,11 +78,14 @@ export class SetPasswordUseCase {
       if (lockedUser.isDeleted) {
         throw accountDeleted(lockedUser.id.value);
       }
-      const currentAccount = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-        userId,
-        "CREDENTIAL",
-      );
-      if (currentAccount != null) {
+      const accounts =
+        (await accountRepository.findByUserId(userId)) ?? LinkedAccounts.create(userId);
+      const passwordSet = accounts.setPassword({
+        id: await accountRepository.nextId(),
+        passwordHash: hashedPassword,
+        now: this.#dependencies.clock.now(),
+      });
+      if (!passwordSet) {
         throw passwordAlreadySet(input.userId);
       }
       await this.#dependencies.consumeVerificationCode.execute({
@@ -91,7 +94,10 @@ export class SetPasswordUseCase {
         type: "PASSWORD_SETUP",
       });
 
-      await this.#dependencies.accountRepository.createCredentialAccount(userId, hashedPassword);
+      // Account_userId_provider_key·Account_provider_providerAccountId_key: 출시 앱이 받던 USER_0604
+      if (!(await accountRepository.save(accounts))) {
+        throw accountAlreadyExists();
+      }
 
       await this.#dependencies.securityLogRepository.create({
         userId,

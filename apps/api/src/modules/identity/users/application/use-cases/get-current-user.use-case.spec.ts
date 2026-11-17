@@ -25,8 +25,8 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     // Given
     const fixture = given({ pending: true });
     await fixture.userRepository.createProfile(UserId.reconstitute(fixture.user.id), {});
-    await fixture.accountRepository.createOAuthAccount({
-      userId: UserId.reconstitute(fixture.user.id),
+    fixture.accountRepository.seed({
+      userId: fixture.user.id,
       provider: "GOOGLE",
       providerAccountId: "google-account",
     });

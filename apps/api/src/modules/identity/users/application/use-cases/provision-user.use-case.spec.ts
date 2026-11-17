@@ -61,7 +61,6 @@ describe("ProvisionUser — 신규 계정과 기본 설정 생성", () => {
         kind: "oauth",
         provider: "GOOGLE",
         providerAccountId: "google-account-123",
-        refreshToken: "social-refresh-token",
       },
       profile: { name: "소셜 사용자", profileImage: "https://example.com/avatar.png" },
       consent,

@@ -1,7 +1,12 @@
 import type { UserRole } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
+import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { oauthAccountLinkConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import type { UserStatus } from "#api/modules/identity/users/domain/users.constants";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { type LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
@@ -15,12 +20,7 @@ import { type UserRepositoryPort } from "../ports/user.repository.port.js";
 /** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 type ProvisionAccount =
   | { kind: "credential"; hashedPassword: string }
-  | {
-      kind: "oauth";
-      provider: AccountProvider;
-      providerAccountId: string;
-      refreshToken?: string;
-    };
+  | { kind: "oauth"; provider: AccountProvider; providerAccountId: string };
 
 export interface ProvisionUserCommand {
   email: string;
@@ -53,12 +53,10 @@ export interface ProvisionedUser {
  */
 interface ProvisionUserDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "create" | "createProfile">;
-  readonly accountRepository: Pick<
-    LinkedAccountsRepositoryPort,
-    "createCredentialAccount" | "createOAuthAccount"
-  >;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "nextId" | "save">;
   readonly seeder: UserProvisioningSeederPort;
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "enrollNewUser">;
+  readonly clock: ClockPort;
 }
 
 export class ProvisionUserUseCase {
@@ -75,23 +73,7 @@ export class ProvisionUserUseCase {
       emailVerifiedAt: input.emailVerifiedAt,
     });
 
-    const account = input.account;
-    switch (account.kind) {
-      case "credential":
-        await this.#dependencies.accountRepository.createCredentialAccount(
-          user.id,
-          account.hashedPassword,
-        );
-        break;
-      case "oauth":
-        await this.#dependencies.accountRepository.createOAuthAccount({
-          userId: user.id,
-          provider: account.provider,
-          providerAccountId: account.providerAccountId,
-          refreshToken: account.refreshToken,
-        });
-        break;
-    }
+    await this.#linkFirstAccount(user.id, input.account);
 
     await this.#dependencies.userRepository.createProfile(user.id, input.profile);
 
@@ -103,5 +85,24 @@ export class ProvisionUserUseCase {
     await this.#dependencies.retentionEnroller.enrollNewUser(user.id, input.status === "ACTIVE");
 
     return { id: user.id.value, email: user.email, userTag: user.userTag, role: user.role };
+  }
+
+  async #linkFirstAccount(userId: UserId, account: ProvisionAccount): Promise<void> {
+    const { accountRepository, clock } = this.#dependencies;
+    const accounts = LinkedAccounts.create(userId);
+    const id = await accountRepository.nextId();
+    const now = clock.now();
+    match(account)
+      .with({ kind: "credential" }, ({ hashedPassword }) =>
+        accounts.setPassword({ id, passwordHash: hashedPassword, now }),
+      )
+      .with({ kind: "oauth" }, ({ provider, providerAccountId }) =>
+        accounts.link({ id, provider, providerAccountId, now }),
+      )
+      .exhaustive();
+    // 새 사용자라 공급자 계정 유일 제약에만 걸린다. 먼저 커밋한 같은 첫 로그인을 부르는 쪽이 다시 읽는다
+    if (!(await accountRepository.save(accounts))) {
+      throw oauthAccountLinkConflict();
+    }
   }
 }

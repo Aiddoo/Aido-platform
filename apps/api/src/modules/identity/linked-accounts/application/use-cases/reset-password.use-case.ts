@@ -10,10 +10,11 @@ import type { SessionCachePort } from "../../../sessions/application/ports/sessi
 import type { SessionPushDeviceReleaserPort } from "../../../sessions/application/ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../../../sessions/application/ports/session.repository.port.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import type { ConsumeVerificationCodeUseCase } from "../../../verifications/application/use-cases/consume-verification-code.use-case.js";
 import { invalidVerificationCode } from "../../../verifications/application/verifications.errors.js";
-import { socialAccountPasswordUnchangeable } from "../linked-accounts.errors.js";
+import { socialAccountPasswordUnchangeable } from "../../domain/linked-accounts.errors.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../ports/password-hasher.port.js";
@@ -26,10 +27,8 @@ export interface ResetPasswordCommand {
 
 interface ResetPasswordDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
-  readonly accountRepository: Pick<
-    LinkedAccountsRepositoryPort,
-    "findByUserIdAndProvider" | "updatePassword"
-  >;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId" | "save">;
   readonly passwordService: Pick<PasswordHasherPort, "hash">;
   readonly consumeVerificationCode: Pick<ConsumeVerificationCodeUseCase, "execute">;
   readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
@@ -58,11 +57,9 @@ export class ResetPasswordUseCase {
       throw accountDeleted(user.id.value);
     }
 
-    const account = await this.#dependencies.accountRepository.findByUserIdAndProvider(
-      user.id,
-      "CREDENTIAL",
-    );
-    if (account == null) {
+    const { accountRepository } = this.#dependencies;
+    // 코드를 확인하기 전에 거절해 소셜 전용 계정은 코드를 쓰지 않는다
+    if (!(await accountRepository.findByUserId(user.id))?.hasCredentialAccount()) {
       throw socialAccountPasswordUnchangeable(user.id.value);
     }
 
@@ -75,12 +72,24 @@ export class ResetPasswordUseCase {
         type: "PASSWORD_RESET",
       });
 
-      await this.#dependencies.accountRepository.updatePassword(user.id, hashedPassword);
+      // 재설정은 지금 비밀번호를 몰라도 되므로 잠근 뒤 다시 읽은 hash 위에 바꾼다
+      if (!(await this.#dependencies.userMutationLock.lockById(user.id))) {
+        throw invalidVerificationCode();
+      }
+      const accounts = await accountRepository.findByUserId(user.id);
+      const now = this.#dependencies.clock.now();
+      if (accounts == null) {
+        throw socialAccountPasswordUnchangeable(user.id.value);
+      }
+      accounts.changePassword(hashedPassword, now);
+      if (!(await accountRepository.save(accounts))) {
+        throw socialAccountPasswordUnchangeable(user.id.value);
+      }
 
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
         userId: user.id,
         reason: REVOKE_REASON.PASSWORD_RESET,
-        now: this.#dependencies.clock.now(),
+        now,
       });
 
       await this.#dependencies.securityLogRepository.create({

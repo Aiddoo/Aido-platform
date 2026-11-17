@@ -8,8 +8,8 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { OAuthIdentityProviderRegistryPort } from "../linked-accounts/application/ports/oauth-identity-provider.port.js";
 import { LinkOAuthIdentityUseCase } from "../linked-accounts/application/use-cases/link-oauth-identity.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "../sessions/application/use-cases/login-with-oauth-token.use-case.js";
+import { UserMutationLockPort } from "../users/application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "../users/application/ports/user-profile-invalidator.port.js";
-import { UserRepositoryPort } from "../users/application/ports/user.repository.port.js";
 import { NotifyOAuthSignupUseCase } from "../users/application/use-cases/notify-oauth-signup.use-case.js";
 import { OAuthRuntimeConfigPort } from "./application/ports/oauth-runtime-config.port.js";
 import { OAuthStateRepositoryPort } from "./application/ports/oauth-state.repository.port.js";
@@ -60,7 +60,7 @@ export const exchangeOAuthCodeProvider = provideUseCase(ExchangeOAuthCodeUseCase
 });
 
 export const linkOAuthAccountWithCodeProvider = provideUseCase(LinkOAuthAccountWithCodeUseCase, {
-  userRepository: UserRepositoryPort,
+  userMutationLock: UserMutationLockPort,
   oauthStateRepository: OAuthStateRepositoryPort,
   linkOAuthIdentity: LinkOAuthIdentityUseCase,
   unitOfWork: UnitOfWorkPort,

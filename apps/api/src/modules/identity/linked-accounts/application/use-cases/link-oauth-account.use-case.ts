@@ -5,9 +5,9 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
-import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
-import { invalidCredentials } from "../../../users/application/users.errors.js";
+import { invalidCredentials, userNotFound } from "../../../users/application/users.errors.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { OAuthIdentityProviderRegistryPort } from "../ports/oauth-identity-provider.port.js";
 import type { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
@@ -22,7 +22,7 @@ export interface LinkOAuthAccountCommand {
 }
 
 interface LinkOAuthAccountDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "findByIdForUpdate">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -49,7 +49,9 @@ export class LinkOAuthAccountUseCase {
     }
     const profile = await strategy.verifyToken(token, input.nonce);
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.findByIdForUpdate(userId);
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
       return this.#dependencies.linkOAuthIdentity.execute({
         userId: input.userId,
         provider: input.provider,

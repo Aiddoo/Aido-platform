@@ -103,22 +103,26 @@
 
 ## linked-accounts
 
-| 용어             | 코드                                                     | 뜻                                                                                                                                                                               |
-| ---------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 로그인 수단 묶음 | `LinkedAccounts`(Aggregate), `ListLinkedAccountsUseCase` | 한 사용자의 이메일·소셜 계정(`Account` 행) 모음. id는 `UserId`이고 마지막 하나는 끊을 수 없다                                                                                    |
-| 소셜 연결        | `LinkOAuthAccountUseCase`, `LinkOAuthIdentityUseCase`    | 로그인한 계정에 공급자 계정을 더한다. 공급자 계정이 이미 누군가에게 연결됐으면 `KAKAO_0306`·`APPLE_0355`·`GOOGLE_0405`·`NAVER_0455`                                              |
-| 자동 연결        | `TRUSTED_EMAIL_PROVIDERS`                                | GOOGLE·APPLE 로그인 이메일이 기존 계정과 같으면 그 계정에 바로 잇는다. KAKAO·NAVER는 `SOCIAL_0206`으로 기존 계정에서 먼저 연결하게 한다                                          |
-| 연결 해제        | `UnlinkOAuthAccountUseCase`, `unlink(provider)`          | 사용자 잠금 아래에서 하나를 빼고 뺀 계정을 돌려준다. 없는 공급자 `USER_0603`, 마지막 하나 `USER_0610`                                                                            |
-| 비밀번호         | `ARGON2_CONFIG`, `needsRehash`                           | `CREDENTIAL` 계정에 argon2id hash로 둔다. 로그인 성공 뒤 설정이 바뀐 hash는 응답과 따로, 그사이 바뀌지 않았을 때만 다시 만든다(`updatePasswordIfUnchanged`)                      |
-| 비밀번호 변경    | `ChangePasswordUseCase`                                  | 지금 비밀번호를 확인하고 지금 세션을 뺀 세션을 폐기한다. 소셜 전용 `USER_0613`, 틀리면 `USER_0602`                                                                               |
-| 비밀번호 재설정  | `RequestPasswordResetUseCase`, `ResetPasswordUseCase`    | `PASSWORD_RESET` 코드로 새 비밀번호를 정하고 모든 세션을 폐기한다. 없는·탈퇴한 이메일도 같은 응답이고 60초 대기(`PasswordResetCooldownPort`)도 이메일마다 같은 `VERIFY_0753`이다 |
-| 비밀번호 추가    | `RequestPasswordSetupCodeUseCase`, `SetPasswordUseCase`  | 소셜 계정에 `PASSWORD_SETUP` 코드로 이메일 로그인 수단을 더한다. 이미 있으면 `USER_0614`                                                                                         |
+| 용어             | 코드                                                                              | 뜻                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 로그인 수단 묶음 | `LinkedAccounts`(Aggregate), `LinkedAccount`(Entity), `ListLinkedAccountsUseCase` | 한 사용자의 이메일·소셜 계정(`Account` 행) 모음. id는 `UserId`이고 공급자마다 하나, 마지막 하나는 끊을 수 없다. 계정 id는 `nextId()`(시퀀스)로 먼저 받는다                        |
+| 소셜 연결        | `LinkOAuthAccountUseCase`, `LinkOAuthIdentityUseCase`, `link`                     | 로그인한 계정에 공급자 계정을 더한다. 공급자 계정이 이미 누군가에게 연결됐거나 같은 공급자의 다른 계정이 있으면 `KAKAO_0306`·`APPLE_0355`·`GOOGLE_0405`·`NAVER_0455`              |
+| 자동 연결        | `TRUSTED_EMAIL_PROVIDERS`                                                         | GOOGLE·APPLE 로그인 이메일이 기존 계정과 같으면 그 계정에 바로 잇는다. KAKAO·NAVER는 `SOCIAL_0206`으로 기존 계정에서 먼저 연결하게 한다                                           |
+| 연결 해제        | `UnlinkOAuthAccountUseCase`, `unlink(provider)`                                   | 하나를 뺀다. 없는 공급자 `USER_0603`, 마지막 하나 `USER_0610`                                                                                                                     |
+| 비밀번호         | `ARGON2_CONFIG`, `needsRehash`                                                    | `CREDENTIAL` 계정에 argon2id hash로 둔다. 로그인 성공 뒤 설정이 바뀐 hash는 응답과 따로 `changePassword` → `save`로 다시 만들고, 그사이 바뀌었으면 `save`가 `false`라 덮지 않는다 |
+| 비밀번호 변경    | `ChangePasswordUseCase`                                                           | 지금 비밀번호를 확인하고 지금 세션을 뺀 세션을 폐기한다. 소셜 전용 `USER_0613`, 틀렸거나 확인한 뒤 다른 요청이 먼저 바꿨으면 `USER_0602`                                          |
+| 비밀번호 재설정  | `RequestPasswordResetUseCase`, `ResetPasswordUseCase`                             | `PASSWORD_RESET` 코드로 새 비밀번호를 정하고 모든 세션을 폐기한다. 없는·탈퇴한 이메일도 같은 응답이고 60초 대기(`PasswordResetCooldownPort`)도 이메일마다 같은 `VERIFY_0753`이다  |
+| 비밀번호 추가    | `RequestPasswordSetupCodeUseCase`, `SetPasswordUseCase`, `setPassword`            | 소셜 계정에 `PASSWORD_SETUP` 코드로 이메일 로그인 수단을 더한다. 이미 있으면 `USER_0614`                                                                                          |
 
-| 상태          | 행동                              | 다음         | 다시·금지                                      |
-| ------------- | --------------------------------- | ------------ | ---------------------------------------------- |
-| 수단 n개      | 연결(저장소 `createOAuthAccount`) | n+1          | 같은 공급자 계정이 이미 연결이면 공급자별 오류 |
-| 수단 2개 이상 | `unlink(provider)`                | n−1, 뺀 계정 | 없는 공급자 `USER_0603`                        |
-| 수단 1개      | `unlink(provider)`                | —            | 없는 공급자 `USER_0603`, 있으면 `USER_0610`    |
+`save(linkedAccounts)`는 읽은 뒤 바뀐 계정만 쓴다. 더한 계정은 넣고(유일 제약에 걸리면 넣지 않음), 뺀 계정은 지우고, 비밀번호는 읽은 hash가 그대로일 때만 바꾼다. 하나라도 어긋나면 `false`이고 UseCase가 기존 오류 코드로 바꿔 트랜잭션을 되돌린다. 저장하는 UseCase는 모두 사용자 잠금(`UserMutationLockPort`)을 먼저 잡는다. 비밀번호 변경·rehash만 argon2를 잠금 밖에서 돌리고 읽은 hash 조건으로 경합을 막는다.
+
+| 상태             | 행동                        | 다음           | 다시·금지                                                                                                                                                                |
+| ---------------- | --------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 수단 n개         | `link` → `save`             | n+1            | 같은 공급자 계정이 이미 이 사용자에게 있으면 `false`(이미 연결). 같은 공급자의 다른 계정은 공급자별 오류, 다른 사용자가 먼저 연결했으면 `save`가 `false` → 공급자별 오류 |
+| 이메일 수단 없음 | `setPassword` → `save`      | 이메일 수단 +1 | 이미 있으면 `false` → `USER_0614`                                                                                                                                        |
+| 이메일 수단 있음 | `changePassword` → `save`   | hash 바뀜      | 이메일 수단이 없으면 `USER_0613`. 읽은 hash가 바뀌었으면 `save`가 `false`                                                                                                |
+| 수단 2개 이상    | `unlink(provider)` → `save` | n−1            | 없는 공급자면 `false` → `USER_0603`                                                                                                                                      |
+| 수단 1개         | `unlink(provider)`          | —              | 없는 공급자 `USER_0603`, 있으면 `USER_0610`                                                                                                                              |
 
 ## users
 

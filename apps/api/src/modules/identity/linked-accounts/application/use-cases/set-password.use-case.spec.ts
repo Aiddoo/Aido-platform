@@ -3,7 +3,6 @@ import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { VerificationPrimitives } from "#api/modules/identity/verifications/domain/verification.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
@@ -78,12 +77,9 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
 
     // Then
     expect(result.message).toBe("비밀번호가 설정되었습니다. 이제 이메일로 로그인할 수 있습니다.");
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toMatchObject({ password: `digest:${newPassword}` });
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toMatchObject(
+      { password: `digest:${newPassword}` },
+    );
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ usedAt: AUTH_CREDENTIAL_NOW }),
     ]);
@@ -143,12 +139,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toBeNull();
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toBeNull();
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
@@ -170,12 +161,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ attempts: 1, usedAt: null }),
     ]);
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toBeNull();
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toBeNull();
     expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
@@ -185,11 +171,13 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     const fixture = await given();
     const useCase = new SetPasswordUseCase({
       ...fixture,
-      unitOfWork: new InterleavedUnitOfWork(() =>
-        fixture.accountRepository.createCredentialAccount(
-          UserId.reconstitute(fixture.user.id),
-          "digest:OtherPassword3!",
-        ),
+      unitOfWork: new InterleavedUnitOfWork(async () =>
+        fixture.accountRepository.seed({
+          userId: fixture.user.id,
+          provider: "CREDENTIAL",
+          providerAccountId: fixture.user.id,
+          password: "digest:OtherPassword3!",
+        }),
       ),
     });
 
@@ -198,12 +186,9 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0614 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toMatchObject({ password: "digest:OtherPassword3!" });
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toMatchObject(
+      { password: "digest:OtherPassword3!" },
+    );
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
@@ -221,12 +206,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0606 });
-    expect(
-      await fixture.accountRepository.findByUserIdAndProvider(
-        UserId.reconstitute(fixture.user.id),
-        "CREDENTIAL",
-      ),
-    ).toBeNull();
+    expect(fixture.accountRepository.storedByProvider(fixture.user.id, "CREDENTIAL")).toBeNull();
     expect(fixture.verificationRepository.all).toEqual([expect.objectContaining({ usedAt: null })]);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });

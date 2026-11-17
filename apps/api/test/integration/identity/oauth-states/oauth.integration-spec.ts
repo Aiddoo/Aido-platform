@@ -670,7 +670,10 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       });
 
       // Then
-      await expect(outcome).rejects.toThrow(ApplicationException);
+      await expect(outcome).rejects.toMatchObject({
+        errorCode: ErrorCode.APPLE_0355,
+        details: { appleId: "conflict-apple-id" },
+      });
     });
   });
 
