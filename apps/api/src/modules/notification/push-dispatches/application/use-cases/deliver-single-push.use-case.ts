@@ -1,6 +1,8 @@
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
 import type { PushDeliveryFinalizationRepositoryPort } from "../ports/push-delivery-finalization.repository.port.js";
 import type { PushNotificationPayloadPort } from "../ports/push-notification-payload.port.js";
@@ -56,8 +58,8 @@ export class DeliverSinglePushUseCase {
       data,
       payload: this.#dependencies.payloadFactory.createSingle({
         data,
-        notificationId: claimed.item.notificationId,
-        dispatchId: claimed.fence.dispatchId,
+        notificationId: NotificationId.reconstitute(claimed.item.notificationId),
+        dispatchId: PushDispatchId.reconstitute(claimed.fence.dispatchId),
         locale: resolveRecipientLocale({
           storedLocale: recipient.preference.locale,
           lastRequestLocale: null,

@@ -34,8 +34,9 @@ export function buildExpoPushMessage(payload: PushPayload): ExpoPushMessageBuild
     data: payload.data,
     badge: payload.badge,
     sound: payload.sound ?? "default",
-    channelId: payload.channelId ?? "default",
-    categoryId: payload.categoryId,
+    // 앱이 등록한 Android 알림 채널은 default 하나다
+    channelId: "default",
+    categoryId: payload.categoryId?.value,
     priority: payload.priority,
     ttl: payload.ttlSeconds,
   };

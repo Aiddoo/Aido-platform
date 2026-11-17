@@ -1,3 +1,4 @@
+import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import type {
   ClaimedPushDeliveryPublicationReadModel,
   PushDeliveryPublicationReadModel,
@@ -17,7 +18,7 @@ export interface DeferPushDeliveryPublicationsInput {
 // 일반 알림 outbox의 claim generation과 relay 상태 전이를 원자적으로 저장한다. 상태 변경은 정렬된 row lock을 지키도록 UnitOfWork 안에서 호출한다
 export abstract class PushDeliveryOutboxRepositoryPort {
   abstract claimByDispatchIds(
-    dispatchIds: readonly number[],
+    dispatchIds: readonly PushDispatchId[],
     lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]>;
   abstract claimAvailable(

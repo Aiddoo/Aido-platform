@@ -1,7 +1,10 @@
 import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
+import { PushDeliveryJobId } from "#api/modules/notification/push-dispatches/domain/push-delivery-job-id.vo";
+import { PushTicketId } from "#api/modules/notification/push-dispatches/domain/push-ticket-id.vo";
 // Provider accept와 DB finalize 사이에는 외부 트랜잭션 경계가 있어 전달 보장은 at-least-once다. 재시도 때 stale worker가 상태를 덮어쓰지 않도록 모든 상태 변경이 claimed fence와 UOW를 거치는지 고정한다
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 import {
   type PushDeliveryLifecycleOperation,
@@ -13,10 +16,12 @@ import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/noti
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type {
   PushDeliveryEligibilityDecision,
   PushDeliverySettingsDecision,
 } from "../../domain/push-delivery-decision.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
@@ -107,7 +112,7 @@ function createExecutionInput(
   claimed: readonly ClaimedPushDelivery[],
 ): DeliverPushNotificationsCommand {
   return {
-    processingJobId: PROCESSING_JOB_ID,
+    processingJobId: PushDeliveryJobId.reconstitute(PROCESSING_JOB_ID),
     processingJobAttempt: 1,
     publications: claimed.map(({ fence }) => ({
       dispatchId: fence.dispatchId,
@@ -216,8 +221,8 @@ class StubDeliveryEligibility {
         ? candidates.map((candidate) => this.rateLimitedUserIds.has(candidate.data.userId))
         : await this.rateLimiter.reserveBatch(
             candidates.map((candidate) => ({
-              dispatchId: candidate.rateLimitDispatchId,
-              userId: candidate.data.userId,
+              dispatchId: PushDispatchId.reconstitute(candidate.rateLimitDispatchId),
+              userId: UserId.reconstitute(candidate.data.userId),
               engagementLocalDate: LOCAL_DATE,
             })),
           );
@@ -252,8 +257,8 @@ class RecordingPayloadFactory implements Pick<
   }
 
   createBatch(input: CreateSingleInput): BatchPushNotificationPayload {
-    this.#callOrder.push(`createBatchPayload:${input.dispatchId}`);
-    this.batchDispatchIds.push(input.dispatchId);
+    this.#callOrder.push(`createBatchPayload:${input.dispatchId.value}`);
+    this.batchDispatchIds.push(input.dispatchId.value);
     return this.#mapper.createBatch(input);
   }
 }
@@ -282,7 +287,13 @@ class StubPushDelivery {
     }
     return {
       status: "sent",
-      results: [{ token: `token-${userId}`, status: "accepted", ticketId: `ticket-${userId}` }],
+      results: [
+        {
+          token: `token-${userId}`,
+          status: "accepted",
+          ticketId: PushTicketId.reconstitute(`ticket-${userId}`),
+        },
+      ],
     };
   }
 
@@ -291,13 +302,18 @@ class StubPushDelivery {
   ): Promise<PreparedPushBatch> {
     this.#callOrder.push("prepareBatchDelivery");
     this.preparedPayloads.push([...payloads]);
-    const deliverable = payloads.filter(({ userId }) => !this.batchNoTokenUserIds.has(userId));
+    const deliverable = payloads.filter(
+      ({ userId }) => !this.batchNoTokenUserIds.has(userId.value),
+    );
     const base = {
-      attemptedDispatchIds: new Set(deliverable.map(({ dispatchId }) => dispatchId)),
+      attemptedDispatchIds: new Set(deliverable.map(({ dispatchId }) => dispatchId.value)),
       skippedDispatches: payloads
-        .filter(({ userId }) => this.batchNoTokenUserIds.has(userId))
-        .map(({ dispatchId }) => ({ dispatchId, reason: "NO_ACTIVE_TOKEN" as const })),
-      recipientUserIds: payloads.map(({ userId }) => userId),
+        .filter(({ userId }) => this.batchNoTokenUserIds.has(userId.value))
+        .map(({ dispatchId }) => ({
+          dispatchId: dispatchId.value,
+          reason: "NO_ACTIVE_TOKEN" as const,
+        })),
+      recipientUserIds: payloads.map(({ userId }) => userId.value),
     };
     if (deliverable.length === 0) {
       return { status: "empty", ...base };
@@ -306,14 +322,14 @@ class StubPushDelivery {
       status: "ready",
       ...base,
       providerPayloads: deliverable.map((payload) => ({
-        token: `token-${payload.userId}`,
+        token: `token-${payload.userId.value}`,
         title: payload.title,
         body: payload.body,
         data: payload.data,
         priority: payload.priority,
         ttlSeconds: payload.ttlSeconds,
       })),
-      dispatchIds: deliverable.map(({ dispatchId }) => dispatchId),
+      dispatchIds: deliverable.map(({ dispatchId }) => dispatchId.value),
     };
   }
 
@@ -330,7 +346,13 @@ class StubPushDelivery {
       resultsByDispatch: new Map(
         [...prepared.attemptedDispatchIds].map((dispatchId) => [
           dispatchId,
-          [{ token: `token-${dispatchId}`, status: "accepted", ticketId: `ticket-${dispatchId}` }],
+          [
+            {
+              token: `token-${dispatchId}`,
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute(`ticket-${dispatchId}`),
+            },
+          ],
         ]),
       ),
     };
@@ -438,7 +460,7 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
       expectPersistenceInsideUnitOfWork,
     } = createDeliverPushNotificationsUseCase();
     const input: DeliverPushNotificationsCommand = {
-      processingJobId: PROCESSING_JOB_ID,
+      processingJobId: PushDeliveryJobId.reconstitute(PROCESSING_JOB_ID),
       processingJobAttempt: 1,
       publications: [{ dispatchId: 1, publishAttempt: 1 }],
       isFinalAttempt: false,
@@ -492,8 +514,8 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
     expect(fixture.payloadFactory.singleInputs).toEqual([
       {
         data: claimed.item.data,
-        notificationId: 111,
-        dispatchId: 11,
+        notificationId: NotificationId.reconstitute(111),
+        dispatchId: PushDispatchId.reconstitute(11),
         locale: "ko",
         ttlSeconds: SETTINGS_TTL_SECONDS,
       },
@@ -504,7 +526,11 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
           fence: claimed.fence,
           context: LOCAL_DATE_CONTEXT,
           results: [
-            { token: "token-single-user", status: "accepted", ticketId: "ticket-single-user" },
+            {
+              token: "token-single-user",
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute("ticket-single-user"),
+            },
           ],
         },
       ],
@@ -630,7 +656,13 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
         {
           fence: sent.fence,
           context: LOCAL_DATE_CONTEXT,
-          results: [{ token: "token-204", status: "accepted", ticketId: "ticket-204" }],
+          results: [
+            {
+              token: "token-204",
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute("ticket-204"),
+            },
+          ],
         },
       ],
     ]);

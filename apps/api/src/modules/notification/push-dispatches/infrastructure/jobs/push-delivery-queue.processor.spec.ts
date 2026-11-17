@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import type { JobEnvelope, QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
+import { PushDeliveryJobId } from "../../domain/push-delivery-job-id.vo.js";
 import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
 import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
@@ -106,7 +107,7 @@ describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
 
     // Then
     expect(units.deliverPushNotifications.execute).toHaveBeenCalledWith({
-      processingJobId: "pg-boss-job-7f9c",
+      processingJobId: PushDeliveryJobId.reconstitute("pg-boss-job-7f9c"),
       processingJobAttempt: 3,
       publications,
       isFinalAttempt: false,
@@ -147,7 +148,7 @@ describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
 
     // Then
     expect(units.deliverPushNotifications.execute).toHaveBeenCalledWith({
-      processingJobId: "final-job",
+      processingJobId: PushDeliveryJobId.reconstitute("final-job"),
       processingJobAttempt: 6,
       publications,
       isFinalAttempt: true,

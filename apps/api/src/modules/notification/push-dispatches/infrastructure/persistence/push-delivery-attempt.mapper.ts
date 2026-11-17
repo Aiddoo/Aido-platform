@@ -11,7 +11,7 @@ export function toAttemptOutcome(result: PushResult): PushDeliveryAttemptOutcome
   if (result.status === "accepted") {
     return {
       status: "TICKET_ACCEPTED",
-      providerTicketId: result.ticketId,
+      providerTicketId: result.ticketId.value,
       failureKind: null,
       errorCode: null,
       errorMessage: null,

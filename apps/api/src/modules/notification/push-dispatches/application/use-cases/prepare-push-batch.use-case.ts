@@ -48,7 +48,7 @@ export class PreparePushBatchUseCase {
   }
 
   async execute(payloads: readonly BatchPushNotificationPayload[]): Promise<PreparedPushBatch> {
-    const userIds = uniq(payloads.map((payload) => payload.userId));
+    const userIds = uniq(payloads.map((payload) => payload.userId.value));
     const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(
       userIds.map((userId) => UserId.reconstitute(userId)),
     );
@@ -61,22 +61,24 @@ export class PreparePushBatchUseCase {
     const noTokenUserIdByDispatch = new Map<number, string>();
 
     for (const payload of payloads) {
+      const userId = payload.userId.value;
+      const dispatchId = payload.dispatchId.value;
       const selection = selectTokens(
         payload,
-        tokensByUser.get(payload.userId) ?? [],
+        tokensByUser.get(userId) ?? [],
         capabilityTokensByUser,
       );
       if (selection.status === "skipped") {
         if (selection.reason === "NO_ACTIVE_TOKEN") {
-          noTokenUserIdByDispatch.set(payload.dispatchId, payload.userId);
+          noTokenUserIdByDispatch.set(dispatchId, userId);
         }
-        skippedDispatches.push({ dispatchId: payload.dispatchId, reason: selection.reason });
+        skippedDispatches.push({ dispatchId, reason: selection.reason });
         continue;
       }
-      attemptedDispatchIds.add(payload.dispatchId);
+      attemptedDispatchIds.add(dispatchId);
       for (const token of selection.tokens) {
         providerPayloads.push(toProviderPayload(payload, token));
-        dispatchIds.push(payload.dispatchId);
+        dispatchIds.push(dispatchId);
       }
     }
 
@@ -101,7 +103,7 @@ export class PreparePushBatchUseCase {
     payloads: readonly BatchPushNotificationPayload[],
   ): Promise<CapabilityTokensByUser> {
     const capabilityUserIds = uniq(
-      payloads.filter(requiresCapability).map((payload) => payload.userId),
+      payloads.filter(requiresCapability).map((payload) => payload.userId.value),
     );
     if (capabilityUserIds.length === 0) {
       return {};
@@ -124,7 +126,7 @@ function selectTokens(
 ):
   | { readonly status: "selected"; readonly tokens: readonly string[] }
   | { readonly status: "skipped"; readonly reason: PushDispatchSkipReason } {
-  const capabilityRecords = capabilityTokensByUser[payload.userId] ?? [];
+  const capabilityRecords = capabilityTokensByUser[payload.userId.value] ?? [];
   const { minAppVersion } = payload;
   const needsCapability = requiresCapability(payload);
   const activeTokenCount = needsCapability ? capabilityRecords.length : activeTokens.length;

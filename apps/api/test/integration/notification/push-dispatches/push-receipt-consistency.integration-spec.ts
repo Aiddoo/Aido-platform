@@ -7,7 +7,10 @@ import { DrizzlePushDeviceRepository } from "#api/modules/notification/push-devi
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-push-token.repository";
 import type { PushReceiptResult } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
+import { PushDeliveryJobId } from "#api/modules/notification/push-dispatches/domain/push-delivery-job-id.vo";
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push-dispatches/domain/push-receipt.domain-service";
+import { PushTicketId } from "#api/modules/notification/push-dispatches/domain/push-ticket-id.vo";
 import { EXPO_PUSH_TIMING } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-sender.adapter";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-receipt.repository";
@@ -37,13 +40,16 @@ const AT_INSTANT = Temporal.Instant.from(AT.toISOString());
 const ACCEPTED_AT = Temporal.Instant.from("2026-10-08T02:40:00.000Z");
 const fingerprint = (token: string) => createHash("sha256").update(token).digest("hex");
 const unregistered = (ticketId: string): PushReceiptResult => ({
-  ticketId,
+  ticketId: PushTicketId.reconstitute(ticketId),
   status: "failed",
   failure: { kind: "DEVICE_UNREGISTERED", providerCode: "DeviceNotRegistered" },
 });
-const delivered = (ticketId: string): PushReceiptResult => ({ ticketId, status: "delivered" });
+const delivered = (ticketId: string): PushReceiptResult => ({
+  ticketId: PushTicketId.reconstitute(ticketId),
+  status: "delivered",
+});
 const payloadTooLarge = (ticketId: string): PushReceiptResult => ({
-  ticketId,
+  ticketId: PushTicketId.reconstitute(ticketId),
   status: "failed",
   failure: { kind: "PAYLOAD_TOO_LARGE", providerCode: "MessageTooBig" },
 });
@@ -207,7 +213,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     );
 
     // Then
-    expect(invalid).toEqual([{ userId: f.user.id, token: f.token.token }]);
+    expect(invalid).toEqual([{ userId: UserId.reconstitute(f.user.id), token: f.token.token }]);
     expect(
       await f.tokens.findPushTokensByUser({
         userId: UserId.reconstitute(f.user.id),
@@ -308,7 +314,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     );
 
     // Then
-    expect(pending).toEqual([recent.ticketId]);
+    expect(pending.map((ticketId) => ticketId.value)).toEqual([recent.ticketId]);
   });
 
   it("15분 이전 ticket은 대기하고 15분 경계 ticket부터 조회한다", async () => {
@@ -327,7 +333,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     );
 
     // Then
-    expect(pending).toEqual([ready.ticketId]);
+    expect(pending.map((ticketId) => ticketId.value)).toEqual([ready.ticketId]);
   });
 
   it("5분마다 도는 receipt 확인은 수락 15분 전 ticket을 묻지 않고 15분이 된 다음 실행에서 묻는다", async () => {
@@ -344,8 +350,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       pushProvider: {
         timing: EXPO_PUSH_TIMING,
         async getReceipts(ticketIds) {
-          requests.push([...ticketIds]);
-          return ticketIds.map(delivered);
+          requests.push(ticketIds.map((ticketId) => ticketId.value));
+          return ticketIds.map((ticketId) => delivered(ticketId.value));
         },
       },
       unitOfWork: f.uow,
@@ -377,7 +383,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // When
     await stuck.receipts.recordPushReceipts({
-      requestedTicketIds: [stuck.ticketId],
+      requestedTicketIds: [PushTicketId.reconstitute(stuck.ticketId)],
       results: [],
       checkedAt: AT_INSTANT,
     });
@@ -387,7 +393,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     );
 
     // Then
-    expect(pending).toEqual([next.ticketId]);
+    expect(pending.map((ticketId) => ticketId.value)).toEqual([next.ticketId]);
     expect(await readAttempt(stuck.ticketId)).toMatchObject({
       status: "TICKET_ACCEPTED",
       receiptCheckedAt: AT_INSTANT,
@@ -437,12 +443,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       }),
     );
     const publications = await f.uow.run(() =>
-      outbox.claimByDispatchIds([staged.dispatchId], AT_INSTANT),
+      outbox.claimByDispatchIds([PushDispatchId.reconstitute(staged.dispatchId)], AT_INSTANT),
     );
     const claimed = await f.uow.run(() =>
       lifecycle.claim({
         publications,
-        processingJobId: "receipt-finalize-job",
+        processingJobId: PushDeliveryJobId.reconstitute("receipt-finalize-job"),
         processingJobAttempt: 1,
         startedAt: AT_INSTANT,
       }),
@@ -455,7 +461,13 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
         {
           fence: claim.fence,
           context: { timezone: "UTC", localDate: Temporal.PlainDate.from("2026-10-08") },
-          results: [{ token: f.token.token, status: "accepted", ticketId: "finalized-ticket" }],
+          results: [
+            {
+              token: f.token.token,
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute("finalized-ticket"),
+            },
+          ],
         },
       ]),
     );
@@ -492,8 +504,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       pushProvider: {
         timing: EXPO_PUSH_TIMING,
         async getReceipts(ticketIds) {
-          requests.push([...ticketIds]);
-          return ticketIds.map(unregistered);
+          requests.push(ticketIds.map((ticketId) => ticketId.value));
+          return ticketIds.map((ticketId) => unregistered(ticketId.value));
         },
       },
       unitOfWork: f.uow,

@@ -4,6 +4,7 @@ import {
   type PushReceiptResult,
   type PushResult,
 } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import { PushTicketId } from "#api/modules/notification/push-dispatches/domain/push-ticket-id.vo";
 import { EXPO_PUSH_TIMING } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-sender.adapter";
 
 // 실제 Expo를 부르지 않고 보낸 payload를 메모리에 남긴다. 결과를 바꿔야 하는 spec은 nextResults로 덮어쓴다
@@ -13,7 +14,7 @@ export class FakePushProvider extends PushProviderPort {
   readonly timing = EXPO_PUSH_TIMING;
   readonly sentBatches: PushPayload[][] = [];
   nextResults: ((payloads: readonly PushPayload[]) => Promise<PushResult[]>) | null = null;
-  receipts: ((ticketIds: readonly string[]) => Promise<PushReceiptResult[]>) | null = null;
+  receipts: ((ticketIds: readonly PushTicketId[]) => Promise<PushReceiptResult[]>) | null = null;
   // ticket id는 DB 유니크 컬럼에 남아 앱을 새로 띄우거나 clear해도 겹치지 않게 만든다
   #ticketSequence = 0;
 
@@ -29,7 +30,7 @@ export class FakePushProvider extends PushProviderPort {
     }));
   }
 
-  async getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]> {
+  async getReceipts(ticketIds: readonly PushTicketId[]): Promise<PushReceiptResult[]> {
     if (this.receipts != null) {
       return this.receipts(ticketIds);
     }
@@ -50,8 +51,8 @@ export class FakePushProvider extends PushProviderPort {
     this.receipts = null;
   }
 
-  #nextTicketId(): string {
+  #nextTicketId(): PushTicketId {
     this.#ticketSequence += 1;
-    return `fake-ticket-${Date.now()}-${this.#ticketSequence}`;
+    return PushTicketId.reconstitute(`fake-ticket-${Date.now()}-${this.#ticketSequence}`);
   }
 }

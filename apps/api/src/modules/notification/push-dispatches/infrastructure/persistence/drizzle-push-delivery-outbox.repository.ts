@@ -22,6 +22,7 @@ import type {
 } from "../../application/read-models/push-delivery.read-model.js";
 import { pushDeliveryLaneOf } from "../../domain/push-delivery-lane.domain-service.js";
 import type { PushDispatchStatus } from "../../domain/push-delivery-status.constants.js";
+import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { matchesPublicationGeneration } from "./push-outbox-generation.mapper.js";
 
 const candidate = alias(pushDispatchOutbox, "candidate");
@@ -44,7 +45,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
   }
 
   claimByDispatchIds(
-    dispatchIds: readonly number[],
+    dispatchIds: readonly PushDispatchId[],
     lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     if (dispatchIds.length === 0) {
@@ -53,7 +54,10 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     return this.#claim({
       limit: dispatchIds.length,
       lockedAt,
-      dispatchFilter: inArray(candidate.dispatchId, [...dispatchIds]),
+      dispatchFilter: inArray(
+        candidate.dispatchId,
+        dispatchIds.map((dispatchId) => dispatchId.value),
+      ),
     });
   }
 

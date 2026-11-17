@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
+import { PushTicketId } from "#api/modules/notification/push-dispatches/domain/push-ticket-id.vo";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
@@ -96,7 +97,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
 
     // Then
     expect(results).toEqual([
-      { token, status: "accepted", ticketId: "accepted-fixture-ticket" },
+      { token, status: "accepted", ticketId: PushTicketId.reconstitute("accepted-fixture-ticket") },
       {
         token: secondToken,
         status: "rejected",
@@ -145,8 +146,12 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
 
     // Then
     await expect(pending).resolves.toEqual([
-      { token, status: "accepted", ticketId: "first-accepted" },
-      { token: secondToken, status: "accepted", ticketId: "retried-accepted" },
+      { token, status: "accepted", ticketId: PushTicketId.reconstitute("first-accepted") },
+      {
+        token: secondToken,
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("retried-accepted"),
+      },
     ]);
   });
 
@@ -246,12 +251,16 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     });
 
     // When
-    const result = provider.getReceipts(["missing", "fresh", "delivered"]);
+    const result = provider.getReceipts([
+      PushTicketId.reconstitute("missing"),
+      PushTicketId.reconstitute("fresh"),
+      PushTicketId.reconstitute("delivered"),
+    ]);
 
     // Then
     await expect(result).resolves.toEqual([
       {
-        ticketId: "fresh",
+        ticketId: PushTicketId.reconstitute("fresh"),
         status: "failed",
         failure: {
           kind: "DEVICE_UNREGISTERED",
@@ -259,7 +268,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
           message: privateMessage,
         },
       },
-      { ticketId: "delivered", status: "delivered" },
+      { ticketId: PushTicketId.reconstitute("delivered"), status: "delivered" },
     ]);
   });
 
@@ -277,7 +286,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     // Then
     expect(
       results.map((result) =>
-        result.status === "accepted" ? result.ticketId : result.failure.kind,
+        result.status === "accepted" ? result.ticketId.value : result.failure.kind,
       ),
     ).toEqual(["INVALID_TOKEN", "PAYLOAD_TOO_LARGE", "accepted-last"]);
   });

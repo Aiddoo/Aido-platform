@@ -9,6 +9,7 @@ import {
   type PushDeliveryLane,
 } from "../../domain/push-delivery-lane.domain-service.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { type PushDeliveryJobEnqueuerPort } from "../ports/push-delivery-job-enqueuer.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../ports/push-delivery-outbox.repository.port.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
@@ -60,7 +61,10 @@ export class PublishPushDeliveryOutboxUseCase {
     let publishedCount = 0;
     for (const dispatchIds of chunk(input.dispatchIds, PUSH_DELIVERY_JOB_MAX_PUBLICATIONS)) {
       const claimed = await this.#dependencies.unitOfWork.run(() =>
-        this.#dependencies.outbox.claimByDispatchIds(dispatchIds, this.#now()),
+        this.#dependencies.outbox.claimByDispatchIds(
+          dispatchIds.map((dispatchId) => PushDispatchId.reconstitute(dispatchId)),
+          this.#now(),
+        ),
       );
       publishedCount += await this.#publish(claimed);
     }

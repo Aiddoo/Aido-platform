@@ -1,10 +1,9 @@
-import { countBy, maxBy, uniq } from "es-toolkit";
+import { countBy, maxBy, uniqBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   PushTokenCachePort,
@@ -19,6 +18,7 @@ import {
   PUSH_RECEIPT_POLICY,
   pushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
+import type { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import type { PushProviderPort } from "../ports/push-provider.port.js";
 import type {
   InvalidPushToken,
@@ -101,7 +101,7 @@ export class ReconcilePushReceiptsUseCase {
     });
   }
 
-  async #reconcileBatch(ticketIds: readonly string[]): Promise<{
+  async #reconcileBatch(ticketIds: readonly PushTicketId[]): Promise<{
     readonly received: number;
     readonly invalidCount: number;
     readonly providerFailures: readonly PushFailureKind[];
@@ -138,11 +138,12 @@ export class ReconcilePushReceiptsUseCase {
     if (invalidTokens.length === 0) {
       return;
     }
-    const userIds = uniq(invalidTokens.map(({ userId }) => userId));
+    const userIds = uniqBy(
+      invalidTokens.map(({ userId }) => userId),
+      (userId) => userId.value,
+    );
     const settled = await Promise.allSettled(
-      userIds.map((userId) =>
-        this.#dependencies.cache.invalidatePushTokens(UserId.reconstitute(userId)),
-      ),
+      userIds.map((userId) => this.#dependencies.cache.invalidatePushTokens(userId)),
     );
     const failedCount = settled.filter((result) => result.status === "rejected").length;
     if (failedCount > 0) {

@@ -9,6 +9,7 @@ import {
   pushToken,
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "../../application/ports/push-receipt.repository.port.js";
 import { PUSH_FAILURE_KIND, revokesPushToken } from "../../domain/push-failure-kind.constants.js";
 import type { PushReceiptCheckWindow } from "../../domain/push-receipt.domain-service.js";
+import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import { pushTokenFingerprint } from "./push-token-fingerprint.mapper.js";
 
 const TOKEN_REVOKING_FAILURE_KINDS: ReadonlySet<string> = new Set(
@@ -33,7 +35,10 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     this.#clock = clock;
   }
 
-  async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
+  async findPendingTicketIds(
+    window: PushReceiptCheckWindow,
+    limit: number,
+  ): Promise<PushTicketId[]> {
     const rows = await this.#db
       .select({ ticketId: pushDeliveryAttempt.providerTicketId })
       .from(pushDeliveryAttempt)
@@ -56,11 +61,13 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
         asc(pushDeliveryAttempt.id),
       )
       .limit(limit);
-    return rows.flatMap((row) => (row.ticketId == null ? [] : [row.ticketId]));
+    return rows.flatMap((row) =>
+      row.ticketId == null ? [] : [PushTicketId.reconstitute(row.ticketId)],
+    );
   }
 
   async recordPushReceipts(input: {
-    readonly requestedTicketIds: readonly string[];
+    readonly requestedTicketIds: readonly PushTicketId[];
     readonly results: readonly PushReceiptResult[];
     readonly checkedAt: Temporal.Instant;
   }): Promise<InvalidPushToken[]> {
@@ -73,7 +80,10 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
       .set({ receiptCheckedAt: input.checkedAt, updatedAt: input.checkedAt })
       .where(
         and(
-          inArray(pushDeliveryAttempt.providerTicketId, [...input.requestedTicketIds]),
+          inArray(
+            pushDeliveryAttempt.providerTicketId,
+            input.requestedTicketIds.map((ticketId) => ticketId.value),
+          ),
           eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
         ),
       );
@@ -121,7 +131,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     const values = results.map((result) => {
       const failure = result.status === "failed" ? result.failure : undefined;
       return sql`(
-        ${result.ticketId}::VARCHAR(100),
+        ${result.ticketId.value}::VARCHAR(100),
         ${result.status === "delivered" ? "DELIVERED" : "FAILED"}::${pushDeliveryStatus},
         ${failure?.kind ?? null}::VARCHAR(40),
         ${failure?.providerCode ?? null}::VARCHAR(100),
@@ -175,7 +185,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
       return token != null &&
         attempt.tokenFingerprint != null &&
         attempt.tokenFingerprint === pushTokenFingerprint(token.token)
-        ? [{ userId: token.userId, token: token.token }]
+        ? [{ userId: UserId.reconstitute(token.userId), token: token.token }]
         : [];
     });
   }

@@ -3,11 +3,13 @@ import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type {
   PushDeliveryEligibilityDecision,
   PushDeliverySettingsDecision,
 } from "../../domain/push-delivery-decision.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
 import type {
   PushDeliveryContext,
@@ -134,8 +136,8 @@ export class DeliverPushBatchUseCase {
       eligible.map((candidate) =>
         this.#dependencies.payloadFactory.createBatch({
           data: candidate.data,
-          notificationId: candidate.claimed.item.notificationId,
-          dispatchId: candidate.dispatchId,
+          notificationId: NotificationId.reconstitute(candidate.claimed.item.notificationId),
+          dispatchId: PushDispatchId.reconstitute(candidate.dispatchId),
           locale: resolveRecipientLocale({
             storedLocale: recipients.get(candidate.data.userId)?.preference?.locale ?? null,
             lastRequestLocale: null,

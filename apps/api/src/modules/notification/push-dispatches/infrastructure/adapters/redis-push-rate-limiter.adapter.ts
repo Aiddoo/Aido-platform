@@ -10,6 +10,7 @@ import type {
   PushRateLimitRequest,
   PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port.js";
+import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/push-rate-limit.constants.js";
 import { PushRateLimiterKeys } from "./push-rate-limiter.keyspace.js";
 
@@ -187,12 +188,12 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
   }
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
-    return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
+    return this.#reserveGeneral(request.userId.value, this.#reservationId(request.dispatchId));
   }
 
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     return this.#reserveEngagement(
-      request.userId,
+      request.userId.value,
       request.localDate,
       this.#reservationId(request.dispatchId),
     );
@@ -208,12 +209,12 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
     const keys = requests.flatMap((request, index) => {
       const reservationId = this.#reservationId(request.dispatchId);
       return [
-        PushRateLimiterKeys.general(request.userId),
+        PushRateLimiterKeys.general(request.userId.value),
         request.engagementLocalDate
-          ? PushRateLimiterKeys.engagement(request.userId, request.engagementLocalDate)
+          ? PushRateLimiterKeys.engagement(request.userId.value, request.engagementLocalDate)
           : PushRateLimiterKeys.engagementPlaceholder(index),
-        PushRateLimiterKeys.generalReservation(request.userId, reservationId),
-        PushRateLimiterKeys.engagementReservation(request.userId, reservationId),
+        PushRateLimiterKeys.generalReservation(request.userId.value, reservationId),
+        PushRateLimiterKeys.engagementReservation(request.userId.value, reservationId),
       ];
     });
     const engagementFlags = requests.map((request) => (request.engagementLocalDate ? 1 : 0));
@@ -303,7 +304,7 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
     }
   }
 
-  #reservationId(dispatchId: number): string {
-    return `push-dispatch-${dispatchId}`;
+  #reservationId(dispatchId: PushDispatchId): string {
+    return `push-dispatch-${dispatchId.value}`;
   }
 }

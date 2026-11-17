@@ -34,7 +34,10 @@ export function transactionRetryDelayMs(failedAttempt: number, random: () => num
   return ceiling / 2 + (ceiling / 2) * random();
 }
 
-interface ReservationRequest extends PushRateLimitRequest {
+interface ReservationRequest {
+  readonly dispatchId: number;
+  readonly userId: string;
+  readonly engagementLocalDate?: string;
   readonly reserveGeneral: boolean;
 }
 
@@ -57,24 +60,39 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
   }
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
-    const [limited] = await this.#reserve([{ ...request, reserveGeneral: true }]);
-    return this.#requiredDecision(limited, request.dispatchId);
+    const [limited] = await this.#reserve([
+      {
+        dispatchId: request.dispatchId.value,
+        userId: request.userId.value,
+        reserveGeneral: true,
+      },
+    ]);
+    return this.#requiredDecision(limited, request.dispatchId.value);
   }
 
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     const [limited] = await this.#reserve([
       {
-        dispatchId: request.dispatchId,
-        userId: request.userId,
+        dispatchId: request.dispatchId.value,
+        userId: request.userId.value,
         reserveGeneral: false,
         engagementLocalDate: request.localDate,
       },
     ]);
-    return this.#requiredDecision(limited, request.dispatchId);
+    return this.#requiredDecision(limited, request.dispatchId.value);
   }
 
   async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
-    return this.#reserve(requests.map((request) => ({ ...request, reserveGeneral: true })));
+    return this.#reserve(
+      requests.map((request) => ({
+        dispatchId: request.dispatchId.value,
+        userId: request.userId.value,
+        reserveGeneral: true,
+        ...(request.engagementLocalDate != null && {
+          engagementLocalDate: request.engagementLocalDate,
+        }),
+      })),
+    );
   }
 
   async #reserve(requests: readonly ReservationRequest[]): Promise<readonly boolean[]> {

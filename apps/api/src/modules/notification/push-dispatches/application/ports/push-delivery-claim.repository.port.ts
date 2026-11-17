@@ -1,3 +1,4 @@
+import type { PushDeliveryJobId } from "../../domain/push-delivery-job-id.vo.js";
 import type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
 import type { PushDeliveryFenceReadModel } from "../read-models/push-delivery-fence.read-model.js";
 import type {
@@ -15,7 +16,7 @@ export interface ClaimedPushDelivery {
 
 export interface ClaimPushDeliveriesInput {
   readonly publications: readonly PushDeliveryPublicationReadModel[];
-  readonly processingJobId: string;
+  readonly processingJobId: PushDeliveryJobId;
   readonly processingJobAttempt: number;
   readonly startedAt: Temporal.Instant;
 }

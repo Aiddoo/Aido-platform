@@ -2,8 +2,10 @@ import { DatabaseError, Pool } from "pg";
 import { vi } from "vitest";
 
 import { createDatabase, type Database } from "#api/platform/database/database.client";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import {
   PostgresPushRateLimiterAdapter,
   transactionRetryDelayMs,
@@ -44,7 +46,10 @@ describe("PostgresPushRateLimiterAdapter 재시도", () => {
       .mockResolvedValueOnce([false]);
     const limiter = new PostgresPushRateLimiterAdapter(database, new DateClock());
     // When
-    const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
+    const decision = limiter.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(1),
+      userId: UserId.reconstitute("user-1"),
+    });
     await vi.advanceTimersByTimeAsync(0);
     const attemptsBeforeBackoff = transaction.mock.calls.length;
     await vi.advanceTimersByTimeAsync(20);
@@ -61,7 +66,10 @@ describe("PostgresPushRateLimiterAdapter 재시도", () => {
     const transaction = vi.spyOn(database, "transaction").mockRejectedValueOnce(error);
     const limiter = new PostgresPushRateLimiterAdapter(database, new DateClock());
     // When
-    const decision = limiter.reserveGeneral({ dispatchId: 1, userId: "user-1" });
+    const decision = limiter.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(1),
+      userId: UserId.reconstitute("user-1"),
+    });
     // Then
     await expect(decision).rejects.toBe(error);
     expect(transaction).toHaveBeenCalledTimes(1);

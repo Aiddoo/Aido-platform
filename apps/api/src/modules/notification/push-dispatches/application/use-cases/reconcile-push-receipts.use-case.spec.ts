@@ -15,6 +15,7 @@ import {
   PUSH_RECEIPT_POLICY,
   type PushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
+import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import type { PushReceiptResult } from "../ports/push-provider.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
 import { PushDispatchAlerts } from "../push-dispatches.alerts.js";
@@ -34,19 +35,25 @@ class StubReceiptRepository implements ReceiptRepository {
   readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
-  async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
+  async findPendingTicketIds(
+    window: PushReceiptCheckWindow,
+    limit: number,
+  ): Promise<PushTicketId[]> {
     this.windows.push(window);
-    return this.pendingTicketIds.slice(0, limit);
+    return this.pendingTicketIds
+      .slice(0, limit)
+      .map((ticketId) => PushTicketId.reconstitute(ticketId));
   }
 
   async recordPushReceipts(input: {
-    readonly requestedTicketIds: readonly string[];
+    readonly requestedTicketIds: readonly PushTicketId[];
     readonly results: readonly PushReceiptResult[];
   }): Promise<InvalidPushToken[]> {
-    this.recorded.push([...input.requestedTicketIds]);
-    const requested = new Set(input.requestedTicketIds);
+    const requestedTicketIds = input.requestedTicketIds.map((ticketId) => ticketId.value);
+    this.recorded.push(requestedTicketIds);
+    const requested = new Set(requestedTicketIds);
     this.pendingTicketIds = this.pendingTicketIds.filter((ticketId) => !requested.has(ticketId));
-    return input.requestedTicketIds.flatMap((ticketId) => {
+    return requestedTicketIds.flatMap((ticketId) => {
       const invalid = this.invalidByTicketId.get(ticketId);
       return invalid == null ? [] : [invalid];
     });
@@ -160,8 +167,14 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     // Given
     const { useCase, repository, pushTokenRepository, cache, transactionEvents } = setup();
     repository.pendingTicketIds = ["ticket-1", "ticket-2"];
-    repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
-    repository.invalidByTicketId.set("ticket-2", { token: "token-2", userId: "user-1" });
+    repository.invalidByTicketId.set("ticket-1", {
+      token: "token-1",
+      userId: UserId.reconstitute("user-1"),
+    });
+    repository.invalidByTicketId.set("ticket-2", {
+      token: "token-2",
+      userId: UserId.reconstitute("user-1"),
+    });
 
     // When
     await useCase.execute();
@@ -187,7 +200,10 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
       },
     });
     repository.pendingTicketIds = ["ticket-1"];
-    repository.invalidByTicketId.set("ticket-1", { token: "token-1", userId: "user-1" });
+    repository.invalidByTicketId.set("ticket-1", {
+      token: "token-1",
+      userId: UserId.reconstitute("user-1"),
+    });
 
     // When
     const result = useCase.execute();

@@ -8,6 +8,7 @@ import type {
   PushDeliveryPublicationReadModel,
 } from "#api/modules/notification/push-dispatches/application/read-models/push-delivery.read-model";
 import type { PushDeliveryLane } from "#api/modules/notification/push-dispatches/domain/push-delivery-lane.domain-service";
+import type { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 
 const PUSH_DELIVERY_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "PUBLISHED"] as const;
 type PushDeliveryOutboxStatus = (typeof PUSH_DELIVERY_OUTBOX_STATUSES)[number];
@@ -55,11 +56,12 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
   }
 
   async claimByDispatchIds(
-    dispatchIds: readonly number[],
+    dispatchIds: readonly PushDispatchId[],
     lockedAt: Temporal.Instant,
   ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
+    const requested = new Set(dispatchIds.map((dispatchId) => dispatchId.value));
     return this.#claim(
-      [...this.#rows.values()].filter((row) => dispatchIds.includes(row.dispatchId)),
+      [...this.#rows.values()].filter((row) => requested.has(row.dispatchId)),
       lockedAt,
       dispatchIds.length,
     );

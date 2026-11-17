@@ -1,6 +1,10 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
+
 export interface GeneralPushRateLimitRequest {
-  readonly dispatchId: number;
-  readonly userId: string;
+  readonly dispatchId: PushDispatchId;
+  readonly userId: UserId;
 }
 
 export interface EngagementPushRateLimitRequest extends GeneralPushRateLimitRequest {

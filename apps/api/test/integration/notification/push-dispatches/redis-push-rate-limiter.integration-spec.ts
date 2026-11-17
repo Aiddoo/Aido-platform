@@ -2,7 +2,9 @@ import { Redis } from "ioredis";
 import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
 import { vi } from "vitest";
 
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { RedisPushRateLimiterAdapter } from "#api/modules/notification/push-dispatches/infrastructure/adapters/redis-push-rate-limiter.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TEST_CUID } from "#test/fixtures/id.fixture";
 
 const REDIS_PORT = 6379;
@@ -53,9 +55,17 @@ describe.each([
 
     // When
     const result = await limiter.reserveBatch([
-      { userId: "user-1", dispatchId: 1, engagementLocalDate: "2026-07-16" },
-      { userId: "user-2", dispatchId: 2 },
-      { userId: "user-3", dispatchId: 3, engagementLocalDate: "2026-07-15" },
+      {
+        userId: UserId.reconstitute("user-1"),
+        dispatchId: PushDispatchId.reconstitute(1),
+        engagementLocalDate: "2026-07-16",
+      },
+      { userId: UserId.reconstitute("user-2"), dispatchId: PushDispatchId.reconstitute(2) },
+      {
+        userId: UserId.reconstitute("user-3"),
+        dispatchId: PushDispatchId.reconstitute(3),
+        engagementLocalDate: "2026-07-15",
+      },
     ]);
 
     // Then
@@ -70,8 +80,8 @@ describe.each([
 
     // When
     const result = await limiter.reserveBatch([
-      { userId: "user-1", dispatchId: 1 },
-      { userId: "user-2", dispatchId: 2 },
+      { userId: UserId.reconstitute("user-1"), dispatchId: PushDispatchId.reconstitute(1) },
+      { userId: UserId.reconstitute("user-2"), dispatchId: PushDispatchId.reconstitute(2) },
     ]);
 
     // Then
@@ -105,7 +115,11 @@ describe.each([
 
     // When
     const result = await limiter.reserveBatch([
-      { userId: TEST_CUID.USER_1, dispatchId: 1, engagementLocalDate: "2026-07-16" },
+      {
+        userId: UserId.reconstitute(TEST_CUID.USER_1),
+        dispatchId: PushDispatchId.reconstitute(1),
+        engagementLocalDate: "2026-07-16",
+      },
     ]);
 
     // Then
@@ -118,15 +132,17 @@ describe.each([
     freezeAt("2026-07-16T10:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const request = {
-      userId: TEST_CUID.USER_1,
+      userId: UserId.reconstitute(TEST_CUID.USER_1),
       engagementLocalDate: "2026-07-16",
-      dispatchId: 501,
+      dispatchId: PushDispatchId.reconstitute(501),
     };
 
     // When
     await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
     await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
-    await expect(limiter.reserveBatch([{ ...request, dispatchId: 502 }])).resolves.toEqual([true]);
+    await expect(
+      limiter.reserveBatch([{ ...request, dispatchId: PushDispatchId.reconstitute(502) }]),
+    ).resolves.toEqual([true]);
 
     // Then
     expect(await redis.zcard(`push-rate:${TEST_CUID.USER_1}`)).toBe(1);
@@ -139,7 +155,10 @@ describe.each([
     // Given
     freezeAt("2026-07-16T10:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
-    const general = { userId: TEST_CUID.USER_1, dispatchId: 601 };
+    const general = {
+      userId: UserId.reconstitute(TEST_CUID.USER_1),
+      dispatchId: PushDispatchId.reconstitute(601),
+    };
     const engagement = { ...general, localDate: "2026-07-16" };
 
     // When
@@ -160,20 +179,32 @@ describe.each([
     freezeAt("2026-07-15T23:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
     const original = {
-      userId: TEST_CUID.USER_1,
+      userId: UserId.reconstitute(TEST_CUID.USER_1),
       engagementLocalDate: "2026-07-15",
-      dispatchId: 701,
+      dispatchId: PushDispatchId.reconstitute(701),
     };
     await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
 
     // When
     vi.setSystemTime(Date.now() + 5 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 702 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(702),
+        },
+      ]),
     ).resolves.toEqual([false]);
     vi.setSystemTime(Date.now() + 4 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 703 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(703),
+        },
+      ]),
     ).resolves.toEqual([false]);
 
     // Then
@@ -181,7 +212,13 @@ describe.each([
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16" }]),
     ).resolves.toEqual([false]);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 704 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(704),
+        },
+      ]),
     ).resolves.toEqual([true]);
     expect(
       await redis.exists(`push-rate-reservation:general:${TEST_CUID.USER_1}:push-dispatch-701`),
@@ -195,20 +232,29 @@ describe.each([
     // Given
     freezeAt("2026-07-15T23:00:00.000Z");
     const limiter = new RedisPushRateLimiterAdapter(redis);
-    const reserved = { userId: TEST_CUID.USER_1, dispatchId: 801 };
+    const reserved = {
+      userId: UserId.reconstitute(TEST_CUID.USER_1),
+      dispatchId: PushDispatchId.reconstitute(801),
+    };
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 
     // When
     vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000);
     for (let index = 0; index < 15; index += 1) {
       await expect(
-        limiter.reserveGeneral({ userId: TEST_CUID.USER_1, dispatchId: 900 + index }),
+        limiter.reserveGeneral({
+          userId: UserId.reconstitute(TEST_CUID.USER_1),
+          dispatchId: PushDispatchId.reconstitute(900 + index),
+        }),
       ).resolves.toBe(false);
     }
 
     // Then
     await expect(
-      limiter.reserveGeneral({ userId: TEST_CUID.USER_1, dispatchId: 999 }),
+      limiter.reserveGeneral({
+        userId: UserId.reconstitute(TEST_CUID.USER_1),
+        dispatchId: PushDispatchId.reconstitute(999),
+      }),
     ).resolves.toBe(true);
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
     await expect(limiter.reserveEngagement({ ...reserved, localDate: "2026-07-16" })).resolves.toBe(

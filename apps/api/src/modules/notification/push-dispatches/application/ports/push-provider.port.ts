@@ -1,6 +1,8 @@
+import type { PushCategoryId } from "../../domain/push-category-id.vo.js";
 import type { PushDeliveryPriority } from "../../domain/push-delivery-options.domain-service.js";
 import type { PushFailureKind } from "../../domain/push-failure-kind.constants.js";
 import type { PushReceiptTiming } from "../../domain/push-receipt.domain-service.js";
+import type { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 
 export interface PushPayload {
   readonly token: string;
@@ -9,8 +11,7 @@ export interface PushPayload {
   readonly data?: Record<string, unknown>;
   readonly badge?: number;
   readonly sound?: "default" | null;
-  readonly channelId?: string;
-  readonly categoryId?: string;
+  readonly categoryId?: PushCategoryId;
   readonly priority: PushDeliveryPriority;
   readonly ttlSeconds: number;
 }
@@ -23,12 +24,12 @@ export interface PushFailure {
 }
 
 export type PushResult =
-  | { readonly token: string; readonly status: "accepted"; readonly ticketId: string }
+  | { readonly token: string; readonly status: "accepted"; readonly ticketId: PushTicketId }
   | { readonly token: string; readonly status: "rejected"; readonly failure: PushFailure };
 
 export type PushReceiptResult =
-  | { readonly ticketId: string; readonly status: "delivered" }
-  | { readonly ticketId: string; readonly status: "failed"; readonly failure: PushFailure };
+  | { readonly ticketId: PushTicketId; readonly status: "delivered" }
+  | { readonly ticketId: PushTicketId; readonly status: "failed"; readonly failure: PushFailure };
 
 /** 공급자가 정하는 시간. receipt 확인 구간과 처리 lease가 공급자 이름 없이 이 값을 쓴다. */
 export interface PushProviderTiming {
@@ -44,5 +45,5 @@ export abstract class PushProviderPort {
   // 결과는 입력 순서와 같고, 공급자 수락 여부를 확인하지 못한 transport 실패는 RetryablePushProviderTransportError로 던진다
   abstract sendBatch(payloads: readonly PushPayload[]): Promise<PushResult[]>;
   // 공급자가 아직 결과를 만들지 않은 ticket은 결과에서 빠진다
-  abstract getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]>;
+  abstract getReceipts(ticketIds: readonly PushTicketId[]): Promise<PushReceiptResult[]>;
 }

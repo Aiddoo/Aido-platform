@@ -94,15 +94,7 @@ export class DrizzlePushDeliveryFinalizationRepository implements PushDeliveryFi
       return 0;
     }
     const now = this.#clock.now();
-    const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
-    const tokens =
-      allTokens.length === 0
-        ? []
-        : await this.#db
-            .select({ id: pushToken.id, token: pushToken.token })
-            .from(pushToken)
-            .where(inArray(pushToken.token, allTokens));
-    const tokenIdByValue = new Map(tokens.map((token) => [token.token, token.id]));
+    const tokenIdByValue = await this.#findTokenIds(inputs);
     const finalizationValues = inputs.map((input) => {
       const sent = input.results.some((result) => result.status === "accepted");
       const firstFailure = input.results.find((result) => result.status === "rejected");
@@ -143,13 +135,44 @@ export class DrizzlePushDeliveryFinalizationRepository implements PushDeliveryFi
         `)
       ).rows,
     );
-    const finalizedDispatchIds = new Set(finalized.map((item) => item.dispatchId));
-    const attemptValues = inputs.flatMap((input) => {
-      if (!finalizedDispatchIds.has(input.fence.dispatchId)) {
+    await this.#recordAttempts({
+      inputs,
+      finalizedDispatchIds: new Set(finalized.map((item) => item.dispatchId)),
+      tokenIdByValue,
+      now,
+    });
+
+    await this.#markOutboxesTerminal(finalized, now);
+    return finalized.length;
+  }
+
+  async #findTokenIds(
+    inputs: readonly FinalizePushDeliveryResultsInput[],
+  ): Promise<ReadonlyMap<string, number>> {
+    const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
+    if (allTokens.length === 0) {
+      return new Map();
+    }
+    const tokens = await this.#db
+      .select({ id: pushToken.id, token: pushToken.token })
+      .from(pushToken)
+      .where(inArray(pushToken.token, allTokens));
+    return new Map(tokens.map((token) => [token.token, token.id]));
+  }
+
+  // 담당 표시가 맞아 끝낸 발송의 토큰별 결과만 남긴다
+  async #recordAttempts(attempt: {
+    readonly inputs: readonly FinalizePushDeliveryResultsInput[];
+    readonly finalizedDispatchIds: ReadonlySet<number>;
+    readonly tokenIdByValue: ReadonlyMap<string, number>;
+    readonly now: Temporal.Instant;
+  }): Promise<void> {
+    const attemptValues = attempt.inputs.flatMap((input) => {
+      if (!attempt.finalizedDispatchIds.has(input.fence.dispatchId)) {
         return [];
       }
       return input.results.flatMap((result) => {
-        const pushTokenId = tokenIdByValue.get(result.token);
+        const pushTokenId = attempt.tokenIdByValue.get(result.token);
         if (!pushTokenId) {
           return [];
         }
@@ -159,7 +182,7 @@ export class DrizzlePushDeliveryFinalizationRepository implements PushDeliveryFi
             pushTokenId,
             tokenFingerprint: pushTokenFingerprint(result.token),
             ...toAttemptOutcome(result),
-            updatedAt: now,
+            updatedAt: attempt.now,
           },
         ];
       });
@@ -178,13 +201,10 @@ export class DrizzlePushDeliveryFinalizationRepository implements PushDeliveryFi
             errorCode: excluded(pushDeliveryAttempt.errorCode),
             errorMessage: excluded(pushDeliveryAttempt.errorMessage),
             receiptCheckedAt: null,
-            updatedAt: now,
+            updatedAt: attempt.now,
           },
         });
     }
-
-    await this.#markOutboxesTerminal(finalized, now);
-    return finalized.length;
   }
 
   async #markOutboxesTerminal(

@@ -7,6 +7,7 @@ import { type JobEnvelope, JobQueuePort } from "#api/shared/application/ports/jo
 import { DeliverPushNotificationsUseCase } from "../../application/use-cases/deliver-push-notifications.use-case.js";
 import { RecoverFailedPushDeliveriesUseCase } from "../../application/use-cases/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "../../application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { PushDeliveryJobId } from "../../domain/push-delivery-job-id.vo.js";
 import {
   PUSH_DELIVERY_DEAD_LETTER_QUEUE,
   PUSH_DELIVERY_QUEUE,
@@ -70,7 +71,7 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
       .with({ name: PushDeliveryJobName.RELAY_OUTBOX }, () => this.#relayOutbox.execute())
       .with({ name: PushDeliveryJobName.DELIVER_DISPATCHES }, ({ data }) =>
         this.#deliverPushNotifications.execute({
-          processingJobId,
+          processingJobId: PushDeliveryJobId.reconstitute(processingJobId),
           processingJobAttempt: jobAttempt,
           publications: data,
           // JobQueuePort는 pg-boss의 attempt를 1부터 센다

@@ -1,5 +1,8 @@
 import { pushNotificationDataSchema } from "@aido/api/contracts/notification/v1";
 
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 
 import { PushNotificationPayloadMapper } from "./push-notification-payload.mapper.js";
@@ -37,8 +40,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         campaignKey: "transactional.v1",
         variantId: "comment.created.ko.v1",
       },
-      notificationId: 101,
-      dispatchId: 202,
+      notificationId: NotificationId.reconstitute(101),
+      dispatchId: PushDispatchId.reconstitute(202),
       ttlSeconds: TTL_SECONDS,
     });
 
@@ -86,15 +89,15 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
     const single = factory.createSingle({
       locale: "ko",
       data: reminder,
-      notificationId: 1,
-      dispatchId: 2,
+      notificationId: NotificationId.reconstitute(1),
+      dispatchId: PushDispatchId.reconstitute(2),
       ttlSeconds: 540,
     });
     const batch = factory.createBatch({
       locale: "ko",
       data: reminder,
-      notificationId: 3,
-      dispatchId: 4,
+      notificationId: NotificationId.reconstitute(3),
+      dispatchId: PushDispatchId.reconstitute(4),
       ttlSeconds: 60,
     });
 
@@ -116,13 +119,13 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         body: "본문",
         purpose: "ENGAGEMENT",
       },
-      notificationId: 1,
-      dispatchId: 2,
+      notificationId: NotificationId.reconstitute(1),
+      dispatchId: PushDispatchId.reconstitute(2),
       ttlSeconds: TTL_SECONDS,
     });
 
     // Then
-    expect(payload.categoryId).toBe("MARKETING");
+    expect(payload.categoryId?.value).toBe("MARKETING");
     expect(payload.data).toMatchObject({
       purpose: "ENGAGEMENT",
       marketingOptOutToken: "opt-out:user-1",
@@ -155,21 +158,21 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       // When
       const single = factory.createSingle({
         data,
-        notificationId: 1,
-        dispatchId: 2,
+        notificationId: NotificationId.reconstitute(1),
+        dispatchId: PushDispatchId.reconstitute(2),
         locale: "ko",
         ttlSeconds: TTL_SECONDS,
       });
       const batch = factory.createBatch({
         data,
-        notificationId: 3,
-        dispatchId: 4,
+        notificationId: NotificationId.reconstitute(3),
+        dispatchId: PushDispatchId.reconstitute(4),
         locale: "ko",
         ttlSeconds: TTL_SECONDS,
       });
 
       // Then
-      expect([single.categoryId, batch.categoryId]).toEqual([categoryId, categoryId]);
+      expect([single.categoryId?.value, batch.categoryId?.value]).toEqual([categoryId, categoryId]);
       expect(single.title).toBe("10분 뒤 시작이에요");
       expect(single.data).not.toHaveProperty("marketingOptOutToken");
       expect(optOutTokens.issuedUserIds).toEqual([]);
@@ -188,15 +191,15 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         purpose: "ENGAGEMENT",
         campaignKey: "feature-discovery-2026-08",
       },
-      notificationId: 10,
-      dispatchId: 20,
+      notificationId: NotificationId.reconstitute(10),
+      dispatchId: PushDispatchId.reconstitute(20),
       ttlSeconds: TTL_SECONDS,
     });
 
     // Then
     expect(payload).toMatchObject({
-      userId: "user-1",
-      dispatchId: 20,
+      userId: UserId.reconstitute("user-1"),
+      dispatchId: PushDispatchId.reconstitute(20),
       requiresFeatureCapability: true,
       title: "(광고) 새 기능",
       body: "본문\n수신 거부: 설정 > 알림",
@@ -206,7 +209,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         marketingOptOutToken: "opt-out:user-1",
       },
     });
-    expect(payload.categoryId).toBe("MARKETING");
+    expect(payload.categoryId?.value).toBe("MARKETING");
   });
 
   it("명시 action URL은 타입과 함께 보존한다", () => {
@@ -220,8 +223,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         body: "본문",
         action: { type: "BROWSER", url: "https://aido.kr/notice" },
       },
-      notificationId: 1,
-      dispatchId: 2,
+      notificationId: NotificationId.reconstitute(1),
+      dispatchId: PushDispatchId.reconstitute(2),
       ttlSeconds: TTL_SECONDS,
     });
 
@@ -247,8 +250,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
     const payload = factory.createBatch({
       locale: "ko",
       data,
-      notificationId: 1,
-      dispatchId: 2,
+      notificationId: NotificationId.reconstitute(1),
+      dispatchId: PushDispatchId.reconstitute(2),
       ttlSeconds: TTL_SECONDS,
     });
 
@@ -287,8 +290,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       const payload = factory.createSingle({
         locale: "ko",
         data,
-        notificationId: 7,
-        dispatchId: 8,
+        notificationId: NotificationId.reconstitute(7),
+        dispatchId: PushDispatchId.reconstitute(8),
         ttlSeconds: TTL_SECONDS,
       });
 
@@ -327,14 +330,15 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         // When
         const payload = factory.createSingle({
           data,
-          notificationId: 1,
-          dispatchId: 2,
+          notificationId: NotificationId.reconstitute(1),
+          dispatchId: PushDispatchId.reconstitute(2),
           locale,
           ttlSeconds: TTL_SECONDS,
         });
 
         // Then
-        expect(payload).toMatchObject({ title, body, categoryId: "MARKETING" });
+        expect(payload).toMatchObject({ title, body });
+        expect(payload.categoryId?.value).toBe("MARKETING");
       },
     );
 
@@ -361,8 +365,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       // When
       const payload = factory.createSingle({
         data,
-        notificationId: 1,
-        dispatchId: 2,
+        notificationId: NotificationId.reconstitute(1),
+        dispatchId: PushDispatchId.reconstitute(2),
         ttlSeconds: TTL_SECONDS,
         locale: "ko",
       });
@@ -388,8 +392,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
       const payload = factory.createSingle({
         locale: "ko",
         data,
-        notificationId: 1,
-        dispatchId: 2,
+        notificationId: NotificationId.reconstitute(1),
+        dispatchId: PushDispatchId.reconstitute(2),
         ttlSeconds: TTL_SECONDS,
       });
 

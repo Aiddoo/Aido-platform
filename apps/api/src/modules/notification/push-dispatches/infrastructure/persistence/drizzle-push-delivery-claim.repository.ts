@@ -65,7 +65,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
           dispatch,
           outbox: dispatch.outbox,
           claim,
-          processingJobId: input.processingJobId,
+          processingJobId: input.processingJobId.value,
         }),
       ];
     });
@@ -156,7 +156,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
             UPDATE ${pushDispatch}
             SET
               ${setColumn(pushDispatch.status)} = ${"PROCESSING"}::${pushDispatchStatus},
-              ${setColumn(pushDispatch.processingJobId)} = ${input.processingJobId},
+              ${setColumn(pushDispatch.processingJobId)} = ${input.processingJobId.value},
               ${setColumn(pushDispatch.processingJobAttempt)} = ${input.processingJobAttempt},
               ${setColumn(pushDispatch.processingStartedAt)} = ${startedAt},
               ${setColumn(pushDispatch.deliveryAttemptCount)} = ${pushDispatch.deliveryAttemptCount} + 1,
@@ -189,29 +189,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
         `)
       ).rows,
     );
-    const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
-    const claimedRows = ownershipRows.flatMap((row) => {
-      if (
-        row.dispatchId == null ||
-        row.deliveryAttemptCount == null ||
-        row.publishAttempt == null
-      ) {
-        return [];
-      }
-      return [
-        {
-          dispatchId: row.dispatchId,
-          deliveryAttemptCount: row.deliveryAttemptCount,
-          publishAttempt: row.publishAttempt,
-        },
-      ];
-    });
-    if (claimedRows.length !== ownedOutboxCount) {
-      throw new Error(
-        `Push delivery claim ownership fence mismatch: owned=${ownedOutboxCount}, claimed=${claimedRows.length}`,
-      );
-    }
-    return claimedRows;
+    return toClaimedRows(ownershipRows);
   }
 
   async #loadClaimedDispatches(
@@ -235,7 +213,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
               deliveryAttemptCount: claim.deliveryAttemptCount,
             })),
           },
-          { processingJobId: input.processingJobId, status: "PROCESSING" },
+          { processingJobId: input.processingJobId.value, status: "PROCESSING" },
         ],
       },
       with: {
@@ -271,7 +249,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
       eq(pushDispatch.status, "PENDING"),
       and(
         eq(pushDispatch.status, "PROCESSING"),
-        eq(pushDispatch.processingJobId, input.processingJobId),
+        eq(pushDispatch.processingJobId, input.processingJobId.value),
         lt(sql`COALESCE(${pushDispatch.processingJobAttempt}, 0)`, input.processingJobAttempt),
       ),
     );
@@ -327,4 +305,27 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
   get #db() {
     return this.#transactionHost.tx;
   }
+}
+
+// 소유한 outbox 수와 claim한 dispatch 수가 다르면 같은 스냅샷이 아니므로 멈춘다
+function toClaimedRows(ownershipRows: readonly z.infer<typeof claimRowSchema>[]): ClaimedRow[] {
+  const ownedOutboxCount = ownershipRows[0]?.ownedOutboxCount ?? 0;
+  const claimedRows = ownershipRows.flatMap((row) => {
+    if (row.dispatchId == null || row.deliveryAttemptCount == null || row.publishAttempt == null) {
+      return [];
+    }
+    return [
+      {
+        dispatchId: row.dispatchId,
+        deliveryAttemptCount: row.deliveryAttemptCount,
+        publishAttempt: row.publishAttempt,
+      },
+    ];
+  });
+  if (claimedRows.length !== ownedOutboxCount) {
+    throw new Error(
+      `Push delivery claim ownership fence mismatch: owned=${ownedOutboxCount}, claimed=${claimedRows.length}`,
+    );
+  }
+  return claimedRows;
 }

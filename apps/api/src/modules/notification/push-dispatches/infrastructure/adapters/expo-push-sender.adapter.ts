@@ -21,6 +21,7 @@ import {
   PUSH_FAILURE_KIND,
   type PushFailureKind,
 } from "../../domain/push-failure-kind.constants.js";
+import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import { notificationPushDispatchesConfig } from "../../notification-push-dispatches.config.js";
 import { EXPO_PUSH_POLICY } from "./expo-outbound.policy.js";
 import { buildExpoPushMessage } from "./expo-push-message.mapper.js";
@@ -83,9 +84,11 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     this.#policy = policies.get(EXPO_PUSH_POLICY);
   }
 
-  async getReceipts(ticketIds: readonly string[]): Promise<PushReceiptResult[]> {
+  async getReceipts(ticketIds: readonly PushTicketId[]): Promise<PushReceiptResult[]> {
     const results: PushReceiptResult[] = [];
-    for (const receiptBatch of this.#expo.chunkPushNotificationReceiptIds([...ticketIds])) {
+    for (const receiptBatch of this.#expo.chunkPushNotificationReceiptIds(
+      ticketIds.map((ticketId) => ticketId.value),
+    )) {
       const receipts = await this.#policy.execute(() =>
         this.#expo.getPushNotificationReceiptsAsync(receiptBatch),
       );
@@ -96,9 +99,9 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
         }
         results.push(
           receipt.status === "ok"
-            ? { ticketId, status: "delivered" }
+            ? { ticketId: PushTicketId.reconstitute(ticketId), status: "delivered" }
             : {
-                ticketId,
+                ticketId: PushTicketId.reconstitute(ticketId),
                 status: "failed",
                 failure: this.#failure(receipt.details?.error, receipt.message),
               },
@@ -201,7 +204,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
       return this.#rejected(token, { kind: PUSH_FAILURE_KIND.UNKNOWN });
     }
     if (ticket.status === "ok") {
-      return { token, status: "accepted", ticketId: ticket.id };
+      return { token, status: "accepted", ticketId: PushTicketId.reconstitute(ticket.id) };
     }
     const failure = this.#failure(ticket.details?.error, ticket.message);
     this.#logger.warn({

@@ -2,6 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import type { PushDeliveryJobId } from "../../domain/push-delivery-job-id.vo.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../domain/push-delivery-outbox-retry.domain-service.js";
 import type {
   ClaimedPushDelivery,
@@ -16,7 +17,7 @@ import type { DeliverSinglePushUseCase } from "./deliver-single-push.use-case.js
 
 export interface DeliverPushNotificationsCommand {
   readonly publications: readonly PushDeliveryPublicationReadModel[];
-  readonly processingJobId: string;
+  readonly processingJobId: PushDeliveryJobId;
   readonly processingJobAttempt: number;
   readonly isFinalAttempt: boolean;
 }

@@ -10,6 +10,7 @@ import {
   type PushDeliverySettingsDecision,
   skippedPushDelivery,
 } from "../../domain/push-delivery-decision.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import {
   isAiPushDisabled,
   isAutomatedEngagementNotification,
@@ -56,8 +57,8 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       !hasReservedRateLimit &&
       !isGeneralRateLimitExemptNotification(data.type) &&
       (await this.#dependencies.rateLimiter.reserveGeneral({
-        dispatchId: rateLimitDispatchId,
-        userId: data.userId,
+        dispatchId: PushDispatchId.reconstitute(rateLimitDispatchId),
+        userId: UserId.reconstitute(data.userId),
       }))
     ) {
       return skippedPushDelivery(data, "RATE_LIMITED");
@@ -89,8 +90,8 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       !hasReservedRateLimit &&
       isEngagement &&
       (await this.#dependencies.rateLimiter.reserveEngagement({
-        dispatchId: rateLimitDispatchId,
-        userId: data.userId,
+        dispatchId: PushDispatchId.reconstitute(rateLimitDispatchId),
+        userId: UserId.reconstitute(data.userId),
         localDate: recipient.localDate,
       }))
     ) {

@@ -20,16 +20,16 @@ export class StubPushRateLimiter extends PushRateLimiterPort {
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
     this.generalRequests.push(request);
-    return this.limitedGeneralUserIds.has(request.userId);
+    return this.limitedGeneralUserIds.has(request.userId.value);
   }
 
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     this.engagementRequests.push(request);
-    return this.limitedEngagementUserIds.has(request.userId);
+    return this.limitedEngagementUserIds.has(request.userId.value);
   }
 
   async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
     this.batchRequests.push([...requests]);
-    return requests.map((request) => this.limitedBatchUserIds.has(request.userId));
+    return requests.map((request) => this.limitedBatchUserIds.has(request.userId.value));
   }
 }

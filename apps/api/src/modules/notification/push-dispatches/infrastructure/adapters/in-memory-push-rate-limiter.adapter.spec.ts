@@ -1,5 +1,8 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/push-rate-limit.constants.js";
 import {
   InMemoryPushRateLimiterAdapter,
@@ -18,7 +21,11 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
     const reserve = (dispatchId: number) =>
-      limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
+      limiter.reserveEngagement({
+        userId: UserId.reconstitute(USER_ID),
+        localDate: "2026-07-15",
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+      });
 
     // When
     const first = await reserve(1);
@@ -39,7 +46,11 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
     const reserve = (dispatchId: number) =>
-      limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
+      limiter.reserveEngagement({
+        userId: UserId.reconstitute(USER_ID),
+        localDate: "2026-07-15",
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+      });
     expect(await reserve(1)).toBe(false);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     expect(await reserve(2)).toBe(false);
@@ -57,12 +68,20 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
 
     // When
     const firstBatch = await limiter.reserveBatch([
-      { userId: USER_ID, dispatchId: 1, engagementLocalDate: "2026-07-15" },
-      { userId: "user-2", dispatchId: 2 },
+      {
+        userId: UserId.reconstitute(USER_ID),
+        dispatchId: PushDispatchId.reconstitute(1),
+        engagementLocalDate: "2026-07-15",
+      },
+      { userId: UserId.reconstitute("user-2"), dispatchId: PushDispatchId.reconstitute(2) },
     ]);
     const secondBatch = await limiter.reserveBatch([
-      { userId: USER_ID, dispatchId: 3, engagementLocalDate: "2026-07-15" },
-      { userId: "user-2", dispatchId: 4 },
+      {
+        userId: UserId.reconstitute(USER_ID),
+        dispatchId: PushDispatchId.reconstitute(3),
+        engagementLocalDate: "2026-07-15",
+      },
+      { userId: UserId.reconstitute("user-2"), dispatchId: PushDispatchId.reconstitute(4) },
     ]);
 
     // Then
@@ -73,12 +92,18 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
   it("같은 dispatch 예약은 재시도와 새 publication generation에서도 한 번만 소비한다", async () => {
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
-    const request = { userId: USER_ID, engagementLocalDate: "2026-07-15", dispatchId: 501 };
+    const request = {
+      userId: UserId.reconstitute(USER_ID),
+      engagementLocalDate: "2026-07-15",
+      dispatchId: PushDispatchId.reconstitute(501),
+    };
 
     // When
     const first = await limiter.reserveBatch([request]);
     const retry = await limiter.reserveBatch([request]);
-    const otherDispatch = await limiter.reserveBatch([{ ...request, dispatchId: 502 }]);
+    const otherDispatch = await limiter.reserveBatch([
+      { ...request, dispatchId: PushDispatchId.reconstitute(502) },
+    ]);
 
     // Then
     expect(first).toEqual([false]);
@@ -90,27 +115,46 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
     const localDate = "2026-07-15";
-    await limiter.reserveEngagement({ userId: USER_ID, localDate, dispatchId: 1 });
+    await limiter.reserveEngagement({
+      userId: UserId.reconstitute(USER_ID),
+      localDate,
+      dispatchId: PushDispatchId.reconstitute(1),
+    });
 
     // When
     const limited = await limiter.reserveBatch([
-      { userId: USER_ID, engagementLocalDate: localDate, dispatchId: 2 },
+      {
+        userId: UserId.reconstitute(USER_ID),
+        engagementLocalDate: localDate,
+        dispatchId: PushDispatchId.reconstitute(2),
+      },
     ]);
 
     // Then
     expect(limited).toEqual([true]);
     for (let index = 0; index < 15; index += 1) {
       await expect(
-        limiter.reserveGeneral({ userId: USER_ID, dispatchId: 100 + index }),
+        limiter.reserveGeneral({
+          userId: UserId.reconstitute(USER_ID),
+          dispatchId: PushDispatchId.reconstitute(100 + index),
+        }),
       ).resolves.toBe(false);
     }
-    await expect(limiter.reserveGeneral({ userId: USER_ID, dispatchId: 200 })).resolves.toBe(true);
+    await expect(
+      limiter.reserveGeneral({
+        userId: UserId.reconstitute(USER_ID),
+        dispatchId: PushDispatchId.reconstitute(200),
+      }),
+    ).resolves.toBe(true);
   });
 
   it("단건 일반·engagement 단계도 같은 dispatch 예약을 각각 재사용한다", async () => {
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
-    const general = { userId: USER_ID, dispatchId: 601 };
+    const general = {
+      userId: UserId.reconstitute(USER_ID),
+      dispatchId: PushDispatchId.reconstitute(601),
+    };
     const engagement = { ...general, localDate: "2026-07-15" };
 
     // When
@@ -129,17 +173,33 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
   it("batch 예약 marker는 general window와 현지 날짜가 바뀌어도 같은 dispatch를 재사용한다", async () => {
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
-    const original = { userId: USER_ID, engagementLocalDate: "2026-07-15", dispatchId: 701 };
+    const original = {
+      userId: UserId.reconstitute(USER_ID),
+      engagementLocalDate: "2026-07-15",
+      dispatchId: PushDispatchId.reconstitute(701),
+    };
     await expect(limiter.reserveBatch([original])).resolves.toEqual([false]);
 
     // When
     vi.advanceTimersByTime(5 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 702 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(702),
+        },
+      ]),
     ).resolves.toEqual([false]);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 703 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(703),
+        },
+      ]),
     ).resolves.toEqual([false]);
 
     // Then
@@ -147,26 +207,43 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
       limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16" }]),
     ).resolves.toEqual([false]);
     await expect(
-      limiter.reserveBatch([{ ...original, engagementLocalDate: "2026-07-16", dispatchId: 704 }]),
+      limiter.reserveBatch([
+        {
+          ...original,
+          engagementLocalDate: "2026-07-16",
+          dispatchId: PushDispatchId.reconstitute(704),
+        },
+      ]),
     ).resolves.toEqual([true]);
   });
 
   it("단건 general 예약 직후 crash한 재시도는 window가 지나도 quota를 다시 쓰지 않는다", async () => {
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
-    const reserved = { userId: USER_ID, dispatchId: 801 };
+    const reserved = {
+      userId: UserId.reconstitute(USER_ID),
+      dispatchId: PushDispatchId.reconstitute(801),
+    };
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
 
     // When
     vi.advanceTimersByTime(2 * 60 * 60 * 1000);
     for (let index = 0; index < 15; index += 1) {
       await expect(
-        limiter.reserveGeneral({ userId: USER_ID, dispatchId: 900 + index }),
+        limiter.reserveGeneral({
+          userId: UserId.reconstitute(USER_ID),
+          dispatchId: PushDispatchId.reconstitute(900 + index),
+        }),
       ).resolves.toBe(false);
     }
 
     // Then
-    await expect(limiter.reserveGeneral({ userId: USER_ID, dispatchId: 999 })).resolves.toBe(true);
+    await expect(
+      limiter.reserveGeneral({
+        userId: UserId.reconstitute(USER_ID),
+        dispatchId: PushDispatchId.reconstitute(999),
+      }),
+    ).resolves.toBe(true);
     await expect(limiter.reserveGeneral(reserved)).resolves.toBe(false);
     await expect(limiter.reserveEngagement({ ...reserved, localDate: "2026-07-16" })).resolves.toBe(
       false,
@@ -178,23 +255,35 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     const limiter = new InMemoryPushRateLimiterAdapter();
     const fillQuota = async (userId: string, firstDispatchId: number) => {
       for (let index = 0; index < PUSH_RATE_LIMIT_POLICY.GENERAL.MAX; index += 1) {
-        await limiter.reserveGeneral({ userId, dispatchId: firstDispatchId + index });
+        await limiter.reserveGeneral({
+          userId: UserId.reconstitute(userId),
+          dispatchId: PushDispatchId.reconstitute(firstDispatchId + index),
+        });
       }
     };
     await fillQuota("oldest", 1);
 
     // When
     for (let index = 0; index < PUSH_RATE_LIMIT_MAX_ENTRIES; index += 1) {
-      await limiter.reserveGeneral({ userId: `user-${index}`, dispatchId: 100 + index });
+      await limiter.reserveGeneral({
+        userId: UserId.reconstitute(`user-${index}`),
+        dispatchId: PushDispatchId.reconstitute(100 + index),
+      });
     }
     await fillQuota("newest", 50_000);
 
     // Then
-    await expect(limiter.reserveGeneral({ userId: "oldest", dispatchId: 60_000 })).resolves.toBe(
-      false,
-    );
-    await expect(limiter.reserveGeneral({ userId: "newest", dispatchId: 60_001 })).resolves.toBe(
-      true,
-    );
+    await expect(
+      limiter.reserveGeneral({
+        userId: UserId.reconstitute("oldest"),
+        dispatchId: PushDispatchId.reconstitute(60_000),
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      limiter.reserveGeneral({
+        userId: UserId.reconstitute("newest"),
+        dispatchId: PushDispatchId.reconstitute(60_001),
+      }),
+    ).resolves.toBe(true);
   });
 });

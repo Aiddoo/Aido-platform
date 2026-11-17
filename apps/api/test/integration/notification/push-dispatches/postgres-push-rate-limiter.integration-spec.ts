@@ -1,5 +1,6 @@
 import { and, count, eq, type SQL } from "drizzle-orm";
 
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { PostgresPushRateLimiterAdapter } from "#api/modules/notification/push-dispatches/infrastructure/adapters/postgres-push-rate-limiter.adapter";
 import {
   notification,
@@ -7,6 +8,7 @@ import {
   pushRateLimitReservation,
   user,
 } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -79,9 +81,15 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
     const dispatchId = await createDispatch(userId, "retry");
 
     // When
-    const firstDecision = await limiter.reserveGeneral({ dispatchId, userId });
+    const firstDecision = await limiter.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(dispatchId),
+      userId: UserId.reconstitute(userId),
+    });
     const restarted = new PostgresPushRateLimiterAdapter(client, new DateClock());
-    const retriedDecision = await restarted.reserveGeneral({ dispatchId, userId });
+    const retriedDecision = await restarted.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(dispatchId),
+      userId: UserId.reconstitute(userId),
+    });
 
     // Then
     expect(firstDecision).toBe(false);
@@ -103,12 +111,22 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
       Array.from({ length: 16 }, (_, index) => createDispatch(userId, `race-${index}`)),
     );
     for (const dispatchId of dispatchIds.slice(0, 14)) {
-      await expect(limiter.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
+      await expect(
+        limiter.reserveGeneral({
+          dispatchId: PushDispatchId.reconstitute(dispatchId),
+          userId: UserId.reconstitute(userId),
+        }),
+      ).resolves.toBe(false);
     }
 
     // When
     const decisions = await Promise.all(
-      dispatchIds.slice(14).map((dispatchId) => limiter.reserveGeneral({ dispatchId, userId })),
+      dispatchIds.slice(14).map((dispatchId) =>
+        limiter.reserveGeneral({
+          dispatchId: PushDispatchId.reconstitute(dispatchId),
+          userId: UserId.reconstitute(userId),
+        }),
+      ),
     );
 
     // Then
@@ -132,22 +150,22 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
     const second = await createDispatch(userId, "interval-b");
     const third = await createDispatch(userId, "interval-c");
     await clockedLimiter.reserveEngagement({
-      dispatchId: first,
-      userId,
+      dispatchId: PushDispatchId.reconstitute(first),
+      userId: UserId.reconstitute(userId),
       localDate: "2026-08-29",
     });
 
     // When
     clock.advanceBy({ hours: 3 });
     const withinInterval = await clockedLimiter.reserveEngagement({
-      dispatchId: second,
-      userId,
+      dispatchId: PushDispatchId.reconstitute(second),
+      userId: UserId.reconstitute(userId),
       localDate: "2026-08-29",
     });
     clock.advanceBy({ hours: 1 });
     const afterInterval = await clockedLimiter.reserveEngagement({
-      dispatchId: third,
-      userId,
+      dispatchId: PushDispatchId.reconstitute(third),
+      userId: UserId.reconstitute(userId),
       localDate: "2026-08-29",
     });
 
@@ -166,11 +184,14 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
     // When
     const decisions = await limiter.reserveBatch([
       {
-        dispatchId: firstDispatchId,
-        userId: firstUserId,
+        dispatchId: PushDispatchId.reconstitute(firstDispatchId),
+        userId: UserId.reconstitute(firstUserId),
         engagementLocalDate: "2026-08-29",
       },
-      { dispatchId: secondDispatchId, userId: secondUserId },
+      {
+        dispatchId: PushDispatchId.reconstitute(secondDispatchId),
+        userId: UserId.reconstitute(secondUserId),
+      },
     ]);
 
     // Then

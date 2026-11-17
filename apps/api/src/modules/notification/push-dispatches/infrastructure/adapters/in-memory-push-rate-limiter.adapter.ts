@@ -6,6 +6,7 @@ import type {
   PushRateLimitRequest,
   PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port.js";
+import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/push-rate-limit.constants.js";
 
 const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
@@ -39,12 +40,12 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
   readonly #engagementReservations = createWindowStore<number>(ENGAGEMENT.RETENTION_MS);
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
-    return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
+    return this.#reserveGeneral(request.userId.value, this.#reservationId(request.dispatchId));
   }
 
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     return this.#reserveEngagement(
-      request.userId,
+      request.userId.value,
       request.localDate,
       this.#reservationId(request.dispatchId),
     );
@@ -56,25 +57,25 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
       const now = Date.now();
       const reservationId = this.#reservationId(request.dispatchId);
       const engagementKey = request.engagementLocalDate
-        ? `${request.userId}:${request.engagementLocalDate}`
+        ? `${request.userId.value}:${request.engagementLocalDate}`
         : null;
       const generalReserved = this.#hasReservation(
         this.#generalReservations,
-        `${request.userId}:${reservationId}`,
+        `${request.userId.value}:${reservationId}`,
         now,
       );
       const engagementReserved =
         engagementKey == null ||
         this.#hasReservation(
           this.#engagementReservations,
-          `${request.userId}:${reservationId}`,
+          `${request.userId.value}:${reservationId}`,
           now,
         );
 
-      const generalTimestamps = (this.#pushTimestamps.get(request.userId) ?? []).filter(
+      const generalTimestamps = (this.#pushTimestamps.get(request.userId.value) ?? []).filter(
         (timestamp) => timestamp > now - GENERAL.WINDOW_MS,
       );
-      this.#pushTimestamps.set(request.userId, generalTimestamps);
+      this.#pushTimestamps.set(request.userId.value, generalTimestamps);
       if (!generalReserved && generalTimestamps.length >= GENERAL.MAX) {
         results.push(true);
         continue;
@@ -103,13 +104,13 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
       }
       if (!generalReserved) {
         this.#generalReservations.set(
-          `${request.userId}:${reservationId}`,
+          `${request.userId.value}:${reservationId}`,
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
       if (engagementKey && !engagementReserved) {
         this.#engagementReservations.set(
-          `${request.userId}:${reservationId}`,
+          `${request.userId.value}:${reservationId}`,
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
@@ -166,7 +167,7 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
     return expiresAt != null && expiresAt > now;
   }
 
-  #reservationId(dispatchId: number): string {
-    return `push-dispatch-${dispatchId}`;
+  #reservationId(dispatchId: PushDispatchId): string {
+    return `push-dispatch-${dispatchId.value}`;
   }
 }

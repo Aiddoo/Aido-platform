@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryUserNotificationSettings } from "#test/doubles/notification/in-memory-user-notification-settings";
 import { StubNotificationRecipientPreferenceReader } from "#test/doubles/notification/stub-notification-recipient-preference.reader";
 import { StubPushRateLimiter } from "#test/doubles/notification/stub-push-rate-limiter";
@@ -6,6 +7,7 @@ import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/noti
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { createSnoozedReminderMetadata } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { EvaluateBatchPushDeliverySettingsUseCase } from "./evaluate-batch-push-delivery-settings.use-case.js";
 import { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 import { LoadPushDeliveryRecipientUseCase } from "./load-push-delivery-recipient.use-case.js";
@@ -165,7 +167,11 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
       reason: "ENGAGEMENT_RATE_LIMITED",
     });
     expect(rateLimiter.engagementRequests).toEqual([
-      { dispatchId: RATE_LIMIT_DISPATCH_ID, userId: "user-1", localDate: "2026-07-16" },
+      {
+        dispatchId: PushDispatchId.reconstitute(RATE_LIMIT_DISPATCH_ID),
+        userId: UserId.reconstitute("user-1"),
+        localDate: "2026-07-16",
+      },
     ]);
   });
 
@@ -302,8 +308,16 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
     ]);
     expect(rateLimiter.batchRequests).toEqual([
       [
-        { dispatchId: 1, userId: "user-1", engagementLocalDate: "2026-07-16" },
-        { dispatchId: 2, userId: "user-2", engagementLocalDate: "2026-07-15" },
+        {
+          dispatchId: PushDispatchId.reconstitute(1),
+          userId: UserId.reconstitute("user-1"),
+          engagementLocalDate: "2026-07-16",
+        },
+        {
+          dispatchId: PushDispatchId.reconstitute(2),
+          userId: UserId.reconstitute("user-2"),
+          engagementLocalDate: "2026-07-15",
+        },
       ],
     ]);
   });
@@ -335,7 +349,10 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
         { status: "skipped", candidate: transactional, reason: "RATE_LIMITED" },
       ]);
       expect(rateLimiter.generalRequests).toEqual([
-        { dispatchId: RATE_LIMIT_DISPATCH_ID + 1, userId: "user-1" },
+        {
+          dispatchId: PushDispatchId.reconstitute(RATE_LIMIT_DISPATCH_ID + 1),
+          userId: UserId.reconstitute("user-1"),
+        },
       ]);
     });
 
@@ -367,8 +384,8 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
       ]);
       expect(rateLimiter.batchRequests).toEqual([
         [
-          { dispatchId: 2, userId: "user-1" },
-          { dispatchId: 3, userId: "user-2" },
+          { dispatchId: PushDispatchId.reconstitute(2), userId: UserId.reconstitute("user-1") },
+          { dispatchId: PushDispatchId.reconstitute(3), userId: UserId.reconstitute("user-2") },
         ],
       ]);
     });
@@ -404,7 +421,10 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
         { status: "eligible", candidate: transactional, ttlSeconds: 43_200 },
       ]);
       expect(rateLimiter.generalRequests).toEqual([
-        { dispatchId: RATE_LIMIT_DISPATCH_ID + 1, userId: "user-1" },
+        {
+          dispatchId: PushDispatchId.reconstitute(RATE_LIMIT_DISPATCH_ID + 1),
+          userId: UserId.reconstitute("user-1"),
+        },
       ]);
     });
 

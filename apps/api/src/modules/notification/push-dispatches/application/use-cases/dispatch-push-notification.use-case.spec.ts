@@ -1,5 +1,6 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
@@ -14,6 +15,8 @@ import { createPushTokenFixture } from "#test/fixtures/notification/push-token.f
 
 import type { PushTokenReadModel } from "../../../push-devices/application/read-models/push-token.read-model.js";
 import type { PushDevice } from "../../../push-devices/domain/push-device.aggregate.js";
+import { PushCategoryId } from "../../domain/push-category-id.vo.js";
+import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
 import { RetryablePushProviderTransportError } from "../push-dispatches.errors.js";
@@ -47,8 +50,8 @@ function batchPayload(input: {
   minAppVersion?: string;
 }): BatchPushNotificationPayload {
   return {
-    userId: input.userId,
-    dispatchId: input.dispatchId,
+    userId: UserId.reconstitute(input.userId),
+    dispatchId: PushDispatchId.reconstitute(input.dispatchId),
     requiresFeatureCapability: input.requiresFeatureCapability ?? false,
     ...(input.minAppVersion != null && { minAppVersion: input.minAppVersion }),
     title: `title-${input.dispatchId}`,
@@ -374,7 +377,11 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       payloads.map((payload) =>
         payload.token === "tablet-token"
           ? { token: payload.token, status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } }
-          : { token: payload.token, status: "accepted", ticketId: `ticket-${payload.token}` },
+          : {
+              token: payload.token,
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute(`ticket-${payload.token}`),
+            },
       );
 
     // When
@@ -388,9 +395,17 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     expect(result).toEqual({
       status: "sent",
       results: [
-        { token: "phone-token", status: "accepted", ticketId: "ticket-phone-token" },
+        {
+          token: "phone-token",
+          status: "accepted",
+          ticketId: PushTicketId.reconstitute("ticket-phone-token"),
+        },
         { token: "tablet-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
-        { token: "laptop-token", status: "accepted", ticketId: "ticket-laptop-token" },
+        {
+          token: "laptop-token",
+          status: "accepted",
+          ticketId: PushTicketId.reconstitute("ticket-laptop-token"),
+        },
       ],
     });
     expect(await activeTokensOf(pushTokenRepository, ["user-1"])).toEqual([
@@ -422,7 +437,12 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     // When
     const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
-      payload: { title: "title", body: "body", categoryId: "TEST", ...DELIVERY_OPTIONS },
+      payload: {
+        title: "title",
+        body: "body",
+        categoryId: PushCategoryId.reconstitute("TEST"),
+        ...DELIVERY_OPTIONS,
+      },
     });
 
     // Then
@@ -436,7 +456,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
           token: "invalid-token",
           title: "title",
           body: "body",
-          categoryId: "TEST",
+          categoryId: PushCategoryId.reconstitute("TEST"),
           ...DELIVERY_OPTIONS,
         },
       ],
@@ -469,8 +489,16 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       ],
     });
     pushProvider.nextResults = async () => [
-      { token: "generic-token", status: "accepted", ticketId: "ticket-1" },
-      { token: "feature-token", status: "accepted", ticketId: "ticket-2" },
+      {
+        token: "generic-token",
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("ticket-1"),
+      },
+      {
+        token: "feature-token",
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("ticket-2"),
+      },
     ];
 
     // When
@@ -506,10 +534,18 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     ]);
     expect([...prepared.attemptedDispatchIds]).toEqual([1, 2]);
     expect(result.resultsByDispatch.get(1)).toEqual([
-      { token: "generic-token", status: "accepted", ticketId: "ticket-1" },
+      {
+        token: "generic-token",
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("ticket-1"),
+      },
     ]);
     expect(result.resultsByDispatch.get(2)).toEqual([
-      { token: "feature-token", status: "accepted", ticketId: "ticket-2" },
+      {
+        token: "feature-token",
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("ticket-2"),
+      },
     ]);
     expect(prepared.skippedDispatches).toEqual([
       { dispatchId: 3, reason: "NO_ACTIVE_TOKEN" },
@@ -541,7 +577,11 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     });
     pushProvider.nextResults = async () => [
       { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
-      { token: "valid-token", status: "accepted", ticketId: "ticket-valid" },
+      {
+        token: "valid-token",
+        status: "accepted",
+        ticketId: PushTicketId.reconstitute("ticket-valid"),
+      },
     ];
     const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "user-1", dispatchId: 1 }),

@@ -22,6 +22,7 @@ import {
 } from "../../application/ports/push-notification-payload.port.js";
 import type { PushPayload } from "../../application/ports/push-provider.port.js";
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/feature-marketing-capability.domain-service.js";
+import { PushCategoryId } from "../../domain/push-category-id.vo.js";
 import { PUSH_DELIVERY_PRIORITY } from "../../domain/push-delivery-options.domain-service.js";
 import { isMarketingNotification } from "../../domain/push-eligibility.domain-service.js";
 import { toNotificationNavigation } from "./notification-navigation.mapper.js";
@@ -36,12 +37,15 @@ function isMarketingPush(data: CreateNotificationData): boolean {
  * 버튼 카테고리. 앱이 같은 id로 버튼을 등록하고, 등록하지 않은 앱은 버튼 없이 보여 앱 버전으로 나누지 않는다.
  * 리마인드 버튼은 할 일을 알리는 단계에만 붙는다(반복 알림 멈춤 안내에는 없다)
  */
-function pushCategoryIdOf(data: CreateNotificationData, isMarketing: boolean): string | null {
+function pushCategoryIdOf(
+  data: CreateNotificationData,
+  isMarketing: boolean,
+): PushCategoryId | null {
   if (isMarketing) {
-    return MARKETING_PUSH_CATEGORY_ID;
+    return PushCategoryId.reconstitute(MARKETING_PUSH_CATEGORY_ID);
   }
   if (data.type === "TODO_REMINDER" && isActionableTodoReminderStage(data.metadata?.stage)) {
-    return TODO_REMINDER_PUSH_CATEGORY_ID;
+    return PushCategoryId.reconstitute(TODO_REMINDER_PUSH_CATEGORY_ID);
   }
   return null;
 }
@@ -71,8 +75,8 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
       title: content.title,
       body: content.body,
       data: {
-        ...this.#createNotificationData(data, notificationId),
-        dispatchId,
+        ...this.#createNotificationData(data, notificationId.value),
+        dispatchId: dispatchId.value,
       },
       ttlSeconds: input.ttlSeconds,
       priority: PUSH_DELIVERY_PRIORITY,
@@ -84,7 +88,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
     const { data, dispatchId } = input;
     const minAppVersion = notificationMinAppVersion(data.type);
     return {
-      userId: data.userId,
+      userId: UserId.reconstitute(data.userId),
       dispatchId,
       requiresFeatureCapability: data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY,
       ...(minAppVersion != null && { minAppVersion }),

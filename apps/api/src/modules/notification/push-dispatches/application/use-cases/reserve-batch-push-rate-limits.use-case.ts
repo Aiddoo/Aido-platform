@@ -1,4 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
@@ -6,6 +7,7 @@ import {
   type PushDeliveryEligibilityDecision,
   skippedPushDelivery,
 } from "../../domain/push-delivery-decision.domain-service.js";
+import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import {
   isAutomatedEngagementNotification,
   isGeneralRateLimitExemptNotification,
@@ -65,8 +67,8 @@ export class ReserveBatchPushRateLimitsUseCase {
     const isEngagement =
       data.purpose === "ENGAGEMENT" || isAutomatedEngagementNotification(data.type);
     return {
-      dispatchId: candidate.rateLimitDispatchId,
-      userId: data.userId,
+      dispatchId: PushDispatchId.reconstitute(candidate.rateLimitDispatchId),
+      userId: UserId.reconstitute(data.userId),
       ...(isEngagement && {
         engagementLocalDate:
           recipient?.localDate ??

@@ -2,6 +2,8 @@ import { Propagation, type TransactionHost } from "@nestjs-cls/transactional";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 
+import { PushDeliveryJobId } from "#api/modules/notification/push-dispatches/domain/push-delivery-job-id.vo";
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -282,7 +284,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
           deliveryMode: "SINGLE",
           force: false,
         });
-        const claimed = await outbox(host).claimByDispatchIds([dispatchId], nowInstant());
+        const claimed = await outbox(host).claimByDispatchIds(
+          [PushDispatchId.reconstitute(dispatchId)],
+          nowInstant(),
+        );
         if (claimed.length === 0) {
           missed.push(dispatchId);
         }
@@ -358,14 +363,17 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const staged = await stageNotification({ userId: user.id, suffix: "claim-first" });
     const staleLockedAt = Temporal.Instant.from("2026-08-29T00:00:00.000Z");
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], staleLockedAt),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(staged.dispatchId)],
+        staleLockedAt,
+      ),
     );
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
     const claimTransaction = inTransaction(async () => {
       const claimed = await lifecycle(host).claim({
         publications: publication,
-        processingJobId: "general-claim-first",
+        processingJobId: PushDeliveryJobId.reconstitute("general-claim-first"),
         processingJobAttempt: 1,
         startedAt: Temporal.Instant.from("2026-08-29T00:20:00.000Z"),
       });
@@ -401,7 +409,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const staged = await stageNotification({ userId: user.id, suffix: "recovery-first" });
     const publication = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
-        [staged.dispatchId],
+        [PushDispatchId.reconstitute(staged.dispatchId)],
         Temporal.Instant.from("2026-08-29T00:00:00.000Z"),
       ),
     );
@@ -429,7 +437,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         claimStarted.resolve();
         return lifecycle(host).claim({
           publications: publication,
-          processingJobId: "general-recovery-first",
+          processingJobId: PushDeliveryJobId.reconstitute("general-recovery-first"),
           processingJobAttempt: 1,
           startedAt: Temporal.Instant.from("2026-08-29T00:20:00.000Z"),
         });
@@ -460,14 +468,17 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNDEF01");
     const staged = await stageNotification({ userId: user.id, suffix: "claim-before-defer" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(staged.dispatchId)],
+        nowInstant(),
+      ),
     );
     const claimOwnsRows = deferred();
     const releaseClaim = deferred();
     const claimTransaction = inTransaction(async () => {
       const claimed = await lifecycle(host).claim({
         publications: publication,
-        processingJobId: "general-claim-before-defer",
+        processingJobId: PushDeliveryJobId.reconstitute("general-claim-before-defer"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       });
@@ -515,7 +526,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("OWNDEF02");
     const staged = await stageNotification({ userId: user.id, suffix: "defer-before-claim" });
     const publication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(staged.dispatchId)],
+        nowInstant(),
+      ),
     );
     const deferOwnsOutbox = deferred();
     const releaseDefer = deferred();
@@ -539,7 +553,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         claimStarted.resolve();
         return lifecycle(host).claim({
           publications: publication,
-          processingJobId: "general-defer-before-claim",
+          processingJobId: PushDeliveryJobId.reconstitute("general-defer-before-claim"),
           processingJobAttempt: 1,
           startedAt: nowInstant(),
         });
@@ -573,13 +587,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
       suffix: "terminal-first",
     });
     const terminalPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([terminalFirst.dispatchId], nowInstant()),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(terminalFirst.dispatchId)],
+        nowInstant(),
+      ),
     );
     await inTransaction(() => outbox(host).markPublished(terminalPublication, nowInstant()));
     const [terminalInitialClaim] = await inTransaction(() =>
       lifecycle(host).claim({
         publications: terminalPublication,
-        processingJobId: "terminal-first-job",
+        processingJobId: PushDeliveryJobId.reconstitute("terminal-first-job"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -611,7 +628,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
         terminalRetryStarted.resolve();
         return lifecycle(host).claim({
           publications: terminalPublication,
-          processingJobId: "terminal-first-job",
+          processingJobId: PushDeliveryJobId.reconstitute("terminal-first-job"),
           processingJobAttempt: 2,
           startedAt: nowInstant(),
         });
@@ -639,13 +656,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     // Given
     const claimFirst = await stageNotification({ userId: user.id, suffix: "claim-first" });
     const claimPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([claimFirst.dispatchId], nowInstant()),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(claimFirst.dispatchId)],
+        nowInstant(),
+      ),
     );
     await inTransaction(() => outbox(host).markPublished(claimPublication, nowInstant()));
     const [claimInitialLease] = await inTransaction(() =>
       lifecycle(host).claim({
         publications: claimPublication,
-        processingJobId: "claim-first-job",
+        processingJobId: PushDeliveryJobId.reconstitute("claim-first-job"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -659,7 +679,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const retryTransaction = inTransaction(async () => {
       const [retry] = await lifecycle(host).claim({
         publications: claimPublication,
-        processingJobId: "claim-first-job",
+        processingJobId: PushDeliveryJobId.reconstitute("claim-first-job"),
         processingJobAttempt: 2,
         startedAt: nowInstant(),
       });
@@ -721,7 +741,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     // When
     const claimedOutbox = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
-        [staged.dispatchId],
+        [PushDispatchId.reconstitute(staged.dispatchId)],
         nowInstant().add({ milliseconds: 1000 }),
       ),
     );
@@ -746,7 +766,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const claimedDelivery = await inTransaction(() =>
       lifecycle(host).claim({
         publications: claimedOutbox,
-        processingJobId: "delivery-job-1",
+        processingJobId: PushDeliveryJobId.reconstitute("delivery-job-1"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -754,7 +774,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const duplicateDelivery = await inTransaction(() =>
       lifecycle(host).claim({
         publications: claimedOutbox,
-        processingJobId: "duplicate-job",
+        processingJobId: PushDeliveryJobId.reconstitute("duplicate-job"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -811,13 +831,16 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const user = await createUser("RECLAIM1");
     const staged = await stageNotification({ userId: user.id, suffix: "reclaim" });
     const firstPublication = await inTransaction(() =>
-      outbox(host).claimByDispatchIds([staged.dispatchId], nowInstant()),
+      outbox(host).claimByDispatchIds(
+        [PushDispatchId.reconstitute(staged.dispatchId)],
+        nowInstant(),
+      ),
     );
     await inTransaction(() => outbox(host).markPublished(firstPublication, nowInstant()));
     const firstClaim = await inTransaction(() =>
       lifecycle(host).claim({
         publications: firstPublication,
-        processingJobId: "stable-runtime-job",
+        processingJobId: PushDeliveryJobId.reconstitute("stable-runtime-job"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -858,7 +881,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const otherJobClaim = await inTransaction(() =>
       lifecycle(host).claim({
         publications: firstPublication,
-        processingJobId: "different-runtime-job",
+        processingJobId: PushDeliveryJobId.reconstitute("different-runtime-job"),
         processingJobAttempt: 2,
         startedAt: nowInstant(),
       }),
@@ -866,7 +889,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const retryClaim = await inTransaction(() =>
       lifecycle(host).claim({
         publications: firstPublication,
-        processingJobId: "stable-runtime-job",
+        processingJobId: PushDeliveryJobId.reconstitute("stable-runtime-job"),
         processingJobAttempt: 2,
         startedAt: nowInstant(),
       }),
@@ -924,7 +947,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const nextGenerationClaim = await inTransaction(() =>
       lifecycle(host).claim({
         publications: secondPublication,
-        processingJobId: "next-generation-job",
+        processingJobId: PushDeliveryJobId.reconstitute("next-generation-job"),
         processingJobAttempt: 1,
         startedAt: nowInstant(),
       }),
@@ -943,7 +966,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const staged = await stageNotification({ userId: user.id, suffix: "stale" });
     const publication = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
-        [staged.dispatchId],
+        [PushDispatchId.reconstitute(staged.dispatchId)],
         Temporal.Instant.from("2026-08-29T00:00:00Z"),
       ),
     );
@@ -953,7 +976,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     await inTransaction(() =>
       lifecycle(host).claim({
         publications: publication,
-        processingJobId: "final-attempt-release-failed",
+        processingJobId: PushDeliveryJobId.reconstitute("final-attempt-release-failed"),
         processingJobAttempt: 6,
         startedAt: Temporal.Instant.from("2026-08-29T00:00:02Z"),
       }),
@@ -1000,7 +1023,10 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     const terminal = await stageNotification({ userId: user.id, suffix: "claim-terminal" });
     const publications = await inTransaction(() =>
       outbox(host).claimByDispatchIds(
-        [first.dispatchId, terminal.dispatchId],
+        [
+          PushDispatchId.reconstitute(first.dispatchId),
+          PushDispatchId.reconstitute(terminal.dispatchId),
+        ],
         Temporal.Instant.from("2026-08-29T00:00:00Z"),
       ),
     );
