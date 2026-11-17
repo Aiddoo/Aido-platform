@@ -4,6 +4,7 @@ import {
 } from "#test/doubles/notification/recording-email-delivery";
 import { StubEmailTemplateRenderer } from "#test/doubles/notification/stub-email-template-renderer";
 
+import { EmailMessageId } from "../../domain/email-message-id.vo.js";
 import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 import { QueueEmailMessageUseCase } from "./queue-email-message.use-case.js";
 import { SendCodeEmailUseCase } from "./send-code-email.use-case.js";
@@ -47,7 +48,7 @@ describe("SendCodeEmailUseCase — 코드 메일 발송 요청", () => {
     // Then
     expect(result).toEqual({ status: "queued" });
     expect(queue.deliveries).toEqual([
-      { deliveryId: expect.any(String), message: queuedMessage() },
+      { deliveryId: expect.any(EmailMessageId), message: queuedMessage() },
     ]);
     expect(renderer.requests).toEqual([{ template: { kind: "verification", data }, locale: "en" }]);
     expect(queuedMessage().subject).toBe("[verification]");
@@ -72,8 +73,8 @@ describe("SendCodeEmailUseCase — 코드 메일 발송 요청", () => {
 
     // Then
     const [first, second] = queue.deliveries;
-    expect(first?.deliveryId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(second?.deliveryId).not.toBe(first?.deliveryId);
+    expect(first?.deliveryId.value).toMatch(/^[0-9a-f-]{36}$/);
+    expect(second?.deliveryId.value).not.toBe(first?.deliveryId.value);
     expect(budget.reserved).toEqual(["critical", "critical"]);
   });
 

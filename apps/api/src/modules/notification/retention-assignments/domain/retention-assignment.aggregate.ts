@@ -38,8 +38,6 @@ export class RetentionAssignment extends AggregateRoot<
   RetentionAssignmentId,
   RetentionAssignmentProps
 > {
-  #changes: RetentionAssignmentChange[] = [];
-
   static create(params: {
     readonly id: RetentionAssignmentId;
     readonly userId: UserId;
@@ -65,6 +63,8 @@ export class RetentionAssignment extends AggregateRoot<
       stages: primitives.stages.map((stage) => RetentionStage.reconstitute(stage)),
     });
   }
+
+  #changes: RetentionAssignmentChange[] = [];
 
   get userId(): UserId {
     return this.props.userId;

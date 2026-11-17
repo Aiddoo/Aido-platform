@@ -29,9 +29,10 @@ export class EnrollRetentionExperimentUseCase {
       return;
     }
     const { treatmentPercent } = this.#dependencies.config;
+    const subjectId = UserId.reconstitute(userId);
     const variant = this.#dependencies.experimentAssigner.assign({
       experimentKey: RETENTION_EXPERIMENT_KEY,
-      subjectId: userId,
+      subjectId,
       // 처리군이 앞 구간을 차지한다(1.15.0까지의 배정 함수와 같은 순서)
       variants: [
         { key: "TREATMENT", weight: treatmentPercent },
@@ -40,7 +41,7 @@ export class EnrollRetentionExperimentUseCase {
     });
     const assignment = RetentionAssignment.create({
       id: RetentionAssignmentId.generate(),
-      userId: UserId.reconstitute(userId),
+      userId: subjectId,
       variant,
       startedAt: activated ? this.#dependencies.clock.now() : null,
     });

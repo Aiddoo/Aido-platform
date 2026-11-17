@@ -42,7 +42,7 @@ export class QueueEmailMessageUseCase {
 
     try {
       const enqueued = await this.#dependencies.queue.enqueue({
-        deliveryId: message.id.value,
+        deliveryId: message.id,
         message,
       });
       if (enqueued === "duplicate") {

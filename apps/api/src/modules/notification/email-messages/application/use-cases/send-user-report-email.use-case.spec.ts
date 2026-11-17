@@ -43,7 +43,7 @@ describe("SendUserReportEmailUseCase — 신고 접수 메일", () => {
     });
 
     // Then
-    expect(queue.deliveries[0]?.deliveryId).toBe("user-report:report-1");
+    expect(queue.deliveries[0]?.deliveryId.value).toBe("user-report:report-1");
     expect(budget.reserved).toEqual(["standard"]);
   });
 });

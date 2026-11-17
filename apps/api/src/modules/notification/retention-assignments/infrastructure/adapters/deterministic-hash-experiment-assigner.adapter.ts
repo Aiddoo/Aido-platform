@@ -22,9 +22,10 @@ export class DeterministicHashExperimentAssignerAdapter extends ExperimentAssign
     if (fallback == null || totalWeight <= 0) {
       throw new Error(`Experiment ${assignment.experimentKey} has no weighted variant`);
     }
+    const subject = assignment.subjectId.value;
     const seed = UNSALTED_EXPERIMENT_KEYS.has(assignment.experimentKey)
-      ? assignment.subjectId
-      : `${assignment.experimentKey}:${assignment.subjectId}`;
+      ? subject
+      : `${assignment.experimentKey}:${subject}`;
     const bucket = fnv1a32(seed) % totalWeight;
     let upperBound = 0;
     for (const variant of assignment.variants) {

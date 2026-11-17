@@ -48,10 +48,10 @@ export function isRetentionStageDue(
     );
   }
   const targetDay = RETENTION_STAGE_TIMING.targetDay[stage];
-  const { hour, minute } = RETENTION_STAGE_TIMING.sendLocalTime;
   return (
     day > targetDay ||
-    (day === targetDay && isAtOrAfterLocalTime(timing.now, timing.timezone, hour, minute))
+    (day === targetDay &&
+      isAtOrAfterLocalTime(timing.now, timing.timezone, RETENTION_STAGE_TIMING.sendLocalTime))
   );
 }
 
@@ -122,8 +122,7 @@ function localDayDifference(
 function isAtOrAfterLocalTime(
   instant: Temporal.Instant,
   timezone: string,
-  hour: number,
-  minute: number,
+  { hour, minute }: { readonly hour: number; readonly minute: number },
 ): boolean {
   const local = instant.toZonedDateTimeISO(resolveTimezone(timezone));
   return local.hour > hour || (local.hour === hour && local.minute >= minute);

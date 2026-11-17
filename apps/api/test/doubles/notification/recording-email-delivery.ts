@@ -8,6 +8,7 @@ import type {
   EmailQuotaScope,
 } from "#api/modules/notification/email-messages/application/ports/email-sender.port";
 import type { EmailMessage } from "#api/modules/notification/email-messages/domain/email-message.aggregate";
+import { ProviderMessageId } from "#api/modules/notification/email-messages/domain/provider-message-id.vo";
 
 // 담은 발송 건을 남긴다. failure를 두면 큐가 내려간 것처럼 던지고, result로 중복 담기를 흉내 낸다
 export class RecordingEmailDeliveryQueue extends EmailDeliveryQueuePort {
@@ -27,7 +28,10 @@ export class RecordingEmailDeliveryQueue extends EmailDeliveryQueuePort {
 // 보낸 메일을 남기고 outcome을 그대로 돌려준다
 export class RecordingEmailSender {
   readonly messages: EmailMessage[] = [];
-  outcome: EmailDeliveryOutcome = { status: "sent", providerMessageId: "id-1" };
+  outcome: EmailDeliveryOutcome = {
+    status: "sent",
+    providerMessageId: ProviderMessageId.reconstitute("id-1"),
+  };
 
   async send(message: EmailMessage): Promise<EmailDeliveryOutcome> {
     this.messages.push(message);

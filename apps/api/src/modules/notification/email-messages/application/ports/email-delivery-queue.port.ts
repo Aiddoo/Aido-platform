@@ -1,3 +1,4 @@
+import type { EmailMessageId } from "../../domain/email-message-id.vo.js";
 import type { EmailMessage } from "../../domain/email-message.aggregate.js";
 
 const EMAIL_ENQUEUE_RESULTS = ["queued", "duplicate"] as const;
@@ -5,7 +6,7 @@ export type EmailEnqueueResult = (typeof EMAIL_ENQUEUE_RESULTS)[number];
 
 export interface EmailDelivery {
   /** 같은 발송 건은 큐에 한 번만 담기고 공급자에도 같은 멱등 키로 나간다 */
-  readonly deliveryId: string;
+  readonly deliveryId: EmailMessageId;
   readonly message: EmailMessage;
 }
 

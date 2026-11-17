@@ -1,6 +1,7 @@
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createEmailMessageFixture } from "#test/fixtures/notification/email-message.fixture";
 
+import { ProviderMessageId } from "../../domain/provider-message-id.vo.js";
 import { EmailDeliveryRetryableError } from "../email-messages.errors.js";
 import type { EmailDeliveryOutcome, EmailQuotaScope } from "../ports/email-sender.port.js";
 import { DeliverEmailUseCase } from "./deliver-email.use-case.js";
@@ -47,7 +48,10 @@ function setup(outcome: EmailDeliveryOutcome) {
 describe("DeliverEmailUseCase", () => {
   it("보내졌으면 예산을 그대로 두고 경보도 올리지 않는다", async () => {
     // Given
-    const { useCase, budget, alert } = setup({ status: "sent", providerMessageId: "id" });
+    const { useCase, budget, alert } = setup({
+      status: "sent",
+      providerMessageId: ProviderMessageId.reconstitute("id"),
+    });
 
     // When
     await useCase.execute({ deliveryId: "d1", message, isFinalAttempt: false });

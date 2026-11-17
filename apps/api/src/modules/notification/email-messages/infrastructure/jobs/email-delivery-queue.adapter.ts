@@ -31,12 +31,12 @@ export class EmailDeliveryQueueAdapter extends EmailDeliveryQueuePort {
 
   async enqueue({ deliveryId, message }: EmailDelivery): Promise<EmailEnqueueResult> {
     const job: EmailDeliveryJob = {
-      deliveryId,
+      deliveryId: deliveryId.value,
       kind: message.kind,
       sealed: this.#encryption.encrypt(JSON.stringify(sealedContentOf(message))),
     };
     const jobId = await this.#jobQueue.enqueue(EMAIL_DELIVERY_QUEUE, job, {
-      idempotencyKey: deliveryId,
+      idempotencyKey: deliveryId.value,
     });
     return jobId == null ? "duplicate" : "queued";
   }

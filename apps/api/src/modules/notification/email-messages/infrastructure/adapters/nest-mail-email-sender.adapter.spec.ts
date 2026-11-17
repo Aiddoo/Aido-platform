@@ -10,6 +10,7 @@ import {
 import { vi } from "vitest";
 
 import { EmailMessageId } from "#api/modules/notification/email-messages/domain/email-message-id.vo";
+import { ProviderMessageId } from "#api/modules/notification/email-messages/domain/provider-message-id.vo";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import {
   describeEmailSenderContract,
@@ -118,7 +119,10 @@ describe("NestMailEmailSenderAdapter — ResendTransport 원문 fixture", () => 
     const outcome = await adapter().send(createEmailMessageFixture());
 
     // Then
-    expect(outcome).toEqual({ status: "sent", providerMessageId: "fixture-message" });
+    expect(outcome).toEqual({
+      status: "sent",
+      providerMessageId: ProviderMessageId.reconstitute("fixture-message"),
+    });
     expect(http.request().headers.get("authorization")).toBe("Bearer test-key");
     expect(await http.request().json()).toEqual(
       expect.objectContaining({

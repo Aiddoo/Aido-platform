@@ -4,27 +4,16 @@ import { and, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm"
 import { match } from "ts-pattern";
 import { z } from "zod";
 
-import {
-  userDeliveryPreference,
-  userMarketingPushConsent,
-} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
-import { userLastActivity } from "#api/modules/identity/users/identity-users.public";
-import { todoActivityRowsOf } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
-  nullableRawTimestamptzSchema,
-  rawTimestamptzSchema,
-} from "#api/platform/database/raw-timestamp.schema";
-import {
-  pushToken,
   retentionExperimentAssignment,
   retentionExperimentResult,
   retentionExperimentStage,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
@@ -35,45 +24,18 @@ import type {
 } from "../../application/read-models/retention-stage-candidate.read-model.js";
 import type { RetentionAssignmentId } from "../../domain/retention-assignment-id.vo.js";
 import type { RetentionAssignment } from "../../domain/retention-assignment.aggregate.js";
-import {
-  RETENTION_EXPERIMENT_KEY,
-  RETENTION_STAGE_NAMES,
-  RETENTION_VARIANTS,
-} from "../../domain/retention-assignments.constants.js";
+import { RETENTION_EXPERIMENT_KEY } from "../../domain/retention-assignments.constants.js";
 import type { RetentionD7Result } from "../../domain/retention-d7-result.vo.js";
-import { RETENTION_STAGE_TIMING } from "../../domain/retention-stage.domain-service.js";
 import type {
   RetentionStage,
   RetentionStagePrimitives,
 } from "../../domain/retention-stage.entity.js";
 import { RETENTION_CACHE_TTL_MS, RetentionCacheKey } from "../cache/retention-cache.keyspace.js";
 import { toRetentionAssignments } from "./retention-assignment-row.mapper.js";
-
-// raw SQL 결과는 칸 디코더를 거치지 않아 Date로 읽은 뒤 Instant로 바꾼다
-const rawInstantSchema = rawTimestamptzSchema.transform(instantFromDate);
-const nullableRawInstantSchema = nullableRawTimestamptzSchema.transform((value) =>
-  value == null ? null : instantFromDate(value),
-);
-
-const stageRowSchema = z.object({
-  assignmentId: z.string(),
-  stageId: z.string(),
-  stageCreatedAt: rawInstantSchema,
-  userId: z.string(),
-  variant: z.enum(RETENTION_VARIANTS),
-  stage: z.enum(RETENTION_STAGE_NAMES),
-  startedAt: rawInstantSchema,
-  timezone: z.string(),
-  locale: z.string().nullable(),
-  pushEnabled: z.boolean(),
-  nightPushEnabled: z.boolean(),
-  marketingPushAgreedAt: nullableRawInstantSchema,
-  activeTokenCount: z.number(),
-  lastActiveAt: nullableRawInstantSchema,
-  todoCount: z.number(),
-  completedCount: z.number(),
-  todoActionWithinWindow: z.boolean(),
-});
+import {
+  dueRetentionStageCandidates,
+  retentionStageCandidateRowSchema,
+} from "./retention-due-stage.query-fragment.js";
 
 @Injectable()
 export class DrizzleRetentionAssignmentRepository implements RetentionAssignmentRepositoryPort {
@@ -86,10 +48,6 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
   ) {
     this.#transactionHost = transactionHost;
     this.#cache = cache;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
   }
 
   async findByUserId(userId: UserId): Promise<RetentionAssignment | null> {
@@ -139,6 +97,29 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
       }
     }
     return true;
+  }
+
+  async findDueStages(params: {
+    readonly dueAt: Temporal.Instant;
+    readonly after?: RetentionStageCursorReadModel;
+    readonly limit: number;
+  }): Promise<RetentionStageCandidateReadModel[]> {
+    const validTimezones = await this.#scheduledStageTimezones();
+    const result = await this.#db.execute<Record<string, unknown>>(
+      dueRetentionStageCandidates({ ...params, validTimezones }),
+    );
+    return z
+      .array(retentionStageCandidateRowSchema)
+      .parse(result.rows)
+      .map((row) => ({
+        ...row,
+        locale: resolveRecipientLocale({ storedLocale: row.locale, lastRequestLocale: null }),
+        incompleteCount: row.todoCount - row.completedCount,
+      }));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   #assignmentRows(condition: SQL | undefined) {
@@ -238,140 +219,6 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
         set: { returnedWithinD7, todoActionWithinD7, measuredAt },
       });
     return true;
-  }
-
-  async findDueStages(params: {
-    readonly dueAt: Temporal.Instant;
-    readonly after?: RetentionStageCursorReadModel;
-    readonly limit: number;
-  }): Promise<RetentionStageCandidateReadModel[]> {
-    const dueAt = toIsoString(params.dueAt);
-    const d0ReadyBefore = toIsoString(
-      params.dueAt.subtract({ milliseconds: RETENTION_STAGE_TIMING.d0MinWaitMs }),
-    );
-    const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
-    const validTimezones = await this.#scheduledStageTimezones();
-    const stagePreference = userDeliveryPreference();
-    const preference = userDeliveryPreference();
-    const consent = userMarketingPushConsent();
-    const appUser = userLastActivity();
-    const userTodos = todoActivityRowsOf(appUser.userId);
-    const afterCursor =
-      params.after == null
-        ? sql`TRUE`
-        : sql`(stage."createdAt", stage."id") > (${toIsoString(params.after.createdAt)}::timestamptz AT TIME ZONE 'UTC', ${params.after.stageId})`;
-    const rows = z.array(stageRowSchema).parse(
-      (
-        await this.#db.execute<Record<string, unknown>>(sql`
-			WITH due_stages AS (
-				-- isRetentionStageDue와 같은 기준이다. 아직 기다리는 단계가 묶음 자리를 차지하지 않게 한다
-				SELECT
-					stage."id",
-					stage."assignmentId",
-					stage."stage",
-					stage."createdAt",
-					stage_clock.timezone
-				FROM ${retentionExperimentStage} AS stage
-				INNER JOIN ${retentionExperimentAssignment} AS assignment
-					ON assignment."id" = stage."assignmentId"
-				LEFT JOIN ${stagePreference}
-					ON ${stagePreference.userId} = assignment."userId"
-				LEFT JOIN unnest(${sql.param(validTimezones)}::TEXT[]) AS valid_timezone(name)
-					ON valid_timezone.name = ${stagePreference.timezone}
-				CROSS JOIN LATERAL (
-					SELECT COALESCE(valid_timezone.name, 'UTC') AS timezone
-				) AS stage_clock
-				CROSS JOIN LATERAL (
-					SELECT
-						(${dueAt}::timestamptz AT TIME ZONE stage_clock.timezone)::DATE
-							- (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE stage_clock.timezone)::DATE
-							AS day_difference,
-						(${dueAt}::timestamptz AT TIME ZONE stage_clock.timezone)::TIME AS local_time,
-						CASE stage."stage"
-							WHEN 'D1' THEN ${targetDay.D1}::INT
-							WHEN 'D3' THEN ${targetDay.D3}::INT
-							ELSE ${targetDay.D7}::INT
-						END AS target_day
-				) AS local_clock
-				WHERE stage."status" = 'SCHEDULED'
-					AND assignment."experimentKey" = ${RETENTION_EXPERIMENT_KEY}
-					AND assignment."startedAt" IS NOT NULL
-					AND ${afterCursor}
-					AND CASE
-						WHEN stage."stage" = 'D0' THEN
-							local_clock.day_difference > 0
-							OR assignment."startedAt" <= ${d0ReadyBefore}::timestamptz AT TIME ZONE 'UTC'
-						ELSE
-							local_clock.day_difference > local_clock.target_day
-							OR (
-								local_clock.day_difference = local_clock.target_day
-								AND local_clock.local_time >= MAKE_TIME(${sendLocalTime.hour}::INT, ${sendLocalTime.minute}::INT, 0)
-							)
-					END
-				ORDER BY stage."createdAt" ASC, stage."id" ASC
-				LIMIT ${params.limit}
-			)
-			SELECT
-				assignment."id" AS "assignmentId",
-				due."id" AS "stageId",
-				due."createdAt" AT TIME ZONE 'UTC' AS "stageCreatedAt",
-				assignment."userId" AS "userId",
-				assignment."variant",
-				due."stage",
-				assignment."startedAt" AT TIME ZONE 'UTC' AS "startedAt",
-				due.timezone AS "timezone",
-				${preference.locale} AS "locale",
-				COALESCE(${preference.pushEnabled}, FALSE) AS "pushEnabled",
-				COALESCE(${preference.nightPushEnabled}, FALSE) AS "nightPushEnabled",
-				${consent.marketingPushAgreedAt} AT TIME ZONE 'UTC' AS "marketingPushAgreedAt",
-				COALESCE(token_metrics."activeTokenCount", 0)::INT AS "activeTokenCount",
-				${appUser.lastActiveAt} AT TIME ZONE 'UTC' AS "lastActiveAt",
-				COALESCE(todo_metrics."todoCount", 0)::INT AS "todoCount",
-				COALESCE(todo_metrics."completedCount", 0)::INT AS "completedCount",
-				COALESCE(todo_metrics."todoActionWithinWindow", FALSE) AS "todoActionWithinWindow"
-			FROM due_stages AS due
-			INNER JOIN ${retentionExperimentAssignment} AS assignment
-				ON assignment."id" = due."assignmentId"
-			INNER JOIN ${appUser}
-				ON ${appUser.userId} = assignment."userId"
-			LEFT JOIN ${preference}
-				ON ${preference.userId} = ${appUser.userId}
-			LEFT JOIN ${consent}
-				ON ${consent.userId} = ${appUser.userId}
-			LEFT JOIN LATERAL (
-				SELECT COUNT(*) AS "activeTokenCount"
-				FROM ${pushToken} AS token
-				WHERE token."userId" = ${appUser.userId}
-					AND token."isActive" = TRUE
-			) AS token_metrics ON TRUE
-			LEFT JOIN LATERAL (
-				SELECT
-					COUNT(*) AS "todoCount",
-					COUNT(*) FILTER (WHERE ${userTodos.completed} = TRUE) AS "completedCount",
-					BOOL_OR(
-						(
-							(${userTodos.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-							AND ${userTodos.createdAt} < assignment."startedAt" + INTERVAL '8 days'
-						) OR (
-							${userTodos.completedAt} IS NOT NULL
-							AND (${userTodos.completedAt} AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-								> (assignment."startedAt" AT TIME ZONE 'UTC' AT TIME ZONE due.timezone)::DATE
-							AND ${userTodos.completedAt} < assignment."startedAt" + INTERVAL '8 days'
-						)
-					) AS "todoActionWithinWindow"
-				FROM ${userTodos}
-			) AS todo_metrics ON TRUE
-			ORDER BY due."createdAt" ASC, due."id" ASC
-		`)
-      ).rows,
-    );
-
-    return rows.map((row) => ({
-      ...row,
-      locale: resolveRecipientLocale({ storedLocale: row.locale, lastRequestLocale: null }),
-      incompleteCount: row.todoCount - row.completedCount,
-    }));
   }
 
   // AT TIME ZONE에 넘길 수 있는 저장값만 고른다. PG가 아는 이름(하루 캐시)이면서 앱 규칙(resolveTimezone과 같은

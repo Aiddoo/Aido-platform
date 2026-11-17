@@ -16,7 +16,10 @@ import {
   RETENTION_EXPERIMENT_KEY,
 } from "../../domain/retention-assignments.constants.js";
 import { RetentionD7Result } from "../../domain/retention-d7-result.vo.js";
-import { decideRetentionStage } from "../../domain/retention-stage.domain-service.js";
+import {
+  decideRetentionStage,
+  type RetentionStageDecision,
+} from "../../domain/retention-stage.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 import type {
@@ -142,75 +145,9 @@ export class ProcessRetentionStagesUseCase {
       return;
     }
 
-    await this.#dependencies.unitOfWork.run(async () => {
-      if (candidate.stage === "D7") {
-        assignment.measureD7(
-          RetentionD7Result.create({
-            returnedWithinD7: returnedWithinWindow,
-            todoActionWithinD7: candidate.todoActionWithinWindow,
-            measuredAt: now,
-          }),
-        );
-      }
-
-      if (candidate.variant === "CONTROL") {
-        assignment.skipStage(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE", now);
-        await repository.save(assignment);
-        return;
-      }
-      if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
-        assignment.skipStage(candidate.stageId, decision.reason, now);
-        await repository.save(assignment);
-        return;
-      }
-
-      const skipReason = retentionPushSkipReason({
-        pushEnabled: candidate.pushEnabled,
-        marketingPushAgreedAt: candidate.marketingPushAgreedAt,
-        activeTokenCount: candidate.activeTokenCount,
-        timezone: candidate.timezone,
-        now,
-      });
-      if (skipReason) {
-        assignment.skipStage(candidate.stageId, skipReason, now);
-        await repository.save(assignment);
-        return;
-      }
-
-      const message = createRetentionNotificationMessage({
-        ...resolveRetentionNotificationSelection(candidate.stage, decision.variantId),
-        locale: candidate.locale,
-        selectionContext: {
-          recipientId: candidate.userId,
-          occurrenceKey: localDateIn(now, candidate.timezone).toString(),
-        },
-      });
-      // 읽을 때 이미 닫혀 있거나(다른 실행이 먼저 발행) 저장에서 경쟁을 지면 발행하지 않는다.
-      // D7 측정은 그래도 남긴다(옛 기록 순서와 같다)
-      const isClaimed = assignment.outboxStage(candidate.stageId, now);
-      const isSaved = await repository.save(assignment);
-      if (!isClaimed || !isSaved) {
-        return;
-      }
-      const notification = await this.#dependencies.notificationPublisher.execute({
-        userId: candidate.userId,
-        type: "SYSTEM_NOTICE",
-        title: message.title,
-        body: message.body,
-        // 리텐션 선택의 copyKey(단계별 문구 묶음)와 달리 알림함을 다시 그릴 카탈로그 키다
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        action: { type: "DEEP_LINK", url: decision.route },
-        campaignKey: RETENTION_CAMPAIGN_KEY,
-        variantId: message.variantId,
-        purpose: "ENGAGEMENT",
-        metadata: { retentionExperiment: RETENTION_EXPERIMENT_KEY },
-      });
-      if (notification != null) {
-        assignment.linkStageNotification(candidate.stageId, notification.id, now);
-        await repository.save(assignment);
-      }
-    });
+    await this.#dependencies.unitOfWork.run(() =>
+      this.#settleStage(candidate, assignment, { decision, returnedWithinWindow, now }),
+    );
 
     this.#dependencies.logger.debug({
       event: RetentionAssignmentLogEvent.PROCESS_RETENTION_STAGES_STAGE_PROCESSED,
@@ -218,6 +155,103 @@ export class ProcessRetentionStagesUseCase {
       stage: candidate.stage,
       userId: candidate.userId,
     });
+  }
+
+  async #settleStage(
+    candidate: RetentionStageCandidateReadModel,
+    assignment: RetentionAssignment,
+    {
+      decision,
+      returnedWithinWindow,
+      now,
+    }: {
+      readonly decision: Exclude<RetentionStageDecision, { readonly kind: "WAIT" }>;
+      readonly returnedWithinWindow: boolean;
+      readonly now: Temporal.Instant;
+    },
+  ): Promise<void> {
+    const { repository } = this.#dependencies;
+    if (candidate.stage === "D7") {
+      assignment.measureD7(
+        RetentionD7Result.create({
+          returnedWithinD7: returnedWithinWindow,
+          todoActionWithinD7: candidate.todoActionWithinWindow,
+          measuredAt: now,
+        }),
+      );
+    }
+
+    if (candidate.variant === "CONTROL") {
+      assignment.skipStage(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE", now);
+      await repository.save(assignment);
+      return;
+    }
+    if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
+      assignment.skipStage(candidate.stageId, decision.reason, now);
+      await repository.save(assignment);
+      return;
+    }
+
+    const skipReason = retentionPushSkipReason({
+      pushEnabled: candidate.pushEnabled,
+      marketingPushAgreedAt: candidate.marketingPushAgreedAt,
+      activeTokenCount: candidate.activeTokenCount,
+      timezone: candidate.timezone,
+      now,
+    });
+    if (skipReason) {
+      assignment.skipStage(candidate.stageId, skipReason, now);
+      await repository.save(assignment);
+      return;
+    }
+    await this.#publishStage(candidate, assignment, { decision, now });
+  }
+
+  async #publishStage(
+    candidate: RetentionStageCandidateReadModel,
+    assignment: RetentionAssignment,
+    {
+      decision,
+      now,
+    }: {
+      readonly decision: Extract<RetentionStageDecision, { readonly kind: "SEND" }>;
+      readonly now: Temporal.Instant;
+    },
+  ): Promise<void> {
+    const { repository } = this.#dependencies;
+    const message = createRetentionNotificationMessage({
+      ...resolveRetentionNotificationSelection(candidate.stage, decision.variantId),
+      locale: candidate.locale,
+      selectionContext: {
+        recipientId: candidate.userId,
+        occurrenceKey: localDateIn(now, candidate.timezone).toString(),
+      },
+    });
+    // 읽을 때 이미 닫혀 있거나(다른 실행이 먼저 발행) 저장에서 경쟁을 지면 발행하지 않는다.
+    // D7 측정은 그래도 남긴다(옛 기록 순서와 같다)
+    const isClaimed = assignment.outboxStage(candidate.stageId, now);
+    const isSaved = await repository.save(assignment);
+    if (!isClaimed || !isSaved) {
+      return;
+    }
+    const notification = await this.#dependencies.notificationPublisher.execute({
+      userId: candidate.userId,
+      type: "SYSTEM_NOTICE",
+      title: message.title,
+      body: message.body,
+      // 리텐션 선택의 copyKey(단계별 문구 묶음)와 달리 알림함을 다시 그릴 카탈로그 키다
+      copyKey: message.copyKey,
+      copyFacts: message.copyFacts,
+      action: { type: "DEEP_LINK", url: decision.route },
+      campaignKey: RETENTION_CAMPAIGN_KEY,
+      variantId: message.variantId,
+      purpose: "ENGAGEMENT",
+      metadata: { retentionExperiment: RETENTION_EXPERIMENT_KEY },
+    });
+    if (notification != null) {
+      assignment.linkStageNotification(candidate.stageId, notification.id, now);
+      await repository.save(assignment);
+    }
   }
 }
 

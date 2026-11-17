@@ -1,5 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   RETENTION_EXPERIMENT_KEY,
   type RetentionVariant,
@@ -22,7 +24,7 @@ const assigner = new DeterministicHashExperimentAssignerAdapter();
 function assignRetention(userId: string, treatmentPercent: number) {
   return assigner.assign({
     experimentKey: RETENTION_EXPERIMENT_KEY,
-    subjectId: userId,
+    subjectId: UserId.reconstitute(userId),
     variants: [
       { key: "TREATMENT", weight: treatmentPercent },
       { key: "CONTROL", weight: 100 - treatmentPercent },
@@ -101,8 +103,16 @@ describe("DeterministicHashExperimentAssignerAdapter — 결정적 실험 배정
     // When
     const sameAcrossExperiments = ids.filter(
       (subjectId) =>
-        assigner.assign({ experimentKey: "copy_test_1", subjectId, variants }) ===
-        assigner.assign({ experimentKey: "copy_test_2", subjectId, variants }),
+        assigner.assign({
+          experimentKey: "copy_test_1",
+          subjectId: UserId.reconstitute(subjectId),
+          variants,
+        }) ===
+        assigner.assign({
+          experimentKey: "copy_test_2",
+          subjectId: UserId.reconstitute(subjectId),
+          variants,
+        }),
     ).length;
 
     // Then
@@ -114,7 +124,11 @@ describe("DeterministicHashExperimentAssignerAdapter — 결정적 실험 배정
   it("비중이 있는 실험군이 없으면 배정하지 않는다", () => {
     // When
     const assign = () =>
-      assigner.assign({ experimentKey: "empty", subjectId: "user-a", variants: [] });
+      assigner.assign({
+        experimentKey: "empty",
+        subjectId: UserId.reconstitute("user-a"),
+        variants: [],
+      });
 
     // Then
     expect(assign).toThrow();

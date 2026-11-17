@@ -8,6 +8,7 @@ import {
   EMAIL_MESSAGE_FIXTURE_RECIPIENT,
 } from "#test/fixtures/notification/email-message.fixture";
 
+import { EmailMessageId } from "../../domain/email-message-id.vo.js";
 import { EmailDeliveryQueueAdapter } from "./email-delivery-queue.adapter.js";
 import { EMAIL_DELIVERY_QUEUE } from "./email-delivery.queue.js";
 
@@ -24,7 +25,7 @@ describe("EmailDeliveryQueueAdapter", () => {
 
     // When
     const result = await adapter.enqueue({
-      deliveryId: "delivery-1",
+      deliveryId: EmailMessageId.reconstitute("delivery-1"),
       message: createEmailMessageFixture(),
     });
 
@@ -47,7 +48,10 @@ describe("EmailDeliveryQueueAdapter", () => {
     const adapter = new EmailDeliveryQueueAdapter(jobQueue, encryption);
 
     // When
-    await adapter.enqueue({ deliveryId: "delivery-2", message: createEmailMessageFixture() });
+    await adapter.enqueue({
+      deliveryId: EmailMessageId.reconstitute("delivery-2"),
+      message: createEmailMessageFixture(),
+    });
 
     // Then
     const [job] = jobQueue.jobsIn(EMAIL_DELIVERY_QUEUE);
@@ -66,11 +70,14 @@ describe("EmailDeliveryQueueAdapter", () => {
   it("큐가 같은 deliveryId를 이미 가지고 있으면 duplicate로 알린다", async () => {
     // Given
     const adapter = new EmailDeliveryQueueAdapter(new InMemoryJobQueue(), encryption);
-    await adapter.enqueue({ deliveryId: "delivery-3", message: createEmailMessageFixture() });
+    await adapter.enqueue({
+      deliveryId: EmailMessageId.reconstitute("delivery-3"),
+      message: createEmailMessageFixture(),
+    });
 
     // When
     const result = await adapter.enqueue({
-      deliveryId: "delivery-3",
+      deliveryId: EmailMessageId.reconstitute("delivery-3"),
       message: createEmailMessageFixture(),
     });
 

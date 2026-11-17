@@ -8,6 +8,7 @@ import {
 } from "#test/fixtures/notification/email-message.fixture";
 
 import type { DeliverEmailInput } from "../../application/use-cases/deliver-email.use-case.js";
+import { EmailMessageId } from "../../domain/email-message-id.vo.js";
 import { EmailDeliveryQueueAdapter } from "./email-delivery-queue.adapter.js";
 import { EmailDeliveryQueueProcessor } from "./email-delivery-queue.processor.js";
 import { EMAIL_DELIVERY_QUEUE, type EmailDeliveryJob } from "./email-delivery.queue.js";
@@ -39,7 +40,7 @@ describe("EmailDeliveryQueueProcessor", () => {
 
   async function sealedJob(): Promise<EmailDeliveryJob> {
     await new EmailDeliveryQueueAdapter(jobQueue, encryption).enqueue({
-      deliveryId: "delivery-1",
+      deliveryId: EmailMessageId.reconstitute("delivery-1"),
       message: createEmailMessageFixture(),
     });
     const parsed = EMAIL_DELIVERY_QUEUE.payloadSchema.parse(jobQueue.jobs.at(-1)?.payload);
@@ -118,7 +119,7 @@ describe("EmailDeliveryQueueProcessor", () => {
     // Given
     await processor.onModuleInit();
     await new EmailDeliveryQueueAdapter(jobQueue, encryption).enqueue({
-      deliveryId: "delivery-2",
+      deliveryId: EmailMessageId.reconstitute("delivery-2"),
       message: createEmailMessageFixture(),
     });
 

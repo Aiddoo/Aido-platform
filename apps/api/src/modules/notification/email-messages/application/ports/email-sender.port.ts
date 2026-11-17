@@ -1,4 +1,5 @@
 import type { EmailMessage } from "../../domain/email-message.aggregate.js";
+import type { ProviderMessageId } from "../../domain/provider-message-id.vo.js";
 
 const EMAIL_QUOTA_SCOPES = ["daily", "monthly"] as const;
 export type EmailQuotaScope = (typeof EMAIL_QUOTA_SCOPES)[number];
@@ -12,7 +13,7 @@ const EMAIL_DELIVERY_FAILURE_REASONS = [
 type EmailDeliveryFailureReason = (typeof EMAIL_DELIVERY_FAILURE_REASONS)[number];
 
 export type EmailDeliveryOutcome =
-  | { readonly status: "sent"; readonly providerMessageId: string | null }
+  | { readonly status: "sent"; readonly providerMessageId: ProviderMessageId | null }
   | {
       readonly status: "failed";
       readonly reason: EmailDeliveryFailureReason;

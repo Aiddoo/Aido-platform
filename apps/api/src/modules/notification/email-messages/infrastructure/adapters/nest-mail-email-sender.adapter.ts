@@ -21,6 +21,7 @@ import type {
   RenderedEmail,
 } from "../../application/ports/email-template-renderer.port.js";
 import type { EmailMessage } from "../../domain/email-message.aggregate.js";
+import { ProviderMessageId } from "../../domain/provider-message-id.vo.js";
 import { EmailTemplateMail } from "../templates/email-template.mail.js";
 import { EMAIL_PROVIDER_POLICY } from "./email-outbound.policy.js";
 import { EmailLogEvent } from "./email-provider.log-events.js";
@@ -126,7 +127,13 @@ export class NestMailEmailSenderAdapter
         signal,
         idempotencyKey: message.id.value,
       });
-      return { status: "sent", providerMessageId: result.providerMessageId ?? null };
+      return {
+        status: "sent",
+        providerMessageId:
+          result.providerMessageId == null
+            ? null
+            : ProviderMessageId.reconstitute(result.providerMessageId),
+      };
     } catch (error) {
       if (error instanceof MailError) {
         return toFailedOutcome(error);

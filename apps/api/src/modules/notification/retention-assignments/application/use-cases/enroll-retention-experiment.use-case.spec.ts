@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryRetentionAssignmentRepository } from "#test/doubles/notification/in-memory-retention-assignment.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -60,7 +61,7 @@ describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () =
     expect(experimentAssigner.assignments).toEqual([
       {
         experimentKey: "onboarding_v2_d7",
-        subjectId: "new-user",
+        subjectId: UserId.reconstitute("new-user"),
         variants: [
           { key: "TREATMENT", weight: 30 },
           { key: "CONTROL", weight: 70 },
