@@ -8,7 +8,7 @@ import { jwtConfig } from "#api/platform/config/jwt.config";
 import type { HttpRequest } from "#api/platform/http/http-request";
 
 import { invalidRefreshToken } from "../../../application/auth.errors.js";
-import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { JWT_VERIFY_OPTIONS } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
 import type { RefreshTokenUser } from "../decorators/authenticated-user.dto.js";
 import { readBearerToken } from "../v1/auth-request.mapper.js";
 
@@ -41,7 +41,7 @@ export class JwtRefreshGuard implements CanActivate {
     return true;
   }
 
-  // 서명·만료·타입·세션 id 중 하나라도 틀리면 null이고, 거절 코드는 모두 AUTH_0104다
+  // 서명·발급자·대상·만료·타입·세션 id 중 하나라도 틀리면 null이고, 거절 코드는 모두 AUTH_0104다
   async #authenticate(authorization: string | undefined): Promise<RefreshTokenUser | null> {
     const token = readBearerToken(authorization);
     if (token == null || authorization == null) {
@@ -49,8 +49,8 @@ export class JwtRefreshGuard implements CanActivate {
     }
     try {
       const payload: unknown = await this.#jwtService.verifyAsync(token, {
+        ...JWT_VERIFY_OPTIONS,
         secret: this.#jwt.refreshSecret,
-        algorithms: [JWT_ALGORITHM],
       });
       const claims = refreshTokenClaimsSchema.safeParse(payload);
       if (!claims.success) {

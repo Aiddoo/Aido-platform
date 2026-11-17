@@ -1,12 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON } from "@aido/api/vocabulary";
 import type { ConfigType } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
-import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/auth/domain/auth.constants";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable } from "#api/platform/database/schema/index";
@@ -14,8 +12,8 @@ import { decodeJwtSegment } from "#test/fixtures/jwt-token.fixture";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-// Passport를 걷어낸 뒤에도 배포 전에 로그인한 사용자가 로그아웃되지 않는지 본다
-describe("배포 전 발급 토큰 호환 E2E", () => {
+// 1.15.3 전에 발급한 토큰(iss·aud 없음)은 refresh 수명 7일이 지나 모두 바뀌었으므로 거절한다
+describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {
   let testContext: E2eTestContext;
   const password = "Test1234!";
 
@@ -31,8 +29,8 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     await testContext.reset();
   });
 
-  // 보안 강화(iss·aud) 전 TokenService와 같은 claim·HS256·secret으로 서명하고 iss·aud는 싣지 않는다
-  async function givenPreDeployTokens(email: string) {
+  // 1.15.3 전 TokenService와 같은 claim·HS256·secret으로 서명하고 iss·aud는 싣지 않는다
+  async function givenPreIssuerTokens(email: string) {
     await testContext.helpers.createVerifiedUser(email, password);
     const login = await request(testContext.app.getHttpServer())
       .post("/v1/auth/login")
@@ -61,16 +59,18 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
       },
       { secret: jwt.refreshSecret, expiresIn: 7 * 24 * 60 * 60 },
     );
+    // 세션이 이 refresh 토큰을 가리켜야 거절 이유가 iss·aud뿐이다
+    const refreshTokenHash = tokenIssuer.hashRefreshToken(refreshToken);
     await client
       .update(sessionTable)
-      .set({ refreshTokenHash: tokenIssuer.hashRefreshToken(refreshToken) })
+      .set({ refreshTokenHash })
       .where(eq(sessionTable.id, session.id));
-    return { accessToken, refreshToken, sessionId: session.id };
+    return { accessToken, refreshToken, refreshTokenHash, sessionId: session.id };
   }
 
-  it("배포 전 access 토큰으로 보호된 API를 쓰고 배포 전 refresh 토큰으로 회전한다", async () => {
+  it("iss·aud 없는 access 토큰은 AUTH_0101, refresh 토큰은 회전하지 않고 AUTH_0104로 거절한다", async () => {
     // Given
-    const legacy = await givenPreDeployTokens("legacy-token@example.com");
+    const legacy = await givenPreIssuerTokens("legacy-token@example.com");
 
     // When
     const me = await request(testContext.app.getHttpServer())
@@ -83,80 +83,15 @@ describe("배포 전 발급 토큰 호환 E2E", () => {
     // Then
     expect(decodeJwtSegment(legacy.accessToken, 1)).not.toHaveProperty("iss");
     expect(decodeJwtSegment(legacy.refreshToken, 1)).not.toHaveProperty("aud");
-    expect(me.status).toBe(200);
-    expect(me.body.data.email).toBe("legacy-token@example.com");
-    expect(refreshed.status).toBe(200);
-    await request(testContext.app.getHttpServer())
-      .get("/v1/auth/me")
-      .set("Authorization", `Bearer ${refreshed.body.data.accessToken}`)
-      .expect(200);
-  });
-
-  it("grace가 지난 뒤 배포 전 refresh 토큰을 다시 쓰면 family 전체를 폐기하고 새 access도 막는다", async () => {
-    // Given
-    const legacy = await givenPreDeployTokens("legacy-reuse@example.com");
-    const refreshed = await request(testContext.app.getHttpServer())
-      .post("/v1/auth/refresh")
-      .set("Authorization", `Bearer ${legacy.refreshToken}`)
-      .expect(200);
-    const client = testContext.testDatabase.getClient();
-    await client
-      .update(sessionTable)
-      .set({
-        lastUsedAt: Temporal.Now.instant().subtract({
-          milliseconds: TOKEN_REUSE_GRACE_PERIOD_MS + 1000,
-        }),
-      })
-      .where(eq(sessionTable.id, legacy.sessionId));
-
-    // When
-    const reused = await request(testContext.app.getHttpServer())
-      .post("/v1/auth/refresh")
-      .set("Authorization", `Bearer ${legacy.refreshToken}`);
-    const denied = await request(testContext.app.getHttpServer())
-      .get("/v1/auth/me")
-      .set("Authorization", `Bearer ${refreshed.body.data.accessToken}`);
-
-    // Then
-    expect(reused.status).toBe(401);
-    expect(reused.body.error.code).toBe(ErrorCode.SESSION_0704);
-    expect(denied.status).toBe(401);
-    expect(denied.body.error.code).toBe(ErrorCode.AUTH_0101);
-    const revoked = requireRecord(
-      await client.query.session.findFirst({ where: { id: legacy.sessionId } }),
+    expect(me.status).toBe(401);
+    expect(me.body.error.code).toBe(ErrorCode.AUTH_0101);
+    expect(refreshed.status).toBe(401);
+    expect(refreshed.body.error.code).toBe(ErrorCode.AUTH_0104);
+    const session = requireRecord(
+      await testContext.testDatabase
+        .getClient()
+        .query.session.findFirst({ where: { id: legacy.sessionId } }),
     );
-    expect(revoked.revokedReason).toBe(REVOKE_REASON.TOKEN_REUSE_DETECTED);
-  });
-
-  it("배포 전 access 토큰으로 로그아웃하면 같은 토큰은 AUTH_0101로 막힌다", async () => {
-    // Given
-    const legacy = await givenPreDeployTokens("legacy-logout@example.com");
-
-    // When
-    await request(testContext.app.getHttpServer())
-      .post("/v1/auth/logout")
-      .set("Authorization", `Bearer ${legacy.accessToken}`)
-      .expect(200);
-    const denied = await request(testContext.app.getHttpServer())
-      .get("/v1/auth/me")
-      .set("Authorization", `Bearer ${legacy.accessToken}`);
-
-    // Then
-    expect(denied.status).toBe(401);
-    expect(denied.body.error.code).toBe(ErrorCode.AUTH_0101);
-  });
-
-  it("access 토큰을 refresh에 보내면 AUTH_0104다", async () => {
-    // Given
-    const legacy = await givenPreDeployTokens("legacy-wrong-type@example.com");
-
-    // When
-    const response = await request(testContext.app.getHttpServer())
-      .post("/v1/auth/refresh")
-      .set("Authorization", `Bearer ${legacy.accessToken}`);
-
-    // Then
-    expect(response.status).toBe(401);
-    expect(response.body.error.code).toBe(ErrorCode.AUTH_0104);
+    expect(session).toMatchObject({ refreshTokenHash: legacy.refreshTokenHash, revokedAt: null });
   });
 });

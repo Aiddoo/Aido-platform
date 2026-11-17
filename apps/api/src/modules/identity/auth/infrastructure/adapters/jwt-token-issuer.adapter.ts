@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { UserRole } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
+import { JwtService, type JwtVerifyOptions } from "@nestjs/jwt";
 
 import { AuthTokenIssuerPort } from "#api/modules/identity/auth/application/ports/auth-crypto.port";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
@@ -30,10 +30,16 @@ export interface TokenPair {
   expiresIn: number;
 }
 
-export const JWT_ALGORITHM = "HS256";
-// 배포 전 토큰에는 iss·aud가 없어 검증 강제는 7일 refresh가 모두 바뀐 다음 릴리스부터다.
+const JWT_ALGORITHM = "HS256";
 const JWT_ISSUER = "aido-api";
 const JWT_AUDIENCE = "aido-app";
+
+// 가드는 발급과 같은 값으로 검증한다. 값을 바꾸면 이전 값으로 발급한 토큰이 모두 거절된다
+export const JWT_VERIFY_OPTIONS = {
+  algorithms: [JWT_ALGORITHM],
+  issuer: JWT_ISSUER,
+  audience: JWT_AUDIENCE,
+} satisfies JwtVerifyOptions;
 
 // Access Token (15분) + Refresh Token (7일) 발급 및 검증, Token Rotation 지원
 @Injectable()

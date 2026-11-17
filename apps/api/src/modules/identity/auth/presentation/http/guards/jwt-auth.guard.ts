@@ -17,7 +17,7 @@ import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.e
 
 import { invalidAccessToken } from "../../../application/auth.errors.js";
 import { AuthenticateSessionUseCase } from "../../../application/use-cases/authenticate-session.use-case.js";
-import { JWT_ALGORITHM } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { JWT_VERIFY_OPTIONS } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { Public } from "../decorators/public.decorator.js";
 import { readBearerToken } from "../v1/auth-request.mapper.js";
 
@@ -79,15 +79,15 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
-  // 서명·알고리즘·만료가 하나라도 틀리면 이유를 가리지 않고 null이다(Passport 시절의 fail과 같다)
+  // 서명·알고리즘·발급자·대상·만료가 하나라도 틀리면 이유를 가리지 않고 null이다(Passport 시절의 fail과 같다)
   async #verify(token: string | null): Promise<z.infer<typeof accessTokenClaimsSchema> | null> {
     if (token == null) {
       return null;
     }
     try {
       const payload: unknown = await this.#jwtService.verifyAsync(token, {
+        ...JWT_VERIFY_OPTIONS,
         secret: this.#jwt.secret,
-        algorithms: [JWT_ALGORITHM],
       });
       const parsed = accessTokenClaimsSchema.safeParse(payload);
       return parsed.success ? parsed.data : null;
