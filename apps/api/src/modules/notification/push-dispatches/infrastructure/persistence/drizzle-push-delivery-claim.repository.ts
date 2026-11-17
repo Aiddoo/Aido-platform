@@ -16,9 +16,9 @@ import type {
   ClaimedPushDelivery,
   ClaimPushDeliveriesInput,
   PushDeliveryClaimRepositoryPort,
-  PushDeliveryFence,
   ReopenPushDeliveriesAfterClaimFailureInput,
 } from "../../application/ports/push-delivery-claim.repository.port.js";
+import type { PushDeliveryFenceReadModel } from "../../application/read-models/push-delivery-fence.read-model.js";
 import type { PushDeliveryPublicationReadModel } from "../../application/read-models/push-delivery.read-model.js";
 import { type ClaimedRow, toClaimedPushDelivery } from "./claimed-push-delivery.mapper.js";
 import { claimedOutboxStatus, setColumn } from "./push-delivery-lifecycle.query-fragment.js";
@@ -78,7 +78,7 @@ export class DrizzlePushDeliveryClaimRepository implements PushDeliveryClaimRepo
   }
 
   async markRateLimitReserved(
-    fences: readonly PushDeliveryFence[],
+    fences: readonly PushDeliveryFenceReadModel[],
     reservedAt: Temporal.Instant,
   ): Promise<readonly number[]> {
     if (fences.length === 0) {

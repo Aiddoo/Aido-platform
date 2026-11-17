@@ -5,7 +5,7 @@ import { vi, type Mocked, type MockedFunction } from "vitest";
 
 import { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
-import { NotificationDedupPort } from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
+import { NotificationDeduplicationPort } from "#api/modules/notification/notifications/application/ports/notification-deduplication.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { FinalizeBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/finalize-batch-notification.use-case";
@@ -22,8 +22,8 @@ import {
   type PublishPushDeliveryOutboxInput,
 } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-outbox.use-case";
 import { NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS } from "#api/modules/notification/push-dispatches/notification-push-dispatches.providers";
-import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 import { UserNotificationSettingsPort } from "#api/modules/notification/shared/application/ports/user-notification-settings.port";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import { SystemClock } from "#api/platform/time/system-clock";
 import {
   type AfterCommitTask,
@@ -148,7 +148,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
       }),
     } satisfies PushDispatchStagingRepositoryPort);
     const cache = new EventRecordingNotificationCache(events);
-    const notificationDedup: NotificationDedupPort = {
+    const notificationDeduplication: NotificationDeduplicationPort = {
       recordNotifiedUsers: vi.fn(async () => {
         events.push("record-dedup");
       }),
@@ -187,7 +187,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
         { provide: NotificationRepositoryPort, useValue: repository },
         { provide: PushDispatchStagingRepositoryPort, useValue: staging },
         { provide: NotificationCachePort, useValue: cache },
-        { provide: NotificationDedupPort, useValue: notificationDedup },
+        { provide: NotificationDeduplicationPort, useValue: notificationDeduplication },
         { provide: UserNotificationSettingsPort, useValue: userSettings },
         { provide: UnitOfWorkPort, useValue: unitOfWork },
         { provide: AfterCommitTaskRegistryPort, useValue: unitOfWork },

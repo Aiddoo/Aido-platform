@@ -14,7 +14,7 @@ import { NotificationRepositoryPort } from "#api/modules/notification/notificati
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
-import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { NotificationMilestone } from "#api/modules/notification/shared/domain/notification-milestone.constants";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -206,11 +206,11 @@ export class InMemoryNotificationRepository
   async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
     return [...this.#rows.values()].some(
       (row) =>
-        row.userId === query.userId &&
+        row.userId === query.userId.value &&
         row.type === query.type &&
         Temporal.Instant.compare(row.createdAt, query.since) >= 0 &&
-        (query.friendId == null || row.friendId === query.friendId) &&
-        (query.todoId == null || row.todoId === query.todoId) &&
+        (query.friendId == null || row.friendId === query.friendId.value) &&
+        (query.todoId == null || row.todoId === query.todoId.value) &&
         (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
         (query.cheerId == null || row.cheerId === query.cheerId),
     );
@@ -222,23 +222,23 @@ export class InMemoryNotificationRepository
       [...this.#rows.values()]
         .filter(
           (row) =>
-            query.userIds.includes(row.userId) &&
+            query.userIds.some((userId) => userId.value === row.userId) &&
             row.type === query.type &&
             row.notificationDate != null &&
             row.notificationDate.equals(notificationDate) &&
-            (query.friendId == null || row.friendId === query.friendId),
+            (query.friendId == null || row.friendId === query.friendId.value),
         )
         .map((row) => row.userId),
     );
   }
 
   async hasMilestoneNotification(
-    userId: string,
+    userId: UserId,
     milestone: NotificationMilestone,
   ): Promise<boolean> {
     return [...this.#rows.values()].some(
       (row) =>
-        row.userId === userId &&
+        row.userId === userId.value &&
         row.type === "WEEKLY_ACHIEVEMENT" &&
         metadataField(row, "milestone") === milestone,
     );

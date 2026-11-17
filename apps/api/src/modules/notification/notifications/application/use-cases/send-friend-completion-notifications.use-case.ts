@@ -54,10 +54,10 @@ export class SendFriendCompletionNotificationsUseCase {
     const localDate = notificationDate.toString();
     const alreadyNotifiedUserIds =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: input.notifyUserIds,
+        userIds: input.notifyUserIds.map((userId) => UserId.reconstitute(userId)),
         type: "FRIEND_COMPLETED",
         notificationDate,
-        friendId: input.friendId,
+        friendId: UserId.reconstitute(input.friendId),
       });
     const recipientUserIds = input.notifyUserIds.filter(
       (userId) => !alreadyNotifiedUserIds.has(userId),

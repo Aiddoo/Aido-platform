@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { Notification } from "../../domain/notification.aggregate.js";

@@ -11,10 +11,10 @@ import {
   NotificationCacheKey,
 } from "#api/modules/notification/notifications/infrastructure/cache/notification-cache.keyspace";
 import {
-  NOTIFICATION_DEDUP_SENTINEL,
-  NOTIFICATION_DEDUP_TTL_MS,
-  notificationDedupKey,
-} from "#api/modules/notification/notifications/infrastructure/cache/notification-dedup.keyspace";
+  NOTIFICATION_DEDUPLICATION_SENTINEL,
+  NOTIFICATION_DEDUPLICATION_TTL_MS,
+  notificationDeduplicationKey,
+} from "#api/modules/notification/notifications/infrastructure/cache/notification-deduplication.keyspace";
 import {
   PUSH_TOKEN_CACHE_TTL_MS,
   PushTokenCacheKey,
@@ -24,9 +24,9 @@ import {
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
 import {
-  SCHEDULER_DEDUP_TTL_MS,
-  SchedulerDedupKey,
-} from "#api/modules/notification/reminders/infrastructure/cache/scheduler-dedup.keyspace";
+  SCHEDULER_DEDUPLICATION_TTL_MS,
+  SchedulerDeduplicationKey,
+} from "#api/modules/notification/reminders/infrastructure/cache/scheduler-deduplication.keyspace";
 import {
   RETENTION_CACHE_TTL_MS,
   RetentionCacheKey,
@@ -83,11 +83,11 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "2026-01-31",
     );
     const pushTokensKey = PushTokenCacheKey.pushTokens("user-1");
-    const dedupKey = notificationDedupKey(
+    const dedupKey = notificationDeduplicationKey(
       "MORNING_REMINDER",
       Temporal.PlainDate.from("2026-01-01"),
     );
-    const winbackStagesKey = SchedulerDedupKey.winbackStages("user-1");
+    const winbackStagesKey = SchedulerDeduplicationKey.winbackStages("user-1");
     const nudgeReceivedKey = NudgeCountCacheKey.received("user-1");
     const nudgeSentKey = NudgeCountCacheKey.sent("user-1");
     const cheerReceivedKey = CheerCountCacheKey.received("user-1");
@@ -132,12 +132,12 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       WEATHER_CACHE_TTL_MS,
       TODO_CACHE_TTL_MS,
       DAILY_COMPLETION_CACHE_TTL_MS,
-      NOTIFICATION_DEDUP_TTL_MS,
-      NOTIFICATION_DEDUP_SENTINEL,
+      NOTIFICATION_DEDUPLICATION_TTL_MS,
+      NOTIFICATION_DEDUPLICATION_SENTINEL,
       RETENTION_CACHE_TTL_MS,
       NUDGE_COUNT_CACHE_TTL_MS,
       CHEER_COUNT_CACHE_TTL_MS,
-      SCHEDULER_DEDUP_TTL_MS,
+      SCHEDULER_DEDUPLICATION_TTL_MS,
     };
 
     // Then
@@ -159,12 +159,12 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(values.TODO_CACHE_TTL_MS.FRIEND_VIEW).toBe(60_000);
     expect(values.DAILY_COMPLETION_CACHE_TTL_MS).toBe(600_000);
     expect(values.PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS).toBe(300_000);
-    expect(values.NOTIFICATION_DEDUP_TTL_MS).toBe(90_000_000);
-    expect(values.NOTIFICATION_DEDUP_SENTINEL).toBe("__init__");
+    expect(values.NOTIFICATION_DEDUPLICATION_TTL_MS).toBe(90_000_000);
+    expect(values.NOTIFICATION_DEDUPLICATION_SENTINEL).toBe("__init__");
     expect(values.RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES).toBe(86_400_000);
     expect(values.NUDGE_COUNT_CACHE_TTL_MS).toBe(60_000);
     expect(values.CHEER_COUNT_CACHE_TTL_MS).toBe(60_000);
-    expect(values.SCHEDULER_DEDUP_TTL_MS).toEqual({
+    expect(values.SCHEDULER_DEDUPLICATION_TTL_MS).toEqual({
       WINBACK_STAGES: 7_776_000_000,
       NUDGE_SUGGEST: 691_200_000,
     });

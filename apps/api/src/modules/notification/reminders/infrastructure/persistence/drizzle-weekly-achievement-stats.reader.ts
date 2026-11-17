@@ -6,13 +6,14 @@ import { freeAccessCondition } from "#api/modules/access/feature-grants/access-f
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   WeeklyAchievementStatsReaderPort,
   WeeklyStatsParams,
 } from "../../application/ports/weekly-achievement-stats-reader.port.js";
 import type { UserTodoCountReadModel } from "../../application/read-models/scheduler.read-model.js";
-import { accessCheckedAt, userInTimezones } from "./scheduler.query-fragment.js";
+import { userInTimezones } from "./scheduler.query-fragment.js";
 
 @Injectable()
 export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementStatsReaderPort {
@@ -61,7 +62,7 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
       columns: { id: true },
       where: {
         id: { in: userIds },
-        RAW: (target) => freeAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
       },
     });
     return new Set(rows.map((row) => row.id));

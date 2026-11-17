@@ -2,7 +2,7 @@ import { uniq } from "es-toolkit";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 
-import type { CreateNotificationData } from "../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../shared/domain/notification-draft.constants.js";
 import type { NotificationTodoTargetReaderPort } from "./ports/notification-todo-target.reader.port.js";
 
 /**

@@ -4,7 +4,8 @@ import type { NotificationInboxReaderPort } from "#api/modules/notification/noti
 import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
-import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createNotificationDraftFixture,
@@ -423,7 +424,7 @@ export function describeNotificationRepositoryContract(
           nudgeId: 9,
         });
         const base = {
-          userId: USER_ID,
+          userId: UserId.reconstitute(USER_ID),
           type: "NUDGE_RECEIVED",
           since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
         } as const;
@@ -433,13 +434,16 @@ export function describeNotificationRepositoryContract(
           await historyReader.existsRecentNotification(base),
           await historyReader.existsRecentNotification({
             ...base,
-            friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
-            todoId: 3,
+            friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
+            todoId: TodoId.reconstitute(3),
             nudgeId: 9,
           }),
           await historyReader.existsRecentNotification({ ...base, nudgeId: 10 }),
           await historyReader.existsRecentNotification({ ...base, type: "CHEER_RECEIVED" }),
-          await historyReader.existsRecentNotification({ ...base, userId: OTHER_USER_ID }),
+          await historyReader.existsRecentNotification({
+            ...base,
+            userId: UserId.reconstitute(OTHER_USER_ID),
+          }),
           await historyReader.existsRecentNotification({
             ...base,
             since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
@@ -468,16 +472,16 @@ export function describeNotificationRepositoryContract(
 
         // When
         const notified = await historyReader.findAlreadyNotifiedUserIds({
-          userIds: [USER_ID, OTHER_USER_ID],
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
-          friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
+          friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
         });
         const otherFriend = await historyReader.findAlreadyNotifiedUserIds({
-          userIds: [USER_ID, OTHER_USER_ID],
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
-          friendId: OTHER_USER_ID,
+          friendId: UserId.reconstitute(OTHER_USER_ID),
         });
 
         // Then
@@ -496,10 +500,13 @@ export function describeNotificationRepositoryContract(
 
         // When
         const results = [
-          await historyReader.hasMilestoneNotification(USER_ID, "STREAK_3"),
-          await historyReader.hasMilestoneNotification(USER_ID, "COUNT_10"),
-          await historyReader.hasMilestoneNotification(USER_ID, "COUNT_50"),
-          await historyReader.hasMilestoneNotification(OTHER_USER_ID, "STREAK_3"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "STREAK_3"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "COUNT_10"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "COUNT_50"),
+          await historyReader.hasMilestoneNotification(
+            UserId.reconstitute(OTHER_USER_ID),
+            "STREAK_3",
+          ),
         ];
 
         // Then

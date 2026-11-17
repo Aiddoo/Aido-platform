@@ -4,7 +4,7 @@ import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-wo
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import type { PublishPushDeliveryAfterCommitUseCase } from "../../../push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
 class RecordingAfterCommitPublisher implements Pick<

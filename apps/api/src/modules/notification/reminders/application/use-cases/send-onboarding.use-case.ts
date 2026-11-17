@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
@@ -6,8 +7,8 @@ import type {
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createOnboardingNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   isOnboardingDay,
@@ -66,7 +67,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     // 오늘 SYSTEM_NOTICE 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: eligibleUsers.map(({ user }) => user.id),
+        userIds: eligibleUsers.map(({ user }) => UserId.reconstitute(user.id)),
         type: "SYSTEM_NOTICE",
         notificationDate: today,
       });

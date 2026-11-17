@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
-import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";

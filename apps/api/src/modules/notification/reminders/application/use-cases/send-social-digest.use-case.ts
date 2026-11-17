@@ -1,6 +1,7 @@
 import { groupBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
@@ -9,8 +10,8 @@ import type {
 } from "../../../notifications/notification-notifications.public.js";
 import { createSocialDigestNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
@@ -62,12 +63,12 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
     // 중복 방지
     const [alreadyNotified, streakAtRiskNotified] = await Promise.all([
       this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: incompleteUsers.map((u) => u.id),
+        userIds: incompleteUsers.map((u) => UserId.reconstitute(u.id)),
         type: "SOCIAL_DIGEST",
         notificationDate: today,
       }),
       this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: incompleteUsers.map((u) => u.id),
+        userIds: incompleteUsers.map((u) => UserId.reconstitute(u.id)),
         type: "STREAK_AT_RISK",
         notificationDate: today,
       }),

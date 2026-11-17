@@ -33,6 +33,8 @@ export class StubNotificationHistoryReader implements Pick<
       ...(this.#notifiedByKey.get(query.type) ?? []),
       ...(this.#notifiedByKey.get(keyOf(query.type, query.notificationDate)) ?? []),
     ]);
-    return new Set(query.userIds.filter((userId) => notified.has(userId)));
+    return new Set(
+      query.userIds.map((userId) => userId.value).filter((userId) => notified.has(userId)),
+    );
   }
 }

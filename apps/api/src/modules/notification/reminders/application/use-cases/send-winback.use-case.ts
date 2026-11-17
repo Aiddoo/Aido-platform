@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
@@ -6,13 +7,13 @@ import type {
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
-import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
+import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
@@ -22,8 +23,8 @@ interface WinbackStrategyDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly schedulerDedup: Pick<
-    SchedulerDedupPort,
+  readonly schedulerDeduplication: Pick<
+    SchedulerDeduplicationPort,
     "findSentWinbackStages" | "recordWinbackStages"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -55,7 +56,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     // 오늘 WINBACK 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
+        userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "WINBACK",
         notificationDate: today,
       });
@@ -74,7 +75,8 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays }];
     });
     // 단계별 중복 방지: 사용자마다 묻지 않고 한 번에 확인한다
-    const sentStageUserIds = await this.#dependencies.schedulerDedup.findSentWinbackStages(checks);
+    const sentStageUserIds =
+      await this.#dependencies.schedulerDeduplication.findSentWinbackStages(checks);
     const activeChecks = checks.filter(({ userId }) => !sentStageUserIds.has(userId));
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       activeChecks.map((check) => check.userId),
@@ -110,7 +112,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.execute(notifications);
 
-      void this.#dependencies.schedulerDedup.recordWinbackStages(
+      void this.#dependencies.schedulerDeduplication.recordWinbackStages(
         activeChecks.map(({ userId, stage }) => ({ userId, stage })),
       );
 

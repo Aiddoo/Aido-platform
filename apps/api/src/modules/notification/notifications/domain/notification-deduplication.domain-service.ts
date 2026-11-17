@@ -9,13 +9,13 @@ import type { NotificationType } from "../../shared/domain/notification-type.con
  */
 
 /** dedup 전략: 윈도우(ms) + 비교에 사용할 컨텍스트 키 */
-export interface DedupStrategy {
+export interface DeduplicationStrategy {
   windowMs: number;
   keys: Array<"friendId" | "todoId" | "nudgeId" | "cheerId">;
 }
 
 /** dedup 판정에 필요한 알림 컨텍스트 */
-export interface DedupContext {
+export interface DeduplicationContext {
   userId: string;
   type: NotificationType;
   friendId?: string | null;
@@ -25,29 +25,34 @@ export interface DedupContext {
 }
 
 /** 컨텍스트 키별로 추출된 값 (existsRecentNotification 조회 파라미터) */
-export interface DedupContextFields {
+export interface DeduplicationContextFields {
   friendId?: string;
   todoId?: number;
   nudgeId?: number;
   cheerId?: number;
 }
 
-const DEDUP_WINDOW = {
+const DEDUPLICATION_WINDOW = {
   FOLLOW: 24 * 60 * 60_000, // 24시간
 } as const;
 
-const DEDUP_STRATEGIES: Partial<Record<NotificationType, DedupStrategy>> = {
-  FOLLOW_NEW: { windowMs: DEDUP_WINDOW.FOLLOW, keys: ["friendId"] },
-  FOLLOW_ACCEPTED: { windowMs: DEDUP_WINDOW.FOLLOW, keys: ["friendId"] },
+const DEDUPLICATION_STRATEGIES: Partial<Record<NotificationType, DeduplicationStrategy>> = {
+  FOLLOW_NEW: { windowMs: DEDUPLICATION_WINDOW.FOLLOW, keys: ["friendId"] },
+  FOLLOW_ACCEPTED: { windowMs: DEDUPLICATION_WINDOW.FOLLOW, keys: ["friendId"] },
 };
 
 /** 타입별 dedup 전략 조회 (없으면 서비스 레이어 dedup 미적용) */
-export function resolveDedupStrategy(type: NotificationType): DedupStrategy | undefined {
-  return DEDUP_STRATEGIES[type];
+export function resolveDeduplicationStrategy(
+  type: NotificationType,
+): DeduplicationStrategy | undefined {
+  return DEDUPLICATION_STRATEGIES[type];
 }
 
 /** 중복 방지 잠금 키 생성 */
-export function buildDedupKey(data: DedupContext, strategy: DedupStrategy): string {
+export function buildDeduplicationKey(
+  data: DeduplicationContext,
+  strategy: DeduplicationStrategy,
+): string {
   const parts = ["dedup", data.userId, data.type];
   for (const key of strategy.keys) {
     const value = data[key];
@@ -59,11 +64,11 @@ export function buildDedupKey(data: DedupContext, strategy: DedupStrategy): stri
 }
 
 /** 전략 키에 해당하는 컨텍스트 값만 추출 */
-export function buildDedupContextFields(
-  data: DedupContext,
-  strategy: DedupStrategy,
-): DedupContextFields {
-  const fields: DedupContextFields = {};
+export function buildDeduplicationContextFields(
+  data: DeduplicationContext,
+  strategy: DeduplicationStrategy,
+): DeduplicationContextFields {
+  const fields: DeduplicationContextFields = {};
   for (const key of strategy.keys) {
     switch (key) {
       case "friendId":

@@ -10,9 +10,9 @@ import {
   NOTIFICATION_FIXTURE_USER_ID,
 } from "#test/fixtures/notification/notification.fixture";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
-import { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
+import { SendNotificationWithDeduplicationUseCase } from "./send-notification-with-deduplication.use-case.js";
 import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 const FOLLOW_LOCK_KEY = `mutation:v1:notification:dedup:${NOTIFICATION_FIXTURE_USER_ID}:FOLLOW_NEW:friendId:friend-1`;
@@ -33,7 +33,7 @@ function setup(history: readonly InboxNotificationReadModel[] = []) {
   const sendNotification = new RecordingSendNotification();
   const unitOfWork = new ImmediateUnitOfWork();
   const mutationLock = new RecordingMutationLock();
-  const useCase = new SendNotificationWithDedupUseCase({
+  const useCase = new SendNotificationWithDeduplicationUseCase({
     sendNotification,
     unitOfWork,
     mutationLock,
@@ -44,7 +44,7 @@ function setup(history: readonly InboxNotificationReadModel[] = []) {
   return { useCase, sendNotification, unitOfWork, mutationLock };
 }
 
-describe("SendNotificationWithDedupUseCase — 중복 방지 알림 발송", () => {
+describe("SendNotificationWithDeduplicationUseCase — 중복 방지 알림 발송", () => {
   it("전략 없는 타입이면 잠금 없이 바로 발송한다", async () => {
     // Given
     const { useCase, sendNotification, unitOfWork, mutationLock } = setup();

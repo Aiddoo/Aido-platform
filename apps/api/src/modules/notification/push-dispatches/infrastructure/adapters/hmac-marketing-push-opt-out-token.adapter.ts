@@ -3,6 +3,7 @@ import type { ConfigType } from "@nestjs/config";
 
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
 import { notificationPushDispatchesConfig } from "../../notification-push-dispatches.config.js";
@@ -25,13 +26,13 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
     this.#signer = new HmacTokenSigner(ring, TOKEN_DOMAIN);
   }
 
-  issue(userId: string): string {
+  issue(userId: UserId): string {
     const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
-    const payload = Buffer.from(`${userId}.${expiresAt}`).toString("base64url");
+    const payload = Buffer.from(`${userId.value}.${expiresAt}`).toString("base64url");
     return this.#signer.sign(payload);
   }
 
-  verify(token: string): string | null {
+  verify(token: string): UserId | null {
     const payload = this.#signer.open(token);
     if (payload == null) {
       return null;
@@ -46,6 +47,6 @@ export class HmacMarketingPushOptOutTokenAdapter implements MarketingPushOptOutT
     if (!Number.isFinite(expiresAt) || expiresAt < Date.now() / 1000) {
       return null;
     }
-    return userId;
+    return UserId.reconstitute(userId);
   }
 }

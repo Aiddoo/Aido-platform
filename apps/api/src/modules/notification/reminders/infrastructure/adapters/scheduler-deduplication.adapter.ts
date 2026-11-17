@@ -2,11 +2,14 @@ import { Injectable } from "@nestjs/common";
 
 import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
-import { SchedulerDedupPort } from "../../application/ports/scheduler-dedup.port.js";
-import { SCHEDULER_DEDUP_TTL_MS, SchedulerDedupKey } from "../cache/scheduler-dedup.keyspace.js";
+import { SchedulerDeduplicationPort } from "../../application/ports/scheduler-deduplication.port.js";
+import {
+  SCHEDULER_DEDUPLICATION_TTL_MS,
+  SchedulerDeduplicationKey,
+} from "../cache/scheduler-deduplication.keyspace.js";
 
 @Injectable()
-export class SchedulerDedupAdapter extends SchedulerDedupPort {
+export class SchedulerDeduplicationAdapter extends SchedulerDeduplicationPort {
   readonly #dedupProvider: DedupProviderPort;
 
   constructor(dedupProvider: DedupProviderPort) {
@@ -24,19 +27,19 @@ export class SchedulerDedupAdapter extends SchedulerDedupPort {
   recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {
     return this.#dedupProvider.addEntries(
       records.map(toWinbackStageEntry),
-      SCHEDULER_DEDUP_TTL_MS.WINBACK_STAGES,
+      SCHEDULER_DEDUPLICATION_TTL_MS.WINBACK_STAGES,
     );
   }
 
   findSentNudgePairs(weekId: string, pairs: string[]): Promise<Set<string>> {
-    return this.#dedupProvider.filterMembers(SchedulerDedupKey.nudgeSuggest(weekId), pairs);
+    return this.#dedupProvider.filterMembers(SchedulerDeduplicationKey.nudgeSuggest(weekId), pairs);
   }
 
   recordNudgePairs(weekId: string, pairs: string[]): Promise<void> {
     return this.#dedupProvider.addMembers(
-      SchedulerDedupKey.nudgeSuggest(weekId),
+      SchedulerDeduplicationKey.nudgeSuggest(weekId),
       pairs,
-      SCHEDULER_DEDUP_TTL_MS.NUDGE_SUGGEST,
+      SCHEDULER_DEDUPLICATION_TTL_MS.NUDGE_SUGGEST,
     );
   }
 }
@@ -45,7 +48,7 @@ export class SchedulerDedupAdapter extends SchedulerDedupPort {
 function toWinbackStageEntry(record: { readonly userId: string; readonly stage: string }) {
   return {
     ...record,
-    setKey: SchedulerDedupKey.winbackStages(record.userId),
+    setKey: SchedulerDeduplicationKey.winbackStages(record.userId),
     member: record.stage,
   };
 }

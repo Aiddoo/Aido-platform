@@ -1,7 +1,8 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationLogEvent } from "./notifications.log-events.js";
-import { type NotificationDedupPort } from "./ports/notification-dedup.port.js";
+import { type NotificationDeduplicationPort } from "./ports/notification-deduplication.port.js";
 import {
   type FindAlreadyNotifiedUserIdsQuery,
   type NotificationHistoryReaderPort,
@@ -16,7 +17,10 @@ import {
  * - Sentinel 없음 = cold start → DB fallback + warm-up
  */
 interface NotificationHistoryReaderDependencies {
-  readonly notificationDedup: Pick<NotificationDedupPort, "readKnownRecipients" | "warmRecipients">;
+  readonly notificationDeduplication: Pick<
+    NotificationDeduplicationPort,
+    "readKnownRecipients" | "warmRecipients"
+  >;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
     "findAlreadyNotifiedUserIds"
@@ -32,7 +36,7 @@ export class NotificationHistoryReader {
   }
 
   async findAlreadyNotifiedUserIds(params: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
-    const knownRecipients = await this.#dependencies.notificationDedup.readKnownRecipients(
+    const knownRecipients = await this.#dependencies.notificationDeduplication.readKnownRecipients(
       params.type,
       params.notificationDate,
       params.userIds,
@@ -45,8 +49,12 @@ export class NotificationHistoryReader {
     const fromDb =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds(params);
 
-    this.#dependencies.notificationDedup
-      .warmRecipients(params.type, params.notificationDate, [...fromDb])
+    this.#dependencies.notificationDeduplication
+      .warmRecipients(
+        params.type,
+        params.notificationDate,
+        [...fromDb].map((userId) => UserId.reconstitute(userId)),
+      )
       .catch(() => {
         this.#dependencies.logger.warn({
           event: NotificationLogEvent.NOTIFICATION_HISTORY_WARM_UP_FAILED,

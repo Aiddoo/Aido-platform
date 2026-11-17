@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
@@ -7,8 +8,8 @@ import type {
 } from "../../../notifications/notification-notifications.public.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   elapsedDaysUntil,
@@ -16,7 +17,7 @@ import {
   utcStartOf,
 } from "../../domain/reminder-day.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
-import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
+import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
@@ -29,7 +30,10 @@ interface NudgeSuggestStrategyDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly schedulerDedup: Pick<SchedulerDedupPort, "findSentNudgePairs" | "recordNudgePairs">;
+  readonly schedulerDeduplication: Pick<
+    SchedulerDeduplicationPort,
+    "findSentNudgePairs" | "recordNudgePairs"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -55,7 +59,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     // 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: activeUsers.map((u) => u.id),
+        userIds: activeUsers.map((u) => UserId.reconstitute(u.id)),
         type: "NUDGE_SUGGEST",
         notificationDate: today,
       });
@@ -107,7 +111,10 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 단일 SMISMEMBER — O(allPairs.length)
-    const sentPairs = await this.#dependencies.schedulerDedup.findSentNudgePairs(weekId, allPairs);
+    const sentPairs = await this.#dependencies.schedulerDeduplication.findSentNudgePairs(
+      weekId,
+      allPairs,
+    );
 
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       candidates.map((u) => u.id),
@@ -168,7 +175,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       await this.#dependencies.notificationPublisher.execute(notifications);
 
       const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
-      void this.#dependencies.schedulerDedup.recordNudgePairs(weekId, members);
+      void this.#dependencies.schedulerDeduplication.recordNudgePairs(weekId, members);
 
       this.#dependencies.logger.log({
         event: ReminderLogEvent.NUDGE_SUGGEST_SENT,

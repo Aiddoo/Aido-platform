@@ -10,12 +10,12 @@ import {
 } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import {
   type NotificationDeliveryPreference,
   type NotificationMarketingConsent,
   type UserNotificationSettingsPort,
 } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import {
   isAiPushDisabled,
   isAutomatedEngagementNotification,

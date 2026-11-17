@@ -1,6 +1,6 @@
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { MarketingReconfirmRecipient } from "../ports/marketing-consent-reconfirm.port.js";
 import { ReconfirmMarketingConsentsUseCase } from "./reconfirm-marketing-consents.use-case.js";
 

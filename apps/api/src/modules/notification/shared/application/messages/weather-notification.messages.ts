@@ -12,7 +12,7 @@ import type {
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { NotificationAction } from "../ports/notification-draft.port.js";
+import type { NotificationAction } from "../../domain/notification-draft.constants.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,

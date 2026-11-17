@@ -1,4 +1,6 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 export abstract class MarketingPushOptOutTokenPort {
-  abstract issue(userId: string): string;
-  abstract verify(token: string): string | null;
+  abstract issue(userId: UserId): string;
+  abstract verify(token: string): UserId | null;
 }

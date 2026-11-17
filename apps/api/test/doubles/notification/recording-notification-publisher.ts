@@ -3,7 +3,7 @@ import type { BatchNotificationOptions } from "#api/modules/notification/notific
 import type { PublishDeduplicatedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-deduplicated-notification.use-case";
 import type { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import type { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
-import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 
 type PublishMode = "single" | "deduplicated" | "batch";
 

@@ -1,6 +1,7 @@
 import type { DedupEntry, DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotificationDedupAdapter } from "./notification-dedup.adapter.js";
+import { NotificationDeduplicationAdapter } from "./notification-deduplication.adapter.js";
 
 interface AddedMembers {
   readonly setKey: string;
@@ -9,7 +10,7 @@ interface AddedMembers {
 }
 
 // Set 키별 멤버와 TTL을 남겨 저장 계약(key·sentinel·TTL)을 상태로 확인한다
-class RecordingDedupProvider implements DedupProviderPort {
+class RecordingDeduplicationProvider implements DedupProviderPort {
   readonly added: AddedMembers[] = [];
   readonly #sets = new Map<string, Set<string>>();
 
@@ -38,21 +39,21 @@ class RecordingDedupProvider implements DedupProviderPort {
   }
 }
 
-describe("NotificationDedupAdapter", () => {
+describe("NotificationDeduplicationAdapter", () => {
   it("application dedup records를 인프라 key와 sentinel 계약으로 저장한다", async () => {
     // Given
-    const provider = new RecordingDedupProvider();
-    const adapter = new NotificationDedupAdapter(provider);
+    const provider = new RecordingDeduplicationProvider();
+    const adapter = new NotificationDeduplicationAdapter(provider);
 
     // When
     await adapter.recordNotifiedUsers([
       {
-        userId: "u1",
+        userId: UserId.reconstitute("u1"),
         type: "FRIEND_COMPLETED",
         notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },
       {
-        userId: "u2",
+        userId: UserId.reconstitute("u2"),
         type: "FRIEND_COMPLETED",
         notificationDate: Temporal.PlainDate.from("2026-03-09"),
       },

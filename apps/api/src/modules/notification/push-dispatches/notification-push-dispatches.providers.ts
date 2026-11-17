@@ -28,7 +28,6 @@ import { PushDeliveryJobEnqueuerPort } from "./application/ports/push-delivery-j
 import { PushDeliveryLeaseRepositoryPort } from "./application/ports/push-delivery-lease.repository.port.js";
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
 import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
-import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
 import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
 import { PushProviderPort } from "./application/ports/push-provider.port.js";
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
@@ -56,7 +55,6 @@ import { DrizzlePushDeliveryFinalizationRepository } from "./infrastructure/pers
 import { DrizzlePushDeliveryLeaseRepository } from "./infrastructure/persistence/drizzle-push-delivery-lease.repository.js";
 import { DrizzlePushDeliveryOutboxRepository } from "./infrastructure/persistence/drizzle-push-delivery-outbox.repository.js";
 import { DrizzlePushDispatchStagingRepository } from "./infrastructure/persistence/drizzle-push-dispatch-staging.repository.js";
-import { DrizzlePushFunnelReader } from "./infrastructure/persistence/drizzle-push-funnel.reader.js";
 import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizzle-push-receipt.repository.js";
 import { notificationPushDispatchesConfig } from "./notification-push-dispatches.config.js";
 
@@ -94,7 +92,6 @@ export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
   },
   { provide: PushDeliveryLeaseRepositoryPort, useClass: DrizzlePushDeliveryLeaseRepository },
   { provide: PushCampaignOutcomeReaderPort, useClass: DrizzlePushCampaignOutcomeReader },
-  { provide: PushFunnelReaderPort, useClass: DrizzlePushFunnelReader },
   { provide: PushDeliveryJobEnqueuerPort, useClass: PushDeliveryQueueAdapter },
   // 캐시한 수신자 설정 하나가 설정·언어·시간대 조회 포트를 함께 맡는다
   CachedNotificationRecipientPreferenceAdapter,

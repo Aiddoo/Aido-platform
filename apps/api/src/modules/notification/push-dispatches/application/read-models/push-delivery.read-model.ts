@@ -1,4 +1,4 @@
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { PushDeliveryLane } from "../../domain/push-delivery-lane.domain-service.js";
 
 /** delivery 작업 하나가 묶는 최대 dispatch 수. queue payload 검증도 같은 값을 쓴다. */

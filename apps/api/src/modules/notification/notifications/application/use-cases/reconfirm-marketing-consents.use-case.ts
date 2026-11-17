@@ -18,8 +18,8 @@ import type {
   PushQuietHoursReaderPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { createMarketingConsentReconfirmNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import type {
   MarketingConsentReconfirmPort,

@@ -1,14 +1,15 @@
 import type { PushNotificationData } from "@aido/api/contracts/notification";
 import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { withMarketingPushLabel } from "../../../shared/application/messages/marketing-push-label.messages.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import {
   notificationMinAppVersion,
   toWireNotificationType,
 } from "../../../shared/domain/notification-client-capability.domain-service.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { type MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
 import {
   type BatchPushNotificationPayload,
@@ -109,7 +110,9 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
       ...(data.variantId && { variantId: data.variantId }),
       ...(data.purpose && { purpose: data.purpose }),
       ...(isMarketingPush(data) && {
-        marketingOptOutToken: this.#dependencies.marketingOptOutTokens.issue(data.userId),
+        marketingOptOutToken: this.#dependencies.marketingOptOutTokens.issue(
+          UserId.reconstitute(data.userId),
+        ),
       }),
     };
   }

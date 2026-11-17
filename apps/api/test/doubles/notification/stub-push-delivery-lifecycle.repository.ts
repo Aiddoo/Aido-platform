@@ -2,7 +2,6 @@ import type {
   ClaimedPushDelivery,
   ClaimPushDeliveriesInput,
   PushDeliveryClaimRepositoryPort,
-  PushDeliveryFence,
   ReopenPushDeliveriesAfterClaimFailureInput,
 } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-claim.repository.port";
 import type {
@@ -14,6 +13,7 @@ import type {
   PushDeliveryLeaseRepositoryPort,
   ReleasePushDeliveryInput,
 } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-lease.repository.port";
+import type { PushDeliveryFenceReadModel } from "#api/modules/notification/push-dispatches/application/read-models/push-delivery-fence.read-model";
 
 const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
   "claim",
@@ -45,7 +45,7 @@ export class StubPushDeliveryLifecycleRepository
   readonly reopenAfterFinalClaimFailureInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
   readonly reopenFailedPublicationsInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
   readonly rateLimitReservations: {
-    readonly fences: readonly PushDeliveryFence[];
+    readonly fences: readonly PushDeliveryFenceReadModel[];
     readonly reservedAt: Temporal.Instant;
   }[] = [];
   readonly finalizedSkipped: FinalizeSkippedPushDeliveryInput[][] = [];
@@ -86,7 +86,7 @@ export class StubPushDeliveryLifecycleRepository
   }
 
   async markRateLimitReserved(
-    fences: readonly PushDeliveryFence[],
+    fences: readonly PushDeliveryFenceReadModel[],
     reservedAt: Temporal.Instant,
   ): Promise<readonly number[]> {
     this.rateLimitReservations.push({ fences: [...fences], reservedAt });

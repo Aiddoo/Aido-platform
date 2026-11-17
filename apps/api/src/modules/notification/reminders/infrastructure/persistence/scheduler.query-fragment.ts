@@ -5,7 +5,6 @@ import { and, eq, gte, inArray, lt, type AnyColumn } from "drizzle-orm";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, userPreference } from "#api/platform/database/schema/index";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
 
@@ -16,11 +15,6 @@ export type SchedulerRetentionSettings = Pick<
   ConfigType<typeof notificationRetentionAssignmentsConfig>,
   "onboardingV2"
 >;
-
-// access 권한 조건은 아직 Date로 받는다
-export function accessCheckedAt(clock: Pick<ClockPort, "now">): Date {
-  return instantToDate(clock.now());
-}
 
 export function todayTodoCount(
   database: SchedulerDatabase,
@@ -63,13 +57,4 @@ export function recentTreatmentExclusion(
       },
     },
   ];
-}
-
-// where가 설정의 시간대로 거르므로 설정 없는 행은 오지 않는다
-export function withPreferenceTimezone<
-  TRow extends { readonly preference: { readonly timezone: string } | null },
->(rows: readonly TRow[]): Array<TRow & { readonly timezone: string }> {
-  return rows.flatMap((row) =>
-    row.preference == null ? [] : [{ ...row, timezone: row.preference.timezone }],
-  );
 }

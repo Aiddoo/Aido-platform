@@ -22,7 +22,7 @@ import { SendCheerNotificationUseCase } from "#api/modules/notification/notifica
 import { SendFollowAcceptedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-follow-accepted-notification.use-case";
 import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-follow-request-notification.use-case";
 import { SendMilestoneNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-milestone-notification.use-case";
-import { SendNotificationWithDedupUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNudgeNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-nudge-notification.use-case";
 import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
@@ -91,6 +91,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -242,15 +243,17 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: ReportPushDeviceUseCase, useValue: unexpectedUseCase },
     { provide: UnregisterPushDeviceUseCase, useValue: unexpectedUseCase },
     { provide: OptOutMarketingPushUseCase, useValue: unexpectedUseCase },
-    { provide: SendNotificationWithDedupUseCase, useValue: unexpectedUseCase },
+    { provide: SendNotificationWithDeduplicationUseCase, useValue: unexpectedUseCase },
     { provide: PushProviderPort, useValue: pushProvider },
     { provide: PushRateLimiterPort, useClass: InMemoryPushRateLimiterAdapter },
     {
       provide: MarketingPushOptOutTokenPort,
       useValue: {
-        issue: (userId: string) => `fake-opt-out:${userId}`,
+        issue: (userId: UserId) => `fake-opt-out:${userId.value}`,
         verify: (token: string) =>
-          token.startsWith("fake-opt-out:") ? token.slice("fake-opt-out:".length) : null,
+          token.startsWith("fake-opt-out:")
+            ? UserId.reconstitute(token.slice("fake-opt-out:".length))
+            : null,
       },
     },
     {

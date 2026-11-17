@@ -11,7 +11,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import { duplicateNotification } from "../../application/notifications.errors.js";
 import { type NotificationRepositoryPort } from "../../application/ports/notification.repository.port.js";

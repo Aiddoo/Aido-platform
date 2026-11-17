@@ -11,7 +11,7 @@ import type {
   WeatherFallbackUserReadModel,
   WeatherReminderUserReadModel,
 } from "../../application/read-models/scheduler.read-model.js";
-import { withPreferenceTimezone } from "./scheduler.query-fragment.js";
+import { withPreferenceTimezone } from "./scheduler-row.mapper.js";
 
 @Injectable()
 export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {

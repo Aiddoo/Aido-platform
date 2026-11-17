@@ -6,7 +6,6 @@ export {
   SendInquiryEmailUseCase,
 } from "./application/use-cases/send-inquiry-email.use-case.js";
 export { SendUserReportEmailUseCase } from "./application/use-cases/send-user-report-email.use-case.js";
-export type { CodeEmailKind } from "./domain/email-delivery.constants.js";
 export type {
   InquiryTemplateData,
   UserReportTemplateData,

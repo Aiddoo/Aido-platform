@@ -7,6 +7,7 @@ import {
 } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { instantToDate } from "#api/shared/domain/time/instant";
 
 import { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
 import type {
@@ -20,11 +21,10 @@ import type {
   ReminderCountUserReadModel,
   UserIdReadModel,
 } from "../../application/read-models/scheduler.read-model.js";
+import { withPreferenceTimezone } from "./scheduler-row.mapper.js";
 import {
-  accessCheckedAt,
   todayTodoCount,
   recentTreatmentExclusion,
-  withPreferenceTimezone,
   type SchedulerRetentionSettings,
 } from "./scheduler.query-fragment.js";
 
@@ -52,7 +52,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
-        RAW: (target) => premiumAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
         preference: {
           timezone: { in: [...timezones] },
           morningReminderHour: hour,
@@ -72,7 +72,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
         preference: { timezone: { in: [...timezones] } },
       },
       with: { preference: { columns: { locale: true } } },
@@ -89,7 +89,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
       columns: { id: true },
       where: {
         ...(userId != null && { id: userId.value }),
-        RAW: (target) => premiumAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
         preference: {
           timezone: { in: [...timezones] },
           eveningReminderHour: hour,
@@ -117,7 +117,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
-        RAW: (target) => freeAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => freeAccessCondition(target, instantToDate(this.#clock.now())),
         preference: { timezone: { in: [...timezones] } },
         todos: { startDate: { gte: today, lt: tomorrow } },
       },
@@ -174,7 +174,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
       columns: { id: true },
       where: {
         preference: { timezone: { in: [...timezones] } },
-        RAW: (target) => premiumAccessCondition(target, accessCheckedAt(this.#clock)),
+        RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
         todos: {
           startDate: { gte: periodStart, lt: periodEnd },
         },

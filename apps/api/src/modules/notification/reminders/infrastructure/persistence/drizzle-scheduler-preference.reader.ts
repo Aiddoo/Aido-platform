@@ -2,10 +2,6 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import {
-  ReminderCacheKey,
-  REMINDER_CACHE_TTL_MS,
-} from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { userPreference } from "#api/platform/database/schema/index";
@@ -14,6 +10,7 @@ import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { SchedulerPreferenceReaderPort } from "../../application/ports/scheduler-preference-reader.port.js";
 import type { UserLocaleMapReadModel } from "../../application/read-models/scheduler.read-model.js";
+import { ReminderCacheKey, REMINDER_CACHE_TTL_MS } from "../cache/reminder-cache.keyspace.js";
 
 @Injectable()
 export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceReaderPort {

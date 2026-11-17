@@ -1,6 +1,6 @@
 import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
-import type { PushDeliveryFence } from "./push-delivery-claim.repository.port.js";
+import type { PushDeliveryFenceReadModel } from "../read-models/push-delivery-fence.read-model.js";
 import type { PushResult } from "./push-provider.port.js";
 
 export interface PushDeliveryContext {
@@ -9,13 +9,13 @@ export interface PushDeliveryContext {
 }
 
 export interface FinalizeSkippedPushDeliveryInput {
-  readonly fence: PushDeliveryFence;
+  readonly fence: PushDeliveryFenceReadModel;
   readonly context: PushDeliveryContext;
   readonly reason: PushDispatchSkipReason;
 }
 
 export interface FinalizePushDeliveryResultsInput {
-  readonly fence: PushDeliveryFence;
+  readonly fence: PushDeliveryFenceReadModel;
   readonly context: PushDeliveryContext;
   readonly results: readonly PushResult[];
 }

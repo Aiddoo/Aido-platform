@@ -15,7 +15,7 @@ import {
   type StagePushDispatchInput,
 } from "../../../push-dispatches/application/ports/push-dispatch-staging.repository.port.js";
 import type { PublishPushDeliveryAfterCommitUseCase } from "../../../push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
 import { SendNotificationUseCase } from "./send-notification.use-case.js";
 

@@ -72,7 +72,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     // 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
+        userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "MORNING_REMINDER",
         notificationDate: today,
       });

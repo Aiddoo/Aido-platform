@@ -5,8 +5,8 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
 import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import type { NotificationHistoryReader } from "../notification-history.reader.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";

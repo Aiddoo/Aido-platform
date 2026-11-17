@@ -12,7 +12,7 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";

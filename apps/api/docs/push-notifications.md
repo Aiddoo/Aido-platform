@@ -107,7 +107,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 
 ### 푸시 navigation (1.14.1+)
 
-push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(`push/infrastructure/adapters/notification-navigation.mapper.ts`, 판정은 `push/domain/notification-navigation.domain-service.ts`) 하나에서 kind별로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
+push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(`push-dispatches/infrastructure/adapters/notification-navigation.mapper.ts`, 판정은 `shared/domain/notification-navigation.domain-service.ts`) 하나에서 kind별로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
 
 | kind                 | 싣는 값                                                                                                                        | 알림                                                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -190,8 +190,8 @@ v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0–v1.1, v1.2–v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
 
-앱 계약 enum(`@aido/api` `NOTIFICATION_TYPE`)에 없는 서버 전용 타입(`PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`)은 `push/domain/notification-client-capability.domain-service.ts`의 `toWireNotificationType` 한 곳에서 푸시 `type`과 알림함 `type`을 `SYSTEM_NOTICE`로 바꿔 보낸다. 저장·중복 방지·카테고리(`NOTICE`)·`navigation`(`SUBSCRIPTION`)은 서버 타입으로 정하고, `DEEP_LINK` url `/settings/subscription`을 함께 실어 1.13.0+ 앱도 구독 화면을 연다. 그래서 최소 앱 버전이 없고 모든 앱이 받는다.
+앱 계약 enum(`@aido/api` `NOTIFICATION_TYPE`)에 없는 서버 전용 타입(`PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`)은 `shared/domain/notification-client-capability.domain-service.ts`의 `toWireNotificationType` 한 곳에서 푸시 `type`과 알림함 `type`을 `SYSTEM_NOTICE`로 바꿔 보낸다. 저장·중복 방지·카테고리(`NOTICE`)·`navigation`(`SUBSCRIPTION`)은 서버 타입으로 정하고, `DEEP_LINK` url `/settings/subscription`을 함께 실어 1.13.0+ 앱도 구독 화면을 연다. 그래서 최소 앱 버전이 없고 모든 앱이 받는다.
 
-새 알림 타입의 최소 앱 버전은 `push/domain/notification-client-capability.domain-service.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
+새 알림 타입의 최소 앱 버전은 `shared/domain/notification-client-capability.domain-service.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
 
 소셜 다이제스트 지연 잡은 직전 저녁 리마인더의 알림 생성 대상 사용자 CUID 목록을 함께 저장한다. 배포 전에 생성되어 대상 목록이 없는 구형 지연 잡은 타임존 전체로 확대 발송하지 않고 안전하게 건너뛴다.

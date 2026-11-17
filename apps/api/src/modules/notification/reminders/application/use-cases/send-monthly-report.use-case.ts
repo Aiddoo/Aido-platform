@@ -1,4 +1,5 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import type {
@@ -45,7 +46,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
 
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
+        userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "MONTHLY_REPORT",
         notificationDate: today,
       });

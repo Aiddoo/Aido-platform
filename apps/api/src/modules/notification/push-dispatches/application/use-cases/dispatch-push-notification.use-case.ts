@@ -14,11 +14,11 @@ import {
   type PushTokenCachePort,
   type PushTokenRepositoryPort,
 } from "../../../push-devices/notification-push-devices.public.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import {
   notificationMinAppVersion,
   supportsNotificationType,
 } from "../../../shared/domain/notification-client-capability.domain-service.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import {
   FEATURE_DISCOVERY_CAMPAIGN_KEY,
   supportsFeatureDiscoveryMarketing,

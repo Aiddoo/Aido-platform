@@ -80,11 +80,11 @@ export class DrizzleNotificationReader
     const row = await this.#db.query.notification.findFirst({
       columns: { id: true },
       where: {
-        userId: query.userId,
+        userId: query.userId.value,
         type: query.type,
         createdAt: { gte: query.since },
-        ...(query.friendId != null && { friendId: query.friendId }),
-        ...(query.todoId != null && { todoId: query.todoId }),
+        ...(query.friendId != null && { friendId: query.friendId.value }),
+        ...(query.todoId != null && { todoId: query.todoId.value }),
         ...(query.nudgeId != null && { nudgeId: query.nudgeId }),
         ...(query.cheerId != null && { cheerId: query.cheerId }),
       },
@@ -98,10 +98,13 @@ export class DrizzleNotificationReader
       .from(notification)
       .where(
         and(
-          inArray(notification.userId, query.userIds),
+          inArray(
+            notification.userId,
+            query.userIds.map((userId) => userId.value),
+          ),
           eq(notification.type, query.type),
           eq(notification.notificationDate, query.notificationDate),
-          query.friendId != null ? eq(notification.friendId, query.friendId) : undefined,
+          query.friendId != null ? eq(notification.friendId, query.friendId.value) : undefined,
         ),
       )
       .groupBy(notification.userId);
@@ -109,14 +112,14 @@ export class DrizzleNotificationReader
   }
 
   async hasMilestoneNotification(
-    userId: string,
+    userId: UserId,
     milestone: NotificationMilestone,
   ): Promise<boolean> {
     // 마일스톤은 처음부터 WEEKLY_ACHIEVEMENT로만 보냈다. 종류를 걸어 (userId, type) 인덱스로 좁힌다
     const row = await this.#db.query.notification.findFirst({
       columns: { id: true },
       where: {
-        userId,
+        userId: userId.value,
         type: "WEEKLY_ACHIEVEMENT",
         RAW: (table) => sql`${table.metadata} ->> 'milestone' = ${milestone}`,
       },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { withNotificationCopyRevision } from "./notification-copy-revision.messages.js";
 
 describe("알림 문구 버전", () => {

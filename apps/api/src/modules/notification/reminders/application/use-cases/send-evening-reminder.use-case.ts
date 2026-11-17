@@ -78,7 +78,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     // 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
+        userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "EVENING_REMINDER",
         notificationDate: today,
       });

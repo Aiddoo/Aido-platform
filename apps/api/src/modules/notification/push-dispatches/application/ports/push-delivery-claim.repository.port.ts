@@ -1,18 +1,12 @@
 import type { PushDeliveryMode } from "../../domain/push-delivery-status.constants.js";
+import type { PushDeliveryFenceReadModel } from "../read-models/push-delivery-fence.read-model.js";
 import type {
   PushDeliveryItemReadModel,
   PushDeliveryPublicationReadModel,
 } from "../read-models/push-delivery.read-model.js";
 
-export interface PushDeliveryFence {
-  readonly dispatchId: number;
-  readonly publishAttempt: number;
-  readonly processingJobId: string;
-  readonly deliveryAttemptCount: number;
-}
-
 export interface ClaimedPushDelivery {
-  readonly fence: PushDeliveryFence;
+  readonly fence: PushDeliveryFenceReadModel;
   readonly deliveryMode: PushDeliveryMode;
   readonly force: boolean;
   readonly rateLimitReservation: { readonly status: "pending" } | { readonly status: "reserved" };
@@ -45,7 +39,7 @@ export abstract class PushDeliveryClaimRepositoryPort {
     input: ReopenPushDeliveriesAfterClaimFailureInput,
   ): Promise<number>;
   abstract markRateLimitReserved(
-    fences: readonly PushDeliveryFence[],
+    fences: readonly PushDeliveryFenceReadModel[],
     reservedAt: Temporal.Instant,
   ): Promise<readonly number[]>;
 }

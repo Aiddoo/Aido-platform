@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
@@ -8,11 +9,11 @@ import type {
   NotificationMessage,
   NotificationVariantContext,
 } from "../../shared/application/messages/notification-copy-catalog.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../shared/domain/notification-campaign.constants.js";
 import type {
   CreateNotificationData,
   NotificationAction,
-} from "../../shared/application/ports/notification-draft.port.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../shared/domain/notification-campaign.constants.js";
+} from "../../shared/domain/notification-draft.constants.js";
 import { resolveRecipientLocale } from "../../shared/domain/recipient-locale.domain-service.js";
 import type {
   WeatherFallbackUserReadModel,
@@ -74,7 +75,7 @@ export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: 
     return [];
   }
   const alreadyNotified = await historyReader.findAlreadyNotifiedUserIds({
-    userIds: users.map((user) => user.id),
+    userIds: users.map((user) => UserId.reconstitute(user.id)),
     type,
     notificationDate: today,
   });

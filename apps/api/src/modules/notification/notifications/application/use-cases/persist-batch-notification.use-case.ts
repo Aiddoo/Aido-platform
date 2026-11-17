@@ -6,7 +6,7 @@ import type {
   PushDeliveryMode,
   PushDispatchStagingRepositoryPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
 import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 

@@ -8,7 +8,6 @@ import { NotificationRecipientLocaleReaderPort } from "./application/ports/notif
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
 import { PushDispatchStagingRepositoryPort } from "./application/ports/push-dispatch-staging.repository.port.js";
-import { PushFunnelReaderPort } from "./application/ports/push-funnel.reader.port.js";
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
 import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
@@ -34,7 +33,6 @@ import { MarketingPushOptOutController } from "./presentation/http/v1/marketing-
     NotificationRecipientTimezoneReaderPort,
     PushQuietHoursReaderPort,
     PushCampaignOutcomeReaderPort,
-    PushFunnelReaderPort,
   ],
 })
 export class NotificationPushDispatchesModule {}

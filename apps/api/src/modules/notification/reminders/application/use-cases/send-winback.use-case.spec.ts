@@ -1,4 +1,4 @@
-import { InMemorySchedulerDedup } from "#test/doubles/notification/in-memory-scheduler-dedup";
+import { InMemorySchedulerDeduplication } from "#test/doubles/notification/in-memory-scheduler-deduplication";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -15,7 +15,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   let preferences: InMemorySchedulerPreferenceReader;
   let publisher: RecordingNotificationPublisher;
   let history: StubNotificationHistoryReader;
-  let dedup: InMemorySchedulerDedup;
+  let dedup: InMemorySchedulerDeduplication;
   let strategy: SendWinbackUseCase;
 
   const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12 });
@@ -26,13 +26,13 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     preferences = new InMemorySchedulerPreferenceReader();
     publisher = new RecordingNotificationPublisher();
     history = new StubNotificationHistoryReader();
-    dedup = new InMemorySchedulerDedup();
+    dedup = new InMemorySchedulerDeduplication();
     strategy = new SendWinbackUseCase({
       reader,
       preferenceReader: preferences,
       notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
-      schedulerDedup: dedup,
+      schedulerDeduplication: dedup,
       logger: new SilentLogger(),
     });
   });

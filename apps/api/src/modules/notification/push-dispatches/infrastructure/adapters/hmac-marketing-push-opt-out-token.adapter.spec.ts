@@ -2,6 +2,8 @@ import { createHmac } from "node:crypto";
 
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { HmacMarketingPushOptOutTokenAdapter } from "./hmac-marketing-push-opt-out-token.adapter.js";
 
 const secret = "test-jwt-secret-at-least-32-characters";
@@ -32,18 +34,18 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
 
   it("발급한 토큰에서 사용자 ID를 복원한다", () => {
     // Given
-    const token = adapter.issue("user.with.dots");
+    const token = adapter.issue(UserId.reconstitute("user.with.dots"));
 
     // When
     const userId = adapter.verify(token);
 
     // Then
-    expect(userId).toBe("user.with.dots");
+    expect(userId?.value).toBe("user.with.dots");
   });
 
   it("서명이 변조된 토큰을 거부한다", () => {
     // Given
-    const token = adapter.issue("user-1");
+    const token = adapter.issue(UserId.reconstitute("user-1"));
     const tampered = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
 
     // When
@@ -55,7 +57,7 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
 
   it("90일 유효기간이 지난 토큰을 기기 시각과 무관하게 거부한다", () => {
     // Given
-    const token = adapter.issue("user-1");
+    const token = adapter.issue(UserId.reconstitute("user-1"));
     vi.advanceTimersByTime(90 * 24 * 60 * 60 * 1000 + 1000);
 
     // When
@@ -74,7 +76,7 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
       .digest("base64url");
 
     // When
-    const token = adapter.issue("user-1");
+    const token = adapter.issue(UserId.reconstitute("user-1"));
 
     // Then
     expect(token).toBe(`${payload}.${signature}`);
@@ -82,24 +84,26 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
 
   it("새 서명 키를 넣으면 kid를 싣고, 이미 보낸 JWT_SECRET 토큰과 이전 kid 토큰도 받는다", () => {
     // Given
-    const legacyToken = adapter.issue("legacy-user");
-    const previousToken = createAdapter(`k1:${previousKey}`).issue("previous-user");
+    const legacyToken = adapter.issue(UserId.reconstitute("legacy-user"));
+    const previousToken = createAdapter(`k1:${previousKey}`).issue(
+      UserId.reconstitute("previous-user"),
+    );
     const rotated = createAdapter(`k2:${currentKey},k1:${previousKey}`);
 
     // When
-    const token = rotated.issue("user-1");
+    const token = rotated.issue(UserId.reconstitute("user-1"));
 
     // Then
     expect(token.split(".")[0]).toBe("k2");
-    expect(rotated.verify(token)).toBe("user-1");
-    expect(rotated.verify(legacyToken)).toBe("legacy-user");
-    expect(rotated.verify(previousToken)).toBe("previous-user");
+    expect(rotated.verify(token)?.value).toBe("user-1");
+    expect(rotated.verify(legacyToken)?.value).toBe("legacy-user");
+    expect(rotated.verify(previousToken)?.value).toBe("previous-user");
   });
 
   it("모르는 kid, 다른 JWT_SECRET, kid 없는 설정에서 연 새 토큰을 거부한다", () => {
     // Given
-    const keyedToken = createAdapter(`k1:${previousKey}`).issue("user-1");
-    const legacyToken = adapter.issue("user-1");
+    const keyedToken = createAdapter(`k1:${previousKey}`).issue(UserId.reconstitute("user-1"));
+    const legacyToken = adapter.issue(UserId.reconstitute("user-1"));
 
     // When
     const results = [

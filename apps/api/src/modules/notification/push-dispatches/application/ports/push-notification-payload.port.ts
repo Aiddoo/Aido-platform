@@ -1,6 +1,6 @@
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { PushPayload } from "./push-provider.port.js";
 
 export interface CreatePushNotificationPayloadInput {

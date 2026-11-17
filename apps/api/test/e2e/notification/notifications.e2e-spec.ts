@@ -37,6 +37,7 @@ import {
   userConsent,
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
@@ -1288,7 +1289,7 @@ describe("알림 E2E", () => {
       // When
       const response = await request(testContext.app.getHttpServer())
         .post("/v1/notifications/marketing-push/opt-out")
-        .send({ token: tokenPort.issue(user.userId) })
+        .send({ token: tokenPort.issue(UserId.reconstitute(user.userId)) })
         .expect(200);
 
       // Then

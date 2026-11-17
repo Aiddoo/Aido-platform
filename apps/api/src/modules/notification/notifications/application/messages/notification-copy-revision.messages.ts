@@ -1,4 +1,4 @@
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 
 export const NOTIFICATION_COPY_REVISION = "1.15.0";
 

@@ -1,3 +1,6 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+import { vi } from "vitest";
+
 import { previousIsoWeekOf } from "#api/modules/notification/reminders/domain/reminder-day.domain-service";
 import type {
   WeeklyStatsTodoSeed,
@@ -13,6 +16,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createWeeklyAchievementNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { SendWeeklyAchievementUseCase } from "./send-weekly-achievement.use-case.js";
 
 describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
@@ -178,5 +182,80 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
     expect(result).toEqual({ sent: 0 });
     expect(writer.writes).toEqual([]);
     expect(publisher.published).toEqual([]);
+  });
+});
+
+type WeeklyAchievementStrategyDependencies = ConstructorParameters<
+  typeof SendWeeklyAchievementUseCase
+>[0];
+type WeeklyStatsQuery = Parameters<
+  WeeklyAchievementStrategyDependencies["reader"]["groupTotalTodosByUser"]
+>[0];
+type WeeklyAchievementRecords = Parameters<
+  WeeklyAchievementStrategyDependencies["weeklyAchievementWriter"]["execute"]
+>[0]["records"];
+type PublishedBatch = Parameters<
+  WeeklyAchievementStrategyDependencies["notificationPublisher"]["execute"]
+>[0];
+
+describe.each<SupportedLocale>(["ko", "en"])("%s 주간 성취 문구의 기간", (locale) => {
+  it("월요일 실제 전략의 이전 주 집계를 이번 주 성과로 안내하지 않는다", async () => {
+    // Given
+    const userId = "synthetic-notification-user";
+    const totalQueries: WeeklyStatsQuery[] = [];
+    const writtenRecords: WeeklyAchievementRecords[] = [];
+    const publishedBatches: PublishedBatch[] = [];
+    const dependencies: WeeklyAchievementStrategyDependencies = {
+      reader: {
+        groupTotalTodosByUser: async (query) => {
+          totalQueries.push(query);
+          return [{ userId, count: 8 }];
+        },
+        groupCompletedTodosByUser: async () => [{ userId, count: 3 }],
+        findFreeRecipientIds: async () => new Set([userId]),
+      },
+      preferenceReader: { findUserLocales: async () => new Map([[userId, locale]]) },
+      notificationHistoryReader: { findAlreadyNotifiedUserIds: async () => new Set() },
+      weeklyAchievementWriter: {
+        execute: async (input) => {
+          writtenRecords.push(input.records);
+        },
+      },
+      notificationPublisher: {
+        execute: async (notifications) => {
+          publishedBatches.push(notifications);
+          return { count: notifications.length };
+        },
+      },
+      logger: new SilentLogger(),
+    };
+    const strategy = new SendWeeklyAchievementUseCase(dependencies);
+    const context: TimezoneContext = {
+      timezones: ["Asia/Seoul"],
+      localHour: 7,
+      localMinute: 0,
+      dayOfWeek: 1,
+      today: Temporal.PlainDate.from("2026-07-27"),
+      tomorrow: Temporal.PlainDate.from("2026-07-28"),
+    };
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-26T22:00:00.000Z"));
+    try {
+      // When
+      await strategy.execute(context);
+      const params = totalQueries[0];
+      const record = writtenRecords[0]?.[0];
+      const message = publishedBatches[0]?.[0];
+
+      // Then
+      expect(params?.periodStart.toString()).toBe("2026-07-20");
+      expect(params?.periodEnd.toString()).toBe("2026-07-27");
+      expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
+      expect(message).toBeDefined();
+      const text = `${message?.title} ${message?.body}`;
+      expect(text).toMatch(locale === "ko" ? /지난주/ : /last week/i);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

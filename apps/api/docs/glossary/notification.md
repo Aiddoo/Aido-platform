@@ -39,16 +39,16 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 ## notifications
 
-| 용어           | 코드                                                               | 뜻                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 알림           | `Notification`(Aggregate, `notifications` slice), `NotificationId` | 한 사용자의 알림함 항목 하나. 푸시가 막혀도 알림함 기록은 남는다                                                                       |
-| 알림함         | `ListNotificationsUseCase`, `InboxNotificationReadModel`           | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
-| 안 읽은 수     | `GetUnreadNotificationCountUseCase`, `NotificationInboxScope`      | 배지 숫자. 앱 버전 범위마다 따로 캐시하고 읽음·발행이 바뀌면 비운다                                                                    |
-| 읽음           | `markRead`, `MarkNotificationReadUseCase`                          | 받은 사람만 읽음으로 바꾼다                                                                                                            |
-| 모두 읽기      | `MarkAllNotificationsReadUseCase`                                  | 이 앱 버전이 보는 종류만 읽음으로 바꾼다. 새 앱으로 올리면 못 보던 알림은 안 읽음으로 보인다                                           |
-| 열기           | `MarkNotificationOpenedUseCase`, `openedAt`                        | 푸시를 눌러 앱을 연 기록. 처음 연 때만 남기고 읽음도 맞춘다                                                                            |
-| 중복 알림      | `SendNotificationWithDedupUseCase`, `resolveDedupStrategy`         | 같은 사용자·종류·대상의 알림이 창 안에 있으면 만들지 않는다. 지금은 친구 요청·수락이 같은 친구 24시간이다                              |
-| 보낸 사람 정리 | `DeleteActorNotificationsUseCase`                                  | 탈퇴한 사람이 보낸 알림을 받은 사람들의 알림함에서 지우고 커밋 뒤 그들의 안 읽은 수 캐시를 비운다                                      |
+| 용어           | 코드                                                                       | 뜻                                                                                                                                     |
+| -------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 알림           | `Notification`(Aggregate, `notifications` slice), `NotificationId`         | 한 사용자의 알림함 항목 하나. 푸시가 막혀도 알림함 기록은 남는다                                                                       |
+| 알림함         | `ListNotificationsUseCase`, `InboxNotificationReadModel`                   | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
+| 안 읽은 수     | `GetUnreadNotificationCountUseCase`, `NotificationInboxScope`              | 배지 숫자. 앱 버전 범위마다 따로 캐시하고 읽음·발행이 바뀌면 비운다                                                                    |
+| 읽음           | `markRead`, `MarkNotificationReadUseCase`                                  | 받은 사람만 읽음으로 바꾼다                                                                                                            |
+| 모두 읽기      | `MarkAllNotificationsReadUseCase`                                          | 이 앱 버전이 보는 종류만 읽음으로 바꾼다. 새 앱으로 올리면 못 보던 알림은 안 읽음으로 보인다                                           |
+| 열기           | `MarkNotificationOpenedUseCase`, `openedAt`                                | 푸시를 눌러 앱을 연 기록. 처음 연 때만 남기고 읽음도 맞춘다                                                                            |
+| 중복 알림      | `SendNotificationWithDeduplicationUseCase`, `resolveDeduplicationStrategy` | 같은 사용자·종류·대상의 알림이 창 안에 있으면 만들지 않는다. 지금은 친구 요청·수락이 같은 친구 24시간이다                              |
+| 보낸 사람 정리 | `DeleteActorNotificationsUseCase`                                          | 탈퇴한 사람이 보낸 알림을 받은 사람들의 알림함에서 지우고 커밋 뒤 그들의 안 읽은 수 캐시를 비운다                                      |
 
 | 상태         | 행동                         | 다음           | 다시·금지                                                                  |
 | ------------ | ---------------------------- | -------------- | -------------------------------------------------------------------------- |
@@ -88,7 +88,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 발송          | `PushDispatch`(Aggregate, `push-dispatches` slice)                       | 알림 하나를 한 사용자의 기기들로 보내는 일. 알림과 같은 트랜잭션에서 만들고(`stage`·`stageMany`) 커밋 뒤 큐가 보낸다             |
 | 발송 아웃박스 | `PushDispatchOutbox`(엔티티)                                             | 발송을 `push-delivery.v1`에 올리는 행. 커밋 직후 빠른 경로와 매분 relay(`RelayPushDeliveryOutboxUseCase`)가 같은 행을 올린다     |
 | 발행 세대     | `publishAttempt`, `PushDeliveryPublication`                              | 아웃박스를 다시 열 때마다 느는 번호. 큐 작업 key와 담당 표시가 이 값을 쓴다                                                      |
-| 담당 표시     | `PushDeliveryFence`                                                      | 발송·세대·작업 id·시도 수. 늦게 끝난 worker가 새 세대의 결과를 덮지 못하게 한다. 외부 공급자까지 한 번 전달을 보장하지 않는다    |
+| 담당 표시     | `PushDeliveryFenceReadModel`                                             | 발송·세대·작업 id·시도 수. 늦게 끝난 worker가 새 세대의 결과를 덮지 못하게 한다. 외부 공급자까지 한 번 전달을 보장하지 않는다    |
 | 발송 방식     | `PushDeliveryMode`(`SINGLE`·`BATCH`), `force`                            | 단건 발행과 묶음 발행. 강제 발송은 관리자 공지 묶음만 쓰고 수신 설정·야간만 넘는다                                               |
 | 차선          | `PushDeliveryLane`(`TRANSACTIONAL`·`MARKETING`), `pushDeliveryLaneOf`    | 큐 우선순위. 광고성·참여 유도·관리자 브로드캐스트가 리마인더를 밀어내지 않게 나눈다                                              |
 | 발송 자격     | `EvaluatePushDeliveryEligibilityUseCase`                                 | 수신 설정·광고성 동의·야간·빈도 한도·토큰·앱 버전을 한곳에서 판단한다([공통 발송 조건](../push-notifications.md#공통-발송-조건)) |
@@ -138,19 +138,19 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 ## reminders
 
-| 용어             | 코드                                                     | 뜻                                                                                                                                                                                                                 |
-| ---------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 리마인더         | `Reminder`(Aggregate, `reminders` slice)                 | 종류·사용자·현지 날짜 하나에 한 번 가는 시각 기반 알림. 할 일 리마인더는 할 일·단계·회차가 한 번의 단위다                                                                                                          |
-| 리마인더 종류    | 알림 종류 값                                             | 할 일·아침·저녁·날씨 아침·저녁, 점심 독려·스트릭 위기·소셜 요약, 친구 콕 제안·재방문, 주간 성취·주간·월간 리포트, 온보딩(`SYSTEM_NOTICE`). 시각은 [자동 발송 일정](../push-notifications.md#자동-발송-일정과-대상) |
-| 매분 sweep       | `SweepTimezoneRemindersUseCase`, `TimezoneContext`       | 현지 날짜·시·분이 같은 시간대를 묶어 그 시각의 종류를 실행한다. 놓친 분은 늦음 한도만큼만 따라잡는다                                                                                                               |
-| 발송 창          | `NOTIFICATION_SCHEDULE`, `isWithinScheduleWindow`        | 고정 시각 종류의 현지 시각과 늦게 돈 sweep을 받아 주는 몇 분                                                                                                                                                       |
-| 할 일 단계       | `REMINDER_STAGES`(`60min`·`10min`), `planReminderJobs`   | 할 일 시각 전 두 단계. 예약할 때 이미 지난 단계는 건너뛴다                                                                                                                                                         |
-| 회차             | `createReminderOccurrenceKey`                            | 날짜 + 벽시계. 시간대가 바뀌어도 같고 사용자가 날짜·시각을 고치면 달라진다                                                                                                                                         |
-| 늦음             | `reminderLateSkipReason`(`late-over-15m`·`todo-started`) | 울려야 했던 시각에서 한도를 넘었거나 할 일이 이미 시작됐으면 보내지 않고 사유를 남긴다                                                                                                                             |
-| 재방문 단계      | `resolveWinbackStage`(`day3`~`day30`)                    | 미접속 일수로 정하는 단계. 사용자마다 단계별 한 번                                                                                                                                                                 |
-| 온보딩 날        | `isOnboardingDay`, `resolveOnboardingDeepLinkPath`       | 가입 뒤 정해진 날. 날마다 문구가 권하는 화면을 연다                                                                                                                                                                |
-| 반복 멈춤 안내   | `TodoSeriesOwnerDormancyPort`                            | 휴면 소유자의 반복 회차는 리마인더 대신 같은 시각에 한 번 안내한다                                                                                                                                                 |
-| 중복 방지 저장소 | `NotificationDedupPort`, `SchedulerDedupPort`            | 보낸 리마인더를 기억하는 곳. 날짜 기록·알림 이력(하루 종류), 할 일·단계·회차 유니크 인덱스, 재방문 단계·주간 콕 제안 짝                                                                                            |
+| 용어             | 코드                                                          | 뜻                                                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 리마인더         | `Reminder`(Aggregate, `reminders` slice)                      | 종류·사용자·현지 날짜 하나에 한 번 가는 시각 기반 알림. 할 일 리마인더는 할 일·단계·회차가 한 번의 단위다                                                                                                          |
+| 리마인더 종류    | 알림 종류 값                                                  | 할 일·아침·저녁·날씨 아침·저녁, 점심 독려·스트릭 위기·소셜 요약, 친구 콕 제안·재방문, 주간 성취·주간·월간 리포트, 온보딩(`SYSTEM_NOTICE`). 시각은 [자동 발송 일정](../push-notifications.md#자동-발송-일정과-대상) |
+| 매분 sweep       | `SweepTimezoneRemindersUseCase`, `TimezoneContext`            | 현지 날짜·시·분이 같은 시간대를 묶어 그 시각의 종류를 실행한다. 놓친 분은 늦음 한도만큼만 따라잡는다                                                                                                               |
+| 발송 창          | `NOTIFICATION_SCHEDULE`, `isWithinScheduleWindow`             | 고정 시각 종류의 현지 시각과 늦게 돈 sweep을 받아 주는 몇 분                                                                                                                                                       |
+| 할 일 단계       | `REMINDER_STAGES`(`60min`·`10min`), `planReminderJobs`        | 할 일 시각 전 두 단계. 예약할 때 이미 지난 단계는 건너뛴다                                                                                                                                                         |
+| 회차             | `createReminderOccurrenceKey`                                 | 날짜 + 벽시계. 시간대가 바뀌어도 같고 사용자가 날짜·시각을 고치면 달라진다                                                                                                                                         |
+| 늦음             | `reminderLateSkipReason`(`late-over-15m`·`todo-started`)      | 울려야 했던 시각에서 한도를 넘었거나 할 일이 이미 시작됐으면 보내지 않고 사유를 남긴다                                                                                                                             |
+| 재방문 단계      | `resolveWinbackStage`(`day3`~`day30`)                         | 미접속 일수로 정하는 단계. 사용자마다 단계별 한 번                                                                                                                                                                 |
+| 온보딩 날        | `isOnboardingDay`, `resolveOnboardingDeepLinkPath`            | 가입 뒤 정해진 날. 날마다 문구가 권하는 화면을 연다                                                                                                                                                                |
+| 반복 멈춤 안내   | `TodoSeriesOwnerDormancyPort`                                 | 휴면 소유자의 반복 회차는 리마인더 대신 같은 시각에 한 번 안내한다                                                                                                                                                 |
+| 중복 방지 저장소 | `NotificationDeduplicationPort`, `SchedulerDeduplicationPort` | 보낸 리마인더를 기억하는 곳. 날짜 기록·알림 이력(하루 종류), 할 일·단계·회차 유니크 인덱스, 재방문 단계·주간 콕 제안 짝                                                                                            |
 
 | 상태    | 행동         | 다음            | 다시·금지                                 |
 | ------- | ------------ | --------------- | ----------------------------------------- |

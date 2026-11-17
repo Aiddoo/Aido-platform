@@ -24,8 +24,8 @@ import {
   createTodoSeriesPausedNotificationMessage,
 } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";

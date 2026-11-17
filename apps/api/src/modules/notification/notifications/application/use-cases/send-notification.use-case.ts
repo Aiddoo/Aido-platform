@@ -7,7 +7,7 @@ import type {
   PublishPushDeliveryAfterCommitUseCase,
   PushDispatchStagingRepositoryPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";

@@ -155,7 +155,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       notificationPublisher: batchPublisher,
       // Redis가 비어 있는(cold) 상태로 두어 저장된 알림 행만으로 하루 한 번을 판단하게 한다
       notificationHistoryReader: new NotificationHistoryReader({
-        notificationDedup: {
+        notificationDeduplication: {
           readKnownRecipients: async () => null,
           warmRecipients: async () => undefined,
         },

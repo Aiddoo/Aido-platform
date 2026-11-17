@@ -14,7 +14,7 @@ import {
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";
 import { ReminderWeatherReportReaderPort } from "./application/ports/reminder-weather-report.reader.port.js";
 import { ScheduledReminderReaderPort } from "./application/ports/scheduled-reminder-reader.port.js";
-import { SchedulerDedupPort } from "./application/ports/scheduler-dedup.port.js";
+import { SchedulerDeduplicationPort } from "./application/ports/scheduler-deduplication.port.js";
 import { SchedulerPreferenceReaderPort } from "./application/ports/scheduler-preference-reader.port.js";
 import { TimezoneReminderEnqueuerPort } from "./application/ports/timezone-reminder-enqueuer.port.js";
 import { TodoReminderReaderPort } from "./application/ports/todo-reminder-reader.port.js";
@@ -39,7 +39,7 @@ import { SendWeeklyReportUseCase } from "./application/use-cases/send-weekly-rep
 import { SendWinbackUseCase } from "./application/use-cases/send-winback.use-case.js";
 import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
 import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/planning-weather-briefing-todo.adapter.js";
-import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
+import { SchedulerDeduplicationAdapter } from "./infrastructure/adapters/scheduler-deduplication.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
 import { DrizzleReEngagementReader } from "./infrastructure/persistence/drizzle-re-engagement.reader.js";
@@ -58,7 +58,7 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
   { provide: WeeklyAchievementStatsReaderPort, useClass: DrizzleWeeklyAchievementStatsReader },
   { provide: TodoReminderReaderPort, useClass: DrizzleTodoReminderReader },
   { provide: SchedulerPreferenceReaderPort, useClass: DrizzleSchedulerPreferenceReader },
-  { provide: SchedulerDedupPort, useClass: SchedulerDedupAdapter },
+  { provide: SchedulerDeduplicationPort, useClass: SchedulerDeduplicationAdapter },
   { provide: TodoSeriesOwnerDormancyPort, useClass: TodoSeriesOwnerDormancyAdapter },
   { provide: TodoReminderSchedulerPort, useClass: TodoReminderSchedulerAdapter },
   // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다
@@ -135,7 +135,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     preferenceReader: SchedulerPreferenceReaderPort,
     notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDedup: SchedulerDedupPort,
+    schedulerDeduplication: SchedulerDeduplicationPort,
     logger: loggerFor(SendWinbackUseCase),
   }),
   provideUseCase(SendNudgeSuggestUseCase, {
@@ -143,7 +143,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     preferenceReader: SchedulerPreferenceReaderPort,
     notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDedup: SchedulerDedupPort,
+    schedulerDeduplication: SchedulerDeduplicationPort,
     logger: loggerFor(SendNudgeSuggestUseCase),
   }),
   provideUseCase(SendOnboardingUseCase, {

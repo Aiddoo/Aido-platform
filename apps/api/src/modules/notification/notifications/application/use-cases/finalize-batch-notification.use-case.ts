@@ -6,14 +6,14 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationCachePort } from "../ports/notification-cache.port.js";
-import { type NotificationDedupPort } from "../ports/notification-dedup.port.js";
+import { type NotificationDeduplicationPort } from "../ports/notification-deduplication.port.js";
 
 const CACHE_INVALIDATION_CONCURRENCY = 5;
 
 /** 커밋된 배치 알림의 cache와 날짜 dedup 후처리를 관찰 가능한 방식으로 정리한다. */
 interface FinalizeBatchNotificationDependencies {
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
-  readonly notificationDedup: Pick<NotificationDedupPort, "recordNotifiedUsers">;
+  readonly notificationDeduplication: Pick<NotificationDeduplicationPort, "recordNotifiedUsers">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
@@ -47,16 +47,22 @@ export class FinalizeBatchNotificationUseCase {
     );
 
     try {
-      await this.#dependencies.notificationDedup.recordNotifiedUsers(
+      await this.#dependencies.notificationDeduplication.recordNotifiedUsers(
         input.sourceData.flatMap((data) =>
           data.notificationDate
-            ? [{ userId: data.userId, type: data.type, notificationDate: data.notificationDate }]
+            ? [
+                {
+                  userId: UserId.reconstitute(data.userId),
+                  type: data.type,
+                  notificationDate: data.notificationDate,
+                },
+              ]
             : [],
         ),
       );
     } catch {
       this.#dependencies.logger.warn({
-        event: NotificationLogEvent.FINALIZE_BATCH_NOTIFICATION_DEDUP_RECORD_FAILED,
+        event: NotificationLogEvent.FINALIZE_BATCH_NOTIFICATION_DEDUPLICATION_RECORD_FAILED,
         count: input.count,
         errorType: "dedup-recording",
       });

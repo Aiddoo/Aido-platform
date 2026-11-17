@@ -89,7 +89,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
 
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: notifiableUserIds,
+        userIds: notifiableUserIds.map((userId) => UserId.reconstitute(userId)),
         type: "WEEKLY_ACHIEVEMENT",
         notificationDate: today,
       });

@@ -12,7 +12,7 @@ import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infr
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
-import { NotificationDedupPort } from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
+import { NotificationDeduplicationPort } from "#api/modules/notification/notifications/application/ports/notification-deduplication.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/notifications/application/use-cases/get-unread-notification-count.use-case";
@@ -23,7 +23,7 @@ import { MarkNotificationReadUseCase } from "#api/modules/notification/notificat
 import { PublishDeduplicatedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-deduplicated-notification.use-case";
 import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
-import { SendNotificationWithDedupUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
@@ -67,7 +67,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -87,7 +87,7 @@ function buildNotificationTestApi(module: TestingModule) {
     todoTargetReader,
   });
   const deduplicatedPublisher = new PublishDeduplicatedNotificationUseCase({
-    sendNotificationWithDeduplication: module.get(SendNotificationWithDedupUseCase),
+    sendNotificationWithDeduplication: module.get(SendNotificationWithDeduplicationUseCase),
     todoTargetReader,
   });
   const batchPublisher = new PublishNotificationBatchUseCase({
@@ -136,8 +136,11 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   const mockPushTokenFormat = { isValid: vi.fn() };
 
   const mockMarketingPushOptOutToken = {
-    issue: vi.fn((userId: string) => `opt-out:${userId}`),
-    verify: vi.fn((token: string) => token.replace(/^opt-out:/, "") || null),
+    issue: vi.fn((userId: UserId) => `opt-out:${userId.value}`),
+    verify: vi.fn((token: string) => {
+      const userId = token.replace(/^opt-out:/, "");
+      return userId.length > 0 ? UserId.reconstitute(userId) : null;
+    }),
   };
   const mockPushDispatchStaging = {
     stage: vi.fn().mockImplementation(async (input: { notificationId: number }) => ({
@@ -211,7 +214,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         UserSettingsCacheAdapter,
         { provide: UserSettingsCachePort, useExisting: UserSettingsCacheAdapter },
         {
-          provide: NotificationDedupPort,
+          provide: NotificationDeduplicationPort,
           useValue: {
             recordNotifiedUsers: vi.fn().mockResolvedValue(undefined),
           },

@@ -1,7 +1,7 @@
-import type { PushDeliveryFence } from "./push-delivery-claim.repository.port.js";
+import type { PushDeliveryFenceReadModel } from "../read-models/push-delivery-fence.read-model.js";
 
 export interface ReleasePushDeliveryInput {
-  readonly fence: PushDeliveryFence;
+  readonly fence: PushDeliveryFenceReadModel;
   readonly error: string;
   // JobRuntime의 마지막 attempt일 때만 새 publication generation을 열어 둔다.
   readonly reopenOutbox: boolean;

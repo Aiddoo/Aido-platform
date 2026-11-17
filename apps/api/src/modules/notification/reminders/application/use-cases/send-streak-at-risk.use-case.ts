@@ -1,5 +1,6 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   NotificationHistoryReader,
@@ -87,7 +88,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     // 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: atRiskUsers.map((u) => u.id),
+        userIds: atRiskUsers.map((u) => UserId.reconstitute(u.id)),
         type: "STREAK_AT_RISK",
         notificationDate: today,
       });

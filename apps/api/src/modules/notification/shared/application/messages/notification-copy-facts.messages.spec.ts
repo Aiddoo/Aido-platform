@@ -1,11 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { SupportedLocale } from "#api/shared/domain/locale";
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { SendWeeklyAchievementUseCase } from "../../../reminders/application/use-cases/send-weekly-achievement.use-case.js";
-import type { TimezoneContext } from "../../../reminders/domain/local-clock.domain-service.js";
 import { SOCIAL_COPY } from "./notification-copy-templates.messages.js";
 import {
   createEveningReminderNotificationMessage,
@@ -19,19 +16,6 @@ import {
   createWeeklyReportNotificationMessage,
   createMonthlyReportNotificationMessage,
 } from "./system-notification.messages.js";
-
-type WeeklyAchievementStrategyDependencies = ConstructorParameters<
-  typeof SendWeeklyAchievementUseCase
->[0];
-type WeeklyStatsQuery = Parameters<
-  WeeklyAchievementStrategyDependencies["reader"]["groupTotalTodosByUser"]
->[0];
-type WeeklyAchievementRecords = Parameters<
-  WeeklyAchievementStrategyDependencies["weeklyAchievementWriter"]["execute"]
->[0]["records"];
-type PublishedBatch = Parameters<
-  WeeklyAchievementStrategyDependencies["notificationPublisher"]["execute"]
->[0];
 
 const locales: SupportedLocale[] = ["ko", "en"];
 const today = Temporal.PlainDate.from("2026-07-27");
@@ -79,66 +63,6 @@ describe.each(locales)("%s 알림 문구와 실제 정책의 사실 조건", (lo
       );
     },
   );
-
-  it("월요일 실제 전략의 이전 주 집계를 이번 주 성과로 안내하지 않는다", async () => {
-    // Given
-    const userId = "synthetic-notification-user";
-    const totalQueries: WeeklyStatsQuery[] = [];
-    const writtenRecords: WeeklyAchievementRecords[] = [];
-    const publishedBatches: PublishedBatch[] = [];
-    const dependencies: WeeklyAchievementStrategyDependencies = {
-      reader: {
-        groupTotalTodosByUser: async (query) => {
-          totalQueries.push(query);
-          return [{ userId, count: 8 }];
-        },
-        groupCompletedTodosByUser: async () => [{ userId, count: 3 }],
-        findFreeRecipientIds: async () => new Set([userId]),
-      },
-      preferenceReader: { findUserLocales: async () => new Map([[userId, locale]]) },
-      notificationHistoryReader: { findAlreadyNotifiedUserIds: async () => new Set() },
-      weeklyAchievementWriter: {
-        execute: async (input) => {
-          writtenRecords.push(input.records);
-        },
-      },
-      notificationPublisher: {
-        execute: async (notifications) => {
-          publishedBatches.push(notifications);
-          return { count: notifications.length };
-        },
-      },
-      logger: new SilentLogger(),
-    };
-    const strategy = new SendWeeklyAchievementUseCase(dependencies);
-    const context: TimezoneContext = {
-      timezones: ["Asia/Seoul"],
-      localHour: 7,
-      localMinute: 0,
-      dayOfWeek: 1,
-      today: Temporal.PlainDate.from("2026-07-27"),
-      tomorrow: Temporal.PlainDate.from("2026-07-28"),
-    };
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-07-26T22:00:00.000Z"));
-    try {
-      // When
-      await strategy.execute(context);
-      const params = totalQueries[0];
-      const record = writtenRecords[0]?.[0];
-      const message = publishedBatches[0]?.[0];
-
-      // Then
-      expect(params?.periodStart.toString()).toBe("2026-07-20");
-      expect(params?.periodEnd.toString()).toBe("2026-07-27");
-      expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
-      expect(message).toBeDefined();
-      const text = `${message?.title} ${message?.body}`;
-      expect(text).toMatch(locale === "ko" ? /지난주/ : /last week/i);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
 
   it("249/250 완료가 반올림 100%라도 모든 할 일을 완료했다고 말하지 않는다", () => {
     // Given

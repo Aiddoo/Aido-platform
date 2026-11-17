@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { ClsServiceManager } from "nestjs-cls";
 
-import { SendNotificationWithDedupUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
@@ -79,7 +79,7 @@ describe("알림 중복 방지 동시성 (실제 PostgreSQL)", () => {
     const repository = new DrizzleNotificationRepository(transactionHost);
     const reader = new DrizzleNotificationReader(transactionHost);
     const rendezvous = new ReadRendezvous();
-    const useCase = new SendNotificationWithDedupUseCase({
+    const useCase = new SendNotificationWithDeduplicationUseCase({
       // SendNotificationUseCase의 저장 단계를 같은 방식(Required 전파)으로 실행한다
       sendNotification: {
         execute: (data) => unitOfWork.run(() => repository.createNotification(data)),

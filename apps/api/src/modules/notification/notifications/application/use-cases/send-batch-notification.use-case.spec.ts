@@ -3,7 +3,7 @@ import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-a
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/application/read-models/push-delivery.read-model.js";
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 import { SendBatchNotificationUseCase } from "./send-batch-notification.use-case.js";

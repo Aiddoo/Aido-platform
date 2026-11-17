@@ -2,7 +2,7 @@ import { and, eq, inArray, type SQL, sql } from "drizzle-orm";
 
 import { pushDispatch, pushDispatchOutbox } from "#api/platform/database/schema/index";
 
-import type { PushDeliveryFence } from "../../application/ports/push-delivery-claim.repository.port.js";
+import type { PushDeliveryFenceReadModel } from "../../application/read-models/push-delivery-fence.read-model.js";
 import type { OutboxStatus } from "./push-outbox-generation.mapper.js";
 
 // 발송 claim·마무리·lease 저장소가 함께 쓰는 SQL 조각이다
@@ -52,7 +52,7 @@ export function heldLease(): SQL | undefined {
   );
 }
 
-export function fenceValues(fence: PushDeliveryFence): SQL {
+export function fenceValues(fence: PushDeliveryFenceReadModel): SQL {
   return sql`${fence.dispatchId}::INTEGER, ${fence.publishAttempt}::INTEGER, ${fence.processingJobId}::VARCHAR(255), ${fence.deliveryAttemptCount}::INTEGER`;
 }
 

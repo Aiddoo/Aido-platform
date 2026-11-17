@@ -1,4 +1,5 @@
-import { InMemoryNotificationDedup } from "#test/doubles/notification/in-memory-notification-dedup";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryNotificationDeduplication } from "#test/doubles/notification/in-memory-notification-deduplication";
 import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
@@ -9,15 +10,15 @@ import type { FindAlreadyNotifiedUserIdsQuery } from "./ports/notification-histo
 const NOTIFICATION_DATE = Temporal.PlainDate.from("2026-03-09");
 
 const query: FindAlreadyNotifiedUserIdsQuery = {
-  userIds: ["user-1", "user-2"],
+  userIds: [UserId.reconstitute("user-1"), UserId.reconstitute("user-2")],
   type: "FRIEND_COMPLETED",
   notificationDate: NOTIFICATION_DATE,
-  friendId: "friend-1",
+  friendId: UserId.reconstitute("friend-1"),
 };
 
 // DB에는 user-2가 이미 오늘 같은 친구의 완료 알림을 받은 기록이 있다
 function setup() {
-  const notificationDedup = new InMemoryNotificationDedup();
+  const notificationDeduplication = new InMemoryNotificationDeduplication();
   const notificationHistory = new InMemoryNotificationRepository([
     createInboxNotificationFixture({
       userId: "user-2",
@@ -27,19 +28,23 @@ function setup() {
     }),
   ]);
   const reader = new NotificationHistoryReader({
-    notificationDedup,
+    notificationDeduplication,
     notificationHistoryReader: notificationHistory,
     logger: new SilentLogger(),
   });
-  return { reader, notificationDedup };
+  return { reader, notificationDeduplication };
 }
 
 describe("NotificationHistoryReader — 이미 알림 받은 사용자 조회", () => {
   it("warm(센티넬 존재)이면 Redis 결과만 믿고 DB를 보지 않는다", async () => {
     // Given
-    const { reader, notificationDedup } = setup();
-    await notificationDedup.recordNotifiedUsers([
-      { userId: "user-1", type: "FRIEND_COMPLETED", notificationDate: NOTIFICATION_DATE },
+    const { reader, notificationDeduplication } = setup();
+    await notificationDeduplication.recordNotifiedUsers([
+      {
+        userId: UserId.reconstitute("user-1"),
+        type: "FRIEND_COMPLETED",
+        notificationDate: NOTIFICATION_DATE,
+      },
     ]);
 
     // When
@@ -51,16 +56,20 @@ describe("NotificationHistoryReader — 이미 알림 받은 사용자 조회", 
 
   it("cold(센티넬 없음)이면 DB에서 읽고 그 결과로 Redis를 warm-up한다", async () => {
     // Given
-    const { reader, notificationDedup } = setup();
+    const { reader, notificationDeduplication } = setup();
 
     // When
     const result = await reader.findAlreadyNotifiedUserIds(query);
 
     // Then
     expect(result).toEqual(new Set(["user-2"]));
-    expect(notificationDedup.isWarm("FRIEND_COMPLETED", NOTIFICATION_DATE)).toBe(true);
+    expect(notificationDeduplication.isWarm("FRIEND_COMPLETED", NOTIFICATION_DATE)).toBe(true);
     await expect(
-      notificationDedup.readKnownRecipients("FRIEND_COMPLETED", NOTIFICATION_DATE, query.userIds),
+      notificationDeduplication.readKnownRecipients(
+        "FRIEND_COMPLETED",
+        NOTIFICATION_DATE,
+        query.userIds,
+      ),
     ).resolves.toEqual(new Set(["user-2"]));
   });
 });

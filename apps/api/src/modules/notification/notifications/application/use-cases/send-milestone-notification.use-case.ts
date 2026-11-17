@@ -44,7 +44,7 @@ export class SendMilestoneNotificationUseCase {
 
       const alreadySent =
         await this.#dependencies.notificationHistoryReader.hasMilestoneNotification(
-          input.userId,
+          UserId.reconstitute(input.userId),
           input.milestone,
         );
       if (alreadySent) {

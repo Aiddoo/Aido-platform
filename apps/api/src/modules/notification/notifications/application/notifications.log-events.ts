@@ -9,7 +9,7 @@ export const NotificationLogEvent = {
     "notification.delivery.notification-account-cleanup.cache-settle.failed",
   FINALIZE_BATCH_NOTIFICATION_UNREAD_CACHE_FAILED:
     "notification.delivery.finalize-batch-notification.unread-cache.failed",
-  FINALIZE_BATCH_NOTIFICATION_DEDUP_RECORD_FAILED:
+  FINALIZE_BATCH_NOTIFICATION_DEDUPLICATION_RECORD_FAILED:
     "notification.delivery.finalize-batch-notification.dedup-record.failed",
   GET_NOTIFICATIONS_LISTED: "notification.delivery.get-notifications.listed",
   MARK_ALL_AS_READ_READ_ALL_PROCESSED: "notification.delivery.mark-all-as-read.read-all.processed",
@@ -35,7 +35,7 @@ export const NotificationLogEvent = {
   SEND_MILESTONE_NOTIFICATION_DUPLICATE_SKIPPED:
     "notification.delivery.send-milestone-notification.duplicate.skipped",
   SEND_MILESTONE_NOTIFICATION_SENT: "notification.delivery.send-milestone-notification.sent",
-  SEND_NOTIFICATION_WITH_DEDUP_DUPLICATE_SKIPPED:
+  SEND_NOTIFICATION_WITH_DEDUPLICATION_DUPLICATE_SKIPPED:
     "notification.delivery.send-notification-with-dedup.duplicate.skipped",
   SEND_NOTIFICATION_DUPLICATE_PREVENTED:
     "notification.delivery.send-notification.duplicate.prevented",

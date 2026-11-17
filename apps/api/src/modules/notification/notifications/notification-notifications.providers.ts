@@ -17,7 +17,7 @@ import { UserNotificationSettingsPort } from "../shared/application/ports/user-n
 import { NotificationHistoryReader } from "./application/notification-history.reader.js";
 import { MarketingConsentReconfirmPort } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { NotificationCachePort } from "./application/ports/notification-cache.port.js";
-import { NotificationDedupPort } from "./application/ports/notification-dedup.port.js";
+import { NotificationDeduplicationPort } from "./application/ports/notification-deduplication.port.js";
 import { NotificationHistoryReaderPort } from "./application/ports/notification-history.reader.port.js";
 import { NotificationInboxReaderPort } from "./application/ports/notification-inbox.reader.port.js";
 import { NotificationTodoTargetReaderPort } from "./application/ports/notification-todo-target.reader.port.js";
@@ -41,11 +41,11 @@ import { SendFollowAcceptedNotificationUseCase } from "./application/use-cases/s
 import { SendFollowRequestNotificationUseCase } from "./application/use-cases/send-follow-request-notification.use-case.js";
 import { SendFriendCompletionNotificationsUseCase } from "./application/use-cases/send-friend-completion-notifications.use-case.js";
 import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-milestone-notification.use-case.js";
-import { SendNotificationWithDedupUseCase } from "./application/use-cases/send-notification-with-dedup.use-case.js";
+import { SendNotificationWithDeduplicationUseCase } from "./application/use-cases/send-notification-with-deduplication.use-case.js";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
 import { MarketingConsentReconfirmAdapter } from "./infrastructure/adapters/marketing-consent-reconfirm.adapter.js";
-import { NotificationDedupAdapter } from "./infrastructure/adapters/notification-dedup.adapter.js";
+import { NotificationDeduplicationAdapter } from "./infrastructure/adapters/notification-deduplication.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/cache/notification-cache.adapter.js";
 import { DrizzleNotificationTodoTargetReader } from "./infrastructure/persistence/drizzle-notification-todo-target.reader.js";
 import { DrizzleNotificationReader } from "./infrastructure/persistence/drizzle-notification.reader.js";
@@ -59,7 +59,7 @@ export const NOTIFICATION_NOTIFICATIONS_PERSISTENCE_PROVIDERS = [
   { provide: NotificationInboxReaderPort, useExisting: DrizzleNotificationReader },
   { provide: NotificationHistoryReaderPort, useExisting: DrizzleNotificationReader },
   { provide: NotificationCachePort, useClass: NotificationCacheAdapter },
-  { provide: NotificationDedupPort, useClass: NotificationDedupAdapter },
+  { provide: NotificationDeduplicationPort, useClass: NotificationDeduplicationAdapter },
   { provide: NotificationTodoTargetReaderPort, useClass: DrizzleNotificationTodoTargetReader },
   { provide: MarketingConsentReconfirmPort, useClass: MarketingConsentReconfirmAdapter },
 ] satisfies Provider[];
@@ -97,7 +97,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     logger: loggerFor(DeleteActorNotificationsUseCase),
   }),
   provideUseCase(NotificationHistoryReader, {
-    notificationDedup: NotificationDedupPort,
+    notificationDeduplication: NotificationDeduplicationPort,
     notificationHistoryReader: NotificationHistoryReaderPort,
     logger: loggerFor(NotificationHistoryReader),
   }),
@@ -110,13 +110,13 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     afterCommitPublisher: PublishPushDeliveryAfterCommitUseCase,
     logger: loggerFor(SendNotificationUseCase),
   }),
-  provideUseCase(SendNotificationWithDedupUseCase, {
+  provideUseCase(SendNotificationWithDeduplicationUseCase, {
     sendNotification: SendNotificationUseCase,
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     notificationHistoryReader: NotificationHistoryReaderPort,
     clock: ClockPort,
-    logger: loggerFor(SendNotificationWithDedupUseCase),
+    logger: loggerFor(SendNotificationWithDeduplicationUseCase),
   }),
   provideUseCase(PersistBatchNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
@@ -126,7 +126,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(FinalizeBatchNotificationUseCase, {
     cache: NotificationCachePort,
-    notificationDedup: NotificationDedupPort,
+    notificationDeduplication: NotificationDeduplicationPort,
     logger: loggerFor(FinalizeBatchNotificationUseCase),
   }),
   provideUseCase(SendBatchNotificationUseCase, {
@@ -140,7 +140,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     todoTargetReader: NotificationTodoTargetReaderPort,
   }),
   provideUseCase(PublishDeduplicatedNotificationUseCase, {
-    sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
+    sendNotificationWithDeduplication: SendNotificationWithDeduplicationUseCase,
     todoTargetReader: NotificationTodoTargetReaderPort,
   }),
   provideUseCase(PublishNotificationBatchUseCase, {

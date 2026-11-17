@@ -1,11 +1,14 @@
-import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { withTodoTargets } from "../notification-todo-target.mapper.js";
 import type { NotificationTodoTargetReaderPort } from "../ports/notification-todo-target.reader.port.js";
 import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
-import type { SendNotificationWithDedupUseCase } from "./send-notification-with-dedup.use-case.js";
+import type { SendNotificationWithDeduplicationUseCase } from "./send-notification-with-deduplication.use-case.js";
 
 interface PublishDeduplicatedNotificationDependencies {
-  readonly sendNotificationWithDeduplication: Pick<SendNotificationWithDedupUseCase, "execute">;
+  readonly sendNotificationWithDeduplication: Pick<
+    SendNotificationWithDeduplicationUseCase,
+    "execute"
+  >;
   readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">;
 }
 

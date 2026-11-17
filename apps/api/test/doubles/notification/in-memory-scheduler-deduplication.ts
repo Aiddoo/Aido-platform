@@ -1,7 +1,7 @@
-import { SchedulerDedupPort } from "#api/modules/notification/reminders/application/ports/scheduler-dedup.port";
+import { SchedulerDeduplicationPort } from "#api/modules/notification/reminders/application/ports/scheduler-deduplication.port";
 
 // win-back 단계와 주별 넛지 쌍 발송 기록을 메모리에 둔다
-export class InMemorySchedulerDedup extends SchedulerDedupPort {
+export class InMemorySchedulerDeduplication extends SchedulerDeduplicationPort {
   readonly #winbackStages = new Set<string>();
   readonly #nudgePairsByWeek = new Map<string, Set<string>>();
 

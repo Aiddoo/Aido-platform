@@ -1,6 +1,6 @@
 import type { NotificationActionType } from "@aido/api/vocabulary";
 
-import type { NotificationType } from "../../domain/notification-type.constants.js";
+import type { NotificationType } from "./notification-type.constants.js";
 
 /** 알림 메타데이터 입력 (DB jsonb 컬럼에 저장) */
 type NotificationMetadataInput = Record<string, unknown>;

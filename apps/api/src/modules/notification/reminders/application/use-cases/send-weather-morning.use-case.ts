@@ -21,7 +21,7 @@ import {
   createWeatherMorningUnavailableNotificationMessage,
   createWeatherRescheduleAction,
 } from "../../../shared/application/messages/weather-notification.messages.js";
-import type { NotificationAction } from "../../../shared/application/ports/notification-draft.port.js";
+import type { NotificationAction } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";

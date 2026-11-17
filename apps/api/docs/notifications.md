@@ -46,11 +46,11 @@ Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss
 
 - 광고성 알림은 수신자 현지 21:00~08:00에 야간 동의가 없으면 보내지 않고 다음 허용 시각으로 미룬다(정보통신망법). 기존 `force`·야간 동의 규칙은 그대로다.
 - 사용자가 시각을 정한 알림(할 일 리마인더, 프리미엄 아침·저녁 리마인더, 날씨)은 야간 수신을 꺼도 보낸다. 소셜·재방문은 야간 설정을, 광고성은 야간 금지를 그대로 따른다([푸시](push-notifications.md#공통-발송-조건)).
-- 판정은 순수 함수 `isWithinQuietHours({ instant, timeZone, window })`(`push/domain/quiet-hours.domain-service.ts`, Temporal) 하나다.
+- 판정은 순수 함수 `isWithinQuietHours({ instant, timeZone, window })`(`push-dispatches/domain/quiet-hours.domain-service.ts`, Temporal) 하나다.
 
 ## 푸시를 등록하지 않은 사용자
 
-알림함(`Notification` 행)은 그대로 만들고 푸시만 건너뛰며 사유를 남긴다. 발송 퍼널에서 "권한 미요청·거부·토큰 없음" 비율을 보여 앱의 권한 요청 화면 개선 근거로 쓴다.
+알림함(`Notification` 행)은 그대로 만들고 푸시만 건너뛰며 사유를 남긴다. "권한 미요청·거부·토큰 없음" 비율은 캠페인 결과 집계(`PushCampaignOutcomeReaderPort`)로 보고 앱의 권한 요청 화면 개선 근거로 쓴다.
 
 ## 지표
 
@@ -60,11 +60,9 @@ Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss
 | 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)                    |
 | D1·D7·D30 리텐션 | 가입 cohort 기준(identity `drizzle-growth-metrics.reader.ts`가 사람별 활동일, 대상 판단은 `tallyGrowthCohort`) |
 | stickiness       | DAU/MAU(%, 소수 둘째 자리, MAU가 0이면 0. 관리자 API 추가 필드 `stickiness`)                                   |
-| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`openedAt`)                              |
 
 - 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 identity `users` slice의 조회(`IdentityUsersAdminModule`)이고 24시간 활성화는 planning `TodoActivationReaderPort`로 센다.
 - 열람은 앱이 푸시를 누를 때 부르는 `POST /v1/notifications/{id}/opened`의 `openedAt`이다. 푸시 data의 `notificationId`·`navigation`으로 앱이 탭 즉시 부르고, 처음 열 때만 `Notification.openedAt`·읽음과 `PushDispatch.openedAt`을 남기며 `notification.push.opened`(userId·notificationId)를 한 번 로그한다.
-- 집계는 notification push의 public `PushFunnelReaderPort.summarize`(생성 구간·캠페인·종류로 좁힘)가 한 SQL 묶음으로 한다. 관리자 HTTP API로는 아직 내보내지 않는다.
-- 문구·발송 시각 실험은 retention slice의 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 퍼널과 리텐션으로 읽는다. 다른 slice가 쓰기 시작하면 Context `shared`로 올린다.
+- 문구·발송 시각 실험은 retention-assignments slice의 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 캠페인 결과와 리텐션으로 읽는다. 다른 slice가 쓰기 시작하면 Context `shared`로 올린다.
 - SANDBOX 결제는 매출 지표에서 뺀다([결제](billing.md#sandbox-결제)).
 - 수신자 언어는 push `resolveRecipientLocale`(지원하지 않는 언어 en)이고 리마인더도 같은 함수를 쓴다([다국어](i18n.md#언어-결정)). notification 밖 Context가 만드는 알림은 `copyKey`·`copyFacts`를 넘겨야 알림함에서 요청 언어로 다시 렌더된다. 지금은 ai 제안 알림만 넘기고 billing·social·engagement 알림은 저장 문구로 보인다.
