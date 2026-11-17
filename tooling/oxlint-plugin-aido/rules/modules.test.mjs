@@ -1,3 +1,8 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { after } from 'node:test';
+
 import { createRuleTester } from '../rule-tester.mjs';
 import rules from './modules.mjs';
 
@@ -75,5 +80,62 @@ tester.run('no-inline-coded-exception', rules['no-inline-coded-exception'], {
     },
     { code: 'class MemoNotFound extends ApplicationException {}', errors: 1 },
     { code: 'const Invalid = class extends DomainException {};', errors: 1 },
+  ],
+});
+
+const serverRoot = mkdtempSync(join(tmpdir(), 'aido-foreign-context-table-'));
+after(() => rmSync(serverRoot, { recursive: true, force: true }));
+const schemaDirectory = join(serverRoot, 'src/platform/database/schema');
+mkdirSync(schemaDirectory, { recursive: true });
+for (const moduleContext of ['planning', 'identity', 'notes']) {
+  mkdirSync(join(serverRoot, 'src/modules', moduleContext), { recursive: true });
+}
+writeFileSync(join(schemaDirectory, 'planning.schema.ts'), 'export const todo = pgTable(\n');
+writeFileSync(join(schemaDirectory, 'identity.schema.ts'), 'export const user = pgTable(\n');
+writeFileSync(
+  join(schemaDirectory, 'outbound.schema.ts'),
+  'export const outboundCall = pgTable(\n',
+);
+const notesReader = join(
+  serverRoot,
+  'src/modules/notes/memos/infrastructure/persistence/reader.ts',
+);
+const planningFragment = join(
+  serverRoot,
+  'src/modules/planning/todos/infrastructure/persistence/todo.query-fragment.ts',
+);
+
+tester.run('no-foreign-context-table', rules['no-foreign-context-table'], {
+  valid: [
+    {
+      code: "import { todo } from '#api/platform/database/schema/index';\ndb.query.todo.findMany();",
+      filename: planningFragment,
+    },
+    {
+      code: "import { outboundCall } from '#api/platform/database/schema/index';",
+      filename: notesReader,
+    },
+    {
+      code: "import { todoOwners } from '#api/modules/planning/todos/planning-todos-queries.public';",
+      filename: notesReader,
+    },
+    { code: 'search.query.user.trim();', filename: join(serverRoot, 'src/platform/http/a.ts') },
+  ],
+  invalid: [
+    {
+      code: "import { todo, user } from '#api/platform/database/schema/index';",
+      filename: notesReader,
+      errors: 2,
+    },
+    {
+      code: "import type { user } from '#api/platform/database/schema/identity.schema';",
+      filename: notesReader,
+      errors: 1,
+    },
+    {
+      code: 'const row = db.query.user.findFirst({ where: { id } });',
+      filename: planningFragment,
+      errors: 1,
+    },
   ],
 });

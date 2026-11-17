@@ -272,6 +272,12 @@
       }
     },
     {
+      "files": ["apps/api/src/modules/**/*.ts"],
+      "rules": {
+        "aido/no-foreign-context-table": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/**/index.ts"],
       "excludeFiles": ["apps/api/src/platform/database/schema/index.ts"],
       "rules": {
