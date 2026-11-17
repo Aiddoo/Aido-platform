@@ -1,7 +1,6 @@
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -37,8 +36,12 @@ import { useRef } from 'react';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-labels';
 import { AchievementPolicy } from '../domains/achievement.model';
+import { useAchievementYear } from '../hooks/use-achievement-params';
 import { useShareViewCapture } from '../hooks/use-share-view-capture';
-import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
+import {
+  useGetAchievementYearsQueryOptions,
+  useGetWeeklyAchievementsInfiniteQueryOptions,
+} from '../queries/achievement.queries';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
@@ -48,8 +51,11 @@ const LOADING_STAT_COUNT = 3;
 export function AchievementSummary() {
   const todayKey = useTodayKey();
   usePrefetchQuery(useGetMeQueryOptions());
+  const { data: achievementYears } = useSuspenseQuery(useGetAchievementYearsQueryOptions());
+  // 보이는 해는 기록 있는 연도를 받아야 정해진다
+  const [year] = useAchievementYear(achievementYears);
   const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
-    useGetWeeklyAchievementsInfiniteQueryOptions({ year: getIsoWeekYear(todayKey) }),
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isFocused = useIsFocused();

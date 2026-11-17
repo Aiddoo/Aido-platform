@@ -1,8 +1,13 @@
-import type { WeeklyAchievementDto, WeeklyAchievementListResponse } from '@aido/api';
+import type {
+  WeeklyAchievementDto,
+  WeeklyAchievementListResponse,
+  WeeklyAchievementYearsResponse,
+} from '@aido/api';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
+import type { AchievementYears } from '../domains/achievement-years.model';
 import type { WeeklyAchievement, WeeklyAchievementPage } from '../domains/achievement.model';
 
 export function toWeeklyAchievement(dto: WeeklyAchievementDto): WeeklyAchievement {
@@ -28,4 +33,8 @@ export function toWeeklyAchievementPage(dto: WeeklyAchievementListResponse): Wee
       'averageRate',
     ]),
   };
+}
+
+export function toAchievementYears(dto: WeeklyAchievementYearsResponse): AchievementYears {
+  return { years: dto.years };
 }

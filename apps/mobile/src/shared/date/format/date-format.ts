@@ -28,7 +28,8 @@ type DateLabel =
   | 'yearMonth'
   | 'yearShortMonth'
   | 'month'
-  | 'weekday';
+  | 'weekday'
+  | 'year';
 
 const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   fullDate: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -41,7 +42,10 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   yearShortMonth: { year: 'numeric', month: 'short' },
   month: { month: 'short' },
   weekday: { weekday: 'short' },
+  year: { year: 'numeric' },
 };
+
+const MID_YEAR_MONTH_INDEX = 6;
 
 // Hermes(iOS)는 ko-KR day 파트에 "일"까지 붙여 주므로 숫자만 필요한 곳은 en-US 파트에서 읽는다
 function formatNumericDay(date: Date, context: DateFormatContext): string {
@@ -99,6 +103,15 @@ export function formatDateKeyLabel(
   context: DateFormatContext,
 ): string {
   return formatDateLabel(toUtcMidnight(dateKey), kind, toUtcContext(context));
+}
+
+/** 연도 숫자만 있는 라벨(ko "2026년", en "2026"). 해 가운데 날을 UTC로 읽어 시간대가 해를 바꾸지 않는다 */
+export function formatYearLabel(year: number, context: DateFormatContext): string {
+  return formatDateLabel(
+    toNativeDate(Date.UTC(year, MID_YEAR_MONTH_INDEX, 1)),
+    'year',
+    toUtcContext(context),
+  );
 }
 
 /** 오늘(사용자 시간대의 날짜 key)과 같은 해의 날만 연도를 뺀다. 지난해·내년 날짜는 연도까지 보여야 헷갈리지 않는다 */

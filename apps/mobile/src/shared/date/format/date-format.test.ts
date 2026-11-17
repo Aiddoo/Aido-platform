@@ -13,6 +13,7 @@ import {
   formatTimeOfDay,
   formatYearAwareDateKeyLabel,
   formatYearAwareDateLabel,
+  formatYearLabel,
 } from './date-format';
 
 const date = new Date('2026-10-01T00:05:00Z');
@@ -273,6 +274,21 @@ describe('formatDateKeyLabel', () => {
       locale,
       timeZone: 'Asia/Seoul',
     });
+
+    // Then
+    expect(label).toBe(expected);
+  });
+});
+
+describe('formatYearLabel', () => {
+  it.each([
+    { context: KO_SEOUL, expected: '2026년' },
+    { context: EN_SEOUL, expected: '2026' },
+    { context: { locale: 'ko-KR', timeZone: 'Pacific/Kiritimati' } as const, expected: '2026년' },
+    { context: { locale: 'en-US', timeZone: 'Pacific/Pago_Pago' } as const, expected: '2026' },
+  ])('$context.locale·$context.timeZone에서 2026은 $expected다', ({ context, expected }) => {
+    // When
+    const label = formatYearLabel(2026, context);
 
     // Then
     expect(label).toBe(expected);
