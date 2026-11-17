@@ -1,3 +1,6 @@
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '@src/features/assistant/suggestion/constants/suggestion.constants';
+import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
@@ -6,6 +9,7 @@ import {
   Box,
   Button,
   HStack,
+  LabelChip,
   Mascot,
   ReportDuoIcon,
   Spacing,
@@ -20,6 +24,7 @@ import {
   useCompetingGestures,
   useFlingGesture,
 } from 'react-native-gesture-handler';
+import { match } from 'ts-pattern';
 
 import { RELEASE_1_16_0_STEPS } from '../constants/release-1-16-0.constants';
 import { RELEASE_1_16_0, RELEASES } from '../constants/releases.constants';
@@ -58,6 +63,7 @@ function findNextStep(step: Release1160Step): Release1160Step | null {
 export function Release1160Steps() {
   const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'common']);
+  const dateFormatContext = useDateFormatContext();
   const flow = useWhatsNewFlow({ release: RELEASE_1_16_0, source });
   const stepper = useStepper<Release1160StepMap>({
     id: 'whats-new-1.16.0',
@@ -87,6 +93,8 @@ export function Release1160Steps() {
   });
   const fling = useCompetingGestures(flingNext, flingBack);
 
+  const analysisPeriod = formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext);
+
   return (
     <>
       <WhatsNewStep.Header
@@ -105,6 +113,7 @@ export function Release1160Steps() {
               <WhatsNewStep
                 media={
                   <IntroMedia
+                    analysisPeriod={analysisPeriod}
                     onSelect={(chapter) => history.push(CHAPTER_START_STEP[chapter], {})}
                   />
                 }
@@ -115,6 +124,7 @@ export function Release1160Steps() {
             suggestionRequest={() => (
               <WhatsNewStep
                 media={<SuggestionRequestDemo />}
+                badge={<PlanBadge plan="premium" />}
                 title={t('v1_16_0.request.title')}
                 description={t('v1_16_0.request.description')}
               />
@@ -122,13 +132,15 @@ export function Release1160Steps() {
             suggestionList={() => (
               <WhatsNewStep
                 media={<SuggestionListDemo onMake={goNext} />}
+                badge={<PlanBadge plan="premium" />}
                 title={t('v1_16_0.suggestions.title')}
-                description={t('v1_16_0.suggestions.description')}
+                description={t('v1_16_0.suggestions.description', { period: analysisPeriod })}
               />
             )}
             reportSummary={() => (
               <WhatsNewStep
                 media={<ReportSummaryDemo />}
+                badge={<PlanBadge plan="premium" />}
                 title={t('v1_16_0.summary.title')}
                 description={t('v1_16_0.summary.description')}
               />
@@ -136,6 +148,7 @@ export function Release1160Steps() {
             reportHours={() => (
               <WhatsNewStep
                 media={<ReportHoursDemo />}
+                badge={<PlanBadge plan="premium" />}
                 title={t('v1_16_0.hours.title')}
                 description={t('v1_16_0.hours.description')}
               />
@@ -143,6 +156,7 @@ export function Release1160Steps() {
             freeRecord={() => (
               <WhatsNewStep
                 media={<FreeRecordDemo />}
+                badge={<PlanBadge plan="free" />}
                 title={t('v1_16_0.free.title')}
                 description={t('v1_16_0.free.description')}
               />
@@ -214,7 +228,12 @@ export function Release1160Steps() {
   );
 }
 
-function IntroMedia({ onSelect }: { onSelect: (chapter: Release1160Chapter) => void }) {
+interface IntroMediaProps {
+  analysisPeriod: string;
+  onSelect: (chapter: Release1160Chapter) => void;
+}
+
+function IntroMedia({ analysisPeriod, onSelect }: IntroMediaProps) {
   const { t } = useTranslation(['whatsNew', 'subscription']);
 
   return (
@@ -228,7 +247,7 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1160Chapter) => v
         <WhatsNewStep.FeatureCard
           Icon={AiFilledIcon}
           title={t('whatsNew:v1_16_0.suggestion.title')}
-          description={t('whatsNew:v1_16_0.suggestion.description')}
+          description={t('whatsNew:v1_16_0.suggestion.description', { period: analysisPeriod })}
           badge={t('subscription:tier.premium')}
           onPress={() => onSelect('suggestion')}
           testID="whats-new-intro-suggestion"
@@ -246,6 +265,32 @@ function IntroMedia({ onSelect }: { onSelect: (chapter: Release1160Chapter) => v
       </VStack>
     </Box>
   );
+}
+
+/** 장면의 기능을 무료로 쓰는지 프리미엄으로 쓰는지 보인다. 프리미엄은 소개 카드와 같은 칩이다 */
+function PlanBadge({ plan }: { plan: 'free' | 'premium' }) {
+  const { t } = useTranslation(['whatsNew', 'subscription']);
+
+  return match(plan)
+    .with('free', () => (
+      <LabelChip
+        color="success"
+        label={t('whatsNew:v1_16_0.badge.free')}
+        labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+        pointerEvents="none"
+        className="self-start"
+      />
+    ))
+    .with('premium', () => (
+      <LabelChip
+        color="accent"
+        label={t('subscription:tier.premium')}
+        labelProps={{ weight: 'semibold', numberOfLines: 1 }}
+        pointerEvents="none"
+        className="self-start"
+      />
+    ))
+    .exhaustive();
 }
 
 function FinishMedia() {

@@ -12,6 +12,7 @@ export const coachmarkKindSchema = z.enum([
   'repeat-horizon',
   'ai-consent-renewal',
   'friend-strip',
+  'ai-feature-update',
 ]);
 
 export type CoachmarkKind = z.infer<typeof coachmarkKindSchema>;

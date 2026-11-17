@@ -10,10 +10,11 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
+import { stubWindowDimensions } from '@src/testing/window-dimensions';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useEffect } from 'react';
+import { type ComponentRef, createRef, useEffect } from 'react';
 import { Keyboard, type KeyboardEvent, View } from 'react-native';
 
 import { createCoachmarkStorage } from '../__tests__/coachmark.fixtures';
@@ -306,6 +307,71 @@ describe('CoachmarkPopover', () => {
       }),
     );
     expect(coachmarkRecords.hasSeen({ accountId, kind: 'voice-quick-start' })).toBe(true);
+  });
+
+  describe('스크롤 안 대상', () => {
+    const WINDOW_HEIGHT = 800;
+    const TARGET_HEIGHT = 60;
+
+    beforeEach(() => {
+      stubWindowDimensions(390, WINDOW_HEIGHT);
+    });
+
+    afterEach(() => {
+      jest.mocked(View.prototype.measureInWindow).mockReset();
+    });
+
+    async function renderScrollTarget(targetTop: number) {
+      jest.spyOn(View.prototype, 'measureInWindow').mockImplementation((callback) => {
+        if (typeof callback === 'function') {
+          callback(16, targetTop, 358, TARGET_HEIGHT);
+        }
+      });
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+      const analytics = createAnalyticsStub();
+      const targetRef = createRef<ComponentRef<typeof View>>();
+
+      await renderScreen(
+        <View ref={targetRef}>
+          <CoachmarkPopover
+            kind="ai-feature-update"
+            title="안내 제목"
+            description="안내 설명"
+            onScreenTargetRef={targetRef}
+            isPassThrough
+          >
+            <PressableFeedback testID="target" />
+          </CoachmarkPopover>
+        </View>,
+        { di: createTestDi({ ports: { httpClient, analytics } }) },
+      );
+
+      return { analytics };
+    }
+
+    it('창 안에 다 보이면 자리를 잰 뒤에 열고 노출을 남긴다', async () => {
+      // When
+      const { analytics } = await renderScrollTarget(WINDOW_HEIGHT - TARGET_HEIGHT);
+
+      // Then
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(analytics.trackEvent).toHaveBeenCalledWith('coachmark_shown', {
+        kind: 'ai-feature-update',
+      });
+    });
+
+    it('아래 끝이 창 밖이면 열지 않고 노출도 남기지 않는다', async () => {
+      // Given
+      const { analytics } = await renderScrollTarget(WINDOW_HEIGHT - TARGET_HEIGHT + 1);
+
+      // When
+      await waitFor(() => expect(View.prototype.measureInWindow).toHaveBeenCalled(), POPOVER_WAIT);
+
+      // Then
+      expect(screen.queryByTestId('hint-popover')).toBeNull();
+      expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+    });
   });
 
   it('이미 본 안내는 열지 않고 대상만 그린다', async () => {

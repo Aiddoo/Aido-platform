@@ -5,7 +5,16 @@ import type { Instant } from '@src/shared/date/instant';
 import { HintPopoverContent, type HintPopoverContentProps, MicIcon } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
 import { Popover } from 'heroui-native';
-import { type ComponentProps, type ReactNode, useEffect, useEffectEvent, useRef } from 'react';
+import {
+  type ComponentProps,
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useEffectEvent,
+  useRef,
+} from 'react';
+import type { View } from 'react-native';
 
 import { CoachmarkPolicy } from '../domains/coachmark.model';
 import type { CoachmarkKind } from '../domains/coachmark.model';
@@ -35,6 +44,8 @@ interface CoachmarkPopoverProps
   /** 바뀌면 닫는다(대상이 움직일 때). 읽을 틈 없이 지나갔으면 본 것으로 남기지 않고 멈춘 뒤 다시 연다 */
   dismissKey?: string;
   isDismissed?: boolean;
+  /** 스크롤 안 대상을 감싼 View. 넘기면 대상이 화면 밖이나 탭 막대 뒤에 있을 때 열지 않고, 다시 기다린 뒤 보이면 연다 */
+  onScreenTargetRef?: RefObject<ComponentRef<typeof View> | null>;
   children: ReactNode;
 }
 
@@ -50,6 +61,7 @@ export function CoachmarkPopover({
   isTargetDisabled = false,
   dismissKey,
   isDismissed = false,
+  onScreenTargetRef,
   Icon = MicIcon,
   placement,
   align,
@@ -66,6 +78,7 @@ export function CoachmarkPopover({
   const isSettled = useIsCoachmarkSettled({
     isVisible: isFocused && (shouldAutoOpen || isForced),
     restartKey: dismissKey,
+    onScreenTargetRef,
   });
   const isOpen = accountId != null && (isPending || isForced) && isEnabled && isSettled;
   const shownDismissKeyRef = useRef(dismissKey);

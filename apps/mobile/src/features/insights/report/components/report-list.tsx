@@ -140,7 +140,8 @@ ReportList.Latest = function Latest({ report, href, trend, testID }: ReportListL
   return (
     <Link href={href} asChild>
       <Link.Trigger>
-        <PressableFeedback className="rounded-2xl" testID={testID}>
+        {/* 카드를 한 접근성 요소로 묶으면 안의 추세 차트에서 주를 고를 수 없다. 스크린리더는 [자세히 보기]로 연다 */}
+        <PressableFeedback className="rounded-2xl" accessible={false} testID={testID}>
           <PressableFeedback.Highlight className="rounded-2xl" />
           <VStack className="gap-4 rounded-2xl bg-white p-4">
             <HStack align="center" gap={8} className="flex-wrap">
@@ -295,7 +296,7 @@ ReportList.Free = function Free() {
     <VStack gap={20}>
       <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
         <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord />
+          <ThisWeekRecord access="free" />
         </Suspense>
       </QueryErrorBoundary>
 
@@ -418,7 +419,7 @@ ReportList.Empty = function Empty() {
     <VStack gap={16}>
       <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
         <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord />
+          <ThisWeekRecord access="premium" />
         </Suspense>
       </QueryErrorBoundary>
 

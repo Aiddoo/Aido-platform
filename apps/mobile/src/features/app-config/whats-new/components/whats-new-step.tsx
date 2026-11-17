@@ -31,6 +31,8 @@ const FEATURE_ICON_SIZE = 22;
 
 interface WhatsNewStepProps {
   media: ReactNode;
+  /** 제목 위 칩. 장면의 기능을 무료로 쓰는지 프리미엄으로 쓰는지 같은 구분을 보인다 */
+  badge?: ReactNode;
   title: string;
   description: string;
   /** 없으면 소개만 하고 바로 써 보기를 두지 않는다 */
@@ -43,6 +45,7 @@ interface WhatsNewStepProps {
 /** 큰 글꼴이나 작은 화면에서는 미디어가 먼저 줄고, 그래도 넘치면 스크롤해 바로 써 보기에 닿는다 */
 export function WhatsNewStep({
   media,
+  badge,
   title,
   description,
   actionLabel,
@@ -67,6 +70,13 @@ export function WhatsNewStep({
         </Box>
 
         <Spacing size={24} />
+
+        {badge != null && (
+          <>
+            {badge}
+            <Spacing size={8} />
+          </>
+        )}
 
         <H3 lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
           {title}

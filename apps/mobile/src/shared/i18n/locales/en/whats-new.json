@@ -8,16 +8,16 @@
   },
   "v1_16_0": {
     "release": {
-      "title": "AI turns to-dos you do often into repeating ones",
-      "description": "See why from your last 2 weeks, and get a check without waiting for the morning. AI reports now show each day, the hours you finish, and a coach note"
+      "title": "AI suggestions and AI reports are all new",
+      "description": "AI finds to-dos you do often from your recent record, and AI reports show daily and hourly charts with a coach note"
     },
     "intro": {
       "title": "Aido's AI got an upgrade",
-      "description": "Here are the all-new AI suggestions and AI reports"
+      "description": "Here's what changed and what you can use for free"
     },
     "suggestion": {
       "title": "AI finds to-dos you do often",
-      "description": "It looks at your last 2 weeks and makes them repeat"
+      "description": "It looks at your last {{period}} and makes them repeat"
     },
     "report": {
       "title": "AI charts your progress",
@@ -29,7 +29,7 @@
     },
     "suggestions": {
       "title": "See why, then make it repeat",
-      "description": "We show how often you finished it in the last 2 weeks, plus the days and time"
+      "description": "We show how often you finished it in the last {{period}}, plus the days and time"
     },
     "summary": {
       "title": "See your progress at a glance",
@@ -41,7 +41,10 @@
     },
     "free": {
       "title": "See this week's record for free",
-      "description": "AI analysis and coach notes come with Premium"
+      "description": "Tap a bar to see each day, and preview AI analysis with a sample report"
+    },
+    "badge": {
+      "free": "Free"
     },
     "finish": {
       "title": "Ready to let AI help?",

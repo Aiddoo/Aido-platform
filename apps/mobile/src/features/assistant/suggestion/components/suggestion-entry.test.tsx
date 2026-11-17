@@ -71,6 +71,7 @@ async function renderFeedEntry(
       di: createTestDi({
         ports: { httpClient, errorReporter: createErrorReporterStub(), queryClient },
       }),
+      withLocalDate: true,
     },
   );
 

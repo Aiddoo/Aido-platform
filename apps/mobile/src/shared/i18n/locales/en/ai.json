@@ -65,7 +65,12 @@
     },
     "thisWeek": {
       "title": "My record this week",
-      "dayUpcoming": "{{date}} · Not here yet"
+      "dayUpcoming": "{{date}} · Not here yet",
+      "info": {
+        "label": "About this week's record",
+        "free": "How many to-dos you finished each day.\nTap a bar to see that day.\nWeekly and monthly AI analysis comes with Premium.",
+        "premium": "How many to-dos you finished each day.\nTap a bar to see that day.\nAI analysis comes with your reports."
+      }
     },
     "sample": {
       "title": "Sample report",
@@ -103,6 +108,11 @@
         }
       }
     }
+  },
+  "updateHint": {
+    "title": "AI suggestions and reports are all new",
+    "premiumDescription": "We find to-dos you do often from your last {{period}}.\nTap Check now to get them right away.\nReports show charts and a coach note.",
+    "freeDescription": "See this week's record and example suggestions and reports for free.\nAI suggestions and report analysis come with Premium."
   },
   "suggestions": {
     "item": {
