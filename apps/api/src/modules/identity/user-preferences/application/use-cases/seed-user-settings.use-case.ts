@@ -1,19 +1,16 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  type ConsentSeedInput,
-  type UserConsentRepositoryPort,
-} from "../ports/user-consent.repository.port.js";
+import type { ConsentAgreement } from "../../domain/user-consent.entity.js";
+import { UserPreference } from "../../domain/user-preference.aggregate.js";
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 
 export interface SeedUserSettingsCommand {
   readonly userId: string;
-  readonly consent: ConsentSeedInput;
+  readonly consent: ConsentAgreement;
 }
 
 interface SeedUserSettingsDependencies {
-  readonly consentRepository: Pick<UserConsentRepositoryPort, "create">;
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "create">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "save">;
 }
 
 export class SeedUserSettingsUseCase {
@@ -23,13 +20,12 @@ export class SeedUserSettingsUseCase {
     this.#dependencies = dependencies;
   }
 
+  // 가입 트랜잭션 안에서 새 사용자의 설정·동의 행을 만든다. 아직 아무도 읽지 않아 잠금이 없다
   async execute(input: SeedUserSettingsCommand): Promise<void> {
-    const userId = UserId.reconstitute(input.userId);
-    // Auth 프로비저닝이 연 CLS transaction에 참여한다.
-    await this.#dependencies.consentRepository.create(userId, input.consent);
-    await this.#dependencies.preferenceRepository.create(userId, {
-      pushEnabled: true,
-      nightPushEnabled: true,
+    const preference = UserPreference.create({
+      userId: UserId.reconstitute(input.userId),
+      consent: input.consent,
     });
+    await this.#dependencies.preferenceRepository.save(preference);
   }
 }

@@ -1,9 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  UserConsentRepositoryPort,
-  UserConsentRecordWithId,
-} from "../ports/user-consent.repository.port.js";
+import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
+import type { UserConsentReadModel } from "../read-models/consent.read-model.js";
 
 export interface GetConsentRecordsQuery {
   readonly userIds: readonly string[];
@@ -20,7 +18,7 @@ export class GetConsentRecordsUseCase {
     this.#dependencies = dependencies;
   }
 
-  execute(input: GetConsentRecordsQuery): Promise<UserConsentRecordWithId[]> {
+  execute(input: GetConsentRecordsQuery): Promise<UserConsentReadModel[]> {
     return this.#dependencies.consentRepository.findByUserIds(
       input.userIds.map((userId) => UserId.reconstitute(userId)),
     );

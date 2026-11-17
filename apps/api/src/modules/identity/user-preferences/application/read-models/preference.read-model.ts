@@ -3,10 +3,13 @@ import { pick } from "es-toolkit";
 
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type {
-  TimeFormatValue,
-  UserPreferenceRecord,
-} from "../../domain/user-preference.constants.js";
+import type { StreakState } from "../../domain/streak.vo.js";
+import type { UserPreferenceSettings } from "../../domain/user-preference.aggregate.js";
+import type { TimeFormatValue } from "../../domain/user-preference.constants.js";
+
+/** 설정 행 한 줄. 다른 Context가 발송 판단에 읽는다 */
+export type UserPreferenceReadModel = UserPreferenceSettings &
+  StreakState & { readonly userId: string };
 
 export interface PreferenceSnapshot {
   pushEnabled: boolean;
@@ -93,6 +96,6 @@ export function buildPreferenceView(
   };
 }
 
-export function buildPreferenceSnapshot(record: UserPreferenceRecord): PreferenceSnapshot {
+export function buildPreferenceSnapshot(record: UserPreferenceSettings): PreferenceSnapshot {
   return { ...pick(record, PREFERENCE_RESPONSE_FIELDS), locale: record.locale };
 }

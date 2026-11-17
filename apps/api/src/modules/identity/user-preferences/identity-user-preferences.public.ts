@@ -11,19 +11,15 @@ export { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-shar
 export { AiDataSharingConsent } from "./domain/ai-data-sharing-consent.entity.js";
 export { UserPreferenceReaderPort } from "./application/ports/user-preference.reader.port.js";
 export type { PreferenceSnapshot } from "./application/read-models/preference.read-model.js";
-export type {
-  MarketingReconfirmTarget,
-  UserConsentRecordWithId,
-} from "./application/ports/user-consent.repository.port.js";
-export type { UserPreferenceRecordWithId } from "./application/ports/user-preference.repository.port.js";
+export type { MarketingReconfirmTarget } from "./application/ports/user-consent.repository.port.js";
+export type { UserConsentReadModel } from "./application/read-models/consent.read-model.js";
+export type { UserPreferenceReadModel } from "./application/read-models/preference.read-model.js";
 export {
   UserNotificationSettingsAccessPort,
   UserSettingsProvisionerPort,
   UserStreakAccessPort,
   UserTimezoneReaderPort,
 } from "./application/ports/user-settings-access.port.js";
-export type { UserConsentRecord } from "./domain/user-consent.constants.js";
-export type { UserPreferenceRecord } from "./domain/user-preference.constants.js";
 export { computeEffectiveStreak } from "./domain/effective-streak.domain-service.js";
 export {
   marketingAgreedSince,

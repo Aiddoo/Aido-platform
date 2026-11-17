@@ -2,20 +2,18 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, isNull, ne } from "drizzle-orm";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { userPreference } from "#api/platform/database/schema/index";
+import { userConsent, userPreference } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  type PreferenceWriteInput,
-  UserPreferenceRepositoryPort,
-} from "../../application/ports/user-preference.repository.port.js";
+import { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port.js";
+import type { UserPreferenceReadModel } from "../../application/read-models/preference.read-model.js";
 import type { StreakState } from "../../domain/streak.vo.js";
-import { UserPreference } from "../../domain/user-preference.aggregate.js";
-
-type UserPreferenceRow = typeof userPreference.$inferSelect;
-type UserPreferencePatch = Partial<Omit<typeof userPreference.$inferInsert, "id" | "userId">>;
+import type {
+  UserPreference,
+  UserPreferenceChanges,
+} from "../../domain/user-preference.aggregate.js";
+import { toUserPreference, toUserPreferenceReadModel } from "./user-preference-row.mapper.js";
 
 @Injectable()
 export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPort {
@@ -26,79 +24,50 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
+  async findByUserId(userId: UserId): Promise<UserPreference> {
+    const preference = await this.#db.query.userPreference.findFirst({
+      where: { userId: userId.value },
+    });
+    const consent = await this.#db.query.userConsent.findFirst({
+      where: { userId: userId.value },
+    });
+    return toUserPreference(userId.value, {
+      preference: preference ?? null,
+      consent: consent ?? null,
+    });
   }
 
-  async findByUserId(userId: UserId): Promise<UserPreferenceRow | null> {
+  async findReadModelByUserId(userId: UserId): Promise<UserPreferenceReadModel | null> {
     const row = await this.#db.query.userPreference.findFirst({
       where: { userId: userId.value },
     });
-    return row ?? null;
+    return row == null ? null : toUserPreferenceReadModel(row);
   }
 
-  async findStreakByUserId(userId: UserId): Promise<UserPreference | null> {
-    const row = await this.#db.query.userPreference.findFirst({
-      columns: { userId: true, currentStreak: true, longestStreak: true, lastCompletedDate: true },
-      where: { userId: userId.value },
-    });
-    return row == null ? null : UserPreference.reconstitute(row);
-  }
-
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRow[]> {
+  async findReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
     if (userIds.length === 0) {
       return [];
     }
-    return this.#db.query.userPreference.findMany({
+    const rows = await this.#db.query.userPreference.findMany({
       where: { userId: { in: userIds.map((userId) => userId.value) } },
     });
+    return rows.map(toUserPreferenceReadModel);
   }
 
-  async create(userId: UserId, data: PreferenceWriteInput = {}): Promise<UserPreferenceRow> {
-    const [row] = await this.#db
-      .insert(userPreference)
-      .values({ userId: userId.value, ...this.#createFields(data) })
-      .returning();
-    return requireRecord(row);
-  }
-
-  async upsert(userId: UserId, data: PreferenceWriteInput): Promise<UserPreferenceRow> {
-    return this.#upsert(userId.value, this.#createFields(data), this.#writeFields(data));
-  }
-
-  async updateStreakIfUnchanged(
-    userId: UserId,
-    expected: StreakState,
-    next: StreakState,
-  ): Promise<boolean> {
-    const updated = await this.#db
-      .update(userPreference)
-      .set(next)
-      .where(
-        and(
-          eq(userPreference.userId, userId.value),
-          eq(userPreference.currentStreak, expected.currentStreak),
-          eq(userPreference.longestStreak, expected.longestStreak),
-          expected.lastCompletedDate == null
-            ? isNull(userPreference.lastCompletedDate)
-            : eq(userPreference.lastCompletedDate, expected.lastCompletedDate),
-        ),
-      )
-      .returning({ id: userPreference.id });
-    return updated.length === 1;
-  }
-
-  async upsertTimezone(userId: UserId, timezone: string): Promise<boolean> {
-    const written = await this.#db
-      .insert(userPreference)
-      .values({ userId: userId.value, timezone })
-      .onConflictDoUpdate({
-        target: userPreference.userId,
-        set: { timezone },
-        setWhere: ne(userPreference.timezone, timezone),
-      })
-      .returning({ id: userPreference.id });
-    return written.length > 0;
+  async save(preference: UserPreference): Promise<boolean> {
+    const userId = preference.id.value;
+    if (preference.isNew()) {
+      const { settings, streak, consent } = preference.toPrimitives();
+      await this.#db.insert(userPreference).values({ userId, ...settings, ...streak });
+      await this.#db.insert(userConsent).values(consent);
+      return true;
+    }
+    const changes = preference.changesSinceLoad();
+    if (!(await this.#saveSettings(userId, changes))) {
+      return false;
+    }
+    await this.#saveConsent(userId, changes.consent);
+    return true;
   }
 
   async refreshTimezoneIfChanged(userId: UserId, timezone: string): Promise<number> {
@@ -110,49 +79,48 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     return updated.length;
   }
 
-  async upsertLocale(userId: UserId, locale: string): Promise<void> {
-    await this.#upsert(userId.value, { locale }, { locale });
-  }
-
-  async #upsert(
+  // 바뀐 칸만 넣거나 바꿔 다른 요청이 쓴 칸을 덮지 않는다. 연속 완료는 읽은 값일 때만 쓴다
+  async #saveSettings(
     userId: string,
-    create: UserPreferencePatch,
-    update: UserPreferencePatch,
-  ): Promise<UserPreferenceRow> {
-    const [row] = await this.#db
+    changes: Pick<UserPreferenceChanges, "settings" | "streak">,
+  ): Promise<boolean> {
+    const columns = { ...changes.settings, ...changes.streak?.next };
+    if (Object.keys(columns).length === 0) {
+      return true;
+    }
+    const saved = await this.#db
       .insert(userPreference)
-      .values({ userId, ...create })
-      // userId는 변경할 필드가 없을 때도 UPDATE가 성립하게 하는 무변경 값이다.
-      .onConflictDoUpdate({ target: userPreference.userId, set: { userId, ...update } })
-      .returning();
-    return requireRecord(row);
+      .values({ userId, ...columns })
+      .onConflictDoUpdate({
+        target: userPreference.userId,
+        set: columns,
+        setWhere: changes.streak == null ? undefined : streakEquals(changes.streak.loaded),
+      })
+      .returning({ id: userPreference.id });
+    return saved.length > 0;
   }
 
-  #createFields(data: PreferenceWriteInput): UserPreferencePatch {
-    return {
-      ...this.#writeFields(data),
-      pushEnabled: data.pushEnabled ?? true,
-      nightPushEnabled: data.nightPushEnabled ?? true,
-    };
+  async #saveConsent(userId: string, changes: UserPreferenceChanges["consent"]): Promise<void> {
+    if (Object.keys(changes).length === 0) {
+      return;
+    }
+    await this.#db
+      .insert(userConsent)
+      .values({ userId, ...changes })
+      .onConflictDoUpdate({ target: userConsent.userId, set: changes });
   }
 
-  #writeFields(data: PreferenceWriteInput): UserPreferencePatch {
-    return {
-      pushEnabled: data.pushEnabled,
-      nightPushEnabled: data.nightPushEnabled,
-      timezone: data.timezone,
-      morningReminderHour: data.morningReminderHour,
-      morningReminderMinute: data.morningReminderMinute,
-      eveningReminderHour: data.eveningReminderHour,
-      eveningReminderMinute: data.eveningReminderMinute,
-      timeFormat: data.timeFormat,
-      weatherMorningEnabled: data.weatherMorningEnabled,
-      weatherMorningHour: data.weatherMorningHour,
-      weatherMorningMinute: data.weatherMorningMinute,
-      weatherEveningEnabled: data.weatherEveningEnabled,
-      weatherEveningHour: data.weatherEveningHour,
-      weatherEveningMinute: data.weatherEveningMinute,
-      aiPushEnabled: data.aiPushEnabled,
-    };
+  get #db() {
+    return this.#transactionHost.tx;
   }
+}
+
+function streakEquals(streak: StreakState) {
+  return and(
+    eq(userPreference.currentStreak, streak.currentStreak),
+    eq(userPreference.longestStreak, streak.longestStreak),
+    streak.lastCompletedDate == null
+      ? isNull(userPreference.lastCompletedDate)
+      : eq(userPreference.lastCompletedDate, streak.lastCompletedDate),
+  );
 }

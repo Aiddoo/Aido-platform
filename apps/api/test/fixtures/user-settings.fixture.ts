@@ -1,10 +1,11 @@
-import type { UserConsentRecordWithId } from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
-import type { UserPreferenceRecordWithId } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import type { UserConsentReadModel } from "#api/modules/identity/user-preferences/application/read-models/consent.read-model";
+import type { UserPreferenceReadModel } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import { InMemoryUserConsentRepository } from "#test/doubles/identity/in-memory-user-consent.repository";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
   StubPreferenceEntitlement,
@@ -21,13 +22,13 @@ export const SETTINGS_TIME = Temporal.Instant.from("2026-01-16T09:00:00.000Z");
 export function createUserSettingsFixture(
   input: {
     userId?: string;
-    preference?: Partial<UserPreferenceRecordWithId> | null;
-    consent?: Partial<UserConsentRecordWithId> | null;
+    preference?: Partial<UserPreferenceReadModel> | null;
+    consent?: Partial<UserConsentReadModel> | null;
     premium?: boolean;
   } = {},
 ) {
   const userId = input.userId ?? "settings-user";
-  const preference: UserPreferenceRecordWithId = {
+  const preference: UserPreferenceReadModel = {
     userId,
     pushEnabled: true,
     nightPushEnabled: false,
@@ -50,7 +51,7 @@ export function createUserSettingsFixture(
     lastCompletedDate: null,
     ...input.preference,
   };
-  const consent: UserConsentRecordWithId = {
+  const consent: UserConsentReadModel = {
     userId,
     termsAgreedAt: SETTINGS_TIME,
     privacyAgreedAt: SETTINGS_TIME,
@@ -62,12 +63,13 @@ export function createUserSettingsFixture(
     marketingReconfirmedAt: null,
     ...input.consent,
   };
-  const preferenceRepository = new InMemoryUserPreferenceRepository(
-    input.preference === null ? [] : [preference],
-  );
   const consentRepository = new InMemoryUserConsentRepository({
     records: input.consent === null ? [] : [consent],
   });
+  const preferenceRepository = new InMemoryUserPreferenceRepository(
+    input.preference === null ? [] : [preference],
+    consentRepository,
+  );
   const cache = new StubUserSettingsCache();
   const preferenceReader = new ReadUserPreferencesUseCase({ preferenceRepository, cache });
   const entitlement = new StubPreferenceEntitlement();
@@ -89,6 +91,7 @@ export function createUserSettingsFixture(
     statsReader: new StubTodoCompletionStatsReader(),
     logger: new SilentLogger(),
     todoTimezoneRebase: new StubTodoTimezoneRebaseEnqueuer(),
+    mutationLock: new RecordingMutationLock(),
     unitOfWork: new ImmediateUnitOfWork(),
     clock: new FixedClock(SETTINGS_TIME),
   };

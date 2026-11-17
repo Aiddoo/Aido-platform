@@ -1,11 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-  type UserConsentRecord,
-  type UserConsentRecordWithId,
+  type UserConsentReadModel,
   UserNotificationSettingsAccessPort,
-  type UserPreferenceRecord,
-  type UserPreferenceRecordWithId,
+  type UserPreferenceReadModel,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -33,19 +31,19 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
     return this.#userSettingsAccess.upsertPushLocale(userId, locale);
   }
 
-  getPreferenceRecord(userId: UserId): Promise<UserPreferenceRecord | null> {
+  getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null> {
     return this.#userSettingsAccess.getPreferenceRecord(userId);
   }
 
-  getPreferenceRecordsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRecordWithId[]> {
+  getPreferenceRecordsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
     return this.#userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
   }
 
-  getConsentRecord(userId: UserId): Promise<UserConsentRecord | null> {
+  getConsentRecord(userId: UserId): Promise<UserConsentReadModel | null> {
     return this.#userSettingsAccess.getConsentRecord(userId);
   }
 
-  getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentRecordWithId[]> {
+  getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
     return this.#userSettingsAccess.getConsentRecordsByUserIds(userIds);
   }
 

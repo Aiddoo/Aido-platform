@@ -2,10 +2,10 @@ import {
   AiDataSharingConsent,
   type AiDataSharingConsentStatus,
 } from "./ai-data-sharing-consent.entity.js";
-import type { UserConsentRecord } from "./user-consent.constants.js";
+import type { UserConsentPrimitives } from "./user-consent.entity.js";
 
 type AiDataSharingConsentState = Pick<
-  UserConsentRecord,
+  UserConsentPrimitives,
   "aiDataSharingAgreedAt" | "aiDataSharingVersion"
 >;
 
@@ -17,11 +17,4 @@ export function resolveAiDataSharingConsent(
     hasAgreed: consent?.aiDataSharingAgreedAt != null,
     version: consent?.aiDataSharingVersion ?? null,
   });
-}
-
-export function resolveAiDataSharingAgreement(
-  agreed: boolean,
-  at: Temporal.Instant,
-): Temporal.Instant | null {
-  return agreed ? at : null;
 }

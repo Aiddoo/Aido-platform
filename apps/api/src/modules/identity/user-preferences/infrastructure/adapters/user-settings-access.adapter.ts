@@ -4,7 +4,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { DatedTodoCompletionStats } from "../../application/ports/todo-completion-stats.reader.port.js";
 import {
-  type ConsentSeedInput,
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
   UserConsentRepositoryPort,
@@ -24,6 +23,7 @@ import { SeedUserSettingsUseCase } from "../../application/use-cases/seed-user-s
 import { UpdateMarketingPushConsentUseCase } from "../../application/use-cases/update-marketing-push-consent.use-case.js";
 import { UpsertPushLocaleUseCase } from "../../application/use-cases/upsert-push-locale.use-case.js";
 import { UpsertPushTimezoneUseCase } from "../../application/use-cases/upsert-push-timezone.use-case.js";
+import type { ConsentAgreement } from "../../domain/user-consent.entity.js";
 
 /** 외부 컨텍스트에 공개한 좁은 capability를 내부 endpoint UseCase에 연결한다. */
 @Injectable()
@@ -76,7 +76,7 @@ export class UserSettingsAccessAdapter
     this.#consentRepository = consentRepository;
   }
 
-  seedDefaults(userId: UserId, consent: ConsentSeedInput): Promise<void> {
+  seedDefaults(userId: UserId, consent: ConsentAgreement): Promise<void> {
     return this.#seedUserSettingsUseCase.execute({ userId: userId.value, consent });
   }
 

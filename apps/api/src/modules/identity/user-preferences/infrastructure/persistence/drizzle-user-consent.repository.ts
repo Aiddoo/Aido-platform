@@ -2,13 +2,11 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 
-import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userConsent } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
-  type ConsentSeedInput,
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
   UserConsentRepositoryPort,
@@ -28,10 +26,24 @@ const reconfirmTargetColumns = {
   marketingPushAgreedAt: userConsent.marketingPushAgreedAt,
 };
 
-type UserConsentRow = typeof userConsent.$inferSelect;
-type UserConsentPatch = Partial<Omit<typeof userConsent.$inferInsert, "id" | "userId">>;
-
+import type { UserConsentReadModel } from "../../application/read-models/consent.read-model.js";
 import { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
+
+type UserConsentRow = typeof userConsent.$inferSelect;
+
+function toUserConsentReadModel(row: UserConsentRow): UserConsentReadModel {
+  return {
+    userId: row.userId,
+    termsAgreedAt: row.termsAgreedAt,
+    privacyAgreedAt: row.privacyAgreedAt,
+    agreedTermsVersion: row.agreedTermsVersion,
+    marketingAgreedAt: row.marketingAgreedAt,
+    marketingPushAgreedAt: row.marketingPushAgreedAt,
+    aiDataSharingAgreedAt: row.aiDataSharingAgreedAt,
+    aiDataSharingVersion: row.aiDataSharingVersion,
+    marketingReconfirmedAt: row.marketingReconfirmedAt,
+  };
+}
 
 @Injectable()
 export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
@@ -46,9 +58,9 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     return this.#transactionHost.tx;
   }
 
-  async findByUserId(userId: UserId): Promise<UserConsentRow | null> {
+  async findByUserId(userId: UserId): Promise<UserConsentReadModel | null> {
     const row = await this.#db.query.userConsent.findFirst({ where: { userId: userId.value } });
-    return row ?? null;
+    return row == null ? null : toUserConsentReadModel(row);
   }
 
   async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
@@ -63,42 +75,14 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     });
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentRow[]> {
+  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
     if (userIds.length === 0) {
       return [];
     }
-    return this.#db.query.userConsent.findMany({
+    const rows = await this.#db.query.userConsent.findMany({
       where: { userId: { in: userIds.map((userId) => userId.value) } },
     });
-  }
-
-  async create(userId: UserId, data: ConsentSeedInput): Promise<UserConsentRow> {
-    const [row] = await this.#db
-      .insert(userConsent)
-      .values({
-        userId: userId.value,
-        termsAgreedAt: data.termsAgreedAt ?? null,
-        privacyAgreedAt: data.privacyAgreedAt ?? null,
-        agreedTermsVersion: data.agreedTermsVersion ?? null,
-        marketingAgreedAt: data.marketingAgreedAt ?? null,
-        marketingPushAgreedAt: data.marketingPushAgreedAt ?? null,
-      })
-      .returning();
-    return requireRecord(row);
-  }
-
-  async upsertMarketingConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null },
-  ): Promise<UserConsentRow> {
-    return this.#upsert(userId.value, { marketingAgreedAt: data.agreedAt });
-  }
-
-  async upsertMarketingPushConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null },
-  ): Promise<UserConsentRow> {
-    return this.#upsert(userId.value, { marketingPushAgreedAt: data.agreedAt });
+    return rows.map(toUserConsentReadModel);
   }
 
   async findMarketingReconfirmTargets(
@@ -140,24 +124,5 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
         ),
       )
       .returning(reconfirmTargetColumns);
-  }
-
-  async upsertAiDataSharingConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null; version: string },
-  ): Promise<UserConsentRow> {
-    return this.#upsert(userId.value, {
-      aiDataSharingAgreedAt: data.agreedAt,
-      aiDataSharingVersion: data.version,
-    });
-  }
-
-  async #upsert(userId: string, patch: UserConsentPatch): Promise<UserConsentRow> {
-    const [row] = await this.#db
-      .insert(userConsent)
-      .values({ userId, ...patch })
-      .onConflictDoUpdate({ target: userConsent.userId, set: patch })
-      .returning();
-    return requireRecord(row);
   }
 }

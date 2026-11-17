@@ -1,4 +1,5 @@
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describeUserConsentRepositoryContract } from "#test/contracts/identity/user-consent-repository.contract";
 import { createUserSettingsFixtureUsers } from "#test/fixtures/identity/user-settings.fixture";
@@ -25,6 +26,9 @@ describe("DrizzleUserConsentRepository (실제 PostgreSQL)", () => {
 
   describeUserConsentRepositoryContract(async () => {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserConsentRepository(transactionHost);
+    return {
+      consents: new DrizzleUserConsentRepository(transactionHost),
+      preferences: new DrizzleUserPreferenceRepository(transactionHost),
+    };
   });
 });

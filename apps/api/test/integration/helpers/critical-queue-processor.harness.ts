@@ -7,11 +7,9 @@ import { PgBoss } from "pg-boss";
 
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import {
-  type UserConsentRecord,
-  type UserConsentRecordWithId,
+  type UserConsentReadModel,
   UserPreferenceReaderPort,
-  type UserPreferenceRecord,
-  type UserPreferenceRecordWithId,
+  type UserPreferenceReadModel,
   UserSettingsCachePort,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
@@ -366,17 +364,17 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
   return {
     upsertPushTimezone: (userId, timezone) => upsertPreference(userId.value, { timezone }),
     upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
-    getPreferenceRecord: async (userId): Promise<UserPreferenceRecord | null> =>
+    getPreferenceRecord: async (userId): Promise<UserPreferenceReadModel | null> =>
       (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
-    getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceRecordWithId[]> =>
+    getPreferenceRecordsByUserIds: async (userIds): Promise<UserPreferenceReadModel[]> =>
       userIds.length === 0
         ? []
         : database.query.userPreference.findMany({
             where: { userId: { in: userIds.map((userId) => userId.value) } },
           }),
-    getConsentRecord: async (userId): Promise<UserConsentRecord | null> =>
+    getConsentRecord: async (userId): Promise<UserConsentReadModel | null> =>
       (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
-    getConsentRecordsByUserIds: async (userIds): Promise<UserConsentRecordWithId[]> =>
+    getConsentRecordsByUserIds: async (userIds): Promise<UserConsentReadModel[]> =>
       userIds.length === 0
         ? []
         : database.query.userConsent.findMany({

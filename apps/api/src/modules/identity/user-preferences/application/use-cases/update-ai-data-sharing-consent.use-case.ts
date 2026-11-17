@@ -1,13 +1,15 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { resolveAiDataSharingAgreement } from "../../domain/ai-data-sharing-consent.domain-service.js";
-import type { UserConsentRepositoryPort } from "../ports/user-consent.repository.port.js";
+import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import {
-  type AiDataSharingConsentView,
   buildAiDataSharingConsentView,
+  type AiDataSharingConsentView,
 } from "../read-models/consent.read-model.js";
+import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
 
 export interface UpdateAiDataSharingConsentCommand {
@@ -18,7 +20,9 @@ export interface UpdateAiDataSharingConsentCommand {
 }
 
 interface UpdateAiDataSharingConsentDependencies {
-  readonly consentRepository: Pick<UserConsentRepositoryPort, "upsertAiDataSharingConsent">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
+  readonly unitOfWork: UnitOfWorkPort;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -32,19 +36,29 @@ export class UpdateAiDataSharingConsentUseCase {
   }
 
   async execute(input: UpdateAiDataSharingConsentCommand): Promise<AiDataSharingConsentView> {
-    const updated = await this.#dependencies.consentRepository.upsertAiDataSharingConsent(
-      UserId.reconstitute(input.userId),
-      {
-        agreedAt: resolveAiDataSharingAgreement(input.agreed, this.#dependencies.clock.now()),
-        version: input.version,
-      },
-    );
+    const userId = UserId.reconstitute(input.userId);
+    const processedAt = this.#dependencies.clock.now();
+    const { preferenceRepository } = this.#dependencies;
+    const consent = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
+      const preference = await preferenceRepository.findByUserId(userId);
+      if (
+        preference.answerAiDataSharing({
+          agreed: input.agreed,
+          version: input.version,
+          now: processedAt,
+        })
+      ) {
+        await preferenceRepository.save(preference);
+      }
+      return preference.consent.toPrimitives();
+    });
     this.#dependencies.logger.log({
       event: UserPreferenceLogEvent.AI_DATA_SHARING_CONSENT_UPDATED,
       userId: input.userId,
       agreed: input.agreed,
       version: input.version,
     });
-    return buildAiDataSharingConsentView(updated, input.version);
+    return buildAiDataSharingConsentView(consent, input.version);
   }
 }

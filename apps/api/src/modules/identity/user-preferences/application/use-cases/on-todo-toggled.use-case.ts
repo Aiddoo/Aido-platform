@@ -4,7 +4,6 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-import type { StreakCompletionPlan } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
 import type { StreakMilestoneNotifierPort } from "../ports/streak-milestone-notifier.port.js";
 import type {
@@ -24,10 +23,7 @@ export interface OnTodoToggledCommand {
 }
 
 interface OnTodoToggledDependencies {
-  readonly preferenceRepository: Pick<
-    UserPreferenceRepositoryPort,
-    "findStreakByUserId" | "updateStreakIfUnchanged"
-  >;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
   readonly statsReader: Pick<TodoCompletionStatsReaderPort, "countForDay">;
   readonly milestoneNotifier: Pick<StreakMilestoneNotifierPort, "notifyStreak3Reached">;
   readonly clock: ClockPort;
@@ -55,27 +51,23 @@ export class OnTodoToggledUseCase {
           return;
         }
 
-        const preference = await this.#dependencies.preferenceRepository.findStreakByUserId(userId);
-        if (preference == null) {
+        // 설정 행이 없는 옛 사용자는 연속 완료를 세지 않는다
+        const preference = await this.#dependencies.preferenceRepository.findByUserId(userId);
+        if (!preference.isStreakTracked()) {
           return;
         }
 
         const allCompleted = stats.total === stats.completed;
-        const plan = await this.#planTransition(userId, preference, today, allCompleted);
-        if (plan == null) {
+        if (!(await this.#recordTransition(userId, preference, today, allCompleted))) {
           return;
         }
 
-        const updated = await this.#dependencies.preferenceRepository.updateStreakIfUnchanged(
-          userId,
-          preference.streakState,
-          plan.nextState,
-        );
-        if (!updated) {
+        // 연속 완료만 읽은 값 조건으로 쓴다. 그사이 다른 반영이 저장했으면 false라 다시 읽는다
+        if (!(await this.#dependencies.preferenceRepository.save(preference))) {
           continue;
         }
 
-        if (plan.reachedStreak3) {
+        if (allCompleted && preference.hasReachedStreakMilestone()) {
           await this.#dependencies.milestoneNotifier.notifyStreak3Reached(userId);
         }
         this.#dependencies.logger.log({
@@ -83,8 +75,8 @@ export class OnTodoToggledUseCase {
             ? UserPreferenceLogEvent.STREAK_UPDATED
             : UserPreferenceLogEvent.STREAK_RECALCULATED,
           userId: input.userId,
-          currentStreak: plan.nextState.currentStreak,
-          longestStreak: plan.nextState.longestStreak,
+          currentStreak: preference.streakState?.currentStreak,
+          longestStreak: preference.streakState?.longestStreak,
         });
         return;
       }
@@ -108,23 +100,22 @@ export class OnTodoToggledUseCase {
     return this.#dependencies.statsReader.countForDay(userId, date);
   }
 
-  async #planTransition(
+  async #recordTransition(
     userId: UserId,
     preference: UserPreference,
     today: Temporal.PlainDate,
     allCompleted: boolean,
-  ): Promise<StreakCompletionPlan | null> {
+  ): Promise<boolean> {
     if (allCompleted) {
-      return preference.planTodoCompletion(today);
+      return preference.recordAllTodosCompleted(today);
     }
     if (!preference.hasTodoCompletionOn(today)) {
-      return null;
+      return false;
     }
 
     const yesterdayStats = await this.#statsForDay(userId, today.subtract({ days: 1 }));
     const hadYesterdayCompletion =
       yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
-    const nextState = preference.planTodoUncompletion(today, hadYesterdayCompletion);
-    return nextState == null ? null : { nextState, reachedStreak3: false };
+    return preference.recordTodoReopened(today, hadYesterdayCompletion);
   }
 }

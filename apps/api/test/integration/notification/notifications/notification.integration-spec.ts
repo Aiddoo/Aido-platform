@@ -235,22 +235,31 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             preferenceRepository: DrizzleUserPreferenceRepository,
             consentRepository: DrizzleUserConsentRepository,
           ) => ({
-            upsertPushTimezone: (userId: UserId, timezone: string) =>
-              preferenceRepository.upsertTimezone(userId, timezone),
-            upsertPushLocale: (userId: UserId, locale: string) =>
-              preferenceRepository.upsertLocale(userId, locale),
-            getPreferenceRecord: (userId: UserId) => preferenceRepository.findByUserId(userId),
+            upsertPushTimezone: async (userId: UserId, timezone: string) => {
+              const preference = await preferenceRepository.findByUserId(userId);
+              preference.changeTimezone(timezone);
+              await preferenceRepository.save(preference);
+            },
+            upsertPushLocale: async (userId: UserId, locale: string) => {
+              const preference = await preferenceRepository.findByUserId(userId);
+              preference.changeLocale(locale);
+              await preferenceRepository.save(preference);
+            },
+            getPreferenceRecord: (userId: UserId) =>
+              preferenceRepository.findReadModelByUserId(userId),
             getPreferenceRecordsByUserIds: (userIds: readonly UserId[]) =>
-              preferenceRepository.findByUserIds(userIds),
+              preferenceRepository.findReadModelsByUserIds(userIds),
             getConsentRecord: (userId: UserId) => consentRepository.findByUserId(userId),
             getConsentRecordsByUserIds: (userIds: readonly UserId[]) =>
               consentRepository.findByUserIds(userIds),
-            updateMarketingPushConsent: (userId: UserId, agreed: boolean) =>
-              consentRepository
-                .upsertMarketingPushConsent(userId, {
-                  agreedAt: agreed ? Temporal.Instant.fromEpochMilliseconds(Date.now()) : null,
-                })
-                .then(() => undefined),
+            updateMarketingPushConsent: async (userId: UserId, agreed: boolean) => {
+              const preference = await preferenceRepository.findByUserId(userId);
+              preference.changeMarketingPushConsent(
+                agreed,
+                Temporal.Instant.fromEpochMilliseconds(Date.now()),
+              );
+              await preferenceRepository.save(preference);
+            },
           }),
           inject: [DrizzleUserPreferenceRepository, DrizzleUserConsentRepository],
         },

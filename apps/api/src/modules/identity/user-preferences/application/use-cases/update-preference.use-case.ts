@@ -1,6 +1,7 @@
 import { assertEntitled } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
@@ -18,6 +19,7 @@ import {
   type PreferenceView,
 } from "../read-models/preference.read-model.js";
 import { invalidTimezone } from "../user-preferences.errors.js";
+import { UserPreferenceLockKeys } from "../user-preferences.lock-keys.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
 
 export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
@@ -25,7 +27,8 @@ export type UpdatePreferenceCommand = Readonly<PreferenceChanges> & {
 };
 
 interface UpdatePreferenceDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "upsert">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId" | "save">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly entitlement: PreferenceEntitlementPort;
   readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
   readonly reminderTimezoneCache: ReminderTimezoneCachePort;
@@ -64,10 +67,10 @@ export class UpdatePreferenceUseCase {
 
     const { preferenceRepository, todoTimezoneRebase, clock } = this.#dependencies;
     const updated = await this.#dependencies.unitOfWork.run(async () => {
-      const timezoneChanged =
-        timezone != null &&
-        (await preferenceRepository.findByUserId(userId))?.timezone !== timezone;
-      const written = await preferenceRepository.upsert(userId, {
+      await this.#dependencies.mutationLock.acquire([UserPreferenceLockKeys.preference(userId)]);
+      const preference = await preferenceRepository.findByUserId(userId);
+      const previousTimezone = preference.settings.timezone;
+      const changed = preference.changeSettings({
         pushEnabled: input.pushEnabled,
         nightPushEnabled: input.nightPushEnabled,
         timezone: timezone ?? undefined,
@@ -84,10 +87,14 @@ export class UpdatePreferenceUseCase {
         weatherEveningMinute: input.weatherEveningMinute,
         aiPushEnabled: input.aiPushEnabled,
       });
-      if (timezoneChanged) {
+      if (!changed) {
+        return preference.settings;
+      }
+      await preferenceRepository.save(preference);
+      if (preference.settings.timezone !== previousTimezone) {
         await todoTimezoneRebase.enqueueRebase(userId, clock.now());
       }
-      return written;
+      return preference.settings;
     });
     await this.#dependencies.cache.invalidateUserPreference(userId);
 

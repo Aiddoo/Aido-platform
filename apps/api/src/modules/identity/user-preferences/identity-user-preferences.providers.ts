@@ -4,6 +4,7 @@ import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access
 import { ReminderTimezoneCachePort as NotificationReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { PreferenceEntitlementPort } from "./application/ports/preference-entitlement.port.js";
@@ -50,6 +51,7 @@ export const refreshPushTimezoneProvider = provideUseCase(RefreshPushTimezoneUse
 
 export const updatePreferenceProvider = provideUseCase(UpdatePreferenceUseCase, {
   preferenceRepository: UserPreferenceRepositoryPort,
+  mutationLock: MutationLockPort,
   entitlement: PreferenceEntitlementPort,
   cache: UserSettingsCachePort,
   reminderTimezoneCache: ReminderTimezoneCachePort,
@@ -62,6 +64,7 @@ export const updatePreferenceProvider = provideUseCase(UpdatePreferenceUseCase, 
 
 export const upsertPushTimezoneProvider = provideUseCase(UpsertPushTimezoneUseCase, {
   preferenceRepository: UserPreferenceRepositoryPort,
+  mutationLock: MutationLockPort,
   cache: UserSettingsCachePort,
   reminderTimezoneCache: ReminderTimezoneCachePort,
   todoTimezoneRebase: TodoTimezoneRebaseEnqueuerPort,
@@ -99,27 +102,32 @@ export const IDENTITY_USER_PREFERENCES_PROVIDERS = [
     clock: ClockPort,
     logger: loggerFor(OnTodoToggledUseCase),
   }),
-  provideUseCase(SeedUserSettingsUseCase, {
-    consentRepository: UserConsentRepositoryPort,
-    preferenceRepository: UserPreferenceRepositoryPort,
-  }),
+  provideUseCase(SeedUserSettingsUseCase, { preferenceRepository: UserPreferenceRepositoryPort }),
   provideUseCase(UpdateAiDataSharingConsentUseCase, {
-    consentRepository: UserConsentRepositoryPort,
+    preferenceRepository: UserPreferenceRepositoryPort,
+    mutationLock: MutationLockPort,
+    unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(UpdateAiDataSharingConsentUseCase),
   }),
   provideUseCase(UpdateMarketingConsentUseCase, {
-    consentRepository: UserConsentRepositoryPort,
+    preferenceRepository: UserPreferenceRepositoryPort,
+    mutationLock: MutationLockPort,
+    unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(UpdateMarketingConsentUseCase),
   }),
   provideUseCase(UpdateMarketingPushConsentUseCase, {
-    consentRepository: UserConsentRepositoryPort,
+    preferenceRepository: UserPreferenceRepositoryPort,
+    mutationLock: MutationLockPort,
+    unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
     logger: loggerFor(UpdateMarketingPushConsentUseCase),
   }),
   provideUseCase(UpsertPushLocaleUseCase, {
     preferenceRepository: UserPreferenceRepositoryPort,
+    mutationLock: MutationLockPort,
+    unitOfWork: UnitOfWorkPort,
     cache: UserSettingsCachePort,
   }),
 ] satisfies Provider[];

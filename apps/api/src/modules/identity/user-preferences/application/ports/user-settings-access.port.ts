@@ -1,18 +1,14 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserConsentRecord } from "../../domain/user-consent.constants.js";
-import type { UserPreferenceRecord } from "../../domain/user-preference.constants.js";
+import type { ConsentAgreement } from "../../domain/user-consent.entity.js";
+import type { UserConsentReadModel } from "../read-models/consent.read-model.js";
+import type { UserPreferenceReadModel } from "../read-models/preference.read-model.js";
 import type { DatedTodoCompletionStats } from "./todo-completion-stats.reader.port.js";
-import type {
-  ConsentSeedInput,
-  UserConsentRecordWithId,
-  UserConsentRepositoryPort,
-} from "./user-consent.repository.port.js";
-import type { UserPreferenceRecordWithId } from "./user-preference.repository.port.js";
+import type { UserConsentRepositoryPort } from "./user-consent.repository.port.js";
 
 /** auth가 회원가입 트랜잭션 안에서 사용하는 초기 설정 생성 capability. */
 export abstract class UserSettingsProvisionerPort {
-  abstract seedDefaults(userId: UserId, consent: ConsentSeedInput): Promise<void>;
+  abstract seedDefaults(userId: UserId, consent: ConsentAgreement): Promise<void>;
 }
 
 /** todo가 완료 처리 후 스트릭을 기록하고 조회하는 capability. */
@@ -23,7 +19,7 @@ export abstract class UserStreakAccessPort {
     timezone: string,
     todayStats: DatedTodoCompletionStats | null,
   ): Promise<void>;
-  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceRecord | null>;
+  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null>;
 }
 
 /** planning이 벽시계를 순간으로 바꿀 때 최신 저장값을 읽는 capability. 캐시를 거치지 않는다. */
@@ -36,14 +32,12 @@ export abstract class UserTimezoneReaderPort {
 export abstract class UserNotificationSettingsAccessPort {
   abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
   abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
-  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceRecord | null>;
+  abstract getPreferenceRecord(userId: UserId): Promise<UserPreferenceReadModel | null>;
   abstract getPreferenceRecordsByUserIds(
     userIds: readonly UserId[],
-  ): Promise<UserPreferenceRecordWithId[]>;
-  abstract getConsentRecord(userId: UserId): Promise<UserConsentRecord | null>;
-  abstract getConsentRecordsByUserIds(
-    userIds: readonly UserId[],
-  ): Promise<UserConsentRecordWithId[]>;
+  ): Promise<UserPreferenceReadModel[]>;
+  abstract getConsentRecord(userId: UserId): Promise<UserConsentReadModel | null>;
+  abstract getConsentRecordsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]>;
   abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;
   abstract findMarketingReconfirmTargets: UserConsentRepositoryPort["findMarketingReconfirmTargets"];
   abstract claimMarketingReconfirm: UserConsentRepositoryPort["claimMarketingReconfirm"];

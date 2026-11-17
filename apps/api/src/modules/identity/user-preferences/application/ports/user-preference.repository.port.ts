@@ -1,59 +1,21 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { StreakState } from "../../domain/streak.vo.js";
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
-import type {
-  TimeFormatValue,
-  UserPreferenceRecord,
-} from "../../domain/user-preference.constants.js";
+import type { UserPreferenceReadModel } from "../read-models/preference.read-model.js";
 
-/** 배치 조회용 설정 레코드 (사용자 식별자 포함). */
-export type UserPreferenceRecordWithId = UserPreferenceRecord & {
-  userId: string;
-};
-
-/** 설정 upsert 입력 (부분 갱신) */
-export interface PreferenceWriteInput {
-  pushEnabled?: boolean;
-  nightPushEnabled?: boolean;
-  timezone?: string;
-  morningReminderHour?: number;
-  morningReminderMinute?: number;
-  eveningReminderHour?: number;
-  eveningReminderMinute?: number;
-  timeFormat?: TimeFormatValue;
-  weatherMorningEnabled?: boolean;
-  weatherMorningHour?: number;
-  weatherMorningMinute?: number;
-  weatherEveningEnabled?: boolean;
-  weatherEveningHour?: number;
-  weatherEveningMinute?: number;
-  aiPushEnabled?: boolean;
-}
-
-/**
- * 설정 리포지토리 포트.
- */
 export abstract class UserPreferenceRepositoryPort {
-  abstract findByUserId(userId: UserId): Promise<UserPreferenceRecord | null>;
-  /** 연속 완료 전이를 가진 설정 Aggregate. 설정 행이 없으면 null */
-  abstract findStreakByUserId(userId: UserId): Promise<UserPreference | null>;
-  abstract findByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceRecordWithId[]>;
-  abstract create(userId: UserId, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
-  abstract upsert(userId: UserId, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
-  /** 시간대를 넣거나 바꾼다. 실제로 달라졌으면(행을 새로 만든 경우 포함) true다. */
-  abstract upsertTimezone(userId: UserId, timezone: string): Promise<boolean>;
+  /** 설정·동의 행이 없으면 그 부분은 기본값이다(옛 사용자). 저장할 때 바꾼 칸으로 행을 만든다 */
+  abstract findByUserId(userId: UserId): Promise<UserPreference>;
+  abstract findReadModelByUserId(userId: UserId): Promise<UserPreferenceReadModel | null>;
+  abstract findReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]>;
   /**
-   * 저장된 타임존이 다를 때만 갱신하고, 실제 갱신된 행 수를 반환한다.
-   *
-   * 자가치유(핫패스)용 — 값이 같으면 0행(no-op)이라 쓰기 증폭·캐시 무효화가 없다.
-   * 행이 없으면(설정 미생성) 0을 반환한다(신규 생성하지 않음 — 토큰 등록 upsert가 담당).
+   * 읽은 뒤 바뀐 칸만 쓰고 없는 행은 만든다. 다른 요청이 쓴 칸(연속 완료·재확인 시각)을 덮지 않는다.
+   * 연속 완료는 읽은 값이 그대로일 때만 쓰고 아니면 false다
+   */
+  abstract save(preference: UserPreference): Promise<boolean>;
+  /**
+   * 저장된 시간대가 다를 때만 바꾸고 바꾼 행 수를 준다. 요청마다 도는 자가치유라 잠금 없이 한 칸만
+   * 조건부로 쓴다. 행이 없으면 만들지 않는다(기기 등록이 만든다)
    */
   abstract refreshTimezoneIfChanged(userId: UserId, timezone: string): Promise<number>;
-  abstract upsertLocale(userId: UserId, locale: string): Promise<void>;
-  abstract updateStreakIfUnchanged(
-    userId: UserId,
-    expected: StreakState,
-    next: StreakState,
-  ): Promise<boolean>;
 }

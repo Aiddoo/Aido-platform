@@ -10,7 +10,7 @@ import {
 } from "../read-models/preference.read-model.js";
 
 interface UserPreferenceReaderDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findReadModelByUserId">;
   readonly cache: Pick<UserSettingsCachePort, "wrapUserPreference">;
 }
 
@@ -23,7 +23,8 @@ export class ReadUserPreferencesUseCase implements UserPreferenceReaderPort {
 
   read(userId: UserId): Promise<PreferenceSnapshot> {
     return this.#dependencies.cache.wrapUserPreference(userId, async () => {
-      const preference = await this.#dependencies.preferenceRepository.findByUserId(userId);
+      const preference =
+        await this.#dependencies.preferenceRepository.findReadModelByUserId(userId);
       return preference == null
         ? { ...DEFAULT_PREFERENCE_SNAPSHOT }
         : buildPreferenceSnapshot(preference);

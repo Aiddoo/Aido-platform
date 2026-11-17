@@ -9,7 +9,7 @@
 
 import type { Provider } from "@nestjs/common";
 
-import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { UserPreference } from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import {
   type ProvisioningConsent,
@@ -21,24 +21,15 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 export const provisioningSeederTestProvider: Provider = {
   provide: UserProvisioningSeederPort,
   useFactory: (
-    consentRepository: DrizzleUserConsentRepository,
     preferenceRepository: DrizzleUserPreferenceRepository,
     defaultTodoCategorySeeder: DefaultTodoCategoryProvisionerAdapter,
   ): UserProvisioningSeederPort => ({
     async seedDefaultSettings(userId: UserId, consent: ProvisioningConsent): Promise<void> {
-      await consentRepository.create(userId, consent);
-      await preferenceRepository.create(userId, {
-        pushEnabled: true,
-        nightPushEnabled: true,
-      });
+      await preferenceRepository.save(UserPreference.create({ userId, consent }));
     },
     async seedDefaultCategories(userId, locale): Promise<void> {
       await defaultTodoCategorySeeder.seed(userId, locale);
     },
   }),
-  inject: [
-    DrizzleUserConsentRepository,
-    DrizzleUserPreferenceRepository,
-    DefaultTodoCategoryProvisionerAdapter,
-  ],
+  inject: [DrizzleUserPreferenceRepository, DefaultTodoCategoryProvisionerAdapter],
 };

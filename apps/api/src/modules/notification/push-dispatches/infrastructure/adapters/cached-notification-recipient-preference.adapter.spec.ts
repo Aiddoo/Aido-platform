@@ -117,10 +117,11 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   ])("저장 언어 %s를 지원 언어 %s로 읽는다", async (storedLocale, expectedLocale) => {
     // Given
     const fixture = createFixture();
-    await fixture.preferenceRepository.upsertLocale(
+    const preference = await fixture.preferenceRepository.findByUserId(
       UserId.reconstitute(fixture.userId),
-      storedLocale,
     );
+    preference.changeLocale(storedLocale);
+    await fixture.preferenceRepository.save(preference);
 
     // When
     const locale = await fixture.reader.getLocale(UserId.reconstitute(fixture.userId));

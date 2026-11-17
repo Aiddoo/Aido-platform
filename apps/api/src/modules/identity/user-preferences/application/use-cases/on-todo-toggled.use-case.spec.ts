@@ -1,5 +1,5 @@
 import type { StreakState } from "#api/modules/identity/user-preferences/domain/streak.vo";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserPreference } from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
@@ -26,19 +26,15 @@ class ContendedPreferenceRepository extends InMemoryUserPreferenceRepository {
     this.#conflicts.push(...changes);
   }
 
-  override async updateStreakIfUnchanged(
-    userId: UserId,
-    expected: StreakState,
-    next: StreakState,
-  ): Promise<boolean> {
+  override async save(preference: UserPreference): Promise<boolean> {
     this.compareAndSetAttempts += 1;
     const conflict = this.#conflicts.shift();
     if (conflict == null) {
-      return super.updateStreakIfUnchanged(userId, expected, next);
+      return super.save(preference);
     }
     conflict.meanwhile?.();
     if (conflict.committed != null) {
-      await super.updateStreakIfUnchanged(userId, expected, conflict.committed);
+      this.commitStreak(preference.id.value, conflict.committed);
     }
     return false;
   }

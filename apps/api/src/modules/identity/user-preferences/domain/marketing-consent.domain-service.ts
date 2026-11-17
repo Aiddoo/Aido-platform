@@ -1,16 +1,12 @@
 import { MARKETING_CONSENT_RECONFIRM_YEARS } from "@aido/api/vocabulary";
 import { minBy } from "es-toolkit";
 
-import type { UserConsentRecord } from "./user-consent.constants.js";
+import type { UserConsentPrimitives } from "./user-consent.entity.js";
 
-type MarketingConsentState = Pick<UserConsentRecord, "marketingAgreedAt" | "marketingPushAgreedAt">;
-
-export function resolveMarketingAgreement(
-  agreed: boolean,
-  at: Temporal.Instant,
-): Temporal.Instant | null {
-  return agreed ? at : null;
-}
+type MarketingConsentState = Pick<
+  UserConsentPrimitives,
+  "marketingAgreedAt" | "marketingPushAgreedAt"
+>;
 
 /** 이 시각 이전에 동의했거나 마지막으로 다시 알린 사용자에게 수신 동의 사실을 다시 알린다. */
 export function marketingReconfirmCutoff(now: Temporal.Instant): Temporal.Instant {

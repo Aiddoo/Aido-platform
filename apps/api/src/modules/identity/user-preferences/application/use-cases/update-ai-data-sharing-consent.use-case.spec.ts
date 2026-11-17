@@ -1,7 +1,10 @@
 import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
 
 import { InMemoryUserConsentRepository } from "#test/doubles/identity/in-memory-user-consent.repository";
+import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import { UpdateAiDataSharingConsentUseCase } from "./update-ai-data-sharing-consent.use-case.js";
@@ -12,7 +15,9 @@ describe("AI 데이터 처리 동의 변경", () => {
   function createUseCase() {
     const consentRepository = new InMemoryUserConsentRepository();
     const useCase = new UpdateAiDataSharingConsentUseCase({
-      consentRepository,
+      preferenceRepository: new InMemoryUserPreferenceRepository([], consentRepository),
+      mutationLock: new RecordingMutationLock(),
+      unitOfWork: new ImmediateUnitOfWork(),
       clock: new FixedClock(Temporal.Instant.from(NOW_ISO)),
       logger: new SilentLogger(),
     });

@@ -10,6 +10,11 @@ import { RefreshPushTimezoneUseCase } from "#api/modules/identity/user-preferenc
 import { SeedUserSettingsUseCase } from "#api/modules/identity/user-preferences/application/use-cases/seed-user-settings.use-case";
 import { UpdatePreferenceUseCase } from "#api/modules/identity/user-preferences/application/use-cases/update-preference.use-case";
 import { UpsertPushTimezoneUseCase } from "#api/modules/identity/user-preferences/application/use-cases/upsert-push-timezone.use-case";
+import type { ConsentAgreement } from "#api/modules/identity/user-preferences/domain/user-consent.entity";
+import {
+  type PreferenceSettingChanges,
+  UserPreference,
+} from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
@@ -121,6 +126,25 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     };
   }
 
+  async function seedPreference(
+    changes: PreferenceSettingChanges = {},
+    consent: ConsentAgreement = {},
+  ): Promise<void> {
+    await preferences.save(UserPreference.create({ userId: UserId.reconstitute(userId), consent }));
+    const preference = await loadPreference();
+    if (preference.changeSettings(changes)) {
+      await preferences.save(preference);
+    }
+  }
+
+  async function storedPreference() {
+    return preferences.findReadModelByUserId(UserId.reconstitute(userId));
+  }
+
+  async function loadPreference() {
+    return preferences.findByUserId(UserId.reconstitute(userId));
+  }
+
   async function expectTwoUpdateWaiters(table: "UserPreference" | "UserConsent") {
     await vi.waitFor(
       async () => {
@@ -155,14 +179,14 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     async (exists) => {
       // Given
       if (exists) {
-        await preferences.create(UserId.reconstitute(userId));
+        await seedPreference();
       }
 
       // When
       const response = await context.module
         .get(UpdatePreferenceUseCase)
         .execute({ userId, ...weather });
-      const saved = await preferences.findByUserId(UserId.reconstitute(userId));
+      const saved = await storedPreference();
 
       // Then
       expect(response).toEqual(expect.objectContaining(weather));
@@ -174,7 +198,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("캐시에 저장된 설정도 timezone 자가치유와 upsert 직후 최신 값을 반환한다", async () => {
     // Given
-    await preferences.create(UserId.reconstitute(userId), { timezone: "UTC" });
+    await seedPreference({ timezone: "UTC" });
     const get = context.module.get(GetPreferenceUseCase);
     expect((await get.execute({ userId })).timezone).toBe("UTC");
 
@@ -184,9 +208,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .execute({ userId, timezone: "Asia/Seoul" });
 
     // Then
-    expect((await preferences.findByUserId(UserId.reconstitute(userId)))?.timezone).toBe(
-      "Asia/Seoul",
-    );
+    expect((await storedPreference())?.timezone).toBe("Asia/Seoul");
     expect((await get.execute({ userId })).timezone).toBe("Asia/Seoul");
 
     // When
@@ -195,9 +217,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
       .execute({ userId, timezone: "America/New_York" });
 
     // Then
-    expect((await preferences.findByUserId(UserId.reconstitute(userId)))?.timezone).toBe(
-      "America/New_York",
-    );
+    expect((await storedPreference())?.timezone).toBe("America/New_York");
     expect((await get.execute({ userId })).timezone).toBe("America/New_York");
   });
 
@@ -214,8 +234,8 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await refresh.execute({ userId, timezone: "UTC" });
 
     // Then
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toBeNull();
-    await preferences.create(UserId.reconstitute(userId), { timezone: "UTC" });
+    expect(await storedPreference()).toBeNull();
+    await seedPreference({ timezone: "UTC" });
 
     // When
     await refresh.execute({ userId, timezone: "UTC" });
@@ -227,13 +247,13 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("timezone 전용 최초 생성은 가입 seed와 같은 DB push 기본값(true)을 쓴다", async () => {
     // Given
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toBeNull();
+    expect(await storedPreference()).toBeNull();
 
     // When
-    await preferences.upsertTimezone(UserId.reconstitute(userId), "Asia/Seoul");
+    await context.module.get(UpsertPushTimezoneUseCase).execute({ userId, timezone: "Asia/Seoul" });
 
     // Then
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+    expect(await storedPreference()).toEqual(
       expect.objectContaining({
         timezone: "Asia/Seoul",
         pushEnabled: true,
@@ -244,7 +264,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("같은 날 두 완료 요청의 UPDATE가 대기해도 스트릭과 마일스톤은 한 번 반영된다", async () => {
     // Given
-    await preferences.create(UserId.reconstitute(userId));
+    await seedPreference();
     await client
       .update(userPreference)
       .set({ currentStreak: 2, longestStreak: 2, lastCompletedDate: yesterdayDate })
@@ -275,7 +295,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+    expect(await storedPreference()).toEqual(
       expect.objectContaining({ currentStreak: 3, longestStreak: 3, lastCompletedDate: todayDate }),
     );
     expect(notification).toHaveBeenCalledExactlyOnceWith(UserId.reconstitute(userId));
@@ -283,7 +303,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("늦게 도착한 완료 취소 이벤트는 최신 Todo가 모두 완료된 상태를 되돌리지 않는다", async () => {
     // Given
-    await preferences.create(UserId.reconstitute(userId));
+    await seedPreference();
     await client
       .update(userPreference)
       .set({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate })
@@ -294,14 +314,14 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await context.module.get(OnTodoToggledUseCase).execute({ userId, completed: false });
 
     // Then
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+    expect(await storedPreference()).toEqual(
       expect.objectContaining({ currentStreak: 3, longestStreak: 4, lastCompletedDate: todayDate }),
     );
   });
 
   it("동시에 서로 다른 preference 필드를 바꾸어도 지정하지 않은 값은 보존된다", async () => {
     // Given
-    await preferences.create(UserId.reconstitute(userId), {
+    await seedPreference({
       timezone: "UTC",
       weatherMorningEnabled: true,
       weatherMorningMinute: 17,
@@ -313,13 +333,18 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .where(eq(userPreference.userId, userId))
         .for("update"),
     );
+    // 두 요청이 같은 행을 읽은 뒤 서로 다른 칸을 바꿔 저장한다
+    const timezoneRequest = await loadPreference();
+    const weatherRequest = await loadPreference();
+    timezoneRequest.changeSettings({ timezone: "Asia/Seoul" });
+    weatherRequest.changeSettings({
+      weatherMorningEnabled: false,
+      weatherMorningHour: 0,
+      weatherMorningMinute: undefined,
+    });
     const requests = Promise.allSettled([
-      preferences.upsert(UserId.reconstitute(userId), { timezone: "Asia/Seoul" }),
-      preferences.upsert(UserId.reconstitute(userId), {
-        weatherMorningEnabled: false,
-        weatherMorningHour: 0,
-        weatherMorningMinute: undefined,
-      }),
+      preferences.save(timezoneRequest),
+      preferences.save(weatherRequest),
     ]);
 
     // When
@@ -332,7 +357,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
     // Then
     expect((await requests).every((result) => result.status === "fulfilled")).toBe(true);
-    expect(await preferences.findByUserId(UserId.reconstitute(userId))).toEqual(
+    expect(await storedPreference()).toEqual(
       expect.objectContaining({
         timezone: "Asia/Seoul",
         weatherMorningEnabled: false,
@@ -345,11 +370,14 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("일반·push 마케팅 동의의 동시 부분 변경은 서로와 약관을 덮어쓰지 않는다", async () => {
     // Given
-    await consents.create(UserId.reconstitute(userId), {
-      termsAgreedAt: yesterdayStart,
-      privacyAgreedAt: yesterdayStart,
-      agreedTermsVersion: "1.0.0",
-    });
+    await seedPreference(
+      {},
+      {
+        termsAgreedAt: yesterdayStart,
+        privacyAgreedAt: yesterdayStart,
+        agreedTermsVersion: "1.0.0",
+      },
+    );
     const lock = await holdRowLock((transaction) =>
       transaction
         .select({ id: userConsent.id })
@@ -357,9 +385,13 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
         .where(eq(userConsent.userId, userId))
         .for("update"),
     );
+    const marketingRequest = await loadPreference();
+    const pushRequest = await loadPreference();
+    marketingRequest.changeMarketingConsent(true, now);
+    pushRequest.changeMarketingPushConsent(true, now);
     const requests = Promise.allSettled([
-      consents.upsertMarketingConsent(UserId.reconstitute(userId), { agreedAt: now }),
-      consents.upsertMarketingPushConsent(UserId.reconstitute(userId), { agreedAt: now }),
+      preferences.save(marketingRequest),
+      preferences.save(pushRequest),
     ]);
 
     // When
@@ -383,7 +415,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     );
 
     // When
-    await consents.upsertMarketingConsent(UserId.reconstitute(userId), { agreedAt: null });
+    const withdrawal = await loadPreference();
+    withdrawal.changeMarketingConsent(false, now);
+    await preferences.save(withdrawal);
 
     // Then
     expect(await consents.findByUserId(UserId.reconstitute(userId))).toEqual(
@@ -419,7 +453,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     // Then
     await expect(provision).rejects.toThrow("프로비저닝 후속 단계 실패");
     expect(await client.query.user.findFirst({ where: { id: user.id } })).toBeUndefined();
-    expect(await preferences.findByUserId(UserId.reconstitute(user.id))).toBeNull();
+    expect(await preferences.findReadModelByUserId(UserId.reconstitute(user.id))).toBeNull();
     expect(await consents.findByUserId(UserId.reconstitute(user.id))).toBeNull();
   });
 });

@@ -19,6 +19,7 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -59,6 +60,7 @@ async function createFixture() {
       updatePreferenceProvider,
       upsertPushTimezoneProvider,
       { provide: UserPreferenceRepositoryPort, useValue: settings.preferenceRepository },
+      { provide: MutationLockPort, useValue: settings.mutationLock },
       { provide: UserSettingsCachePort, useValue: settings.cache },
       { provide: PreferenceEntitlementPort, useValue: settings.entitlement },
       { provide: PreferenceReminderTimezoneCachePort, useExisting: ReminderTimezoneCachePort },
