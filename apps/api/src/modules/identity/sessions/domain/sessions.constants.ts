@@ -5,7 +5,6 @@ export const SESSION_RETENTION_DAYS = 30;
 export const LOGIN_ATTEMPT_RETENTION_DAYS = 90;
 
 export const SESSION_DEFAULTS = {
-  DEFAULT_ACCESS_TOKEN_EXPIRES_SECONDS: 900,
   /** DB Session.deviceFingerprint varchar(64)와 같아야 한다 */
   MAX_DEVICE_FINGERPRINT_LENGTH: 64,
 } as const;

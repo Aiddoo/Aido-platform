@@ -68,4 +68,19 @@ describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
     expect(claims.exp - claims.iat).toBe(30 * 24 * 60 * 60);
     expect(issuer.getRefreshTokenExpiresInSeconds()).toBe(30 * 24 * 60 * 60);
   });
+
+  it.each(["7 days", "1.5d", "0d", "-1d"])(
+    "토큰 수명 %s는 예전처럼 15분으로 몰래 바꾸지 않고 설정 검증에서 막는다",
+    (lifetime) => {
+      // When
+      const parsed = jwtSchema.safeParse({
+        JWT_SECRET: accessSecret,
+        JWT_REFRESH_SECRET: refreshSecret,
+        JWT_REFRESH_EXPIRES_IN: lifetime,
+      });
+
+      // Then
+      expect(parsed.success).toBe(false);
+    },
+  );
 });

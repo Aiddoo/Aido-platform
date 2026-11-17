@@ -28,8 +28,8 @@ const JWT = {
   secret: "test-jwt-secret-at-least-32-characters-long",
   refreshSecret: "test-refresh-secret-at-least-32-characters",
   expiresIn: "15m",
-  refreshExpiresIn: "7d",
-};
+  refreshExpiresIn: "30d",
+} as const;
 
 // 1.15.3부터 JwtTokenIssuerAdapter가 발급하는 claim이다
 const ACCESS_CLAIMS = {

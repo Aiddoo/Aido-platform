@@ -4,9 +4,9 @@ import type { UserRole } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { JwtService, type JwtVerifyOptions } from "@nestjs/jwt";
+import ms from "ms";
 
 import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
-import { SESSION_DEFAULTS } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -40,6 +40,8 @@ export const JWT_VERIFY_OPTIONS = {
   issuer: JWT_ISSUER,
   audience: JWT_AUDIENCE,
 } satisfies JwtVerifyOptions;
+
+const MILLISECONDS_PER_SECOND = 1000;
 
 // Access Token (15분) + Refresh Token (30일) 발급 및 검증, Token Rotation 지원
 @Injectable()
@@ -141,36 +143,10 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
   }
 
   #getAccessTokenExpiresInSeconds(): number {
-    const expiresIn = this.#jwt.expiresIn;
-    return this.#parseExpiresIn(expiresIn);
+    return ms(this.#jwt.expiresIn) / MILLISECONDS_PER_SECOND;
   }
 
   getRefreshTokenExpiresInSeconds(): number {
-    const expiresIn = this.#jwt.refreshExpiresIn;
-    return this.#parseExpiresIn(expiresIn);
-  }
-
-  // "15m", "1h", "7d" 형식을 초 단위로 변환
-  #parseExpiresIn(expiresIn: string): number {
-    const match = expiresIn.match(/^(\d+)([smhd])$/);
-    if (!match?.[1] || !match[2]) {
-      return SESSION_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES_SECONDS;
-    }
-
-    const value = parseInt(match[1], 10);
-    const unit = match[2];
-
-    switch (unit) {
-      case "s":
-        return value;
-      case "m":
-        return value * 60;
-      case "h":
-        return value * 60 * 60;
-      case "d":
-        return value * 60 * 60 * 24;
-      default:
-        return SESSION_DEFAULTS.DEFAULT_ACCESS_TOKEN_EXPIRES_SECONDS;
-    }
+    return ms(this.#jwt.refreshExpiresIn) / MILLISECONDS_PER_SECOND;
   }
 }
