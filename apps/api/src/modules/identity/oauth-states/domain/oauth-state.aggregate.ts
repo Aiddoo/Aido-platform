@@ -1,6 +1,7 @@
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import type { AccountProvider } from "../../linked-accounts/domain/linked-accounts.constants.js";
+import { isExpiredAt } from "../../shared/domain/expiry.domain-service.js";
 import { OAuthStateId } from "./oauth-state-id.vo.js";
 import type { OAUTH_STATE_VALIDITIES } from "./oauth-states.constants.js";
 
@@ -88,7 +89,7 @@ export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
     if (this.props.exchangedAt != null) {
       return "exchanged";
     }
-    return Temporal.Instant.compare(this.props.expiresAt, now) <= 0 ? "expired" : "valid";
+    return isExpiredAt(this.props.expiresAt, now) ? "expired" : "valid";
   }
 
   // 1.15.0까지의 앱은 연결 시작에 user_hint를 보내지 않아 시작한 사용자가 비어 있다. 모든 지원 앱이 보내면 지운다

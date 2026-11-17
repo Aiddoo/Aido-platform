@@ -8,7 +8,9 @@ import { EntitlementCacheAdapter } from "#api/modules/access/feature-grants/infr
 import { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import { OAuthIdentityProviderRegistryPort } from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
 import { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import { PasswordResetCooldownPort } from "#api/modules/identity/linked-accounts/application/ports/password-reset-cooldown.port";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
+import { PasswordResetCooldownAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/password-reset-cooldown.adapter";
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
 import { OAuthRuntimeConfigPort } from "#api/modules/identity/oauth-states/application/ports/oauth-runtime-config.port";
 import { OAuthStateRepositoryPort } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
@@ -181,6 +183,7 @@ export async function createAuthTestModule(
       { provide: VerificationCodeEmailSenderPort, useValue: fakeEmailService },
       { provide: SessionCachePort, useClass: SessionCacheAdapter },
       { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },
+      { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },
       { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
       {
         provide: UserRegistrationNotifierPort,

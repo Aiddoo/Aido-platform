@@ -1,7 +1,7 @@
 import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
-import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import type { UserActivityWriterPort } from "#api/modules/identity/users/application/ports/user-activity-writer.port";
@@ -287,7 +287,7 @@ export class DrizzleUserRepository
       .where(
         and(
           isNotNull(user.deletedAt),
-          lt(user.deletedAt, cutoff),
+          lte(user.deletedAt, cutoff),
           query.afterId == null ? undefined : gt(user.id, query.afterId.value),
         ),
       )

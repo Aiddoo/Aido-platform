@@ -8,7 +8,7 @@ import {
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "./sessions.constants.js";
 
 describe("Session — refresh 토큰 회전과 재사용 판단", () => {
-  it("만료 시각과 같은 순간까지 유효하고 그 뒤는 만료, 폐기가 만료보다 먼저다", () => {
+  it("만료 시각 직전까지 유효하고 그 순간부터 만료, 폐기가 만료보다 먼저다", () => {
     // Given
     const session = createSessionFixture({ expiresAt: AUTH_FIXTURE_NOW });
     const revoked = createSessionFixture({
@@ -18,8 +18,8 @@ describe("Session — refresh 토큰 회전과 재사용 판단", () => {
 
     // When
     const validities = [
+      session.validityAt(AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 })),
       session.validityAt(AUTH_FIXTURE_NOW),
-      session.validityAt(AUTH_FIXTURE_NOW.add({ milliseconds: 1 })),
       revoked.validityAt(AUTH_FIXTURE_NOW),
     ];
 

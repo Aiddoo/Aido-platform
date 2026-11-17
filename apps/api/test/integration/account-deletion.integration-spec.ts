@@ -10,8 +10,10 @@ import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-gra
 import { EntitlementCacheAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-cache.adapter";
 import { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import { PasswordResetCooldownPort } from "#api/modules/identity/linked-accounts/application/ports/password-reset-cooldown.port";
 import { RequestPasswordResetUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/request-password-reset.use-case";
 import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
+import { PasswordResetCooldownAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/password-reset-cooldown.adapter";
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
 import { LoginAttemptRepositoryPort } from "#api/modules/identity/sessions/application/ports/login-attempt.repository.port";
 import { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
@@ -185,6 +187,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         { provide: VerificationCodeEmailSenderPort, useExisting: FakeEmailService },
         { provide: SessionCachePort, useClass: SessionCacheAdapter },
         { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },
+        { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },
         { provide: EntitlementCacheInvalidatorPort, useClass: EntitlementCacheAdapter },
         {
           provide: UserRegistrationNotifierPort,

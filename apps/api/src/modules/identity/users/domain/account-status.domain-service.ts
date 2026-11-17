@@ -1,24 +1,16 @@
 import { accountLocked, accountSuspended } from "./users.errors.js";
 
-/**
- * 계정 상태 로그인 가능성 불변식.
- *
- * 자격 증명 인증 흐름과 OAuth 인증 흐름이 공유하던 상태 게이트를
- * 도메인이 소유한다. LOCKED/SUSPENDED는 로그인을 거부하고, 그 외(ACTIVE/PENDING_VERIFY
- * 및 알 수 없는 값)는 이 정책에서 처리하지 않는다(호출측의 인증/복구 흐름이 담당).
- *
- * status를 넓은 string으로 받는 이유: 호출측 읽기 모델의 status 타입이
- * UserStatus 유니온과 raw string으로 혼재하며, 스위치가 LOCKED/SUSPENDED만
- * 판정하고 나머지는 통과시키므로 기존 동작과 byte-identical하다.
- */
-export function assertStatusAllowsLogin(status: string, identifier: string): void {
-  switch (status) {
-    case "LOCKED":
-      throw accountLocked(identifier);
-    case "SUSPENDED":
-      throw accountSuspended(identifier);
-    default:
-      // ACTIVE, PENDING_VERIFY는 상태 게이트에서 통과
-      break;
+// 로그인·세션 확인·인증 메일이 같은 상태 게이트를 쓴다. LOCKED로 바꾸는 행동은 없고 운영이 넣은 행만 거절한다.
+// ACTIVE·PENDING_VERIFY는 통과시키고 메일 인증 전 처리는 부르는 흐름이 정한다
+export function assertStatusAllowsLogin(
+  status: string,
+  identifier: string,
+  isDeleted = false,
+): void {
+  if (status === "LOCKED") {
+    throw accountLocked(identifier);
+  }
+  if (status === "SUSPENDED" || isDeleted) {
+    throw accountSuspended(identifier);
   }
 }

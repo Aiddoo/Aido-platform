@@ -35,11 +35,11 @@ describe("User — 탈퇴 유예·복구·영구 삭제 판단", () => {
     expect(deleted.toPrimitives()).toMatchObject({ status: "ACTIVE", deletedAt: null });
   });
 
-  it("유예 경계에 닿으면 복구할 수 없어 USER_0606이고, 경계를 지난 계정만 영구 삭제 대상이다", () => {
+  it("유예 끝 시각 직전은 복구하고, 그 순간부터는 복구할 수 없어 USER_0606이며 영구 삭제 대상이다", () => {
     // Given
     const atBoundary = createUserFixture({ deletedAt: AUTH_FIXTURE_NOW.subtract(GRACE) });
-    const pastBoundary = createUserFixture({
-      deletedAt: AUTH_FIXTURE_NOW.subtract(GRACE).subtract({ milliseconds: 1 }),
+    const beforeBoundary = createUserFixture({
+      deletedAt: AUTH_FIXTURE_NOW.subtract(GRACE).add({ milliseconds: 1 }),
     });
 
     // When
@@ -47,7 +47,10 @@ describe("User — 탈퇴 유예·복구·영구 삭제 판단", () => {
 
     // Then
     expect(restore).toThrow(expect.objectContaining({ errorCode: ErrorCode.USER_0606 }));
-    expect(atBoundary.isPurgeEligibleAt(AUTH_FIXTURE_NOW)).toBe(false);
-    expect(pastBoundary.isPurgeEligibleAt(AUTH_FIXTURE_NOW)).toBe(true);
+    expect({
+      atBoundary: atBoundary.isPurgeEligibleAt(AUTH_FIXTURE_NOW),
+      beforeBoundary: beforeBoundary.isPurgeEligibleAt(AUTH_FIXTURE_NOW),
+      restoresBeforeBoundary: beforeBoundary.requiresRestoration(AUTH_FIXTURE_NOW),
+    }).toEqual({ atBoundary: true, beforeBoundary: false, restoresBeforeBoundary: true });
   });
 });

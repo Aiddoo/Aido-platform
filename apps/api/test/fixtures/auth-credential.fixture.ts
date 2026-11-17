@@ -28,6 +28,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryEntitlementCache } from "#test/doubles/access/in-memory-entitlement-cache";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
 import { InMemoryLoginAttemptRepository } from "#test/doubles/identity/in-memory-login-attempt.repository";
+import { InMemoryPasswordResetCooldown } from "#test/doubles/identity/in-memory-password-reset-cooldown";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
@@ -133,6 +134,7 @@ export function createAuthCredentialFixture(
     accountRepository,
     sessionRepository,
     securityLogRepository,
+    resetCooldown: new InMemoryPasswordResetCooldown(),
     tokenService,
     passwordService,
     loginAttemptRepository,

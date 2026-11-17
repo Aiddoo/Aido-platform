@@ -3,6 +3,7 @@ import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { isExpiredAt } from "../../shared/domain/expiry.domain-service.js";
 import { VerificationId } from "./verification-id.vo.js";
 import type { VERIFICATION_VALIDITIES, VerificationType } from "./verifications.constants.js";
 
@@ -81,7 +82,7 @@ export class Verification extends AggregateRoot<VerificationId, VerificationProp
     if (this.props.usedAt != null) {
       return "used";
     }
-    if (Temporal.Instant.compare(this.props.expiresAt, now) <= 0) {
+    if (isExpiredAt(this.props.expiresAt, now)) {
       return "expired";
     }
     return this.props.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS ? "exhausted" : "valid";

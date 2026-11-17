@@ -768,7 +768,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.SESSION_0704]: {
     code: "SESSION_0704",
     message: "보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
-    description: "토큰 재사용이 감지되어 보안을 위해 모든 세션이 무효화되었습니다.",
+    description: "토큰 재사용이 감지되어 그 토큰 묶음(tokenFamily)의 세션을 무효화했습니다.",
     httpStatus: HttpStatus.UNAUTHORIZED,
   },
 

@@ -6,16 +6,12 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
+import { assertStatusAllowsLogin } from "../../../users/domain/account-status.domain-service.js";
 import { SessionId } from "../../domain/session-id.vo.js";
 import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
 import type { CachedSession, SessionCachePort } from "../ports/session-cache.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
-import {
-  accountLocked,
-  accountSuspended,
-  invalidAccessToken,
-  sessionRejection,
-} from "../sessions.errors.js";
+import { invalidAccessToken, sessionRejection } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 
 // 서명·만료를 검증한 access 토큰의 claim. 타입·세션 확인은 이 UseCase가 한다
@@ -150,10 +146,5 @@ function toInstant(value: Date | string): Temporal.Instant {
 }
 
 function assertUserStatus(status: string, deletedAt: string | null | undefined): void {
-  if (status === "LOCKED") {
-    throw accountLocked("User");
-  }
-  if (status === "SUSPENDED" || deletedAt) {
-    throw accountSuspended("User");
-  }
+  assertStatusAllowsLogin(status, "User", deletedAt != null && deletedAt !== "");
 }

@@ -1,6 +1,8 @@
+import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
@@ -89,5 +91,57 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
         userAgent: REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT,
       }),
     ]);
+  });
+
+  it("가입한 이메일과 없는 이메일이 60초 안에 다시 요청하면 같은 VERIFY_0753과 남은 초를 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
+    const useCase = new RequestPasswordResetUseCase({ ...fixture, clock });
+    const emails = [fixture.user.email, "nobody@example.com"];
+    for (const email of emails) {
+      await useCase.execute({ email, emailLocale: "ko" });
+    }
+    clock.advanceBy({ seconds: 20 });
+
+    // When
+    const retries = await Promise.all(
+      emails.map((email) =>
+        useCase.execute({ email, emailLocale: "ko" }).catch((error: unknown) => error),
+      ),
+    );
+
+    // Then
+    expect(retries).toEqual([
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 40 },
+      }),
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 40 },
+      }),
+    ]);
+  });
+
+  it("없는 이메일도 대문자로 다시 요청하면 같은 대기로 막고 60초 뒤에는 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
+    const useCase = new RequestPasswordResetUseCase({ ...fixture, clock });
+    await useCase.execute({ email: "nobody@example.com", emailLocale: "ko" });
+
+    // When
+    const retry = await useCase
+      .execute({ email: "NOBODY@example.com", emailLocale: "ko" })
+      .catch((error: unknown) => error);
+    clock.advanceBy({ seconds: 60 });
+    const afterCooldown = await useCase.execute({ email: "nobody@example.com", emailLocale: "ko" });
+
+    // Then
+    expect(retry).toEqual(expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753 }));
+    expect(afterCooldown).toEqual({
+      message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.",
+    });
   });
 });

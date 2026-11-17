@@ -9,14 +9,6 @@ export function emailNotVerified(email: string): ApplicationException {
   return new ApplicationException(ErrorCode.EMAIL_0503, { email });
 }
 
-export function accountLocked(email: string): ApplicationException {
-  return new ApplicationException(ErrorCode.USER_0607, { email, remainingMinutes: undefined });
-}
-
-export function accountSuspended(userId: string): ApplicationException {
-  return new ApplicationException(ErrorCode.USER_0605, { userId });
-}
-
 /** 공급자 계정의 이메일이 이미 다른 방식으로 가입돼 있고 그 계정에 이 공급자가 연결돼 있지 않다 */
 export function oauthAccountNotLinked(
   provider: AccountProvider,

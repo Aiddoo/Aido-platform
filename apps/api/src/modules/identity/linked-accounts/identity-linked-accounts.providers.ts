@@ -16,6 +16,7 @@ import { SendVerificationCodeUseCase } from "../verifications/application/use-ca
 import { LinkedAccountsRepositoryPort } from "./application/ports/linked-accounts.repository.port.js";
 import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
 import { PasswordHasherPort } from "./application/ports/password-hasher.port.js";
+import { PasswordResetCooldownPort } from "./application/ports/password-reset-cooldown.port.js";
 import { ChangePasswordUseCase } from "./application/use-cases/change-password.use-case.js";
 import { LinkOAuthAccountUseCase } from "./application/use-cases/link-oauth-account.use-case.js";
 import { LinkOAuthIdentityUseCase } from "./application/use-cases/link-oauth-identity.use-case.js";
@@ -31,6 +32,7 @@ import { GoogleOAuthIdentityAdapter } from "./infrastructure/adapters/google-oau
 import { KakaoOAuthIdentityAdapter } from "./infrastructure/adapters/kakao-oauth-identity.adapter.js";
 import { NaverOAuthIdentityAdapter } from "./infrastructure/adapters/naver-oauth-identity.adapter.js";
 import { OAuthIdentityProviderRegistryAdapter } from "./infrastructure/adapters/oauth-identity-provider-registry.adapter.js";
+import { PasswordResetCooldownAdapter } from "./infrastructure/adapters/password-reset-cooldown.adapter.js";
 import { DrizzleLinkedAccountsRepository } from "./infrastructure/persistence/drizzle-linked-accounts.repository.js";
 
 export const listLinkedAccountsProvider = provideUseCase(ListLinkedAccountsUseCase, {
@@ -78,6 +80,8 @@ export const requestPasswordResetProvider = provideUseCase(RequestPasswordResetU
   issueVerificationCode: IssueVerificationCodeUseCase,
   sendVerificationCode: SendVerificationCodeUseCase,
   securityLogRepository: SecurityLogRepositoryPort,
+  resetCooldown: PasswordResetCooldownPort,
+  clock: ClockPort,
   logger: loggerFor(RequestPasswordResetUseCase),
 });
 
@@ -116,6 +120,7 @@ export const setPasswordProvider = provideUseCase(SetPasswordUseCase, {
 export const IDENTITY_LINKED_ACCOUNTS_PROVIDERS = [
   { provide: LinkedAccountsRepositoryPort, useClass: DrizzleLinkedAccountsRepository },
   { provide: PasswordHasherPort, useClass: Argon2PasswordHasherAdapter },
+  { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },
   AppleOAuthIdentityAdapter,
   GoogleOAuthIdentityAdapter,
   KakaoOAuthIdentityAdapter,

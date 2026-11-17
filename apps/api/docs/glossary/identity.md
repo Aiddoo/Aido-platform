@@ -45,7 +45,7 @@
 | 세션 목록        | `ListActiveSessionsUseCase`                                                   | 폐기 전·만료 전 세션을 최근 사용 순으로 준다. 기기 이름·종류는 저장하지 않아 `null`, 현재 세션 표시는 늘 `false`다(출시 계약)                                          |
 | 기기 지문        | `deviceFingerprint`                                                           | 비밀번호 로그인의 `deviceName`, 없으면 User-Agent. 64자로 자르고 신뢰 판단에 쓰지 않는다                                                                               |
 
-회전은 `Session.rotate`, 폐기는 `Session.revoke`(이미 폐기면 `false`, 처음 폐기 시각·사유를 둔다)다. `save`는 폐기 전 행만 바꾸고 회전은 읽을 때의 버전일 때만 쓴다. 경합에 지면 `false`다. 만료 시각과 같은 순간까지 유효하다.
+회전은 `Session.rotate`, 폐기는 `Session.revoke`(이미 폐기면 `false`, 처음 폐기 시각·사유를 둔다)다. `save`는 폐기 전 행만 바꾸고 회전은 읽을 때의 버전일 때만 쓴다. 경합에 지면 `false`다. 만료 시각과 같은 순간부터 만료다(인증 코드·OAuth state·탈퇴 유예와 같은 `isExpiredAt` 규칙).
 
 | 상태    | 행동                                                    | 다음                            | 다시·금지                                                              |
 | ------- | ------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
@@ -103,16 +103,16 @@
 
 ## linked-accounts
 
-| 용어             | 코드                                                     | 뜻                                                                                                                                                          |
-| ---------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 로그인 수단 묶음 | `LinkedAccounts`(Aggregate), `ListLinkedAccountsUseCase` | 한 사용자의 이메일·소셜 계정(`Account` 행) 모음. id는 `UserId`이고 마지막 하나는 끊을 수 없다                                                               |
-| 소셜 연결        | `LinkOAuthAccountUseCase`, `LinkOAuthIdentityUseCase`    | 로그인한 계정에 공급자 계정을 더한다. 공급자 계정이 이미 누군가에게 연결됐으면 `KAKAO_0306`·`APPLE_0355`·`GOOGLE_0405`·`NAVER_0455`                         |
-| 자동 연결        | `TRUSTED_EMAIL_PROVIDERS`                                | GOOGLE·APPLE 로그인 이메일이 기존 계정과 같으면 그 계정에 바로 잇는다. KAKAO·NAVER는 `SOCIAL_0206`으로 기존 계정에서 먼저 연결하게 한다                     |
-| 연결 해제        | `UnlinkOAuthAccountUseCase`, `unlink(provider)`          | 사용자 잠금 아래에서 하나를 빼고 뺀 계정을 돌려준다. 없는 공급자 `USER_0603`, 마지막 하나 `USER_0610`                                                       |
-| 비밀번호         | `ARGON2_CONFIG`, `needsRehash`                           | `CREDENTIAL` 계정에 argon2id hash로 둔다. 로그인 성공 뒤 설정이 바뀐 hash는 응답과 따로, 그사이 바뀌지 않았을 때만 다시 만든다(`updatePasswordIfUnchanged`) |
-| 비밀번호 변경    | `ChangePasswordUseCase`                                  | 지금 비밀번호를 확인하고 지금 세션을 뺀 세션을 폐기한다. 소셜 전용 `USER_0613`, 틀리면 `USER_0602`                                                          |
-| 비밀번호 재설정  | `RequestPasswordResetUseCase`, `ResetPasswordUseCase`    | `PASSWORD_RESET` 코드로 새 비밀번호를 정하고 모든 세션을 폐기한다. 없는·탈퇴한 이메일 요청도 같은 응답이다                                                  |
-| 비밀번호 추가    | `RequestPasswordSetupCodeUseCase`, `SetPasswordUseCase`  | 소셜 계정에 `PASSWORD_SETUP` 코드로 이메일 로그인 수단을 더한다. 이미 있으면 `USER_0614`                                                                    |
+| 용어             | 코드                                                     | 뜻                                                                                                                                                                               |
+| ---------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 로그인 수단 묶음 | `LinkedAccounts`(Aggregate), `ListLinkedAccountsUseCase` | 한 사용자의 이메일·소셜 계정(`Account` 행) 모음. id는 `UserId`이고 마지막 하나는 끊을 수 없다                                                                                    |
+| 소셜 연결        | `LinkOAuthAccountUseCase`, `LinkOAuthIdentityUseCase`    | 로그인한 계정에 공급자 계정을 더한다. 공급자 계정이 이미 누군가에게 연결됐으면 `KAKAO_0306`·`APPLE_0355`·`GOOGLE_0405`·`NAVER_0455`                                              |
+| 자동 연결        | `TRUSTED_EMAIL_PROVIDERS`                                | GOOGLE·APPLE 로그인 이메일이 기존 계정과 같으면 그 계정에 바로 잇는다. KAKAO·NAVER는 `SOCIAL_0206`으로 기존 계정에서 먼저 연결하게 한다                                          |
+| 연결 해제        | `UnlinkOAuthAccountUseCase`, `unlink(provider)`          | 사용자 잠금 아래에서 하나를 빼고 뺀 계정을 돌려준다. 없는 공급자 `USER_0603`, 마지막 하나 `USER_0610`                                                                            |
+| 비밀번호         | `ARGON2_CONFIG`, `needsRehash`                           | `CREDENTIAL` 계정에 argon2id hash로 둔다. 로그인 성공 뒤 설정이 바뀐 hash는 응답과 따로, 그사이 바뀌지 않았을 때만 다시 만든다(`updatePasswordIfUnchanged`)                      |
+| 비밀번호 변경    | `ChangePasswordUseCase`                                  | 지금 비밀번호를 확인하고 지금 세션을 뺀 세션을 폐기한다. 소셜 전용 `USER_0613`, 틀리면 `USER_0602`                                                                               |
+| 비밀번호 재설정  | `RequestPasswordResetUseCase`, `ResetPasswordUseCase`    | `PASSWORD_RESET` 코드로 새 비밀번호를 정하고 모든 세션을 폐기한다. 없는·탈퇴한 이메일도 같은 응답이고 60초 대기(`PasswordResetCooldownPort`)도 이메일마다 같은 `VERIFY_0753`이다 |
+| 비밀번호 추가    | `RequestPasswordSetupCodeUseCase`, `SetPasswordUseCase`  | 소셜 계정에 `PASSWORD_SETUP` 코드로 이메일 로그인 수단을 더한다. 이미 있으면 `USER_0614`                                                                                         |
 
 | 상태          | 행동                              | 다음         | 다시·금지                                      |
 | ------------- | --------------------------------- | ------------ | ---------------------------------------------- |
@@ -130,12 +130,12 @@
 | 가입             | `RegisterUseCase`, `ProvisionUserUseCase`           | 이메일·소셜 가입이 `ProvisionUserUseCase`로 모여 User·로그인 수단·프로필·약관 동의·설정 기본값·기본 카테고리를 한 트랜잭션에 만든다. 같은 이메일 `EMAIL_0501`                                                                                                   |
 | 소셜 가입        | `isNewUser`, `NotifyOAuthSignupUseCase`             | 소셜 첫 로그인은 ACTIVE·이메일 인증 완료로 만들고 관리자 가입 알림을 보낸다. 선택 동의 화면이 없어 광고 동의는 넣지 않는다                                                                                                                                      |
 | Aido ID          | `userTag`, `generateUserTag`, `USER_TAG_LENGTH`     | 가입 때 헷갈리는 글자를 뺀 대문자·숫자로 만든다. 겹치면 다시 만들고 끝내 못 만들면 `USER_0611`                                                                                                                                                                  |
-| 로그인 상태 검사 | `assertStatusAllowsLogin`                           | LOCKED `USER_0607`, SUSPENDED `USER_0605`. 비밀번호 로그인의 PENDING_VERIFY는 `EMAIL_0503`                                                                                                                                                                      |
+| 로그인 상태 검사 | `assertStatusAllowsLogin`                           | LOCKED `USER_0607`, SUSPENDED·탈퇴 대기 `USER_0605`. 로그인·세션 확인·인증 메일이 같은 함수를 쓴다. 비밀번호 로그인의 PENDING_VERIFY는 `EMAIL_0503`                                                                                                             |
 | 내 정보          | `GetCurrentUserUseCase`, `UpdateProfileUseCase`     | `/me` 응답. 프로필·구독·설정을 5분(프리미엄 경계 전까지) 캐시한다. 이름·이미지를 바꾸면(이미지 null은 지움) 캐시를 비운다                                                                                                                                       |
 | 마지막 활동      | `LastActiveInterceptor`, `UserActivityReaderPort`   | 인증 요청마다 `lastActiveAt`·활동일(`UserActivityDay`)·앱 버전을 사용자당 한 시간에 한 번 남긴다. 앱 버전이 바뀌면 바로 남긴다                                                                                                                                  |
 | 마지막 앱 버전   | `UserAppVersionReaderPort`                          | 마지막 인증 요청의 `X-App-Version`. 푸시 권한이 없어도 남는다                                                                                                                                                                                                   |
 | 탈퇴             | `DeleteAccountUseCase`, `requestDeletion`           | 이메일 계정은 비밀번호를 확인한다(없으면 `USER_0612`, 틀리면 `USER_0602`). SUSPENDED·탈퇴 시각을 남기고 모든 세션을 폐기한다                                                                                                                                    |
-| 탈퇴 유예        | `ACCOUNT_DELETION`, `requiresRestoration`           | 탈퇴 뒤 30일(UTC 24시간 단위). 그 안에 다시 로그인하면 복구하고, 지나면 로그인이 `USER_0606`이다                                                                                                                                                                |
+| 탈퇴 유예        | `ACCOUNT_DELETION`, `requiresRestoration`           | 탈퇴 뒤 30일(UTC 24시간 단위). 끝 시각 전에 다시 로그인하면 복구하고, 끝 시각부터는 `USER_0606`이고 영구 삭제 대상이다                                                                                                                                          |
 | 복구             | `RestoreAccountUseCase`, `restore`                  | 유예 안의 로그인이 ACTIVE로 되돌리고 응답에 `accountRestored`를 싣는다. 권한·프로필 캐시를 함께 비운다                                                                                                                                                          |
 | 영구 삭제        | `PurgeDeletedAccountsUseCase`, `account-purge.v1`   | 매일 03:00 KST. 유예가 지난 계정을 잠근 뒤 다시 판단하고 알림·댓글·사용량을 정리해 지운다. 실패가 있으면 경보 `identity.account-purge.failed`                                                                                                                   |
 | 성장 요약        | `GrowthSummaryReadModel`, `GetGrowthSummaryUseCase` | 관리자 화면(`GET /v1/admin/growth/summary`, `IdentityUsersAdminModule`)의 가입·활동(DAU·WAU·MAU·stickiness)·리텐션(d1·d7·d30) 지표. 가입·활동일은 identity 행, 24시간 안 할 일 생성·완료는 planning `TodoActivationReaderPort`가 cohort 전체를 한 문장으로 센다 |

@@ -20,8 +20,9 @@ import type { UserRepositoryPort } from "../../../users/application/ports/user.r
 import type { RestoreAccountUseCase } from "../../../users/application/use-cases/restore-account.use-case.js";
 import { invalidCredentials } from "../../../users/application/users.errors.js";
 import { UserLogEvent } from "../../../users/application/users.log-events.js";
+import { accountLocked } from "../../../users/domain/users.errors.js";
 import type { LoginAttemptRepositoryPort } from "../ports/login-attempt.repository.port.js";
-import { accountLocked, emailNotVerified } from "../sessions.errors.js";
+import { emailNotVerified } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
 

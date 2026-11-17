@@ -116,7 +116,7 @@ describe("RefreshTokens — 세션 연장과 Refresh Token 재사용 방어", ()
 
   it("현재 토큰을 회전하고 새 만료 시간을 저장하여 세션 캐시를 비우고 기본 요청 정보를 기록한다", async () => {
     // Given
-    const fixture = given([sessionWith({ expiresAt: AUTH_FIXTURE_NOW })]);
+    const fixture = given([sessionWith({ expiresAt: AUTH_FIXTURE_NOW.add({ minutes: 1 }) })]);
 
     // When
     const result = await fixture.useCase.execute({ refreshToken, verifiedPayload });

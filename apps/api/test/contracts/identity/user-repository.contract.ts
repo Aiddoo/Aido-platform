@@ -154,18 +154,18 @@ export function describeUserRepositoryContract(
       expect(restored).toEqual(created.toPrimitives());
     });
 
-    it("완전 삭제 대상은 탈퇴 유예가 지난 사용자뿐이다", async () => {
+    it("완전 삭제 대상은 탈퇴 유예 끝 시각에 닿은 사용자부터다", async () => {
       // Given
       const repository = await createRepository();
-      const expired = await createUser(repository);
       const atBoundary = await createUser(repository);
+      const beforeBoundary = await createUser(repository);
       await createUser(repository);
-      expired.requestDeletion(
-        AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD).subtract({ milliseconds: 1 }),
-      );
       atBoundary.requestDeletion(AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD));
-      await repository.save(expired);
+      beforeBoundary.requestDeletion(
+        AUTH_FIXTURE_NOW.subtract(GRACE_PERIOD).add({ milliseconds: 1 }),
+      );
       await repository.save(atBoundary);
+      await repository.save(beforeBoundary);
 
       // When
       const eligible = await repository.listPurgeEligible({
@@ -175,7 +175,7 @@ export function describeUserRepositoryContract(
       });
 
       // Then
-      expect(eligible.map((user) => user.id.value)).toEqual([expired.id.value]);
+      expect(eligible.map((user) => user.id.value)).toEqual([atBoundary.id.value]);
     });
 
     it("완전 삭제 대상은 id 순으로 limit명씩 읽고 afterId 다음부터 이어 읽는다", async () => {

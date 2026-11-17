@@ -1,3 +1,4 @@
+import { isExpiredAt } from "../../shared/domain/expiry.domain-service.js";
 import type { SESSION_VALIDITIES } from "./sessions.constants.js";
 
 export type SessionValidity = (typeof SESSION_VALIDITIES)[number];
@@ -10,5 +11,5 @@ export function getSessionValidity(params: {
   if (params.revokedAt != null) {
     return "revoked";
   }
-  return Temporal.Instant.compare(params.expiresAt, params.now) < 0 ? "expired" : "valid";
+  return isExpiredAt(params.expiresAt, params.now) ? "expired" : "valid";
 }

@@ -3,6 +3,7 @@ import { ACCOUNT_DELETION, type SubscriptionStatus, type UserRole } from "@aido/
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import { isExpiredAt } from "../../shared/domain/expiry.domain-service.js";
 import type { UserStatus } from "./users.constants.js";
 import { accountDeleted } from "./users.errors.js";
 
@@ -63,12 +64,12 @@ export class User extends AggregateRoot<UserId, UserProps> {
     return this.props.deletedAt != null;
   }
 
-  /** 탈퇴 대기 중이고 유예 안이면 true다. 유예가 지났으면 복구할 수 없어 USER_0606이다 */
+  /** 탈퇴 대기 중이고 유예 안(유예 끝 시각 전)이면 true다. 유예가 끝났으면 복구할 수 없어 USER_0606이다 */
   requiresRestoration(now: Temporal.Instant): boolean {
     if (this.props.deletedAt == null) {
       return false;
     }
-    if (Temporal.Instant.compare(this.props.deletedAt, now.subtract(GRACE_PERIOD)) > 0) {
+    if (!isExpiredAt(this.props.deletedAt.add(GRACE_PERIOD), now)) {
       return true;
     }
     throw accountDeleted(this.id.value);
@@ -104,10 +105,7 @@ export class User extends AggregateRoot<UserId, UserProps> {
   }
 
   isPurgeEligibleAt(now: Temporal.Instant): boolean {
-    return (
-      this.props.deletedAt != null &&
-      Temporal.Instant.compare(this.props.deletedAt, now.subtract(GRACE_PERIOD)) < 0
-    );
+    return this.props.deletedAt != null && isExpiredAt(this.props.deletedAt.add(GRACE_PERIOD), now);
   }
 
   toPrimitives(): UserPrimitives {
