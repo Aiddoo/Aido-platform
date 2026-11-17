@@ -39,7 +39,7 @@ overrides:
   body-parser@<2.4.0: ^2.4.0
   fast-uri@<3.1.9: ^3.1.9
   # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
-  '@nestjs/terminus@12.1.0>@prisma/client': '-'
+  '@nestjs/terminus@12.2.0>@prisma/client': '-'
   decode-uri-component@<=0.4.2: ^0.5.0
   hono@<4.13.7: ^4.13.7
   http-cache-semantics@<=4.2.0: ^4.3.0
@@ -103,8 +103,8 @@ catalog:
   'knip': '6.45.1'
   'lru-cache': '11.5.3'
   'ngeohash': '0.6.4'
-  'oxfmt': '0.78.0'
-  'oxlint': '1.93.0'
+  'oxfmt': '0.79.0'
+  'oxlint': '1.94.0'
   'pg': '8.23.1'
   'pg-boss': '12.38.2'
   'pino': '10.4.0'
@@ -194,21 +194,21 @@ catalogs:
   nest12:
     '@nestjs-cls/transactional': '4.0.2'
     '@nestjs/cli': '12.0.13'
-    '@nestjs/common': '12.5.0'
+    '@nestjs/common': '12.5.1'
     '@nestjs/config': '12.1.1'
-    '@nestjs/core': '12.5.0'
+    '@nestjs/core': '12.5.1'
     '@nestjs/drizzle': '0.0.2'
     '@nestjs/event-emitter': '12.0.3'
     '@nestjs/http-client': '0.0.3'
     '@nestjs/i18n': '0.0.3'
     '@nestjs/jwt': '12.0.5'
     '@nestjs/mail': '0.0.2'
-    '@nestjs/platform-express': '12.5.0'
+    '@nestjs/platform-express': '12.5.1'
     '@nestjs/schematics': '12.0.13'
     '@nestjs/swagger': '12.1.2'
-    '@nestjs/terminus': '12.1.0'
-    '@nestjs/testing': '12.5.0'
-    '@nestjs/throttler': '6.7.1'
+    '@nestjs/terminus': '12.2.0'
+    '@nestjs/testing': '12.5.1'
+    '@nestjs/throttler': '6.8.0'
     'nestjs-cls': '7.0.2'
     'nestjs-pino': '5.3.1'
 
