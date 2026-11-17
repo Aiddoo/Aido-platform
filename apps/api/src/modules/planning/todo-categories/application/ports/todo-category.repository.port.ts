@@ -1,5 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { ReorderPlan } from "../../domain/category-ordering.domain-service.js";
 import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
@@ -31,12 +32,7 @@ export abstract class TodoCategoryRepositoryPort {
   ): Promise<boolean>;
   abstract getMaxSortOrder(userId: UserId): Promise<number>;
   // 사이 카테고리를 한 칸씩 미는 묶음 문장이다
-  abstract shiftSortOrders(
-    userId: UserId,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
-  ): Promise<number>;
+  abstract shiftSortOrders(userId: UserId, shift: ReorderPlan["shift"]): Promise<number>;
 
   abstract countTodos(userId: UserId, categoryId: TodoCategoryId): Promise<CategoryTodoCount>;
   abstract countActiveSeries(categoryId: TodoCategoryId): Promise<number>;

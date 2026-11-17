@@ -7,10 +7,15 @@ export class TodoToggledEvent {
   readonly completed: boolean;
   readonly timezone: string;
 
-  constructor(todoId: number, userId: string, completed: boolean, timezone: string) {
-    this.todoId = todoId;
-    this.userId = userId;
-    this.completed = completed;
-    this.timezone = timezone;
+  constructor(params: {
+    readonly todoId: number;
+    readonly userId: string;
+    readonly completed: boolean;
+    readonly timezone: string;
+  }) {
+    this.todoId = params.todoId;
+    this.userId = params.userId;
+    this.completed = params.completed;
+    this.timezone = params.timezone;
   }
 }

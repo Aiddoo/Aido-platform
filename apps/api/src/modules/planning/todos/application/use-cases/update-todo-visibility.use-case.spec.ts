@@ -27,10 +27,7 @@ describe("할 일 공개 범위 수정", () => {
   it("비공개 전이를 저장하고 친구 목록 캐시와 이벤트에 반영한다", async () => {
     // Given
     await fixture.todoCache.storeFriendTodosFirstPageIfCurrent(
-      UserId.reconstitute(fixture.userId),
-      "-",
-      "-",
-      20,
+      { ownerUserId: UserId.reconstitute(fixture.userId), startDate: "-", endDate: "-", size: 20 },
       "0",
       {
         items: [],
@@ -44,12 +41,12 @@ describe("할 일 공개 범위 수정", () => {
     expect(fixture.records.get(1)?.visibility).toBe("PRIVATE");
     expect(
       (
-        await fixture.todoCache.readFriendTodosFirstPage(
-          UserId.reconstitute(fixture.userId),
-          "-",
-          "-",
-          20,
-        )
+        await fixture.todoCache.readFriendTodosFirstPage({
+          ownerUserId: UserId.reconstitute(fixture.userId),
+          startDate: "-",
+          endDate: "-",
+          size: 20,
+        })
       ).page,
     ).toBeUndefined();
     expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([

@@ -33,7 +33,7 @@ import type {
   RebasedInstant,
   TodoRepositoryPort,
   TodoSortEdge,
-  TodoSortNeighbor,
+  TodoSortNeighborQuery,
 } from "../../application/ports/todo.repository.port.js";
 import { TodoId } from "../../domain/todo-id.vo.js";
 import { TodoItemId } from "../../domain/todo-item-id.vo.js";
@@ -135,10 +135,9 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
 
   async findAdjacentSortOrder(
     userId: UserId,
-    from: { readonly id: TodoId; readonly sortOrder: number },
-    direction: TodoSortNeighbor,
-    excludeId: TodoId,
+    neighbor: TodoSortNeighborQuery,
   ): Promise<number | null> {
+    const { from, direction, excludeId } = neighbor;
     const keyset = [todo.sortOrder, todo.id];
     const anchor = [from.sortOrder, from.id.value];
     const [row] = await this.#db

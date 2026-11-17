@@ -4,6 +4,7 @@ import {
 } from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
 import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/todo-categories/application/read-models/todo-category-with-count.read-model";
 import { duplicateCategoryName } from "#api/modules/planning/todo-categories/application/todo-categories.errors";
+import type { ReorderPlan } from "#api/modules/planning/todo-categories/domain/category-ordering.domain-service";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { TodoCategory } from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
@@ -112,12 +113,8 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     );
   }
 
-  async shiftSortOrders(
-    userId: UserId,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
-  ): Promise<number> {
+  async shiftSortOrders(userId: UserId, shift: ReorderPlan["shift"]): Promise<number> {
+    const { from: fromSortOrder, to: toSortOrder, delta } = shift;
     let shifted = 0;
     for (const [id, category] of this.#categories) {
       const isInRange =

@@ -41,12 +41,12 @@ describe("친구 할 일 목록 조회", () => {
     expect(cached.items[0]?.userId).toBe("friend-user");
     expect(
       (
-        await fixture.todoCache.readFriendTodosFirstPage(
-          UserId.reconstitute("friend-user"),
-          "-",
-          "-",
-          20,
-        )
+        await fixture.todoCache.readFriendTodosFirstPage({
+          ownerUserId: UserId.reconstitute("friend-user"),
+          startDate: "-",
+          endDate: "-",
+          size: 20,
+        })
       ).page,
     ).toEqual(first);
   });
@@ -83,23 +83,23 @@ describe("친구 할 일 목록 조회", () => {
     ];
     // When
     const cursorPage = await useCase.execute({ ...input, cursor: 3 });
-    const stored = await fixture.todoCache.readFriendTodosFirstPage(
-      UserId.reconstitute("friend-user"),
-      "2026-05-01",
-      "2026-05-31",
-      2,
-    );
+    const stored = await fixture.todoCache.readFriendTodosFirstPage({
+      ownerUserId: UserId.reconstitute("friend-user"),
+      startDate: "2026-05-01",
+      endDate: "2026-05-31",
+      size: 2,
+    });
     // Then
     expect(cursorPage.items[0]?.id).toBe(2);
     expect(stored.page?.items[0]?.id).toBe(3);
     expect(
       (
-        await fixture.todoCache.readFriendTodosFirstPage(
-          UserId.reconstitute("friend-user"),
-          "-",
-          "-",
-          2,
-        )
+        await fixture.todoCache.readFriendTodosFirstPage({
+          ownerUserId: UserId.reconstitute("friend-user"),
+          startDate: "-",
+          endDate: "-",
+          size: 2,
+        })
       ).page,
     ).toBeUndefined();
   });

@@ -11,6 +11,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   FriendTodosFirstPageCacheRead,
+  FriendTodosFirstPageKey,
   TodoCachePort,
 } from "../../application/ports/todo-cache.port.js";
 import type { FriendTodoReadModel } from "../../application/read-models/todo.read-model.js";
@@ -56,11 +57,9 @@ export class TodoCacheAdapter implements TodoCachePort {
   }
 
   async readFriendTodosFirstPage(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
   ): Promise<FriendTodosFirstPageCacheRead> {
+    const { ownerUserId, startDate, endDate, size } = key;
     const generation = await this.#getFriendTodosGeneration(ownerUserId);
     const page = await this.#cacheService.get(
       TodoCacheKey.friendTodosFirstPageVersioned(
@@ -84,13 +83,11 @@ export class TodoCacheAdapter implements TodoCachePort {
   }
 
   async storeFriendTodosFirstPageIfCurrent(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
     generation: string,
     page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void> {
+    const { ownerUserId, startDate, endDate, size } = key;
     const currentGeneration = await this.#getFriendTodosGeneration(ownerUserId);
     if (currentGeneration !== generation) {
       return;

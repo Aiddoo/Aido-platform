@@ -90,12 +90,7 @@ export class ReorderTodoCategoryUseCase {
         plan = planReorderToEdge(category.sortOrder, position, maxSortOrder);
       }
 
-      await this.#dependencies.repository.shiftSortOrders(
-        userId,
-        plan.shift.from,
-        plan.shift.to,
-        plan.shift.delta,
-      );
+      await this.#dependencies.repository.shiftSortOrders(userId, plan.shift);
       this.#dependencies.afterCommit.register(() =>
         this.#dependencies.todoCache.invalidateFriendTodos(userId),
       );

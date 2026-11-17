@@ -60,7 +60,7 @@ function setUp(options: {
     },
   };
   const streak: StreakPort = {
-    recordTodoToggle: async (userId, completed, timezone, todayStats) => {
+    recordTodoToggle: async ({ userId, completed, timezone, todayStats }) => {
       streakRecords.push({ userId: userId.value, completed, timezone });
       streakTodayStats.push(todayStats);
     },
@@ -94,7 +94,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
+    await useCase.execute([
+      new TodoToggledEvent({ todoId: 1, userId: "user-1", completed: true, timezone: "UTC" }),
+    ]);
 
     // Then
     expect(streakRecords).toEqual([{ userId: "user-1", completed: true, timezone: "UTC" }]);
@@ -109,7 +111,14 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", true, "Asia/Seoul")]);
+    await useCase.execute([
+      new TodoToggledEvent({
+        todoId: 1,
+        userId: "user-1",
+        completed: true,
+        timezone: "Asia/Seoul",
+      }),
+    ]);
 
     // Then
     expect(friendCompleted).toEqual([
@@ -130,7 +139,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
+    await useCase.execute([
+      new TodoToggledEvent({ todoId: 1, userId: "user-1", completed: true, timezone: "UTC" }),
+    ]);
 
     // Then
     expect(milestones).toEqual([{ userId: "user-1", milestone: "COUNT_10" }]);
@@ -145,7 +156,14 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", true, "Asia/Seoul")]);
+    await useCase.execute([
+      new TodoToggledEvent({
+        todoId: 1,
+        userId: "user-1",
+        completed: true,
+        timezone: "Asia/Seoul",
+      }),
+    ]);
 
     // Then
     const today = Temporal.PlainDate.from("2026-11-10");
@@ -163,7 +181,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    const result = useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
+    const result = useCase.execute([
+      new TodoToggledEvent({ todoId: 1, userId: "user-1", completed: true, timezone: "UTC" }),
+    ]);
 
     // Then
     await expect(result).rejects.toThrow("DB 연결 끊김");
@@ -187,7 +207,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
       });
 
       // When
-      await useCase.execute([new TodoToggledEvent(1, "user-1", true, "UTC")]);
+      await useCase.execute([
+        new TodoToggledEvent({ todoId: 1, userId: "user-1", completed: true, timezone: "UTC" }),
+      ]);
 
       // Then
       expect(milestones).toEqual(expected);
@@ -203,7 +225,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     });
 
     // When
-    await useCase.execute([new TodoToggledEvent(1, "user-1", false, "UTC")]);
+    await useCase.execute([
+      new TodoToggledEvent({ todoId: 1, userId: "user-1", completed: false, timezone: "UTC" }),
+    ]);
 
     // Then
     expect(streakRecords).toEqual([{ userId: "user-1", completed: false, timezone: "UTC" }]);

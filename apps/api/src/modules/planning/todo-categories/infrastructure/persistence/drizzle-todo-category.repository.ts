@@ -30,6 +30,7 @@ import type {
 } from "../../application/ports/todo-category.repository.port.js";
 import type { TodoCategoryWithCountReadModel } from "../../application/read-models/todo-category-with-count.read-model.js";
 import { duplicateCategoryName } from "../../application/todo-categories.errors.js";
+import type { ReorderPlan } from "../../domain/category-ordering.domain-service.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import type { TodoCategory } from "../../domain/todo-category.aggregate.js";
 import {
@@ -151,12 +152,8 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return result?.maximum ?? -1;
   }
 
-  async shiftSortOrders(
-    userId: UserId,
-    fromSortOrder: number,
-    toSortOrder: number | null,
-    delta: number,
-  ): Promise<number> {
+  async shiftSortOrders(userId: UserId, shift: ReorderPlan["shift"]): Promise<number> {
+    const { from: fromSortOrder, to: toSortOrder, delta } = shift;
     const updated = await this.#db
       .update(todoCategory)
       .set({ sortOrder: sql`${todoCategory.sortOrder} + ${delta}`, updatedAt: this.#clock.now() })

@@ -57,17 +57,16 @@ export class ListFriendTodosUseCase {
     const size = clampPageSize(input.size);
 
     const isFirstPage = cursor == null;
-    const startDateKey = input.startDate?.toString() ?? "-";
-    const endDateKey = input.endDate?.toString() ?? "-";
+    const pageKey = {
+      ownerUserId: friendId,
+      startDate: input.startDate?.toString() ?? "-",
+      endDate: input.endDate?.toString() ?? "-",
+      size,
+    };
     let cacheGeneration: string | undefined;
 
     if (isFirstPage) {
-      const cached = await this.#dependencies.todoCache.readFriendTodosFirstPage(
-        friendId,
-        startDateKey,
-        endDateKey,
-        size,
-      );
+      const cached = await this.#dependencies.todoCache.readFriendTodosFirstPage(pageKey);
       cacheGeneration = cached.generation;
       if (cached.page != null) {
         return cached.page;
@@ -89,10 +88,7 @@ export class ListFriendTodosUseCase {
 
     if (isFirstPage && cacheGeneration != null) {
       await this.#dependencies.todoCache.storeFriendTodosFirstPageIfCurrent(
-        friendId,
-        startDateKey,
-        endDateKey,
-        size,
+        pageKey,
         cacheGeneration,
         response,
       );

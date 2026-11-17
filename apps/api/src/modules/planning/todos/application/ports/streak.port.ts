@@ -13,14 +13,16 @@ export interface TodayCompletionStats {
  * 완료/미완료 토글 시 스트릭을 갱신합니다. 실패 처리(로깅)는 호출자
  * (이벤트 핸들러)가 소유합니다.
  */
+export interface TodoToggleRecord {
+  readonly userId: UserId;
+  readonly completed: boolean;
+  readonly timezone: string;
+  readonly todayStats: TodayCompletionStats | null;
+}
+
 export abstract class StreakPort {
   /** 완료/미완료 전이를 스트릭에 기록합니다. todayStats가 없으면 스트릭 쪽이 그날 현황을 직접 센다 */
-  abstract recordTodoToggle(
-    userId: UserId,
-    completed: boolean,
-    timezone: string,
-    todayStats: TodayCompletionStats | null,
-  ): Promise<void>;
+  abstract recordTodoToggle(toggle: TodoToggleRecord): Promise<void>;
 
   /**
    * 스트릭 판정 컨텍스트를 조회합니다 (기록 없으면 0/null).

@@ -53,7 +53,12 @@ export class ApplyTodoCompletionEffectsUseCase {
     // 스트릭과 친구 완료 알림이 같은 오늘 현황을 보므로 한 번만 센다
     const todayStats = await this.#readTodayStats(ownerId, timezone);
 
-    await this.#dependencies.streakPort.recordTodoToggle(ownerId, completed, timezone, todayStats);
+    await this.#dependencies.streakPort.recordTodoToggle({
+      userId: ownerId,
+      completed,
+      timezone,
+      todayStats,
+    });
 
     if (completed) {
       await this.#notifyMilestone(ownerId);

@@ -188,9 +188,7 @@ export function describeTodoCategoryRepositoryContract(
       // When
       const shifted = await categoryRepository.shiftSortOrders(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
-        1,
-        null,
-        1,
+        { from: 1, to: null, delta: 1 },
       );
 
       // Then

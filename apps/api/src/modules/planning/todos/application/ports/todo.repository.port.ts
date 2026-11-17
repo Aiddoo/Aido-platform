@@ -32,6 +32,12 @@ export type TodoSortEdge = "first" | "last";
 
 // 할 일 쓰기 저장소. 조회 응답은 TodoReadRepositoryPort, 반복 회차 묶음은 TodoOccurrenceWriterPort가 맡는다.
 // 순서·시간대 재계산은 그 사용자 할 일 수백 행을 한 문장으로 옮기는 묶음 경로라 이름 있는 메서드로 둔다
+export interface TodoSortNeighborQuery {
+  readonly from: { readonly id: TodoId; readonly sortOrder: number };
+  readonly direction: TodoSortNeighbor;
+  readonly excludeId: TodoId;
+}
+
 export abstract class TodoRepositoryPort {
   abstract nextId(): Promise<TodoId>;
 
@@ -57,9 +63,7 @@ export abstract class TodoRepositoryPort {
   // (sortOrder, id) 순서로 볼 때 from 바로 앞·뒤 할 일의 sortOrder. 옮기는 할 일은 건너뛰고 없으면 null이다
   abstract findAdjacentSortOrder(
     userId: UserId,
-    from: { readonly id: TodoId; readonly sortOrder: number },
-    direction: TodoSortNeighbor,
-    excludeId: TodoId,
+    neighbor: TodoSortNeighborQuery,
   ): Promise<number | null>;
 
   // excludeId를 뺀 그 사용자 할 일의 가장 앞·끝 sortOrder. 없으면 null이다

@@ -46,12 +46,12 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
   it("cache miss의 DB 조회 중 무효화되면 이전 응답을 stale-fill하지 않는다", async () => {
     // Given
     // R: generation을 잡고 cache miss 뒤 DB를 읽기 시작한 상태
-    const staleRead = await adapter.readFriendTodosFirstPage(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const staleRead = await adapter.readFriendTodosFirstPage({
+      ownerUserId: OWNER_ID,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     expect(staleRead).toEqual({
       generation: FRIEND_TODOS_INITIAL_GENERATION,
       page: undefined,
@@ -65,10 +65,7 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
     };
     await adapter.storeFriendTodosFirstPageIfCurrent(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
+      { ownerUserId: OWNER_ID, startDate: START_DATE, endDate: END_DATE, size: PAGE_SIZE },
       staleRead.generation,
       stalePage,
     );
@@ -87,24 +84,24 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       ),
     ).toBe(false);
 
-    const currentRead = await adapter.readFriendTodosFirstPage(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const currentRead = await adapter.readFriendTodosFirstPage({
+      ownerUserId: OWNER_ID,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     expect(currentRead.generation).not.toBe(staleRead.generation);
     expect(currentRead.page).toBeUndefined();
   });
 
   it("같은 generation 안에서 저장한 첫 페이지는 다시 읽는다", async () => {
     // Given
-    const cacheRead = await adapter.readFriendTodosFirstPage(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const cacheRead = await adapter.readFriendTodosFirstPage({
+      ownerUserId: OWNER_ID,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     const page = {
       items: [],
       pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
@@ -112,37 +109,36 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
 
     // When
     await adapter.storeFriendTodosFirstPageIfCurrent(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
+      { ownerUserId: OWNER_ID, startDate: START_DATE, endDate: END_DATE, size: PAGE_SIZE },
       cacheRead.generation,
       page,
     );
 
     // Then
     await expect(
-      adapter.readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE),
+      adapter.readFriendTodosFirstPage({
+        ownerUserId: OWNER_ID,
+        startDate: START_DATE,
+        endDate: END_DATE,
+        size: PAGE_SIZE,
+      }),
     ).resolves.toEqual({ generation: cacheRead.generation, page });
   });
 
   it("무효화는 세대만 바꾸고 이전 세대 페이지는 짧은 TTL에 맡기며 새 조회에 보이지 않는다", async () => {
     // Given
-    const cacheRead = await adapter.readFriendTodosFirstPage(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const cacheRead = await adapter.readFriendTodosFirstPage({
+      ownerUserId: OWNER_ID,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     const page = {
       items: [],
       pagination: { nextCursor: null, hasNext: false, size: PAGE_SIZE },
     };
     await adapter.storeFriendTodosFirstPageIfCurrent(
-      OWNER_ID,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
+      { ownerUserId: OWNER_ID, startDate: START_DATE, endDate: END_DATE, size: PAGE_SIZE },
       cacheRead.generation,
       page,
     );
@@ -160,7 +156,12 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     // Then
     expect(await backend.ttl(previousPageKey)).toBeLessThanOrEqual(TODO_CACHE_TTL_MS.FRIEND_VIEW);
     await expect(
-      adapter.readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE),
+      adapter.readFriendTodosFirstPage({
+        ownerUserId: OWNER_ID,
+        startDate: START_DATE,
+        endDate: END_DATE,
+        size: PAGE_SIZE,
+      }),
     ).resolves.toMatchObject({ page: undefined });
   });
 
@@ -198,7 +199,12 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     const readPromise = new TodoCacheAdapter(
       cacheService,
       new TodoCategoryCacheAdapter(cacheService),
-    ).readFriendTodosFirstPage(OWNER_ID, START_DATE, END_DATE, PAGE_SIZE);
+    ).readFriendTodosFirstPage({
+      ownerUserId: OWNER_ID,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     await pageReadStarted.promise;
 
     // When

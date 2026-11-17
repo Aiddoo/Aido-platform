@@ -258,24 +258,21 @@ export function describeTodoRepositoryContract(
       // When
       const { todoRepository } = context;
       const neighbors = {
-        afterTieLow: await todoRepository.findAdjacentSortOrder(
-          OWNER_ID,
-          at(tieLow),
-          "next",
-          first.id,
-        ),
-        afterTieLowSkippingTieHigh: await todoRepository.findAdjacentSortOrder(
-          OWNER_ID,
-          at(tieLow),
-          "next",
-          tieHigh.id,
-        ),
-        beforeFirst: await todoRepository.findAdjacentSortOrder(
-          OWNER_ID,
-          at(first),
-          "previous",
-          last.id,
-        ),
+        afterTieLow: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(tieLow),
+          direction: "next",
+          excludeId: first.id,
+        }),
+        afterTieLowSkippingTieHigh: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(tieLow),
+          direction: "next",
+          excludeId: tieHigh.id,
+        }),
+        beforeFirst: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(first),
+          direction: "previous",
+          excludeId: last.id,
+        }),
         firstSkippingFirst: await todoRepository.findEdgeSortOrder(OWNER_ID, "first", first.id),
         lastSkippingLast: await todoRepository.findEdgeSortOrder(OWNER_ID, "last", last.id),
       };

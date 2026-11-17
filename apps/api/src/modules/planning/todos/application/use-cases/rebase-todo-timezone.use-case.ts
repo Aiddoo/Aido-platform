@@ -106,7 +106,7 @@ export class RebaseTodoTimezoneUseCase {
     let skippedCount = 0;
     for (;;) {
       const batch: RebasedBatch = await unitOfWork.run(() =>
-        this.#rebaseBatch(userId, timezone, afterId, batchSize),
+        this.#rebaseBatch(userId, timezone, { afterId, limit: batchSize }),
       );
       if (batch.superseded) {
         return { outcome: "SUPERSEDED", seriesCount, scannedCount, rebasedCount, skippedCount };
@@ -124,9 +124,9 @@ export class RebaseTodoTimezoneUseCase {
   async #rebaseBatch(
     userId: string,
     timezone: string,
-    afterId: TodoId | null,
-    limit: number,
+    page: { readonly afterId: TodoId | null; readonly limit: number },
   ): Promise<RebasedBatch> {
+    const { afterId, limit } = page;
     const { todoRepository, ownerTimezone, todoReminder } = this.#dependencies;
     await this.#acquireLocks(userId);
     const ownerId = UserId.reconstitute(userId);

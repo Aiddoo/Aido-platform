@@ -3,6 +3,14 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
+/** 친구 공개 투두 첫 페이지 캐시 칸. 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정)다 */
+export interface FriendTodosFirstPageKey {
+  readonly ownerUserId: UserId;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly size: number;
+}
+
 export interface FriendTodosFirstPageCacheRead {
   /**
    * 조회와 저장 사이에 무효화가 있었는지 판별하는 불투명 토큰.
@@ -29,10 +37,7 @@ export abstract class TodoCachePort {
    * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
    */
   abstract readFriendTodosFirstPage(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
   ): Promise<FriendTodosFirstPageCacheRead>;
 
   /**
@@ -40,10 +45,7 @@ export abstract class TodoCachePort {
    * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
    */
   abstract storeFriendTodosFirstPageIfCurrent(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
     generation: string,
     page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void>;

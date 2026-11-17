@@ -217,7 +217,14 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     this.props.completed = true;
     this.props.completedAt = now;
     this.props.updatedAt = now;
-    this.raise(new TodoToggledEvent(this.id.value, this.props.userId.value, true, timezone));
+    this.raise(
+      new TodoToggledEvent({
+        todoId: this.id.value,
+        userId: this.props.userId.value,
+        completed: true,
+        timezone,
+      }),
+    );
     return true;
   }
 
@@ -229,7 +236,14 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     this.props.completed = false;
     this.props.completedAt = null;
     this.props.updatedAt = now;
-    this.raise(new TodoToggledEvent(this.id.value, this.props.userId.value, false, timezone));
+    this.raise(
+      new TodoToggledEvent({
+        todoId: this.id.value,
+        userId: this.props.userId.value,
+        completed: false,
+        timezone,
+      }),
+    );
     const { scheduledTime } = this.props.schedule;
     if (scheduledTime != null) {
       this.raise(new TodoRescheduledEvent(this.id.value, this.props.userId.value, scheduledTime));

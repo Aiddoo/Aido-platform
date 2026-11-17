@@ -190,13 +190,10 @@ describe("카테고리 재정렬", () => {
         return super.findByIdAndUserId(id, userId);
       }
       override async shiftSortOrders(
-        userId: UserId,
-        fromSortOrder: number,
-        toSortOrder: number | null,
-        delta: number,
+        ...parameters: Parameters<InMemoryTodoCategoryRepository["shiftSortOrders"]>
       ): Promise<number> {
         events.push("shift");
-        return super.shiftSortOrders(userId, fromSortOrder, toSortOrder, delta);
+        return super.shiftSortOrders(...parameters);
       }
       override async save(category: TodoCategory): Promise<void> {
         events.push("save");

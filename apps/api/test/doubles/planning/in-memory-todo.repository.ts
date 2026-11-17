@@ -7,7 +7,7 @@ import {
   type RebasedInstant,
   TodoRepositoryPort,
   type TodoSortEdge,
-  type TodoSortNeighbor,
+  type TodoSortNeighborQuery,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
@@ -117,10 +117,9 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
 
   async findAdjacentSortOrder(
     userId: UserId,
-    from: { readonly id: TodoId; readonly sortOrder: number },
-    direction: TodoSortNeighbor,
-    excludeId: TodoId,
+    neighbor: TodoSortNeighborQuery,
   ): Promise<number | null> {
+    const { from, direction, excludeId } = neighbor;
     const isAfter = (record: { id: number; sortOrder: number }) =>
       record.sortOrder > from.sortOrder ||
       (record.sortOrder === from.sortOrder && record.id > from.id.value);
