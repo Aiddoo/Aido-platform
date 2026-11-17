@@ -1,6 +1,7 @@
 import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
-import type { Request } from "express";
+
+import type { HttpRequest } from "#api/platform/http/http-request";
 
 import { authenticatedUserSchema } from "./authenticated-user.dto.js";
 
@@ -21,7 +22,7 @@ import { authenticatedUserSchema } from "./authenticated-user.dto.js";
  */
 export const CurrentUser = createParamDecorator(
   (data: keyof CurrentUserPayload | undefined, context: ExecutionContext) => {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<HttpRequest>();
     const parsedUser = authenticatedUserSchema.safeParse(request.user);
 
     if (!parsedUser.success) {

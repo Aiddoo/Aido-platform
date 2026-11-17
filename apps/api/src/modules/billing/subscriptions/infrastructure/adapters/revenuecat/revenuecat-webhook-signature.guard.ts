@@ -1,7 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from "@nestjs/common";
-import type { Request } from "express";
+
+import type { HttpRequest } from "#api/platform/http/http-request";
 
 import { invalidWebhookSignature } from "../../../application/subscriptions.errors.js";
 import { SubscriptionLogEvent } from "../../../application/subscriptions.log-events.js";
@@ -41,7 +42,7 @@ export class RevenueCatWebhookSignatureGuard implements CanActivate {
       throw invalidWebhookSignature();
     }
 
-    const authHeader = context.switchToHttp().getRequest<Request>().headers.authorization;
+    const authHeader = context.switchToHttp().getRequest<HttpRequest>().headers.authorization;
     if (!authHeader) {
       this.#logger.warn({
         event: SubscriptionLogEvent.WEBHOOK_AUTHORIZATION_REJECTED,

@@ -1,7 +1,6 @@
 export const PlatformLogEvent = {
   SERVER_STARTED: "server.process.started",
   SERVER_SHUTDOWN_STARTED: "server.shutdown.started",
-  SERVER_SHUTDOWN_FAILED: "server.shutdown.failed",
   DOMAIN_EVENT_PUBLISH_FAILED: "events.domain-event.publish.failed",
   AFTER_COMMIT_TASK_FAILED: "database.after-commit-task.failed",
   DATABASE_FOREIGN_KEY_VIOLATED: "database.foreign-key.violated",

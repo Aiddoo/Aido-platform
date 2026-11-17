@@ -10,6 +10,7 @@ const ROUTE_BODY_LIMITS = [{ path: "/v1/voice-notes/digest", limit: "256kb" }] a
 
 export function configureRouteBodyLimits(app: INestApplication): void {
   for (const { path, limit } of ROUTE_BODY_LIMITS) {
+    // Nest에 route별 본문 한도 API가 없어 Express 파서를 직접 단다. HTTP 어댑터를 바꾸면 함께 옮긴다
     const parse = json({ limit });
     // 이름이 jsonParser인 미들웨어가 이미 있으면 Nest가 전역 JSON 파서를 등록하지 않아 감싼다
     app.use(path, (request: Request, response: Response, next: NextFunction) => {

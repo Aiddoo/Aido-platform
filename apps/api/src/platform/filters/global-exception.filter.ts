@@ -8,7 +8,7 @@ import {
   HttpStatus,
   Inject,
 } from "@nestjs/common";
-import type { Request, Response } from "express";
+import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
 
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
@@ -19,6 +19,7 @@ import {
   isRecordNotFoundError,
 } from "#api/platform/database/database-error.util";
 import { DatabaseAlerts } from "#api/platform/database/database.alerts";
+import type { HttpRequest, HttpResponse } from "#api/platform/http/http-request";
 import { readRouteTemplate } from "#api/platform/http/request-route";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
@@ -75,6 +76,7 @@ function classifiedFailureGroup(exception: unknown): string | undefined {
 /** 모든 예외를 공유 오류 envelope로 바꾸고, 5xx만 예외 보고로 보낸다. */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  readonly #adapterHost: HttpAdapterHost;
   readonly #logger: PinoLogger;
   readonly #exposeErrorDetails: boolean;
   readonly #messages: ErrorMessageTranslator;
@@ -82,12 +84,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   readonly #operationalAlert: OperationalAlertPort;
 
   constructor(
+    adapterHost: HttpAdapterHost,
     logger: PinoLogger,
     @Inject(appConfig.KEY) app: Pick<AppSettings, "devTools">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
+    this.#adapterHost = adapterHost;
     this.#logger = logger;
     this.#exposeErrorDetails = app.devTools.exposeErrorDetails;
     this.#messages = messages;
@@ -98,8 +102,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const httpContext = host.switchToHttp();
-    const response = httpContext.getResponse<Response>();
-    const request = httpContext.getRequest<Request>();
+    const response = httpContext.getResponse<HttpResponse>();
+    const request = httpContext.getRequest<HttpRequest>();
     const { statusCode, errorResponse } = this.#toResponse(exception);
 
     const userId = readRequestUserId(request) ?? "anonymous";
@@ -144,7 +148,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.#logger.warn(logFields, "HTTP 요청 거부");
     }
 
-    response.status(statusCode).json(errorResponse);
+    this.#adapterHost.httpAdapter.reply(response, errorResponse, statusCode);
   }
 
   #toResponse(exception: unknown): { statusCode: number; errorResponse: RestErrorResponse } {

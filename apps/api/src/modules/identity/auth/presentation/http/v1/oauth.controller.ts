@@ -13,10 +13,8 @@ import {
   Logger,
   Post,
   Query,
-  Res,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { Response } from "express";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { CompleteOAuthAuthorizationUseCase } from "#api/modules/identity/auth/application/use-cases/complete-oauth-authorization.use-case";
@@ -35,6 +33,7 @@ import {
 } from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { RedirectResponse } from "#api/platform/http/decorators/redirect-response.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -336,6 +335,7 @@ export class OAuthController {
 
   @Get("google/start")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Google OAuth 시작 (웹 브라우저)",
     operationId: "googleOAuthStart",
@@ -351,13 +351,13 @@ export class OAuthController {
   })
   async googleOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#authorizationUrl("GOOGLE", query));
+  ): Promise<{ url: string }> {
+    return { url: await this.#authorizationUrl("GOOGLE", query) };
   }
 
   @Get("google/web-callback")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Google OAuth 콜백 (웹 브라우저)",
     operationId: "googleOAuthCallback",
@@ -372,9 +372,8 @@ export class OAuthController {
   async googleOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#webCallbackRedirectUrl("GOOGLE", query, source));
+  ): Promise<{ url: string }> {
+    return { url: await this.#webCallbackRedirectUrl("GOOGLE", query, source) };
   }
 
   @Post("kakao/callback")
@@ -446,6 +445,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
   @Get("kakao/start")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Kakao OAuth 시작 (웹 브라우저)",
     operationId: "kakaoOAuthStart",
@@ -461,13 +461,13 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   })
   async kakaoOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#authorizationUrl("KAKAO", query));
+  ): Promise<{ url: string }> {
+    return { url: await this.#authorizationUrl("KAKAO", query) };
   }
 
   @Get("kakao/web-callback")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Kakao OAuth 콜백 (웹 브라우저)",
     operationId: "kakaoOAuthCallback",
@@ -482,9 +482,8 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async kakaoOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#webCallbackRedirectUrl("KAKAO", query, source));
+  ): Promise<{ url: string }> {
+    return { url: await this.#webCallbackRedirectUrl("KAKAO", query, source) };
   }
 
   @Post("naver/callback")
@@ -550,6 +549,7 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
 
   @Get("naver/start")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Naver OAuth 시작 (웹 브라우저)",
     operationId: "naverOAuthStart",
@@ -565,13 +565,13 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   })
   async naverOAuthStart(
     @Query({ schema: OAuthStartQueryDto }) query: OAuthStartQueryDto,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#authorizationUrl("NAVER", query));
+  ): Promise<{ url: string }> {
+    return { url: await this.#authorizationUrl("NAVER", query) };
   }
 
   @Get("naver/web-callback")
   @Public()
+  @RedirectResponse()
   @ApiDoc({
     summary: "Naver OAuth 콜백 (웹 브라우저)",
     operationId: "naverOAuthCallback",
@@ -586,9 +586,8 @@ IP당 분당 10회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async naverOAuthCallback(
     @Query({ schema: OAuthWebCallbackQueryDto }) query: OAuthWebCallbackQueryDto,
     @CurrentRequestSource() source: RequestSource,
-    @Res() response: Response,
-  ): Promise<void> {
-    response.redirect(await this.#webCallbackRedirectUrl("NAVER", query, source));
+  ): Promise<{ url: string }> {
+    return { url: await this.#webCallbackRedirectUrl("NAVER", query, source) };
   }
 
   @Post("link")

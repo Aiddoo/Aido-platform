@@ -8,7 +8,9 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { HttpAdapterHost } from "@nestjs/core";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
+import { ExpressAdapter } from "@nestjs/platform-express";
 import { Test } from "@nestjs/testing";
 import { vi, type Mock } from "vitest";
 
@@ -27,7 +29,7 @@ import { GlobalExceptionFilter } from "./global-exception.filter.js";
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
   let logger: RecordingPinoLogger;
-  let mockResponse: { status: Mock; json: Mock };
+  let mockResponse: { status: Mock; json: Mock; getHeader: Mock };
   let mockRequest: {
     method: string;
     url: string;
@@ -44,7 +46,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     const devTools = resolveDevTools({ isLocalRun: exposeErrorDetails, nodeEnv: "development" });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
-    return new GlobalExceptionFilter(logger, { devTools }, messages, reporter, alerts);
+    const adapterHost = new HttpAdapterHost();
+    adapterHost.httpAdapter = new ExpressAdapter();
+    return new GlobalExceptionFilter(adapterHost, logger, { devTools }, messages, reporter, alerts);
   };
 
   beforeAll(async () => {
@@ -59,6 +63,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     mockResponse = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
+      getHeader: vi.fn(),
     };
 
     mockRequest = {

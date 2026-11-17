@@ -1,6 +1,6 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
-import type { Request } from "express";
 
+import type { HttpRequest } from "#api/platform/http/http-request";
 import type { RequestClient } from "#api/platform/http/request-client/request-client";
 import { readRequestClient } from "#api/platform/http/request-client/request-client.store";
 
@@ -15,7 +15,7 @@ export interface RequestSource {
 /** `@CurrentRequestSource() source: RequestSource` — 요청 IP·User-Agent·Accept-Language와 앱 헤더 */
 export const CurrentRequestSource = createParamDecorator<undefined, RequestSource>(
   (_data, context: ExecutionContext) => {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<HttpRequest>();
     return {
       ip: request.ip || undefined,
       userAgent: request.headers["user-agent"],

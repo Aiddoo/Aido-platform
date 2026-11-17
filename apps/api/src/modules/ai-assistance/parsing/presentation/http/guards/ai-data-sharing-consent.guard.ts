@@ -1,8 +1,8 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
-import type { Request } from "express";
 
 import { AiDataSharingConsentReaderPort } from "#api/modules/identity/identity-settings.public";
+import type { HttpRequest } from "#api/platform/http/http-request";
 import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -13,7 +13,7 @@ import {
   authenticationRequired,
 } from "../../../application/parsing.errors.js";
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends HttpRequest {
   user?: CurrentUserPayload;
 }
 

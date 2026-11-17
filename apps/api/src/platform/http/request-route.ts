@@ -1,8 +1,8 @@
-import type { Request } from "express";
+import type { HttpRequest } from "./http-request.js";
 
-/** Express가 고른 경로 템플릿(`/v1/todos/:id`). 라우팅 전이거나 맞는 경로가 없으면 null이다. */
-export function readRouteTemplate(request: Request): string | null {
-  const route: unknown = request.route;
+/** 어댑터가 고른 경로 템플릿(`/v1/todos/:id`). 라우팅 전이거나 맞는 경로가 없으면 null이다. */
+export function readRouteTemplate(request: HttpRequest): string | null {
+  const { route } = request;
   return typeof route === "object" &&
     route != null &&
     "path" in route &&

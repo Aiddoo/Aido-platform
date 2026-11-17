@@ -1,8 +1,9 @@
-import type { Request, Response } from "express";
 import type { Params } from "nestjs-pino";
 
 import type { NodeEnvironment } from "#api/platform/config/schemas/app.schema";
+import type { HttpRequest, HttpResponse } from "#api/platform/http/http-request";
 import { assignRequestId } from "#api/platform/http/request-client/request-id";
+import { readRequestUserId } from "#api/platform/http/request-user-id";
 
 import { LOGGER_REDACT_PATHS } from "./constants/logger.constant.js";
 import { HttpLogEvent, httpRequestPath } from "./http-log.js";
@@ -63,9 +64,9 @@ export function createLoggerOptions(
         method: request.method,
         path: httpRequestPath(request.url),
         statusCode: response.statusCode,
-        userId: request.user?.userId,
+        userId: readRequestUserId(request),
       }),
       customSuccessMessage: () => "HTTP 요청 완료",
     },
-  } satisfies Params<Request & { user?: { userId?: string } }, Response>;
+  } satisfies Params<HttpRequest, HttpResponse>;
 }

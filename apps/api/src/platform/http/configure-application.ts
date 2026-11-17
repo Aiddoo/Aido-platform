@@ -17,14 +17,13 @@ import { configureRouteBodyLimits } from "./route-body-limits.js";
 
 export interface ApplicationConfiguration {
   corsOrigins: readonly string[];
-  enableShutdownHooks?: boolean;
 }
 
 /**
  * 운영 서버와 HTTP E2E가 공유하는 애플리케이션 경계 설정. 개발 도구 스위치는 앱이 받은 app 설정에서 읽는다.
  *
- * 필터와 인터셉터는 AppModule의 APP_FILTER/APP_INTERCEPTOR provider로 등록되므로
- * 여기서 중복 등록하지 않는다. 응답 계약 검사만 운영이 아닐 때 여기서 더한다.
+ * 전역 예외 필터와 응답 envelope 인터셉터는 SharedKernelModule의 APP_FILTER·APP_INTERCEPTOR provider라
+ * 여기서 다시 등록하지 않는다. 응답 계약 검사만 운영이 아닐 때 여기서 더한다. 종료 신호는 main.ts가 받는다.
  */
 export function configureApplication(
   app: INestApplication,
@@ -54,9 +53,5 @@ export function configureApplication(
   // 운영은 등록하지 않아 요청마다 parse하는 비용이 없다. APP_INTERCEPTOR보다 안쪽이라 handler 반환값을 본다
   if (responseContractCheck) {
     app.useGlobalInterceptors(new ResponseContractInterceptor(app.get(Reflector)));
-  }
-
-  if (config.enableShutdownHooks !== false) {
-    app.enableShutdownHooks();
   }
 }

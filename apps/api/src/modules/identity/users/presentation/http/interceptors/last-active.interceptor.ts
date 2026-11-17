@@ -6,12 +6,12 @@ import {
   Logger,
   type NestInterceptor,
 } from "@nestjs/common";
-import type { Request } from "express";
 import { LRUCache } from "lru-cache";
 import type { Observable } from "rxjs";
 
 import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
 import { AuthUserActivityWriterPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
+import type { HttpRequest } from "#api/platform/http/http-request";
 import { RequestClientReader } from "#api/platform/http/request-client/request-client.store";
 import { requestTimezoneOrUtc } from "#api/platform/http/request-client/request-timezone";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
@@ -61,7 +61,7 @@ export class LastActiveInterceptor implements NestInterceptor {
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<HttpRequest>();
     const userId = readRequestUserId(request);
 
     if (userId) {

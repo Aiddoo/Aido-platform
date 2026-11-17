@@ -6,7 +6,6 @@ import {
 } from "@nestjs/common";
 import type { Reflector } from "@nestjs/core";
 import { DECORATORS } from "@nestjs/swagger";
-import type { Request, Response } from "express";
 import type { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { z } from "zod";
@@ -14,6 +13,7 @@ import { z } from "zod";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 
 import { isRawResponse } from "../decorators/raw-response.decorator.js";
+import type { HttpRequest, HttpResponse } from "../http-request.js";
 import { toSuccessResponse } from "./response-transform.interceptor.js";
 
 class ResponseContractViolationError extends Error {
@@ -46,7 +46,7 @@ function declaredSuccessSchemas(declared: unknown): ReadonlyMap<number, z.ZodTyp
   return schemas;
 }
 
-// Express가 res.json으로 보내는 값(Date → 문자열, undefined 필드 제거)을 검증한다
+// HTTP 어댑터가 JSON으로 보내는 값(Date → 문자열, undefined 필드 제거)을 검증한다
 function toSentJson(body: unknown): unknown {
   // oxlint-disable-next-line aido/no-strict-nullish -- null은 JSON null로 보내고, undefined만 JSON.stringify가 문자열을 만들지 않는다
   return body === undefined ? undefined : JSON.parse(JSON.stringify(body));
@@ -79,10 +79,10 @@ export class ResponseContractInterceptor implements NestInterceptor {
 
   #verify(context: ExecutionContext, body: unknown): void {
     const http = context.switchToHttp();
-    const response = http.getResponse<Response>();
+    const response = http.getResponse<HttpResponse>();
     const { statusCode } = response;
     const schemas = this.#schemasOf(context.getHandler());
-    // @Res()로 직접 보낸 응답과 Swagger에 Zod schema가 없는 route는 비교할 대상이 없다
+    // 이미 보낸 응답(리다이렉트 등)과 Swagger에 Zod schema가 없는 route는 비교할 대상이 없다
     if (response.headersSent || schemas.size === 0 || !isSuccessStatus(statusCode)) {
       return;
     }
@@ -94,7 +94,7 @@ export class ResponseContractInterceptor implements NestInterceptor {
       return;
     }
 
-    const request = http.getRequest<Request>();
+    const request = http.getRequest<HttpRequest>();
     const handler = `${context.getClass().name}.${context.getHandler().name}`;
     const declaredStatuses = [...schemas.keys()];
     this.#logger.error({

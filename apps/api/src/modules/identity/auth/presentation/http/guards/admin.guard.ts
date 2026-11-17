@@ -1,6 +1,7 @@
 import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
-import type { Request } from "express";
+
+import type { HttpRequest } from "#api/platform/http/http-request";
 
 import { adminRequired, invalidAccessToken } from "../../../application/auth.errors.js";
 
@@ -19,7 +20,9 @@ import { adminRequired, invalidAccessToken } from "../../../application/auth.err
 @Injectable()
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request & { user?: CurrentUserPayload }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<HttpRequest & { user?: CurrentUserPayload }>();
     const user = request.user;
 
     if (!user) {

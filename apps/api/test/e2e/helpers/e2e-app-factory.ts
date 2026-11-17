@@ -273,10 +273,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   try {
     module = await builder.compile();
     app = module.createNestApplication();
-    configureApplication(app, {
-      corsOrigins: ["http://localhost:3000"],
-      enableShutdownHooks: false,
-    });
+    configureApplication(app, { corsOrigins: ["http://localhost:3000"] });
     // main.ts와 같은 순서로 문서를 붙여, 개발 도구가 꺼진 설정에서 문서 경로가 열리지 않는지 E2E가 본다
     setupApiDocs(app);
     // Supertest의 요청별 임시 서버 재시작 대신 suite 전체에서 같은 HTTP 서버를 사용한다.

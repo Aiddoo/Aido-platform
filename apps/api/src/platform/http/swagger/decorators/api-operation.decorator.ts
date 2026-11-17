@@ -1,5 +1,6 @@
 import { ErrorCode, Errors } from "@aido/api/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
+// route 인자 메타데이터 key는 공개 API가 없다. @nestjs/swagger도 같은 경로에서 읽어 입력 문서를 만든다
 import { ROUTE_ARGS_METADATA } from "@nestjs/common/constants.js";
 import { ApiOperation, ApiResponse, type ApiResponseOptions, DECORATORS } from "@nestjs/swagger";
 

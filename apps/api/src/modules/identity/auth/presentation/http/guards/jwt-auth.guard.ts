@@ -9,10 +9,10 @@ import {
 import type { ConfigType } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
-import type { Request } from "express";
 import { z } from "zod";
 
 import { jwtConfig } from "#api/platform/config/jwt.config";
+import type { HttpRequest } from "#api/platform/http/http-request";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
 import { invalidAccessToken } from "../../../application/auth.errors.js";
@@ -60,7 +60,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<HttpRequest>();
     const claims = await this.#verify(readBearerToken(request.headers.authorization));
     if (claims == null) {
       throw invalidAccessToken(INVALID_ACCESS_TOKEN_REASON);

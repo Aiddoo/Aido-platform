@@ -1,6 +1,6 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
-import { Module } from "@nestjs/common";
+import { type BeforeApplicationShutdown, Logger, Module } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
@@ -41,6 +41,7 @@ import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
 import { LockModule } from "#api/platform/lock/lock.module";
 import { LoggerModule } from "#api/platform/logging/logger.module";
+import { PlatformLogEvent } from "#api/platform/logging/platform.log-events";
 import { MeteringModule } from "#api/platform/metering/metering.module";
 import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { RedisModule } from "#api/platform/redis/redis.module";
@@ -143,4 +144,11 @@ import { TimeModule } from "#api/platform/time/time.module";
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements BeforeApplicationShutdown {
+  readonly #logger = new Logger(AppModule.name);
+
+  // 루트 모듈의 hook이 가장 먼저 돌아 작업 worker 정지(최대 90초)를 기다리기 전에 남는다
+  beforeApplicationShutdown(signal?: string): void {
+    this.#logger.log({ event: PlatformLogEvent.SERVER_SHUTDOWN_STARTED, signal });
+  }
+}
