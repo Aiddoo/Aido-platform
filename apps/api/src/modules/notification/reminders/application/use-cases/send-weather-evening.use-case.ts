@@ -52,6 +52,10 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    // 가을 DST로 두 번째 오는 시각처럼 울릴 시각이 없는 분은 조회하지 않는다
+    if (timezoneContext.reminderTimes.length === 0) {
+      return { sent: 0 };
+    }
     const { timezones, localHour, localMinute, today } = timezoneContext;
 
     // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
@@ -81,8 +85,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
   ): Promise<{ sent: number; unavailable: number }> {
     const rows = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
       timezones: timezoneContext.timezones,
-      hour: timezoneContext.localHour,
-      minute: timezoneContext.localMinute,
+      times: timezoneContext.reminderTimes,
       userId:
         timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
     });
@@ -145,8 +148,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
   ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherEveningFallbackUsers({
       timezones: timezoneContext.timezones,
-      hour: timezoneContext.localHour,
-      minute: timezoneContext.localMinute,
+      times: timezoneContext.reminderTimes,
       userId:
         timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
     });

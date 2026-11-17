@@ -24,7 +24,7 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
   async findWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
-    const { timezones, hour, minute, userId } = params;
+    const { timezones, times, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -34,8 +34,10 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
         preference: {
           weatherMorningEnabled: true,
           timezone: { in: [...timezones] },
-          weatherMorningHour: hour,
-          weatherMorningMinute: minute,
+          OR: times.map(({ hour, minute }) => ({
+            weatherMorningHour: hour,
+            weatherMorningMinute: minute,
+          })),
         },
         location: true,
       },
@@ -50,7 +52,7 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
   findWeatherMorningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]> {
-    const { timezones, hour, minute, userId } = params;
+    const { timezones, times, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -60,8 +62,10 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
         preference: {
           weatherMorningEnabled: true,
           timezone: { in: [...timezones] },
-          weatherMorningHour: hour,
-          weatherMorningMinute: minute,
+          OR: times.map(({ hour, minute }) => ({
+            weatherMorningHour: hour,
+            weatherMorningMinute: minute,
+          })),
         },
         NOT: { location: true },
       },
@@ -72,7 +76,7 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
   async findWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
-    const { timezones, hour, minute, userId } = params;
+    const { timezones, times, userId } = params;
     const rows = await this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -82,8 +86,10 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
         preference: {
           weatherEveningEnabled: true,
           timezone: { in: [...timezones] },
-          weatherEveningHour: hour,
-          weatherEveningMinute: minute,
+          OR: times.map(({ hour, minute }) => ({
+            weatherEveningHour: hour,
+            weatherEveningMinute: minute,
+          })),
         },
         location: true,
       },
@@ -98,7 +104,7 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
   findWeatherEveningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]> {
-    const { timezones, hour, minute, userId } = params;
+    const { timezones, times, userId } = params;
     return this.#db.query.user.findMany({
       columns: { id: true },
       where: {
@@ -108,8 +114,10 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
         preference: {
           weatherEveningEnabled: true,
           timezone: { in: [...timezones] },
-          weatherEveningHour: hour,
-          weatherEveningMinute: minute,
+          OR: times.map(({ hour, minute }) => ({
+            weatherEveningHour: hour,
+            weatherEveningMinute: minute,
+          })),
         },
         NOT: { location: true },
       },

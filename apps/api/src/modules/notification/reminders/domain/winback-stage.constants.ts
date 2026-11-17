@@ -13,8 +13,10 @@ const WINBACK_STAGES = [
   { threshold: 0, stage: "day3" },
 ] as const;
 
+export type WinbackStageName = (typeof WINBACK_STAGES)[number]["stage"];
+
 /** 미접속 경과일 → 단계 라벨 (매칭 없으면 최소 단계 day3) */
-export function resolveWinbackStage(inactiveDays: number): string {
+export function resolveWinbackStage(inactiveDays: number): WinbackStageName {
   const matched = WINBACK_STAGES.find((s) => inactiveDays >= s.threshold);
   return matched?.stage ?? "day3";
 }

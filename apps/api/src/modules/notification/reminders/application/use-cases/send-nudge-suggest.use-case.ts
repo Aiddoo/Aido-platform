@@ -11,6 +11,7 @@ import { getNotificationFriendFallback } from "../../../shared/application/messa
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import { NudgePairMark } from "../../domain/nudge-pair-mark.vo.js";
 import {
   localDayRangeAcross,
   localDaysSince,
@@ -32,7 +33,7 @@ interface NudgeSuggestStrategyDependencies {
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDeduplication: Pick<
     SchedulerDeduplicationPort,
-    "findSentNudgePairs" | "recordNudgePairs"
+    "filterUnsentNudgePairs" | "recordNudgePairs"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -110,20 +111,25 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       }
     }
 
-    // 배치 2: 이번 주 발송 이력을 compound key로 단일 Redis 조회
+    // 배치 2: 전체 candidate × friend 쌍의 이번 주 발송 표시를 한 번에 확인한다
     const weekId = isoWeekIdOf(today);
-    // 전체 candidate × friend 조합을 한 번에 빌드
-    const allPairs: string[] = [];
-    for (const user of candidates) {
-      const friends = friendMap.get(user.id) ?? [];
-      const pairs = friends.map((f) => `${user.id}:${f.id}`);
-      allPairs.push(...pairs);
-    }
-
-    // 단일 SMISMEMBER — O(allPairs.length)
-    const sentPairs = await this.#dependencies.schedulerDeduplication.findSentNudgePairs(
-      weekId,
-      allPairs,
+    const pairMarks = new Map(
+      candidates.map((user) => [
+        user.id,
+        (friendMap.get(user.id) ?? []).map((friend) => ({
+          friend,
+          mark: NudgePairMark.create({
+            weekId,
+            recipientId: UserId.reconstitute(user.id),
+            friendId: UserId.reconstitute(friend.id),
+          }),
+        })),
+      ]),
+    );
+    const unsentMarks = new Set(
+      await this.#dependencies.schedulerDeduplication.filterUnsentNudgePairs(
+        [...pairMarks.values()].flat().map(({ mark }) => mark),
+      ),
     );
 
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
@@ -132,23 +138,18 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
     // 인메모리 매칭
     const notifications: CreateNotificationData[] = [];
+    const chosenMarks: NudgePairMark[] = [];
 
     for (const user of candidates) {
-      const friends = friendMap.get(user.id);
-
-      if (friends == null || friends.length === 0) {
-        continue;
-      }
-
-      const eligibleFriends = friends
-        .filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
-        .flatMap((friend) => {
+      const eligibleFriends = (pairMarks.get(user.id) ?? [])
+        .filter(({ mark }) => unsentMarks.has(mark))
+        .flatMap(({ friend, mark }) => {
           if (friend.lastActiveAt == null) {
             return [];
           }
           const days = localDaysSince(friend.lastActiveAt, today, user.timezone);
           return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
-            ? [{ ...friend, days }]
+            ? [{ ...friend, mark, days }]
             : [];
         })
         .sort((a, b) => b.days - a.days);
@@ -170,6 +171,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         },
       });
 
+      chosenMarks.push(target.mark);
       notifications.push({
         userId: user.id,
         type: "NUDGE_SUGGEST",
@@ -189,8 +191,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.execute(notifications);
 
-      const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
-      void this.#dependencies.schedulerDeduplication.recordNudgePairs(weekId, members);
+      void this.#dependencies.schedulerDeduplication.recordNudgePairs(chosenMarks);
 
       this.#dependencies.logger.log({
         event: ReminderLogEvent.NUDGE_SUGGEST_SENT,

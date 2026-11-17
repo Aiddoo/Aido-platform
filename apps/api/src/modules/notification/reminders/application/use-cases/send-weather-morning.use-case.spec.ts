@@ -17,7 +17,10 @@ import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-pr
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
-import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import {
+  type TimezoneContext,
+  timezoneContextAt,
+} from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
@@ -93,6 +96,45 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
       clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
       logger,
     });
+  });
+
+  it.each([
+    {
+      name: "뉴욕 봄 틈 2027-03-14 02:30은 틈 뒤 첫 분",
+      timezone: "America/New_York",
+      time: { hour: 2, minute: 30 },
+      minutes: ["2027-03-14T07:00:00Z"],
+    },
+    {
+      name: "런던 봄 틈 2027-03-28 01:30은 틈 뒤 첫 분",
+      timezone: "Europe/London",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-03-28T01:00:00Z"],
+    },
+    {
+      name: "뉴욕 가을 겹침 2027-11-07 01:30은 앞의 것만",
+      timezone: "America/New_York",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-11-07T05:30:00Z", "2027-11-07T06:30:00Z"],
+    },
+    {
+      name: "런던 가을 겹침 2027-10-31 01:30은 앞의 것만",
+      timezone: "Europe/London",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-10-31T00:30:00Z", "2027-10-31T01:30:00Z"],
+    },
+  ])("$name에 설정 시각을 한 번만 조회한다", async ({ timezone, time, minutes }) => {
+    // When
+    for (const minute of minutes) {
+      await strategy.execute(timezoneContextAt(Temporal.Instant.from(minute), timezone));
+    }
+
+    // Then
+    expect(
+      reader.userParams.map(({ times }) =>
+        times.some(({ hour, minute }) => hour === time.hour && minute === time.minute),
+      ),
+    ).toEqual([true]);
   });
 
   it("대상이 없으면 날씨를 조회하지 않고 보내지 않는다", async () => {
@@ -246,8 +288,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     // Then
     expect(reader.userParams[0]).toMatchObject({
       userId: UserId.reconstitute("user-specific"),
-      hour: 7,
-      minute: 0,
+      times: [{ hour: 7, minute: 0 }],
     });
   });
 });

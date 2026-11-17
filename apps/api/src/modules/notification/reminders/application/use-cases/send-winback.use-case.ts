@@ -11,6 +11,7 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-camp
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { localDayRangeAcross, localDaysSince } from "../../domain/reminder-day.domain-service.js";
+import { WinbackStageMark } from "../../domain/winback-stage-mark.vo.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
@@ -25,7 +26,7 @@ interface WinbackStrategyDependencies {
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly schedulerDeduplication: Pick<
     SchedulerDeduplicationPort,
-    "findSentWinbackStages" | "recordWinbackStages"
+    "filterUnsentWinbackStages" | "recordWinbackStages"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -85,12 +86,17 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
         return [];
       }
-      return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays }];
+      const stage = resolveWinbackStage(inactiveDays);
+      const mark = WinbackStageMark.create({ recipientId: UserId.reconstitute(id), stage });
+      return [{ userId: id, stage, inactiveDays, mark }];
     });
     // 단계별 중복 방지: 사용자마다 묻지 않고 한 번에 확인한다
-    const sentStageUserIds =
-      await this.#dependencies.schedulerDeduplication.findSentWinbackStages(checks);
-    const activeChecks = checks.filter(({ userId }) => !sentStageUserIds.has(userId));
+    const unsentMarks = new Set(
+      await this.#dependencies.schedulerDeduplication.filterUnsentWinbackStages(
+        checks.map(({ mark }) => mark),
+      ),
+    );
+    const activeChecks = checks.filter(({ mark }) => unsentMarks.has(mark));
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       activeChecks.map((check) => check.userId),
     );
@@ -126,7 +132,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       await this.#dependencies.notificationPublisher.execute(notifications);
 
       void this.#dependencies.schedulerDeduplication.recordWinbackStages(
-        activeChecks.map(({ userId, stage }) => ({ userId, stage })),
+        activeChecks.map(({ mark }) => mark),
       );
 
       this.#dependencies.logger.log({

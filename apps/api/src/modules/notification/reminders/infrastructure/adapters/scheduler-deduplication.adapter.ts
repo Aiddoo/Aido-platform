@@ -1,8 +1,11 @@
 import { Injectable } from "@nestjs/common";
+import { groupBy } from "es-toolkit";
 
 import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 
 import { SchedulerDeduplicationPort } from "../../application/ports/scheduler-deduplication.port.js";
+import type { NudgePairMark } from "../../domain/nudge-pair-mark.vo.js";
+import type { WinbackStageMark } from "../../domain/winback-stage-mark.vo.js";
 import {
   SCHEDULER_DEDUPLICATION_TTL_MS,
   SchedulerDeduplicationKey,
@@ -17,38 +20,57 @@ export class SchedulerDeduplicationAdapter extends SchedulerDeduplicationPort {
     this.#dedupProvider = dedupProvider;
   }
 
-  async findSentWinbackStages(
-    records: ReadonlyArray<{ userId: string; stage: string }>,
-  ): Promise<Set<string>> {
-    const sent = await this.#dedupProvider.filterEntries(records.map(toWinbackStageEntry));
-    return new Set(sent.map(({ userId }) => userId));
+  async filterUnsentWinbackStages(marks: readonly WinbackStageMark[]): Promise<WinbackStageMark[]> {
+    const sent = await this.#dedupProvider.filterEntries(marks.map(toWinbackStageEntry));
+    const sentMarks = new Set(sent.map(({ mark }) => mark));
+    return marks.filter((mark) => !sentMarks.has(mark));
   }
 
-  recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {
+  recordWinbackStages(marks: readonly WinbackStageMark[]): Promise<void> {
     return this.#dedupProvider.addEntries(
-      records.map(toWinbackStageEntry),
+      marks.map(toWinbackStageEntry),
       SCHEDULER_DEDUPLICATION_TTL_MS.WINBACK_STAGES,
     );
   }
 
-  findSentNudgePairs(weekId: string, pairs: string[]): Promise<Set<string>> {
-    return this.#dedupProvider.filterMembers(SchedulerDeduplicationKey.nudgeSuggest(weekId), pairs);
+  // 보통 한 주의 표시만 오므로 주마다 SMISMEMBER 한 번이다
+  async filterUnsentNudgePairs(marks: readonly NudgePairMark[]): Promise<NudgePairMark[]> {
+    const unsent = await Promise.all(
+      Object.entries(groupBy(marks, (mark) => mark.weekId)).map(async ([weekId, weekMarks]) => {
+        const sent = await this.#dedupProvider.filterMembers(
+          SchedulerDeduplicationKey.nudgeSuggest(weekId),
+          weekMarks.map(toNudgePairMember),
+        );
+        return weekMarks.filter((mark) => !sent.has(toNudgePairMember(mark)));
+      }),
+    );
+    const unsentMarks = new Set(unsent.flat());
+    return marks.filter((mark) => unsentMarks.has(mark));
   }
 
-  recordNudgePairs(weekId: string, pairs: string[]): Promise<void> {
-    return this.#dedupProvider.addMembers(
-      SchedulerDeduplicationKey.nudgeSuggest(weekId),
-      pairs,
-      SCHEDULER_DEDUPLICATION_TTL_MS.NUDGE_SUGGEST,
+  async recordNudgePairs(marks: readonly NudgePairMark[]): Promise<void> {
+    await Promise.all(
+      Object.entries(groupBy(marks, (mark) => mark.weekId)).map(([weekId, weekMarks]) =>
+        this.#dedupProvider.addMembers(
+          SchedulerDeduplicationKey.nudgeSuggest(weekId),
+          weekMarks.map(toNudgePairMember),
+          SCHEDULER_DEDUPLICATION_TTL_MS.NUDGE_SUGGEST,
+        ),
+      ),
     );
   }
 }
 
 // 단계 기록은 사용자마다 따로인 Set이다(키를 바꾸면 이미 보낸 단계 기록을 잃는다)
-function toWinbackStageEntry(record: { readonly userId: string; readonly stage: string }) {
+function toWinbackStageEntry(mark: WinbackStageMark) {
   return {
-    ...record,
-    setKey: SchedulerDeduplicationKey.winbackStages(record.userId),
-    member: record.stage,
+    mark,
+    setKey: SchedulerDeduplicationKey.winbackStages(mark.recipientId.value),
+    member: mark.stage,
   };
+}
+
+// 주별 Set의 멤버는 "받는 사람:친구"다(바꾸면 그 주 기록을 잃는다)
+function toNudgePairMember(mark: NudgePairMark): string {
+  return `${mark.recipientId.value}:${mark.friendId.value}`;
 }

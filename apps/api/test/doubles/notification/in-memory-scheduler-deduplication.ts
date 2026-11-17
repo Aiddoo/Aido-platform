@@ -1,40 +1,32 @@
 import { SchedulerDeduplicationPort } from "#api/modules/notification/reminders/application/ports/scheduler-deduplication.port";
+import type { NudgePairMark } from "#api/modules/notification/reminders/domain/nudge-pair-mark.vo";
+import type { WinbackStageMark } from "#api/modules/notification/reminders/domain/winback-stage-mark.vo";
 
-// win-back 단계와 주별 넛지 쌍 발송 기록을 메모리에 둔다
+// win-back 단계와 주별 넛지 쌍 발송 표시를 메모리에 두고 값으로 비교한다
 export class InMemorySchedulerDeduplication extends SchedulerDeduplicationPort {
-  readonly #winbackStages = new Set<string>();
-  readonly #nudgePairsByWeek = new Map<string, Set<string>>();
+  readonly #winbackStages: WinbackStageMark[] = [];
+  readonly #nudgePairs: NudgePairMark[] = [];
 
-  async findSentWinbackStages(
-    records: ReadonlyArray<{ userId: string; stage: string }>,
-  ): Promise<Set<string>> {
-    return new Set(
-      records
-        .filter(({ userId, stage }) => this.#winbackStages.has(`${userId}:${stage}`))
-        .map(({ userId }) => userId),
-    );
+  async filterUnsentWinbackStages(marks: readonly WinbackStageMark[]): Promise<WinbackStageMark[]> {
+    return marks.filter((mark) => !this.#winbackStages.some((sent) => sent.equals(mark)));
   }
 
-  async recordWinbackStages(records: Array<{ userId: string; stage: string }>): Promise<void> {
-    for (const { userId, stage } of records) {
-      this.#winbackStages.add(`${userId}:${stage}`);
-    }
+  async recordWinbackStages(marks: readonly WinbackStageMark[]): Promise<void> {
+    this.#winbackStages.push(...marks);
   }
 
-  async findSentNudgePairs(weekId: string, pairs: string[]): Promise<Set<string>> {
-    const sent = this.#nudgePairsByWeek.get(weekId) ?? new Set<string>();
-    return new Set(pairs.filter((pair) => sent.has(pair)));
+  async filterUnsentNudgePairs(marks: readonly NudgePairMark[]): Promise<NudgePairMark[]> {
+    return marks.filter((mark) => !this.#nudgePairs.some((sent) => sent.equals(mark)));
   }
 
-  async recordNudgePairs(weekId: string, pairs: string[]): Promise<void> {
-    const sent = this.#nudgePairsByWeek.get(weekId) ?? new Set<string>();
-    for (const pair of pairs) {
-      sent.add(pair);
-    }
-    this.#nudgePairsByWeek.set(weekId, sent);
+  async recordNudgePairs(marks: readonly NudgePairMark[]): Promise<void> {
+    this.#nudgePairs.push(...marks);
   }
 
   nudgePairsOf(weekId: string): string[] {
-    return [...(this.#nudgePairsByWeek.get(weekId) ?? [])].toSorted();
+    return this.#nudgePairs
+      .filter((mark) => mark.weekId === weekId)
+      .map((mark) => `${mark.recipientId.value}:${mark.friendId.value}`)
+      .toSorted();
   }
 }

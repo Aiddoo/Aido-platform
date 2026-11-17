@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySchedulerDeduplication } from "#test/doubles/notification/in-memory-scheduler-deduplication";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -8,6 +9,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { NudgePairMark } from "../../domain/nudge-pair-mark.vo.js";
 import type { NudgeSuggestFollowReadModel } from "../read-models/scheduler.read-model.js";
 import { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
 
@@ -125,7 +127,13 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     reader.nudgeSuggestFollows = [
       follow("user-1", { id: "friend-1", name: "친구1", lastActive: "2024-01-13" }),
     ];
-    await dedup.recordNudgePairs(WEEK_ID, ["user-1:friend-1"]);
+    await dedup.recordNudgePairs([
+      NudgePairMark.create({
+        weekId: WEEK_ID,
+        recipientId: UserId.reconstitute("user-1"),
+        friendId: UserId.reconstitute("friend-1"),
+      }),
+    ]);
 
     // When
     const result = await strategy.execute(timezoneContext);

@@ -341,8 +341,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
         weatherMorning: (timezones: readonly string[]) =>
           reader.weatherReminder.findWeatherMorningUsersWithLocation({
             timezones,
-            hour: 8,
-            minute: 0,
+            times: [{ hour: 8, minute: 0 }],
           }),
         activeUsers: (timezones: readonly string[]) =>
           reader.reEngagement.findActiveUsersInTimezones(timezones),
@@ -379,8 +378,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       });
       const weather = await reader.weatherReminder.findWeatherMorningUsersWithLocation({
         timezones: GROUP,
-        hour: 8,
-        minute: 0,
+        times: [{ hour: 8, minute: 0 }],
       });
 
       // Then

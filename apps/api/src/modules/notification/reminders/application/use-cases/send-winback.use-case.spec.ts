@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySchedulerDeduplication } from "#test/doubles/notification/in-memory-scheduler-deduplication";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
@@ -8,6 +9,7 @@ import { createTimezoneContextFixture } from "#test/fixtures/notification/timezo
 
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { WinbackStageMark } from "../../domain/winback-stage-mark.vo.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
 
 describe("SendWinbackUseCase — 윈백 전략", () => {
@@ -61,7 +63,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     { lastActive: "2024-01-02", inactiveDays: 14, stage: "day14" },
     { lastActive: "2023-12-26", inactiveDays: 21, stage: "day21" },
     { lastActive: "2023-12-17", inactiveDays: 30, stage: "day30" },
-  ])(
+  ] as const)(
     "$inactiveDays일 미접속 사용자에게 $stage 단계 Win-back을 보내고 그 단계를 기록한다",
     async ({ lastActive, inactiveDays, stage }) => {
       // Given
@@ -100,9 +102,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         }),
       ]);
       await vi.waitFor(async () => {
-        expect(await dedup.findSentWinbackStages([{ userId: "user-1", stage }])).toEqual(
-          new Set(["user-1"]),
-        );
+        const recorded = WinbackStageMark.create({
+          recipientId: UserId.reconstitute("user-1"),
+          stage,
+        });
+        expect(await dedup.filterUnsentWinbackStages([recorded])).toEqual([]);
       });
     },
   );
@@ -154,8 +158,8 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
       },
     ];
     await dedup.recordWinbackStages([
-      { userId: "user-1", stage: "day7" },
-      { userId: "user-3", stage: "day7" },
+      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-1"), stage: "day7" }),
+      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-3"), stage: "day7" }),
     ]);
 
     // When
@@ -178,7 +182,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         timezone: "Asia/Seoul",
       },
     ];
-    await dedup.recordWinbackStages([{ userId: "user-1", stage: "day7" }]);
+    await dedup.recordWinbackStages([
+      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-1"), stage: "day7" }),
+    ]);
 
     // When
     const result = await strategy.execute(timezoneContext);

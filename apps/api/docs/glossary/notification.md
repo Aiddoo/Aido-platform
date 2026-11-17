@@ -151,7 +151,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 재방문 단계      | `resolveWinbackStage`(`day3`~`day30`)                         | 미접속 일수로 정하는 단계. 사용자마다 단계별 한 번                                                                                                                                                                 |
 | 온보딩 날        | `isOnboardingDay`, `resolveOnboardingDeepLinkPath`            | 가입 뒤 정해진 날. 날마다 문구가 권하는 화면을 연다                                                                                                                                                                |
 | 반복 멈춤 안내   | `TodoSeriesOwnerDormancyPort`                                 | 휴면 소유자의 반복 회차는 리마인더 대신 같은 시각에 한 번 안내한다                                                                                                                                                 |
-| 중복 방지 저장소 | `NotificationDeduplicationPort`, `SchedulerDeduplicationPort` | 보낸 리마인더를 기억하는 곳. 날짜 기록·알림 이력(하루 종류), 할 일·단계·회차 유니크 인덱스, 재방문 단계·주간 콕 제안 짝                                                                                            |
+| 중복 방지 저장소 | `NotificationDeduplicationPort`, `SchedulerDeduplicationPort` | 보낸 리마인더를 기억하는 곳. 날짜 기록·알림 이력(하루 종류), 할 일·단계·회차 유니크 인덱스, 재방문 단계·주간 콕 제안 짝(`WinbackStageMark`·`NudgePairMark` VO)                                                     |
 
 | 상태    | 행동         | 다음            | 다시·금지                                 |
 | ------- | ------------ | --------------- | ----------------------------------------- |
