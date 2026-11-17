@@ -52,10 +52,6 @@ export class Notification extends AggregateRoot<NotificationId, NotificationProp
     return this.props.userId;
   }
 
-  get isRead(): boolean {
-    return this.props.isRead;
-  }
-
   get readAt(): Temporal.Instant | null {
     return this.props.readAt;
   }

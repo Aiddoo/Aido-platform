@@ -10,8 +10,6 @@ export interface ExistsRecentNotificationQuery {
   readonly since: Temporal.Instant;
   readonly friendId?: UserId;
   readonly todoId?: TodoId;
-  readonly nudgeId?: number;
-  readonly cheerId?: number;
 }
 
 export interface FindAlreadyNotifiedUserIdsQuery {

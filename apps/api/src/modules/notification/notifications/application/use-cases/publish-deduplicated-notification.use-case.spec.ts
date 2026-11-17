@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { PublishDeduplicatedNotificationUseCase } from "./publish-deduplicated-notification.use-case.js";
 
 const nudge = {
@@ -18,7 +20,8 @@ describe("PublishDeduplicatedNotificationUseCase", () => {
     const useCase = new PublishDeduplicatedNotificationUseCase({
       sendNotificationWithDeduplication,
       todoTargetReader: {
-        findTodoTargets: async () => new Map([[42, { ownerId: "owner-1", date: "2026-10-27" }]]),
+        findTodoTargets: async () =>
+          new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
       },
     });
 

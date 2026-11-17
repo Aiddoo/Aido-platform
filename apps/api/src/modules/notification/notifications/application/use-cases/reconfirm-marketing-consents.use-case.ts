@@ -7,7 +7,7 @@ import {
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
@@ -78,13 +78,12 @@ export class ReconfirmMarketingConsentsUseCase {
         ...(afterUserId != null && { afterUserId }),
         limit: MARKETING_CONSENT_RECONFIRM.BATCH_SIZE,
       });
+      const targetUserIds = targets.map((target) => target.userId);
       const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
-        targets.map((target) => UserId.reconstitute(target.userId)),
+        targetUserIds,
         input.now,
       );
-      const daytimeUserIds = targets
-        .map((target) => target.userId)
-        .filter((userId) => !quietUserIds.has(userId));
+      const daytimeUserIds = targetUserIds.filter((userId) => !quietUserIds.has(userId.value));
       for (const userIds of chunk(daytimeUserIds, MARKETING_CONSENT_RECONFIRM.CLAIM_CHUNK_SIZE)) {
         notifiedCount += await this.#claimAndNotify(userIds, cutoff, input.now);
       }
@@ -92,7 +91,7 @@ export class ReconfirmMarketingConsentsUseCase {
       if (!hasRemaining) {
         break;
       }
-      afterUserId = targets.map((target) => UserId.reconstitute(target.userId)).at(-1);
+      afterUserId = targetUserIds.at(-1);
     }
 
     this.#dependencies.logger.log({
@@ -104,27 +103,23 @@ export class ReconfirmMarketingConsentsUseCase {
   }
 
   async #claimAndNotify(
-    userIds: readonly string[],
+    userIds: readonly UserId[],
     cutoff: Temporal.Instant,
     now: Temporal.Instant,
   ): Promise<number> {
-    const recipientIds = userIds.map((userId) => UserId.reconstitute(userId));
     const [localeOf, timezones] = await Promise.all([
-      this.#dependencies.localeReader.getLocales(recipientIds),
-      this.#dependencies.timezoneReader.getTimezones(userIds),
+      this.#dependencies.localeReader.getLocales(userIds),
+      this.#dependencies.timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
     ]);
     return this.#dependencies.unitOfWork.run(async () => {
-      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(
-        recipientIds,
-        {
-          cutoff,
-          at: now,
-        },
-      );
+      const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(userIds, {
+        cutoff,
+        at: now,
+      });
       const notices = claimed.flatMap((recipient) =>
         this.#notice(recipient, {
-          locale: localeOf(recipient.userId),
-          timezone: timezones.get(recipient.userId) ?? DEFAULT_DELIVERY_TIMEZONE,
+          locale: localeOf(recipient.userId.value),
+          timezone: timezones.get(recipient.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
         }),
       );
       if (notices.length > 0) {
@@ -151,7 +146,7 @@ export class ReconfirmMarketingConsentsUseCase {
     });
     return [
       {
-        userId: recipient.userId,
+        userId: recipient.userId.value,
         type: "SYSTEM_NOTICE",
         title: message.title,
         body: message.body,

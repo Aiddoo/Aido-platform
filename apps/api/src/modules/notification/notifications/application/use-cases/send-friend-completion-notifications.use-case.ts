@@ -7,6 +7,7 @@ import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { createFriendCompletedNotificationMessage } from "../../../shared/application/messages/social-notification.messages.js";
 import { type UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import type { NotificationHistoryReader } from "../notification-history.reader.js";
@@ -51,7 +52,6 @@ export class SendFriendCompletionNotificationsUseCase {
     }
 
     const notificationDate = localDateIn(this.#dependencies.clock.now(), input.timezone);
-    const localDate = notificationDate.toString();
     const alreadyNotifiedUserIds =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
         userIds: input.notifyUserIds.map((userId) => UserId.reconstitute(userId)),
@@ -71,18 +71,47 @@ export class SendFriendCompletionNotificationsUseCase {
       return;
     }
 
+    const notifications = await this.#buildNotifications(input, {
+      recipientUserIds,
+      notificationDate,
+    });
+    const persistedBatch = await this.#persist(input, notifications);
+    if (persistedBatch == null) {
+      return;
+    }
+
+    this.#dependencies.logger.log({
+      event: NotificationLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_PERSISTED,
+      friendId: input.friendId,
+      count: persistedBatch.count,
+    });
+    await this.#dependencies.finalizeBatch.execute(persistedBatch);
+    this.#dependencies.logger.debug({
+      event: NotificationLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_EFFECTS_FINALIZED,
+      friendId: input.friendId,
+      count: persistedBatch.count,
+    });
+  }
+
+  async #buildNotifications(
+    input: SendFriendCompletionNotificationsInput,
+    target: {
+      readonly recipientUserIds: readonly string[];
+      readonly notificationDate: Temporal.PlainDate;
+    },
+  ): Promise<CreateNotificationData[]> {
     const preferences =
       await this.#dependencies.userNotificationSettings.findPreferenceReadModelsByUserIds(
-        recipientUserIds.map((userId) => UserId.reconstitute(userId)),
+        target.recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(
       preferences.map((preference) => [preference.userId, preference.locale]),
     );
-    const notifications = recipientUserIds.map((userId) => {
+    return target.recipientUserIds.map((userId) => {
       const variantContext = {
         campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FRIEND_COMPLETED,
         recipientId: userId,
-        occurrenceKey: `${input.friendId}:${localDate}`,
+        occurrenceKey: `${input.friendId}:${target.notificationDate.toString()}`,
       };
       const message = createFriendCompletedNotificationMessage({
         friendName: input.friendName,
@@ -100,14 +129,20 @@ export class SendFriendCompletionNotificationsUseCase {
         copyKey: message.copyKey,
         copyFacts: message.copyFacts,
         friendId: input.friendId,
-        notificationDate,
+        notificationDate: target.notificationDate,
         campaignKey: variantContext.campaignKey,
         variantId: message.variantId,
       };
     });
-    let persistedBatch: PersistedBatchNotificationResultReadModel;
+  }
+
+  // 같은 친구·날짜의 알림이 이미 저장됐으면(동시 실행) null이고 보내지 않는다
+  async #persist(
+    input: SendFriendCompletionNotificationsInput,
+    notifications: CreateNotificationData[],
+  ): Promise<PersistedBatchNotificationResultReadModel | null> {
     try {
-      persistedBatch = await this.#dependencies.unitOfWork.run(() =>
+      return await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.persistBatch.execute(notifications),
       );
     } catch (error) {
@@ -118,19 +153,7 @@ export class SendFriendCompletionNotificationsUseCase {
         event: NotificationLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_DUPLICATE_PREVENTED,
         friendId: input.friendId,
       });
-      return;
+      return null;
     }
-
-    this.#dependencies.logger.log({
-      event: NotificationLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_PERSISTED,
-      friendId: input.friendId,
-      count: persistedBatch.count,
-    });
-    await this.#dependencies.finalizeBatch.execute(persistedBatch);
-    this.#dependencies.logger.debug({
-      event: NotificationLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_EFFECTS_FINALIZED,
-      friendId: input.friendId,
-      count: persistedBatch.count,
-    });
   }
 }

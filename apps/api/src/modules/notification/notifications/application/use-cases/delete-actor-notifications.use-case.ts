@@ -27,7 +27,7 @@ export class DeleteActorNotificationsUseCase {
     const result = await this.#dependencies.repository.deleteNotificationsByActorId(
       UserId.reconstitute(userId),
     );
-    return { affectedUserIds: result.affectedUserIds };
+    return { affectedUserIds: result.affectedUserIds.map((userId) => userId.value) };
   }
 
   async settleAfterCommit(result: NotificationAccountCleanupResult): Promise<void> {

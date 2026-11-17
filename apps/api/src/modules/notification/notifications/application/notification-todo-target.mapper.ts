@@ -29,7 +29,7 @@ export async function withTodoTargets(
     }
     return {
       ...item,
-      metadata: { ...item.metadata, todoOwnerId: target.ownerId, todoDate: target.date },
+      metadata: { ...item.metadata, todoOwnerId: target.ownerId.value, todoDate: target.date },
     };
   });
 }

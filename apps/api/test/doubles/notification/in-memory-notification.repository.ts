@@ -184,7 +184,7 @@ export class InMemoryNotificationRepository
 
   async deleteNotificationsByActorId(
     actor: UserId,
-  ): Promise<{ count: number; affectedUserIds: string[] }> {
+  ): Promise<{ count: number; affectedUserIds: UserId[] }> {
     const actorId = actor.value;
     const deleted = [...this.#rows.values()].filter(
       (row) => row.friendId === actorId || metadataField(row, "senderId") === actorId,
@@ -192,7 +192,12 @@ export class InMemoryNotificationRepository
     for (const row of deleted) {
       this.#rows.delete(row.id);
     }
-    return { count: deleted.length, affectedUserIds: uniq(deleted.map((row) => row.userId)) };
+    return {
+      count: deleted.length,
+      affectedUserIds: uniq(deleted.map((row) => row.userId)).map((userId) =>
+        UserId.reconstitute(userId),
+      ),
+    };
   }
 
   async deleteCreatedBefore(query: {
@@ -255,9 +260,7 @@ export class InMemoryNotificationRepository
         row.type === query.type &&
         Temporal.Instant.compare(row.createdAt, query.since) >= 0 &&
         (query.friendId == null || row.friendId === query.friendId.value) &&
-        (query.todoId == null || row.todoId === query.todoId.value) &&
-        (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
-        (query.cheerId == null || row.cheerId === query.cheerId),
+        (query.todoId == null || row.todoId === query.todoId.value),
     );
   }
 

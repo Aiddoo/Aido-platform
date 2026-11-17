@@ -6,6 +6,7 @@ import {
   todoOwnerDates,
 } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   NotificationTodoTarget,
@@ -31,7 +32,10 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
     const rows = await this.#transactionHost.tx.select().from(targets);
 
     return new Map(
-      rows.map((row) => [row.id, { ownerId: row.userId, date: row.startDate.toString() }]),
+      rows.map((row) => [
+        row.id,
+        { ownerId: UserId.reconstitute(row.userId), date: row.startDate.toString() },
+      ]),
     );
   }
 }

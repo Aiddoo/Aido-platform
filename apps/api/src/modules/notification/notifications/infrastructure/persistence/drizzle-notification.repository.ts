@@ -170,7 +170,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
   async deleteNotificationsByActorId(
     actor: UserId,
-  ): Promise<{ count: number; affectedUserIds: string[] }> {
+  ): Promise<{ count: number; affectedUserIds: UserId[] }> {
     const actorId = actor.value;
     const deletedRows = await this.#db
       .delete(notification)
@@ -184,7 +184,9 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
 
     return {
       count: deletedRows.length,
-      affectedUserIds: uniq(deletedRows.map((row) => row.userId)),
+      affectedUserIds: uniq(deletedRows.map((row) => row.userId)).map((userId) =>
+        UserId.reconstitute(userId),
+      ),
     };
   }
 

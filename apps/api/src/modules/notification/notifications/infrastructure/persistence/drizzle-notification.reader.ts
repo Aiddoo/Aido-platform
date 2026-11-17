@@ -96,8 +96,6 @@ export class DrizzleNotificationReader
         createdAt: { gte: query.since },
         ...(query.friendId != null && { friendId: query.friendId.value }),
         ...(query.todoId != null && { todoId: query.todoId.value }),
-        ...(query.nudgeId != null && { nudgeId: query.nudgeId }),
-        ...(query.cheerId != null && { cheerId: query.cheerId }),
       },
     });
     return row != null;

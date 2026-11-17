@@ -57,8 +57,6 @@ export class SendNotificationWithDeduplicationUseCase {
         since: this.#dependencies.clock.now().subtract({ milliseconds: strategy.windowMs }),
         ...(context.friendId != null && { friendId: UserId.reconstitute(context.friendId) }),
         ...(context.todoId != null && { todoId: TodoId.reconstitute(context.todoId) }),
-        ...(context.nudgeId != null && { nudgeId: context.nudgeId }),
-        ...(context.cheerId != null && { cheerId: context.cheerId }),
       });
       if (exists) {
         this.#dependencies.logger.debug({

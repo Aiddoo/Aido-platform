@@ -4,9 +4,12 @@ import {
   type MarketingReconfirmTarget,
   UserNotificationSettingsAccessPort,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { MarketingConsentReconfirmPort } from "../../application/ports/marketing-consent-reconfirm.port.js";
+import type {
+  MarketingConsentReconfirmPort,
+  MarketingReconfirmRecipient,
+} from "../../application/ports/marketing-consent-reconfirm.port.js";
 
 @Injectable()
 export class MarketingConsentReconfirmAdapter implements MarketingConsentReconfirmPort {
@@ -19,22 +22,34 @@ export class MarketingConsentReconfirmAdapter implements MarketingConsentReconfi
     this.#userSettingsAccess = userSettingsAccess;
   }
 
-  findMarketingReconfirmTargets(params: {
+  async findMarketingReconfirmTargets(params: {
     readonly cutoff: Temporal.Instant;
     readonly afterUserId?: UserId;
     readonly limit: number;
-  }): Promise<MarketingReconfirmTarget[]> {
-    return this.#userSettingsAccess.findMarketingReconfirmTargets({
+  }): Promise<MarketingReconfirmRecipient[]> {
+    const targets = await this.#userSettingsAccess.findMarketingReconfirmTargets({
       cutoff: params.cutoff,
       afterUserId: params.afterUserId,
       limit: params.limit,
     });
+    return targets.map(toMarketingReconfirmRecipient);
   }
 
-  claimMarketingReconfirm(
+  async claimMarketingReconfirm(
     userIds: readonly UserId[],
     params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
-  ): Promise<MarketingReconfirmTarget[]> {
-    return this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
+  ): Promise<MarketingReconfirmRecipient[]> {
+    const claimed = await this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
+    return claimed.map(toMarketingReconfirmRecipient);
   }
+}
+
+function toMarketingReconfirmRecipient(
+  target: MarketingReconfirmTarget,
+): MarketingReconfirmRecipient {
+  return {
+    userId: UserId.reconstitute(target.userId),
+    marketingAgreedAt: target.marketingAgreedAt,
+    marketingPushAgreedAt: target.marketingPushAgreedAt,
+  };
 }

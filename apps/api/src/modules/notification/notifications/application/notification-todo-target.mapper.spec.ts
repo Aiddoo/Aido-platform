@@ -1,10 +1,12 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { withTodoTargets } from "./notification-todo-target.mapper.js";
 import type { NotificationTodoTargetReaderPort } from "./ports/notification-todo-target.reader.port.js";
 
 function createTodoTargetReader(
-  targets = new Map([[42, { ownerId: "owner-1", date: "2026-10-27" }]]),
+  targets = new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
 ): Pick<NotificationTodoTargetReaderPort, "findTodoTargets"> {
   return { findTodoTargets: vi.fn().mockResolvedValue(targets) };
 }

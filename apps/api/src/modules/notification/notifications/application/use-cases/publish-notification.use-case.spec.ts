@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
 const comment = {
@@ -18,7 +20,8 @@ describe("PublishNotificationUseCase", () => {
     const useCase = new PublishNotificationUseCase({
       sendNotification,
       todoTargetReader: {
-        findTodoTargets: async () => new Map([[42, { ownerId: "owner-1", date: "2026-10-27" }]]),
+        findTodoTargets: async () =>
+          new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
       },
     });
 

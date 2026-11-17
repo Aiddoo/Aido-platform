@@ -208,7 +208,7 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     }
 
     // Then
-    expect((await first).map((target) => target.userId)).toEqual([userId]);
+    expect((await first).map((target) => target.userId.value)).toEqual([userId]);
     expect(await second).toEqual([]);
   });
 });

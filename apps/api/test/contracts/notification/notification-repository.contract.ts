@@ -317,7 +317,9 @@ export function describeNotificationRepositoryContract(
 
       // Then
       expect(result.count).toBe(3);
-      expect(result.affectedUserIds.toSorted()).toEqual([USER_ID, OTHER_USER_ID].toSorted());
+      expect(result.affectedUserIds.map((userId) => userId.value).toSorted()).toEqual(
+        [USER_ID, OTHER_USER_ID].toSorted(),
+      );
       expect(none).toEqual({ count: 0, affectedUserIds: [] });
       const remaining = await inboxReader.listByUser({
         userId: UserId.reconstitute(USER_ID),
@@ -498,9 +500,8 @@ export function describeNotificationRepositoryContract(
             ...base,
             friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
             todoId: TodoId.reconstitute(3),
-            nudgeId: 9,
           }),
-          await historyReader.existsRecentNotification({ ...base, nudgeId: 10 }),
+          await historyReader.existsRecentNotification({ ...base, todoId: TodoId.reconstitute(4) }),
           await historyReader.existsRecentNotification({ ...base, type: "CHEER_RECEIVED" }),
           await historyReader.existsRecentNotification({
             ...base,

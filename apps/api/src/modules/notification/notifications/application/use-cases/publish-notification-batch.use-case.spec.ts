@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import { PublishNotificationBatchUseCase } from "./publish-notification-batch.use-case.js";
 
 const notice = {
@@ -15,7 +17,8 @@ function createUseCase() {
   const useCase = new PublishNotificationBatchUseCase({
     sendBatchNotification,
     todoTargetReader: {
-      findTodoTargets: async () => new Map([[42, { ownerId: "owner-1", date: "2026-10-27" }]]),
+      findTodoTargets: async () =>
+        new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
     },
   });
   return { useCase, sendBatchNotification };

@@ -11,7 +11,7 @@ import type { NotificationType } from "../../shared/domain/notification-type.con
 /** dedup 전략: 윈도우(ms) + 비교에 사용할 컨텍스트 키 */
 export interface DeduplicationStrategy {
   windowMs: number;
-  keys: Array<"friendId" | "todoId" | "nudgeId" | "cheerId">;
+  keys: Array<"friendId" | "todoId">;
 }
 
 /** dedup 판정에 필요한 알림 컨텍스트 */
@@ -20,16 +20,12 @@ export interface DeduplicationContext {
   type: NotificationType;
   friendId?: string | null;
   todoId?: number | null;
-  nudgeId?: number | null;
-  cheerId?: number | null;
 }
 
 /** 컨텍스트 키별로 추출된 값 (existsRecentNotification 조회 파라미터) */
 export interface DeduplicationContextFields {
   friendId?: string;
   todoId?: number;
-  nudgeId?: number;
-  cheerId?: number;
 }
 
 const DEDUPLICATION_WINDOW = {
@@ -79,16 +75,6 @@ export function buildDeduplicationContextFields(
       case "todoId":
         if (data.todoId != null) {
           fields.todoId = data.todoId;
-        }
-        break;
-      case "nudgeId":
-        if (data.nudgeId != null) {
-          fields.nudgeId = data.nudgeId;
-        }
-        break;
-      case "cheerId":
-        if (data.cheerId != null) {
-          fields.cheerId = data.cheerId;
         }
         break;
     }

@@ -34,7 +34,7 @@ export abstract class NotificationRepositoryPort {
   ): Promise<{ count: number }>;
   abstract deleteNotificationsByActorId(
     actorId: UserId,
-  ): Promise<{ count: number; affectedUserIds: string[] }>;
+  ): Promise<{ count: number; affectedUserIds: UserId[] }>;
   // 보관 기간이 지난 알림을 만든 순서로 limit개 지운다. 발송 기록은 FK cascade로 함께 지워진다.
   // 한 번뿐인 마일스톤 알림은 다시 보내지 않는 근거라 남긴다. createdFrom부터 찾아 남긴 행을 다시 훑지 않는다.
   // unreadOwnerIds는 안 읽은 알림이 지워진 사람(중복 없음)이다

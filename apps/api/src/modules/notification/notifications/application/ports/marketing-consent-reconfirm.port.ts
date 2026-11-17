@@ -1,7 +1,7 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface MarketingReconfirmRecipient {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly marketingAgreedAt: Temporal.Instant | null;
   readonly marketingPushAgreedAt: Temporal.Instant | null;
 }
