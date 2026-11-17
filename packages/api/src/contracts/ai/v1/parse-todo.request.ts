@@ -19,5 +19,3 @@ export const parseTodoRequestSchema = z.object({
     .optional()
     .meta({ description: "카테고리 ID (프론트에서 선택한 카테고리, pass-through)" }),
 });
-
-export type ParseTodoRequest = z.infer<typeof parseTodoRequestSchema>;

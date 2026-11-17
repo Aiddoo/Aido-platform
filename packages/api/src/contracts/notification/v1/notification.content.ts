@@ -24,5 +24,3 @@ export const notificationContentSchema = z
     body: notificationBodySchema,
   })
   .meta({ description: "알림 제목과 본문" });
-
-export type NotificationContent = z.infer<typeof notificationContentSchema>;

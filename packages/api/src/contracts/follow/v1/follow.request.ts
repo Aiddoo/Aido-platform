@@ -10,8 +10,6 @@ export const userIdParamSchema = z.object({
   }),
 });
 
-export type UserIdParam = z.infer<typeof userIdParamSchema>;
-
 export const userTagParamSchema = z.object({
   userTag: z
     .string()
@@ -19,8 +17,6 @@ export const userTagParamSchema = z.object({
     .regex(/^[A-Z0-9]+$/, "사용자 태그는 영문 대문자와 숫자만 허용됩니다")
     .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
 });
-
-export type UserTagParam = z.infer<typeof userTagParamSchema>;
 
 export const getFollowsQuerySchema = z.object({
   cursor: entityIdSchema.optional().meta({ description: "페이지네이션 커서 (선택)" }),
@@ -33,8 +29,6 @@ export const getFollowsQuerySchema = z.object({
     .default(20)
     .meta({ description: "페이지 크기 (1-50, 기본값: 20)" }),
 });
-
-export type GetFollowsQuery = z.infer<typeof getFollowsQuerySchema>;
 
 export const getFriendsQuerySchema = z.object({
   cursor: entityIdSchema.optional().meta({ description: "페이지네이션 커서 (선택)" }),
@@ -52,8 +46,6 @@ export const getFriendsQuerySchema = z.object({
     .optional()
     .meta({ description: "검색어 (최대 50자, 선택)" }),
 });
-
-export type GetFriendsQuery = z.infer<typeof getFriendsQuerySchema>;
 
 export const searchUsersQuerySchema = z.object({
   q: z
@@ -79,8 +71,6 @@ export const searchUsersQuerySchema = z.object({
     .meta({ description: "페이지 크기 (1-50, 기본값: 20)" }),
 });
 
-export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
-
 export const reorderFriendSchema = z.object({
   targetFollowId: entityIdSchemaWithMessage("유효하지 않은 Follow ID입니다")
     .optional()
@@ -90,12 +80,8 @@ export const reorderFriendSchema = z.object({
   }),
 });
 
-export type ReorderFriendInput = z.infer<typeof reorderFriendSchema>;
-
 export const followIdParamSchema = z.object({
   followId: entityIdSchemaWithMessage("유효하지 않은 Follow ID입니다").meta({
     description: "순서를 변경할 친구의 팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)",
   }),
 });
-
-export type FollowIdParam = z.infer<typeof followIdParamSchema>;

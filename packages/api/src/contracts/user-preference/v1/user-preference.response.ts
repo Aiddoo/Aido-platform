@@ -47,8 +47,6 @@ export const userPreferenceSchema = z
     },
   });
 
-export type UserPreference = z.infer<typeof userPreferenceSchema>;
-
 export const preferenceResponseSchema = userPreferenceSchema.meta({
   example: {
     pushEnabled: true,
@@ -90,5 +88,3 @@ export const updatePreferenceResponseSchema = userPreferenceSchema.meta({
     aiPushEnabled: true,
   },
 });
-
-export type UpdatePreferenceResponse = z.infer<typeof updatePreferenceResponseSchema>;

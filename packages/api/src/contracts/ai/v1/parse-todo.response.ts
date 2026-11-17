@@ -11,8 +11,6 @@ export const todoRecurrenceSchema = z.object({
   endDate: dateSchema,
 });
 
-export type TodoRecurrence = z.infer<typeof todoRecurrenceSchema>;
-
 export const parsedTodoDataSchema = z.object({
   title: z
     .string()
@@ -54,8 +52,6 @@ export const parseTodoMetaSchema = z.object({
   }),
 });
 
-export type ParseTodoMeta = z.infer<typeof parseTodoMetaSchema>;
-
 export const parseTodoResponseSchema = z.object({
   success: z.literal(true).meta({ description: "파싱 성공 여부 (항상 true)" }),
   data: parsedTodoDataSchema.meta({ description: "파싱된 할 일 데이터" }),
@@ -64,5 +60,3 @@ export const parseTodoResponseSchema = z.object({
     .optional()
     .meta({ description: "이 요청을 반영한 AI_PARSE 한도·사용량. 1.15.0 이전 서버 응답에는 없다" }),
 });
-
-export type ParseTodoResponse = z.infer<typeof parseTodoResponseSchema>;

@@ -51,10 +51,6 @@ export const createBroadcastCampaignSchema = broadcastNotificationSchema
     },
   });
 
-export type CreateBroadcastCampaignInput = z.infer<typeof createBroadcastCampaignSchema>;
-
 export const broadcastCampaignIdParamSchema = z.object({
   campaignId: entityIdSchema.meta({ description: "브로드캐스트 캠페인 ID" }),
 });
-
-export type BroadcastCampaignIdParam = z.infer<typeof broadcastCampaignIdParamSchema>;

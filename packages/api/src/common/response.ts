@@ -29,8 +29,6 @@ export const errorEnvelopeSchema = z.object({
   timestamp: z.number(),
 });
 
-export type ErrorEnvelope = z.infer<typeof errorEnvelopeSchema>;
-
 export interface RestErrorResponse {
   success: false;
   error: {

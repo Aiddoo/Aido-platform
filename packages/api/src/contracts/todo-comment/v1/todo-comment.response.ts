@@ -293,16 +293,11 @@ export const deleteTodoCommentResponseSchema = z
 
 export type TodoComment = z.infer<typeof todoCommentSchema>;
 export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;
-export type TodoCommentReplyTarget = z.infer<typeof todoCommentReplyTargetSchema>;
 export type TodoCommentCursorPagination = z.infer<typeof todoCommentCursorPaginationSchema>;
-export type TodoCommentReplySummary = z.infer<typeof todoCommentReplySummarySchema>;
-export type TodoCommentOverviewItem = z.infer<typeof todoCommentOverviewItemSchema>;
 export type TodoCommentOverviewResponse = z.infer<typeof todoCommentOverviewResponseSchema>;
-export type TodoConversationIncomingBranch = z.infer<typeof todoConversationIncomingBranchSchema>;
 export type TodoConversationConnection = z.infer<typeof todoConversationConnectionSchema>;
 export type TodoConversationItem = z.infer<typeof todoConversationItemSchema>;
 export type TodoConversationResponse = z.infer<typeof todoConversationResponseSchema>;
-export type TodoConversationFocus = z.infer<typeof todoConversationFocusSchema>;
 export type TodoDetailsResponse = z.infer<typeof todoDetailsResponseSchema>;
 export type TodoCommentChainResponse = z.infer<typeof todoCommentChainResponseSchema>;
 export type TodoCommentMutationResponse = z.infer<typeof todoCommentMutationResponseSchema>;

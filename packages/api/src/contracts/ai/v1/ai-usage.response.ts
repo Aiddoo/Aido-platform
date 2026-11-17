@@ -14,18 +14,12 @@ export const aiUsageDataSchema = z.object({
   }),
 });
 
-export type AiUsageData = z.infer<typeof aiUsageDataSchema>;
-
 export const tokenUsageSchema = z.object({
   input: z.int().nonnegative().meta({ description: "입력 토큰 수 (0 이상)" }),
   output: z.int().nonnegative().meta({ description: "출력 토큰 수 (0 이상)" }),
 });
 
-export type TokenUsage = z.infer<typeof tokenUsageSchema>;
-
 export const aiUsageResponseSchema = z.object({
   success: z.literal(true).meta({ description: "조회 성공 여부 (항상 true)" }),
   data: aiUsageDataSchema.meta({ description: "AI 사용량 정보" }),
 });
-
-export type AiUsageResponse = z.infer<typeof aiUsageResponseSchema>;

@@ -7,8 +7,6 @@ import { FOLLOW_STATUSES } from "../../../vocabulary/follow.constants.js";
 
 export const followStatusSchema = z.enum(FOLLOW_STATUSES);
 
-export type FollowStatus = z.infer<typeof followStatusSchema>;
-
 export const followSchema = z
   .object({
     id: entityIdSchema.meta({ description: "팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)" }),
@@ -34,37 +32,6 @@ export const followSchema = z
   });
 
 export type Follow = z.infer<typeof followSchema>;
-
-export const followUserSchema = z
-  .object({
-    id: entityIdSchema.meta({ description: "사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)" }),
-    userTag: z
-      .string()
-      .length(USER_TAG_LENGTH)
-      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
-    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
-    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
-    isFollowing: z.boolean().meta({ description: "내가 팔로우 중인지 여부" }),
-    isFollower: z.boolean().meta({ description: "상대가 나를 팔로우 중인지 여부" }),
-    isFriend: z.boolean().meta({ description: "서로 친구인지 여부 (양방향 팔로우)" }),
-    followedAt: datetimeSchema.meta({
-      description: "팔로우 시작 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
-    }),
-  })
-  .meta({
-    example: {
-      id: "clz7x5p8k0005qz0z8z8z8z8z",
-      userTag: "JOHN2026",
-      name: "존",
-      profileImage: "https://example.com/profiles/john.jpg",
-      isFollowing: true,
-      isFollower: true,
-      isFriend: true,
-      followedAt: "2026-01-15T10:30:00.000Z",
-    },
-  });
-
-export type FollowUser = z.infer<typeof followUserSchema>;
 
 export const searchUserSchema = z
   .object({
@@ -180,64 +147,6 @@ export const friendRequestUserSchema = z
 
 export type FriendRequestUser = z.infer<typeof friendRequestUserSchema>;
 
-export const followingListResponseSchema = z
-  .object({
-    following: z
-      .array(followUserSchema)
-      .meta({ description: "팔로잉 목록 (내가 팔로우하는 사용자들)" }),
-    totalCount: z.int().nonnegative().meta({ description: "전체 팔로잉 수 (음이 아닌 정수)" }),
-    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
-  })
-  .meta({
-    example: {
-      following: [
-        {
-          id: "clz7x5p8k0005qz0z8z8z8z8z",
-          userTag: "JOHN2026",
-          name: "존",
-          profileImage: "https://example.com/profiles/john.jpg",
-          isFollowing: true,
-          isFollower: true,
-          isFriend: true,
-          followedAt: "2026-01-15T10:30:00.000Z",
-        },
-      ],
-      totalCount: 15,
-      hasMore: true,
-    },
-  });
-
-export type FollowingListResponse = z.infer<typeof followingListResponseSchema>;
-
-export const followerListResponseSchema = z
-  .object({
-    followers: z
-      .array(followUserSchema)
-      .meta({ description: "팔로워 목록 (나를 팔로우하는 사용자들)" }),
-    totalCount: z.int().nonnegative().meta({ description: "전체 팔로워 수 (음이 아닌 정수)" }),
-    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
-  })
-  .meta({
-    example: {
-      followers: [
-        {
-          id: "clz7x5p8k0007qz0z8z8z8z8z",
-          userTag: "MIKE2025",
-          name: "마이크",
-          profileImage: "https://example.com/profiles/mike.jpg",
-          isFollowing: false,
-          isFollower: true,
-          isFriend: false,
-          followedAt: "2026-01-12T14:00:00.000Z",
-        },
-      ],
-      totalCount: 8,
-      hasMore: false,
-    },
-  });
-
-export type FollowerListResponse = z.infer<typeof followerListResponseSchema>;
-
 export const friendsListResponseSchema = z
   .object({
     friends: z
@@ -313,32 +222,6 @@ export const sentRequestsResponseSchema = z
 
 export type SentRequestsResponse = z.infer<typeof sentRequestsResponseSchema>;
 
-export const followCountResponseSchema = z
-  .object({
-    followingCount: z.int().nonnegative().meta({ description: "팔로잉 수 (음이 아닌 정수)" }),
-    followerCount: z.int().nonnegative().meta({ description: "팔로워 수 (음이 아닌 정수)" }),
-    friendCount: z.int().nonnegative().meta({ description: "친구 수 (음이 아닌 정수)" }),
-    pendingReceivedCount: z
-      .int()
-      .nonnegative()
-      .meta({ description: "받은 친구 요청 수 (음이 아닌 정수)" }),
-    pendingSentCount: z
-      .int()
-      .nonnegative()
-      .meta({ description: "보낸 친구 요청 수 (음이 아닌 정수)" }),
-  })
-  .meta({
-    example: {
-      followingCount: 15,
-      followerCount: 8,
-      friendCount: 5,
-      pendingReceivedCount: 3,
-      pendingSentCount: 2,
-    },
-  });
-
-export type FollowCountResponse = z.infer<typeof followCountResponseSchema>;
-
 export const sendFriendRequestResponseSchema = z
   .object({
     message: z.string().meta({ description: "응답 메시지" }),
@@ -394,8 +277,6 @@ export const rejectFriendRequestResponseSchema = z
     },
   });
 
-export type RejectFriendRequestResponse = z.infer<typeof rejectFriendRequestResponseSchema>;
-
 export const removeFriendResponseSchema = z
   .object({
     message: z.string(),
@@ -406,8 +287,6 @@ export const removeFriendResponseSchema = z
     },
   });
 
-export type RemoveFriendResponse = z.infer<typeof removeFriendResponseSchema>;
-
 export const cancelFriendRequestResponseSchema = z
   .object({
     message: z.string(),
@@ -417,20 +296,6 @@ export const cancelFriendRequestResponseSchema = z
       message: "친구 요청을 철회했습니다.",
     },
   });
-
-export type CancelFriendRequestResponse = z.infer<typeof cancelFriendRequestResponseSchema>;
-
-export const removeFollowerResponseSchema = z
-  .object({
-    message: z.string(),
-  })
-  .meta({
-    example: {
-      message: "팔로워가 삭제되었습니다.",
-    },
-  });
-
-export type RemoveFollowerResponse = z.infer<typeof removeFollowerResponseSchema>;
 
 export const reorderFriendResponseSchema = z
   .object({

@@ -16,5 +16,3 @@ export const parseMemoRequestSchema = z.object({
     .positive("유효하지 않은 카테고리 ID입니다")
     .meta({ description: "기본 카테고리 ID (생성될 모든 할 일에 적용)" }),
 });
-
-export type ParseMemoRequest = z.infer<typeof parseMemoRequestSchema>;

@@ -33,8 +33,6 @@ export const updateMemoSchema = z.object({
     .meta({ description: `메모 내용 (1-${MEMO_LIMITS.MAX_CONTENT_LENGTH}자)` }),
 });
 
-export type UpdateMemoInput = z.infer<typeof updateMemoSchema>;
-
 export const getMemosQuerySchema = z.object({
   cursor: z.coerce
     .number()
@@ -51,8 +49,6 @@ export const getMemosQuerySchema = z.object({
     .meta({ description: "조회할 개수 (1-200, 기본값: 20)" }),
 });
 
-export type GetMemosQuery = z.infer<typeof getMemosQuerySchema>;
-
 export const memoIdParamSchema = z.object({
   id: z.coerce
     .number()
@@ -61,13 +57,9 @@ export const memoIdParamSchema = z.object({
     .meta({ description: "메모 고유 ID (양의 정수, 예: 1)" }),
 });
 
-export type MemoIdParam = z.infer<typeof memoIdParamSchema>;
-
 export const toggleMemoPinSchema = z.object({
   isPinned: z.boolean().meta({ description: "고정 여부 (true: 고정, false: 해제)" }),
 });
-
-export type ToggleMemoPinInput = z.infer<typeof toggleMemoPinSchema>;
 
 export const reorderMemoSchema = z.object({
   targetMemoId: z
@@ -79,8 +71,6 @@ export const reorderMemoSchema = z.object({
     description: "이동 위치 (before: 기준 앞으로, after: 기준 뒤로)",
   }),
 });
-
-export type ReorderMemoInput = z.infer<typeof reorderMemoSchema>;
 
 export const convertMemoToTodoSchema = z.object({
   categoryId: z
@@ -115,8 +105,6 @@ export const convertMemoToTodoSchema = z.object({
     .optional()
     .meta({ description: "할 일 생성 시 함께 만들 체크리스트 (선택, 최대 20개)" }),
 });
-
-export type ConvertMemoToTodoInput = z.infer<typeof convertMemoToTodoSchema>;
 
 const convertMemoTodoItemSchema = z.object({
   title: z

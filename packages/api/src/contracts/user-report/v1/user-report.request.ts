@@ -31,8 +31,6 @@ export const userReportFormSchema = z.object({
     .meta({ description: `신고 상세 내용 (선택, 최대 ${USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}자)` }),
 });
 
-export type UserReportFormInput = z.infer<typeof userReportFormSchema>;
-
 export const createUserReportSchema = z
   .object({
     targetUserId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").meta({
@@ -82,8 +80,6 @@ export const resolveUserReportParamSchema = z.object({
   }),
 });
 
-export type ResolveUserReportParam = z.infer<typeof resolveUserReportParamSchema>;
-
 /** 운영자가 신고를 확인하고 한 조치. 신고자·신고된 사용자에게는 보이지 않는다 */
 export const resolveUserReportSchema = z
   .object({
@@ -100,5 +96,3 @@ export const resolveUserReportSchema = z
       }),
   })
   .meta({ example: { note: "약관 위반 댓글을 삭제하고 작성자에게 경고했습니다." } });
-
-export type ResolveUserReportInput = z.infer<typeof resolveUserReportSchema>;

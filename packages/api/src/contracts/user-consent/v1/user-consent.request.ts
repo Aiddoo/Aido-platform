@@ -15,8 +15,6 @@ export const updateMarketingPushConsentSchema = z.object({
   agreed: z.boolean().meta({ description: "광고성 앱 푸시 수신 동의 여부" }),
 });
 
-export type UpdateMarketingPushConsentInput = z.infer<typeof updateMarketingPushConsentSchema>;
-
 export const updateAiDataSharingConsentSchema = z
   .object({
     agreed: z.boolean().meta({

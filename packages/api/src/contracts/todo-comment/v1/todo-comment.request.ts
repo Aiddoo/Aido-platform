@@ -170,5 +170,3 @@ export const getTodoConversationQuerySchema = z
 
 export type CreateTodoCommentChainInput = z.infer<typeof createTodoCommentChainSchema>;
 export type UpdateTodoCommentInput = z.infer<typeof updateTodoCommentSchema>;
-export type GetTodoCommentOverviewQuery = z.infer<typeof getTodoCommentOverviewQuerySchema>;
-export type GetTodoConversationQuery = z.infer<typeof getTodoConversationQuerySchema>;

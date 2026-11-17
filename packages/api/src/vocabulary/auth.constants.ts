@@ -46,16 +46,10 @@ export const LOGIN_ATTEMPT = {
   LOCKOUT_MINUTES: 15,
 } as const;
 
-export const JWT_CONFIG = {
-  ACCESS_EXPIRES_IN: "15m",
-  REFRESH_EXPIRES_IN: "7d",
-} as const;
-
 export const DEVICE_TYPES = ["IOS", "ANDROID", "WEB"] as const;
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 
 export const USER_STATUS = ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"] as const;
-export type UserStatus = (typeof USER_STATUS)[number];
 
 export const USER_ROLE = {
   USER: "USER",
@@ -110,8 +104,6 @@ export const VERIFICATION_TYPE = {
   PASSWORD_SETUP: "PASSWORD_SETUP",
 } as const;
 
-export type VerificationTypeValue = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
-
 export const ACCOUNT_DELETION = {
   GRACE_PERIOD_DAYS: 30,
 } as const;
@@ -127,8 +119,6 @@ export const PROFILE_ICON_KEYS = [
   "cream_cat",
   "tuxedo_cat",
 ] as const;
-
-export type ProfileIconKey = (typeof PROFILE_ICON_KEYS)[number];
 
 export const OAUTH_PROVIDERS = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] as const;
 

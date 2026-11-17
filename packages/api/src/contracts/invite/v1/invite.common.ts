@@ -32,8 +32,6 @@ export const inviteCodeSchema = z
     description: "초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)",
   });
 
-export type InviteCode = z.output<typeof inviteCodeSchema>;
-
 export const redemptionRejectionReasonSchema = z
   .enum(REDEMPTION_REJECTION_REASON)
   .meta({ description: "보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음)" });
@@ -94,8 +92,6 @@ export const inviteRewardSchema = z
     description: "보상 (rewardType 판별 유니온)",
     example: { rewardType: "PREMIUM_DAYS", quantity: 7 },
   });
-
-export type InviteReward = z.infer<typeof inviteRewardSchema>;
 
 export type RewardAmount = z.input<typeof inviteRewardSchema>;
 

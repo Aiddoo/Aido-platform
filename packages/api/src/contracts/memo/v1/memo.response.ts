@@ -107,8 +107,6 @@ export const memoDeleteResponseSchema = z
     },
   });
 
-export type MemoDeleteResponse = z.infer<typeof memoDeleteResponseSchema>;
-
 export const convertMemoToTodoResponseSchema = z
   .object({
     message: z.string().meta({ description: "응답 메시지" }),

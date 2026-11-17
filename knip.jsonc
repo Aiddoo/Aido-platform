@@ -24,9 +24,13 @@
       "ignoreDependencies": ["pino-pretty"],
     },
     "packages/api": {
-      // 모든 계약 파일이 공개 API다. 모바일이 쓰는 export는 이 검사에서 보이지 않아 의존성·중복 export만 본다
-      "entry": ["src/**/*.ts"],
+      // 진입점은 package.json exports다. 서버·모바일(의존 workspace라 함께 분석된다)·테스트가 import하지 않는
+      // export는 지운다. tsconfig.json에 rootDir를 두지 않아야 exports의 dist 경로를 src로 짝짓는다
       "project": ["src/**/*.ts", "test/**/*.ts"],
+      "includeEntryExports": true,
+      "ignoreExportsUsedInFile": true,
+      // 주간 성취 계약은 insights 층이 고치는 중이라 그 층에서 정리한다
+      "ignore": ["src/contracts/weekly-achievement/**"],
     },
     "tooling/*": {},
   },

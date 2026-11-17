@@ -29,16 +29,12 @@ export const registerPushTokenSchema = z.object({
   appVersion: z.string().max(30).optional().meta({ description: "모바일 앱 버전" }),
 });
 
-export type RegisterPushTokenInput = z.infer<typeof registerPushTokenSchema>;
-
 /** 푸시 토큰 해제. deviceId를 생략하면 사용자의 모든 토큰을 해제한다. 등록할 때와 같은 기기 ID 규칙을 쓴다. */
 export const unregisterPushTokenQuerySchema = z.object({
   deviceId: registerPushTokenSchema.shape.deviceId.meta({
     description: "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제 (최대 100자)",
   }),
 });
-
-export type UnregisterPushTokenQuery = z.infer<typeof unregisterPushTokenQuerySchema>;
 
 /** 세션이 끝난 기기의 해제. 로그인 없이 받으므로 기기 ID와 그 기기에 등록된 토큰이 모두 맞을 때만 지운다. */
 export const unregisterPushDeviceByTokenSchema = z.object({
@@ -56,8 +52,6 @@ export const pushDeviceParamSchema = z.object({
   }),
 });
 
-export type PushDeviceParam = z.infer<typeof pushDeviceParamSchema>;
-
 export const pushPermissionSchema = z
   .object({
     status: z
@@ -66,8 +60,6 @@ export const pushPermissionSchema = z
     canAskAgain: z.boolean().meta({ description: "앱이 시스템 권한 창을 다시 띄울 수 있는지" }),
   })
   .meta({ description: "앱이 OS에서 읽은 알림 권한" });
-
-export type PushPermission = z.infer<typeof pushPermissionSchema>;
 
 export const reportPushDeviceSchema = z
   .object({
@@ -90,26 +82,6 @@ export const reportPushDeviceSchema = z
   });
 
 export type ReportPushDeviceInput = z.infer<typeof reportPushDeviceSchema>;
-
-export const markNotificationReadSchema = z.object({
-  notificationId: z.coerce
-    .number()
-    .int()
-    .positive("유효하지 않은 알림 ID입니다")
-    .meta({ description: "알림 ID (양의 정수)" }),
-});
-
-export type MarkNotificationReadInput = z.infer<typeof markNotificationReadSchema>;
-
-export const markNotificationsReadSchema = z.object({
-  notificationIds: z
-    .array(z.coerce.number().int().positive("유효하지 않은 알림 ID입니다"))
-    .min(1, "최소 1개의 알림 ID가 필요합니다")
-    .max(100, "한 번에 최대 100개까지 처리 가능합니다")
-    .meta({ description: "알림 ID 배열 (1-100개, 양의 정수)" }),
-});
-
-export type MarkNotificationsReadInput = z.infer<typeof markNotificationsReadSchema>;
 
 export const getNotificationsQuerySchema = z.object({
   limit: z.coerce
@@ -142,8 +114,6 @@ export const getNotificationsQuerySchema = z.object({
     }),
 });
 
-export type GetNotificationsQuery = z.infer<typeof getNotificationsQuerySchema>;
-
 export const notificationIdParamSchema = z.object({
   id: z.coerce
     .number()
@@ -152,17 +122,6 @@ export const notificationIdParamSchema = z.object({
     .meta({ description: "알림 고유 ID (양의 정수, 예: 1)" }),
 });
 
-export type NotificationIdParam = z.infer<typeof notificationIdParamSchema>;
-
-export const markNotificationOpenedSchema = z.object({
-  actionIdentifier: z.string().max(100).default("DEFAULT"),
-  source: z.enum(["PUSH", "NOTIFICATION_CENTER"]).default("PUSH"),
-});
-
-export type MarkNotificationOpenedInput = z.infer<typeof markNotificationOpenedSchema>;
-
 export const marketingPushOptOutSchema = z.object({
   token: z.string().min(1).max(2048).meta({ description: "서명된 광고성 푸시 수신 철회 토큰" }),
 });
-
-export type MarketingPushOptOutInput = z.infer<typeof marketingPushOptOutSchema>;

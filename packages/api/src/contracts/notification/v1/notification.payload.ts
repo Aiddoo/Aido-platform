@@ -27,8 +27,6 @@ export const todoCommentNotificationRoutingSchema = z
   })
   .meta({ description: "댓글 알림 라우팅" });
 
-export type TodoCommentNotificationRouting = z.infer<typeof todoCommentNotificationRoutingSchema>;
-
 /**
  * 기존 알림과 구버전 클라이언트를 위한 읽기 계약.
  * 예전 payload는 필드 일부만 가질 수 있으므로 optional shape을 유지한다.
@@ -67,8 +65,6 @@ export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.pa
 });
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
-
-export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 /** 푸시 알림 data. 구버전 앱은 모르는 키를 버리므로 필드는 추가만 한다. */
 export const pushNotificationDataSchema = z.object({

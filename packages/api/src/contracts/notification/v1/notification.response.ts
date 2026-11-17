@@ -63,8 +63,6 @@ export const notificationSchema = z
     },
   });
 
-export type Notification = z.infer<typeof notificationSchema>;
-
 export const notificationListResponseSchema = z
   .object({
     notifications: z.array(notificationSchema).meta({ description: "알림 목록" }),
@@ -138,17 +136,11 @@ export const registerTokenResponseSchema = z
     },
   });
 
-export type RegisterTokenResponse = z.infer<typeof registerTokenResponseSchema>;
-
 export const unregisterPushDeviceByTokenResponseSchema = z.object({
   unregistered: z
     .literal(true)
     .meta({ description: "항상 true. 일치하는 등록이 있었는지는 알려 주지 않는다" }),
 });
-
-export type UnregisterPushDeviceByTokenResponse = z.infer<
-  typeof unregisterPushDeviceByTokenResponseSchema
->;
 
 export const pushDeviceResponseSchema = z
   .object({
@@ -189,7 +181,6 @@ export const markReadResponseSchema = z
 export type MarkReadResponse = z.infer<typeof markReadResponseSchema>;
 
 export const notificationOpenedResponseSchema = z.object({ opened: z.boolean() });
-export type NotificationOpenedResponse = z.infer<typeof notificationOpenedResponseSchema>;
 
 export const marketingPushOptOutResponseSchema = z.object({
   optedOut: z.literal(true),
@@ -198,4 +189,3 @@ export const marketingPushOptOutResponseSchema = z.object({
       "이번 요청을 처리한 서버 시각 (1.15.0+ 서버). 토큰 유효 여부를 숨기려고 항상 준다. 앱은 철회 결과 안내에 기기 시각 대신 이 값을 쓴다",
   }),
 });
-export type MarketingPushOptOutResponse = z.infer<typeof marketingPushOptOutResponseSchema>;

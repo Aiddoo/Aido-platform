@@ -12,8 +12,6 @@ export const hourlyForecastSchema = z.object({
   snowAmount: z.number().min(0).meta({ description: "1시간 신적설 (cm)" }),
 });
 
-export type HourlyForecast = z.infer<typeof hourlyForecastSchema>;
-
 export const dailyForecastSchema = z.object({
   date: z.string().meta({ description: "예보 날짜 (YYYY-MM-DD)" }),
   skyCondition: z.enum(SKY_CONDITIONS).meta({ description: "하늘 상태" }),
@@ -22,8 +20,6 @@ export const dailyForecastSchema = z.object({
   temperatureMin: z.number().meta({ description: "최저 기온 (°C)" }),
   temperatureMax: z.number().meta({ description: "최고 기온 (°C)" }),
 });
-
-export type DailyForecast = z.infer<typeof dailyForecastSchema>;
 
 export const weatherConditionsSchema = z.object({
   feelsLikeTemperature: z.number().nullable().meta({ description: "체감 온도 (°C)" }),

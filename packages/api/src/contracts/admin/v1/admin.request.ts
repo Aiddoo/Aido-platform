@@ -59,8 +59,6 @@ export const growthSummaryQuerySchema = z
   })
   .meta({ description: "관리자 성장 지표 요약 조회" });
 
-export type GrowthSummaryQuery = z.infer<typeof growthSummaryQuerySchema>;
-
 /**
  * 전체/조건부 알림 브로드캐스트 요청
  */
@@ -97,8 +95,6 @@ export const broadcastNotificationSchema = z
       targetFilter: "ALL",
     },
   });
-
-export type BroadcastNotificationInput = z.infer<typeof broadcastNotificationSchema>;
 
 /**
  * 특정 사용자 대상 알림 요청
@@ -137,5 +133,3 @@ export const targetedNotificationSchema = z
       userIds: ["clz7x5p8k0001qz0z8z8z8z8z", "clz7x5p8k0002qz0z8z8z8z8z"],
     },
   });
-
-export type TargetedNotificationInput = z.infer<typeof targetedNotificationSchema>;

@@ -103,5 +103,3 @@ export const updatePreferenceSchema = z
       data.aiPushEnabled != null,
     { error: "최소 하나의 설정 값이 필요합니다" },
   );
-
-export type UpdatePreferenceInput = z.infer<typeof updatePreferenceSchema>;

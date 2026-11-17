@@ -33,8 +33,6 @@ export const invitePreviewInviterSchema = z
     description: "초대한 사람 공개 프로필 (로그인 전에도 보이므로 이름과 프로필 이미지만 담는다)",
   });
 
-export type InvitePreviewInviter = z.infer<typeof invitePreviewInviterSchema>;
-
 export const invitePreviewResponseSchema = z
   .object({
     inviter: invitePreviewInviterSchema,
@@ -54,8 +52,6 @@ export const inviterSummarySchema = invitePreviewInviterSchema
   })
   .meta({ description: "초대한 사람 요약 (환영 화면과 친구 화면 이동용)" });
 
-export type InviterSummary = z.infer<typeof inviterSummarySchema>;
-
 export const inviteMilestoneSchema = z
   .object({
     qualifiedCount: z
@@ -65,8 +61,6 @@ export const inviteMilestoneSchema = z
     rewards: z.array(inviteRewardSchema).meta({ description: "이 단계에서 받는 보상 목록" }),
   })
   .meta({ description: "초대한 사람 보상 단계" });
-
-export type InviteMilestone = z.infer<typeof inviteMilestoneSchema>;
 
 export const myInviteResponseSchema = z
   .object({
@@ -183,8 +177,6 @@ export const invitedFriendsListResponseSchema = z
     },
   });
 
-export type InvitedFriendsListResponse = z.infer<typeof invitedFriendsListResponseSchema>;
-
 export const redeemInviteResponseSchema = z
   .discriminatedUnion("outcome", [
     z
@@ -237,5 +229,3 @@ export const inviteAvailabilityResponseSchema = z
     enabled: z.boolean().meta({ description: "친구 초대 기능 사용 가능 여부" }),
   })
   .meta({ example: { enabled: true } });
-
-export type InviteAvailabilityResponse = z.infer<typeof inviteAvailabilityResponseSchema>;

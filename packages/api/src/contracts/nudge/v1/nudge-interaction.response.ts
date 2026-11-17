@@ -8,10 +8,6 @@ export const nudgeInteractionAvailabilityResponseSchema = z.object({
   enabled: z.boolean().meta({ description: "콕 주고받기 기능 사용 가능 여부" }),
 });
 
-export type NudgeInteractionAvailabilityResponse = z.infer<
-  typeof nudgeInteractionAvailabilityResponseSchema
->;
-
 export const nudgeInteractionResponseSchema = nudgeSchema.extend({
   sender: nudgeSenderSchema.meta({ description: "콕을 보낸 친구" }),
   receiver: nudgeSenderSchema.meta({ description: "콕을 받은 친구" }),
@@ -70,5 +66,3 @@ export type NudgeThanksPreviewResponse = z.infer<typeof nudgeThanksPreviewRespon
 export const sendNudgeThanksResponseSchema = z.object({
   sentCount: z.int().nonnegative().meta({ description: "이번 요청으로 감사를 전한 친구 수" }),
 });
-
-export type SendNudgeThanksResponse = z.infer<typeof sendNudgeThanksResponseSchema>;

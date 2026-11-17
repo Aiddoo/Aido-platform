@@ -53,8 +53,6 @@ export const cheerSenderSchema = z
     },
   });
 
-export type CheerSender = z.infer<typeof cheerSenderSchema>;
-
 export const cheerDetailSchema = cheerSchema
   .extend({
     sender: cheerSenderSchema,

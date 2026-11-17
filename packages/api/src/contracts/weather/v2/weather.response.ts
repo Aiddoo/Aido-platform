@@ -55,15 +55,11 @@ export const weatherCurrentConditionsSchema = z.object({
   precipitationIntensity: z.number().min(0).meta({ description: "강수 강도 (mm/h)" }),
 });
 
-export type WeatherCurrentConditions = z.infer<typeof weatherCurrentConditionsSchema>;
-
 export const weatherMinuteForecastSchema = z.object({
   startsAt: datetimeSchema.meta({ description: "분 단위 구간 시작 시각" }),
   precipitationChance: percentSchema.meta({ description: "강수 확률 (%)" }),
   precipitationIntensity: z.number().min(0).meta({ description: "강수 강도 (mm/h)" }),
 });
-
-export type WeatherMinuteForecast = z.infer<typeof weatherMinuteForecastSchema>;
 
 export const weatherNextHourPeriodSchema = z.object({
   condition: z.enum(WEATHER_NEXT_HOUR_CONDITIONS).meta({ description: "구간 상태" }),
@@ -88,8 +84,6 @@ export const weatherNextHourSchema = z.object({
     .array(weatherMinuteForecastSchema)
     .meta({ description: "지금부터 공급자 예보 끝(최대 약 90분)까지 1분 간격" }),
 });
-
-export type WeatherNextHour = z.infer<typeof weatherNextHourSchema>;
 
 export const weatherHourlyForecastSchema = z.object({
   startsAt: datetimeSchema.meta({ description: "시간 구간 시작 시각" }),
@@ -145,8 +139,6 @@ export const weatherDailyForecastSchema = z.object({
     .meta({ description: "밤(19~다음 날 07시) 예보" }),
 });
 
-export type WeatherDailyForecast = z.infer<typeof weatherDailyForecastSchema>;
-
 export const weatherAirQualitySchema = z.object({
   pm10: z.number().min(0).nullable().meta({ description: "미세먼지 (μg/m³)" }),
   pm25: z.number().min(0).nullable().meta({ description: "초미세먼지 (μg/m³)" }),
@@ -154,8 +146,6 @@ export const weatherAirQualitySchema = z.object({
     .enum(WEATHER_AIR_QUALITY_SOURCES)
     .meta({ description: "대기질 출처. 화면에 출처를 함께 표기한다" }),
 });
-
-export type WeatherAirQuality = z.infer<typeof weatherAirQualitySchema>;
 
 export const weatherAlertSchema = z.object({
   id: z.string().meta({ description: "공급자 특보 ID" }),
@@ -194,8 +184,6 @@ export const weatherAttributionSchema = z.object({
     }),
 });
 
-export type WeatherAttribution = z.infer<typeof weatherAttributionSchema>;
-
 export const weatherRescheduleOptionSchema = z.object({
   startsAt: datetimeSchema.meta({
     description: "옮길 시각 후보. 같은 날(요청 시간대)의 시간별 예보 시작 시각",
@@ -206,8 +194,6 @@ export const weatherRescheduleOptionSchema = z.object({
     .boolean()
     .meta({ description: "서버가 가장 낫다고 고른 후보. 목록의 첫 항목이다" }),
 });
-
-export type WeatherRescheduleOption = z.infer<typeof weatherRescheduleOptionSchema>;
 
 export const weatherBriefingSchema = z.object({
   reason: z.enum(WEATHER_RESCHEDULE_REASONS).nullable().catch(null).meta({

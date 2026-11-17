@@ -39,8 +39,6 @@ export const todoCategorySummarySchema = z.object({
   sortOrder: z.int().meta({ description: "카테고리 정렬 순서 (작을수록 위)" }),
 });
 
-export type TodoCategorySummary = z.infer<typeof todoCategorySummarySchema>;
-
 export const todoCategoryWithCountSchema = todoCategorySchema.extend({
   todoCount: z.int().meta({ description: "카테고리 내 할 일 개수 (음이 아닌 정수)" }),
 });
@@ -80,8 +78,6 @@ export const todoCategoryListResponseSchema = z
     },
   });
 
-export type TodoCategoryListResponse = z.infer<typeof todoCategoryListResponseSchema>;
-
 export const createTodoCategoryResponseSchema = z
   .object({
     message: z.string(),
@@ -102,8 +98,6 @@ export const createTodoCategoryResponseSchema = z
     },
   });
 
-export type CreateTodoCategoryResponse = z.infer<typeof createTodoCategoryResponseSchema>;
-
 export const updateTodoCategoryResponseSchema = z
   .object({
     message: z.string(),
@@ -123,8 +117,6 @@ export const updateTodoCategoryResponseSchema = z
       },
     },
   });
-
-export type UpdateTodoCategoryResponse = z.infer<typeof updateTodoCategoryResponseSchema>;
 
 export const categoryDeletionResultSchema = z.object({
   todoHandling: z.enum(CATEGORY_TODO_HANDLING_RESULTS).meta({
@@ -161,8 +153,6 @@ export const deleteTodoCategoryResponseSchema = z
     },
   });
 
-export type DeleteTodoCategoryResponse = z.infer<typeof deleteTodoCategoryResponseSchema>;
-
 export const todoCategoryDeletionPreviewSchema = z
   .object({
     categoryId: z.int().meta({ description: "삭제하려는 카테고리 ID" }),
@@ -198,8 +188,6 @@ export const todoCategoryResponseSchema = z.object({
   category: todoCategoryWithCountSchema,
 });
 
-export type TodoCategoryResponse = z.infer<typeof todoCategoryResponseSchema>;
-
 export const reorderTodoCategoryResponseSchema = z
   .object({
     message: z.string(),
@@ -219,5 +207,3 @@ export const reorderTodoCategoryResponseSchema = z
       },
     },
   });
-
-export type ReorderTodoCategoryResponse = z.infer<typeof reorderTodoCategoryResponseSchema>;

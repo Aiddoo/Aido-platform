@@ -17,17 +17,6 @@ export const createCheerSchema = z.object({
     .meta({ description: "응원 메시지 (선택, 최대 200자)" }),
 });
 
-export type CreateCheerInput = z.infer<typeof createCheerSchema>;
-
-export const markCheerReadSchema = z.object({
-  cheerId: z
-    .int()
-    .positive("유효하지 않은 응원 ID입니다")
-    .meta({ description: "응원 ID (양의 정수)" }),
-});
-
-export type MarkCheerReadInput = z.infer<typeof markCheerReadSchema>;
-
 export const markCheersReadSchema = z.object({
   cheerIds: z
     .array(z.int().positive("유효하지 않은 응원 ID입니다"))
@@ -35,8 +24,6 @@ export const markCheersReadSchema = z.object({
     .max(100, "한 번에 최대 100개까지 처리 가능합니다")
     .meta({ description: "응원 ID 배열 (1-100개, 양의 정수)" }),
 });
-
-export type MarkCheersReadInput = z.infer<typeof markCheersReadSchema>;
 
 export const getCheersQuerySchema = z.object({
   limit: z.coerce
@@ -54,8 +41,6 @@ export const getCheersQuerySchema = z.object({
     .meta({ description: "페이지네이션 커서 (0 이상의 정수)" }),
 });
 
-export type GetCheersQuery = z.infer<typeof getCheersQuerySchema>;
-
 export const cheerIdParamSchema = z.object({
   id: z.coerce
     .number()
@@ -63,5 +48,3 @@ export const cheerIdParamSchema = z.object({
     .positive("유효하지 않은 응원 ID입니다")
     .meta({ description: "응원 고유 ID (양의 정수, 예: 1)" }),
 });
-
-export type CheerIdParam = z.infer<typeof cheerIdParamSchema>;

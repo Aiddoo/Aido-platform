@@ -12,8 +12,6 @@ export const publishAppReleaseParamSchema = z.object({
     .meta({ description: "버전을 공개한 스토어 (ios: App Store | android: Google Play)" }),
 });
 
-export type PublishAppReleaseParam = z.infer<typeof publishAppReleaseParamSchema>;
-
 export const publishAppReleaseSchema = z
   .object({
     latestVersion: appStoreVersionSchema.max(APP_STORE_VERSION_MAX_LENGTH).meta({
@@ -21,5 +19,3 @@ export const publishAppReleaseSchema = z
     }),
   })
   .meta({ example: { latestVersion: "1.15.2" } });
-
-export type PublishAppReleaseInput = z.infer<typeof publishAppReleaseSchema>;

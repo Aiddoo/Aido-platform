@@ -16,8 +16,6 @@ import {
   todoVisibilitySchema,
 } from "./todo.common.js";
 
-export { todoVisibilitySchema } from "./todo.common.js";
-
 export const createTodoSchema = z
   .object({
     title: z
@@ -201,8 +199,6 @@ export const todoIdParamSchema = z.object({
     .meta({ description: "할 일 고유 ID (양의 정수, 예: 1)" }),
 });
 
-export type TodoIdParam = z.infer<typeof todoIdParamSchema>;
-
 export const deleteTodoQuerySchema = z.object({
   scope: todoEditScopeSchema.optional().meta({
     description:
@@ -218,15 +214,11 @@ export const toggleTodoCompleteSchema = z.object({
   completed: z.boolean().meta({ description: "완료 상태 (true: 완료, false: 미완료)" }),
 });
 
-export type ToggleTodoCompleteInput = z.infer<typeof toggleTodoCompleteSchema>;
-
 export const updateTodoVisibilitySchema = z.object({
   visibility: todoVisibilitySchema.meta({
     description: "공개 범위 (PUBLIC: 전체 공개, PRIVATE: 비공개)",
   }),
 });
-
-export type UpdateTodoVisibilityInput = z.infer<typeof updateTodoVisibilitySchema>;
 
 export const changeTodoCategorySchema = z.object({
   categoryId: z
@@ -234,8 +226,6 @@ export const changeTodoCategorySchema = z.object({
     .positive("유효하지 않은 카테고리 ID입니다")
     .meta({ description: "변경할 카테고리 ID (양의 정수, 예: 1)" }),
 });
-
-export type ChangeTodoCategoryInput = z.infer<typeof changeTodoCategorySchema>;
 
 export const updateTodoScheduleSchema = z
   .object({
@@ -269,8 +259,6 @@ export const updateTodoScheduleSchema = z
     },
   );
 
-export type UpdateTodoScheduleInput = z.infer<typeof updateTodoScheduleSchema>;
-
 export const updateTodoTitleSchema = z.object({
   title: z
     .string()
@@ -278,8 +266,6 @@ export const updateTodoTitleSchema = z.object({
     .max(TODO_LIMITS.TITLE_MAX_LENGTH, "제목은 200자 이하로 입력해주세요")
     .meta({ description: "할 일 제목 (1-200자)" }),
 });
-
-export type UpdateTodoTitleInput = z.infer<typeof updateTodoTitleSchema>;
 
 export const reorderTodoSchema = z.object({
   targetTodoId: z
@@ -291,8 +277,6 @@ export const reorderTodoSchema = z.object({
     description: "이동 위치 (before: 기준 앞으로, after: 기준 뒤로)",
   }),
 });
-
-export type ReorderTodoInput = z.infer<typeof reorderTodoSchema>;
 
 export const createRecurringTodoSchema = z
   .object({
@@ -340,8 +324,6 @@ export const createRecurringTodoSchema = z
     },
   );
 
-export type CreateRecurringTodoInput = z.infer<typeof createRecurringTodoSchema>;
-
 export const todoResourceLimitQuerySchema = z.object({
   categoryId: z.coerce
     .number()
@@ -351,16 +333,12 @@ export const todoResourceLimitQuerySchema = z.object({
     .meta({ description: "카테고리 ID (지정 시 해당 카테고리의 activeCount도 반환)" }),
 });
 
-export type TodoResourceLimitQuery = z.infer<typeof todoResourceLimitQuerySchema>;
-
 export const getTodoSummaryQuerySchema = z.object({
   date: dateSchema.optional().meta({
     description:
       "조회할 날짜 (선택, YYYY-MM-DD, 생략하면 X-Timezone 기준 오늘, 위젯의 내일 미리 받기용)",
   }),
 });
-
-export type GetTodoSummaryQuery = z.infer<typeof getTodoSummaryQuerySchema>;
 
 export const createTodoItemSchema = z.object({
   title: z
@@ -409,5 +387,3 @@ export const todoItemIdParamSchema = z.object({
     .positive("유효하지 않은 Item ID입니다")
     .meta({ description: "하위 항목 ID" }),
 });
-
-export type TodoItemIdParam = z.infer<typeof todoItemIdParamSchema>;

@@ -6,15 +6,6 @@ export const TERMS_VERSION = {
 /** 광고성 정보 수신 동의를 다시 알리는 주기(년). 정보통신망법 시행령 제62조 */
 export const MARKETING_CONSENT_RECONFIRM_YEARS = 2;
 
-export const CONSENT_TYPE = {
-  TERMS: "TERMS",
-  PRIVACY: "PRIVACY",
-  MARKETING: "MARKETING",
-  AI_DATA_SHARING: "AI_DATA_SHARING",
-} as const;
-
-export type ConsentType = (typeof CONSENT_TYPE)[keyof typeof CONSENT_TYPE];
-
 /**
  * AI 데이터 처리 동의 안내 버전. 버전마다 글자를 보내는 AI 처리 업체가 다르다.
  * - 2026-10-26: 할 일·메모 글자와 리포트 통계를 Google Gemini로 보낸다(1.13·1.14 앱).

@@ -2,15 +2,6 @@ import { z } from "zod";
 
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { USER_BLOCK_LIMITS } from "../../../vocabulary/user-block.constants.js";
-import { userIdParamSchema } from "../../follow/v1/follow.request.js";
-
-export const blockUserParamSchema = userIdParamSchema;
-
-export type BlockUserParam = z.infer<typeof blockUserParamSchema>;
-
-export const unblockUserParamSchema = userIdParamSchema;
-
-export type UnblockUserParam = z.infer<typeof unblockUserParamSchema>;
 
 export const getBlockedUsersQuerySchema = z.object({
   cursor: entityIdSchema
@@ -27,5 +18,3 @@ export const getBlockedUsersQuerySchema = z.object({
       description: `페이지 크기 (1-${USER_BLOCK_LIMITS.MAX_PAGE_SIZE}, 기본값: ${USER_BLOCK_LIMITS.DEFAULT_PAGE_SIZE})`,
     }),
 });
-
-export type GetBlockedUsersQuery = z.infer<typeof getBlockedUsersQuerySchema>;

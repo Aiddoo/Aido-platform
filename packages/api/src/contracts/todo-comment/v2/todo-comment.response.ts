@@ -123,10 +123,6 @@ export const todoCommentRepliesResponseSchema = z
 
 export type TodoComment = z.infer<typeof todoCommentSchema>;
 export type TodoCommentAuthor = z.infer<typeof todoCommentAuthorSchema>;
-export type TodoCommentViewer = z.infer<typeof todoCommentViewerSchema>;
-export type TodoCommentReplyTarget = z.infer<typeof todoCommentReplyTargetSchema>;
-export type TodoCommentThreadReplySummary = z.infer<typeof todoCommentThreadReplySummarySchema>;
 export type TodoCommentThread = z.infer<typeof todoCommentThreadSchema>;
-export type TodoCommentThreadAnchor = z.infer<typeof todoCommentThreadAnchorSchema>;
 export type TodoCommentThreadsResponse = z.infer<typeof todoCommentThreadsResponseSchema>;
 export type TodoCommentRepliesResponse = z.infer<typeof todoCommentRepliesResponseSchema>;

@@ -49,8 +49,6 @@ export const authTokensSchema = z
     },
   });
 
-export type AuthTokens = z.infer<typeof authTokensSchema>;
-
 export const refreshTokensSchema = z
   .object({
     accessToken: z.string().meta({ description: "JWT 액세스 토큰 (갱신됨, 유효기간: 15분)" }),
@@ -65,38 +63,6 @@ export const refreshTokensSchema = z
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbHo3eDVwOGswMDAxcXowejh6OHo4ejh6IiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE3MDU0ODMyMDB9.newtoken",
     },
   });
-
-export type RefreshTokens = z.infer<typeof refreshTokensSchema>;
-
-export const userProfileSchema = z
-  .object({
-    id: entityIdSchema.meta({ description: "사용자 고유 ID (예: clz7x5p8k0001qz0z8z8z8z8z)" }),
-    email: z.email().meta({ description: "이메일 주소" }),
-    emailVerifiedAt: nullableDatetimeSchema.meta({
-      description:
-        "이메일 인증 완료 시각 (ISO 8601 UTC, 예: 2024-01-15T10:30:00.000Z, 미인증 시 null)",
-    }),
-    status: userStatusSchema,
-    createdAt: datetimeSchema.meta({
-      description: "계정 생성 시각 (ISO 8601 UTC, 예: 2024-01-01T09:00:00.000Z)",
-    }),
-    updatedAt: datetimeSchema.meta({
-      description: "계정 정보 수정 시각 (ISO 8601 UTC, 예: 2024-01-17T14:00:00.000Z)",
-    }),
-  })
-  .meta({
-    description: "사용자 프로필 정보",
-    example: {
-      id: "clz7x5p8k0001qz0z8z8z8z8z",
-      email: "dydals3440@gmail.com",
-      emailVerifiedAt: "2026-01-15T10:30:00.000Z",
-      status: "ACTIVE",
-      createdAt: "2026-01-01T09:00:00.000Z",
-      updatedAt: "2026-01-17T14:00:00.000Z",
-    },
-  });
-
-export type UserProfile = z.infer<typeof userProfileSchema>;
 
 // JWT 페이로드에서 추출된 사용자 정보 (req.user)
 export const currentUserPayloadSchema = z
@@ -151,8 +117,6 @@ export const premiumFeatureEntitlementSchema = z
   })
   .meta({ description: "유료 기능 하나의 현재 권한" });
 
-export type PremiumFeatureEntitlement = z.infer<typeof premiumFeatureEntitlementSchema>;
-
 const premiumEntitlementShape = {
   AI_PARSE: premiumFeatureEntitlementSchema,
   CHEER: premiumFeatureEntitlementSchema,
@@ -170,8 +134,6 @@ export const premiumEntitlementsSchema = z.looseObject(premiumEntitlementShape).
   description:
     "PREMIUM_FEATURES 카탈로그의 기능별 현재 권한입니다. ADMIN은 모든 기능이 allowed=true, limit=null입니다. 만료·자동 갱신 유예(3시간)를 반영한 서버 판단과 같습니다.",
 });
-
-export type PremiumEntitlements = z.infer<typeof premiumEntitlementsSchema>;
 
 export const currentUserSchema = z
   .object({
@@ -266,8 +228,6 @@ export const currentUserSchema = z
     },
   });
 
-export type CurrentUser = z.infer<typeof currentUserSchema>;
-
 export const sessionInfoSchema = z
   .object({
     id: entityIdSchema.meta({ description: "세션 고유 ID" }),
@@ -292,12 +252,6 @@ export const sessionInfoSchema = z
       isCurrent: true,
     },
   });
-
-export type SessionInfo = z.infer<typeof sessionInfoSchema>;
-
-export const sessionListSchema = z.array(sessionInfoSchema).meta({ description: "활성 세션 목록" });
-
-export type SessionList = z.infer<typeof sessionListSchema>;
 
 export const sessionListResponseSchema = z
   .object({
@@ -331,11 +285,6 @@ export const sessionListResponseSchema = z
     },
   });
 
-export type SessionListResponse = z.infer<typeof sessionListResponseSchema>;
-
-export const loginResponseSchema = authTokensSchema.meta({ description: "로그인 응답" });
-export type LoginResponse = z.infer<typeof loginResponseSchema>;
-
 export const registerResponseSchema = z
   .object({
     message: z.string().meta({ description: "응답 메시지" }),
@@ -353,18 +302,6 @@ export const registerResponseSchema = z
       emailSent: true,
     },
   });
-
-export type RegisterResponse = z.infer<typeof registerResponseSchema>;
-
-export const verifyEmailResponseSchema = authTokensSchema.meta({
-  description: "이메일 인증 완료 응답",
-});
-export type VerifyEmailResponse = z.infer<typeof verifyEmailResponseSchema>;
-
-export const refreshTokensResponseSchema = refreshTokensSchema.meta({
-  description: "토큰 갱신 응답",
-});
-export type RefreshTokensResponse = z.infer<typeof refreshTokensResponseSchema>;
 
 export const forgotPasswordResponseSchema = z
   .object({
@@ -405,14 +342,6 @@ export const changePasswordResponseSchema = z
 
 export type ChangePasswordResponse = z.infer<typeof changePasswordResponseSchema>;
 
-export const setPasswordResponseSchema = z
-  .object({
-    message: z.string().meta({ description: "응답 메시지" }),
-  })
-  .meta({ description: "비밀번호 설정 완료 응답" });
-
-export type SetPasswordResponse = z.infer<typeof setPasswordResponseSchema>;
-
 export const logoutResponseSchema = z
   .object({
     message: z.string().meta({ description: "응답 메시지" }),
@@ -423,8 +352,6 @@ export const logoutResponseSchema = z
       message: "로그아웃되었습니다.",
     },
   });
-
-export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
 export const resendVerificationResponseSchema = z
   .object({
@@ -466,9 +393,6 @@ export const updateProfileResponseSchema = z
   });
 
 export type UpdateProfileResponse = z.infer<typeof updateProfileResponseSchema>;
-
-export const appleLoginResponseSchema = authTokensSchema.meta({ description: "Apple 로그인 응답" });
-export type AppleLoginResponse = z.infer<typeof appleLoginResponseSchema>;
 
 export const linkedAccountSchema = z
   .object({
@@ -537,7 +461,6 @@ export const linkedAccountsResponseSchema = z
 export type LinkedAccountsResponse = z.infer<typeof linkedAccountsResponseSchema>;
 
 export const linkAccountResponseSchema = z.object({ message: z.string() });
-export type LinkAccountResponse = z.infer<typeof linkAccountResponseSchema>;
 
 export const unlinkAccountResponseSchema = z
   .object({
@@ -551,8 +474,6 @@ export const unlinkAccountResponseSchema = z
       provider: "GOOGLE",
     },
   });
-
-export type UnlinkAccountResponse = z.infer<typeof unlinkAccountResponseSchema>;
 
 export const deleteAccountResponseSchema = z
   .object({
@@ -570,43 +491,3 @@ export const deleteAccountResponseSchema = z
   });
 
 export type DeleteAccountResponse = z.infer<typeof deleteAccountResponseSchema>;
-
-export const authErrorCodeSchema = z
-  .enum([
-    // 공통
-    "USER_NOT_FOUND",
-    "INVALID_PARAMETER",
-    "INTERNAL_SERVER_ERROR",
-    // 인증/토큰
-    "INVALID_TOKEN",
-    "TOKEN_EXPIRED",
-    "TOKEN_REVOKED",
-    "AUTHENTICATION_REQUIRED",
-    "INVALID_CREDENTIALS",
-    // 소셜 로그인
-    "SOCIAL_AUTH_FAILED",
-    "SOCIAL_ACCOUNT_NOT_LINKED",
-    "SOCIAL_PROVIDER_ERROR",
-    // 회원가입
-    "EMAIL_ALREADY_REGISTERED",
-    "EMAIL_NOT_VERIFIED",
-  ])
-  .meta({ description: "인증 에러 코드" });
-
-export type AuthErrorCode = z.infer<typeof authErrorCodeSchema>;
-
-export const authErrorSchema = z
-  .object({
-    code: authErrorCodeSchema.or(z.string()), // Unknown codes fallback
-    message: z.string(),
-    details: z.record(z.string(), z.unknown()).optional(),
-  })
-  .meta({
-    description: "인증 에러 객체",
-    example: {
-      code: "INVALID_CREDENTIALS",
-      message: "이메일 또는 비밀번호가 올바르지 않습니다.",
-    },
-  });
-
-export type AuthError = z.infer<typeof authErrorSchema>;

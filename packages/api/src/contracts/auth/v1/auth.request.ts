@@ -183,19 +183,6 @@ export const setPasswordSchema = z
   })
   .meta({ description: "비밀번호 설정 요청 (소셜 전용 사용자)" });
 
-export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
-
-export const refreshTokenSchema = z
-  .object({
-    refreshToken: z
-      .string()
-      .min(1, "리프레시 토큰이 필요합니다")
-      .meta({ description: "리프레시 토큰" }),
-  })
-  .meta({ description: "토큰 갱신 요청" });
-
-export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
-
 export const revokeSessionSchema = z
   .object({
     sessionId: entityIdSchemaWithMessage("유효하지 않은 세션 ID입니다").meta({
@@ -203,8 +190,6 @@ export const revokeSessionSchema = z
     }),
   })
   .meta({ description: "세션 해제 요청" });
-
-export type RevokeSessionInput = z.infer<typeof revokeSessionSchema>;
 
 export const updateProfileSchema = z
   .object({
@@ -235,8 +220,6 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export const oauthProviderSchema = z
   .enum(OAUTH_PROVIDERS)
   .meta({ description: "소셜 로그인 제공자" });
-
-export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 
 export const appleMobileCallbackSchema = z
   .object({
@@ -289,8 +272,6 @@ export const googleMobileCallbackSchema = z
   })
   .meta({ description: "Google 모바일 로그인 콜백 요청" });
 
-export type GoogleMobileCallbackInput = z.infer<typeof googleMobileCallbackSchema>;
-
 export const kakaoMobileCallbackSchema = z
   .object({
     accessToken: z
@@ -314,8 +295,6 @@ export const kakaoMobileCallbackSchema = z
   })
   .meta({ description: "Kakao 모바일 로그인 콜백 요청" });
 
-export type KakaoMobileCallbackInput = z.infer<typeof kakaoMobileCallbackSchema>;
-
 export const naverMobileCallbackSchema = z
   .object({
     accessToken: z
@@ -338,8 +317,6 @@ export const naverMobileCallbackSchema = z
       .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
   .meta({ description: "Naver 모바일 로그인 콜백 요청" });
-
-export type NaverMobileCallbackInput = z.infer<typeof naverMobileCallbackSchema>;
 
 export const deleteAccountSchema = z
   .object({
@@ -403,8 +380,6 @@ export const unlinkAccountSchema = z
   })
   .meta({ description: "소셜 계정 연결 해제 요청" });
 
-export type UnlinkAccountInput = z.infer<typeof unlinkAccountSchema>;
-
 export const exchangeCodeSchema = z
   .object({
     code: z
@@ -434,8 +409,6 @@ export const oauthStartQuerySchema = z
   })
   .meta({ description: "웹 OAuth 시작 요청" });
 
-export type OAuthStartQuery = z.infer<typeof oauthStartQuerySchema>;
-
 /**
  * 공급자가 인증 뒤 붙여 보내는 query. 사용자가 공급자 화면에서 취소하면 code 없이 error만 오므로
  * 모두 optional로 두고, 실패는 400이 아니라 앱 딥링크의 error로 돌려보낸다.
@@ -446,5 +419,3 @@ export const oauthWebCallbackQuerySchema = z
     state: z.string().optional().meta({ description: "시작할 때 보낸 CSRF 검증용 state" }),
   })
   .meta({ description: "웹 OAuth 콜백 요청" });
-
-export type OAuthWebCallbackQuery = z.infer<typeof oauthWebCallbackQuerySchema>;

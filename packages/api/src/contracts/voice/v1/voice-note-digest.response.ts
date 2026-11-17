@@ -17,8 +17,6 @@ export const voiceNoteKeyPointSchema = z.object({
     .meta({ description: "이 내용을 말한 시각 (앱이 보낸 segments의 값). 찾지 못했으면 null" }),
 });
 
-export type VoiceNoteKeyPoint = z.infer<typeof voiceNoteKeyPointSchema>;
-
 export const voiceNoteDigestResponseSchema = z.object({
   title: z
     .string()

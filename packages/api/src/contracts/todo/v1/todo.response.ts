@@ -32,8 +32,6 @@ export const todoItemStatsSchema = z.object({
   completed: z.int().meta({ description: "완료된 하위 항목 수" }),
 });
 
-export type TodoItemStats = z.infer<typeof todoItemStatsSchema>;
-
 const todoExample = {
   id: 1,
   userId: "clz7x5p8k0010qz0z8z8z8z8z",
@@ -207,8 +205,6 @@ export const createTodoResponseSchema = z
     },
   });
 
-export type CreateTodoResponse = z.infer<typeof createTodoResponseSchema>;
-
 export const updateTodoResponseSchema = z
   .object({
     message: z.string(),
@@ -241,8 +237,6 @@ export const updateTodoResponseSchema = z
     },
   });
 
-export type UpdateTodoResponse = z.infer<typeof updateTodoResponseSchema>;
-
 export const deleteTodoResponseSchema = z
   .object({
     message: z.string(),
@@ -252,8 +246,6 @@ export const deleteTodoResponseSchema = z
       message: "할 일이 삭제되었습니다.",
     },
   });
-
-export type DeleteTodoResponse = z.infer<typeof deleteTodoResponseSchema>;
 
 export const reorderTodoResponseSchema = z
   .object({
@@ -287,8 +279,6 @@ export const reorderTodoResponseSchema = z
     },
   });
 
-export type ReorderTodoResponse = z.infer<typeof reorderTodoResponseSchema>;
-
 export const createRecurringTodoResponseSchema = z
   .object({
     message: z.string(),
@@ -302,8 +292,6 @@ export const createRecurringTodoResponseSchema = z
       count: 13,
     },
   });
-
-export type CreateRecurringTodoResponse = z.infer<typeof createRecurringTodoResponseSchema>;
 
 export const todoResourceLimitResponseSchema = z
   .object({
@@ -320,8 +308,6 @@ export const todoResourceLimitResponseSchema = z
     },
   });
 
-export type TodoResourceLimitResponse = z.infer<typeof todoResourceLimitResponseSchema>;
-
 export const todoSummaryTodoSchema = z.object({
   id: z.int().meta({ description: "할 일 고유 ID (양의 정수)" }),
   title: z.string().meta({ description: "할 일 제목" }),
@@ -330,8 +316,6 @@ export const todoSummaryTodoSchema = z.object({
     .string()
     .meta({ description: "카테고리 색상 (HEX, 예: #FFB3B3 — 위젯 체크박스 컬러)" }),
 });
-
-export type TodoSummaryTodo = z.infer<typeof todoSummaryTodoSchema>;
 
 export const todoSummaryResponseSchema = z
   .object({

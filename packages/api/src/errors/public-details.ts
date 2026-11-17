@@ -29,8 +29,6 @@ export const friendLimitErrorDetailsSchema = z
   })
   .meta({ description: "친구 한도 초과 상세" });
 
-export type FriendLimitErrorDetails = z.infer<typeof friendLimitErrorDetailsSchema>;
-
 /**
  * FOLLOW_0909 운영 응답 상세. 출시 앱이 읽는 current·limit을 그대로 두고 다른 한도 오류와 같은
  * charged·featureQuota를 더한다.

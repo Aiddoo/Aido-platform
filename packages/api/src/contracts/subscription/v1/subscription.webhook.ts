@@ -46,8 +46,6 @@ export const revenueCatEventSchema = z.looseObject({
   transferred_to: z.array(z.string()).optional(),
 });
 
-export type RevenueCatEvent = z.infer<typeof revenueCatEventSchema>;
-
 export const revenueCatWebhookPayloadSchema = z.looseObject({
   api_version: z.string().optional(),
   event: revenueCatEventSchema,
@@ -71,13 +69,7 @@ export const revenueCatTransferEventSchema = z.looseObject({
   transferred_to: z.array(z.string().min(1)).min(1),
 });
 
-export type RevenueCatTransferEvent = z.infer<typeof revenueCatTransferEventSchema>;
-
 export const revenueCatTransferWebhookPayloadSchema = z.looseObject({
   api_version: z.string().optional(),
   event: revenueCatTransferEventSchema,
 });
-
-export type RevenueCatTransferWebhookPayload = z.infer<
-  typeof revenueCatTransferWebhookPayloadSchema
->;

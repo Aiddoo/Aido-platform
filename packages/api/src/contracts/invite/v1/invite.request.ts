@@ -7,8 +7,6 @@ export const inviteCodeParamSchema = z.object({
   code: inviteCodeSchema,
 });
 
-export type InviteCodeParam = z.infer<typeof inviteCodeParamSchema>;
-
 export const redeemInviteRequestSchema = z
   .object({
     installationId: z.string().min(1).max(128, "설치 ID는 128자 이내여야 해요").optional().meta({
@@ -17,8 +15,6 @@ export const redeemInviteRequestSchema = z
     }),
   })
   .meta({ example: { installationId: "6F9619FF-8B86-D011-B42D-00C04FC964FF" } });
-
-export type RedeemInviteRequest = z.infer<typeof redeemInviteRequestSchema>;
 
 // 초대한 친구 목록도 친구 목록과 같은 cursor(마지막 userId)·limit 규칙을 쓴다
 export const getInvitedFriendsQuerySchema = getFollowsQuerySchema.extend({

@@ -36,8 +36,6 @@ export const suggestionEvidenceSchema = z.object({
   periodDays: z.int().positive().meta({ description: "근거를 센 기간(일). 지금은 14" }),
 });
 
-export type SuggestionEvidence = z.infer<typeof suggestionEvidenceSchema>;
-
 export const recurringSuggestionSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -96,5 +94,3 @@ export const suggestionIdParamSchema = z.object({
     .positive()
     .meta({ description: "AI 제안 고유 ID (양의 정수, 예: 1)" }),
 });
-
-export type SuggestionIdParam = z.infer<typeof suggestionIdParamSchema>;

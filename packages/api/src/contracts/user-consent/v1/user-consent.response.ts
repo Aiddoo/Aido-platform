@@ -58,8 +58,6 @@ export const userConsentSchema = z
     },
   });
 
-export type UserConsent = z.infer<typeof userConsentSchema>;
-
 export const consentResponseSchema = userConsentSchema.meta({
   example: {
     termsAgreedAt: "2026-01-17T10:00:00.000Z",
@@ -72,8 +70,6 @@ export const consentResponseSchema = userConsentSchema.meta({
     aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
   },
 });
-
-export type ConsentResponse = z.infer<typeof consentResponseSchema>;
 
 export const updateMarketingConsentResponseSchema = z
   .object({
@@ -92,8 +88,6 @@ export const updateMarketingConsentResponseSchema = z
     },
   });
 
-export type UpdateMarketingConsentResponse = z.infer<typeof updateMarketingConsentResponseSchema>;
-
 export const updateMarketingPushConsentResponseSchema = z
   .object({
     marketingPushAgreedAt: nullableDatetimeSchema.meta({
@@ -105,10 +99,6 @@ export const updateMarketingPushConsentResponseSchema = z
     }),
   })
   .meta({ example: { marketingPushAgreedAt: "2026-01-17T10:00:00.000Z" } });
-
-export type UpdateMarketingPushConsentResponse = z.infer<
-  typeof updateMarketingPushConsentResponseSchema
->;
 
 export const updateAiDataSharingConsentResponseSchema = z
   .object({

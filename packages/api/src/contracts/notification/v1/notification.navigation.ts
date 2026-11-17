@@ -14,8 +14,6 @@ import { todoCommentIdSchema } from "../../todo-comment/v1/todo-comment.request.
 
 export const notificationActivityKindSchema = z.enum(NOTIFICATION_ACTIVITY_KIND);
 
-export type NotificationActivityKind = z.infer<typeof notificationActivityKindSchema>;
-
 const positiveIdSchema = z.int().positive();
 const userIdSchema = z.string().min(1).max(64);
 

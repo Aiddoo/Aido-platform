@@ -75,8 +75,6 @@ export const nudgeTodoSchema = z
     },
   });
 
-export type NudgeTodo = z.infer<typeof nudgeTodoSchema>;
-
 export const nudgeDetailSchema = nudgeSchema
   .extend({
     sender: nudgeSenderSchema,

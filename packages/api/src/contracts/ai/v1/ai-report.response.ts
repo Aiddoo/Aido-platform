@@ -12,8 +12,6 @@ export const reportStatsSchema = z.object({
   streakDays: z.int().nonnegative(),
 });
 
-export type ReportStats = z.infer<typeof reportStatsSchema>;
-
 export const categoryBreakdownItemSchema = z.object({
   name: z.string(),
   color: z.string(),
@@ -22,8 +20,6 @@ export const categoryBreakdownItemSchema = z.object({
   rate: z.number().min(0).max(100),
 });
 
-export type CategoryBreakdownItem = z.infer<typeof categoryBreakdownItemSchema>;
-
 export const dayPatternItemSchema = z.object({
   day: dayOfWeekSchema,
   total: z.int().nonnegative(),
@@ -31,22 +27,16 @@ export const dayPatternItemSchema = z.object({
   rate: z.number().min(0).max(100),
 });
 
-export type DayPatternItem = z.infer<typeof dayPatternItemSchema>;
-
 export const timePatternItemSchema = z.object({
   hour: z.int().min(0).max(23),
   count: z.int().nonnegative(),
 });
-
-export type TimePatternItem = z.infer<typeof timePatternItemSchema>;
 
 export const dailyCompletionItemSchema = z.object({
   date: dateSchema,
   total: z.int().nonnegative(),
   completed: z.int().nonnegative(),
 });
-
-export type DailyCompletionItem = z.infer<typeof dailyCompletionItemSchema>;
 
 export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
 
@@ -83,13 +73,9 @@ export const aiReportResponseSchema = z.object({
   report: aiReportSchema,
 });
 
-export type AiReportResponse = z.infer<typeof aiReportResponseSchema>;
-
 export const aiReportListResponseSchema = z.object({
   reports: z.array(aiReportSchema),
 });
-
-export type AiReportListResponse = z.infer<typeof aiReportListResponseSchema>;
 
 // 리포트 상태 (다음 리포트 예정일)
 
@@ -108,8 +94,6 @@ export const reportStatusResponseSchema = z.object({
   status: reportStatusSchema,
 });
 
-export type ReportStatusResponse = z.infer<typeof reportStatusResponseSchema>;
-
 export const getAiReportsQuerySchema = z.object({
   type: reportTypeSchema
     .optional()
@@ -123,8 +107,6 @@ export const getAiReportsQuerySchema = z.object({
     .meta({ description: "페이지 크기 (1-50, 기본값: 10)" }),
 });
 
-export type GetAiReportsQuery = z.infer<typeof getAiReportsQuerySchema>;
-
 export const aiReportIdParamSchema = z.object({
   id: z.coerce
     .number()
@@ -132,5 +114,3 @@ export const aiReportIdParamSchema = z.object({
     .positive("유효하지 않은 리포트 ID입니다")
     .meta({ description: "AI 리포트 고유 ID (양의 정수, 예: 1)" }),
 });
-
-export type AiReportIdParam = z.infer<typeof aiReportIdParamSchema>;

@@ -51,8 +51,6 @@ export const parsedMemoTodoSchema = z.object({
   }),
 });
 
-export type ParsedMemoTodo = z.infer<typeof parsedMemoTodoSchema>;
-
 export const parsedMemoDataSchema = z.object({
   todos: z
     .array(parsedMemoTodoSchema)
@@ -79,8 +77,6 @@ export const parseMemoMetaSchema = z.object({
     }),
 });
 
-export type ParseMemoMeta = z.infer<typeof parseMemoMetaSchema>;
-
 export const parseMemoResponseSchema = z.object({
   success: z.literal(true).meta({ description: "파싱 성공 여부 (항상 true)" }),
   data: parsedMemoDataSchema.meta({ description: "파싱된 할 일 데이터" }),
@@ -89,5 +85,3 @@ export const parseMemoResponseSchema = z.object({
     .optional()
     .meta({ description: "이 요청을 반영한 AI_PARSE 한도·사용량. 1.15.0 이전 서버 응답에는 없다" }),
 });
-
-export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;

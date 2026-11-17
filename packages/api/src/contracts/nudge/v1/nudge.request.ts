@@ -22,27 +22,6 @@ export const createNudgeSchema = z.object({
     .meta({ description: `응원 메시지 (선택, 최대 ${NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자)` }),
 });
 
-export type CreateNudgeInput = z.infer<typeof createNudgeSchema>;
-
-export const markNudgeReadSchema = z.object({
-  nudgeId: z
-    .int()
-    .positive("유효하지 않은 콕 찌름 ID입니다")
-    .meta({ description: "찌르기 ID (양의 정수)" }),
-});
-
-export type MarkNudgeReadInput = z.infer<typeof markNudgeReadSchema>;
-
-export const markNudgesReadSchema = z.object({
-  nudgeIds: z
-    .array(z.int().positive("유효하지 않은 콕 찌름 ID입니다"))
-    .min(1, "최소 1개의 콕 찌름 ID가 필요합니다")
-    .max(100, "한 번에 최대 100개까지 처리 가능합니다")
-    .meta({ description: "찌르기 ID 배열 (1-100개, 양의 정수)" }),
-});
-
-export type MarkNudgesReadInput = z.infer<typeof markNudgesReadSchema>;
-
 export const getNudgesQuerySchema = z.object({
   limit: z.coerce
     .number()
@@ -59,8 +38,6 @@ export const getNudgesQuerySchema = z.object({
     .meta({ description: "페이지네이션 커서 (0 이상의 정수)" }),
 });
 
-export type GetNudgesQuery = z.infer<typeof getNudgesQuerySchema>;
-
 export const createRemindNudgeSchema = z.object({
   receiverId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").meta({
     description: "받을 사용자 ID",
@@ -75,8 +52,6 @@ export const createRemindNudgeSchema = z.object({
     .meta({ description: `독촉 메시지 (선택, 최대 ${REMIND_NUDGE_LIMITS.MAX_MESSAGE_LENGTH}자)` }),
 });
 
-export type CreateRemindNudgeInput = z.infer<typeof createRemindNudgeSchema>;
-
 export const nudgeIdParamSchema = z.object({
   id: z.coerce
     .number()
@@ -84,8 +59,6 @@ export const nudgeIdParamSchema = z.object({
     .positive("유효하지 않은 콕 찌름 ID입니다")
     .meta({ description: "콕 찌름 고유 ID (양의 정수, 예: 1)" }),
 });
-
-export type NudgeIdParam = z.infer<typeof nudgeIdParamSchema>;
 
 export const getNudgeInteractionsQuerySchema = getNudgesQuerySchema.extend({
   direction: z
@@ -132,16 +105,12 @@ export const replyToNudgeSchema = z.object({
   replyKind: nudgeReplyKindSchema.meta({ description: "콕에 대한 답장 종류" }),
 });
 
-export type ReplyToNudgeInput = z.infer<typeof replyToNudgeSchema>;
-
 export const sendNudgeThanksSchema = z.object({
   throughNudgeId: z
     .int()
     .positive("유효하지 않은 콕 ID입니다")
     .meta({ description: "미리보기 시점의 마지막 콕 ID" }),
 });
-
-export type SendNudgeThanksInput = z.infer<typeof sendNudgeThanksSchema>;
 
 export const nudgeTodoIdParamSchema = z.object({
   todoId: z.coerce
@@ -150,5 +119,3 @@ export const nudgeTodoIdParamSchema = z.object({
     .positive("유효하지 않은 할 일 ID입니다")
     .meta({ description: "감사를 전할 할 일 ID" }),
 });
-
-export type NudgeTodoIdParam = z.infer<typeof nudgeTodoIdParamSchema>;

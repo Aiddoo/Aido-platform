@@ -16,8 +16,6 @@ export const userReportSchema = z
   })
   .meta({ description: "접수된 신고" });
 
-export type UserReport = z.infer<typeof userReportSchema>;
-
 export const createUserReportResponseSchema = z
   .object({
     message: z.string().meta({ description: "결과 메시지" }),
