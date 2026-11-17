@@ -12,7 +12,6 @@ import { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import { TodoSeriesAlerts } from "../todo-series.alerts.js";
 import { MaterializeDueTodoSeriesUseCase } from "./materialize-due-todo-series.use-case.js";
 import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
-import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 const AT = new Date("2026-11-05T00:00:00.000Z");
 
@@ -39,7 +38,7 @@ describe("회차 채우기", () => {
         clock: new DateClock(),
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
-        effects: new PublishTodoCreationUseCase(fixture),
+        effects: fixture.seriesEffects,
         unitOfWork: fixture.unitOfWork,
         mutationLock: fixture.mutationLock,
       }),
@@ -59,7 +58,7 @@ describe("회차 채우기", () => {
       scheduledLocalTime: null,
       timezone: "UTC",
       rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } }),
-      startDate,
+      startDate: Temporal.PlainDate.from(startDate),
       checklistTemplate: [],
       now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });
@@ -140,7 +139,7 @@ describe("회차 채우기", () => {
     // Then
     expect(result).toMatchObject({ processedCount: 0, createdCount: 0, dormantCount: 1 });
     expect(fixture.records.size).toBe(0);
-    expect(fixture.seriesStore.get("series-1")?.nextOccurrenceDate).toBe("2026-11-05");
+    expect(fixture.seriesStore.get("series-1")?.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     expect(alert.alerts).toEqual([]);
     expect(fixture.logger.messages).toContainEqual(expect.objectContaining({ dormantCount: 1 }));
   });

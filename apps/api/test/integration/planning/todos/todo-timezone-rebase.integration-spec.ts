@@ -12,6 +12,7 @@ import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notific
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
+import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { EditTodoUseCase } from "#api/modules/planning/todos/application/use-cases/edit-todo.use-case";
@@ -805,12 +806,10 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
       );
     // When
     await context.module.get(RebaseTodoTimezoneUseCase).execute({ userId });
-    await context.module.get(MaterializeTodoSeriesUseCase).execute(
-      { id: seriesId, userId },
-      {
-        skipLocked: false,
-      },
-    );
+    await context.module.get(MaterializeTodoSeriesUseCase).execute({
+      due: { id: TodoSeriesId.reconstitute(seriesId), userId: UserId.reconstitute(userId) },
+      skipLocked: false,
+    });
     // Then
     await assertEveryRowMatchesWallClock(NEW_YORK);
   });

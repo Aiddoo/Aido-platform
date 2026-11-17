@@ -8,7 +8,6 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoOccurrenceWriterPort } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
@@ -16,12 +15,16 @@ import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
-import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
-import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
+import type { TodoSeries, TodoSeriesEvent } from "../../domain/todo-series.aggregate.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { todoNotRepeating, todoSeriesNotFound } from "../todo-series.errors.js";
 import type { PublishTodoSeriesEditUseCase } from "./publish-todo-series-edit.use-case.js";
+
+interface DeletedOccurrences {
+  readonly deletedTodoIds: readonly number[];
+  readonly events: readonly TodoSeriesEvent[];
+}
 
 export interface DeleteTodoOccurrencesInput {
   readonly todoId: number;
@@ -75,7 +78,7 @@ export class DeleteTodoOccurrencesUseCase {
       if (series != null && !series.userId.equals(ownerId)) {
         throw todoSeriesNotFound(seriesId.value);
       }
-      const deletedTodoIds = await match(scope)
+      const { deletedTodoIds, events } = await match(scope)
         .with("ALL", () => this.#deleteAll(ownerId, seriesId, series))
         .with("THIS_AND_FOLLOWING", () => {
           // 규칙이 없는 묶음은 회차 날짜도 없어 "이후"의 기준이 없다
@@ -83,13 +86,11 @@ export class DeleteTodoOccurrencesUseCase {
           if (occurrenceDate == null) {
             throw todoNotRepeating(todoId, scope);
           }
-          return this.#deleteFollowing(ownerId, seriesId, series, occurrenceDate.toString());
+          return this.#deleteFollowing({ ownerId, seriesId, series, pivot: occurrenceDate });
         })
         .exhaustive();
       await todoReminder.cancelReminders(deletedTodoIds.map((id) => TodoId.reconstitute(id)));
-      await this.#dependencies.applyTodoEvents.execute([
-        new TodoOccurrencesChangedEvent(seriesId.value, userId),
-      ]);
+      await this.#dependencies.applyTodoEvents.execute(events);
       return { seriesId, deletedTodoIds };
     });
 
@@ -109,7 +110,7 @@ export class DeleteTodoOccurrencesUseCase {
     ownerId: UserId,
     seriesId: TodoSeriesId,
     series: TodoSeries | null,
-  ): Promise<readonly number[]> {
+  ): Promise<DeletedOccurrences> {
     const { seriesRepository, occurrenceWriter } = this.#dependencies;
     const seriesIds =
       series == null
@@ -121,28 +122,31 @@ export class DeleteTodoOccurrencesUseCase {
       includeCompleted: true,
     });
     await seriesRepository.deleteMany(seriesIds);
-    return deletedTodoIds;
+    series?.markDeleted();
+    return { deletedTodoIds, events: series?.pullDomainEvents() ?? [] };
   }
 
-  async #deleteFollowing(
-    ownerId: UserId,
-    seriesId: TodoSeriesId,
-    series: TodoSeries | null,
-    pivot: string,
-  ): Promise<readonly number[]> {
+  async #deleteFollowing(deletion: {
+    readonly ownerId: UserId;
+    readonly seriesId: TodoSeriesId;
+    readonly series: TodoSeries | null;
+    readonly pivot: Temporal.PlainDate;
+  }): Promise<DeletedOccurrences> {
+    const { ownerId, seriesId, series, pivot } = deletion;
     const { seriesRepository, occurrenceWriter } = this.#dependencies;
     const following = series == null ? [] : await seriesRepository.lockFollowingSegments(series);
     const deletedTodoIds = await occurrenceWriter.deleteOccurrences({
       userId: ownerId,
       seriesIds: [seriesId, ...following.map((segment) => segment.id)],
-      fromDate: pivot,
+      fromDate: pivot.toString(),
       includeCompleted: false,
     });
-    for (const segment of series == null ? [] : [series, ...following]) {
-      if (segment.stopAfter(addDaysToKey(pivot, -1))) {
+    const segments = series == null ? [] : [series, ...following];
+    for (const segment of segments) {
+      if (segment.stopAfter(pivot.subtract({ days: 1 }))) {
         await seriesRepository.save(segment);
       }
     }
-    return deletedTodoIds;
+    return { deletedTodoIds, events: segments.flatMap((segment) => segment.pullDomainEvents()) };
   }
 }

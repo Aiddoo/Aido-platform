@@ -289,14 +289,16 @@ describe("시간대 재계산", () => {
         scheduledLocalTime: "10:00",
         timezone: SEOUL,
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-        startDate: "2026-11-10",
+        startDate: Temporal.PlainDate.from("2026-11-10"),
         checklistTemplate: [],
         now: Temporal.Instant.fromEpochMilliseconds(NOW.getTime()),
       }),
     );
     // When
     const result = await useCase.execute({ userId: "planning-user" });
-    const drafts = fixture.seriesStore.get("series-1")?.planOccurrences("2026-11-10");
+    const drafts = fixture.seriesStore
+      .get("series-1")
+      ?.planOccurrences(Temporal.PlainDate.from("2026-11-10"));
     // Then
     expect(result.seriesCount).toBe(1);
     expect(drafts?.[0]?.scheduledTime).toEqual(Temporal.Instant.from("2026-11-10T15:00:00.000Z"));

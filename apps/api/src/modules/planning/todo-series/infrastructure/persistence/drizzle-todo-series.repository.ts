@@ -6,7 +6,7 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todoSeries } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   DueTodoSeriesQuery,
@@ -88,7 +88,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
         and(
           eq(todoSeries.userId, series.userId.value),
           eq(todoSeries.originSeriesId, series.originSeriesId.value),
-          gte(todoSeries.startDate, Temporal.PlainDate.from(series.startDate)),
+          gte(todoSeries.startDate, series.startDate),
           ne(todoSeries.id, series.id.value),
         ),
       )
@@ -133,32 +133,34 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     return updated.length;
   }
 
-  findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
-    return this.#db
+  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
+    const rows = await this.#db
       .select({ id: todoSeries.id, userId: todoSeries.userId })
       .from(todoSeries)
       .where(
         and(
           isNotNull(todoSeries.nextOccurrenceDate),
-          lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(query.through)),
+          lte(todoSeries.nextOccurrenceDate, query.through),
           query.afterId == null ? undefined : gt(todoSeries.id, query.afterId.value),
         ),
       )
       .orderBy(asc(todoSeries.id))
       .limit(query.limit);
+    return rows.map((row) => ({
+      id: TodoSeriesId.reconstitute(row.id),
+      userId: UserId.reconstitute(row.userId),
+    }));
   }
 
-  async findIdsBehind(userId: UserId, through: string): Promise<readonly string[]> {
+  async findIdsBehind(
+    userId: UserId,
+    through: Temporal.PlainDate,
+  ): Promise<readonly TodoSeriesId[]> {
     const rows = await this.#db
       .select({ id: todoSeries.id })
       .from(todoSeries)
-      .where(
-        and(
-          eq(todoSeries.userId, userId.value),
-          lte(todoSeries.nextOccurrenceDate, Temporal.PlainDate.from(through)),
-        ),
-      );
-    return rows.map((row) => row.id);
+      .where(and(eq(todoSeries.userId, userId.value), lte(todoSeries.nextOccurrenceDate, through)));
+    return rows.map((row) => TodoSeriesId.reconstitute(row.id));
   }
 
   get #db() {

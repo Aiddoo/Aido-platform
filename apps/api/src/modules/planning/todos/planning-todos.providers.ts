@@ -1,10 +1,14 @@
 import type { Provider } from "@nestjs/common";
 
 import {
+  ApplyFollowingTodosUpdateUseCase,
   CatchUpTodoSeriesUseCase,
+  CheckTodoSeriesStartUseCase,
   DeleteTodoOccurrencesUseCase,
   MaterializeTodoOccurrencesUseCase,
-  PublishTodoCreationUseCase,
+  PublishFollowingTodosUpdateUseCase,
+  PublishTodoSeriesStartedUseCase,
+  PublishTodoSeriesStoppedUseCase,
   StartSeriesFromTodoUseCase,
   StopTodoSeriesUseCase,
   TodoSeriesRepositoryPort,
@@ -32,6 +36,7 @@ import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js"
 import { AddTodoItemUseCase } from "./application/use-cases/add-todo-item.use-case.js";
 import { ApplyTodoCompletionEffectsUseCase } from "./application/use-cases/apply-todo-completion-effects.use-case.js";
 import { ApplyTodoEventsUseCase } from "./application/use-cases/apply-todo-events.use-case.js";
+import { ApplyTodoUpdateUseCase } from "./application/use-cases/apply-todo-update.use-case.js";
 import { ChangeTodoCategoryUseCase } from "./application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "./application/use-cases/create-todo.use-case.js";
 import { DeleteTodoItemUseCase } from "./application/use-cases/delete-todo-item.use-case.js";
@@ -44,6 +49,8 @@ import { GetTodoUseCase } from "./application/use-cases/get-todo.use-case.js";
 import { InvalidateTodoViewCacheUseCase } from "./application/use-cases/invalidate-todo-view-cache.use-case.js";
 import { ListFriendTodosUseCase } from "./application/use-cases/list-friend-todos.use-case.js";
 import { ListTodosUseCase } from "./application/use-cases/list-todos.use-case.js";
+import { PublishTodoCreatedUseCase } from "./application/use-cases/publish-todo-created.use-case.js";
+import { PublishTodoUpdateUseCase } from "./application/use-cases/publish-todo-update.use-case.js";
 import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
 import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
 import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-items.use-case.js";
@@ -56,7 +63,8 @@ import { UpdateTodoScheduleUseCase } from "./application/use-cases/update-todo-s
 import { UpdateTodoTitleUseCase } from "./application/use-cases/update-todo-title.use-case.js";
 import { UpdateTodoVisibilityUseCase } from "./application/use-cases/update-todo-visibility.use-case.js";
 import { UpdateTodoUseCase } from "./application/use-cases/update-todo.use-case.js";
-import { WriteTodoCreationUseCase } from "./application/use-cases/write-todo-creation.use-case.js";
+import { WriteSingleTodoUseCase } from "./application/use-cases/write-single-todo.use-case.js";
+import { WriteTodoSeriesUseCase } from "./application/use-cases/write-todo-series.use-case.js";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
 import { StagedTodoCreatorAdapter } from "./infrastructure/adapters/staged-todo-creator.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
@@ -83,17 +91,28 @@ export const PLANNING_TODOS_PROVIDERS = [
     todoCache: TodoCachePort,
     afterCommit: AfterCommitTaskRegistryPort,
   }),
-  provideUseCase(WriteTodoCreationUseCase, {
+  provideUseCase(WriteSingleTodoUseCase, {
+    clock: ClockPort,
+    todoRepository: TodoRepositoryPort,
+    categoryOwnership: CategoryOwnershipPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
+  }),
+  provideUseCase(WriteTodoSeriesUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoSeriesRepository: TodoSeriesRepositoryPort,
     occurrenceMaterializer: MaterializeTodoOccurrencesUseCase,
     categoryOwnership: CategoryOwnershipPort,
-    applyTodoEvents: ApplyTodoEventsUseCase,
+  }),
+  provideUseCase(PublishTodoCreatedUseCase, {
+    todoCache: TodoCachePort,
+    logger: loggerFor(PublishTodoCreatedUseCase),
   }),
   provideUseCase(StageTodoCreationUseCase, {
-    writer: WriteTodoCreationUseCase,
-    effects: PublishTodoCreationUseCase,
+    writeSingle: WriteSingleTodoUseCase,
+    writeSeries: WriteTodoSeriesUseCase,
+    publishCreated: PublishTodoCreatedUseCase,
+    publishSeriesStarted: PublishTodoSeriesStartedUseCase,
     todoReadRepository: TodoReadRepositoryPort,
     timezoneResolver: ResolveTodoTimezoneUseCase,
   }),
@@ -112,22 +131,36 @@ export const PLANNING_TODOS_PROVIDERS = [
     applyTodoEvents: ApplyTodoEventsUseCase,
     logger: loggerFor(DeleteTodoUseCase),
   }),
-  provideUseCase(UpdateTodoUseCase, {
+  provideUseCase(ApplyTodoUpdateUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
+    mutationLock: MutationLockPort,
+    categoryOwnership: CategoryOwnershipPort,
+  }),
+  provideUseCase(PublishTodoUpdateUseCase, {
+    todoCache: TodoCachePort,
+    logger: loggerFor(PublishTodoUpdateUseCase),
+  }),
+  provideUseCase(UpdateTodoUseCase, {
+    applyUpdate: ApplyTodoUpdateUseCase,
+    publishUpdate: PublishTodoUpdateUseCase,
     todoReadRepository: TodoReadRepositoryPort,
-    ...MUTATION,
+    unitOfWork: UnitOfWorkPort,
     applyTodoEvents: ApplyTodoEventsUseCase,
     completionEffects: ApplyTodoCompletionEffectsUseCase,
-    categoryOwnership: CategoryOwnershipPort,
-    todoCache: TodoCachePort,
-    logger: loggerFor(UpdateTodoUseCase),
   }),
   provideUseCase(EditTodoUseCase, {
     updateTodo: UpdateTodoUseCase,
+    applyTodoUpdate: ApplyTodoUpdateUseCase,
+    publishTodoUpdate: PublishTodoUpdateUseCase,
     updateFollowingTodos: UpdateFollowingTodosUseCase,
+    applyFollowingTodosUpdate: ApplyFollowingTodosUpdateUseCase,
+    publishFollowingTodosUpdate: PublishFollowingTodosUpdateUseCase,
+    checkTodoSeriesStart: CheckTodoSeriesStartUseCase,
     startSeriesFromTodo: StartSeriesFromTodoUseCase,
+    publishTodoSeriesStarted: PublishTodoSeriesStartedUseCase,
     stopTodoSeries: StopTodoSeriesUseCase,
+    publishTodoSeriesStopped: PublishTodoSeriesStoppedUseCase,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
     timezoneResolver: ResolveTodoTimezoneUseCase,

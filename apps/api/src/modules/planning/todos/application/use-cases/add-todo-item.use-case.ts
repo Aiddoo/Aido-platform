@@ -58,7 +58,7 @@ export class AddTodoItemUseCase {
       const { todoRepository, clock } = this.#dependencies;
       const itemTitle = TodoTitle.create(title);
       const now = clock.now();
-      const wasCompleted = todo.completed;
+      const wasCompleted = todo.isCompleted();
       todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, timezone, now });
       await todoRepository.save(todo);
 
@@ -67,7 +67,7 @@ export class AddTodoItemUseCase {
           event: TodoLogEvent.COMPLETION_CHANGED,
           todoId,
           userId,
-          completed: todo.completed,
+          completed: todo.isCompleted(),
         });
       }
       const events = todo.pullDomainEvents();

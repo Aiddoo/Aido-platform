@@ -163,7 +163,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive,
+        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive(),
     ).length;
     return (
       activeSeries +

@@ -77,7 +77,7 @@ async function occurrencePlans(
             scheduledLocalTime: "09:00",
             scheduledTime: Temporal.Instant.from(`${date}T00:00:00.000Z`),
             isAllDay: false,
-            occurrenceDate: date,
+            occurrenceDate: Temporal.PlainDate.from(date),
             createdAt: TODO_FIXTURE_NOW,
             sortOrder: sortOrderFrom + index,
           },

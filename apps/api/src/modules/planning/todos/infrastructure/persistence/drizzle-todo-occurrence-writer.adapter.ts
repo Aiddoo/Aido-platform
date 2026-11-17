@@ -58,7 +58,6 @@ export class DrizzleTodoOccurrenceWriterAdapter implements TodoOccurrenceWriterP
           ...plan,
           id: plan.id.value,
           seriesId: seriesId.value,
-          occurrenceDate: Temporal.PlainDate.from(plan.occurrenceDate),
           updatedAt,
         })),
       )

@@ -43,7 +43,7 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
     const seriesId = series.value;
     const created: CreatedOccurrence[] = [];
     for (const plan of plans) {
-      const occurrenceDate = Temporal.PlainDate.from(plan.occurrenceDate);
+      const { occurrenceDate } = plan;
       const exists = [...this.records.values()].some(
         (record) => record.seriesId === seriesId && record.occurrenceDate?.equals(occurrenceDate),
       );

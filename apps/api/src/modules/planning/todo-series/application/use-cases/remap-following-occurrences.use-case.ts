@@ -11,7 +11,7 @@ export interface RemapFollowingOccurrencesInput {
   readonly source: TodoSeries;
   readonly following: readonly TodoSeries[];
   readonly target: TodoSeries;
-  readonly pivot: string;
+  readonly pivot: Temporal.PlainDate;
   readonly now: Temporal.Instant;
 }
 
@@ -43,14 +43,20 @@ export class RemapFollowingOccurrencesUseCase {
     const { occurrenceWriter } = this.#dependencies;
     const rows = await occurrenceWriter.findOccurrencesFrom(
       [source, ...following].map((segment) => segment.id),
-      pivot,
+      pivot.toString(),
     );
-    const lastRowDate = rows.at(-1)?.occurrenceDate ?? pivot;
+    const lastRow = rows.at(-1);
+    const lastRowDate = lastRow == null ? pivot : Temporal.PlainDate.from(lastRow.occurrenceDate);
     const horizon = occurrenceHorizon(target.timezone, now);
-    const through = lastRowDate > horizon ? lastRowDate : horizon;
+    const through = Temporal.PlainDate.compare(lastRowDate, horizon) > 0 ? lastRowDate : horizon;
+    const dates = target.rule.occurrencesBetween({
+      seriesStart: target.startDate,
+      from: pivot,
+      through,
+    });
     const plan = planOccurrenceRemap({
       rows,
-      dates: target.rule.occurrencesBetween(target.startDate, pivot, through, 0),
+      dates: dates.map((date) => date.toString()),
       pivotTodoId,
       sourceSeriesId: source.id.value,
     });

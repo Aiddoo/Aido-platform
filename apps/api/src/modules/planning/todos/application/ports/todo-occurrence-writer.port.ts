@@ -3,8 +3,8 @@ import type { TodoVisibility } from "@aido/api/vocabulary";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoCategoryId } from "../../../todo-categories/domain/todo-category-id.vo.js";
+import type { TodoOccurrenceDraft } from "../../../todo-series/domain/todo-occurrence-draft.domain-service.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
-import type { TodoOccurrenceDraft } from "../../../todo-series/domain/todo-series.aggregate.js";
 import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoOccurrenceReadModel } from "../read-models/todo-occurrence.read-model.js";
 

@@ -7,7 +7,7 @@ import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
-import type { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import type { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
@@ -89,9 +89,9 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       fixture.transactionHost,
       new DateClock(),
     );
-    const effects: Pick<PublishTodoCreationUseCase, "publishOccurrences"> = {
-      publishOccurrences: async (series) => {
-        published.push(series.id.value);
+    const effects: Pick<PublishTodoSeriesEditUseCase, "execute"> = {
+      execute: async ({ seriesId }) => {
+        published.push(seriesId);
       },
     };
     const seriesRepository = new DrizzleTodoSeriesRepository(
@@ -138,7 +138,7 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       scheduledLocalTime: "09:00",
       timezone: "UTC",
       rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-      startDate: overrides.startDate ?? "2026-11-05",
+      startDate: Temporal.PlainDate.from(overrides.startDate ?? "2026-11-05"),
       checklistTemplate: [{ title: "항목" }],
       now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
     });

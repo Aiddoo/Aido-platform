@@ -10,11 +10,9 @@ import { TodoSeriesOwnerDormancyPort } from "#api/modules/notification/reminders
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DeleteTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/delete-todo-category.use-case";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
+import type { UpdateFollowingTodosInput } from "#api/modules/planning/todo-series/application/use-cases/apply-following-todos-update.use-case";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
-import {
-  UpdateFollowingTodosUseCase,
-  type UpdateFollowingTodosInput,
-} from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
+import { UpdateFollowingTodosUseCase } from "#api/modules/planning/todo-series/application/use-cases/update-following-todos.use-case";
 import { TodoLockKeys } from "#api/modules/planning/todos/application/todos.lock-keys";
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { DeleteTodoUseCase } from "#api/modules/planning/todos/application/use-cases/delete-todo.use-case";

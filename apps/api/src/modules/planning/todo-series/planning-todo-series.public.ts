@@ -10,11 +10,21 @@ export {
   todoSeriesLimitReached,
 } from "./application/todo-series.errors.js";
 export { todoSeriesChangedPayloadSchema } from "./application/todo-series-published-events.constants.js";
+export {
+  ApplyFollowingTodosUpdateUseCase,
+  type UpdateFollowingTodosInput,
+} from "./application/use-cases/apply-following-todos-update.use-case.js";
 export { CatchUpTodoSeriesUseCase } from "./application/use-cases/catch-up-todo-series.use-case.js";
+export { CheckTodoSeriesStartUseCase } from "./application/use-cases/check-todo-series-start.use-case.js";
 export { DeleteTodoOccurrencesUseCase } from "./application/use-cases/delete-todo-occurrences.use-case.js";
 export { MaterializeTodoOccurrencesUseCase } from "./application/use-cases/materialize-todo-occurrences.use-case.js";
-export { PublishTodoCreationUseCase } from "./application/use-cases/publish-todo-creation.use-case.js";
+export { PublishFollowingTodosUpdateUseCase } from "./application/use-cases/publish-following-todos-update.use-case.js";
 export { PublishTodoSeriesEditUseCase } from "./application/use-cases/publish-todo-series-edit.use-case.js";
+export {
+  PublishTodoSeriesStartedUseCase,
+  type StartedTodoSeries,
+} from "./application/use-cases/publish-todo-series-started.use-case.js";
+export { PublishTodoSeriesStoppedUseCase } from "./application/use-cases/publish-todo-series-stopped.use-case.js";
 export { StartSeriesFromTodoUseCase } from "./application/use-cases/start-series-from-todo.use-case.js";
 export { StopTodoSeriesUseCase } from "./application/use-cases/stop-todo-series.use-case.js";
 export { UpdateFollowingTodosUseCase } from "./application/use-cases/update-following-todos.use-case.js";

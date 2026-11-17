@@ -12,12 +12,14 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import { PublishTodoSeriesStartedUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-started.use-case.js";
+import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/domain/todo-series.constants.js";
 import { StagedTodoCreatorAdapter } from "../../infrastructure/adapters/staged-todo-creator.adapter.js";
 import { CreateTodoUseCase, type CreateTodoInput } from "./create-todo.use-case.js";
+import { PublishTodoCreatedUseCase } from "./publish-todo-created.use-case.js";
 import { StageTodoCreationUseCase } from "./stage-todo-creation.use-case.js";
-import { WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
+import { WriteSingleTodoUseCase } from "./write-single-todo.use-case.js";
+import { WriteTodoSeriesUseCase } from "./write-todo-series.use-case.js";
 
 describe("할 일 생성", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
@@ -31,8 +33,10 @@ describe("할 일 생성", () => {
       todoCreator: new StagedTodoCreatorAdapter(
         new StageTodoCreationUseCase({
           ...fixture,
-          writer: new WriteTodoCreationUseCase(fixture),
-          effects: new PublishTodoCreationUseCase(fixture),
+          writeSingle: new WriteSingleTodoUseCase(fixture),
+          writeSeries: new WriteTodoSeriesUseCase(fixture),
+          publishCreated: new PublishTodoCreatedUseCase(fixture),
+          publishSeriesStarted: new PublishTodoSeriesStartedUseCase(fixture),
         }),
       ),
     });
@@ -235,7 +239,7 @@ describe("할 일 생성", () => {
       const { todos, series } = await useCase.execute(seriesInput({ startDate }));
       // Then
       expect(todos.map((todo) => todo.startDate)).toEqual(["2027-01-01"]);
-      expect(series?.nextOccurrenceDate).toBe("2027-01-02");
+      expect(series?.nextOccurrenceDate?.toString()).toBe("2027-01-02");
     });
 
     it("상한 안의 지난 시작일도 한 번에 상한까지만 만들고 나머지는 커서에 남긴다", async () => {
@@ -344,7 +348,7 @@ describe("할 일 생성", () => {
       });
       // Given
       for (const series of fixture.seriesStore.values()) {
-        series.stopAfter("2026-12-31");
+        series.stopAfter(Temporal.PlainDate.from("2026-12-31"));
         await fixture.todoSeriesRepository.save(series);
       }
       // When

@@ -5,7 +5,7 @@ import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 
 export interface DueTodoSeriesQuery {
   /** nextOccurrenceDate가 이 날짜 이하인 규칙 */
-  readonly through: string;
+  readonly through: Temporal.PlainDate;
   /** id 순 커서. 지난 배치의 마지막 id */
   readonly afterId: TodoSeriesId | null;
   readonly limit: number;
@@ -13,8 +13,8 @@ export interface DueTodoSeriesQuery {
 
 /** 규칙 행을 잡기 전에 사용자 잠금을 잡을 수 있게 소유자를 함께 읽는다. */
 export interface TodoSeriesRef {
-  readonly id: string;
-  readonly userId: string;
+  readonly id: TodoSeriesId;
+  readonly userId: UserId;
 }
 
 export abstract class TodoSeriesRepositoryPort {
@@ -56,5 +56,8 @@ export abstract class TodoSeriesRepositoryPort {
   abstract findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
 
   /** 커서가 through 이하인 이 사용자의 규칙. */
-  abstract findIdsBehind(userId: UserId, through: string): Promise<readonly string[]>;
+  abstract findIdsBehind(
+    userId: UserId,
+    through: Temporal.PlainDate,
+  ): Promise<readonly TodoSeriesId[]>;
 }

@@ -14,7 +14,6 @@ import {
   CatchUpTodoSeriesUseCase,
 } from "./catch-up-todo-series.use-case.js";
 import { MaterializeTodoSeriesUseCase } from "./materialize-todo-series.use-case.js";
-import { PublishTodoCreationUseCase } from "./publish-todo-creation.use-case.js";
 
 const AT = new Date("2026-11-05T03:00:00.000Z");
 const LAST_MOVED_AT = new Date("2026-06-01T00:00:00.000Z");
@@ -31,7 +30,7 @@ describe("복귀 회차 채우기", () => {
       clock: new DateClock(),
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
-      effects: new PublishTodoCreationUseCase(fixture),
+      effects: fixture.seriesEffects,
       unitOfWork: fixture.unitOfWork,
       mutationLock: fixture.mutationLock,
     });
@@ -62,11 +61,11 @@ describe("복귀 회차 채우기", () => {
         scheduledLocalTime: null,
         timezone: "UTC",
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-        startDate: "2026-03-01",
+        startDate: Temporal.PlainDate.from("2026-03-01"),
         checklistTemplate: [],
         now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
       }).toPrimitives(),
-      nextOccurrenceDate,
+      nextOccurrenceDate: Temporal.PlainDate.from(nextOccurrenceDate),
     });
     await fixture.todoSeriesRepository.insert(series);
   }
@@ -115,10 +114,11 @@ describe("복귀 회차 채우기", () => {
     await service.execute(fixture.userId);
     // Then
     expect(findIdsBehind).toHaveBeenCalledTimes(2);
-    expect(findIdsBehind).toHaveBeenLastCalledWith(
-      UserId.reconstitute(fixture.userId),
-      "2026-11-07",
-    );
+    const [owner, through] = findIdsBehind.mock.lastCall ?? [];
+    expect({ owner, through: through?.toString() }).toEqual({
+      owner: UserId.reconstitute(fixture.userId),
+      through: "2026-11-07",
+    });
   });
 
   it("UTC 날짜가 하루 늦은 시간대의 오늘도 조회 범위에 넣는다", async () => {
@@ -128,7 +128,11 @@ describe("복귀 회차 채우기", () => {
     // When
     await catchUp().execute(fixture.userId);
     // Then
-    expect(findIdsBehind).toHaveBeenCalledWith(UserId.reconstitute(fixture.userId), "2026-11-05");
+    const [owner, through] = findIdsBehind.mock.lastCall ?? [];
+    expect({ owner, through: through?.toString() }).toEqual({
+      owner: UserId.reconstitute(fixture.userId),
+      through: "2026-11-05",
+    });
   });
 
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {
@@ -170,13 +174,13 @@ describe("복귀 회차 채우기", () => {
     // Given
     await seedStale("series-1");
     await seedStale("series-2");
-    const persist = fixture.occurrenceMaterializer.persist.bind(fixture.occurrenceMaterializer);
+    const materialize = fixture.occurrenceMaterializer.execute.bind(fixture.occurrenceMaterializer);
     const spy = vi
-      .spyOn(fixture.occurrenceMaterializer, "persist")
+      .spyOn(fixture.occurrenceMaterializer, "execute")
       .mockImplementationOnce(async () => {
         throw new Error("카테고리 없음");
       })
-      .mockImplementation(persist);
+      .mockImplementation(materialize);
     const service = catchUp();
     // When
     await service.execute(fixture.userId);

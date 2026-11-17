@@ -70,7 +70,7 @@ export class ChangeTodoCategoryUseCase {
       const changed = todo.changeCategory(targetCategoryId, this.#dependencies.clock.now());
 
       // 같은 카테고리여도 한도를 먼저 본다. 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
-      if (!todo.completed && !todo.isOccurrence()) {
+      if (!todo.isCompleted() && !todo.isOccurrence()) {
         const activeInTarget = await this.#dependencies.todoRepository.countCategoryUsage(
           ownerId,
           targetCategoryId,

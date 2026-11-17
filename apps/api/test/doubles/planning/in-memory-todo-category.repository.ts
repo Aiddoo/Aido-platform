@@ -62,7 +62,7 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     const id = categoryId.value;
     this.#require(id);
     for (const [seriesId, series] of this.#stores.seriesStore) {
-      if (series.categoryId === id && !series.isActive) {
+      if (series.categoryId === id && !series.isActive()) {
         this.#stores.seriesStore.delete(seriesId);
       }
     }
@@ -146,7 +146,7 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
 
   async countActiveSeries(categoryId: TodoCategoryId): Promise<number> {
     return [...this.#stores.seriesStore.values()].filter(
-      (series) => series.categoryId === categoryId.value && series.isActive,
+      (series) => series.categoryId === categoryId.value && series.isActive(),
     ).length;
   }
 

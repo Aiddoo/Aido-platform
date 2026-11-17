@@ -11,7 +11,7 @@ import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/appl
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { MaterializeTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-series.use-case";
-import { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-creation.use-case";
+import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
 import { RepeatRule } from "#api/modules/planning/todo-series/domain/repeat-rule.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
@@ -151,7 +151,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
         todoReminder: new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
         applyTodoEvents: { execute: async () => undefined },
       }),
-      effects: new PublishTodoCreationUseCase({
+      effects: new PublishTodoSeriesEditUseCase({
         todoCache: {
           invalidateTodoCategories: async () => undefined,
           invalidateFriendTodos: async () => undefined,
@@ -221,7 +221,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       scheduledLocalTime: overrides.scheduledLocalTime ?? null,
       timezone: overrides.timezone ?? "UTC",
       rule: overrides.rule ?? RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-      startDate: overrides.startDate ?? "2026-03-01",
+      startDate: Temporal.PlainDate.from(overrides.startDate ?? "2026-03-01"),
       checklistTemplate: [{ title: "항목" }],
       now: Temporal.Instant.fromEpochMilliseconds(LAST_MOVED_AT.getTime()),
     });

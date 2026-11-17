@@ -18,9 +18,9 @@ export function toTodoSeries(row: TodoSeriesRow): TodoSeries {
     scheduledLocalTime: row.scheduledLocalTime,
     timezone: row.timezone,
     rule: toRepeatRule(row).toPrimitives(),
-    startDate: row.startDate.toString(),
+    startDate: row.startDate,
     checklistTemplate: row.checklistTemplate,
-    nextOccurrenceDate: row.nextOccurrenceDate?.toString() ?? null,
+    nextOccurrenceDate: row.nextOccurrenceDate,
     generatedCount: row.generatedCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -54,14 +54,11 @@ export function toTodoSeriesRow(
     repeatInterval: interval,
     repeatWeekdays: weekdays == null ? null : [...weekdays],
     repeatMonthDay: monthDay,
-    startDate: Temporal.PlainDate.from(primitives.startDate),
+    startDate: primitives.startDate,
     repeatUntil,
     repeatCount,
     checklistTemplate: [...primitives.checklistTemplate],
-    nextOccurrenceDate:
-      primitives.nextOccurrenceDate == null
-        ? null
-        : Temporal.PlainDate.from(primitives.nextOccurrenceDate),
+    nextOccurrenceDate: primitives.nextOccurrenceDate,
     generatedCount: primitives.generatedCount,
     createdAt: primitives.createdAt,
   };

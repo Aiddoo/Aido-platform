@@ -16,8 +16,8 @@ import { AddTodoItemUseCase } from "#api/modules/planning/todos/application/use-
 import { CreateTodoUseCase } from "#api/modules/planning/todos/application/use-cases/create-todo.use-case";
 import { ReorderTodoItemsUseCase } from "#api/modules/planning/todos/application/use-cases/reorder-todo-items.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
+import type { TodoDetailsPatch } from "#api/modules/planning/todos/domain/todo-details-patch.domain-service";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
-import type { TodoDetailsPatch } from "#api/modules/planning/todos/domain/todo.aggregate";
 import {
   todo,
   todoCategory,
@@ -619,7 +619,7 @@ describe("Todo 변경 원자성·Drizzle 쿼리 실행 수 (실제 PostgreSQL)",
             sortOrder: 1,
             isAllDay: true,
             visibility: "PUBLIC",
-            occurrenceDate: "2027-01-04",
+            occurrenceDate: Temporal.PlainDate.from("2027-01-04"),
             createdAt: instantFromDate(AT),
           },
         ],

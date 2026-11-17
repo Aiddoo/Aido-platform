@@ -2,10 +2,15 @@ import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type {
+  ApplyFollowingTodosUpdateUseCase,
+  CheckTodoSeriesStartUseCase,
+  PublishFollowingTodosUpdateUseCase,
+  PublishTodoSeriesStartedUseCase,
+  PublishTodoSeriesStoppedUseCase,
+  RepeatSpec,
   StartSeriesFromTodoUseCase,
   StopTodoSeriesUseCase,
   UpdateFollowingTodosUseCase,
-  RepeatSpec,
 } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { invalidRepeatRule } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -21,8 +26,10 @@ import { todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import type { ApplyTodoCompletionEffectsUseCase } from "./apply-todo-completion-effects.use-case.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
+import type { ApplyTodoUpdateUseCase, UpdateTodoData } from "./apply-todo-update.use-case.js";
+import type { PublishTodoUpdateUseCase } from "./publish-todo-update.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
-import type { UpdateTodoData, UpdateTodoUseCase } from "./update-todo.use-case.js";
+import type { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 export interface EditTodoInput {
   readonly id: number;
@@ -37,13 +44,17 @@ export interface EditTodoInput {
 }
 
 interface EditTodoDependencies {
-  readonly updateTodo: Pick<UpdateTodoUseCase, "execute" | "apply" | "publish">;
-  readonly updateFollowingTodos: Pick<UpdateFollowingTodosUseCase, "execute" | "apply" | "publish">;
-  readonly startSeriesFromTodo: Pick<
-    StartSeriesFromTodoUseCase,
-    "assertCanStart" | "apply" | "publish"
-  >;
-  readonly stopTodoSeries: Pick<StopTodoSeriesUseCase, "apply" | "publish">;
+  readonly updateTodo: Pick<UpdateTodoUseCase, "execute">;
+  readonly applyTodoUpdate: Pick<ApplyTodoUpdateUseCase, "execute">;
+  readonly publishTodoUpdate: Pick<PublishTodoUpdateUseCase, "execute">;
+  readonly updateFollowingTodos: Pick<UpdateFollowingTodosUseCase, "execute">;
+  readonly applyFollowingTodosUpdate: Pick<ApplyFollowingTodosUpdateUseCase, "execute">;
+  readonly publishFollowingTodosUpdate: Pick<PublishFollowingTodosUpdateUseCase, "execute">;
+  readonly checkTodoSeriesStart: Pick<CheckTodoSeriesStartUseCase, "execute">;
+  readonly startSeriesFromTodo: Pick<StartSeriesFromTodoUseCase, "execute">;
+  readonly publishTodoSeriesStarted: Pick<PublishTodoSeriesStartedUseCase, "execute">;
+  readonly stopTodoSeries: Pick<StopTodoSeriesUseCase, "execute">;
+  readonly publishTodoSeriesStopped: Pick<PublishTodoSeriesStoppedUseCase, "execute">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -97,7 +108,8 @@ export class EditTodoUseCase {
 
   async #editFollowing(input: ResolvedEditTodoInput, repeat: RepeatSpec | undefined) {
     const { id, userId, timezone, checklist, data } = input;
-    const { updateFollowingTodos, updateTodo, unitOfWork } = this.#dependencies;
+    const { updateFollowingTodos, applyFollowingTodosUpdate, applyTodoUpdate, unitOfWork } =
+      this.#dependencies;
     const followingInput = {
       id,
       userId,
@@ -118,8 +130,8 @@ export class EditTodoUseCase {
     // 날짜 이동·완료는 범위와 상관없이 이 회차에만 적용한다.
     const applied = await unitOfWork.run(async () => {
       await this.#acquireLocks(id, userId);
-      const following = await updateFollowingTodos.apply(followingInput);
-      const thisOnly = await updateTodo.apply({
+      const following = await applyFollowingTodosUpdate.execute(followingInput);
+      const thisOnly = await applyTodoUpdate.execute({
         id: following.responseTodoId,
         userId,
         timezone,
@@ -128,42 +140,45 @@ export class EditTodoUseCase {
       await this.#applyEvents(thisOnly.events);
       return { following, thisOnly };
     });
-    await updateFollowingTodos.publish(applied.following, userId);
-    await updateTodo.publish(applied.thisOnly);
+    await this.#dependencies.publishFollowingTodosUpdate.execute({
+      edited: applied.following,
+      userId,
+    });
+    await this.#dependencies.publishTodoUpdate.execute(applied.thisOnly);
     return this.#read(applied.following.responseTodoId, userId);
   }
 
   async #startSeries(input: ResolvedEditTodoInput, repeat: RepeatSpec) {
     const { id, userId, timezone, data } = input;
-    const { startSeriesFromTodo, updateTodo, unitOfWork } = this.#dependencies;
+    const { startSeriesFromTodo, applyTodoUpdate, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
       await this.#acquireLocks(id, userId);
-      await startSeriesFromTodo.assertCanStart(id, userId);
-      const updated = await updateTodo.apply({ id, userId, timezone, data });
+      await this.#dependencies.checkTodoSeriesStart.execute({ todoId: id, userId });
+      const updated = await applyTodoUpdate.execute({ id, userId, timezone, data });
       // 첫 회차의 예약은 전환이 새 날짜로 다시 잡는다. 옛 시각으로 예약하거나 알리지 않는다.
       const events = updated.events.filter((event) => !(event instanceof TodoRescheduledEvent));
-      const started = await startSeriesFromTodo.apply({ todoId: id, userId, repeat, timezone });
+      const started = await startSeriesFromTodo.execute({ todoId: id, userId, repeat, timezone });
       // 옛 커밋 뒤 순서와 같게 전환 뒤에 반영한다(완료와 함께 전환하면 첫 회차 예약이 취소된다)
       await this.#applyEvents(events);
       return { updated: { ...updated, events }, started };
     });
-    await updateTodo.publish(applied.updated);
-    await startSeriesFromTodo.publish(applied.started);
+    await this.#dependencies.publishTodoUpdate.execute(applied.updated);
+    await this.#dependencies.publishTodoSeriesStarted.execute(applied.started);
     return this.#read(id, userId);
   }
 
   async #stopSeries(input: ResolvedEditTodoInput) {
     const { id, userId, timezone, data } = input;
-    const { stopTodoSeries, updateTodo, unitOfWork } = this.#dependencies;
+    const { stopTodoSeries, applyTodoUpdate, unitOfWork } = this.#dependencies;
     const applied = await unitOfWork.run(async () => {
       await this.#acquireLocks(id, userId);
-      const stopped = await stopTodoSeries.apply({ todoId: id, userId });
-      const updated = await updateTodo.apply({ id, userId, timezone, data });
+      const stopped = await stopTodoSeries.execute({ todoId: id, userId });
+      const updated = await applyTodoUpdate.execute({ id, userId, timezone, data });
       await this.#applyEvents(updated.events);
       return { stopped, updated };
     });
-    await stopTodoSeries.publish(applied.stopped);
-    await updateTodo.publish(applied.updated);
+    await this.#dependencies.publishTodoSeriesStopped.execute(applied.stopped);
+    await this.#dependencies.publishTodoUpdate.execute(applied.updated);
     return this.#read(id, userId);
   }
 

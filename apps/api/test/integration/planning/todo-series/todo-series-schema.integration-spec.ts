@@ -535,7 +535,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         scheduledLocalTime: "09:00",
         timezone: "Asia/Seoul",
         rule,
-        startDate: "2026-11-02",
+        startDate: Temporal.PlainDate.from("2026-11-02"),
         checklistTemplate: [{ title: "항목" }],
         now: Temporal.Instant.fromEpochMilliseconds(new Date("2026-11-01T00:00:00.000Z").getTime()),
       });
@@ -593,7 +593,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await repository().insert(active);
       await repository().insert(finished);
       // When
-      finished.planOccurrences("2026-12-31");
+      finished.planOccurrences(Temporal.PlainDate.from("2026-12-31"));
       await repository().save(finished);
       // Then
       expect(await repository().countActiveByUserId(UserId.reconstitute(userId))).toBe(1);
@@ -618,7 +618,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
           scheduledLocalTime: null,
           timezone: "UTC",
           rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-          startDate: "2027-06-01",
+          startDate: Temporal.PlainDate.from("2027-06-01"),
           checklistTemplate: [],
           now: Temporal.Instant.fromEpochMilliseconds(
             new Date("2026-11-01T00:00:00.000Z").getTime(),
@@ -627,18 +627,18 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       );
       // When
       const first = await repository().findDueBatch({
-        through: "2026-12-01",
+        through: Temporal.PlainDate.from("2026-12-01"),
         afterId: null,
         limit: 2,
       });
       const second = await repository().findDueBatch({
-        through: "2026-12-01",
-        afterId: first.map((due) => TodoSeriesId.reconstitute(due.id)).at(-1) ?? null,
+        through: Temporal.PlainDate.from("2026-12-01"),
+        afterId: first.at(-1)?.id ?? null,
         limit: 2,
       });
       // Then
-      expect(first.map((due) => due.id)).toEqual(ids.slice(0, 2));
-      expect(second.map((due) => due.id)).toEqual(ids.slice(2));
+      expect(first.map((due) => due.id.value)).toEqual(ids.slice(0, 2));
+      expect(second.map((due) => due.id.value)).toEqual(ids.slice(2));
     });
 
     it("다른 트랜잭션이 잡고 있으면 SKIP LOCKED는 건너뛴다", async () => {

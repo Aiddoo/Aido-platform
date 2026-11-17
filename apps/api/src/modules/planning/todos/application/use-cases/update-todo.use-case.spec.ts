@@ -10,6 +10,8 @@ import {
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
+import { ApplyTodoUpdateUseCase } from "./apply-todo-update.use-case.js";
+import { PublishTodoUpdateUseCase } from "./publish-todo-update.use-case.js";
 import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 describe("할 일 부분 수정", () => {
@@ -19,7 +21,11 @@ describe("할 일 부분 수정", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new UpdateTodoUseCase(fixture);
+    useCase = new UpdateTodoUseCase({
+      ...fixture,
+      applyUpdate: new ApplyTodoUpdateUseCase(fixture),
+      publishUpdate: new PublishTodoUpdateUseCase(fixture),
+    });
   });
   afterEach(() => {
     vi.useRealTimers();

@@ -24,6 +24,6 @@ describe("occurrenceHorizon — 미리 만드는 기간", () => {
     // When
     const horizon = occurrenceHorizon(timezone, Temporal.Instant.from(at));
     // Then
-    expect(horizon).toBe(expected);
+    expect(horizon.toString()).toBe(expected);
   });
 });

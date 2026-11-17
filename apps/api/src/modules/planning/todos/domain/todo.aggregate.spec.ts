@@ -98,7 +98,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
       // Then
       expect(changed).toBe(true);
-      expect(todo.completed).toBe(true);
+      expect(todo.isCompleted()).toBe(true);
       expect(todo.completedAt).toEqual(LATER);
       const events = todo.pullDomainEvents();
       expect(events).toHaveLength(1);
@@ -120,7 +120,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
       // Then
       expect(changed).toBe(true);
-      expect(todo.completed).toBe(false);
+      expect(todo.isCompleted()).toBe(false);
       expect(todo.completedAt).toBeNull();
       const event = todo.pullDomainEvents()[0];
       expect(event).toBeInstanceOf(TodoToggledEvent);
@@ -138,7 +138,7 @@ describe("Todo — 할 일 애그리게잇", () => {
 
       // Then
       expect(changed).toBe(false);
-      expect(todo.completed).toBe(true);
+      expect(todo.isCompleted()).toBe(true);
       expect(todo.completedAt).toEqual(NOW);
       expect(todo.pullDomainEvents()).toHaveLength(0);
     });
@@ -256,7 +256,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       todo.updateDetails({ completed: true }, "UTC", LATER);
 
       // Then
-      expect(todo.completed).toBe(true);
+      expect(todo.isCompleted()).toBe(true);
       expect(todo.completedAt).toEqual(LATER);
     });
 
@@ -275,7 +275,7 @@ describe("Todo — 할 일 애그리게잇", () => {
       todo.updateDetails({ completed: false }, "UTC", LATER);
 
       // Then
-      expect(todo.completed).toBe(false);
+      expect(todo.isCompleted()).toBe(false);
       expect(todo.completedAt).toBeNull();
       const events = todo.pullDomainEvents();
       expect(events.map((event) => event.constructor)).toEqual([

@@ -12,7 +12,6 @@ import { match } from "ts-pattern";
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
 import { invalidRepeatRule } from "./todo-series.errors.js";
 
 export type RepeatEnd =
@@ -29,6 +28,14 @@ export type RepeatSpec =
       readonly end: RepeatEnd;
     }
   | { readonly frequency: "MONTHLY"; readonly monthDay: number; readonly end: RepeatEnd };
+
+export interface OccurrenceRange {
+  readonly seriesStart: Temporal.PlainDate;
+  readonly from: Temporal.PlainDate;
+  readonly through: Temporal.PlainDate;
+  /** 끝이 COUNT일 때 이미 만든 회차 수 */
+  readonly generatedCount?: number;
+}
 
 export interface RepeatRuleProps {
   readonly frequency: TodoRepeatFrequency;
@@ -55,7 +62,7 @@ function assertEnd(end: RepeatEnd): void {
   }
 }
 
-/** 반복 규칙. 날짜는 시간대 없는 달력 값이라 모두 YYYY-MM-DD key로 계산한다. */
+/** 반복 규칙. 날짜는 시간대 없는 달력 값(Temporal.PlainDate)이다. 종료일만 저장 모양 그대로 YYYY-MM-DD다. */
 export class RepeatRule extends ValueObject<RepeatRuleProps> {
   static #daily(end: RepeatEnd): RepeatRule {
     assertEnd(end);
@@ -129,20 +136,17 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
    * [from, through] 안의 회차 날짜. 끝이 COUNT면 generatedCount를 뺀 나머지만 돌려준다.
    * 전체를 하루씩 돌지 않고 규칙이 맞는 날짜로 바로 건너뛴다.
    */
-  occurrencesBetween(
-    seriesStart: string,
-    from: string,
-    through: string,
-    generatedCount = 0,
-  ): string[] {
+  occurrencesBetween(range: OccurrenceRange): Temporal.PlainDate[] {
+    const { seriesStart, from, through, generatedCount = 0 } = range;
     const { end } = this.value;
-    const lower = from < seriesStart ? seriesStart : from;
-    const upper = end.type === "UNTIL" && end.date < through ? end.date : through;
+    const lower = later(from, seriesStart);
+    const upper =
+      end.type === "UNTIL" ? earlier(Temporal.PlainDate.from(end.date), through) : through;
     const limit = end.type === "COUNT" ? end.count - generatedCount : Number.POSITIVE_INFINITY;
-    if (lower > upper || limit <= 0) {
+    if (Temporal.PlainDate.compare(lower, upper) > 0 || limit <= 0) {
       return [];
     }
-    const dates: string[] = [];
+    const dates: Temporal.PlainDate[] = [];
     for (const date of this.#walk(seriesStart, lower, upper)) {
       dates.push(date);
       if (dates.length >= limit) {
@@ -153,27 +157,35 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
   }
 
   /** date 이후(포함) 첫 회차. 끝났으면 null이다. */
-  firstOnOrAfter(seriesStart: string, date: string, generatedCount = 0): string | null {
-    const lower = date < seriesStart ? seriesStart : date;
-    const window = addDaysToKey(lower, TODO_REPEAT_OCCURRENCE_SEARCH_DAYS);
-    return this.occurrencesBetween(seriesStart, lower, window, generatedCount).at(0) ?? null;
+  firstOnOrAfter(
+    seriesStart: Temporal.PlainDate,
+    date: Temporal.PlainDate,
+    generatedCount = 0,
+  ): Temporal.PlainDate | null {
+    const from = later(date, seriesStart);
+    const through = from.add({ days: TODO_REPEAT_OCCURRENCE_SEARCH_DAYS });
+    return this.occurrencesBetween({ seriesStart, from, through, generatedCount }).at(0) ?? null;
   }
 
   /** date 전까지 만들어졌어야 할 회차 수. 이 할 일만 지운 날짜도 센다. */
-  countBefore(seriesStart: string, date: string): number {
-    return this.occurrencesBetween(seriesStart, seriesStart, addDaysToKey(date, -1)).length;
+  countBefore(seriesStart: Temporal.PlainDate, date: Temporal.PlainDate): number {
+    return this.occurrencesBetween({
+      seriesStart,
+      from: seriesStart,
+      through: date.subtract({ days: 1 }),
+    }).length;
   }
 
   /** 분할할 때 앞쪽 규칙이 pivot 전날로 끝나도록 종료만 바꾼다. */
-  endingBefore(date: string): RepeatRule {
+  endingBefore(date: Temporal.PlainDate): RepeatRule {
     return new RepeatRule({
       ...this.value,
-      end: { type: "UNTIL", date: addDaysToKey(date, -1) },
+      end: { type: "UNTIL", date: date.subtract({ days: 1 }).toString() },
     });
   }
 
   /** 분할할 때 뒤쪽 규칙이 남은 횟수를 이어받는다. 횟수 종료가 아니면 그대로다. */
-  continuingFrom(seriesStart: string, pivotDate: string): RepeatRule {
+  continuingFrom(seriesStart: Temporal.PlainDate, pivotDate: Temporal.PlainDate): RepeatRule {
     const { end } = this.value;
     if (end.type !== "COUNT") {
       return this;
@@ -182,25 +194,40 @@ export class RepeatRule extends ValueObject<RepeatRuleProps> {
     return new RepeatRule({ ...this.value, end: { type: "COUNT", count: Math.max(remaining, 1) } });
   }
 
-  *#walk(seriesStart: string, lower: string, upper: string): Generator<string> {
-    yield* match(this.value.frequency)
+  *#walk(
+    seriesStart: Temporal.PlainDate,
+    lower: Temporal.PlainDate,
+    upper: Temporal.PlainDate,
+  ): Generator<Temporal.PlainDate> {
+    const { frequency, interval, weekdays, monthDay } = this.value;
+    yield* match(frequency)
       .with("DAILY", () => walkDaily(lower, upper))
       .with("WEEKLY", () =>
-        walkWeekly(seriesStart, lower, upper, this.value.interval, this.value.weekdays ?? []),
+        walkWeekly({ seriesStart, lower, upper, interval, weekdays: weekdays ?? [] }),
       )
-      .with("MONTHLY", () => walkMonthly(lower, upper, this.value.monthDay ?? 1))
+      .with("MONTHLY", () => walkMonthly(lower, upper, monthDay ?? 1))
       .exhaustive();
   }
 }
 
-function* walkDaily(lower: string, upper: string): Generator<string> {
-  const last = Temporal.PlainDate.from(upper);
+function earlier(left: Temporal.PlainDate, right: Temporal.PlainDate): Temporal.PlainDate {
+  return Temporal.PlainDate.compare(left, right) <= 0 ? left : right;
+}
+
+function later(left: Temporal.PlainDate, right: Temporal.PlainDate): Temporal.PlainDate {
+  return Temporal.PlainDate.compare(left, right) >= 0 ? left : right;
+}
+
+function* walkDaily(
+  lower: Temporal.PlainDate,
+  upper: Temporal.PlainDate,
+): Generator<Temporal.PlainDate> {
   for (
-    let date = Temporal.PlainDate.from(lower);
-    Temporal.PlainDate.compare(date, last) <= 0;
+    let date = lower;
+    Temporal.PlainDate.compare(date, upper) <= 0;
     date = date.add({ days: 1 })
   ) {
-    yield date.toString();
+    yield date;
   }
 }
 
@@ -209,51 +236,52 @@ function mondayOf(date: Temporal.PlainDate): Temporal.PlainDate {
 }
 
 /** 격주 기준 주는 시작일이 속한 주(월요일 시작)다. */
-function* walkWeekly(
-  seriesStart: string,
-  lower: string,
-  upper: string,
-  interval: TodoRepeatInterval,
-  weekdays: readonly DayOfWeek[],
-): Generator<string> {
-  const first = Temporal.PlainDate.from(lower);
-  const last = Temporal.PlainDate.from(upper);
-  const anchorMonday = mondayOf(Temporal.PlainDate.from(seriesStart));
-  const weeksToLower = Math.trunc(anchorMonday.until(mondayOf(first)).days / DAYS_PER_WEEK);
-  const offsets = weekdays.map((weekday) => DAYS_OF_WEEK.indexOf(weekday));
+function* walkWeekly(walk: {
+  readonly seriesStart: Temporal.PlainDate;
+  readonly lower: Temporal.PlainDate;
+  readonly upper: Temporal.PlainDate;
+  readonly interval: TodoRepeatInterval;
+  readonly weekdays: readonly DayOfWeek[];
+}): Generator<Temporal.PlainDate> {
+  const { lower, upper, interval } = walk;
+  const anchorMonday = mondayOf(walk.seriesStart);
+  const weeksToLower = Math.trunc(anchorMonday.until(mondayOf(lower)).days / DAYS_PER_WEEK);
+  const offsets = walk.weekdays.map((weekday) => DAYS_OF_WEEK.indexOf(weekday));
   for (
     let week = weeksToLower - (weeksToLower % interval);
-    Temporal.PlainDate.compare(anchorMonday.add({ weeks: week }), last) <= 0;
+    Temporal.PlainDate.compare(anchorMonday.add({ weeks: week }), upper) <= 0;
     week += interval
   ) {
     const monday = anchorMonday.add({ weeks: week });
     for (const offset of offsets) {
       const date = monday.add({ days: offset });
-      if (Temporal.PlainDate.compare(date, last) > 0) {
+      if (Temporal.PlainDate.compare(date, upper) > 0) {
         return;
       }
-      if (Temporal.PlainDate.compare(date, first) >= 0) {
-        yield date.toString();
+      if (Temporal.PlainDate.compare(date, lower) >= 0) {
+        yield date;
       }
     }
   }
 }
 
 /** 그 날이 없는 달은 말일로 맞춘다. */
-function* walkMonthly(lower: string, upper: string, monthDay: number): Generator<string> {
-  const first = Temporal.PlainDate.from(lower);
-  const last = Temporal.PlainDate.from(upper);
+function* walkMonthly(
+  lower: Temporal.PlainDate,
+  upper: Temporal.PlainDate,
+  monthDay: number,
+): Generator<Temporal.PlainDate> {
   for (
-    let month = first.toPlainYearMonth();
-    Temporal.PlainDate.compare(month.toPlainDate({ day: 1 }), last) <= 0;
+    let month = lower.toPlainYearMonth();
+    Temporal.PlainDate.compare(month.toPlainDate({ day: 1 }), upper) <= 0;
     month = month.add({ months: 1 })
   ) {
     const date = month.toPlainDate({ day: Math.min(monthDay, month.daysInMonth) });
-    if (Temporal.PlainDate.compare(date, last) > 0) {
+    if (Temporal.PlainDate.compare(date, upper) > 0) {
       return;
     }
-    if (Temporal.PlainDate.compare(date, first) >= 0) {
-      yield date.toString();
+    if (Temporal.PlainDate.compare(date, lower) >= 0) {
+      yield date;
     }
   }
 }
