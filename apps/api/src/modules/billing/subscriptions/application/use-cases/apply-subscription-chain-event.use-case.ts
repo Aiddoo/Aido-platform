@@ -6,6 +6,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { StoreCustomerId } from "../../domain/store-customer-id.vo.js";
 import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 import {
   providerEventIdOf,
@@ -36,7 +37,7 @@ export type ApplySubscriptionChainEventCommand = Exclude<
 
 export interface ApplySubscriptionChainEventDependencies {
   readonly subscriptionRepository: Pick<SubscriptionRepositoryPort, "findByStoreSubscriptionId">;
-  readonly subscriptionUserReader: Pick<SubscriptionUserReaderPort, "findFirstByAppUserIds">;
+  readonly subscriptionUserReader: Pick<SubscriptionUserReaderPort, "findFirstByStoreCustomerIds">;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
   readonly userLock: Pick<UserMutationLockPort, "lockById">;
   readonly mutationLock: Pick<MutationLockPort, "tryAcquire">;
@@ -62,8 +63,8 @@ export class ApplySubscriptionChainEventUseCase {
   async execute(
     event: ApplySubscriptionChainEventCommand,
   ): Promise<SubscriptionEventOutcomeReadModel> {
-    const user = await this.#dependencies.subscriptionUserReader.findFirstByAppUserIds([
-      event.appUserId,
+    const user = await this.#dependencies.subscriptionUserReader.findFirstByStoreCustomerIds([
+      StoreCustomerId.reconstitute(event.appUserId),
     ]);
     if (user == null) {
       throw subscriptionUserNotFound(event.appUserId);

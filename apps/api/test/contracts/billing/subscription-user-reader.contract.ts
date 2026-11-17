@@ -1,5 +1,6 @@
 import type { SubscriptionUserReaderPort } from "#api/modules/billing/subscriptions/application/ports/subscription-user.reader.port";
 import type { SubscriptionUserReadModel } from "#api/modules/billing/subscriptions/application/read-models/subscription-user.read-model";
+import { StoreCustomerId } from "#api/modules/billing/subscriptions/domain/store-customer-id.vo";
 import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
   SUBSCRIPTION_FIXTURE_USER_ID,
@@ -17,6 +18,10 @@ interface SeedSubscriptionUserInput {
 export interface SubscriptionUserReaderHarness {
   readonly reader: SubscriptionUserReaderPort;
   seedUser(input: SeedSubscriptionUserInput): Promise<void>;
+}
+
+function customerIdsOf(values: readonly string[]): StoreCustomerId[] {
+  return values.map((value) => StoreCustomerId.reconstitute(value));
 }
 
 function primitivesOf(user: SubscriptionUserReadModel | null | undefined) {
@@ -37,7 +42,9 @@ export function describeSubscriptionUserReaderContract(
       });
 
       // When
-      const found = await reader.findFirstByAppUserIds([SUBSCRIPTION_FIXTURE_USER_ID]);
+      const found = await reader.findFirstByStoreCustomerIds(
+        customerIdsOf([SUBSCRIPTION_FIXTURE_USER_ID]),
+      );
 
       // Then
       expect(primitivesOf(found)).toEqual({
@@ -63,7 +70,7 @@ export function describeSubscriptionUserReaderContract(
       });
 
       // When
-      const found = await reader.findFirstByAppUserIds(["owner-alias"]);
+      const found = await reader.findFirstByStoreCustomerIds(customerIdsOf(["owner-alias"]));
 
       // Then
       expect(found?.id.value).toBe(SUBSCRIPTION_FIXTURE_USER_ID);
@@ -75,7 +82,9 @@ export function describeSubscriptionUserReaderContract(
       await seedUser({ id: SUBSCRIPTION_FIXTURE_USER_ID, email: "owner@example.com", name: null });
 
       // When
-      const found = await reader.findFirstByAppUserIds([SUBSCRIPTION_FIXTURE_USER_ID]);
+      const found = await reader.findFirstByStoreCustomerIds(
+        customerIdsOf([SUBSCRIPTION_FIXTURE_USER_ID]),
+      );
 
       // Then
       expect(primitivesOf(found)).toMatchObject({ id: SUBSCRIPTION_FIXTURE_USER_ID, name: null });
@@ -91,7 +100,7 @@ export function describeSubscriptionUserReaderContract(
       });
 
       // When
-      const found = await reader.findFirstByAppUserIds(["unknown-app-user"]);
+      const found = await reader.findFirstByStoreCustomerIds(customerIdsOf(["unknown-app-user"]));
 
       // Then
       expect(found).toBeNull();
@@ -113,11 +122,9 @@ export function describeSubscriptionUserReaderContract(
       });
 
       // When
-      const found = await reader.findFirstByAppUserIds([
-        "unknown-app-user",
-        "other-alias",
-        SUBSCRIPTION_FIXTURE_USER_ID,
-      ]);
+      const found = await reader.findFirstByStoreCustomerIds(
+        customerIdsOf(["unknown-app-user", "other-alias", SUBSCRIPTION_FIXTURE_USER_ID]),
+      );
 
       // Then
       expect(found?.id.value).toBe(SUBSCRIPTION_FIXTURE_OTHER_USER_ID);
@@ -139,12 +146,14 @@ export function describeSubscriptionUserReaderContract(
       });
 
       // When
-      const users = await reader.listByAppUserIds([
-        SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
-        "owner-alias",
-        SUBSCRIPTION_FIXTURE_USER_ID,
-        "unknown-app-user",
-      ]);
+      const users = await reader.listByStoreCustomerIds(
+        customerIdsOf([
+          SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
+          "owner-alias",
+          SUBSCRIPTION_FIXTURE_USER_ID,
+          "unknown-app-user",
+        ]),
+      );
 
       // Then
       expect(users.map((user) => user.id.value)).toEqual([

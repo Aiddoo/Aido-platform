@@ -28,7 +28,10 @@ export class EnqueueSubscriptionEventUseCase {
     const user = await resolveUser.execute(subscriptionNoticeUserOf(payload));
     const notice = AdminNotice.create({
       content: buildSubscriptionNotice(payload, user),
-      ...(payload.eventId ? { deduplicationKey: `subscription-event_${payload.eventId}` } : {}),
+      ...(payload.eventId != null &&
+        payload.eventId.value !== "" && {
+          deduplicationKey: `subscription-event_${payload.eventId.value}`,
+        }),
     });
     await queue.enqueueSend(notice);
   }

@@ -8,7 +8,7 @@ import {
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
 import type {
@@ -17,6 +17,10 @@ import type {
 } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayloadReadModel } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
+import { ProviderEventId } from "../../domain/provider-event-id.vo.js";
+import { StoreCustomerId } from "../../domain/store-customer-id.vo.js";
+import { StoreProductId } from "../../domain/store-product-id.vo.js";
+import { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
 
 /**
  * 구독 이벤트 알림 어댑터.
@@ -63,8 +67,8 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
         storeEnvironment: context.environment ?? "unknown",
       },
       details: {
-        eventId: context.providerEventId ?? null,
-        productId: context.productId ?? null,
+        eventId: context.providerEventId?.value ?? null,
+        productId: context.productId?.value ?? null,
         errorType: toErrorType(error),
         errorCode: error instanceof ErrorCodedException ? error.errorCode : null,
       },
@@ -76,7 +80,9 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
     if (appUserId == null) {
       return undefined;
     }
-    return this.#customerConsole.customerUrlOf(appUserId) ?? undefined;
+    return (
+      this.#customerConsole.customerUrlOf(StoreCustomerId.reconstitute(appUserId)) ?? undefined
+    );
   }
 }
 
@@ -86,16 +92,19 @@ function toSubscriptionNoticeInput(
   providerCustomerUrl: string | undefined,
 ) {
   return {
-    userId: payload.userId,
+    userId: UserId.reconstitute(payload.userId),
     email: payload.email,
     name: payload.name,
     kind: payload.kind,
     isOneTime: payload.isOneTime,
-    productId: payload.productId,
+    productId: StoreProductId.reconstitute(payload.productId),
     planType: payload.planType,
     store: payload.store,
     environment: payload.environment,
-    storeSubscriptionId: payload.storeSubscriptionId,
+    storeSubscriptionId:
+      payload.storeSubscriptionId == null
+        ? undefined
+        : StoreSubscriptionId.reconstitute(payload.storeSubscriptionId),
     purchasedAt: payload.purchasedAt,
     expiresAt: payload.expiresAt,
     gracePeriodEndsAt: payload.gracePeriodEndsAt,
@@ -103,11 +112,12 @@ function toSubscriptionNoticeInput(
     priceUsd: payload.priceUsd,
     priceInPurchasedCurrency: payload.priceInPurchasedCurrency,
     purchasedCurrency: payload.purchasedCurrency,
-    newProductId: payload.newProductId,
+    newProductId:
+      payload.newProductId == null ? undefined : StoreProductId.reconstitute(payload.newProductId),
     newPlanType: payload.newPlanType,
     transfer: payload.transfer,
     providerCustomerUrl,
-    eventId: payload.eventId,
+    eventId: payload.eventId == null ? undefined : ProviderEventId.reconstitute(payload.eventId),
     countryCode: payload.countryCode,
     periodKind: payload.periodKind,
     appVersion: payload.appVersion,

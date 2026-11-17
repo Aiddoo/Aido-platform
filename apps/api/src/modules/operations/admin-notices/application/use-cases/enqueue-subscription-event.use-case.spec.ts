@@ -1,3 +1,8 @@
+import {
+  ProviderEventId,
+  StoreProductId,
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminNotificationQueue } from "#test/doubles/operations/recording-admin-notification-queue";
 import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -8,15 +13,15 @@ import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.us
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 const payload: SubscriptionNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "billing@example.com",
   name: "결제 이름",
   kind: "RENEWED",
-  productId: "com.aido.pro.yearly",
+  productId: StoreProductId.reconstitute("com.aido.pro.yearly"),
   planType: "ANNUAL",
   store: "APP_STORE",
   environment: "PRODUCTION",
-  eventId: "evt-1",
+  eventId: ProviderEventId.reconstitute("evt-1"),
   priceUsd: 27.99,
   priceInPurchasedCurrency: 39_000,
   purchasedCurrency: "KRW",

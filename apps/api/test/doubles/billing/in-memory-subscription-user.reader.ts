@@ -2,6 +2,7 @@ import { uniq, uniqBy } from "es-toolkit";
 
 import { SubscriptionUserReaderPort } from "#api/modules/billing/subscriptions/application/ports/subscription-user.reader.port";
 import type { SubscriptionUserReadModel } from "#api/modules/billing/subscriptions/application/read-models/subscription-user.read-model";
+import type { StoreCustomerId } from "#api/modules/billing/subscriptions/domain/store-customer-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface InMemorySubscriptionUser {
@@ -20,14 +21,17 @@ export class InMemorySubscriptionUserReader extends SubscriptionUserReaderPort {
     this.#users = users;
   }
 
-  async findFirstByAppUserIds(
-    appUserIds: readonly string[],
+  async findFirstByStoreCustomerIds(
+    customerIds: readonly StoreCustomerId[],
   ): Promise<SubscriptionUserReadModel | null> {
-    const [first] = await this.listByAppUserIds(appUserIds);
+    const [first] = await this.listByStoreCustomerIds(customerIds);
     return first ?? null;
   }
 
-  async listByAppUserIds(appUserIds: readonly string[]): Promise<SubscriptionUserReadModel[]> {
+  async listByStoreCustomerIds(
+    customerIds: readonly StoreCustomerId[],
+  ): Promise<SubscriptionUserReadModel[]> {
+    const appUserIds = customerIds.map((customerId) => customerId.value);
     const matched = uniq(appUserIds).flatMap((appUserId) => {
       const user =
         this.#users.find((candidate) => candidate.appUserAlias === appUserId) ??

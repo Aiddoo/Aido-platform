@@ -18,6 +18,8 @@ import type { StoreCustomerConsolePort } from "../../application/ports/store-cus
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayloadReadModel } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
+import { ProviderEventId } from "../../domain/provider-event-id.vo.js";
+import { StoreProductId } from "../../domain/store-product-id.vo.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { customerConsoleUrl?: string } = {}) {
@@ -25,8 +27,10 @@ function createAdapter(options: { customerConsoleUrl?: string } = {}) {
   const alerts = new RecordingOperationalAlert();
   const jobQueue = new InMemoryJobQueue();
   const customerConsole: StoreCustomerConsolePort = {
-    customerUrlOf: (appUserId) =>
-      options.customerConsoleUrl == null ? null : `${options.customerConsoleUrl}/${appUserId}`,
+    customerUrlOf: (customerId) =>
+      options.customerConsoleUrl == null
+        ? null
+        : `${options.customerConsoleUrl}/${customerId.value}`,
   };
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
@@ -43,10 +47,10 @@ function createAdapter(options: { customerConsoleUrl?: string } = {}) {
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   const context: StoreSubscriptionEventFailureContext = {
     kind: "STARTED",
-    providerEventId: "evt-1",
+    providerEventId: ProviderEventId.reconstitute("evt-1"),
     store: "APP_STORE",
     environment: "SANDBOX",
-    productId: "premium_monthly",
+    productId: StoreProductId.reconstitute("premium_monthly"),
   };
 
   it("경보 태그와 세부 값에는 이벤트 식별자와 오류 종류만 싣고 스택은 원인 예외로 넘긴다", () => {
@@ -134,10 +138,10 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     // Then
     expect(forwarded).toEqual([
       {
-        userId: "user-1",
+        userId: UserId.reconstitute("user-1"),
         email: "user@example.com",
         kind: "STARTED",
-        productId: "premium_monthly",
+        productId: StoreProductId.reconstitute("premium_monthly"),
         store: "APP_STORE",
       },
     ]);

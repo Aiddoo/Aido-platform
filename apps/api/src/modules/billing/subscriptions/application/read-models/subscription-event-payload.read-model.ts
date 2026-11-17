@@ -82,7 +82,7 @@ interface SubscriptionTransfer {
   readonly to: readonly string[];
 }
 
-export interface PremiumAccessSummary {
+interface PremiumAccessSummary {
   /** 지금 프리미엄의 출처. 프리미엄이 아니면 null이다. */
   readonly source: PremiumSource | null;
   /** 지금 출처 기간의 끝(ISO string). STORE면 스토어 만료, GRANT면 진행 중인 보상 기간의 끝이다. */

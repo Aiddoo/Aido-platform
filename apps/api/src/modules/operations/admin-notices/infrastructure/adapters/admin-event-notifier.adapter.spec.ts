@@ -1,3 +1,4 @@
+import { StoreProductId } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
@@ -15,11 +16,11 @@ const userPayload: UserRegisteredNoticeInput = {
 };
 
 const subscriptionPayload: SubscriptionNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "test@example.com",
   kind: "STARTED",
   store: null,
-  productId: "aido_premium_monthly",
+  productId: StoreProductId.reconstitute("aido_premium_monthly"),
 };
 
 // 등록 호출을 기록하고, 실패를 주면 큐 등록 실패를 흉내 낸다

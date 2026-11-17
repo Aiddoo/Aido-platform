@@ -4,6 +4,8 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { ProviderEventId } from "../../domain/provider-event-id.vo.js";
+import { StoreProductId } from "../../domain/store-product-id.vo.js";
 import type { StoreSubscriptionEvent } from "../../domain/store-subscription.event.js";
 import type {
   StoreSubscriptionEventFailureContext,
@@ -31,10 +33,14 @@ export interface ApplyStoreSubscriptionEventDependencies {
 function failureContextOf(event: StoreSubscriptionEvent): StoreSubscriptionEventFailureContext {
   return {
     kind: event.kind,
-    ...(event.providerEventId != null && { providerEventId: event.providerEventId }),
+    ...(event.providerEventId != null && {
+      providerEventId: ProviderEventId.reconstitute(event.providerEventId),
+    }),
     ...(event.store != null && { store: event.store }),
     ...(event.environment != null && { environment: event.environment }),
-    ...(event.kind !== "TRANSFERRED" && { productId: event.productId }),
+    ...(event.kind !== "TRANSFERRED" && {
+      productId: StoreProductId.reconstitute(event.productId),
+    }),
   };
 }
 

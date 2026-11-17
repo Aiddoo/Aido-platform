@@ -7,6 +7,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { StoreAppUserReaderPort } from "../../application/ports/store-app-user.reader.port.js";
 import type { StoreAppUserReadModel } from "../../application/read-models/store-app-user.read-model.js";
+import type { StoreAppUserId } from "../../domain/store-app-user-id.vo.js";
 
 interface StoreAppUserRow {
   readonly id: string;
@@ -25,8 +26,10 @@ export class DrizzleStoreAppUserReader extends StoreAppUserReaderPort {
   }
 
   // RevenueCat은 처음에 User.id를 appUserId로 쓰고, 별칭이 생기면 storeAppUserId가 달라진다
-  async listByStoreAppUserIds(appUserIds: readonly string[]): Promise<StoreAppUserReadModel[]> {
-    const ids = uniq(appUserIds);
+  async listByStoreAppUserIds(
+    storeAppUserIds: readonly StoreAppUserId[],
+  ): Promise<StoreAppUserReadModel[]> {
+    const ids = uniq(storeAppUserIds.map((storeAppUserId) => storeAppUserId.value));
     if (ids.length === 0) {
       return [];
     }

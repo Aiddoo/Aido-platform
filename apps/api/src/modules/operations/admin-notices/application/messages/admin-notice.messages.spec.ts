@@ -1,3 +1,4 @@
+import { StoreProductId } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
@@ -9,10 +10,10 @@ import {
 } from "./admin-notice.messages.js";
 
 const base: SubscriptionNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "user@example.com",
   kind: "STARTED",
-  productId: "com.aido.pro.monthly",
+  productId: StoreProductId.reconstitute("com.aido.pro.monthly"),
   store: "APP_STORE",
 };
 
@@ -84,7 +85,7 @@ describe("buildSubscriptionNotice — 결제 블록", () => {
       endReason: "BILLING_ERROR",
       expiresAt: "2027-01-01T00:00:00.000Z",
       gracePeriodEndsAt: "2027-01-17T00:00:00.000Z",
-      newProductId: "com.aido.pro.yearly",
+      newProductId: StoreProductId.reconstitute("com.aido.pro.yearly"),
       newPlanType: "ANNUAL",
       transfer: { from: ["old"], to: ["new"] },
       premium: { source: "STORE", periodEndsAt: null, bankedDays: 0, isTrial: false },
@@ -114,7 +115,7 @@ describe("buildSubscriptionNotice — 결제 블록", () => {
   it("이전 이벤트는 상품이 없으므로 상품 칸을 비운다", () => {
     // When
     const notice = buildSubscriptionNotice(
-      { ...base, kind: "TRANSFERRED", productId: "-" },
+      { ...base, kind: "TRANSFERRED", productId: StoreProductId.reconstitute("-") },
       { userId: "user-1", email: "u@example.com" },
     );
 

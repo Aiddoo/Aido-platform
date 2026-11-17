@@ -1,3 +1,4 @@
+import { StoreCustomerId } from "#api/modules/billing/subscriptions/domain/store-customer-id.vo";
 import { IdentitySubscriptionUserAdapter } from "#api/modules/billing/subscriptions/infrastructure/adapters/identity-subscription-user.adapter";
 import { DrizzleStoreAppUserReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-store-app-user.reader";
 import { user, userProfile } from "#api/platform/database/schema/index";
@@ -72,7 +73,9 @@ describe("구독 사용자 조회 — identity 스토어 앱 사용자 포트 (�
     await client.insert(user).values([idOwner.user, aliasOwner.user]);
 
     // When
-    const found = await reader.findFirstByAppUserIds([SUBSCRIPTION_FIXTURE_USER_ID]);
+    const found = await reader.findFirstByStoreCustomerIds([
+      StoreCustomerId.reconstitute(SUBSCRIPTION_FIXTURE_USER_ID),
+    ]);
 
     // Then
     expect(found?.id.value).toBe(SUBSCRIPTION_FIXTURE_OTHER_USER_ID);

@@ -61,7 +61,7 @@ export function subscriptionNoticeEventOf(
 /** 사용자 조회가 실패하거나 사용자가 없을 때 billing이 준 값으로 채우는 사용자 블록 */
 export function subscriptionNoticeUserOf(payload: SubscriptionNoticeInput): AdminNoticeUser {
   return {
-    userId: payload.userId,
+    userId: payload.userId.value,
     email: payload.email,
     ...(payload.name != null && { nickname: payload.name }),
   };
@@ -90,9 +90,9 @@ export function buildSubscriptionNotice(
       ...(payload.environment != null && { environment: payload.environment }),
       ...(payload.store != null && { store: payload.store }),
       // 이전 이벤트에는 상품이 없다
-      ...(payload.kind !== "TRANSFERRED" && { productId: payload.productId }),
+      ...(payload.kind !== "TRANSFERRED" && { productId: payload.productId.value }),
       ...(payload.planType != null && { planType: payload.planType }),
-      ...(payload.newProductId != null && { newProductId: payload.newProductId }),
+      ...(payload.newProductId != null && { newProductId: payload.newProductId.value }),
       ...(payload.newPlanType != null && { newPlanType: payload.newPlanType }),
       ...(payload.periodKind != null && { periodKind: payload.periodKind }),
       price: {
@@ -122,7 +122,7 @@ export function buildSubscriptionNotice(
         transfer: { from: [...payload.transfer.from], to: [...payload.transfer.to] },
       }),
       ...(payload.storeSubscriptionId != null && {
-        storeSubscriptionId: payload.storeSubscriptionId,
+        storeSubscriptionId: payload.storeSubscriptionId.value,
       }),
       ...(payload.appVersion != null && { appVersion: payload.appVersion }),
       ...(payload.deviceModel != null && { deviceModel: payload.deviceModel }),

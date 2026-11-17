@@ -6,6 +6,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { StoreCustomerId } from "../../domain/store-customer-id.vo.js";
 import {
   providerEventIdOf,
   type SubscriptionTransferredEvent,
@@ -33,7 +34,7 @@ export interface TransferSubscriptionsDependencies {
   readonly subscriptionRepository: Pick<SubscriptionRepositoryPort, "takeOverChains">;
   readonly subscriptionUserReader: Pick<
     SubscriptionUserReaderPort,
-    "findFirstByAppUserIds" | "listByAppUserIds"
+    "findFirstByStoreCustomerIds" | "listByStoreCustomerIds"
   >;
   readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
   readonly userLock: Pick<UserMutationLockPort, "lockById">;
@@ -59,12 +60,16 @@ export class TransferSubscriptionsUseCase {
     const { subscriptionUserReader, unitOfWork } = this.#dependencies;
     const receiverAppUserIds = uniq(event.receivers);
     const receiverAppUserId = receiverAppUserIds[0] ?? "";
-    const receiver = await subscriptionUserReader.findFirstByAppUserIds(receiverAppUserIds);
+    const receiver = await subscriptionUserReader.findFirstByStoreCustomerIds(
+      receiverAppUserIds.map((appUserId) => StoreCustomerId.reconstitute(appUserId)),
+    );
     if (receiver == null) {
       throw subscriptionUserNotFound(receiverAppUserId);
     }
     const previousOwners = (
-      await subscriptionUserReader.listByAppUserIds(event.transferredFrom)
+      await subscriptionUserReader.listByStoreCustomerIds(
+        event.transferredFrom.map((appUserId) => StoreCustomerId.reconstitute(appUserId)),
+      )
     ).filter((owner) => !owner.id.equals(receiver.id));
     const payload = await unitOfWork.run(async () => {
       await this.#lockWebhook(receiverAppUserId);

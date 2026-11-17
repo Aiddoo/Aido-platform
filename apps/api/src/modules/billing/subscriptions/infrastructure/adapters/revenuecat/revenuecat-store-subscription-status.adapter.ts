@@ -20,6 +20,7 @@ import {
   revenueCatProductSchema,
   revenueCatSubscriptionListSchema,
 } from "./revenuecat-subscription.wire.js";
+import { revenueCatRequestFailed } from "./revenuecat.errors.js";
 import { RevenueCatLogEvent } from "./revenuecat.log-events.js";
 
 const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
@@ -33,23 +34,6 @@ const RENEWING_STATUSES: ReadonlySet<string> = new Set([
   "requires_price_increase_consent",
   "has_already_renewed",
 ]);
-
-const REVENUECAT_REQUEST_ERROR_REASONS = ["http", "invalid_response"] as const;
-
-type RevenueCatRequestErrorReason = (typeof REVENUECAT_REQUEST_ERROR_REASONS)[number];
-
-/** RevenueCat이 실패로 응답했다. 응답 본문은 담지 않는다. */
-export class RevenueCatRequestError extends Error {
-  readonly reason: RevenueCatRequestErrorReason;
-  readonly statusCode: number | null;
-
-  constructor(reason: RevenueCatRequestErrorReason, statusCode: number | null) {
-    super(`RevenueCat request failed: ${reason}`);
-    this.name = "RevenueCatRequestError";
-    this.reason = reason;
-    this.statusCode = statusCode;
-  }
-}
 
 /**
  * RevenueCat REST v2로 체인 상태를 읽는다. 우리 체인 키(원 거래 ID)로 찾는 검색은 App Store의 어떤 거래 ID나
@@ -150,7 +134,7 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
       }),
     );
     if (outcome.kind === "http_failure") {
-      throw new RevenueCatRequestError("http", outcome.statusCode);
+      throw revenueCatRequestFailed("http", outcome.statusCode);
     }
     const parsed = schema.safeParse(outcome.body);
     if (!parsed.success) {
@@ -158,7 +142,7 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
         event: RevenueCatLogEvent.RESPONSE_INVALID,
         issueCount: parsed.error.issues.length,
       });
-      throw new RevenueCatRequestError("invalid_response", null);
+      throw revenueCatRequestFailed("invalid_response", null);
     }
     return parsed.data;
   }

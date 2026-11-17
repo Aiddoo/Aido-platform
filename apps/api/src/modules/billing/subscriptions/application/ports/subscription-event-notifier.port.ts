@@ -2,6 +2,8 @@ import type { SubscriptionEnvironment } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { ProviderEventId } from "../../domain/provider-event-id.vo.js";
+import type { StoreProductId } from "../../domain/store-product-id.vo.js";
 import type {
   StoreSubscriptionEventKind,
   SubscriptionStore,
@@ -11,11 +13,11 @@ import type { SubscriptionEventPayloadReadModel } from "../read-models/subscript
 /** 처리에 실패한 이벤트. 이전 이벤트는 상품이 없다. */
 export interface StoreSubscriptionEventFailureContext {
   readonly kind: StoreSubscriptionEventKind;
-  readonly providerEventId?: string;
+  readonly providerEventId?: ProviderEventId;
   readonly store?: SubscriptionStore;
   /** SANDBOX면 App Review·TestFlight 또는 개발 빌드 구매다. 심각도는 같고 경보에서 구분만 한다. */
   readonly environment?: SubscriptionEnvironment;
-  readonly productId?: string;
+  readonly productId?: StoreProductId;
 }
 
 /**
