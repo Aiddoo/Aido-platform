@@ -375,7 +375,7 @@ describe('구독 화면', () => {
 
       // Then
       const welcome = await screen.findByTestId('subscription-welcome');
-      expect(within(welcome).getByText('모든 기능을 넉넉하게 써 보세요')).toBeTruthy();
+      expect(within(welcome).getByText('모든 기능을 넉넉하게 써보세요')).toBeTruthy();
       expect(within(welcome).getByText('월 ₩3,900')).toBeTruthy();
       expect(within(welcome).queryByText('첫 결제')).toBeNull();
       expect(

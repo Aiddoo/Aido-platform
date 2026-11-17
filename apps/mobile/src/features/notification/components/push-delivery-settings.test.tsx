@@ -40,7 +40,10 @@ async function renderSettings({ pushEnabled }: { pushEnabled: boolean }) {
     <Suspense fallback={null}>
       <PushDeliverySettings />
     </Suspense>,
-    { di: createTestDi({ ports: { analytics, httpClient, pushNotification, queryClient } }) },
+    {
+      di: createTestDi({ ports: { analytics, httpClient, pushNotification, queryClient } }),
+      withLocalDate: true,
+    },
   );
   const pushToggle = await screen.findByText('푸시 알림');
   const getPushPermissionEvents = () =>

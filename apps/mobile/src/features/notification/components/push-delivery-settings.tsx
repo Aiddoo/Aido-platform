@@ -1,5 +1,8 @@
+import { NIGHT_TIME_CONFIG } from '@aido/api/vocabulary';
 import { useUpdatePreferenceMutationOptions } from '@src/features/identity/preference/queries/preference.mutations';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { formatHourLabel } from '@src/shared/date/format/date-format';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { BellDuoIcon, MoonDuoIcon, ReportDuoIcon, SettingsListGroup } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -15,6 +18,7 @@ type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'chil
 /** 기기 알림이 꺼져 있으면 설정은 바꿀 수 있지만 알림이 닿지 않는다는 뜻으로 흐리게 둔다 */
 export function PushDeliverySettings(props: SettingsSectionProps) {
   const { t } = useTranslation(['notification', 'auth']);
+  const dateFormatContext = useDateFormatContext();
   const [{ data: preference }, { data: permission }] = useSuspenseQueries({
     queries: [useGetPreferenceQueryOptions(), useGetPushPermissionQueryOptions()],
   });
@@ -55,7 +59,18 @@ export function PushDeliverySettings(props: SettingsSectionProps) {
         label={t('settings.nightPushLabel')}
         description={
           preference.pushEnabled
-            ? t('settings.nightPushDescription')
+            ? t('settings.nightPushDescription', {
+                start: formatHourLabel(
+                  NIGHT_TIME_CONFIG.START_HOUR,
+                  preference.timeFormat,
+                  dateFormatContext,
+                ),
+                end: formatHourLabel(
+                  NIGHT_TIME_CONFIG.END_HOUR,
+                  preference.timeFormat,
+                  dateFormatContext,
+                ),
+              })
             : t('auth:preference.enablePushFirst')
         }
         isSelected={preference.nightPushEnabled}

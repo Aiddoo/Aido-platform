@@ -16,7 +16,7 @@
   "entry": {
     "loading": "할 일을 만들 준비 중이에요",
     "loadError": "할 일 작성 화면을 열지 못했어요",
-    "emptyCategory": "할 일을 담을 카테고리를 먼저 만들어 주세요",
+    "emptyCategory": "할 일을 담을 카테고리를 먼저 만들어주세요",
     "manageCategories": "카테고리 만들기"
   },
   "state": {
