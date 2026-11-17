@@ -147,7 +147,8 @@ describe("planWeatherBriefing — 날씨와 겹친 할 일과 옮길 시간", ()
   });
 
   it("후보는 할 일과 같은 날(기기 시간대)의 시간만 쓴다", () => {
-    // Given - 서울 자정(UTC 15시)을 넘기는 예보에서 서울 기준 같은 날만 후보가 된다
+    // Given
+    // 서울 자정(UTC 15시)을 넘기는 예보에서 서울 기준 같은 날만 후보가 된다
     const lateStart = Temporal.Instant.from("2026-11-02T13:00:00.000Z");
     const at = (offset: number, chance: number): WeatherBriefingHour => ({
       startsAt: lateStart.add({ hours: offset }),

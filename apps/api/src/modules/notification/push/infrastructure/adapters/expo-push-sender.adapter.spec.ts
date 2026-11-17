@@ -86,9 +86,13 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     "ExpoPushToken[notification14-synthetic-token]",
     "12345678-1234-1234-1234-123456789012",
   ])("SDK 토큰 형식 %s을 받아들인다", (value) => {
-    // Given / When / Then
-    expect(provider.validateToken(value)).toBe(true);
-    expect(provider.validateToken("invalid-token")).toBe(false);
+    // When
+    const acceptsToken = provider.validateToken(value);
+    const acceptsInvalidToken = provider.validateToken("invalid-token");
+
+    // Then
+    expect(acceptsToken).toBe(true);
+    expect(acceptsInvalidToken).toBe(false);
   });
 
   it("ticket 결과를 입력 순서대로 공급자 중립 실패 분류로 바꾸고 원문은 로그에 남기지 않는다", async () => {
@@ -189,8 +193,11 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     });
     reply(sendPath, 500, { errors: [{ code: "SERVER_ERROR", message: privateMessage }] });
 
-    // When / Then
-    await expect(provider.sendBatch(Array.from({ length: 101 }, payload))).rejects.toMatchObject({
+    // When
+    const result = provider.sendBatch(Array.from({ length: 101 }, payload));
+
+    // Then
+    await expect(result).rejects.toMatchObject({
       metadata: {
         providerName: "expo",
         resolvedPayloadCountBeforeFailure: 100,
@@ -252,8 +259,11 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
       },
     });
 
-    // When / Then
-    await expect(provider.getReceipts(["missing", "fresh", "delivered"])).resolves.toEqual([
+    // When
+    const result = provider.getReceipts(["missing", "fresh", "delivered"]);
+
+    // Then
+    await expect(result).resolves.toEqual([
       {
         ticketId: "fresh",
         status: "failed",
@@ -287,7 +297,10 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
   });
 
   it("빈 배치는 공급자를 부르지 않는다", async () => {
-    // Given / When / Then
-    await expect(provider.sendBatch([])).resolves.toEqual([]);
+    // When
+    const result = provider.sendBatch([]);
+
+    // Then
+    await expect(result).resolves.toEqual([]);
   });
 });

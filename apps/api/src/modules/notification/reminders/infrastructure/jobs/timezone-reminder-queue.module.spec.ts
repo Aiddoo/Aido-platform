@@ -79,14 +79,16 @@ async function createFixture() {
 
 describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", () => {
   it("기존 활성 timezone 캐시만 지우고 다음 조회가 새 목록을 로드한다", async () => {
-    // Given: 실제 Module이 제공한 Adapter와 실제 CacheStorePort에 이전 목록이 캐시되어 있다.
+    // Given
+    // 실제 Module이 제공한 Adapter와 실제 CacheStorePort에 이전 목록이 캐시되어 있다.
     const fixture = await createFixture();
     const activeKey = ReminderCacheKey.activeTimezones();
     const unrelatedKey = "settings-fixture:preference";
     try {
       await fixture.cache.set(activeKey, ["UTC"], REMINDER_CACHE_TTL_MS);
       await fixture.cache.set(unrelatedKey, { pushEnabled: true });
-      // When: 공개 capability로 목록을 무효화한 뒤 새 목록을 조회한다.
+
+      // When
       await fixture.upsertTimezone.execute({
         userId: fixture.settings.userId,
         timezone: "Asia/Seoul",
@@ -98,7 +100,8 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
         load,
         REMINDER_CACHE_TTL_MS,
       );
-      // Then: 이전 목록을 반환하지 않고 관련 없는 캐시는 보존한다.
+
+      // Then
       expect(fixture.settings.preferenceRepository.stored(fixture.settings.userId)?.timezone).toBe(
         "Asia/Seoul",
       );
@@ -112,13 +115,17 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
   });
 
   it("캐시 삭제 실패를 호출자에게 그대로 전달한다", async () => {
-    // Given: 실제 조립된 Adapter의 CacheStorePort 삭제가 실패한다.
+    // Given
+    // 실제 조립된 Adapter의 CacheStorePort 삭제가 실패한다.
     const fixture = await createFixture();
     const failure = new Error("synthetic cache unavailable");
     vi.spyOn(fixture.cache, "del").mockRejectedValueOnce(failure);
     try {
-      // When/Then: caller가 기존 실패를 관찰하며 성공으로 처리하지 않는다.
-      await expect(fixture.timezoneCache.invalidateActiveTimezones()).rejects.toBe(failure);
+      // When
+      const result = fixture.timezoneCache.invalidateActiveTimezones();
+
+      // Then
+      await expect(result).rejects.toBe(failure);
     } finally {
       await fixture.close();
     }

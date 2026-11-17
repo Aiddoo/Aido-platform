@@ -85,7 +85,8 @@ describe("RedisModule — Redis 연결 모듈", () => {
     });
 
     it("quit이 응답하지 않으면(hang) 타임아웃 후 disconnect로 폴백한다", async () => {
-      // Given — Redis 다운 중 종료: 오프라인 큐에 걸린 quit은 영원히 pending
+      // Given
+      // Redis 다운 중 종료: 오프라인 큐에 걸린 quit은 영원히 pending
       vi.useFakeTimers();
       const commandClient = createFakeClient({
         quit: vi.fn().mockReturnValue(new Promise(() => {})),
@@ -103,6 +104,7 @@ describe("RedisModule — Redis 연결 모듈", () => {
     });
 
     it("두 번 호출돼도 quit/disconnect는 한 번만 실행된다 (멱등)", async () => {
+      // Given
       const commandClient = createFakeClient({
         quit: vi.fn().mockReturnValue(
           new Promise((resolve) => {
@@ -112,7 +114,8 @@ describe("RedisModule — Redis 연결 모듈", () => {
       });
       const module = new RedisModule(commandClient);
 
-      // When — 동시 중복 호출
+      // When
+
       await Promise.all([module.onApplicationShutdown(), module.onApplicationShutdown()]);
 
       // Then

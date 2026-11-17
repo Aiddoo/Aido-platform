@@ -53,7 +53,7 @@ function todoAt(id: number, kstHour: number, title = `할 일 ${id}`) {
 
 describe("날씨 브리핑 정책 — 아침", () => {
   it("할 일 시각의 강수 확률이 50% 이상이면 가장 이른 할 일로 비를 알린다", () => {
-    // Given 15시·17시 할 일이 비와 겹친다
+    // Given
     const report = forecast({ 15: { precipitationChance: 70 }, 17: { precipitationChance: 60 } });
     // When
     const result = decideMorningWeatherBriefing(
@@ -102,7 +102,7 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("낮 체감 33°C 이상 시간과 겹치면 그 더운 시간대의 최고 체감 온도로 알린다", () => {
-    // Given 13~15시 더위, 14시 할 일
+    // Given
     const report = forecast({
       13: { apparentTemperature: 33 },
       14: { apparentTemperature: 35.4 },
@@ -120,7 +120,7 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("밤 시간의 높은 체감 온도는 더위로 보지 않는다", () => {
-    // Given 22시(밤) 체감 34°C
+    // Given
     const report = forecast({ 22: { apparentTemperature: 34 } });
     // When
     const result = decideMorningWeatherBriefing(report, [todoAt(1, 22)], SEOUL);
@@ -141,7 +141,7 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("할 일과 겹치지 않아도 오늘 늦게 비가 오면 시작 시각을 알린다", () => {
-    // Given 18시부터 비, 할 일 없음
+    // Given
     const report = forecast({ 18: { precipitationChance: 60 }, 19: { precipitationChance: 70 } });
     // When
     const result = decideMorningWeatherBriefing(report, [], SEOUL);
@@ -150,7 +150,8 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("내일 새벽 비는 오늘 비로 알리지 않는다", () => {
-    // Given 서울 다음 날 02시 비
+    // Given
+    // 서울 다음 날 02시 비
     const report = forecast({ 26: { precipitationChance: 90 } });
     // When
     const result = decideMorningWeatherBriefing(report, [], SEOUL);
@@ -159,7 +160,8 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("지난 할 일과 예보 범위 밖 할 일은 판단에서 뺀다", () => {
-    // Given 06시(지난)·비 오는 시간
+    // Given
+    // 06시(지난)·비 오는 시간
     const report = forecast();
     const past = { id: 1, title: "지난 일", scheduledAt: NOW.subtract({ hours: 1 }) };
     // When
@@ -178,7 +180,8 @@ describe("날씨 브리핑 정책 — 아침", () => {
   });
 
   it("오늘·내일 구분은 알림 시간대를 따른다 (같은 순간, LA 기기)", () => {
-    // Given LA 기준 2026-07-15 15:00. 서울 시각 18시(=LA 02시 다음 날)는 LA의 내일이다
+    // Given
+    // LA 기준 2026-07-15 15:00. 서울 시각 18시(=LA 02시 다음 날)는 LA의 내일이다
     const report = forecast({ 18: { precipitationChance: 80 } });
     const clock = { now: NOW, timezone: "America/Los_Angeles", locationTimezone: "Asia/Seoul" };
     // When
@@ -211,7 +214,8 @@ describe("날씨 브리핑 정책 — 저녁", () => {
   }
 
   it("내일 비가 시작하는 시간대를 알린다", () => {
-    // Given 내일 14시(서울 38시)부터 비
+    // Given
+    // 내일 14시(서울 38시)부터 비
     const report = eveningForecast({ 38: { precipitationChance: 70 } });
     // When
     const result = decideEveningWeatherBriefing(report, EVENING);
@@ -220,7 +224,7 @@ describe("날씨 브리핑 정책 — 저녁", () => {
   });
 
   it("오늘 밤 비는 내일 비로 알리지 않는다", () => {
-    // Given 오늘 22시 비
+    // Given
     const report = eveningForecast({ 22: { precipitationChance: 90 } });
     // When
     const result = decideEveningWeatherBriefing(report, EVENING);

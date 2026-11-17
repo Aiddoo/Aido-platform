@@ -116,6 +116,18 @@
       }
     },
     {
+      "files": [
+        "apps/api/**/*.spec.ts",
+        "apps/api/**/*.integration-spec.ts",
+        "apps/api/**/*.e2e-spec.ts",
+        "apps/api/**/*.performance-spec.ts",
+        "packages/api/test/**/*.ts"
+      ],
+      "rules": {
+        "aido/test-gwt-comments": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/**/*.ts"],
       "excludeFiles": ["**/*.errors.ts", "**/*.spec.ts", "**/*.integration-spec.ts"],
       "rules": {

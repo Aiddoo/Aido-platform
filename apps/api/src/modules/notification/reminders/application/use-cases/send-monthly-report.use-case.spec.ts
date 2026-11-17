@@ -42,7 +42,8 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
     // When
     const result = await strategy.execute(ctx);
 
-    // Then — AI 리포트는 유료 기능이라 대상 조회가 프리미엄만 고르고, 푸시 여부는 발송 단계가 정한다
+    // Then
+    // AI 리포트는 유료 기능이라 대상 조회가 프리미엄만 고르고, 푸시 여부는 발송 단계가 정한다
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toEqual([
       {

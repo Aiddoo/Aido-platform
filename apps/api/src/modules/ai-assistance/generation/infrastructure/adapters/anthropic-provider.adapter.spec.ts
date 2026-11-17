@@ -152,7 +152,8 @@ describe("AnthropicProviderAdapter — 설치된 SDK·기록된 오류 본문, �
   });
 
   it("JSON 도구 입력의 배열 칸을 문자열로 보낸 응답은 다시 묻지 않고 그대로 받는다", async () => {
-    // Given - 실제 평가에서 받은 모양처럼 배열 칸이 JSON 문자열이다
+    // Given
+    // 실제 평가에서 받은 모양처럼 배열 칸이 JSON 문자열이다
     const memo = { title: "와이파이 비밀번호", content: "거실 공유기 뒷면" };
     fetchSpy.mockImplementation(async () =>
       messageResponse({ todos: JSON.stringify([]), memo: JSON.stringify(memo) }),

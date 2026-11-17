@@ -147,12 +147,15 @@ describe("invite-reward — 초대 보상 계산", () => {
       // When
       const state = premiumCapState(summary);
 
-      // Then 누적 상한(90)이 최근 30일 상한(30)보다 먼저다
+      // Then
+      // 누적 상한(90)이 최근 30일 상한(30)보다 먼저다
       expect(state).toBe(expected);
     });
 
     it("최근 30일 상한에 닿았던 지급이 기간 밖으로 빠지면 다시 AVAILABLE이다", () => {
-      // Given 30일을 받은 뒤 rolling 기간이 지나 기간 안 지급이 0이 됐다
+      // Given
+      // 30일을 받은 뒤 rolling 기간이 지나 기간 안 지급이 0이 됐다
+
       const reached = { premiumDaysInWindow: 30, totalPremiumDays: 30 };
       const afterWindow = { premiumDaysInWindow: 0, totalPremiumDays: 30 };
 

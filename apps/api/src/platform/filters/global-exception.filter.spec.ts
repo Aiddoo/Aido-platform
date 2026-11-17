@@ -431,7 +431,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       // When
       filter.catch(exception, host);
 
-      // Then - 동일 ErrorCode의 업무 오류과 상태/바디가 동일
+      // Then
       expect(mockResponse.status).toHaveBeenCalledWith(Errors[expected.errorCode].httpStatus);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(expected.errorCode);
@@ -524,8 +524,12 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
       for (const exposeErrorDetails of [true, false]) {
+        // When
         createFilter(exposeErrorDetails).catch(create(), host);
+
+        // Then
         const body = mockResponse.json.mock.lastCall?.[0];
+
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }
     });

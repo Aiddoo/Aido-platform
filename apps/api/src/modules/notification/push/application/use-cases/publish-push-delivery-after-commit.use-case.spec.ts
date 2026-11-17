@@ -36,22 +36,22 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
   });
 
   it("등록 시점의 dispatch ID 복사본만 commit 이후 발행한다", async () => {
-    // Given - 등록 후 호출자가 변경할 수 있는 mutable 배열
+    // Given
     const { afterCommit, publishOutbox, publisher } = createAfterCommitPublisher();
     const dispatchIds = [61, 62];
 
-    // When - fast path를 등록한 뒤 원본 배열을 변경하고 commit task 실행
+    // When
     publisher.register(dispatchIds);
     dispatchIds.splice(0, dispatchIds.length, 999);
     await afterCommit.runAll();
 
-    // Then - transaction에서 커밋된 최초 ID snapshot만 발행
+    // Then
     expect(afterCommit.tasks).toHaveLength(1);
     expect(publishOutbox.inputs).toEqual([{ kind: "dispatches", dispatchIds: [61, 62] }]);
   });
 
   it("2초 timeout은 commit 흐름만 놓아주고 이미 시작한 발행은 취소하지 않는다", async () => {
-    // Given - fast path 제한 시간보다 늦게 완료되는 outbox publication
+    // Given
     vi.useFakeTimers();
     const { afterCommit, publishOutbox, logger, publisher } = createAfterCommitPublisher();
     let resolvePublication: ((publishedCount: number) => void) | undefined;
@@ -65,11 +65,11 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
     publishOutbox.result = () => underlyingPublication;
     publisher.register([71]);
 
-    // When - after-commit task가 2초 제한에 도달
+    // When
     const fastPath = afterCommit.runAll();
     await vi.advanceTimersByTimeAsync(2000);
 
-    // Then - task는 best-effort로 끝나지만 underlying promise는 이후 정상 완료 가능
+    // Then
     await expect(fastPath).resolves.toBeUndefined();
     expect(underlyingPublicationSettled).toBe(false);
     expect(logger.messages).toContainEqual(
@@ -84,13 +84,13 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
   });
 
   it("발행할 dispatch가 없으면 after-commit task를 등록하지 않는다", () => {
-    // Given - 빈 dispatch ID 목록
+    // Given
     const { afterCommit, publisher } = createAfterCommitPublisher();
 
-    // When - fast path 등록 요청
+    // When
     publisher.register([]);
 
-    // Then - 불필요한 callback과 timer를 만들지 않음
+    // Then
     expect(afterCommit.tasks).toEqual([]);
   });
 });

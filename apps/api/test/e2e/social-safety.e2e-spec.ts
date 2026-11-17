@@ -134,7 +134,11 @@ describe("사용자 차단·신고 E2E", () => {
     });
 
     it("인증 없이 차단 목록을 볼 수 없다", async () => {
-      await request(server()).get("/v1/blocks").expect(401);
+      // When
+      const response = await request(server()).get("/v1/blocks");
+
+      // Then
+      expect(response.status).toBe(401);
     });
   });
 

@@ -81,19 +81,17 @@ describe("관리자 E2E", () => {
       });
 
       it("인증 없이 호출하면 401을 반환한다", async () => {
-        // Given
-
         // When
-        await request(ctx.app.getHttpServer())
+        const response = await request(ctx.app.getHttpServer())
           .post("/v1/admin/notifications/broadcast")
           .send({
             title: "인증 없는 알림",
             body: "이 요청은 실패해야 합니다",
             targetFilter: "ALL",
-          })
-          .expect(401);
+          });
 
         // Then
+        expect(response.status).toBe(401);
       });
     });
 
@@ -271,7 +269,7 @@ describe("관리자 E2E", () => {
         .expect(202);
       await runQueued(BROADCAST_FAN_OUT_QUEUE);
 
-      // Then - 분배가 끝나도 알림은 아직 없고 시간대별 발송 작업이 남는다
+      // Then
       expect(
         await client.query.notification.findMany({ where: { type: "ADMIN_BROADCAST" } }),
       ).toEqual([]);
@@ -282,7 +280,7 @@ describe("관리자 E2E", () => {
       ]);
       expect(scheduled.every((job) => job.options.priority === 0)).toBe(true);
 
-      // When - 그 시각이 되어 작업이 돌면
+      // When
       expect(await runQueued(BROADCAST_DELIVERY_QUEUE)).toBe(2);
 
       // Then

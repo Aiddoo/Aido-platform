@@ -112,16 +112,25 @@ describe("CreateBroadcastCampaignUseCase — 브로드캐스트 접수", () => {
     // Given
     const { useCase } = setup({ existing: createBroadcastCampaignFixture() });
 
+    // When
+    const localizedContentChanged = useCase.execute({
+      ...command,
+      localizedContent: { en: { title: "t", body: "b" } },
+    });
+
     // Then
-    await expect(
-      useCase.execute({ ...command, localizedContent: { en: { title: "t", body: "b" } } }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.ADMIN_1405 });
-    await expect(
-      useCase.execute({
-        ...command,
-        delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2026-11-11" },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.ADMIN_1405 });
+    await expect(localizedContentChanged).rejects.toMatchObject({
+      errorCode: ErrorCode.ADMIN_1405,
+    });
+
+    // When
+    const deliveryChanged = useCase.execute({
+      ...command,
+      delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2026-11-11" },
+    });
+
+    // Then
+    await expect(deliveryChanged).rejects.toMatchObject({ errorCode: ErrorCode.ADMIN_1405 });
   });
 
   it("대상이 없으면 캠페인을 남기지 않도록 404로 거절한다", async () => {

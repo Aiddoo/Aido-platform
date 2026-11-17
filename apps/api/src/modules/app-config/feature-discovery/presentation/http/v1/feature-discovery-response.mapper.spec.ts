@@ -6,7 +6,11 @@ import { toFeatureDiscoveryResponse } from "./feature-discovery-response.mapper.
 
 describe("toFeatureDiscoveryResponse — 기능 발견 응답", () => {
   it("캠페인이 없으면 비활성만 보낸다", () => {
-    expect(toFeatureDiscoveryResponse(null)).toEqual({ enabled: false });
+    // When
+    const response = toFeatureDiscoveryResponse(null);
+
+    // Then
+    expect(response).toEqual({ enabled: false });
   });
 
   it("출시 시각을 ms 3자리 UTC로 보내고 공유 계약을 만족한다", () => {

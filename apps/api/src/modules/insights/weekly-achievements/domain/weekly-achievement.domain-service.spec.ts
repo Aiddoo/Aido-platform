@@ -57,7 +57,9 @@ describe("주간 성취 요약", () => {
     // When
     const summary = summarizeWeeklyAchievements(achievements);
 
-    // Then - (100 + 80 + 100) / 3 = 93.3 → 93
+    // Then
+    // (100 + 80 + 100) / 3 = 93.3 → 93
+
     expect(summary).toEqual({
       totalWeeks: 3,
       perfectWeeks: 2,

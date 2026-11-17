@@ -84,9 +84,14 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   it.each([TODO_COMMENT_SORT.LATEST, TODO_COMMENT_SORT.POPULAR])(
     "%s conversation cursor를 서명하고 경계를 복원한다",
     (sort) => {
+      // Given
       const cursor = codec.encodeConversation(record, sort, "TODO");
 
-      expect(codec.decodeConversation(cursor, sort)).toEqual({
+      // When
+      const decoded = codec.decodeConversation(cursor, sort);
+
+      // Then
+      expect(decoded).toEqual({
         v: 1,
         kind: "conversation",
         sort,
@@ -100,25 +105,36 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
   );
 
   it("답글과 focus cursor의 thread 경계를 보존한다", () => {
+    // Given
     const reply = { ...record, id: "cm1todoacomment00000000002", threadCommentId: record.id };
     const cursor = codec.encodeConversation(reply, TODO_COMMENT_SORT.LATEST, "THREAD");
 
-    expect(codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toMatchObject({
+    // When
+    const decoded = codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decoded).toMatchObject({
       threadId: record.id,
       scope: "THREAD",
     });
   });
 
   it("payload의 인기 rank를 변경하면 서명 검증에서 거부한다", () => {
+    // Given
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.POPULAR, "TODO");
     const tampered = replacePayload(cursor, (payload) => {
       payload.position = { rootLikeCount: 400, rootReplyCount: 2 };
     });
 
-    expect(() => codec.decodeConversation(tampered, TODO_COMMENT_SORT.POPULAR)).toThrow();
+    // When
+    const decode = () => codec.decodeConversation(tampered, TODO_COMMENT_SORT.POPULAR);
+
+    // Then
+    expect(decode).toThrow();
   });
 
   it("서명 한 글자를 변경하면 거부한다", () => {
+    // Given
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const [payload, signature] = cursor.split(".");
     if (payload == null || signature == null) {
@@ -130,14 +146,23 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
     }
     const tampered = `${payload}.${first === "a" ? "b" : "a"}${signature.slice(1)}`;
 
-    expect(() => codec.decodeConversation(tampered, TODO_COMMENT_SORT.LATEST)).toThrow();
+    // When
+    const decode = () => codec.decodeConversation(tampered, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decode).toThrow();
   });
 
   it("다른 secret으로 만든 cursor를 거부한다", () => {
+    // Given
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const another = createCodec({ jwtSecret: "another-jwt-secret-at-least-32-characters" });
 
-    expect(() => another.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
+    // When
+    const decode = () => another.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decode).toThrow();
   });
 
   it("새 서명 키가 없으면 배포 전과 바이트 단위로 같은 cursor를 만든다", () => {
@@ -201,23 +226,35 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
     }).encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
     const otherKid = createCodec({ jwtSecret: secret, cursorSigningKeys: `k2:${currentKey}` });
 
-    // When / Then
-    expect(() => otherKid.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
-    expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
+    // When
+    const decodeWithOtherKid = () => otherKid.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST);
+    const decodeWithoutKid = () => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decodeWithOtherKid).toThrow();
+    expect(decodeWithoutKid).toThrow();
   });
 
   it("정렬 종류가 다른 cursor를 거부한다", () => {
+    // Given
     const cursor = codec.encodeConversation(record, TODO_COMMENT_SORT.LATEST, "TODO");
 
-    expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.POPULAR)).toThrow();
+    // When
+    const decode = () => codec.decodeConversation(cursor, TODO_COMMENT_SORT.POPULAR);
+
+    // Then
+    expect(decode).toThrow();
   });
 
   it("묶음 cursor를 conversation 경계로 재사용하지 못한다", () => {
     // Given
     const cursor = codec.encodeThreads(threadComment, TODO_COMMENT_SORT.LATEST, "AFTER");
 
-    // When / Then
-    expect(() => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST)).toThrow();
+    // When
+    const decode = () => codec.decodeConversation(cursor, TODO_COMMENT_SORT.LATEST);
+
+    // Then
+    expect(decode).toThrow();
   });
 
   it.each([TODO_COMMENT_SORT.LATEST, TODO_COMMENT_SORT.POPULAR])(
@@ -276,9 +313,13 @@ describe("HmacTodoCommentCursorCodecAdapter", () => {
       replyToCommentId: threadComment.id,
     };
 
-    // When / Then
-    expect(() => codec.encodeThreads(reply, TODO_COMMENT_SORT.LATEST, "AFTER")).toThrow();
-    expect(() => codec.encodeReplies(threadComment, "AFTER")).toThrow();
+    // When
+    const encodeReplyAsThread = () => codec.encodeThreads(reply, TODO_COMMENT_SORT.LATEST, "AFTER");
+    const encodeThreadAsReply = () => codec.encodeReplies(threadComment, "AFTER");
+
+    // Then
+    expect(encodeReplyAsThread).toThrow();
+    expect(encodeThreadAsReply).toThrow();
   });
 
   it("답글 cursor를 서명하고 묶음·방향을 복원하며 묶음 cursor와 섞이지 않는다", () => {

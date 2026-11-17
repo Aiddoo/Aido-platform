@@ -177,7 +177,8 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
   }
 
   it("같은 분에 때가 된 리마인더 200건을 폴링 한 간격 안에 모두 보내거나 중복으로 건너뛴다", async () => {
-    // Given: 10분 뒤 시작하는 할 일 200개의 10분 단계가 지금 울려야 하고, 20개는 이미 울렸다
+    // Given
+    // 10분 뒤 시작하는 할 일 200개의 10분 단계가 지금 울려야 하고, 20개는 이미 울렸다
     const now = new DateClock().now();
     const todoIds = await seedTodos(now.add({ minutes: 10 }));
     for (const todoId of todoIds.slice(0, ALREADY_SENT_COUNT)) {

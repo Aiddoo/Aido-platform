@@ -1326,12 +1326,16 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
 
       // When
       const firstResult = await loginWithOAuthToken.execute({ provider: "KAKAO", token: token });
-      expect(firstResult.userId).toBeDefined();
 
+      // Then
+      expect(firstResult.userId).toBeDefined();
       const user = await client.query.user.findFirst({ where: { id: firstResult.userId } });
       expect(user?.status).toBe("ACTIVE");
 
+      // When
       const secondResult = await loginWithOAuthToken.execute({ provider: "KAKAO", token: token });
+
+      // Then
       expect(secondResult.userId).toBe(firstResult.userId);
     });
   });

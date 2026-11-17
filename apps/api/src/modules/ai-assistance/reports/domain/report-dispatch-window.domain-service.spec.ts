@@ -93,7 +93,8 @@ describe("isInReportDispatchWindow", () => {
 
 describe("reportDispatchPeriodId", () => {
   it("사용자 로컬 주차로 멱등 키 주기를 만든다", () => {
-    // Given - UTC로는 일요일, 서울로는 월요일인 순간
+    // Given
+    // UTC로는 일요일, 서울로는 월요일인 순간
     const at = new Date("2026-10-25T15:05:00Z");
     // When
     const seoul = reportDispatchPeriodId("WEEKLY", at, "Asia/Seoul");

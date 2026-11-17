@@ -92,21 +92,21 @@ describe("CacheModule 통합 테스트", () => {
           revokedAt: null,
         };
 
-        // When - 저장
+        // When
         await cacheService.set(
           IdentityCacheKey.session(sessionId),
           session,
           IDENTITY_CACHE_TTL_MS.SESSION,
         );
 
-        // Then - 조회
+        // Then
         const cached = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
         expect(cached).toEqual(session);
 
-        // When - 무효화
+        // When
         await cacheService.del(IdentityCacheKey.session(sessionId));
 
-        // Then - 무효화 확인
+        // Then
         const afterInvalidate = await cacheService.get(
           IdentityCacheKey.session(sessionId),
           z.unknown(),
@@ -139,12 +139,10 @@ describe("CacheModule 통합 테스트", () => {
         try {
           const shortTtlService = shortTtlModule.get(CacheStorePort);
           await shortTtlService.set("test-key", "test-value");
-
-          // When - 값이 설정됨을 확인
           const beforeExpiry = await shortTtlService.get("test-key", z.unknown());
           expect(beforeExpiry).toBe("test-value");
 
-          // When - 실제 대기 없이 TTL 이후로 시간 이동
+          // When
           now.mockReturnValue(baseTime + 100);
 
           // Then
@@ -337,12 +335,10 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.set("key_1", "value_1");
         await cacheService.set("key_2", "value_2");
 
-        // When - 히트 3회
+        // When
         await cacheService.get("key_1", z.unknown());
         await cacheService.get("key_2", z.unknown());
         await cacheService.get("key_1", z.unknown());
-
-        // When - 미스 2회
         await cacheService.get("non_existent_1", z.unknown());
         await cacheService.get("non_existent_2", z.unknown());
 
@@ -515,9 +511,13 @@ describe("CacheModule 통합 테스트", () => {
         // Given
         await cacheService.set("has-test", "value");
 
-        // When & Then
-        expect(await cacheService.has("has-test")).toBe(true);
-        expect(await cacheService.has("nonexistent")).toBe(false);
+        // When
+        const existing = await cacheService.has("has-test");
+        const missing = await cacheService.has("nonexistent");
+
+        // Then
+        expect(existing).toBe(true);
+        expect(missing).toBe(false);
       });
 
       it("ttl로 남은 TTL을 조회한다", async () => {
@@ -701,12 +701,12 @@ describe("CacheModule 통합 테스트", () => {
       const service = module.get(CacheStorePort);
 
       try {
-        // When - 최대 항목 수를 초과하여 저장
+        // When
         for (let i = 0; i < 10; i++) {
           await service.set(`key_${i}`, `value_${i}`);
         }
 
-        // Then - LRU로 인해 최대 5개만 유지
+        // Then
         const stats = service.getStats();
         expect(stats.keys).toBeLessThanOrEqual(5);
       } finally {

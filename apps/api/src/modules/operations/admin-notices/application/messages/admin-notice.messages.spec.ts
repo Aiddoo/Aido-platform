@@ -65,8 +65,11 @@ describe("subscriptionNoticeEventOf — 운영자가 구분할 구독 이벤트"
     { label: "이전", payload: { kind: "TRANSFERRED" }, expected: "transferred" },
     { label: "연장", payload: { kind: "EXTENDED" }, expected: "extended" },
   ])("$label → $expected", ({ payload, expected }) => {
-    // When / Then
-    expect(subscriptionNoticeEventOf({ ...base, ...payload })).toBe(expected);
+    // When
+    const event = subscriptionNoticeEventOf({ ...base, ...payload });
+
+    // Then
+    expect(event).toBe(expected);
   });
 });
 

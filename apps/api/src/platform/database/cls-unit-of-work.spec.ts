@@ -67,8 +67,10 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   });
 
   it("root transaction이 commit된 뒤에만 등록 작업을 실행한다", async () => {
+    // Given
     const events: string[] = [];
 
+    // When
     const result = await unitOfWork.run(async () => {
       registry.register(async () => {
         events.push("after-commit");
@@ -77,43 +79,50 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
       return "business-result";
     });
 
+    // Then
     expect(result).toBe("business-result");
     expect(events).toEqual(["after-commit"]);
   });
 
   it("work가 rollback되면 등록 작업을 실행하지 않는다", async () => {
+    // Given
     const task = vi.fn().mockResolvedValue(undefined);
 
-    await expect(
-      unitOfWork.run(async () => {
-        registry.register(task);
-        throw new Error("rollback");
-      }),
-    ).rejects.toThrow("rollback");
+    // When
+    const result = unitOfWork.run(async () => {
+      registry.register(task);
+      throw new Error("rollback");
+    });
 
+    // Then
+    await expect(result).rejects.toThrow("rollback");
     expect(task).not.toHaveBeenCalled();
   });
 
   it("commit 자체가 실패해도 등록 작업을 실행하지 않는다", async () => {
+    // Given
     const task = vi.fn().mockResolvedValue(undefined);
     txHost.commitError = new Error("commit failed");
 
-    await expect(
-      unitOfWork.run(async () => {
-        registry.register(task);
-        return "uncommitted";
-      }),
-    ).rejects.toThrow("commit failed");
+    // When
+    const result = unitOfWork.run(async () => {
+      registry.register(task);
+      return "uncommitted";
+    });
 
+    // Then
+    await expect(result).rejects.toThrow("commit failed");
     expect(task).not.toHaveBeenCalled();
   });
 
   it("nested Required UoW가 같은 배열에 등록하고 root commit 뒤 FIFO로 실행한다", async () => {
+    // Given
     const events: string[] = [];
     const task = (name: string) => async () => {
       events.push(name);
     };
 
+    // When
     await unitOfWork.run(async () => {
       registry.register(task("outer-before"));
       await unitOfWork.run(async () => {
@@ -124,20 +133,23 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
       expect(events).toEqual([]);
     });
 
+    // Then
     expect(events).toEqual(["outer-before", "nested", "outer-after"]);
   });
 
   it("한 작업의 실패가 다음 작업과 이미 commit된 business result를 막지 않는다", async () => {
+    // Given
     const secondTask = vi.fn().mockResolvedValue(undefined);
 
-    await expect(
-      unitOfWork.run(async () => {
-        registry.register(vi.fn().mockRejectedValue(new Error("side effect failed")));
-        registry.register(secondTask);
-        return "committed";
-      }),
-    ).resolves.toBe("committed");
+    // When
+    const result = unitOfWork.run(async () => {
+      registry.register(vi.fn().mockRejectedValue(new Error("side effect failed")));
+      registry.register(secondTask);
+      return "committed";
+    });
 
+    // Then
+    await expect(result).resolves.toBe("committed");
     expect(secondTask).toHaveBeenCalledTimes(1);
     expect(Logger.prototype.error).toHaveBeenCalledWith({
       event: "database.after-commit-task.failed",
@@ -146,6 +158,7 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   });
 
   it("동시에 실행되는 root transaction의 task scope를 서로 격리한다", async () => {
+    // Given
     const firstReady = createDeferred();
     const releaseFirst = createDeferred();
     const events: string[] = [];
@@ -159,11 +172,14 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
     });
     await firstReady.promise;
 
+    // When
     await unitOfWork.run(async () => {
       registry.register(async () => {
         events.push("second");
       });
     });
+
+    // Then
     expect(events).toEqual(["second"]);
 
     releaseFirst.resolve();
@@ -172,9 +188,13 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   });
 
   it("transaction 밖에서는 즉시 실행하고 rejection을 관측한다", async () => {
+    // Given
     const task = vi.fn().mockRejectedValue(new Error("immediate failure"));
 
+    // When
     registry.register(task);
+
+    // Then
     expect(task).toHaveBeenCalledTimes(1);
     await Promise.resolve();
 
@@ -185,11 +205,16 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
   });
 
   it("transaction 밖 task의 synchronous throw도 caller에 전파하지 않는다", () => {
+    // Given
     const task = vi.fn().mockImplementation(() => {
       throw new Error("synchronous failure");
     });
 
-    expect(() => registry.register(task)).not.toThrow();
+    // When
+    const register = () => registry.register(task);
+
+    // Then
+    expect(register).not.toThrow();
     expect(Logger.prototype.error).toHaveBeenCalledWith({
       event: "database.after-commit-task.failed",
       errorType: "Error",
@@ -198,9 +223,11 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
 
   it("active transaction에 registry scope가 없으면 invariant 오류를 낸다", async () => {
     await txHost.withTransaction(async () => {
-      expect(() => registry.register(vi.fn().mockResolvedValue(undefined))).toThrow(
-        "After-commit task scope is missing for an active transaction",
-      );
+      // When
+      const register = () => registry.register(vi.fn().mockResolvedValue(undefined));
+
+      // Then
+      expect(register).toThrow("After-commit task scope is missing for an active transaction");
     });
   });
 });

@@ -90,7 +90,8 @@ describe("WeatherReport.isPrecipitationSoon — 곧 비·눈이 오는지", () =
   const now = at("2026-11-02T06:20:00.000Z");
 
   it("2시간 안에 강수 예보가 없으면 아니다", () => {
-    // Given 강수 확률 10%인 맑은 리포트
+    // Given
+    // 강수 확률 10%인 맑은 리포트
     const report = weatherReportFixture(now);
 
     // When
@@ -115,7 +116,8 @@ describe("WeatherReport.isPrecipitationSoon — 곧 비·눈이 오는지", () =
   });
 
   it("다음 1시간 예보에 강수 구간이 있으면 그렇다", () => {
-    // Given 30분 뒤 시작하는 강수 구간
+    // Given
+    // 30분 뒤 시작하는 강수 구간
     const report = weatherReportFixture(now, {
       nextHour: {
         periods: [
@@ -140,7 +142,8 @@ describe("WeatherReport.isPrecipitationSoon — 곧 비·눈이 오는지", () =
   });
 
   it("강수 확률 50% 이상인 시간이 2시간 뒤 밖이면 아니다", () => {
-    // Given 3시간 뒤 강수 확률 90%
+    // Given
+    // 3시간 뒤 강수 확률 90%
     const base = weatherReportFixture(now);
     const report = weatherReportFixture(now, {
       hourly: base.hourly.map((hour, index) =>

@@ -63,8 +63,11 @@ describe("EncryptionService — 암호화 서비스", () => {
       // Given
       const invalidCiphertext = "invalid-format";
 
-      // When & Then
-      expect(() => service.decrypt(invalidCiphertext)).toThrow("Invalid ciphertext format");
+      // When
+      const decrypt = () => service.decrypt(invalidCiphertext);
+
+      // Then
+      expect(decrypt).toThrow("Invalid ciphertext format");
     });
 
     it("변조된 ciphertext는 복호화에 실패한다", () => {
@@ -74,8 +77,11 @@ describe("EncryptionService — 암호화 서비스", () => {
       parts[1] = Buffer.from("tampered-auth-tag").toString("base64");
       const tampered = parts.join(":");
 
-      // When & Then
-      expect(() => service.decrypt(tampered)).toThrow();
+      // When
+      const decrypt = () => service.decrypt(tampered);
+
+      // Then
+      expect(decrypt).toThrow();
     });
   });
 
@@ -107,9 +113,13 @@ describe("EncryptionService — 암호화 서비스", () => {
       const twoParts = "a:b";
       const fourParts = "a:b:c:d";
 
-      // When & Then
-      expect(service.isEncrypted(twoParts)).toBe(false);
-      expect(service.isEncrypted(fourParts)).toBe(false);
+      // When
+      const twoPartsResult = service.isEncrypted(twoParts);
+      const fourPartsResult = service.isEncrypted(fourParts);
+
+      // Then
+      expect(twoPartsResult).toBe(false);
+      expect(fourPartsResult).toBe(false);
     });
   });
 

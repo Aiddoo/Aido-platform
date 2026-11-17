@@ -57,7 +57,8 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
   });
 
   it("댓글 알림은 서버 내부 경로 대신 의미 기반 이동 재료만 보내야 한다", async () => {
-    // Given - 공개 앱이 아는 TODO_SHARED 알림과 최신 앱이 해석할 댓글 문맥
+    // Given
+    // 공개 앱이 아는 TODO_SHARED 알림과 최신 앱이 해석할 댓글 문맥
     const input = {
       recipientId: "cmrecip000000000000000001",
       senderId: "cmsender00000000000000001",
@@ -81,10 +82,11 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
       variantContext,
     });
 
-    // When - 댓글 알림을 영속화하고 발송한다
+    // When
     await adapter.notifyCommentsWritten(input);
 
-    // Then - v1.8은 TODO_SHARED 기본 화면으로, 최신 앱은 metadata로 이동할 수 있다
+    // Then
+    // v1.8은 TODO_SHARED 기본 화면으로, 최신 앱은 metadata로 이동할 수 있다
     expect(published).toEqual([
       {
         userId: input.recipientId,
@@ -106,7 +108,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
   });
 
   it("좋아요 알림도 기기별로 해석할 수 있는 같은 계약을 사용해야 한다", async () => {
-    // Given - 댓글 좋아요 알림 문맥
+    // Given
     const input = {
       recipientId: "cmrecip000000000000000001",
       senderId: "cmsender00000000000000001",
@@ -116,10 +118,12 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
       threadRootId: "cmroot000000000000000001",
     };
 
-    // When - 좋아요 알림을 발송한다
+    // When
     await adapter.notifyCommentLiked(input);
 
-    // Then - 공유 알림 레코드에 특정 모바일 route를 고정하지 않는다
+    // Then
+    // 공유 알림 레코드에 특정 모바일 route를 고정하지 않는다
+
     expect(published).toEqual([
       expect.objectContaining({
         action: { type: "DEEP_LINK" },

@@ -176,7 +176,8 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
   });
 
   it("메모의 항목 다섯 개는 성공하고 공개 응답의 수량·날짜·시간 제약을 wire에 보낸다", async () => {
-    // Given - 실제 메모 스키마와 허용 경계인 서브 항목 다섯 개
+    // Given
+    // 실제 메모 스키마와 허용 경계인 서브 항목 다섯 개
     const memo = {
       todos: [
         {
@@ -242,7 +243,7 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
   );
 
   it("출력 토큰 한도로 잘린 응답은 TRUNCATED로 끝내고 다시 묻지 않는다", async () => {
-    // Given - JSON이 중간에 끊긴 MAX_TOKENS 응답
+    // Given
     fetchSpy.mockResolvedValue(
       Response.json({
         candidates: [
@@ -347,7 +348,8 @@ describe("GoogleProviderAdapter — 설치된 SDK·기록된 오류 본문, 외�
   });
 
   it("네트워크 오류는 원인 체인의 오류 code만 남긴다", async () => {
-    // Given - undici가 연결이 끊겼을 때 던지는 모양
+    // Given
+    // undici가 연결이 끊겼을 때 던지는 모양
     const reset = Object.assign(new Error("SECRET_SOCKET_DETAIL"), { code: "ECONNRESET" });
     fetchSpy.mockRejectedValue(new TypeError("fetch failed", { cause: reset }));
     const adapter = new GoogleProviderAdapter(createAiTestConfig());

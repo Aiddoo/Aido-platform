@@ -47,18 +47,21 @@ describe("할 일 카테고리 이동", () => {
     for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY + 1; id++) {
       fixture.records.set(id, { ...createPlanningTodo(fixture.userId, id), categoryId: 2 });
     }
-    // When / Then
-    await expect(
-      useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
+    // When
+    const overLimitResult = useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 });
+    // Then
+    await expect(overLimitResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.get(1)?.categoryId).toBe(1);
+    // Given
     const saved = fixture.records.get(1);
     if (saved == null) {
       throw new Error("Todo fixture missing");
     }
     saved.completed = true;
     saved.completedAt = PLANNING_INSTANT;
+    // When
     const result = await useCase.execute({ id: 1, userId: fixture.userId, categoryId: 2 });
+    // Then
     expect(result).toMatchObject({
       completed: true,
       completedAt: PLANNING_TIME.toISOString(),
@@ -68,17 +71,24 @@ describe("할 일 카테고리 이동", () => {
   it("다른 소유자의 카테고리와 없는 할 일은 기존 오류를 유지한다", async () => {
     // Given
     fixture.categoryOwners.set(1, "other-user");
-    await expect(
-      useCase.execute({ id: 999, userId: fixture.userId, categoryId: 1 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    // When / Then
-    await expect(
-      useCase.execute({ id: 1, userId: fixture.userId, categoryId: 1 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
+    // When
+    const missingTodoResult = useCase.execute({ id: 999, userId: fixture.userId, categoryId: 1 });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0851,
+    });
+    // When
+    const otherOwnerResult = useCase.execute({ id: 1, userId: fixture.userId, categoryId: 1 });
+    // Then
+    await expect(otherOwnerResult).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0851,
+    });
+    // Given
     fixture.categoryOwners.set(1, fixture.userId);
-    await expect(
-      useCase.execute({ id: 999, userId: fixture.userId, categoryId: 1 }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const ownCategoryResult = useCase.execute({ id: 999, userId: fixture.userId, categoryId: 1 });
+    // Then
+    await expect(ownCategoryResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)?.categoryId).toBe(1);
   });
 });

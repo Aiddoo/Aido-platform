@@ -15,7 +15,7 @@ describe("시간대 이름 해석", () => {
     { raw: "  ", expected: null },
     { raw: 900, expected: null },
   ])("normalizeIanaTimezone($raw)는 $expected다", ({ raw, expected }) => {
-    // Given·When
+    // When
     const normalized = normalizeIanaTimezone(raw);
 
     // Then
@@ -38,7 +38,7 @@ describe("시간대 이름 해석", () => {
     { raw: null, expected: DEFAULT_DELIVERY_TIMEZONE },
     { raw: "America/Los_Angeles", expected: "America/Los_Angeles" },
   ])("발송용 해석은 $raw를 $expected로 본다", ({ raw, expected }) => {
-    // Given·When
+    // When
     const timezone = resolveDeliveryTimezone(raw);
 
     // Then

@@ -98,11 +98,13 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
   });
 
   it("권한을 거절하면 이 기기의 토큰을 지우고 권한 상태만 남긴다", async () => {
-    // Given 허용 상태로 등록된 기기
+    // Given
+    // 허용 상태로 등록된 기기
     const { devices, tokens, cache, useCase } = setup();
     await useCase.execute(createCommand());
 
-    // When 설정에서 알림을 끈 뒤 같은 토큰과 함께 보고
+    // When
+    // 설정에서 알림을 끈 뒤 같은 토큰과 함께 보고
     const report = await useCase.execute(
       createCommand({ permission: { status: "DENIED", canAskAgain: false } }),
     );
@@ -118,11 +120,11 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
   });
 
   it("허용인데 토큰 발급에 실패해 null로 보고하면 등록된 토큰을 두고 세션·앱 버전만 이번 보고로 옮긴다", async () => {
-    // Given 이전 세션에서 토큰을 등록한 기기
+    // Given
     const { devices, tokens, useCase } = setup();
     await useCase.execute(createCommand({ sessionId: "session-old", appVersion: "1.14.2" }));
 
-    // When 다시 로그인한 뒤 토큰 발급이 시간 초과로 실패한 보고
+    // When
     const report = await useCase.execute(
       createCommand({ sessionId: "session-new", appVersion: "1.15.0", token: null }),
     );
@@ -166,16 +168,17 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
   });
 
   it("계정을 바꿔 로그인한 기기는 이전 사용자의 기기·토큰을 옮기고 양쪽 캐시를 비운다", async () => {
-    // Given user-b가 쓰던 같은 기기
+    // Given
     const { devices, tokens, cache, logger, useCase } = setup();
     await useCase.execute(createCommand({ userId: "user-b" }));
 
-    // When user-a로 로그인한 뒤 권한을 거절한 상태로 보고
+    // When
+    // user-a로 로그인한 뒤 권한을 거절한 상태로 보고
     await useCase.execute(
       createCommand({ permission: { status: "DENIED", canAskAgain: false }, token: null }),
     );
 
-    // Then user-b는 더 이상 이 기기로 푸시를 받지 않는다
+    // Then
     expect(devices.deviceOf("user-b", "ios_device-a")).toBeUndefined();
     expect(tokens.tokenOf("user-b", "ios_device-a")).toBeUndefined();
     expect(cache.invalidatedPushTokenUserIds.slice(-2)).toEqual(["user-a", "user-b"]);

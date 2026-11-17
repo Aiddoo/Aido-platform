@@ -50,7 +50,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
     const date = Temporal.Instant.from("2024-07-15T00:00:00Z");
 
     it('정상 응답 시 일출/일몰 시각을 "HH:mm" 형식으로 반환해야 한다', async () => {
-      // Given - API 키 설정 및 정상 일출/일몰 응답 준비
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy.mockResolvedValue(
         new Response(
@@ -70,29 +70,29 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
         ),
       );
 
-      // When - 일출/일몰 시각 조회
+      // When
       const result = await provider.getSunTime(lat, lon, date);
 
-      // Then - HH:mm 형식으로 반환 확인
+      // Then
       expect(result).not.toBeNull();
       expect(result?.sunrise).toBe("05:32");
       expect(result?.sunset).toBe("19:45");
     });
 
     it("API 키가 없으면 null을 반환해야 한다", async () => {
-      // Given - API 키 미설정
+      // Given
       config.kmaApiKey = undefined;
 
-      // When - 일출/일몰 시각 조회
+      // When
       const result = await provider.getSunTime(lat, lon, date);
 
-      // Then - null 반환 및 fetch 미호출
+      // Then
       expect(result).toBeNull();
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("API 에러 시 null을 반환해야 한다", async () => {
-      // Given - API 키 설정 및 fetch 실패
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy.mockResolvedValue(
         new Response(null, {
@@ -101,15 +101,15 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
         }),
       );
 
-      // When - 일출/일몰 시각 조회
+      // When
       const result = await provider.getSunTime(lat, lon, date);
 
-      // Then - null 반환
+      // Then
       expect(result).toBeNull();
     });
 
     it("빈 응답 시 null을 반환해야 한다", async () => {
-      // Given - API 키 설정 및 item이 없는 응답
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy.mockResolvedValue(
         new Response(
@@ -124,10 +124,10 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
         ),
       );
 
-      // When - 일출/일몰 시각 조회
+      // When
       const result = await provider.getSunTime(lat, lon, date);
 
-      // Then - null 반환
+      // Then
       expect(result).toBeNull();
     });
   });

@@ -94,7 +94,7 @@ function setup() {
 describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
   describe("registerToken", () => {
     it("1.14.1 이하 앱의 토큰 등록을 권한 허용 기기 보고로 바꿔 저장한다", async () => {
-      // Given 권한을 허용한 뒤 토큰을 보내는 구 앱 요청
+      // Given
       const { controller, devices, tokens, settings } = setup();
       const dto: RegisterPushTokenDto = {
         token: "ExponentPushToken[xxxxxx]",
@@ -110,7 +110,7 @@ describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
       // When
       const result = await controller.registerToken(user, dto, client);
 
-      // Then 권한은 GRANTED, 결과 문구는 그대로다
+      // Then
       expect(result).toEqual({ message: "푸시 토큰이 등록되었습니다.", registered: true });
       expect(devices.deviceOf(user.userId, "android_abc")?.toPrimitives()).toEqual({
         deviceId: "android_abc",
@@ -136,7 +136,7 @@ describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
     });
 
     it("deviceId가 없으면 구 기본 기기로 보고하고 기기 타입 헤더를 플랫폼 힌트로 쓴다", async () => {
-      // Given deviceId 없이 보낸 요청
+      // Given
       const { controller, tokens, settings } = setup();
       const dto: RegisterPushTokenDto = { token: "ExponentPushToken[xxxxxx]", payloadVersion: 1 };
 

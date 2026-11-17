@@ -25,7 +25,8 @@ describe("groupTimezonesByLocalClock", () => {
   });
 
   it("시:분이 같아도 날짜가 다르면 따로 묶는다", () => {
-    // When: 키리티마시(+14)와 호놀룰루(-10)는 같은 시각, 다른 날이다
+    // When
+    // 키리티마시(+14)와 호놀룰루(-10)는 같은 시각, 다른 날이다
     const groups = clockOf("2024-01-16T23:00:00Z", ["Pacific/Kiritimati", "Pacific/Honolulu"]);
 
     // Then
@@ -36,7 +37,8 @@ describe("groupTimezonesByLocalClock", () => {
   });
 
   it("서머타임으로 오프셋이 바뀐 날에는 평소 같은 묶음이던 시간대를 나눈다", () => {
-    // When: 2024-03-10 미국은 서머타임 시작, 서스캐처원(Regina)은 그대로다
+    // When
+    // 2024-03-10 미국은 서머타임 시작, 서스캐처원(Regina)은 그대로다
     const winter = clockOf("2024-03-09T18:00:00Z", ["America/Chicago", "America/Regina"]);
     const summer = clockOf("2024-03-10T18:00:00Z", ["America/Chicago", "America/Regina"]);
 

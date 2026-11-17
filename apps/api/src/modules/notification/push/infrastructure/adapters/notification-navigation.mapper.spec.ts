@@ -53,42 +53,50 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
   });
 
   it("댓글 재료가 빠진 TODO_SHARED는 할 일 상세로, 할 일도 없으면 이동하지 않는다", () => {
-    // Given / When / Then
-    expect(toNotificationNavigation(source("TODO_SHARED", { todoId: 42 }))).toEqual({
-      kind: "TODO",
-      todoId: 42,
-    });
-    expect(toNotificationNavigation(source("TODO_SHARED"))).toEqual({ kind: "NONE" });
+    // When
+    const withTodo = toNotificationNavigation(source("TODO_SHARED", { todoId: 42 }));
+    const withoutTodo = toNotificationNavigation(source("TODO_SHARED"));
+
+    // Then
+    expect(withTodo).toEqual({ kind: "TODO", todoId: 42 });
+    expect(withoutTodo).toEqual({ kind: "NONE" });
   });
 
   it("할 일이 걸린 콕은 콕 상세로, 할 일 없는 콕은 보낸 친구 피드로, 아무 재료도 없으면 내 피드로 연다", () => {
-    // Given / When / Then
-    expect(
-      toNotificationNavigation(
-        source("NUDGE_RECEIVED", { nudgeId: 7, todoId: 42, friendId: FRIEND_ID }),
-      ),
-    ).toEqual({ kind: "NUDGE", nudgeId: 7 });
-    expect(
-      toNotificationNavigation(source("NUDGE_RECEIVED", { nudgeId: 7, friendId: FRIEND_ID })),
-    ).toEqual({ kind: "FRIEND_FEED", friendId: FRIEND_ID });
-    expect(toNotificationNavigation(source("NUDGE_RECEIVED"))).toEqual({ kind: "FEED" });
+    // When
+    const withTodo = toNotificationNavigation(
+      source("NUDGE_RECEIVED", { nudgeId: 7, todoId: 42, friendId: FRIEND_ID }),
+    );
+    const withFriend = toNotificationNavigation(
+      source("NUDGE_RECEIVED", { nudgeId: 7, friendId: FRIEND_ID }),
+    );
+    const withoutDetails = toNotificationNavigation(source("NUDGE_RECEIVED"));
+
+    // Then
+    expect(withTodo).toEqual({ kind: "NUDGE", nudgeId: 7 });
+    expect(withFriend).toEqual({ kind: "FRIEND_FEED", friendId: FRIEND_ID });
+    expect(withoutDetails).toEqual({ kind: "FEED" });
   });
 
   it("콕 답장은 콕 상세로, 콕 ID가 없으면 알림 목록으로 연다", () => {
-    // Given / When / Then
-    expect(toNotificationNavigation(source("NUDGE_REPLIED", { nudgeId: 7 }))).toEqual({
-      kind: "NUDGE",
-      nudgeId: 7,
-    });
-    expect(toNotificationNavigation(source("NUDGE_THANKED"))).toEqual({ kind: "NOTIFICATIONS" });
+    // When
+    const replied = toNotificationNavigation(source("NUDGE_REPLIED", { nudgeId: 7 }));
+    const thanked = toNotificationNavigation(source("NUDGE_THANKED"));
+
+    // Then
+    expect(replied).toEqual({ kind: "NUDGE", nudgeId: 7 });
+    expect(thanked).toEqual({ kind: "NOTIFICATIONS" });
   });
 
   it("응원은 응원 ID와 보낸 친구를 CHEER로 싣는다", () => {
     // Given
     const input = source("CHEER_RECEIVED", { cheerId: 3, friendId: FRIEND_ID });
 
-    // When / Then
-    expect(toNotificationNavigation(input)).toEqual({
+    // When
+    const navigation = toNotificationNavigation(input);
+
+    // Then
+    expect(navigation).toEqual({
       kind: "CHEER",
       cheerId: 3,
       friendId: FRIEND_ID,
@@ -98,8 +106,11 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
   it.each(["FOLLOW_ACCEPTED", "FRIEND_COMPLETED", "NUDGE_SUGGEST"] as const)(
     "%s는 친구 피드로 연다",
     (type) => {
-      // Given / When / Then
-      expect(toNotificationNavigation(source(type, { friendId: FRIEND_ID }))).toEqual({
+      // When
+      const navigation = toNotificationNavigation(source(type, { friendId: FRIEND_ID }));
+
+      // Then
+      expect(navigation).toEqual({
         kind: "FRIEND_FEED",
         friendId: FRIEND_ID,
       });
@@ -107,31 +118,32 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
   );
 
   it("할 일 리마인더는 할 일 상세로, 할 일이 없으면 내 피드로 연다", () => {
-    // Given / When / Then
-    expect(toNotificationNavigation(source("TODO_REMINDER", { todoId: 42 }))).toEqual({
-      kind: "TODO",
-      todoId: 42,
-    });
-    expect(toNotificationNavigation(source("TODO_REMINDER"))).toEqual({ kind: "FEED" });
+    // When
+    const withTodo = toNotificationNavigation(source("TODO_REMINDER", { todoId: 42 }));
+    const withoutTodo = toNotificationNavigation(source("TODO_REMINDER"));
+
+    // Then
+    expect(withTodo).toEqual({ kind: "TODO", todoId: 42 });
+    expect(withoutTodo).toEqual({ kind: "FEED" });
   });
 
   it("아침 날씨의 옮기기 링크는 할 일 목록과 이유를 싣고, 다른 링크는 날씨 화면으로 연다", () => {
     // Given
     const rescheduleUrl = buildWeatherRescheduleDeepLink([12, 15], "heat");
 
-    // When / Then
-    expect(
-      toNotificationNavigation(
-        source("WEATHER_MORNING", { action: { type: "DEEP_LINK", url: rescheduleUrl } }),
-      ),
-    ).toEqual({ kind: "WEATHER_RESCHEDULE", todoIds: [12, 15], reason: "heat" });
-    expect(
-      toNotificationNavigation(
-        source("WEATHER_MORNING", {
-          action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=a,0" },
-        }),
-      ),
-    ).toEqual({ kind: "WEATHER" });
+    // When
+    const reschedule = toNotificationNavigation(
+      source("WEATHER_MORNING", { action: { type: "DEEP_LINK", url: rescheduleUrl } }),
+    );
+    const invalidReschedule = toNotificationNavigation(
+      source("WEATHER_MORNING", {
+        action: { type: "DEEP_LINK", url: "/weather/reschedule?todoIds=a,0" },
+      }),
+    );
+
+    // Then
+    expect(reschedule).toEqual({ kind: "WEATHER_RESCHEDULE", todoIds: [12, 15], reason: "heat" });
+    expect(invalidReschedule).toEqual({ kind: "WEATHER" });
   });
 
   it.each([
@@ -144,27 +156,35 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
     [NOTICE_DEEP_LINK_PATH.NOTIFICATION_SETTINGS, "NOTIFICATION_SETTINGS"],
     ["/todos/1", "NONE"],
   ] as const)("공지의 앱 경로 %s는 %s로 연다", (url, kind) => {
-    // Given / When / Then
-    expect(
-      toNotificationNavigation(source("ADMIN_BROADCAST", { action: { type: "DEEP_LINK", url } })),
-    ).toEqual({ kind });
+    // When
+    const navigation = toNotificationNavigation(
+      source("ADMIN_BROADCAST", { action: { type: "DEEP_LINK", url } }),
+    );
+
+    // Then
+    expect(navigation).toEqual({ kind });
   });
 
   it("외부 링크는 http(s)만 EXTERNAL_URL로 싣고, NONE 액션은 이동하지 않는다", () => {
-    // Given / When / Then
-    expect(
-      toNotificationNavigation(
-        source("SYSTEM_NOTICE", { action: { type: "WEBVIEW", url: "https://aido.kr/notice" } }),
-      ),
-    ).toEqual({ kind: "EXTERNAL_URL", url: "https://aido.kr/notice", presentation: "WEBVIEW" });
-    expect(
-      toNotificationNavigation(
-        source("SYSTEM_NOTICE", { action: { type: "BROWSER", url: "javascript:alert(1)" } }),
-      ),
-    ).toEqual({ kind: "NONE" });
-    expect(
-      toNotificationNavigation(source("TODO_REMINDER", { todoId: 42, action: { type: "NONE" } })),
-    ).toEqual({ kind: "NONE" });
+    // When
+    const webview = toNotificationNavigation(
+      source("SYSTEM_NOTICE", { action: { type: "WEBVIEW", url: "https://aido.kr/notice" } }),
+    );
+    const unsafeBrowser = toNotificationNavigation(
+      source("SYSTEM_NOTICE", { action: { type: "BROWSER", url: "javascript:alert(1)" } }),
+    );
+    const noAction = toNotificationNavigation(
+      source("TODO_REMINDER", { todoId: 42, action: { type: "NONE" } }),
+    );
+
+    // Then
+    expect(webview).toEqual({
+      kind: "EXTERNAL_URL",
+      url: "https://aido.kr/notice",
+      presentation: "WEBVIEW",
+    });
+    expect(unsafeBrowser).toEqual({ kind: "NONE" });
+    expect(noAction).toEqual({ kind: "NONE" });
   });
 
   it.each([
@@ -187,16 +207,22 @@ describe("toNotificationNavigation — 푸시 이동 문맥", () => {
     ["STREAK_AT_RISK", "FEED"],
     ["INVITE_QUALIFY_REMINDER", "FEED"],
   ] as const)("%s는 고정 화면 %s로 연다", (type, kind) => {
-    // Given / When / Then
-    expect(toNotificationNavigation(source(type))).toEqual({ kind });
+    // When
+    const navigation = toNotificationNavigation(source(type));
+
+    // Then
+    expect(navigation).toEqual({ kind });
   });
 
   it("계약을 통과하지 못하는 값이면 navigation을 싣지 않아 기존 필드로 이동하게 한다", () => {
     // Given
     const input = source("TODO_REMINDER", { todoId: -1 });
 
-    // When / Then
-    expect(toNotificationNavigation(input)).toBeUndefined();
+    // When
+    const navigation = toNotificationNavigation(input);
+
+    // Then
+    expect(navigation).toBeUndefined();
   });
 });
 
@@ -223,22 +249,31 @@ describe("서버·앱 대조표", () => {
     // Given
     const types = new Set(NAVIGATION_CASES.map(({ source }) => source.type));
 
-    // When / Then
-    expect(Object.values(NOTIFICATION_TYPE).filter((type) => !types.has(type))).toEqual([]);
+    // When
+    const missingTypes = Object.values(NOTIFICATION_TYPE).filter((type) => !types.has(type));
+
+    // Then
+    expect(missingTypes).toEqual([]);
   });
 
   it("19개 navigation kind가 모두 대조표에 있다", () => {
     // Given
     const kinds = new Set(NAVIGATION_CASES.map(({ navigation }) => navigation?.kind));
 
-    // When / Then
-    expect(Object.values(NOTIFICATION_NAVIGATION_KIND).filter((kind) => !kinds.has(kind))).toEqual(
-      [],
+    // When
+    const missingKinds = Object.values(NOTIFICATION_NAVIGATION_KIND).filter(
+      (kind) => !kinds.has(kind),
     );
+
+    // Then
+    expect(missingKinds).toEqual([]);
   });
 
   it.each(NAVIGATION_CASES)("$name", ({ source, navigation }) => {
-    // Given / When / Then
-    expect(toNotificationNavigation(source) ?? null).toEqual(navigation);
+    // When
+    const result = toNotificationNavigation(source) ?? null;
+
+    // Then
+    expect(result).toEqual(navigation);
   });
 });

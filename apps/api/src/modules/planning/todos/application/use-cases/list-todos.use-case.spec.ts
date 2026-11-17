@@ -101,14 +101,14 @@ describe("할 일 목록 조회", () => {
   it("역전된 기간은 저장소에 도달하기 전에 거부한다", async () => {
     // Given
     const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
-    // When / Then
-    await expect(
-      useCase.execute({
-        userId: fixture.userId,
-        startDate: Temporal.PlainDate.from("2026-05-16"),
-        endDate: Temporal.PlainDate.from("2026-05-15"),
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const result = useCase.execute({
+      userId: fixture.userId,
+      startDate: Temporal.PlainDate.from("2026-05-16"),
+      endDate: Temporal.PlainDate.from("2026-05-15"),
+    });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(query).not.toHaveBeenCalled();
   });
 });

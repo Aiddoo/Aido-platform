@@ -423,7 +423,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     });
 
     it("이전 사용자의 해제가 실패한 기기에 다른 사용자가 등록하면 토큰 소유가 새 사용자로 옮겨진다", async () => {
-      // Given 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
+      // Given
+      // 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
       mockPushProvider.validateToken.mockReturnValue(true);
       await facade.reportPushDevice(
         createReportPushDeviceCommandFixture({
@@ -435,7 +436,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         }),
       );
 
-      // When 같은 기기에서 사용자 B가 로그인해 같은 토큰을 등록한다
+      // When
       const registration = facade.reportPushDevice(
         createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,

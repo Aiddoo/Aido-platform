@@ -51,9 +51,13 @@ describe("notificationNavigationSchema", () => {
   });
 
   it("모르는 kind와 kind에 없는 필드는 거부한다", () => {
-    // Given / When / Then
-    expect(notificationNavigationSchema.safeParse({ kind: "UNKNOWN" }).success).toBe(false);
-    expect(notificationNavigationSchema.safeParse({ kind: "FEED", todoId: 1 }).success).toBe(false);
+    // When
+    const unknownKind = notificationNavigationSchema.safeParse({ kind: "UNKNOWN" });
+    const extraField = notificationNavigationSchema.safeParse({ kind: "FEED", todoId: 1 });
+
+    // Then
+    expect(unknownKind.success).toBe(false);
+    expect(extraField.success).toBe(false);
   });
 
   it("http(s)가 아닌 외부 주소는 거부한다", () => {
@@ -64,8 +68,11 @@ describe("notificationNavigationSchema", () => {
       presentation: "WEBVIEW",
     };
 
-    // When / Then
-    expect(notificationNavigationSchema.safeParse(navigation).success).toBe(false);
+    // When
+    const result = notificationNavigationSchema.safeParse(navigation);
+
+    // Then
+    expect(result.success).toBe(false);
   });
 });
 
@@ -79,7 +86,8 @@ describe("pushNotificationDataSchema.navigation", () => {
   };
 
   it("navigation이 없는 기존 payload를 그대로 읽는다", () => {
-    // Given / When
+    // When
+
     const parsed = pushNotificationDataSchema.parse(legacyData);
 
     // Then

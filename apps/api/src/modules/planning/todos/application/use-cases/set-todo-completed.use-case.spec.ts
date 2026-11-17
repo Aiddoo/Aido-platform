@@ -104,15 +104,15 @@ describe("할 일 완료 상태 전이", () => {
   it("다른 사용자의 할 일은 완료할 수 없다", async () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: "other-user",
-        timezone: "UTC",
-        completed: true,
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const result = useCase.execute({
+      id: 1,
+      userId: "other-user",
+      timezone: "UTC",
+      completed: true,
+    });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
     expect(fixture.completionEffects.events).toEqual([]);
   });

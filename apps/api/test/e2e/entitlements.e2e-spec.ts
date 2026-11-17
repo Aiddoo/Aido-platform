@@ -118,7 +118,8 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
   });
 
   it("FREE 사용자가 카테고리 한도를 채우면 남은 0을 받고, 다음 만들기 거절도 같은 featureQuota다", async () => {
-    // Given - 기본 카테고리 2개에 하나를 더해 무료 한도를 채운다
+    // Given
+    // 기본 카테고리 2개에 하나를 더해 무료 한도를 채운다
     const free = await context.helpers.createVerifiedUser("ent-category@test.com", "Test1234!");
     const before = await entitlements(free.accessToken);
     await createCategory(free.accessToken, "세 번째").expect(201);

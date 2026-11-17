@@ -54,7 +54,7 @@ async function setup() {
 
 describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
   it("일반 worker와 우선순위 10 이상만 가져가는 거래성 worker를 같은 큐에 등록한다", async () => {
-    // Given / When
+    // When
     const { jobQueue } = await setup();
 
     // Then

@@ -65,12 +65,10 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
   it("위치가 없으면 WEATHER_1902이며 공급자에 접근하지 않는다", async () => {
     // Given
     repository.clear();
-    // When & Then
-    await expect(
-      conditions.execute({ userId: "weather-user", target: date }),
-    ).rejects.toMatchObject({
-      errorCode: ErrorCode.WEATHER_1902,
-    });
+    // When
+    const result = conditions.execute({ userId: "weather-user", target: date });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
     expect(weatherProvider.calls).toEqual([]);
     expect(sunTimeProvider.calls).toEqual([]);
   });
@@ -120,7 +118,8 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
   });
 
   it("동일 instant의 한국 예보 09시 기온을 체감 계산에 전달한다", async () => {
-    // Given - UTC 00시=1, 한국 09시=25, LA 17시=15인 고정 예보
+    // Given
+    // UTC 00시=1, 한국 09시=25, LA 17시=15인 고정 예보
     // When
     const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
@@ -137,7 +136,8 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     ["UTC", 1],
     ["America/Los_Angeles", 15],
   ])("공급자 시간대 %s의 hour를 선택한다", async (timeZone, expectedTemperature) => {
-    // Given - 공급자 metadata는 서버 host TZ와 독립이다.
+    // Given
+    // 공급자 metadata는 서버 host TZ와 독립이다.
     const provider = new StubWeatherForecastProvider(String(timeZone));
     const logger = new SilentLogger();
     const readWeatherForecast = new ReadWeatherForecastUseCase({

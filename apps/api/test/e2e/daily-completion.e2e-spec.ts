@@ -89,27 +89,23 @@ describe("일일 달성 E2E", () => {
   describe("GET /daily-completions - 일일 완료 현황 조회", () => {
     describe("인증", () => {
       it("인증 없이 접근 시 401 반환", async () => {
-        // Given - 인증되지 않은 상태
-
-        // When - 인증 토큰 없이 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
       });
 
       it("잘못된 토큰으로 접근 시 401 반환", async () => {
-        // Given - 유효하지 않은 토큰 준비
-
-        // When - 잘못된 토큰으로 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", "Bearer invalid-token")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
       });
     });
@@ -148,61 +144,61 @@ describe("일일 달성 E2E", () => {
 
     describe("파라미터 검증", () => {
       it("startDate 누락 시 400 반환", async () => {
-        // Given - 인증된 사용자 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-param1@test.com", password);
 
-        // When - startDate 없이 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ endDate: "2026-01-31" });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
 
       it("endDate 누락 시 400 반환", async () => {
-        // Given - 인증된 사용자 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-param2@test.com", password);
 
-        // When - endDate 없이 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026-01-01" });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
 
       it("잘못된 날짜 형식 시 400 반환", async () => {
-        // Given - 인증된 사용자 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-param3@test.com", password);
 
-        // When - 잘못된 날짜 형식으로 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026/01/01", endDate: "2026-01-31" });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
 
       it("endDate가 startDate보다 이전인 경우 400 반환", async () => {
-        // Given - 인증된 사용자 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-param4@test.com", password);
 
-        // When - endDate가 startDate보다 이전인 값으로 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .query({ startDate: "2026-01-31", endDate: "2026-01-01" });
 
-        // Then - 400 Bad Request 반환
+        // Then
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
       });
@@ -210,7 +206,7 @@ describe("일일 달성 E2E", () => {
 
     describe("정상 조회", () => {
       it("날짜 범위 내 완료 현황 조회 성공", async () => {
-        // Given - 인증된 사용자와 4개 날짜에 Todo 데이터 준비 (100% 완료 2일)
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-normal1@test.com", password);
         const accessToken = user.accessToken;
 
@@ -219,13 +215,13 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-01-17", 2, 0);
         await createTodosForDate(accessToken, "2026-01-20", 1, 1);
 
-        // When - 1월 전체 기간 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
-        // Then - 성공 응답과 완료 현황 데이터 반환
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.data).toHaveProperty("completions");
@@ -246,7 +242,7 @@ describe("일일 달성 E2E", () => {
       });
 
       it("완료 현황 상세 데이터 검증", async () => {
-        // Given - 인증된 사용자와 3일간의 Todo 데이터 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-normal2@test.com", password);
         const accessToken = user.accessToken;
 
@@ -254,13 +250,13 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-01-16", 4, 2);
         await createTodosForDate(accessToken, "2026-01-17", 2, 0);
 
-        // When - 특정 3일 기간 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-15", endDate: "2026-01-17" });
 
-        // Then - 각 날짜별 상세 완료 현황 검증
+        // Then
         expect(response.status).toBe(200);
         const { completions } = response.body.data;
 
@@ -292,19 +288,19 @@ describe("일일 달성 E2E", () => {
       });
 
       it("특정 날짜만 조회", async () => {
-        // Given - 인증된 사용자와 2026-01-20에 100% 완료된 Todo 준비
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-normal3@test.com", password);
         const accessToken = user.accessToken;
 
         await createTodosForDate(accessToken, "2026-01-20", 1, 1);
 
-        // When - 단일 날짜 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-01-20", endDate: "2026-01-20" });
 
-        // Then - 해당 날짜의 완료 현황 반환
+        // Then
         expect(response.status).toBe(200);
         const { completions, totalCompleteDays } = response.body.data;
 
@@ -315,17 +311,17 @@ describe("일일 달성 E2E", () => {
       });
 
       it("Todo가 없는 날짜 범위 조회 시 빈 배열 반환", async () => {
-        // Given - 인증된 사용자 준비 (2월에는 Todo 없음)
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-normal4@test.com", password);
         const accessToken = user.accessToken;
 
-        // When - Todo가 없는 2월 기간 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-02-01", endDate: "2026-02-28" });
 
-        // Then - 빈 completions 배열과 0개의 완료일 반환
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.data.completions).toEqual([]);
@@ -335,32 +331,32 @@ describe("일일 달성 E2E", () => {
 
     describe("사용자 격리", () => {
       it("사용자 1은 자신의 데이터만 조회하고, 사용자 2는 자신의 데이터만 조회한다", async () => {
-        // Given - 사용자 1 (3개 Todo, 100% 완료)과 사용자 2 (2개 Todo, 50% 완료) 준비
+        // Given
         const user1 = await ctx.helpers.createVerifiedUser("dc-iso1@test.com", password);
         const user2 = await ctx.helpers.createVerifiedUser("dc-iso2@test.com", password);
         await createTodosForDate(user1.accessToken, "2026-03-01", 3, 3);
         await createTodosForDate(user2.accessToken, "2026-03-01", 2, 1);
 
-        // When - 사용자 1이 완료 현황 조회
+        // When
         const response1 = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user1.accessToken}`)
           .query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
-        // Then - 사용자 1의 데이터만 반환 (3개 중 3개 완료)
+        // Then
         expect(response1.status).toBe(200);
         expect(response1.body.data.completions.length).toBe(1);
         expect(response1.body.data.completions[0].totalTodos).toBe(3);
         expect(response1.body.data.completions[0].completedTodos).toBe(3);
         expect(response1.body.data.completions[0].isComplete).toBe(true);
 
-        // When - 사용자 2가 완료 현황 조회
+        // When
         const response2 = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${user2.accessToken}`)
           .query({ startDate: "2026-03-01", endDate: "2026-03-01" });
 
-        // Then - 사용자 2의 데이터만 반환 (2개 중 1개 완료)
+        // Then
         expect(response2.status).toBe(200);
         expect(response2.body.data.completions.length).toBe(1);
         expect(response2.body.data.completions[0].totalTodos).toBe(2);
@@ -371,7 +367,7 @@ describe("일일 달성 E2E", () => {
 
     describe("Todo 상태 변경 반영", () => {
       it("Todo 완료 상태 변경 시 완료 현황 즉시 반영", async () => {
-        // Given - 2개의 미완료 Todo 생성
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-state@test.com", password);
         const accessToken = user.accessToken;
 
@@ -386,18 +382,18 @@ describe("일일 달성 E2E", () => {
           completed: false,
         });
 
-        // When - 초기 완료 현황 조회
+        // When
         let response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
-        // Then - 0% 완료 상태 확인
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.completions[0].completedTodos).toBe(0);
         expect(response.body.data.completions[0].isComplete).toBe(false);
 
-        // When - Todo 하나 완료 처리 후 다시 조회
+        // When
         await request(ctx.app.getHttpServer())
           .patch(`/v1/todos/${todoId2}`)
           .set("Authorization", `Bearer ${accessToken}`)
@@ -409,7 +405,7 @@ describe("일일 달성 E2E", () => {
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-04-01", endDate: "2026-04-01" });
 
-        // Then - 50% 완료 상태로 변경 확인
+        // Then
         expect(response.status).toBe(200);
         expect(response.body.data.completions[0].completedTodos).toBe(1);
         expect(response.body.data.completions[0].completionRate).toBe(50);
@@ -418,39 +414,37 @@ describe("일일 달성 E2E", () => {
 
     describe("GET /daily-completions/friends/:userId - 친구 일일 완료 현황 조회", () => {
       it("인증 없이 접근 시 401 반환", async () => {
-        // Given - 인증되지 않은 상태
-
-        // When - 인증 토큰 없이 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions/friends/clz7x5p8k0001qz0z8z8z8z8z8")
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
-        // Then - 401 Unauthorized 반환
+        // Then
         expect(response.status).toBe(401);
       });
 
       it("맞팔 관계가 아니면 403 반환", async () => {
-        // Given - 팔로우 관계가 없는 두 사용자 준비
+        // Given
         const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer1@test.com", password);
         const stranger = await ctx.helpers.createVerifiedUser(
           "dc-friend-stranger@test.com",
           password,
         );
 
-        // When - 맞팔이 아닌 사용자의 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${stranger.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query({ startDate: "2026-01-01", endDate: "2026-01-31" });
 
-        // Then - 403 Forbidden (FOLLOW_0906) 반환
+        // Then
         expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
         expect(response.body.error.code).toBe("FOLLOW_0906");
       });
 
       it("맞팔이면 친구의 PUBLIC 할 일만 집계해 반환한다", async () => {
-        // Given - 맞팔 관계인 두 사용자와 친구의 PUBLIC/PRIVATE 할 일 준비
+        // Given
         const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer2@test.com", password);
         const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner@test.com", password);
         await ctx.helpers.createFriendship(viewer, friend);
@@ -494,13 +488,14 @@ describe("일일 달성 E2E", () => {
           visibility: "PRIVATE",
         });
 
-        // When - 친구의 6월 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
           .query({ startDate: "2026-06-01", endDate: "2026-06-30" });
 
-        // Then - PUBLIC 기준으로만 집계되어 PRIVATE 존재가 드러나지 않음
+        // Then
+        // PUBLIC 기준으로만 집계되어 PRIVATE 존재가 드러나지 않음
         expect(response.status).toBe(200);
         const { completions, totalCompleteDays } = response.body.data;
 
@@ -520,7 +515,7 @@ describe("일일 달성 E2E", () => {
       });
 
       it("내 완료 현황 조회는 PRIVATE을 포함해 친구용 조회와 독립적이다", async () => {
-        // Given - 맞팔 친구가 PUBLIC 1개(완료) + PRIVATE 1개(미완료) 보유
+        // Given
         const viewer = await ctx.helpers.createVerifiedUser("dc-friend-viewer3@test.com", password);
         const friend = await ctx.helpers.createVerifiedUser("dc-friend-owner2@test.com", password);
         await ctx.helpers.createFriendship(viewer, friend);
@@ -537,7 +532,7 @@ describe("일일 달성 E2E", () => {
           visibility: "PRIVATE",
         });
 
-        // When - 뷰어가 친구용으로, 친구 본인이 내 것으로 각각 조회
+        // When
         const friendView = await request(ctx.app.getHttpServer())
           .get(`/v1/daily-completions/friends/${friend.userId}`)
           .set("Authorization", `Bearer ${viewer.accessToken}`)
@@ -547,14 +542,15 @@ describe("일일 달성 E2E", () => {
           .set("Authorization", `Bearer ${friend.accessToken}`)
           .query({ startDate: "2026-07-01", endDate: "2026-07-01" });
 
-        // Then - 친구용은 PUBLIC 기준 완료(물고기), 본인은 전체 기준 미완료
+        // Then
+        // 친구용은 PUBLIC 기준 완료(물고기), 본인은 전체 기준 미완료
         expect(friendView.body.data.completions[0].isComplete).toBe(true);
         expect(ownerView.body.data.completions[0].totalTodos).toBe(2);
         expect(ownerView.body.data.completions[0].isComplete).toBe(false);
       });
 
       it("친구용 캐시 생성 후 PUBLIC을 PRIVATE으로 바꾸면 같은 범위에서 즉시 사라진다", async () => {
-        // Given - 맞팔 친구의 완료된 PUBLIC 할 일과 캐시된 친구 완료 현황
+        // Given
         const viewer = await ctx.helpers.createVerifiedUser(
           "dc-visibility-private-viewer@test.com",
           password,
@@ -579,7 +575,7 @@ describe("일일 달성 E2E", () => {
           .expect(200);
         expect(cached.body.data.completions).toHaveLength(1);
 
-        // When - 소유자가 공개 할 일을 비공개로 변경한 뒤 같은 조건으로 재조회
+        // When
         await request(ctx.app.getHttpServer())
           .patch(`/v1/todos/${todo.id}/visibility`)
           .set("Authorization", `Bearer ${friend.accessToken}`)
@@ -591,13 +587,14 @@ describe("일일 달성 E2E", () => {
           .query(query)
           .expect(200);
 
-        // Then - 기존 공개 집계가 캐시 TTL 동안 노출되지 않음
+        // Then
+        // 기존 공개 집계가 캐시 TTL 동안 노출되지 않음
         expect(refreshed.body.data.completions).toEqual([]);
         expect(refreshed.body.data.totalCompleteDays).toBe(0);
       });
 
       it("친구용 빈 캐시 생성 후 PRIVATE을 PUBLIC으로 바꾸면 같은 범위에 즉시 나타난다", async () => {
-        // Given - 맞팔 친구의 완료된 PRIVATE 할 일과 캐시된 빈 친구 완료 현황
+        // Given
         const viewer = await ctx.helpers.createVerifiedUser(
           "dc-visibility-public-viewer@test.com",
           password,
@@ -622,7 +619,7 @@ describe("일일 달성 E2E", () => {
           .expect(200);
         expect(cached.body.data.completions).toEqual([]);
 
-        // When - 소유자가 비공개 할 일을 공개로 변경한 뒤 같은 조건으로 재조회
+        // When
         await request(ctx.app.getHttpServer())
           .patch(`/v1/todos/${todo.id}/visibility`)
           .set("Authorization", `Bearer ${friend.accessToken}`)
@@ -634,7 +631,8 @@ describe("일일 달성 E2E", () => {
           .query(query)
           .expect(200);
 
-        // Then - 빈 캐시가 제거되어 현재 공개 집계를 반환함
+        // Then
+        // 빈 캐시가 제거되어 현재 공개 집계를 반환함
         expect(refreshed.body.data.completions).toHaveLength(1);
         expect(refreshed.body.data.completions[0]).toMatchObject({
           date: "2026-08-02",
@@ -648,7 +646,7 @@ describe("일일 달성 E2E", () => {
 
     describe("월간 캘린더 시나리오", () => {
       it("월간 조회 시 물고기 개수 정확히 계산하고 UI 매핑 데이터 검증", async () => {
-        // Given - 5월에 7일간 다양한 완료율의 Todo 준비 (100% 완료 4일)
+        // Given
         const user = await ctx.helpers.createVerifiedUser("dc-calendar@test.com", password);
         const accessToken = user.accessToken;
 
@@ -660,13 +658,13 @@ describe("일일 달성 E2E", () => {
         await createTodosForDate(accessToken, "2026-05-25", 6, 3); // 50%
         await createTodosForDate(accessToken, "2026-05-31", 2, 2); // 100%
 
-        // When - 5월 전체 기간 완료 현황 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/daily-completions")
           .set("Authorization", `Bearer ${accessToken}`)
           .query({ startDate: "2026-05-01", endDate: "2026-05-31" });
 
-        // Then - 7개 날짜와 4일의 100% 완료일 반환
+        // Then
         expect(response.status).toBe(200);
         const { completions, totalCompleteDays } = response.body.data;
 
@@ -680,7 +678,6 @@ describe("일일 달성 E2E", () => {
         const completeDays = completions.filter((c: { isComplete: boolean }) => c.isComplete);
         expect(completeDays.length).toBe(4);
 
-        // Then - 각 날짜별 UI 표시 로직에 맞는 데이터 검증
         for (const completion of completions) {
           const incompleteTodos = completion.totalTodos - completion.completedTodos;
 

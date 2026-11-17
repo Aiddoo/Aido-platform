@@ -322,7 +322,8 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
   }
 
   it("설정 행이 없는 사용자의 리마인더도 단건 publish와 같이 단건 발송 경로로 넣는다", async () => {
-    // Given: 단건 경로는 설정 행이 없으면 기본 설정(푸시 켬)으로 보낸다
+    // Given
+    // 단건 경로는 설정 행이 없으면 기본 설정(푸시 켬)으로 보낸다
     const id = await seedTodo(0, "10:00");
     await client.delete(userPreference).where(eq(userPreference.userId, userId));
     // When

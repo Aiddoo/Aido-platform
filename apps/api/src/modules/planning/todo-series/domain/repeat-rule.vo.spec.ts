@@ -237,9 +237,11 @@ describe("RepeatRule — 반복 규칙", () => {
         build: () => RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 0 } }),
       },
     ])("$field가 맞지 않으면 TODO_0845다", ({ field, build }) => {
-      // When / Then
-      expect(build).toThrow(DomainException);
-      expect(build).toThrow(
+      // When
+      const create = build;
+      // Then
+      expect(create).toThrow(DomainException);
+      expect(create).toThrow(
         expect.objectContaining({ errorCode: ErrorCode.TODO_0845, details: { field } }),
       );
     });
@@ -266,27 +268,26 @@ describe("RepeatRule — 반복 규칙", () => {
         interval: 1,
         end: NEVER,
       });
-      // When / Then
-      expect(
-        rule.equals(
-          RepeatRule.create({
-            frequency: "WEEKLY",
-            weekdays: ["FRI", "MON"],
-            interval: 1,
-            end: NEVER,
-          }),
-        ),
-      ).toBe(true);
-      expect(
-        rule.equals(
-          RepeatRule.create({
-            frequency: "WEEKLY",
-            weekdays: ["MON", "FRI"],
-            interval: 2,
-            end: NEVER,
-          }),
-        ),
-      ).toBe(false);
+      // When
+      const equalsReordered = rule.equals(
+        RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["FRI", "MON"],
+          interval: 1,
+          end: NEVER,
+        }),
+      );
+      const equalsOtherInterval = rule.equals(
+        RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["MON", "FRI"],
+          interval: 2,
+          end: NEVER,
+        }),
+      );
+      // Then
+      expect(equalsReordered).toBe(true);
+      expect(equalsOtherInterval).toBe(false);
     });
 
     it("toSpec은 from의 역변환이다", () => {
@@ -297,8 +298,10 @@ describe("RepeatRule — 반복 규칙", () => {
         weekdays: ["TUE"],
         end: { type: "UNTIL", date: "2027-01-01" },
       };
-      // When / Then
-      expect(RepeatRule.create(spec).toSpec()).toEqual(spec);
+      // When
+      const roundTrip = RepeatRule.create(spec).toSpec();
+      // Then
+      expect(roundTrip).toEqual(spec);
     });
 
     it("분할 뒤 횟수 종료는 앞쪽에서 쓴 만큼 줄어든다", () => {

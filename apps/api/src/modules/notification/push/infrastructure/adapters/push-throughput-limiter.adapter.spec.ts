@@ -15,7 +15,7 @@ function createClock() {
 
 describe("PushThroughputLimiterAdapter — 공급자 초당 한도", () => {
   it("초당 한도 안의 발송은 기다리지 않고 넘는 만큼만 기다린다", async () => {
-    // Given: 초당 500건, 100건씩 7번 보낸다
+    // Given
     const clock = createClock();
     const limiter = new PushThroughputLimiterAdapter({ messagesPerSecond: 500, ...clock });
 
@@ -24,7 +24,8 @@ describe("PushThroughputLimiterAdapter — 공급자 초당 한도", () => {
       await limiter.acquire(100);
     }
 
-    // Then: 처음 500건은 바로, 나머지 200건은 각각 0.2초씩 기다린다
+    // Then
+    // 처음 500건은 바로, 나머지 200건은 각각 0.2초씩 기다린다
     expect(clock.sleeps).toEqual([200, 200]);
     expect(clock.now()).toBe(400);
   });

@@ -752,7 +752,8 @@ describe.each(LOCALES)("%s 알림함 다시 렌더링", (locale) => {
 
   it.each(NOTIFICATION_COPY_CASES)("%s", (_name, create) => {
     for (const { seed, message } of renderEveryVariant(create, locale)) {
-      // Given - 저장했다 읽은 것처럼 JSON을 거친 사실
+      // Given
+      // 저장했다 읽은 것처럼 JSON을 거친 사실
       const other = create(otherLocale, variantContextOf(seed));
       const stored = {
         copyKey: message.copyKey,
@@ -763,7 +764,7 @@ describe.each(LOCALES)("%s 알림함 다시 렌더링", (locale) => {
       const sameLocale = renderNotificationCopy(stored, locale);
       const switchedLocale = renderNotificationCopy(stored, otherLocale);
 
-      // Then - 같은 언어는 푸시 문구 그대로, 다른 언어는 그 언어로 만든 푸시 문구와 같다
+      // Then
       expect(other.copyKey).toBe(message.copyKey);
       expect(other.copyFacts).toEqual(message.copyFacts);
       expect(sameLocale).toEqual({ title: message.title, body: message.body });

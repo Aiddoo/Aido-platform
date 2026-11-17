@@ -11,11 +11,18 @@ const props = {
 };
 describe("EmailMessage", () => {
   it.each(["to", "subject"])("빈 %s는 기존 SYS_0002 규칙으로 거절한다", (field) => {
-    expect(() => EmailMessage.create({ ...props, [field]: " " })).toThrow();
+    // When
+    const create = () => EmailMessage.create({ ...props, [field]: " " });
+
+    // Then
+    expect(create).toThrow();
   });
   it("입력 및 반환 태그의 변경이 검증된 메시지 snapshot을 바꾸지 않는다", () => {
+    // Given
     const tags = [{ name: "type", value: "verification" }];
     const message = EmailMessage.create({ ...props, tags });
+
+    // When
     if (tags[0] != null) {
       tags[0].value = "changed";
     }
@@ -23,6 +30,8 @@ describe("EmailMessage", () => {
     if (output[0] != null) {
       Object.assign(output[0], { value: "changed-again" });
     }
+
+    // Then
     expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
     expect(message.idempotencyKey).toBe("message-1");
   });

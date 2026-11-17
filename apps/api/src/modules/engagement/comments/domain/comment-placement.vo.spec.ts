@@ -61,7 +61,7 @@ describe("CommentPlacement", () => {
   });
 
   it("저장된 답글 대상이 비면 묶음 머리에 단 답글로 복원한다", () => {
-    // Given / When
+    // When
     const placement = CommentPlacement.reconstitute({
       parentId: COMMENT_ID,
       replyToCommentId: null,
@@ -76,11 +76,12 @@ describe("CommentPlacement", () => {
   });
 
   it("묶음 머리가 없으면 댓글이다", () => {
-    // Given / When / Then
-    expect(CommentPlacement.reconstitute({ parentId: null, replyToCommentId: null }).value).toEqual(
-      {
-        kind: "COMMENT",
-      },
-    );
+    // When
+    const placement = CommentPlacement.reconstitute({ parentId: null, replyToCommentId: null });
+
+    // Then
+    expect(placement.value).toEqual({
+      kind: "COMMENT",
+    });
   });
 });

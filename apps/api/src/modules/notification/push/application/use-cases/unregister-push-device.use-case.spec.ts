@@ -44,7 +44,7 @@ function setup() {
 
 describe("UnregisterPushDeviceUseCase — 푸시 기기 해제", () => {
   it("deviceId가 있으면 그 기기의 기록과 토큰만 지우고 토큰 캐시를 비운다", async () => {
-    // Given 기기 두 대
+    // Given
     const { devices, tokens, cache, useCase } = setup();
 
     // When

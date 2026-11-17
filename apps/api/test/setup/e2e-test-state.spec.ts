@@ -4,7 +4,7 @@ import { createE2eTestStateResetter } from "../e2e/helpers/e2e-test-state.js";
 
 describe("E2E 테스트 상태 reset", () => {
   it("DB, cache, 공용 fake와 suite fake를 모두 초기화해야 한다", async () => {
-    // Given - 상태를 가진 모든 테스트 의존성
+    // Given
     const cleanupDatabase = vi.fn().mockResolvedValue(undefined);
     const resetCache = vi.fn().mockResolvedValue(undefined);
     const clearEmail = vi.fn();
@@ -18,10 +18,10 @@ describe("E2E 테스트 상태 reset", () => {
       additionalResetters: [clearSuiteFake],
     });
 
-    // When - 단일 reset 진입점 호출
+    // When
     await reset();
 
-    // Then - 모든 상태 저장소가 정확히 한 번 초기화
+    // Then
     expect(cleanupDatabase).toHaveBeenCalledTimes(1);
     expect(resetCache).toHaveBeenCalledTimes(1);
     expect(clearEmail).toHaveBeenCalledTimes(1);
@@ -31,7 +31,7 @@ describe("E2E 테스트 상태 reset", () => {
   });
 
   it("백그라운드 작업을 모두 기다린 뒤 DB를 초기화해야 한다", async () => {
-    // Given - push 저장 작업이 아직 진행 중인 상태
+    // Given
     let backgroundWorkCompleted = false;
     const drainBackgroundWork = vi.fn(async () => {
       await Promise.resolve();
@@ -50,7 +50,7 @@ describe("E2E 테스트 상태 reset", () => {
     // When
     await reset();
 
-    // Then - truncate보다 drain이 항상 선행
+    // Then
     expect(drainBackgroundWork).toHaveBeenCalledTimes(1);
     expect(cleanupDatabase).toHaveBeenCalledTimes(1);
   });
@@ -58,6 +58,7 @@ describe("E2E 테스트 상태 reset", () => {
   it("백그라운드 drain이 실패해도 DB를 포함한 모든 상태를 초기화하고 에러를 보고해야 한다", async () => {
     // drain 실패 시 TRUNCATE를 건너뛰면 오염이 다음 테스트로 전파되므로
     // DB 정리는 항상 수행하고, drain 에러는 AggregateError로 함께 드러낸다
+    // Given
     const drainError = new Error("drain failed");
     const drainBackgroundWork = vi.fn().mockRejectedValue(drainError);
     const cleanupDatabase = vi.fn();
@@ -70,7 +71,11 @@ describe("E2E 테스트 상태 reset", () => {
       sharedResetters: [clearFake],
     });
 
-    await expect(reset()).rejects.toMatchObject({
+    // When
+    const result = reset();
+
+    // Then
+    await expect(result).rejects.toMatchObject({
       errors: [drainError, expect.objectContaining({ message: "cache failed" })],
     });
     expect(cleanupDatabase).toHaveBeenCalledTimes(1);
@@ -84,6 +89,7 @@ describe("E2E 테스트 상태 reset", () => {
     afterEach(() => vi.useRealTimers());
 
     it("정착하지 않는 drain을 끊고 어느 단계였는지 말한다", async () => {
+      // Given
       const cleanupDatabase = vi.fn();
       const reset = createE2eTestStateResetter({
         drainBackgroundWork: neverSettles,
@@ -93,18 +99,22 @@ describe("E2E 테스트 상태 reset", () => {
         timeoutMs: 20,
       });
 
+      // When
       const assertion = expect(reset()).rejects.toMatchObject({
         errors: [
           expect.objectContaining({ message: expect.stringMatching(/drainBackgroundWork.*20ms/) }),
         ],
       });
       await vi.advanceTimersByTimeAsync(20);
+
+      // Then
       await assertion;
       // drain이 끊겨도 DB 정리는 여전히 수행된다 — 오염을 다음 테스트로 넘기지 않는다.
       expect(cleanupDatabase).toHaveBeenCalledTimes(1);
     });
 
     it("어느 단계가 멈추든 이름과 함께 실패한다", async () => {
+      // Given
       const reset = createE2eTestStateResetter({
         cleanupDatabase: vi.fn(),
         resetCache: neverSettles,
@@ -112,13 +122,17 @@ describe("E2E 테스트 상태 reset", () => {
         timeoutMs: 20,
       });
 
+      // When
       const assertion = expect(reset()).rejects.toMatchObject({
         errors: [expect.objectContaining({ message: expect.stringMatching(/resetCache.*20ms/) })],
       });
       await vi.advanceTimersByTimeAsync(20);
+
+      // Then
       await assertion;
     });
     it("timeout 이후 같은 상태를 다시 사용하지 않는다", async () => {
+      // Given
       const cleanupDatabase = vi.fn();
       const reset = createE2eTestStateResetter({
         cleanupDatabase,
@@ -129,7 +143,12 @@ describe("E2E 테스트 상태 reset", () => {
       const assertion = expect(reset()).rejects.toBeInstanceOf(AggregateError);
       await vi.advanceTimersByTimeAsync(20);
       await assertion;
-      await expect(reset()).rejects.toBeInstanceOf(AggregateError);
+
+      // When
+      const result = reset();
+
+      // Then
+      await expect(result).rejects.toBeInstanceOf(AggregateError);
       expect(cleanupDatabase).toHaveBeenCalledTimes(1);
     });
   });

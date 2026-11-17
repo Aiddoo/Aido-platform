@@ -226,7 +226,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   });
 
   it("가용성 조회가 실패한 칸은 1분 동안 가용성을 다시 묻지 않고 기본 dataset으로 바로 진행한다", async () => {
-    // Given 가용성 503 뒤 날씨 성공, 리포트 캐시는 없는 상태로 다시 부른다
+    // Given
+    // 가용성 503 뒤 날씨 성공, 리포트 캐시는 없는 상태로 다시 부른다
     const { provider, requests } = createProvider([
       jsonResponse({ reason: "unavailable" }, 503),
       jsonResponse(WeatherKitReportFixture.seoulRain()),

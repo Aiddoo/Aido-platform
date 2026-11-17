@@ -122,7 +122,8 @@ describe("ReconfirmMarketingConsentsUseCase — 광고성 수신 동의 2년 재
   });
 
   it("현지 야간인 사용자는 표시하지 않고 남겨, 낮이 된 다음 실행에서 알린다", async () => {
-    // Given: 런던은 지금 야간(02:00), 서울은 낮(11:00)
+    // Given
+    // 런던은 지금 야간(02:00), 서울은 낮(11:00)
     const quietUserIds = new Set(["user-london"]);
     const { useCase, sent } = createReconfirm(
       [

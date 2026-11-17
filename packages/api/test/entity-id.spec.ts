@@ -19,7 +19,7 @@ describe("ENTITY_ID_PATTERN — 서버가 발급한 엔티티 ID", () => {
     { label: "옛 CUID v1(25자)", id: LEGACY_CUID_V1 },
     { label: "29자인 옛 사용자 ID", id: `${LEGACY_LONG_USER_ID}z` },
   ])("$label을 받는다", ({ id }) => {
-    // Given / When
+    // When
     const matched = ENTITY_ID_PATTERN.test(id);
 
     // Then
@@ -33,7 +33,7 @@ describe("ENTITY_ID_PATTERN — 서버가 발급한 엔티티 ID", () => {
     { label: "c로 시작하지 않는 UUID", id: "0f3a9b2c-4d5e-4f70-8192-a3b4c5d6e7f8" },
     { label: "65자", id: `c${"a".repeat(64)}` },
   ])("$label은 거절한다", ({ id }) => {
-    // Given / When
+    // When
     const matched = ENTITY_ID_PATTERN.test(id);
 
     // Then
@@ -56,7 +56,7 @@ describe("출시 앱 요청이 엔티티 ID 규칙으로도 통과한다", () =>
   it.each([ISSUED_HEX_ID, LEGACY_CUID_V1])(
     "서버가 준 세션 ID %s로 세션 해제를 요청할 수 있다",
     (sessionId) => {
-      // Given / When
+      // When
       const result = revokeSessionSchema.safeParse({ sessionId });
 
       // Then

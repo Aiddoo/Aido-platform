@@ -64,7 +64,8 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
   });
 
   it("다른 실행이 먼저 단계를 처리했으면 알림을 만들지 않는다", async () => {
-    // Given: 후보로 읽은 뒤 표시하기 전에 다른 실행이 먼저 표시했다
+    // Given
+    // 후보로 읽은 뒤 표시하기 전에 다른 실행이 먼저 표시했다
     const { useCase, repository, publisher } = setup([candidate()]);
     repository.markStageOutboxed = async () => false;
 
@@ -113,7 +114,8 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
   });
 
   it("5분 간격 실행 사이에 결정할 때가 된 단계는 다음 실행이 빠짐없이 처리한다", async () => {
-    // Given: 10:30 실행 뒤 10:31·10:34에 D0 2시간이 차는 사용자와 몇 시간 전에 이미 찼던 사용자
+    // Given
+    // 10:30 실행 뒤 10:31·10:34에 D0 2시간이 차는 사용자와 몇 시간 전에 이미 찼던 사용자
     const { useCase, repository, publisher, clock } = setup([
       candidate({
         stageId: "due-at-1031",
@@ -160,7 +162,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
   });
 
   it("처리에 실패한 단계는 같은 실행에서 다시 읽지 않고 다음 실행에 남긴다", async () => {
-    // Given: 첫 묶음 전체가 실패하고 그 뒤에 처리할 단계가 하나 있다
+    // Given
     const stages = dueD1Stages(RETENTION_STAGE_SWEEP.BATCH_SIZE + 1);
     const { useCase, repository, publisher, logger } = setup(stages);
     repository.failingStageIds = new Set(

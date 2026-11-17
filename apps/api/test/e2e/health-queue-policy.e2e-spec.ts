@@ -28,8 +28,10 @@ describe("작업 큐 상태 확인 E2E", () => {
   });
 
   it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
+    // When
     const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
+    // Then
     expect(response.body.data.status).toBe("ok");
     expect(response.body.data.info.queues).toMatchObject({
       status: "up",
@@ -56,6 +58,7 @@ describe("작업 큐 상태 확인 E2E", () => {
   });
 
   it("backend 장애도 200/up을 유지하고 degraded 필드로만 알린다", async () => {
+    // Given
     health.mockResolvedValueOnce({
       backend: "postgres",
       degraded: true,
@@ -63,8 +66,10 @@ describe("작업 큐 상태 확인 E2E", () => {
       queues: {},
     });
 
+    // When
     const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
+    // Then
     expect(response.body.data.status).toBe("ok");
     expect(response.body.data.info.queues).toMatchObject({
       status: "up",

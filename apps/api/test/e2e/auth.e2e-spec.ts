@@ -51,8 +51,6 @@ describe("인증 E2E", () => {
     const testPassword = "Test1234!";
 
     it("POST /auth/register - 새 사용자 등록", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/auth/register")
@@ -163,7 +161,7 @@ describe("인증 E2E", () => {
     });
 
     it("POST /auth/resend-verification - 운영 응답에도 마지막 발급에서 남은 대기 초를 싣는다", async () => {
-      // Given - 가입이 코드를 보낸 20초 뒤
+      // Given
       const cooldownEmail = "resend-cooldown@example.com";
       const issuedAt = Temporal.Instant.from("2026-11-12T01:00:00Z");
       vi.useFakeTimers({ toFake: ["Date"] });
@@ -263,8 +261,6 @@ describe("인증 E2E", () => {
     });
 
     it("POST /auth/login - 존재하지 않는 이메일 거부", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/auth/login")
@@ -297,12 +293,11 @@ describe("인증 E2E", () => {
     });
 
     it("GET /auth/me - 토큰 없이 접근 거부", async () => {
-      // Given
-
       // When
+      const response = await request(ctx.app.getHttpServer()).get("/v1/auth/me");
 
       // Then
-      await request(ctx.app.getHttpServer()).get("/v1/auth/me").expect(401);
+      expect(response.status).toBe(401);
     });
 
     it("POST /auth/refresh - 토큰 갱신", async () => {
@@ -592,8 +587,6 @@ describe("인증 E2E", () => {
     });
 
     it("가입 이름이 공백만 있으면 400 SYS_0002", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/auth/register")
@@ -707,15 +700,13 @@ describe("인증 E2E", () => {
     });
 
     it("PATCH /auth/profile - 인증 없이 접근 거부", async () => {
-      // Given
-
       // When
+      const response = await request(ctx.app.getHttpServer())
+        .patch("/v1/auth/profile")
+        .send({ name: "테스트" });
 
       // Then
-      await request(ctx.app.getHttpServer())
-        .patch("/v1/auth/profile")
-        .send({ name: "테스트" })
-        .expect(401);
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/profile - 잘못된 URL 형식 거부", async () => {
@@ -968,8 +959,6 @@ describe("인증 E2E", () => {
 
   describe("카카오 웹 OAuth 플로우", () => {
     it("GET /auth/kakao/start - state 파라미터로 요청하면 카카오로 리다이렉트", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/auth/kakao/start")
@@ -983,8 +972,6 @@ describe("인증 E2E", () => {
     });
 
     it("GET /auth/kakao/start - state 파라미터 없이도 카카오로 리다이렉트", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/auth/kakao/start")
@@ -1051,8 +1038,6 @@ describe("인증 E2E", () => {
     });
 
     it("GET /auth/kakao/web-callback - code 없이 요청하면 딥링크로 에러 리다이렉트", async () => {
-      // Given
-
       // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/auth/kakao/web-callback")
@@ -1492,15 +1477,12 @@ describe("인증 E2E", () => {
     });
 
     it("여러 번 OAuth 로그인 시 각각 LoginAttempt 기록", async () => {
-      // Given
-
       // When
       await request(ctx.app.getHttpServer())
         .post("/v1/auth/kakao/callback")
         .send({ accessToken: "first-token-12345" })
         .expect(200);
 
-      // When
       await request(ctx.app.getHttpServer())
         .post("/v1/auth/google/callback")
         .send({ idToken: "second-token-12345" })
@@ -1605,6 +1587,7 @@ describe("인증 E2E", () => {
       // Then
       expect(morningResponse.body.data.morningReminderHour).toBe(8);
 
+      // When
       const eveningResponse = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1616,16 +1599,21 @@ describe("인증 E2E", () => {
     });
 
     it("GET /auth/preference - 인증 없이 접근 거부", async () => {
-      // Given
-      await request(ctx.app.getHttpServer()).get("/v1/auth/preference").expect(401);
+      // When
+      const response = await request(ctx.app.getHttpServer()).get("/v1/auth/preference");
+
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/preference - 인증 없이 접근 거부", async () => {
-      // Given
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/preference")
-        .send({ pushEnabled: true })
-        .expect(401);
+        .send({ pushEnabled: true });
+
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/preference - morningReminderHour 범위 초과 (12) → 400", async () => {
@@ -1636,11 +1624,13 @@ describe("인증 E2E", () => {
       );
 
       // When
-      await request(ctx.app.getHttpServer())
+      const response = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({ morningReminderHour: 12 })
-        .expect(400);
+        .send({ morningReminderHour: 12 });
+
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("PATCH /auth/preference - eveningReminderHour 범위 미달 (11) → 400", async () => {
@@ -1651,11 +1641,13 @@ describe("인증 E2E", () => {
       );
 
       // When
-      await request(ctx.app.getHttpServer())
+      const response = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/preference")
         .set("Authorization", `Bearer ${accessToken}`)
-        .send({ eveningReminderHour: 11 })
-        .expect(400);
+        .send({ eveningReminderHour: 11 });
+
+      // Then
+      expect(response.status).toBe(400);
     });
   });
 
@@ -1761,21 +1753,31 @@ describe("인증 E2E", () => {
     });
 
     it("GET /auth/consent - 인증 없이 접근 거부", async () => {
-      await request(ctx.app.getHttpServer()).get("/v1/auth/consent").expect(401);
+      // When
+      const response = await request(ctx.app.getHttpServer()).get("/v1/auth/consent");
+
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/consent/marketing - 인증 없이 접근 거부", async () => {
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/consent/marketing")
-        .send({ agreed: true })
-        .expect(401);
+        .send({ agreed: true });
+
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/consent/marketing-push - 인증 없이 접근 거부", async () => {
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/consent/marketing-push")
-        .send({ agreed: true })
-        .expect(401);
+        .send({ agreed: true });
+
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("PATCH /auth/consent/marketing - 잘못된 요청 본문", async () => {
@@ -1985,6 +1987,7 @@ describe("인증 E2E", () => {
         .send({ provider: "KAKAO", accessToken: "link-kakao-token" })
         .expect(200);
 
+      // Then
       expect(kakaoResponse.body.success).toBe(true);
       expect(kakaoResponse.body.data.message).toContain("연결");
 
@@ -2002,6 +2005,7 @@ describe("인증 E2E", () => {
         .send({ provider: "GOOGLE", idToken: "link-google-token" })
         .expect(200);
 
+      // Then
       expect(googleResponse.body.success).toBe(true);
 
       // When
@@ -2010,6 +2014,7 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
+      // Then
       expect(listResponse.body.success).toBe(true);
       expect(Array.isArray(listResponse.body.data.accounts)).toBe(true);
       expect(listResponse.body.data.accounts).toHaveLength(4);
@@ -2043,10 +2048,10 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
+      // Then
       expect(unlinkResponse.body.success).toBe(true);
       expect(unlinkResponse.body.data.message).toContain("해제");
 
-      // Then
       const afterUnlinkResponse = await request(ctx.app.getHttpServer())
         .get("/v1/auth/linked-accounts")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -2083,15 +2088,21 @@ describe("인증 E2E", () => {
     );
 
     it("미인증 요청은 401을 반환한다", async () => {
-      // Given
-      await request(ctx.app.getHttpServer())
+      // When
+      const linkResponse = await request(ctx.app.getHttpServer())
         .post("/v1/auth/link")
-        .send({ provider: "KAKAO", accessToken: "some-token" })
-        .expect(401);
+        .send({ provider: "KAKAO", accessToken: "some-token" });
+      const linkedAccountsResponse = await request(ctx.app.getHttpServer()).get(
+        "/v1/auth/linked-accounts",
+      );
+      const unlinkResponse = await request(ctx.app.getHttpServer()).delete(
+        "/v1/auth/linked-accounts/KAKAO",
+      );
 
-      await request(ctx.app.getHttpServer()).get("/v1/auth/linked-accounts").expect(401);
-
-      await request(ctx.app.getHttpServer()).delete("/v1/auth/linked-accounts/KAKAO").expect(401);
+      // Then
+      expect(linkResponse.status).toBe(401);
+      expect(linkedAccountsResponse.status).toBe(401);
+      expect(unlinkResponse.status).toBe(401);
     });
 
     it("토큰 검증 실패 시 에러를 반환한다", async () => {
@@ -2566,7 +2577,6 @@ describe("인증 E2E", () => {
         })
         .where(eq(userTable.email, deleteEmail));
 
-      // When
       const expiredResponse = await request(ctx.app.getHttpServer())
         .post("/v1/auth/login")
         .send({ email: deleteEmail, password: deletePassword })
@@ -2927,20 +2937,21 @@ describe("인증 E2E", () => {
     });
 
     it("인증되지 않은 요청은 401 반환", async () => {
-      // Given
-
       // When
-      await request(ctx.app.getHttpServer()).post("/v1/auth/password/setup-code").expect(401);
-
-      // When
-      await request(ctx.app.getHttpServer())
+      const setupCodeResponse = await request(ctx.app.getHttpServer()).post(
+        "/v1/auth/password/setup-code",
+      );
+      const passwordResponse = await request(ctx.app.getHttpServer())
         .post("/v1/auth/password")
         .send({
           code: "123456",
           newPassword: "NewPassword1",
           newPasswordConfirm: "NewPassword1",
-        })
-        .expect(401);
+        });
+
+      // Then
+      expect(setupCodeResponse.status).toBe(401);
+      expect(passwordResponse.status).toBe(401);
     });
   });
 });

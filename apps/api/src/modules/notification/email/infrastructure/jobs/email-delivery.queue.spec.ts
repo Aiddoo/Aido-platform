@@ -17,16 +17,26 @@ describe("이메일 발송 큐 계약", () => {
   });
 
   it("모양이 틀린 잡은 schema가 거절해 발송 handler에 오지 않는다", () => {
-    expect(EmailDeliveryJobSchema.safeParse({ deliveryId: "x" }).success).toBe(false);
-    expect(
-      EmailDeliveryJobSchema.safeParse({ deliveryId: "x", kind: "unknown", sealed: "v1:x" })
-        .success,
-    ).toBe(false);
+    // When
+    const missingFields = EmailDeliveryJobSchema.safeParse({ deliveryId: "x" });
+    const unknownKind = EmailDeliveryJobSchema.safeParse({
+      deliveryId: "x",
+      kind: "unknown",
+      sealed: "v1:x",
+    });
+
+    // Then
+    expect(missingFields.success).toBe(false);
+    expect(unknownKind.success).toBe(false);
   });
 
   it("재시도는 큐 한 층에서만 하도록 같은 이름에 4회·5초 지수 backoff로 정의하고 DLQ는 없다", () => {
-    expect(EMAIL_DELIVERY_QUEUE.name).toBe("email-delivery.v1");
-    expect(EMAIL_DELIVERY_QUEUE.retry).toEqual({
+    // When
+    const queue = EMAIL_DELIVERY_QUEUE;
+
+    // Then
+    expect(queue.name).toBe("email-delivery.v1");
+    expect(queue.retry).toEqual({
       retryLimit: 4,
       retryDelaySeconds: 5,
       retryBackoff: true,
@@ -34,7 +44,7 @@ describe("이메일 발송 큐 계약", () => {
       retentionSeconds: 3600,
       deleteAfterSeconds: 3600,
     });
-    expect(EMAIL_DELIVERY_QUEUE.deadLetter).toBeUndefined();
-    expect(EMAIL_DELIVERY_QUEUE.worker).toEqual({ localConcurrency: 2, pollingIntervalSeconds: 2 });
+    expect(queue.deadLetter).toBeUndefined();
+    expect(queue.worker).toEqual({ localConcurrency: 2, pollingIntervalSeconds: 2 });
   });
 });

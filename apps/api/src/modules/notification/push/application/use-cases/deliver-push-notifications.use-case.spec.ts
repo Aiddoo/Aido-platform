@@ -771,10 +771,12 @@ describe("DeliverPushNotificationsUseCase — 저장된 Push 발송 처리", () 
     expect(fixture.unitOfWork.runCount).toBe(4);
     fixture.expectPersistenceInsideUnitOfWork();
 
-    // When - 다음 실행에 다시 claim된 저장 문구를 payload mapper로 변환한다(DB claim·rollback이 아니라 문자열 전달 계약만 본다)
+    // When
+    // 다음 실행에 다시 claim된 저장 문구를 payload mapper로 변환한다(DB claim·rollback이 아니라 문자열 전달 계약만 본다)
     await fixture.useCase.execute(createExecutionInput([claimed]));
 
-    // Then - 현재 catalog revision·수신자 설정으로 다시 만들지 않는다
+    // Then
+    // 현재 catalog revision·수신자 설정으로 다시 만들지 않는다
     const retried = fixture.delivery.deliverSingleInputs[1];
     expect(retried?.payload).toMatchObject({
       title: "이전 버전에서 저장한 제목",

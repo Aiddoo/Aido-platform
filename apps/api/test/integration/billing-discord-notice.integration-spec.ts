@@ -266,8 +266,11 @@ describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
     const deleted = UserFixture.create({ deletedAt: instantFromDate(AT) });
     await client.insert(userTable).values(deleted);
 
-    // When / Then
-    await expect(reader.findById(UserId.reconstitute(deleted.id))).resolves.toBeNull();
+    // When
+    const found = await reader.findById(UserId.reconstitute(deleted.id));
+
+    // Then
+    expect(found).toBeNull();
   });
 
   it("프로필·계정이 없는 사용자는 닉네임·가입 방식을 비운다", async () => {

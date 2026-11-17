@@ -331,7 +331,9 @@ describe("업체 공통 구조화 출력 규칙", () => {
     { name: "voice-note-digest ko", system: VOICE_NOTE_DIGEST_SYSTEM_KO },
     { name: "voice-note-digest en", system: VOICE_NOTE_DIGEST_SYSTEM_EN },
   ])("$name 지시문은 칸을 생략하라고 하지 않는다", ({ system }) => {
+    // When
+    const instruction = system;
     // Then
-    expect(system).not.toMatch(/\bomit|생략/i);
+    expect(instruction).not.toMatch(/\bomit|생략/i);
   });
 });

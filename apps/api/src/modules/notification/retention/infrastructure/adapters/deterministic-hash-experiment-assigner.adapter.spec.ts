@@ -63,17 +63,31 @@ describe("DeterministicHashExperimentAssignerAdapter — 결정적 실험 배정
   });
 
   it("기록해 둔 사용자의 구간 경계에서 실험군이 바뀌지 않는다", () => {
-    // Given / When / Then: "user-stable"은 30번, "clz7x5p8k0031qz0z8z8z8z8z"는 10번 구간이다
-    expect(assignRetention("user-stable", 30)).toBe("CONTROL");
-    expect(assignRetention("user-stable", 31)).toBe("TREATMENT");
-    expect(assignRetention("clz7x5p8k0031qz0z8z8z8z8z", 10)).toBe("CONTROL");
-    expect(assignRetention("clz7x5p8k0031qz0z8z8z8z8z", 11)).toBe("TREATMENT");
+    // When
+    const stableAtBoundary = assignRetention("user-stable", 30);
+    const stableAboveBoundary = assignRetention("user-stable", 31);
+    const cuidAtBoundary = assignRetention("clz7x5p8k0031qz0z8z8z8z8z", 10);
+    const cuidAboveBoundary = assignRetention("clz7x5p8k0031qz0z8z8z8z8z", 11);
+
+    // Then
+    // "user-stable"은 30번, "clz7x5p8k0031qz0z8z8z8z8z"는 10번 구간이다
+    expect(stableAtBoundary).toBe("CONTROL");
+    expect(stableAboveBoundary).toBe("TREATMENT");
+    expect(cuidAtBoundary).toBe("CONTROL");
+    expect(cuidAboveBoundary).toBe("TREATMENT");
   });
 
   it("같은 대상은 항상 같은 실험군이고 비율 0과 100의 경계를 지킨다", () => {
-    expect(assignRetention("user-stable", 50)).toBe(assignRetention("user-stable", 50));
-    expect(assignRetention("user-a", 0)).toBe("CONTROL");
-    expect(assignRetention("user-a", 100)).toBe("TREATMENT");
+    // When
+    const first = assignRetention("user-stable", 50);
+    const repeated = assignRetention("user-stable", 50);
+    const noTreatment = assignRetention("user-a", 0);
+    const allTreatment = assignRetention("user-a", 100);
+
+    // Then
+    expect(first).toBe(repeated);
+    expect(noTreatment).toBe("CONTROL");
+    expect(allTreatment).toBe("TREATMENT");
   });
 
   it("새 실험은 실험 key를 섞어 같은 사용자도 실험마다 다른 구간에 놓인다", () => {
@@ -91,14 +105,18 @@ describe("DeterministicHashExperimentAssignerAdapter — 결정적 실험 배정
         assigner.assign({ experimentKey: "copy_test_2", subjectId, variants }),
     ).length;
 
-    // Then: 독립이면 절반 근처다
+    // Then
+    // 독립이면 절반 근처다
     expect(sameAcrossExperiments).toBeGreaterThan(400);
     expect(sameAcrossExperiments).toBeLessThan(600);
   });
 
   it("비중이 있는 실험군이 없으면 배정하지 않는다", () => {
-    expect(() =>
-      assigner.assign({ experimentKey: "empty", subjectId: "user-a", variants: [] }),
-    ).toThrow();
+    // When
+    const assign = () =>
+      assigner.assign({ experimentKey: "empty", subjectId: "user-a", variants: [] });
+
+    // Then
+    expect(assign).toThrow();
   });
 });

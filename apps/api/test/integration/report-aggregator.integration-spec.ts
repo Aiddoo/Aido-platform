@@ -372,34 +372,39 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     });
   });
   it("활성 UoW의 미커밋 쓰기를 읽고 롤백 후 조회에 노출하지 않는다", async () => {
+    // Given
     const params = createParams();
     const category = await client.query.todoCategory.findFirst({ where: { userId: testUserId } });
     if (category === undefined) {
       throw new Error("category fixture 누락");
     }
-    await expect(
-      uow.run(async () => {
-        await txHost.tx.insert(todo).values({
-          userId: testUserId,
-          categoryId: category.id,
-          title: "미커밋 할 일",
-          startDate: plainDateFromDate(params.startDate),
-          completed: true,
-          completedAt: Temporal.Instant.from("2026-02-23T23:30:00.000Z"),
-          updatedAt: nowInstant(),
-        });
-        const inputs = await reader.fetchAggregationInputs(params);
-        expect(
-          assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone, "기타")
-            .totalTodos,
-        ).toBe(1);
-        throw new Error("rollback");
-      }),
-    ).rejects.toThrow("rollback");
+
+    // When
+    const result = uow.run(async () => {
+      await txHost.tx.insert(todo).values({
+        userId: testUserId,
+        categoryId: category.id,
+        title: "미커밋 할 일",
+        startDate: plainDateFromDate(params.startDate),
+        completed: true,
+        completedAt: Temporal.Instant.from("2026-02-23T23:30:00.000Z"),
+        updatedAt: nowInstant(),
+      });
+      const inputs = await reader.fetchAggregationInputs(params);
+      expect(
+        assembleAggregatedData(inputs, params.startDate, params.endDate, params.timezone, "기타")
+          .totalTodos,
+      ).toBe(1);
+      throw new Error("rollback");
+    });
+
+    // Then
+    await expect(result).rejects.toThrow("rollback");
     expect((await aggregate(params)).totalTodos).toBe(0);
   });
 
   it("UTC DATE 경계와 null 완료 시각을 유지하고 다른 사용자의 데이터를 제외한다", async () => {
+    // Given
     const params = createParams({ timezone: "Asia/Seoul" });
     await createTodo({ startDate: params.startDate, completed: true });
     await createTodo({
@@ -442,7 +447,11 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
       completedAt: instantFromDate(params.startDate),
       updatedAt: nowInstant(),
     });
+
+    // When
     const result = await aggregate(params);
+
+    // Then
     expect(result.totalTodos).toBe(2);
     expect(result.completedTodos).toBe(2);
     expect(result.timePatterns).toEqual([{ hour: 8, count: 1 }]);

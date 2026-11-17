@@ -110,16 +110,20 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   }));
 
   it("기존 사용자는 migration 이후에도 assignment가 자동 생성되지 않는다", async () => {
+    // Given
     const userId = await createUser("legacy01@example.com");
 
+    // When
     const assignmentCount = await db.query.retentionExperimentAssignment.findMany({
       where: { userId },
     });
 
+    // Then
     expect(assignmentCount).toHaveLength(0);
   });
 
   it("stage 후보를 N+1 없이 집계 projection으로 조회한다", async () => {
+    // Given
     const userId = await createUser("projection@example.com");
     await repository.enroll({
       userId: UserId.reconstitute(userId),
@@ -127,8 +131,10 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       startedAt: Temporal.Instant.from("2026-07-15T00:00:00Z"),
     });
 
+    // When
     const candidates = await repository.findDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
 
+    // Then
     expect(candidates).toHaveLength(4);
     expect(
       candidates.every(
@@ -143,6 +149,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   it("저장된 타임존이 잘못되어도 UTC로 조회하고 유효한 별칭은 보존한다", async () => {
+    // Given
     const invalidTimezoneUserId = await createUser("invalidtz@example.com");
     const aliasTimezoneUserId = await createUser("aliastz1@example.com");
     await Promise.all([
@@ -208,14 +215,16 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       }),
     ]);
 
+    // When
     const candidates = await repository.findDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
+
+    // Then
     const invalidTimezoneCandidates = candidates.filter(
       (candidate) => candidate.userId === invalidTimezoneUserId,
     );
     const aliasTimezoneCandidates = candidates.filter(
       (candidate) => candidate.userId === aliasTimezoneUserId,
     );
-
     expect(invalidTimezoneCandidates).toHaveLength(4);
     expect(
       invalidTimezoneCandidates.every(
@@ -231,7 +240,8 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   it("앱은 받지만 PG 시간대 목록에 없는 이름은 UTC로 조회해 묶음이 실패하지 않는다", async () => {
-    // Given: PG 목록 캐시에 Asia/Seoul이 없는 상황(DB tzdata가 앱보다 오래됨)을 만든다
+    // Given
+    // PG 목록 캐시에 Asia/Seoul이 없는 상황(DB tzdata가 앱보다 오래됨)을 만든다
     const cache = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
     await cache.set(
       RetentionCacheKey.postgresTimezoneNames(),
@@ -311,7 +321,8 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   it("결정할 때가 된 단계만 고르고 그 기준은 도메인 isRetentionStageDue와 같다", async () => {
-    // Given: 오프셋이 다른 시간대(30·45분 단위, DST, 날짜변경선, 잘못된 값)의 사용자가 같은 시각에 시작했다
+    // Given
+    // 오프셋이 다른 시간대(30·45분 단위, DST, 날짜변경선, 잘못된 값)의 사용자가 같은 시각에 시작했다
     const startedAt = Temporal.Instant.from("2026-03-07T13:17:00.000Z");
     const timezones = [
       "Asia/Seoul",
@@ -368,7 +379,8 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   it("sweep이 실행 사이와 놓친 실행 동안 결정할 때가 된 사용자를 모두 처리한다", async () => {
-    // Given: 10:00 KST(01:00Z) 실행 직후 2시간이 차는 D0 사용자들과, 1시간 동안 실행이 멈춘 사이에 찬 사용자
+    // Given
+    // 10:00 KST(01:00Z) 실행 직후 2시간이 차는 D0 사용자들과, 1시간 동안 실행이 멈춘 사이에 찬 사용자
     const firstRun = Temporal.Instant.from("2026-07-15T01:00:00Z");
     const startedAts = [
       "2026-07-14T23:00:30Z",
@@ -397,7 +409,8 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       logger: new SilentLogger(),
     });
 
-    // When: 01:00 실행, 01:05 실행, 그 뒤 01:10~01:40 실행을 놓치고 01:45 실행
+    // When
+    // 01:00 실행, 01:05 실행, 그 뒤 01:10~01:40 실행을 놓치고 01:45 실행
     await sweep.execute();
     const afterFirst = publisher.published.length;
     clock.advanceBy({ minutes: 5 });

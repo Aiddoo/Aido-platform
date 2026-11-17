@@ -59,13 +59,22 @@ describe("할 일 공개 범위 수정", () => {
   it("없는 할 일과 저장 후 사라진 응답은 기존 오류를 반환한다", async () => {
     // Given
     fixture.todoReadRepository.findByIdAndUserId = async () => null;
-    // When / Then
-    await expect(
-      useCase.execute({ id: 999, userId: fixture.userId, visibility: "PRIVATE" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
-    await expect(
-      useCase.execute({ id: 1, userId: fixture.userId, visibility: "PRIVATE" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const missingTodoResult = useCase.execute({
+      id: 999,
+      userId: fixture.userId,
+      visibility: "PRIVATE",
+    });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const missingResponseResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      visibility: "PRIVATE",
+    });
+    // Then
+    await expect(missingResponseResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)?.visibility).toBe("PRIVATE");
   });
 });

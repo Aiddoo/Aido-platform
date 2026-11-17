@@ -35,7 +35,8 @@ describe("GetReportStatusUseCase", () => {
   });
 
   it("남은 날은 시간이 아니라 사용자 달력 날짜로 센다", async () => {
-    // Given - 일요일 23:00 KST
+    // Given
+    // 일요일 23:00 KST
     const { useCase } = setup("2026-03-08T14:00:00Z");
 
     // When
@@ -48,7 +49,8 @@ describe("GetReportStatusUseCase", () => {
   });
 
   it("LA 일요일 저녁에는 LA 월요일 11:30을 다음 주간 리포트로 안내한다", async () => {
-    // Given - LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
+    // Given
+    // LA 2026-10-25(일) 18:00, 서울은 이미 월요일 10:00
     const { useCase } = setup("2026-10-26T01:00:00Z");
 
     // When
@@ -62,7 +64,8 @@ describe("GetReportStatusUseCase", () => {
   });
 
   it("서머타임이 끝난 뒤의 월요일 11:30은 PST 오프셋으로 계산한다", async () => {
-    // Given - LA 2026-11-01(일) 12:00 PST
+    // Given
+    // LA 2026-11-01(일) 12:00 PST
     const { useCase } = setup("2026-11-01T20:00:00Z");
 
     // When
@@ -74,7 +77,8 @@ describe("GetReportStatusUseCase", () => {
   });
 
   it("X-Timezone이 없으면 저장된 사용자 시간대를 쓴다", async () => {
-    // Given - 서울 2026-10-26(월) 07:00
+    // Given
+    // 서울 2026-10-26(월) 07:00
     const { useCase, localePreferenceReader } = setup("2026-10-25T22:00:00Z");
     localePreferenceReader.preferences.set(USER_ID, { timezone: "Asia/Seoul", locale: "ko" });
 

@@ -23,7 +23,7 @@ describe("SubscriptionPlanDomainService", () => {
     { planType: "ANNUAL" as const, expected: ["com.aido.pro.yearly"] },
     { planType: "MONTHLY" as const, expected: ["com.aido.pro.monthly"] },
   ])("$planType 요금제의 스토어 상품 ID를 반환한다", ({ planType, expected }) => {
-    // Given / When
+    // When
     const productIds = storeProductIdsOfPlan(planType);
 
     // Then

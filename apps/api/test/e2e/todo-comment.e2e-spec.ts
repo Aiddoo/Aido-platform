@@ -249,6 +249,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("focus 대화 cursor는 다른 root로 넘어가지 않고 page 경계 형제도 부모 lane으로 잇는다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const parentId = await writeComment(user.accessToken, todoId, "댓글");
@@ -258,12 +259,14 @@ describe("할 일 댓글 E2E", () => {
     }
     const unrelatedRoot = await writeComment(user.accessToken, todoId, "다른 최신 대화");
 
+    // When
     const firstPage = await getConversation(user.accessToken, todoId, {
       sort: "LATEST",
       size: 2,
       focusCommentId: parentId,
     });
 
+    // Then
     expect(firstPage.items.map((item) => item.comment.id)).toEqual([parentId, replies[0]]);
     expect(firstPage.pagination).toMatchObject({
       hasPrevious: false,
@@ -291,12 +294,14 @@ describe("할 일 댓글 E2E", () => {
     expect(firstPage.pagination.nextCursor).not.toBeNull();
     expect(firstPage.focus).toMatchObject({ commentId: parentId, itemIndex: 0 });
 
+    // When
     const secondPage = await getConversation(user.accessToken, todoId, {
       sort: "LATEST",
       size: 2,
       after: firstPage.pagination.nextCursor ?? "",
     });
 
+    // Then
     expect(secondPage.items.map((item) => item.comment.id)).toEqual([replies[1], replies[2]]);
     expect(secondPage.pagination).toMatchObject({
       hasPrevious: true,
@@ -323,17 +328,20 @@ describe("할 일 댓글 E2E", () => {
     expect(secondPage.pagination.previousCursor).not.toBeNull();
     expect(secondPage.items.some((item) => item.comment.id === unrelatedRoot)).toBe(false);
 
+    // When
     const previousPage = await getConversation(user.accessToken, todoId, {
       sort: "LATEST",
       size: 2,
       before: secondPage.pagination.previousCursor ?? "",
     });
 
+    // Then
     expect(previousPage.items.map((item) => item.comment.id)).toEqual([parentId, replies[0]]);
     expect(previousPage.pagination.hasNext).toBe(true);
   });
 
   it("LATEST와 POPULAR는 root block만 재정렬하고 block 내부 형제 순서를 보존한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const olderRoot = await writeComment(user.accessToken, todoId, "오래된 원문");
@@ -341,10 +349,13 @@ describe("할 일 댓글 E2E", () => {
     const secondReply = await writeComment(user.accessToken, todoId, "둘째 답글", olderRoot);
     const newerRoot = await writeComment(user.accessToken, todoId, "새 원문");
 
+    // When
     const latest = await getConversation(user.accessToken, todoId, {
       sort: "LATEST",
       size: 10,
     });
+
+    // Then
     expect(latest.items.map((item) => item.comment.id)).toEqual([
       newerRoot,
       olderRoot,
@@ -352,6 +363,7 @@ describe("할 일 댓글 E2E", () => {
       secondReply,
     ]);
 
+    // When
     await request(ctx.app.getHttpServer())
       .put(`/v1/todos/${todoId}/comments/${olderRoot}/likes`)
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -361,6 +373,8 @@ describe("할 일 댓글 E2E", () => {
       sort: "POPULAR",
       size: 10,
     });
+
+    // Then
     expect(popular.items.map((item) => item.comment.id)).toEqual([
       olderRoot,
       firstReply,
@@ -370,6 +384,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("overview는 묶음 단위 cursor와 owner 답글 preview, 남은 답글 수 요약을 제공한다", async () => {
+    // Given
     const owner = await ctx.helpers.createVerifiedUser("overview-owner@example.com", "Test1234!", {
       name: "할 일 주인",
     });
@@ -395,10 +410,13 @@ describe("할 일 댓글 E2E", () => {
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
 
+    // When
     const firstPage = await getOverview(owner.accessToken, todoId, {
       sort: "POPULAR",
       size: 1,
     });
+
+    // Then
     expect(firstPage.items).toHaveLength(1);
     expect(firstPage.items[0]).toMatchObject({
       comment: {
@@ -429,11 +447,14 @@ describe("할 일 댓글 E2E", () => {
       throw new Error("Overview first page must have a next cursor");
     }
 
+    // When
     const secondPage = await getOverview(owner.accessToken, todoId, {
       sort: "POPULAR",
       size: 1,
       after: nextCursor,
     });
+
+    // Then
     expect(secondPage.items).toMatchObject([
       {
         comment: { id: otherRootId },
@@ -555,6 +576,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("작성자만 수정하고 할 일 주인은 남의 댓글도 지우며, 허용된 viewer의 좋아요 상태는 conversation에 반영한다", async () => {
+    // Given
     const owner = await ctx.helpers.createVerifiedUser("comment-owner@example.com", "Test1234!", {
       name: "할 일 주인",
     });
@@ -571,7 +593,10 @@ describe("할 일 댓글 E2E", () => {
     const todoId = await createTodo(owner.accessToken, "PUBLIC");
     const commentId = await writeComment(author.accessToken, todoId, "수정 전");
 
+    // When
     const ownerView = await getConversation(owner.accessToken, todoId);
+
+    // Then
     expect(ownerView.items[0]).toMatchObject({
       comment: {
         id: commentId,
@@ -583,18 +608,24 @@ describe("할 일 댓글 E2E", () => {
       comment: { id: commentId, viewer: { canEdit: false, canDelete: false } },
     });
 
+    // When
     const forbiddenEdit = await request(ctx.app.getHttpServer())
       .patch(`/v1/todos/${todoId}/comments/${commentId}`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .send({ content: "가로채기" })
       .expect(403);
+
+    // Then
     expect(forbiddenEdit.body.error.code).toBe("TODO_0832");
 
+    // When
     const updated = await request(ctx.app.getHttpServer())
       .patch(`/v1/todos/${todoId}/comments/${commentId}`)
       .set("Authorization", `Bearer ${author.accessToken}`)
       .send({ content: "수정 후" })
       .expect(200);
+
+    // Then
     expect(updated.body.data.comment).toMatchObject({
       id: commentId,
       content: "수정 후",
@@ -602,10 +633,13 @@ describe("할 일 댓글 E2E", () => {
       viewer: { canEdit: true, canDelete: true },
     });
 
+    // When
     const liked = await request(ctx.app.getHttpServer())
       .put(`/v1/todos/${todoId}/comments/${commentId}/likes`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
+
+    // Then
     expect(liked.body.data).toMatchObject({ commentId, isLiked: true, likeCount: 1 });
 
     const likedView = await getConversation(owner.accessToken, todoId);
@@ -618,29 +652,38 @@ describe("할 일 댓글 E2E", () => {
       },
     });
 
+    // When
     const unliked = await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${commentId}/likes`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
+
+    // Then
     expect(unliked.body.data).toMatchObject({ commentId, isLiked: false, likeCount: 0 });
 
+    // When
     const forbiddenDelete = await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${commentId}`)
       .set("Authorization", `Bearer ${bystander.accessToken}`)
       .expect(403);
+
+    // Then
     expect(forbiddenDelete.body.error.code).toBe("TODO_0832");
 
+    // When
     await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${commentId}`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
 
+    // Then
     await expect(getConversation(author.accessToken, todoId)).resolves.toMatchObject({
       items: [],
     });
   });
 
   it("좋아요는 멱등이고 비친구와 삭제 묘비의 좋아요 변경은 일관된 오류로 거부한다", async () => {
+    // Given
     const owner = await ctx.helpers.createVerifiedUser("like-owner@example.com", "Test1234!", {
       name: "할 일 주인",
     });
@@ -654,10 +697,13 @@ describe("할 일 댓글 E2E", () => {
     await writeComment(author.accessToken, todoId, "원문을 보존하는 답글", rootId);
 
     for (const expectedLikeCount of [1, 1]) {
+      // When
       const liked = await request(ctx.app.getHttpServer())
         .put(`/v1/todos/${todoId}/comments/${rootId}/likes`)
         .set("Authorization", `Bearer ${owner.accessToken}`)
         .expect(200);
+
+      // Then
       expect(liked.body.data).toMatchObject({
         commentId: rootId,
         isLiked: true,
@@ -665,12 +711,16 @@ describe("할 일 댓글 E2E", () => {
       });
     }
 
+    // When
     const deniedLike = await request(ctx.app.getHttpServer())
       .put(`/v1/todos/${todoId}/comments/${rootId}/likes`)
       .set("Authorization", `Bearer ${stranger.accessToken}`)
       .expect(404);
+
+    // Then
     expect(deniedLike.body.error.code).toBe("TODO_0801");
 
+    // When
     await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${rootId}`)
       .set("Authorization", `Bearer ${author.accessToken}`)
@@ -680,12 +730,17 @@ describe("할 일 댓글 E2E", () => {
       .put(`/v1/todos/${todoId}/comments/${rootId}/likes`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(409);
+
+    // Then
     expect(likeDeletedComment.body.error.code).toBe("TODO_0833");
 
+    // When
     const unlikeDeletedComment = await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${rootId}/likes`)
       .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(409);
+
+    // Then
     expect(unlikeDeletedComment.body.error.code).toBe("TODO_0833");
 
     const conversation = await getConversation(owner.accessToken, todoId);
@@ -743,6 +798,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("공개 할 일도 친구만 대화 조회·작성할 수 있고 비공개·비친구 접근은 숨긴다", async () => {
+    // Given
     const owner = await ctx.helpers.createVerifiedUser("comment-owner@example.com", "Test1234!");
     const friend = await ctx.helpers.createVerifiedUser("comment-friend@example.com", "Test1234!");
     const stranger = await ctx.helpers.createVerifiedUser(
@@ -753,15 +809,18 @@ describe("할 일 댓글 E2E", () => {
     const publicTodoId = await createTodo(owner.accessToken, "PUBLIC");
     const privateTodoId = await createTodo(owner.accessToken, "PRIVATE");
 
-    await request(ctx.app.getHttpServer())
+    // When
+    const friendConversation = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${publicTodoId}/conversation`)
-      .set("Authorization", `Bearer ${friend.accessToken}`)
-      .expect(200);
-    await request(ctx.app.getHttpServer())
+      .set("Authorization", `Bearer ${friend.accessToken}`);
+    const friendOverview = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${publicTodoId}/comments/overview`)
-      .set("Authorization", `Bearer ${friend.accessToken}`)
-      .expect(200);
+      .set("Authorization", `Bearer ${friend.accessToken}`);
     await writeComment(friend.accessToken, publicTodoId, "친구의 댓글");
+
+    // Then
+    expect(friendConversation.status).toBe(200);
+    expect(friendOverview.status).toBe(200);
 
     const deniedReads: [string, string][] = [
       [`/v1/todos/${publicTodoId}/conversation`, stranger.accessToken],
@@ -770,13 +829,17 @@ describe("할 일 댓글 E2E", () => {
       [`/v1/todos/${privateTodoId}/comments/overview`, friend.accessToken],
     ];
     for (const [path, token] of deniedReads) {
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get(path)
         .set("Authorization", `Bearer ${token}`)
         .expect(404);
+
+      // Then
       expect(response.body.error.code).toBe("TODO_0801");
     }
 
+    // When
     const deniedWrite = await request(ctx.app.getHttpServer())
       .post(`/v1/todos/${publicTodoId}/comments`)
       .set("Authorization", `Bearer ${stranger.accessToken}`)
@@ -785,17 +848,25 @@ describe("할 일 댓글 E2E", () => {
         items: [{ clientRequestId: randomUUID(), content: "비친구 댓글" }],
       })
       .expect(404);
+
+    // Then
     expect(deniedWrite.body.error.code).toBe("TODO_0801");
 
-    await request(ctx.app.getHttpServer())
-      .get(`/v1/todos/${publicTodoId}/conversation`)
-      .expect(401);
-    await request(ctx.app.getHttpServer())
-      .get(`/v1/todos/${publicTodoId}/comments/overview`)
-      .expect(401);
+    // When
+    const unauthenticatedConversation = await request(ctx.app.getHttpServer()).get(
+      `/v1/todos/${publicTodoId}/conversation`,
+    );
+    const unauthenticatedOverview = await request(ctx.app.getHttpServer()).get(
+      `/v1/todos/${publicTodoId}/comments/overview`,
+    );
+
+    // Then
+    expect(unauthenticatedConversation.status).toBe(401);
+    expect(unauthenticatedOverview.status).toBe(401);
   });
 
   it("cursor의 todo·thread·sort를 검증하고 모호한 위치 query를 거부한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const otherTodoId = await createTodo(user.accessToken);
@@ -807,20 +878,27 @@ describe("할 일 댓글 E2E", () => {
     const cursor = page.pagination.nextCursor;
     expect(cursor).not.toBeNull();
 
+    // When
     const crossTodo = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${otherTodoId}/conversation`)
       .query({ after: cursor })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(400);
+
+    // Then
     expect(crossTodo.body.error.code).toBe("SYS_0002");
 
+    // When
     const crossSort = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${todoId}/conversation`)
       .query({ sort: "POPULAR", after: cursor })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(400);
+
+    // Then
     expect(crossSort.body.error.code).toBe("SYS_0002");
 
+    // When
     const tamperedCursor = tamperCursorPayload(cursor ?? "", (payload) => {
       payload.threadId = payload.commentId;
     });
@@ -829,8 +907,11 @@ describe("할 일 댓글 E2E", () => {
       .query({ after: tamperedCursor })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(400);
+
+    // Then
     expect(tampered.body.error.code).toBe("SYS_0002");
 
+    // When
     const tamperedRankCursor = tamperCursorPayload(cursor ?? "", (payload) => {
       payload.position = { rootLikeCount: 400, rootReplyCount: 400 };
     });
@@ -839,20 +920,26 @@ describe("할 일 댓글 E2E", () => {
       .query({ after: tamperedRankCursor })
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(400);
+
+    // Then
     expect(tamperedRank.body.error.code).toBe("SYS_0002");
 
     for (const query of [
       { focusCommentId: rootId, after: cursor },
       { before: cursor, after: cursor },
     ]) {
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/${todoId}/conversation`)
         .query(query)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(400);
+
+      // Then
       expect(response.body.error.code).toBe("SYS_0002");
     }
 
+    // When
     await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${firstReplyId}`)
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -861,6 +948,8 @@ describe("할 일 댓글 E2E", () => {
       after: cursor ?? "",
       size: 10,
     });
+
+    // Then
     expect(continuedAfterDeletedBoundary.items.map((item) => item.comment.id)).toEqual([
       secondReplyId,
       olderRootId,
@@ -868,6 +957,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("같은 멱등 키로 다시 보내면 사슬이 두 번 생기지 않는다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const items = [
@@ -875,6 +965,7 @@ describe("할 일 댓글 E2E", () => {
       { clientRequestId: randomUUID(), content: "둘" },
     ];
 
+    // When
     const first = await request(ctx.app.getHttpServer())
       .post(`/v1/todos/${todoId}/comments`)
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -886,6 +977,7 @@ describe("할 일 댓글 E2E", () => {
       .send({ parentId: null, items })
       .expect(201);
 
+    // Then
     const firstComments = todoCommentChainResponseSchema.parse(first.body.data).comments;
     const retriedComments = todoCommentChainResponseSchema.parse(retried.body.data).comments;
     expect(retriedComments.map((comment) => comment.id)).toEqual(
@@ -899,6 +991,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("같은 멱등 명령을 동시에 보내도 하나의 사슬만 만들고 같은 결과를 replay한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const items = [
@@ -912,7 +1005,10 @@ describe("할 일 댓글 E2E", () => {
         .send({ parentId: null, items })
         .expect(201);
 
+    // When
     const [first, second] = await Promise.all([post(), post()]);
+
+    // Then
     const firstComments = todoCommentChainResponseSchema.parse(first.body.data).comments;
     const secondComments = todoCommentChainResponseSchema.parse(second.body.data).comments;
     expect(secondComments.map((comment) => comment.id)).toEqual(
@@ -926,6 +1022,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("정확히 같은 답글 명령은 부모가 나중에 삭제돼도 원래 결과를 replay한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const parentId = await writeComment(user.accessToken, todoId, "부모 댓글");
@@ -942,11 +1039,14 @@ describe("할 일 댓글 E2E", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
 
+    // When
     const retried = await request(ctx.app.getHttpServer())
       .post(path)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ parentId, items })
       .expect(201);
+
+    // Then
     const firstComments = todoCommentChainResponseSchema.parse(first.body.data).comments;
     const retriedComments = todoCommentChainResponseSchema.parse(retried.body.data).comments;
     expect(retriedComments.map((comment) => comment.id)).toEqual(
@@ -955,6 +1055,7 @@ describe("할 일 댓글 E2E", () => {
   });
 
   it("멱등 키는 최초 todo·parent·순서·content와 정확히 같은 명령에만 재사용한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const otherTodoId = await createTodo(user.accessToken);
@@ -978,20 +1079,25 @@ describe("할 일 댓글 E2E", () => {
     ];
 
     for (const command of mismatchedCommands) {
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post(`/v1/todos/${command.todoId}/comments`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ parentId: command.parentId, items: command.items })
         .expect(400);
+
+      // Then
       expect(response.body.error.code).toBe("SYS_0002");
     }
   });
 
   it("한 요청 안의 중복 clientRequestId는 저장 전에 거부한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("todo-comment@example.com", "Test1234!");
     const todoId = await createTodo(user.accessToken);
     const clientRequestId = randomUUID();
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .post(`/v1/todos/${todoId}/comments`)
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1004,6 +1110,7 @@ describe("할 일 댓글 E2E", () => {
       })
       .expect(400);
 
+    // Then
     expect(response.body.error.code).toBe("SYS_0002");
   });
 

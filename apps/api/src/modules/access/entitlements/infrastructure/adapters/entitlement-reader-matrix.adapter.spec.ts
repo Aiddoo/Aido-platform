@@ -159,10 +159,12 @@ describe("assertEntitled — 기능별 기존 거부 코드", () => {
     const admin = entitlementAt(SUBJECTS.ADMIN);
     const premium = entitlementAt(SUBJECTS.PREMIUM);
 
-    // When / Then
-    await expect(assertEntitled(admin.reader, admin.userId, "AI_REPORT")).resolves.toBeUndefined();
-    await expect(
-      assertEntitled(premium.reader, premium.userId, "CUSTOM_REMINDER_TIME"),
-    ).resolves.toBeUndefined();
+    // When
+    const adminCheck = assertEntitled(admin.reader, admin.userId, "AI_REPORT");
+    const premiumCheck = assertEntitled(premium.reader, premium.userId, "CUSTOM_REMINDER_TIME");
+
+    // Then
+    await expect(adminCheck).resolves.toBeUndefined();
+    await expect(premiumCheck).resolves.toBeUndefined();
   });
 });

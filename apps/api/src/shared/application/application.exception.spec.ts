@@ -33,7 +33,7 @@ describe("ApplicationException — 애플리케이션 예외", () => {
   });
 
   it("ErrorCodedException의 인스턴스이다", () => {
-    // Given & When
+    // When
     const exception = new ApplicationException(ErrorCode.SYS_0001);
 
     // Then

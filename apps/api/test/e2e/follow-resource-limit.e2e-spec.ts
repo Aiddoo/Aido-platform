@@ -41,7 +41,7 @@ describe("팔로우 리소스 제한 E2E", () => {
 
   describe("Free 유저 친구 제한", () => {
     it(`친구 ${FREE_LIMIT}명 도달 후 추가 요청 시 403 에러, 리소스 제한 조회 확인`, async () => {
-      // Given - Free 유저와 FREE_LIMIT + 1명의 친구 후보 생성
+      // Given
       const freeUser = await ctx.helpers.createVerifiedUser("follow-limit-free@test.com", password);
       const friends: VerifiedUser[] = [];
 
@@ -58,7 +58,7 @@ describe("팔로우 리소스 제한 E2E", () => {
         await ctx.helpers.createFriendship(freeUser, friend);
       }
 
-      // When - FREE_LIMIT + 1번째 친구 요청
+      // When
       const extraFriend = friends[FREE_LIMIT];
       expect(extraFriend).toBeDefined();
 
@@ -67,7 +67,7 @@ describe("팔로우 리소스 제한 E2E", () => {
         .set("Authorization", `Bearer ${freeUser.accessToken}`)
         .expect(403);
 
-      // Then - 403 에러와 FOLLOW_0909 코드 반환
+      // Then
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("FOLLOW_0909");
       expect(friendQuotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
@@ -87,13 +87,13 @@ describe("팔로우 리소스 제한 E2E", () => {
         },
       });
 
-      // When - 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get("/v1/follows/resource-limit")
         .set("Authorization", `Bearer ${freeUser.accessToken}`)
         .expect(200);
 
-      // Then - 현재 친구 수와 한도가 FREE_LIMIT과 일치
+      // Then
       expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
       expect(limitResponse.body.data.maxCount).toBe(FREE_LIMIT);
     });

@@ -320,7 +320,7 @@ describe("카테고리 삭제", () => {
   });
 
   it("사용자 카테고리·정렬 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
-    // Given - 삭제 transaction 경계와 구조 읽기 순서 기록
+    // Given
     const events: string[] = [];
     class OrderedUnitOfWork extends ImmediateUnitOfWork {
       override async run<T>(work: () => Promise<T>): Promise<T> {

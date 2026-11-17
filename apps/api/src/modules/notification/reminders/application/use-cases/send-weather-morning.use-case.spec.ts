@@ -121,7 +121,8 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("묶음으로 보내도 할 일 조회와 문구 시각은 사용자 행의 시간대를 쓴다", async () => {
-    // Given 서울 묶음 안의 상하이 사용자, 서울 15시(상하이 14시) 할 일에 강수 확률 70%
+    // Given
+    // 서울 묶음 안의 상하이 사용자, 서울 15시(상하이 14시) 할 일에 강수 확률 70%
     reader.usersWithLocation = [
       { id: "seoul", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
       { id: "shanghai", timezone: "Asia/Shanghai", preference: { locale: "ko" }, location: SEOUL },
@@ -144,7 +145,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
-    // Given 15시 '한강 산책'에 강수 확률 70%
+    // Given
     reader.usersWithLocation = [
       { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
     ];
@@ -201,7 +202,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("예보를 받지 못한 사용자는 틀린 날씨 대신 앱에서 확인하라는 안내를 받는다", async () => {
-    // Given 리포트 없음
+    // Given
     reader.usersWithLocation = [
       { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
     ];
@@ -317,7 +318,8 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   });
 
   it("캐시가 지난 뒤 공급자가 실패하면 마지막 스냅샷으로, 그것도 없으면 안내 알림으로 보낸다", async () => {
-    // Given 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
+    // Given
+    // 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
     reader.usersWithLocation = [
       { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
     ];
@@ -340,7 +342,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   });
 
   it("알림 대상이 아니면 WeatherKit을 부르지 않는다", async () => {
-    // Given 위치 없는 사용자만
+    // Given
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     // When
     await strategy.execute(ctx());

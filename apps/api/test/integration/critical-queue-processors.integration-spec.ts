@@ -166,7 +166,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
     expect(deliveryJobs.map(({ priority }) => priority).sort()).toEqual([0, 10]);
     expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
 
-    // When: at-least-once 재전달처럼 끝난 작업을 같은 id·attempt로 다시 처리한다
+    // When
+    // at-least-once 재전달처럼 끝난 작업을 같은 id·attempt로 다시 처리한다
     const processor = harness.module.get(PushDeliveryQueueProcessor);
     for (const job of deliveryJobs) {
       const payload = PushDeliveryRuntimeJobSchema.parse(job.data);
@@ -174,7 +175,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       await processor.process(job.id, job.retryCount + 2, payload);
     }
 
-    // Then: dispatch 상태 fence가 다시 claim하지 않아 기기마다 한 번만 보낸다
+    // Then
+    // dispatch 상태 fence가 다시 claim하지 않아 기기마다 한 번만 보낸다
     expect(harness.pushProvider.getSentPayloads()).toHaveLength(2);
     await expect(
       harness.client.query.pushDeliveryAttempt.findMany({
@@ -184,7 +186,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
   });
 
   it("retention sweep 잡은 공용 outbox와 push-delivery worker로 ENGAGEMENT 푸시를 보낸다", async () => {
-    // Given: 가입 3시간 뒤 할 일이 없는 D0 대상
+    // Given
+    // 가입 3시간 뒤 할 일이 없는 D0 대상
     const recipient = await createPushReadyUser(harness.client, {
       email: "queue-retention@example.com",
       userTag: "RETENT01",

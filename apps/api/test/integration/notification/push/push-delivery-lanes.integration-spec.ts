@@ -55,7 +55,7 @@ describe("푸시 발송 차선 (실제 PostgreSQL + pg-boss)", () => {
   });
 
   it("거래성 전용 worker는 마케팅 작업이 쌓여 있어도 우선순위 10 작업만 가져가고 옛 key·id를 그대로 쓴다", async () => {
-    // Given: 마케팅 작업이 먼저 쌓이고 리마인더가 뒤에 들어온다
+    // Given
     const adapter = new PushDeliveryQueueAdapter(jobQueue);
     const campaign = [
       [{ dispatchId: 1, publishAttempt: 1 }],

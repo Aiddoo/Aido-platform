@@ -32,8 +32,12 @@ function isQuiet(instant: Temporal.Instant, timeZone: string): boolean {
 
 describe("광고성 동의 재확인 큐 계약", () => {
   it("queue 이름과 예약 key를 유지하고 매시 정각에 예약한다", () => {
-    // Given / When / Then: 예약 key가 같아야 배포 때 기존 예약을 덮어쓴다
-    expect(MARKETING_CONSENT_RECONFIRM_QUEUE).toMatchObject({
+    // When
+    const queue = MARKETING_CONSENT_RECONFIRM_QUEUE;
+
+    // Then
+    // 예약 key가 같아야 배포 때 기존 예약을 덮어쓴다
+    expect(queue).toMatchObject({
       name: "notification.marketing-consent-reconfirm.v1",
       schedules: [
         {
@@ -47,7 +51,8 @@ describe("광고성 동의 재확인 큐 계약", () => {
   });
 
   it("하루 한 번 10:00 KST에 돌면 현지 야간이라 영영 건너뛰는 시간대가 생겨 매시 실행을 둔다", () => {
-    // Given: 10:00 KST = 01:00Z
+    // Given
+    // 10:00 KST = 01:00Z
     const tenAmKst = Temporal.Instant.from("2026-07-15T01:00:00Z");
 
     // When

@@ -20,7 +20,9 @@ const baseCommand = { title: "제목", body: "내용", force: false };
 
 describe("SendTargetedNotificationUseCase — 타겟 발송", () => {
   it("존재하는 사용자만 필터링해 발송하고 총 대상은 존재 수로 집계한다", async () => {
-    // Given - 3명 중 2명만 존재한다
+    // Given
+    // 3명 중 2명만 존재한다
+
     const { useCase, notifier } = setup(["u1", "u2"]);
 
     // When

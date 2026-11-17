@@ -532,15 +532,16 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
 
     // When
     for (const state of [actorMismatch, purposeMismatch, expired]) {
-      expect(
-        await states.consumeExchangeCode({
-          id: OAuthStateId.reconstitute(state.id),
-          exchangeCode: state.exchangeCode ?? "",
-          at: atInstant,
-          purpose: "link",
-          actorUserId: UserId.reconstitute(userId),
-        }),
-      ).toBe(false);
+      const consumed = await states.consumeExchangeCode({
+        id: OAuthStateId.reconstitute(state.id),
+        exchangeCode: state.exchangeCode ?? "",
+        at: atInstant,
+        purpose: "link",
+        actorUserId: UserId.reconstitute(userId),
+      });
+
+      // Then
+      expect(consumed).toBe(false);
       expect(await savedState(state.id)).toMatchObject({ exchangedAt: null });
     }
   });

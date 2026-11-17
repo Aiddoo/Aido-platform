@@ -23,6 +23,7 @@ const context: NotificationVariantContext = {
 
 describe("직교성: timezone ⊥ 카피 언어", () => {
   it("아침 리마인더 — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
+    // When
     const ko = createMorningReminderNotificationMessage({
       count: 3,
       locale: "ko",
@@ -34,11 +35,13 @@ describe("직교성: timezone ⊥ 카피 언어", () => {
       variantContext: context,
     });
 
+    // Then
     expect(ko.variantId).toBe(en.variantId);
     expect(ko.title).not.toBe(en.title);
   });
 
   it("Win-back — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
+    // When
     const ko = createWinbackNotificationMessage({
       inactiveDays: 7,
       locale: "ko",
@@ -50,11 +53,13 @@ describe("직교성: timezone ⊥ 카피 언어", () => {
       variantContext: context,
     });
 
+    // Then
     expect(ko.variantId).toBe(en.variantId);
     expect(ko.title).not.toBe(en.title);
   });
 
   it("저녁 리마인더 — 언어가 달라도 분기/선택은 동일하다", () => {
+    // When
     const ko = createEveningReminderNotificationMessage({
       completed: 2,
       total: 3,
@@ -68,6 +73,7 @@ describe("직교성: timezone ⊥ 카피 언어", () => {
       variantContext: context,
     });
 
+    // Then
     expect(ko.variantId).toBe(en.variantId);
     expect(ko.title).not.toBe(en.title);
   });

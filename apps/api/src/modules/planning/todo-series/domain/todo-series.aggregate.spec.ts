@@ -59,8 +59,10 @@ describe("TodoSeries — 반복 할 일", () => {
         frequency: "DAILY",
         end: { type: "UNTIL", date: "2026-11-04" },
       });
-      // When / Then
-      expect(() => start({ rule })).toThrow(
+      // When
+      const startSeries = () => start({ rule });
+      // Then
+      expect(startSeries).toThrow(
         expect.objectContaining({
           errorCode: ErrorCode.TODO_0843,
           details: { startDate: "2026-11-05", repeat: rule.toSpec() },
@@ -73,10 +75,10 @@ describe("TodoSeries — 반복 할 일", () => {
       const checklistTemplate = Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO + 1 }, () => ({
         title: "항목",
       }));
-      // When / Then
-      expect(() => start({ checklistTemplate })).toThrow(
-        expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }),
-      );
+      // When
+      const startSeries = () => start({ checklistTemplate });
+      // Then
+      expect(startSeries).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
     });
   });
 
@@ -423,26 +425,30 @@ describe("TodoSeries — 반복 할 일", () => {
     it("맞는 날짜가 없는 규칙으로는 바꿀 수 없다", () => {
       // Given
       const series = start();
-      // When / Then
-      expect(() =>
+      // When
+      const replaceRule = () =>
         series.replaceRule(
           RepeatRule.create({ frequency: "DAILY", end: { type: "UNTIL", date: "2026-11-01" } }),
-        ),
-      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0843 }));
+        );
+      // Then
+      expect(replaceRule).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0843 }));
       expect(series.nextOccurrenceDate).toBe("2026-11-05");
     });
 
     it("체크리스트는 같으면 false이고 상한을 넘으면 거부한다", () => {
       // Given
       const series = start({ checklistTemplate: [{ title: "항목" }] });
-      // When / Then
-      expect(series.replaceChecklist([{ title: "항목" }])).toBe(false);
-      expect(series.replaceChecklist([{ title: "새 항목" }])).toBe(true);
-      expect(() =>
+      // When
+      const same = series.replaceChecklist([{ title: "항목" }]);
+      const changed = series.replaceChecklist([{ title: "새 항목" }]);
+      const replaceOverLimit = () =>
         series.replaceChecklist(
           Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO + 1 }, () => ({ title: "x" })),
-        ),
-      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
+        );
+      // Then
+      expect(same).toBe(false);
+      expect(changed).toBe(true);
+      expect(replaceOverLimit).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
     });
   });
 

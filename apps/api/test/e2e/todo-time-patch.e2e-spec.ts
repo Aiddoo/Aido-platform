@@ -77,7 +77,7 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
   });
 
   it("제목과 시간만 함께 수정해도 날짜 없이 요청한 시간을 반영한다", async () => {
-    // Given / When
+    // When
     const response = await patch({ title: "시간 변경된 제목", scheduledTime: "12:30" }).expect(200);
     // Then
     expect(response.body.data.todo).toMatchObject({
@@ -91,7 +91,7 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
   });
 
   it("새 날짜와 시간이 함께 오면 새 DATE의 로컬 시간으로 변환한다", async () => {
-    // Given / When
+    // When
     const response = await patch({ startDate: "2026-05-16", scheduledTime: "12:30" }).expect(200);
     // Then
     expect(response.body.data.todo).toMatchObject({
@@ -124,7 +124,7 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
     { timezone: "UTC", expected: "2026-05-15T12:30:00.000Z" },
     { timezone: "America/Los_Angeles", expected: "2026-05-15T19:30:00.000Z" },
   ])("$timezone에서도 저장된 DATE 기준으로 시간만 수정한다", async ({ timezone, expected }) => {
-    // Given / When
+    // When
     const response = await patch({ scheduledTime: "12:30" }, timezone).expect(200);
     // Then
     expect(response.body.data.todo).toMatchObject({

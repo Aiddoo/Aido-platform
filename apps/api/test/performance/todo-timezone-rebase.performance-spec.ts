@@ -43,6 +43,7 @@ describe("시간대 재계산 규모 측정", () => {
   ])(
     "$name",
     async ({ seriesCount, days, historyRows, otherUsers }) => {
+      // Given
       let statements = 0;
       const database = new TestDatabase({
         createClient: (url) =>
@@ -142,6 +143,7 @@ describe("시간대 재계산 규모 측정", () => {
           logger: { log: () => undefined },
         });
 
+        // When
         global.gc?.();
         const heapBefore = process.memoryUsage().heapUsed;
         let heapPeak = heapBefore;
@@ -167,6 +169,7 @@ describe("시간대 재계산 규모 측정", () => {
         const repeated = await useCase.execute({ userId: user.id });
         const repeatedMs = Math.round(performance.now() - repeatedAt);
 
+        // Then
         const measured = {
           seriesCount,
           historyRows,

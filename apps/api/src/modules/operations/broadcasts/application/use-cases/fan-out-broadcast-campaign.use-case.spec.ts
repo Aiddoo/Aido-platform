@@ -229,7 +229,8 @@ describe("FanOutBroadcastCampaignUseCase — 수신자 현지 시각 발송", ()
     // When
     await useCase.execute({ campaignId });
 
-    // Then - 서울 11-04 10:00 = 01:00Z, LA 11-04 10:00 PST = 18:00Z
+    // Then
+    // 서울 11-04 10:00 = 01:00Z, LA 11-04 10:00 PST = 18:00Z
     expect(notifier.batches).toEqual([]);
     expect(
       jobEnqueuer.deliveries.map(({ startAfter, userIds: groupUserIds }) => ({
@@ -249,7 +250,9 @@ describe("FanOutBroadcastCampaignUseCase — 수신자 현지 시각 발송", ()
   });
 
   it("그 날짜·시각이 수신자에게 이미 지났으면 다음 날로 등록한다", async () => {
-    // Given - 서울은 지금 11-03 19:00이라 11-03 10:00은 지났다
+    // Given
+    // 서울은 지금 11-03 19:00이라 11-03 10:00은 지났다
+
     const { useCase, campaignId, jobEnqueuer } = setup({
       audience: ["user-seoul"],
       campaign: createBroadcastCampaignFixture({

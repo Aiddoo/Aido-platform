@@ -15,8 +15,6 @@ import { generateRandomName } from "./random-name.domain-service.js";
 
 describe("generateRandomName", () => {
   it("비어있지 않은 문자열을 반환한다", () => {
-    // Given - 별도 설정 없음
-
     // When
     const name = generateRandomName();
 
@@ -26,11 +24,11 @@ describe("generateRandomName", () => {
   });
 
   it("20자 이내의 이름을 반환한다", () => {
-    // Given - 100회 반복 테스트
-
-    // When & Then
     for (let i = 0; i < 100; i++) {
+      // When
       const name = generateRandomName();
+
+      // Then
       expect(name.length).toBeLessThanOrEqual(20);
     }
   });
@@ -49,9 +47,8 @@ describe("generateRandomName", () => {
   });
 
   it("공백을 포함한 이름을 반환한다", () => {
-    // Given - 별도 설정 없음
-
     // When
+
     const name = generateRandomName();
 
     // Then

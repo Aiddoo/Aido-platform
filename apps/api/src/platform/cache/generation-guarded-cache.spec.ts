@@ -44,7 +44,9 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
   });
 
   it("factory가 읽은 뒤 쓰기의 커밋 후 무효화가 오면 읽은 값은 돌려주되 저장하지 않는다", async () => {
-    // Given - factory가 커밋 전 값을 읽는 동안 쓰기가 커밋하고 무효화한다
+    // Given
+    // factory가 커밋 전 값을 읽는 동안 쓰기가 커밋하고 무효화한다
+
     const { store, cache } = setUp();
     const readBeforeCommit = async () => {
       await cache.invalidate(KEY);

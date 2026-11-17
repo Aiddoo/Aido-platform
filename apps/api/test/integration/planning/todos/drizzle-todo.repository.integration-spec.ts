@@ -68,7 +68,8 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
     const { todoRepository } = createRepositories();
     const missingId = (await todoRepository.nextId()).value;
 
-    // When - 거절을 모두 받아 두어 먼저 끝난 거절이 처리되지 않은 거절로 남지 않게 한다
+    // When
+    // 거절을 모두 받아 두어 먼저 끝난 거절이 처리되지 않은 거절로 남지 않게 한다
     const results = await Promise.allSettled([
       todoRepository.delete(TodoId.reconstitute(missingId)),
       todoRepository.updateTitle(TodoId.reconstitute(missingId), "제목"),

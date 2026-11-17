@@ -57,10 +57,10 @@ describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
   it("위치가 없으면 WEATHER_1902이며 예보를 요청하지 않는다", async () => {
     // Given
     repository.clear();
-    // When & Then
-    await expect(useCase.execute({ userId: "weather-user", target: date })).rejects.toMatchObject({
-      errorCode: ErrorCode.WEATHER_1902,
-    });
+    // When
+    const result = useCase.execute({ userId: "weather-user", target: date });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1902 });
     expect(weatherProvider.calls).toEqual([]);
   });
 

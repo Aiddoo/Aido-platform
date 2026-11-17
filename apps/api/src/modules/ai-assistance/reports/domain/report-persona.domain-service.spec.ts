@@ -6,7 +6,7 @@ describe("normalizeReportPersona", () => {
     ["등록해보세요 냥!", "등록해보세요!"],
     ["훌륭해요냥. 흐름이에요냥", "훌륭해요. 흐름이에요"],
   ])("ko 해요체 뒤에 붙은 냥을 지운다: %s", (input, expected) => {
-    // Given / When
+    // When
     const result = normalizeReportPersona(input, "ko");
     // Then
     expect(result).toBe(expected);
@@ -33,7 +33,9 @@ describe("normalizeReportPersona", () => {
   it("en에서 meow가 들어간 다른 단어는 건드리지 않는다", () => {
     // Given
     const text = "You finished 3 of 4 Meowmix chores.";
-    // When / Then
-    expect(normalizeReportPersona(text, "en")).toBe(text);
+    // When
+    const result = normalizeReportPersona(text, "en");
+    // Then
+    expect(result).toBe(text);
   });
 });

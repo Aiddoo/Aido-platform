@@ -10,8 +10,10 @@ import {
 
 describe("getTodoCommentOverviewQuerySchema", () => {
   it("정렬과 페이지 크기의 기본값을 채운다", () => {
+    // When
     const result = getTodoCommentOverviewQuerySchema.parse({});
 
+    // Then
     expect(result).toEqual({
       sort: TODO_COMMENT_SORT.LATEST,
       size: TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE,
@@ -19,27 +21,30 @@ describe("getTodoCommentOverviewQuerySchema", () => {
   });
 
   it("before와 after 중 하나만 받는다", () => {
-    expect(getTodoCommentOverviewQuerySchema.safeParse({ before: "before-cursor" }).success).toBe(
-      true,
-    );
-    expect(getTodoCommentOverviewQuerySchema.safeParse({ after: "after-cursor" }).success).toBe(
-      true,
-    );
-    expect(
-      getTodoCommentOverviewQuerySchema.safeParse({
-        before: "before-cursor",
-        after: "after-cursor",
-      }).success,
-    ).toBe(false);
+    // When
+    const beforeOnly = getTodoCommentOverviewQuerySchema.safeParse({ before: "before-cursor" });
+    const afterOnly = getTodoCommentOverviewQuerySchema.safeParse({ after: "after-cursor" });
+    const both = getTodoCommentOverviewQuerySchema.safeParse({
+      before: "before-cursor",
+      after: "after-cursor",
+    });
+
+    // Then
+    expect(beforeOnly.success).toBe(true);
+    expect(afterOnly.success).toBe(true);
+    expect(both.success).toBe(false);
   });
 
   it("페이지 크기를 정수로 변환하고 허용 범위로 제한한다", () => {
-    expect(getTodoCommentOverviewQuerySchema.parse({ size: "1" }).size).toBe(1);
-    expect(
-      getTodoCommentOverviewQuerySchema.safeParse({
-        size: TODO_COMMENT_LIMITS.MAX_PAGE_SIZE + 1,
-      }).success,
-    ).toBe(false);
+    // When
+    const converted = getTodoCommentOverviewQuerySchema.parse({ size: "1" });
+    const oversized = getTodoCommentOverviewQuerySchema.safeParse({
+      size: TODO_COMMENT_LIMITS.MAX_PAGE_SIZE + 1,
+    });
+
+    // Then
+    expect(converted.size).toBe(1);
+    expect(oversized.success).toBe(false);
   });
 });
 
@@ -82,21 +87,29 @@ const pagination = {
 
 describe("todoCommentChainResponseSchema", () => {
   it("성공 응답에는 적어도 댓글 한 건이 있어야 한다", () => {
-    expect(todoCommentChainResponseSchema.safeParse({ comments: [] }).success).toBe(false);
-    expect(todoCommentChainResponseSchema.safeParse({ comments: [comment] }).success).toBe(true);
+    // When
+    const empty = todoCommentChainResponseSchema.safeParse({ comments: [] });
+    const single = todoCommentChainResponseSchema.safeParse({ comments: [comment] });
+
+    // Then
+    expect(empty.success).toBe(false);
+    expect(single.success).toBe(true);
   });
 
   it("요청 사슬 상한보다 많은 댓글 응답을 거부한다", () => {
-    expect(
-      todoCommentChainResponseSchema.safeParse({
-        comments: Array.from({ length: TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE + 1 }, () => comment),
-      }).success,
-    ).toBe(false);
+    // When
+    const result = todoCommentChainResponseSchema.safeParse({
+      comments: Array.from({ length: TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE + 1 }, () => comment),
+    });
+
+    // Then
+    expect(result.success).toBe(false);
   });
 });
 
 describe("todoCommentOverviewResponseSchema", () => {
   it("최상위 댓글, 답글 미리보기, 답글 요약을 한 항목으로 검증한다", () => {
+    // When
     const result = todoCommentOverviewResponseSchema.safeParse({
       items: [
         {
@@ -113,10 +126,12 @@ describe("todoCommentOverviewResponseSchema", () => {
       pagination,
     });
 
+    // Then
     expect(result.success).toBe(true);
   });
 
   it("참여 작성자는 정해진 미리보기 수를 넘길 수 없다", () => {
+    // When
     const result = todoCommentOverviewResponseSchema.safeParse({
       items: [
         {
@@ -136,12 +151,14 @@ describe("todoCommentOverviewResponseSchema", () => {
       pagination,
     });
 
+    // Then
     expect(result.success).toBe(false);
   });
 });
 
 describe("todoConversationResponseSchema", () => {
   it("목록과 focus 조상을 동일한 대화 항목으로 검증한다", () => {
+    // Given
     const rootItem = {
       comment,
       connection: {
@@ -163,6 +180,7 @@ describe("todoConversationResponseSchema", () => {
       isFocused: true,
     };
 
+    // When
     const result = todoConversationResponseSchema.safeParse({
       items: [replyItem],
       focus: {
@@ -173,18 +191,19 @@ describe("todoConversationResponseSchema", () => {
       },
       pagination,
     });
+    const bareCommentResult = todoConversationResponseSchema.safeParse({
+      items: [reply],
+      focus: null,
+      pagination,
+    });
 
+    // Then
     expect(result.success).toBe(true);
-    expect(
-      todoConversationResponseSchema.safeParse({
-        items: [reply],
-        focus: null,
-        pagination,
-      }).success,
-    ).toBe(false);
+    expect(bareCommentResult.success).toBe(false);
   });
 
   it("lane depth는 중복 없는 오름차순이고 branch는 visual depth와 일치해야 한다", () => {
+    // Given
     const parseConnection = (connection: unknown) =>
       todoConversationResponseSchema.safeParse({
         items: [{ comment: reply, connection, isFocused: false }],
@@ -192,39 +211,37 @@ describe("todoConversationResponseSchema", () => {
         pagination,
       });
 
-    expect(
-      parseConnection({
-        visualDepth: 2,
-        upperLaneDepths: [0, 0, 1],
-        lowerLaneDepths: [0, 1],
-        incomingBranch: { fromDepth: 1, toDepth: 2 },
-      }).success,
-    ).toBe(false);
-    expect(
-      parseConnection({
-        visualDepth: 2,
-        upperLaneDepths: [1, 0],
-        lowerLaneDepths: [0, 1],
-        incomingBranch: { fromDepth: 1, toDepth: 2 },
-      }).success,
-    ).toBe(false);
-    expect(
-      parseConnection({
-        visualDepth: 2,
-        upperLaneDepths: [0, 1],
-        lowerLaneDepths: [0, 1],
-        incomingBranch: { fromDepth: 0, toDepth: 1 },
-      }).success,
-    ).toBe(false);
+    // When
+    const duplicatedLanes = parseConnection({
+      visualDepth: 2,
+      upperLaneDepths: [0, 0, 1],
+      lowerLaneDepths: [0, 1],
+      incomingBranch: { fromDepth: 1, toDepth: 2 },
+    });
+    const unsortedLanes = parseConnection({
+      visualDepth: 2,
+      upperLaneDepths: [1, 0],
+      lowerLaneDepths: [0, 1],
+      incomingBranch: { fromDepth: 1, toDepth: 2 },
+    });
+    const mismatchedBranch = parseConnection({
+      visualDepth: 2,
+      upperLaneDepths: [0, 1],
+      lowerLaneDepths: [0, 1],
+      incomingBranch: { fromDepth: 0, toDepth: 1 },
+    });
+
+    // Then
+    expect(duplicatedLanes.success).toBe(false);
+    expect(unsortedLanes.success).toBe(false);
+    expect(mismatchedBranch.success).toBe(false);
   });
 
   it("개요와 대화는 커서 페이지네이션 필드만 공유한다", () => {
-    expect(Object.keys(todoCommentCursorPaginationSchema.shape)).toEqual([
-      "previousCursor",
-      "nextCursor",
-      "hasPrevious",
-      "hasNext",
-      "size",
-    ]);
+    // When
+    const fields = Object.keys(todoCommentCursorPaginationSchema.shape);
+
+    // Then
+    expect(fields).toEqual(["previousCursor", "nextCursor", "hasPrevious", "hasNext", "size"]);
   });
 });

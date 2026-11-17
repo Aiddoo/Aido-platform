@@ -71,7 +71,8 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   });
 
   it.each([7, 10])("다시 계산한 연속 기록 %i일을 메시지에 쓴다", async (streak) => {
-    // Given 어제 완료 + 오늘 미완료라 연속 기록이 그대로 이어진다
+    // Given
+    // 어제 완료 + 오늘 미완료라 연속 기록이 그대로 이어진다
     reader.streakAtRiskUsers = [atRiskUser("user-1", streak)];
 
     // When

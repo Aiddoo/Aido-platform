@@ -126,7 +126,8 @@ describe("OpenAPI 계약 (e2e)", () => {
   });
 
   it("JSON Schema의 title·description 사용자 필드 변경을 fingerprint에 반영한다", () => {
-    // Given - OpenAPI 문서 메타데이터와 이름이 같은 실제 JSON Schema 필드
+    // Given
+    // OpenAPI 문서 메타데이터와 이름이 같은 실제 JSON Schema 필드
     const releasedSchema = {
       type: "object",
       properties: {
@@ -148,12 +149,14 @@ describe("OpenAPI 계약 (e2e)", () => {
     const releasedFingerprint = contractFingerprint(releasedSchema);
     const breakingFingerprint = contractFingerprint(breakingSchema);
 
-    // Then - 필드 shape 변경을 문서 문구 변경으로 오인해 누락하면 안 된다
+    // Then
+    // 필드 shape 변경을 문서 문구 변경으로 오인해 누락하면 안 된다
     expect(breakingFingerprint).not.toBe(releasedFingerprint);
   });
 
   it("OpenAPI 문서가 스냅샷과 일치한다 (클라이언트 계약 무변경)", () => {
-    // Given - main.ts와 동일한 기본 문서 설정 (paths/schemas는 컨트롤러에서 파생)
+    // Given
+    // main.ts와 동일한 기본 문서 설정 (paths/schemas는 컨트롤러에서 파생)
     const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
 
     // When
@@ -163,7 +166,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       }),
     );
 
-    // Then - 라우트/스키마 전체가 기준 스냅샷과 동일해야 한다
+    // Then
     expect(document.paths).toMatchSnapshot("openapi-paths");
     expect(document.components).toMatchSnapshot("openapi-components");
   });
@@ -236,7 +239,8 @@ describe("OpenAPI 계약 (e2e)", () => {
       deleteTodoCategory: { 400: declaredErrorCodes(deleteCategoryResponses["400"]) },
     };
 
-    // Then - 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
+    // Then
+    // 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
     expect(declared).toEqual({
       redeem: {
         400: [ErrorCode.INVITE_2103, ErrorCode.SYS_0002],
@@ -273,7 +277,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       responses: z.record(z.string(), z.unknown()),
     });
 
-    // When - 입력이 있는데 400에 SYS_0002가 없는 operation
+    // When
     const missing = Object.entries(document.paths).flatMap(([route, pathItem]) =>
       Object.entries(pathItem).flatMap(([method, operation]) => {
         const parsed = operationSchema.safeParse(operation);
@@ -311,7 +315,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       standardSchemaConverter: convertStandardSchema,
     });
 
-    // When - content 밖 response.schema로 떠 있는 응답
+    // When
     const strayResponses = Object.entries(document.paths).flatMap(([route, pathItem]) =>
       Object.entries(pathItem).flatMap(([method, operation]) =>
         Object.entries(
@@ -330,7 +334,8 @@ describe("OpenAPI 계약 (e2e)", () => {
   it.each(RELEASED_OPENAPI_CONTRACTS)(
     "스토어 배포된 $releasedClientVersion 클라이언트의 요청·응답·상태 코드 계약을 보존한다",
     (releasedContract) => {
-      // Given - 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
+      // Given
+      // 운영과 같은 /v1 prefix가 적용된 현재 OpenAPI 계약
       const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
       const document = SwaggerModule.createDocument(ctx.app, config, {
         standardSchemaConverter: convertStandardSchema,
@@ -343,7 +348,8 @@ describe("OpenAPI 계약 (e2e)", () => {
         ]),
       );
 
-      // When - 배포 클라이언트가 알고 있는 surface만 선택 (새 API 추가는 허용)
+      // When
+      // 배포 클라이언트가 알고 있는 surface만 선택 (새 API 추가는 허용)
       const missingSchemas = releasedContract.schemaNames.filter(
         (name) => !(name in currentSchemas),
       );
@@ -351,7 +357,8 @@ describe("OpenAPI 계약 (e2e)", () => {
       const releasedSchemas = selectReleasedContract(currentSchemas, releasedContract.schemaNames);
       const releasedPaths = selectReleasedContract(currentPaths, releasedContract.pathNames);
 
-      // Then - 문구 변경은 무시하되 Zod shape/request/response/status 구조는 동일
+      // Then
+      // 문구 변경은 무시하되 Zod shape/request/response/status 구조는 동일
       expect({
         releasedClientVersion: releasedContract.releasedClientVersion,
         sourceCommit: releasedContract.sourceCommit,

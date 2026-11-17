@@ -30,15 +30,19 @@ class TestInfrastructureModule {}
 
 describe("DatabaseModule", () => {
   it("UoW와 after-commit registry 토큰에 같은 ClsUnitOfWork singleton을 제공한다", async () => {
+    // Given
     const module = await Test.createTestingModule({
       imports: [ClsModule.forRoot({ global: true }), TestInfrastructureModule, DatabaseModule],
     }).compile();
 
+    // When
     const concrete = module.get(ClsUnitOfWork);
     const unitOfWork = module.get(UnitOfWorkPort);
     const registry = module.get(AfterCommitTaskRegistryPort);
 
+    // Then
     expect(unitOfWork).toBe(concrete);
+
     expect(registry).toBe(concrete);
     await module.close();
   });

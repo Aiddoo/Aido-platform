@@ -180,11 +180,11 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       subscriptionExpiresAt: new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS),
     });
 
-    // When 만료
+    // When
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(storeEvent(SubscriptionEventBuilder.expiration(), "s6-expire"));
 
-    // Then 빈틈 없이 이어 시작
+    // Then
     expect(await premiumAccess()).toMatchObject({
       source: "GRANT",
       periodEndsAt: new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS),
@@ -241,7 +241,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   }
 
   it("스토어 결제 유예 10일째에는 프리미엄을 유지하고 보상을 시작하지 않으며, 결제가 복구되면 쌓아 둔 일수를 그대로 둔다", async () => {
-    // Given 결제 실패: RevenueCat은 BILLING_ISSUE와 CANCELLATION(BILLING_ERROR)을 함께 보낸다
+    // Given
+    // 결제 실패: RevenueCat은 BILLING_ISSUE와 CANCELLATION(BILLING_ERROR)을 함께 보낸다
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s7-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
@@ -254,7 +255,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     await webhook(billingIssue("s7-billing", graceEndsAt));
     await webhook(billingErrorCancellation("s7-billing-cancel"));
 
-    // When 유예 10일째 정리
+    // When
+    // 유예 10일째 정리
     const insideGrace = new Date(STORE_EXPIRY.getTime() + 10 * DAY_MS);
     vi.setSystemTime(insideGrace);
     await context.module
@@ -264,7 +266,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     const premiumInsideGrace = await isPremium();
     const grantsInsideGrace = await grantsOf();
 
-    // When 12일째 결제 복구
+    // When
+    // 12일째 결제 복구
     const recoveredAt = new Date(STORE_EXPIRY.getTime() + 12 * DAY_MS);
     vi.setSystemTime(recoveredAt);
     const nextExpiry = new Date(STORE_EXPIRY.getTime() + 42 * DAY_MS);
@@ -318,7 +321,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     await webhook(billingIssue("g-billing", graceEndsAt));
     await webhook(billingErrorCancellation("g-billing-cancel"));
 
-    // When 유예가 끝난 뒤 정리, 이어서 늦은 만료 웹훅
+    // When
     const afterGrace = new Date(graceEndsAt.getTime() + 10 * 60_000);
     vi.setSystemTime(afterGrace);
     await context.module
@@ -356,7 +359,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   it("진행 중인 보상을 두 번 끊어도 남은 기간을 ms 그대로 쌓아 일수 올림이 누적되지 않는다", async () => {
-    // Given 보상 진행 중 1일 21시간 뒤 구매, 환불 뒤 다시 1일 9시간 뒤 구매
+    // Given
+    // 보상 진행 중 1일 21시간 뒤 구매, 환불 뒤 다시 1일 9시간 뒤 구매
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -382,7 +386,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
         .build(),
     );
 
-    // Then 7일 - 1일 21시간 = 5일 3시간, 다시 1일 9시간을 써서 3일 18시간(표시 4일)
+    // Then
+    // 7일 - 1일 21시간 = 5일 3시간, 다시 1일 9시간을 써서 3일 18시간(표시 4일)
     const remainder = (await grantsOf()).find((grant) => grant.status === "BANKED");
     expect(remainder).toMatchObject({ durationDays: 4, durationMs: 3 * DAY_MS + 18 * 3_600_000 });
     expect(await premiumAccess()).toMatchObject({
@@ -395,7 +400,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   it("행이 지워진 체인의 RENEWAL은 payload로 체인 행을 만들어 복원한 사용자를 프리미엄으로 이어 간다", async () => {
-    // Given 탈퇴(hard delete)로 행이 함께 지워져 TRANSFER로 옮길 행이 없다
+    // Given
+    // 탈퇴(hard delete)로 행이 함께 지워져 TRANSFER로 옮길 행이 없다
     const nextExpiry = new Date(STORE_EXPIRY.getTime() + 30 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
 
@@ -475,7 +481,8 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   it("결제 유예가 끝난 직후 sweep·만료 웹훅 전이라도 /me 프로필 캐시가 유예 끝에서 만료돼 무료가 된다", async () => {
-    // Given 결제 유예 중 /me를 캐시해 둔다
+    // Given
+    // 결제 유예 중 /me를 캐시해 둔다
     await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "m-purchase"));
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);

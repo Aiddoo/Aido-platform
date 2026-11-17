@@ -13,10 +13,18 @@ describe("getRegionCode", () => {
     { name: "춘천시청", lat: 37.8813, lon: 127.7298, expected: "3200000000" },
     { name: "수원시청", lat: 37.2636, lon: 127.0286, expected: "3100000000" },
   ])("$name ($lat, $lon) → $expected", ({ lat, lon, expected }) => {
-    expect(getRegionCode(lat, lon)).toBe(expected);
+    // When
+    const regionCode = getRegionCode(lat, lon);
+
+    // Then
+    expect(regionCode).toBe(expected);
   });
 
   it("범위 밖 좌표는 서울 기본값을 반환한다", () => {
-    expect(getRegionCode(40.0, 130.0)).toBe("1100000000");
+    // When
+    const regionCode = getRegionCode(40.0, 130.0);
+
+    // Then
+    expect(regionCode).toBe("1100000000");
   });
 });

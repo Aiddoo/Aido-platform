@@ -84,9 +84,12 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
           },
         ];
 
-        // When & Then
         for (const { input, expected } of testCases) {
-          expect(IdentityCacheKey.session(input)).toBe(expected);
+          // When
+          const key = IdentityCacheKey.session(input);
+
+          // Then
+          expect(key).toBe(expected);
         }
       });
     });

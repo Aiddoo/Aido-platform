@@ -54,7 +54,7 @@ describe("WeatherKitAttributionAdapter — Apple 날씨 출처 표기", () => {
   });
 
   it("언어별 공식 로고 경로를 절대 URL로 바꾸고 출처 고지 링크와 함께 돌려준다", async () => {
-    // Given 실제 /attribution/ko 응답
+    // Given
     const { resolver, requests } = createResolver([json(OBSERVED_KO_ATTRIBUTION)]);
 
     // When
@@ -95,7 +95,7 @@ describe("WeatherKitAttributionAdapter — Apple 날씨 출처 표기", () => {
   });
 
   it("조회에 실패하면 로고만 null로 두고 서비스 이름과 고지 링크는 유지한다", async () => {
-    // Given 5xx 응답
+    // Given
     const { resolver } = createResolver([json({}, 503)]);
 
     // When
@@ -115,7 +115,7 @@ describe("WeatherKitAttributionAdapter — Apple 날씨 출처 표기", () => {
   });
 
   it("실패한 언어는 1분 동안 다시 요청하지 않고 로고 없이 응답한다", async () => {
-    // Given 첫 조회가 5xx로 실패했다
+    // Given
     const { resolver, requests } = createResolver([json({}, 503), json(OBSERVED_KO_ATTRIBUTION)]);
     await resolver.resolve("en");
 
@@ -128,7 +128,8 @@ describe("WeatherKitAttributionAdapter — Apple 날씨 출처 표기", () => {
   });
 
   it("로고 경로 형식이 깨지면 로고를 버린다", async () => {
-    // Given 상대 경로가 아닌 값
+    // Given
+    // 상대 경로가 아닌 값
     const { resolver } = createResolver([
       json({ ...OBSERVED_KO_ATTRIBUTION, "logoDark@1x": "https://evil.example/logo.png" }),
     ]);

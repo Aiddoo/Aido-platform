@@ -202,8 +202,10 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
   });
 
   it("알림과 BATCH outbox를 원자적으로 저장하고 root commit 후에만 발행한다", async () => {
+    // When
     await useCase.execute(friendCompletionInput);
 
+    // Then
     expect(unitOfWork.rootTransactionCount).toBe(1);
     expect(staging.stageMany).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -234,6 +236,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
   });
 
   it("외부 UoW가 rollback되면 등록된 발송 작업을 발행하지 않는다", async () => {
+    // Given
     const data: CreateNotificationData[] = [
       {
         userId: "user-1",
@@ -244,13 +247,14 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
       },
     ];
 
-    await expect(
-      unitOfWork.run(async () => {
-        await persistBatch.execute(data);
-        throw new Error("rollback persistence transaction");
-      }),
-    ).rejects.toThrow("rollback persistence transaction");
+    // When
+    const result = unitOfWork.run(async () => {
+      await persistBatch.execute(data);
+      throw new Error("rollback persistence transaction");
+    });
 
+    // Then
+    await expect(result).rejects.toThrow("rollback persistence transaction");
     expect(unitOfWork.rootTransactionCount).toBe(1);
     expect(
       repository.rows().map(({ userId, type, friendId }) => ({ userId, type, friendId })),

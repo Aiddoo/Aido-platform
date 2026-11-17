@@ -40,7 +40,8 @@ describe("할 일 순서 변경", () => {
   }>)(
     "$name 이동은 전체 순서에 충돌 없이 반영된다(간격 없는 옛 순서는 다시 매긴다)",
     async ({ id, targetTodoId, position, expected }) => {
-      // Given: 간격 없이 0,1,2,3으로 쌓인 옛 순서
+      // Given
+      // 간격 없이 0,1,2,3으로 쌓인 옛 순서
       fixture.records.clear();
       for (let todoId = 1; todoId <= 4; todoId++) {
         fixture.records.set(todoId, {
@@ -95,7 +96,7 @@ describe("할 일 순서 변경", () => {
   }>)(
     "간격이 있으면 $name 옮긴 할 일 한 행만 바꾼다",
     async ({ id, targetTodoId, position, expected, value }) => {
-      // Given: 1024 간격 순서
+      // Given
       fixture.records.clear();
       for (let todoId = 1; todoId <= 4; todoId++) {
         fixture.records.set(todoId, {
@@ -119,13 +120,24 @@ describe("할 일 순서 변경", () => {
   it("없는 기준과 다른 소유자의 요청은 순서를 변경하지 않는다", async () => {
     // Given
     const before = [...fixture.records.values()].map(copyTodoRecord);
-    // When / Then
-    await expect(
-      useCase.execute({ id: 1, userId: fixture.userId, targetTodoId: 999, position: "before" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0810 });
-    await expect(
-      useCase.execute({ id: 1, userId: "other-user", targetTodoId: undefined, position: "after" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const missingTargetResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      targetTodoId: 999,
+      position: "before",
+    });
+    // Then
+    await expect(missingTargetResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0810 });
+    // When
+    const otherUserResult = useCase.execute({
+      id: 1,
+      userId: "other-user",
+      targetTodoId: undefined,
+      position: "after",
+    });
+    // Then
+    await expect(otherUserResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect([...fixture.records.values()]).toEqual(before);
   });
 });

@@ -136,13 +136,14 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
 
   describe("handleMinuteSweep 전략 실행", () => {
     it("KST 08:00 — 아침 리마인더 전략이 실행된다", async () => {
-      // Given - UTC 2026-03-15 23:00 = KST 2026-03-16 (월) 08:00
+      // Given
+      // UTC 2026-03-15 23:00 = KST 2026-03-16 (월) 08:00
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 아침 리마인더가 실행되어야 함
+      // Then
       expect(mockMorningReminder.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           timezones: ["Asia/Seoul"],
@@ -160,7 +161,8 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     });
 
     it("KST 18:00 — 저녁 리마인더 전략이 실행되고 SocialDigest가 지연 enqueue된다", async () => {
-      // Given - UTC 2026-03-16 09:00 = KST 2026-03-16 (월) 18:00
+      // Given
+      // UTC 2026-03-16 09:00 = KST 2026-03-16 (월) 18:00
       vi.setSystemTime(new Date("2026-03-16T09:00:00Z"));
       mockEveningReminder.execute.mockResolvedValue({
         sent: 5,
@@ -173,10 +175,10 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
         ],
       });
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 저녁 리마인더가 실행되고 SocialDigest enqueue
+      // Then
       expect(mockEveningReminder.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           timezones: ["Asia/Seoul"],
@@ -197,13 +199,14 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     });
 
     it("월요일 KST 11:30 — 주간 리포트 전략이 실행된다", async () => {
-      // Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
+      // Given
+      // UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
       vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 주간 리포트가 실행되어야 함
+      // Then
       expect(mockWeeklyReport.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           timezones: ["Asia/Seoul"],
@@ -214,13 +217,14 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     });
 
     it("매월 1일 KST 11:30 — 월간 리포트 전략이 실행된다", async () => {
-      // Given - UTC 2026-04-01 02:30 = KST 2026-04-01 (수) 11:30
+      // Given
+      // UTC 2026-04-01 02:30 = KST 2026-04-01 (수) 11:30
       vi.setSystemTime(new Date("2026-04-01T02:30:00Z"));
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 월간 리포트가 실행되어야 함
+      // Then
       expect(mockMonthlyReport.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           timezones: ["Asia/Seoul"],
@@ -231,13 +235,14 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     });
 
     it("월요일 KST 11:30 — 주간 달성 전략이 실행된다", async () => {
-      // Given - UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
+      // Given
+      // UTC 2026-03-16 02:30 = KST 2026-03-16 (월) 11:30
       vi.setSystemTime(new Date("2026-03-16T02:30:00Z"));
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 주간 달성 전략이 실행되어야 함
+      // Then
       expect(mockWeeklyAchievement.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           timezones: ["Asia/Seoul"],
@@ -250,7 +255,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
 
   describe("handleMinuteSweep 오류 격리", () => {
     it("한 타임존 실패 시 — 다른 타임존은 정상 실행된다", async () => {
-      // Given - 2개 타임존, 첫 번째 타임존에서 에러 발생
+      // Given
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
       mockPreferenceReader.findActiveTimezones.mockResolvedValue([
@@ -268,10 +273,10 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
         return Promise.resolve({ sent: 0 });
       });
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - morningReminder가 2번 호출됨 (각 타임존마다 1번)
+      // Then
       expect(mockMorningReminder.execute).toHaveBeenCalledTimes(2);
       // 두 번째 타임존(Asia/Seoul)도 정상 실행됨
       expect(mockMorningReminder.execute).toHaveBeenCalledWith(
@@ -284,14 +289,14 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
 
   describe("handleMinuteSweep 빈 타임존", () => {
     it("활성 타임존 없는 경우 — 전략이 실행되지 않는다", async () => {
-      // Given - 활성 타임존 없음
+      // Given
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
       mockPreferenceReader.findActiveTimezones.mockResolvedValue([]);
 
-      // When - 매분 스윕 실행
+      // When
       await orchestrator.handleMinuteSweep();
 
-      // Then - 어떤 전략도 실행되지 않아야 함
+      // Then
       expect(mockMorningReminder.execute).not.toHaveBeenCalled();
       expect(mockEveningReminder.execute).not.toHaveBeenCalled();
       expect(mockOnboarding.execute).not.toHaveBeenCalled();

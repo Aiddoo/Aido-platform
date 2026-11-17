@@ -16,6 +16,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   it("단건 payload는 기본 액션, context, 댓글 routing과 분석 식별자를 조립한다", () => {
     // Given
     const commentId = "cmt92zn3n000b7voxx9quc2th";
+
+    // When
     const payload = factory.createSingle({
       data: {
         userId: "user-1",
@@ -168,7 +170,8 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   });
 
   it("날씨 옮기기 링크는 DEEP_LINK url에만 실려 종류로 이동하는 구 앱은 그대로 /weather를 연다", () => {
-    // Given 1.13.x 앱은 WEATHER_* 종류만 보고 action url·context·routing은 읽지 않는다
+    // Given
+    // 1.13.x 앱은 WEATHER_* 종류만 보고 action url·context·routing은 읽지 않는다
     const data = {
       userId: "user-1",
       type: "WEATHER_MORNING" as const,

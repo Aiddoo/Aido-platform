@@ -42,10 +42,11 @@ function setup() {
 
 describe("ReleaseSessionPushDevicesUseCase — 폐기된 세션의 푸시 기기 해제", () => {
   it("폐기된 세션의 기기와 토큰만 지우고 그 사용자의 토큰 캐시를 비운다", async () => {
-    // Given 기기 두 대를 쓰는 user-a
+    // Given
+    // 기기 두 대를 쓰는 user-a
     const { devices, tokens, cache, useCase } = setup();
 
-    // When 휴대폰 세션만 폐기됐다
+    // When
     await useCase.releaseSessions(["session-phone"]);
 
     // Then

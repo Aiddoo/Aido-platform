@@ -2,8 +2,12 @@ import { RETENTION_QUEUE, RetentionJobName } from "./retention.queue.js";
 
 describe("리텐션 큐 계약", () => {
   it("queue 이름·재시도·예약 key를 기존 계약으로 유지하고 sweep을 매분 예약한다", () => {
-    // Given / When / Then: 이름·예약 key가 바뀌면 쌓인 작업과 기존 예약을 잃는다
-    expect(RETENTION_QUEUE).toMatchObject({
+    // When
+    const queue = RETENTION_QUEUE;
+
+    // Then
+    // 이름·예약 key가 바뀌면 쌓인 작업과 기존 예약을 잃는다
+    expect(queue).toMatchObject({
       name: "retention.v1",
       retry: {
         retryLimit: 4,
@@ -29,17 +33,22 @@ describe("리텐션 큐 계약", () => {
     // Given
     const schema = RETENTION_QUEUE.payloadSchema;
 
-    // When / Then
-    expect(
-      schema.safeParse({
-        name: "retention-dispatch",
-        data: { outboxId: "outbox-1", publishAttempt: 2 },
-      }).success,
-    ).toBe(true);
-    expect(schema.safeParse({ name: RetentionJobName.STAGE_SWEEP, data: {} }).success).toBe(true);
-    expect(schema.safeParse({ name: RetentionJobName.STAGE_SWEEP, data: { x: 1 } }).success).toBe(
-      false,
-    );
-    expect(schema.safeParse({ name: "unknown", data: {} }).success).toBe(false);
+    // When
+    const previousDispatch = schema.safeParse({
+      name: "retention-dispatch",
+      data: { outboxId: "outbox-1", publishAttempt: 2 },
+    });
+    const stageSweep = schema.safeParse({ name: RetentionJobName.STAGE_SWEEP, data: {} });
+    const stageSweepWithData = schema.safeParse({
+      name: RetentionJobName.STAGE_SWEEP,
+      data: { x: 1 },
+    });
+    const unknownJob = schema.safeParse({ name: "unknown", data: {} });
+
+    // Then
+    expect(previousDispatch.success).toBe(true);
+    expect(stageSweep.success).toBe(true);
+    expect(stageSweepWithData.success).toBe(false);
+    expect(unknownJob.success).toBe(false);
   });
 });

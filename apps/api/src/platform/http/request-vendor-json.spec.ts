@@ -10,16 +10,19 @@ describe("requestVendorJson", () => {
   }
 
   it("query를 URL에 직렬화하고 2xx JSON 본문을 반환한다", async () => {
+    // Given
     const fetchSpy = vi.fn<typeof globalThis.fetch>(
       async () => new Response(JSON.stringify({ value: 1 })),
     );
 
+    // When
     const outcome = await requestVendorJson(clientResponding(fetchSpy), url, {
       serviceKey: "a+b/c=",
       nx: 60,
       skipped: undefined,
     });
 
+    // Then
     expect(outcome).toEqual({ kind: "success", body: { value: 1 } });
     const requestedUrl = new URL(String(fetchSpy.mock.calls[0]?.[0]));
     expect(Object.fromEntries(requestedUrl.searchParams)).toEqual({
@@ -40,33 +43,40 @@ describe("requestVendorJson", () => {
         }),
     ],
   ])("non-2xx 응답은 본문 형태와 무관하게 상태 코드로 보고한다 (%s)", async (_name, respond) => {
+    // When
     const outcome = await requestVendorJson(
       clientResponding(async () => respond()),
       url,
       {},
     );
 
+    // Then
     expect(outcome).toMatchObject({ kind: "http_failure" });
   });
 
   it("2xx인데 JSON이 아닌 본문은 HttpParseError로 던진다", async () => {
-    await expect(
-      requestVendorJson(
-        clientResponding(async () => new Response("<xml/>")),
-        url,
-        {},
-      ),
-    ).rejects.toBeInstanceOf(HttpParseError);
+    // When
+    const result = requestVendorJson(
+      clientResponding(async () => new Response("<xml/>")),
+      url,
+      {},
+    );
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(HttpParseError);
   });
 
   it("client timeout을 넘기면 HttpTimeoutError로 던진다", async () => {
+    // Given
     const neverResponding: typeof globalThis.fetch = (_input, init) =>
       new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
       });
 
-    await expect(
-      requestVendorJson(clientResponding(neverResponding, 10), url, {}),
-    ).rejects.toBeInstanceOf(HttpTimeoutError);
+    // When
+    const result = requestVendorJson(clientResponding(neverResponding, 10), url, {});
+
+    // Then
+    await expect(result).rejects.toBeInstanceOf(HttpTimeoutError);
   });
 });

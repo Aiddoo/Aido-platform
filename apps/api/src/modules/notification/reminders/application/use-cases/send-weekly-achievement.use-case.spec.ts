@@ -58,7 +58,8 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
   });
 
   it("지난주 월~일 범위의 할 일만 집계하고 그 주의 ISO 연·주차로 기록한다", async () => {
-    // Given 지난주 3개(2개 완료)와 이번 주 월요일에 끝낸 1개
+    // Given
+    // 지난주 3개(2개 완료)와 이번 주 월요일에 끝낸 1개
     await givenUser("user-1", [
       ...lastWeekTodos(3, 2),
       { start: "2024-01-15", end: null, completed: true },
@@ -166,7 +167,8 @@ describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {
   });
 
   it("지난주 할 일이 없으면 기록도 알림도 남기지 않는다", async () => {
-    // Given 이번 주 할 일만 있다
+    // Given
+    // 이번 주 할 일만 있다
     await givenUser("user-1", [{ start: "2024-01-15", end: null, completed: true }]);
 
     // When

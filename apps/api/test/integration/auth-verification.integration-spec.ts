@@ -247,10 +247,12 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
       };
 
       // When
-      expect(await repository.consume(input)).toBe(false);
-      await expect(
-        consumeCode.execute({ userId, code, type: "PASSWORD_RESET" }),
-      ).rejects.toMatchObject({
+      const consumed = await repository.consume(input);
+      const result = consumeCode.execute({ userId, code, type: "PASSWORD_RESET" });
+
+      // Then
+      expect(consumed).toBe(false);
+      await expect(result).rejects.toMatchObject({
         errorCode,
       });
       expect(await readVerification(verification.id)).toMatchObject({
@@ -273,15 +275,28 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     };
 
     // When
-    expect(await repository.consume({ ...input, userId: UserId.reconstitute("other-user") })).toBe(
-      false,
-    );
-    expect(await repository.consume({ ...input, type: "EMAIL_VERIFY" })).toBe(false);
-    expect(await repository.consume({ ...input, tokenHash: security.hash("654321") })).toBe(false);
-    expect(await repository.consume({ ...input, maxAttempts: 1 })).toBe(false);
-    expect((await readVerification(verification.id))?.usedAt).toBeNull();
-    expect(await repository.consume(input)).toBe(true);
-    expect(await repository.consume(input)).toBe(false);
+    const otherUserConsumed = await repository.consume({
+      ...input,
+      userId: UserId.reconstitute("other-user"),
+    });
+    const otherTypeConsumed = await repository.consume({ ...input, type: "EMAIL_VERIFY" });
+    const otherHashConsumed = await repository.consume({
+      ...input,
+      tokenHash: security.hash("654321"),
+    });
+    const exhaustedConsumed = await repository.consume({ ...input, maxAttempts: 1 });
+    const afterMismatches = await readVerification(verification.id);
+    const firstConsumed = await repository.consume(input);
+    const secondConsumed = await repository.consume(input);
+
+    // Then
+    expect(otherUserConsumed).toBe(false);
+    expect(otherTypeConsumed).toBe(false);
+    expect(otherHashConsumed).toBe(false);
+    expect(exhaustedConsumed).toBe(false);
+    expect(afterMismatches?.usedAt).toBeNull();
+    expect(firstConsumed).toBe(true);
+    expect(secondConsumed).toBe(false);
   });
 
   it("느린 로그인 rehash는 먼저 저장된 새 비밀번호를 덮어쓰지 않는다", async () => {

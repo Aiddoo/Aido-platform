@@ -191,12 +191,14 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
 
   describe("worker 정지 → 시각 경과 → 재시작", () => {
     it("멈춘 사이의 분을 순서대로 한 번씩 처리해 놓친 아침 리마인더를 한 번 보낸다", async () => {
-      // Given: 07:56에 돌고 worker가 멈춘다
+      // Given
+      // 07:56에 돌고 worker가 멈춘다
       const worker = createWorker(BEFORE_MORNING);
       await worker.sweep.handleMinuteSweep();
       expect(worker.sweptMinutes).toEqual(["7:56"]);
 
-      // When: 08:01에 다시 시작한다
+      // When
+      // 08:01에 다시 시작한다
       worker.clock.advanceBy({ minutes: 5 });
       await worker.sweep.handleMinuteSweep();
 
@@ -226,14 +228,16 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     });
 
     it("커서를 쓰기 전에 멈춰 같은 분을 두 번 처리해도 아침 리마인더는 하나다", async () => {
-      // Given: 07:59까지 끝냈고, 08:00을 보낸 뒤 커서를 쓰기 전에 멈춘다
+      // Given
+      // 07:59까지 끝냈고, 08:00을 보낸 뒤 커서를 쓰기 전에 멈춘다
       const worker = createWorker(BEFORE_MORNING.add({ minutes: 3 }));
       await worker.sweep.handleMinuteSweep();
       worker.clock.advanceBy({ minutes: 1 });
       worker.cursor.failNextMark = true;
       await worker.sweep.handleMinuteSweep();
 
-      // When: 재시작한 worker가 08:00부터 다시 처리한다
+      // When
+      // 재시작한 worker가 08:00부터 다시 처리한다
       worker.clock.advanceBy({ minutes: 1 });
       await worker.sweep.handleMinuteSweep();
 
@@ -243,7 +247,8 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     });
 
     it("15분 넘게 멈추면 마지막 15분만 처리하고 버린 분 수를 사유와 함께 남긴다", async () => {
-      // Given: 07:40에 돌고 40분 동안 멈춘다. 08:00은 버리는 구간에 있다
+      // Given
+      // 07:40에 돌고 40분 동안 멈춘다. 08:00은 버리는 구간에 있다
       const worker = createWorker(BEFORE_MORNING.subtract({ minutes: 16 }));
       await worker.sweep.handleMinuteSweep();
 
@@ -309,7 +314,8 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         }) as const;
 
       it("울려야 했던 시각보다 15분 넘게 늦게 꺼낸 작업은 보내지 않고 사유를 남긴다", async () => {
-        // Given: 배포로 16분 늦게 꺼냈다
+        // Given
+        // 배포로 16분 늦게 꺼냈다
         const todoId = await seedTodo(NINE_AM);
         const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
 
@@ -328,7 +334,8 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       });
 
       it("15분 안으로 늦은 작업은 보내고 같은 작업을 다시 처리해도 알림은 하나다", async () => {
-        // Given: 10분 늦게 꺼냈다
+        // Given
+        // 10분 늦게 꺼냈다
         const todoId = await seedTodo(NINE_AM);
         const processor = createProcessor(NINE_AM.subtract({ minutes: 50 }));
 

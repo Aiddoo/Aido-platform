@@ -90,7 +90,7 @@ describe("AI 파싱 E2E — 서버 일정 계산", () => {
   });
 
   it("draft의 날짜·시각 표현을 서버가 계산해 공개 계약 그대로 응답하고 promptVersion을 남긴다", async () => {
-    // Given - 연도를 말한 날짜와 오후 3시
+    // Given
     fakeAiGenerator.setRawResponse({
       intent: "TASK",
       title: "팀 미팅",

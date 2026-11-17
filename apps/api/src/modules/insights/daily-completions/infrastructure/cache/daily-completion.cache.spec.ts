@@ -208,7 +208,9 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     const initialRead = await cache.readRange(USER, RANGE);
     await cache.storeRangeIfCurrent(USER, initialRead.generation, VALUE);
 
-    // When - 캐시 eviction으로 세대 키만 사라진 상태
+    // When
+    // 캐시 eviction으로 세대 키만 사라진 상태
+
     await backend.del(DailyCompletionCacheKey.generation(USER.value));
     const currentRead = await cache.readRange(USER, RANGE);
 

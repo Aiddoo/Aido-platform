@@ -80,7 +80,10 @@ describe("EnqueueUserRegisteredUseCase — 가입 알림 등록", () => {
     const { useCase, queue } = setup(null);
     queue.failure = new Error("queue unavailable");
 
-    // When / Then
-    await expect(useCase.execute(payload)).rejects.toThrow("queue unavailable");
+    // When
+    const result = useCase.execute(payload);
+
+    // Then
+    await expect(result).rejects.toThrow("queue unavailable");
   });
 });

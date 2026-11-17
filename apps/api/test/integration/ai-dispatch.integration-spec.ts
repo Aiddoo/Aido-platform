@@ -271,7 +271,8 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     });
 
     it("시간대 설정이 없는 사용자는 기본 시간대(서울)·언어(ko)로 월간 창을 판단한다", async () => {
-      // Given - 서울 11월 1일 00:05
+      // Given
+      // 서울 11월 1일 00:05
       vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-31T15:05:00Z") });
       const userId = createEntityId();
       await client
@@ -294,7 +295,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-26T07:40:00Z") });
       const scheduler = reportScheduler();
 
-      // When - 같은 시각에 두 번 부팅
+      // When
       scheduler.onModuleInit();
       await scheduler.schedulerRegistration;
       scheduler.onModuleInit();

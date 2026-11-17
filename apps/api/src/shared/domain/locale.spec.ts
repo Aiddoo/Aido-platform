@@ -10,6 +10,10 @@ const CASES: ReadonlyArray<readonly [value: unknown, expected: SupportedLocale]>
 
 describe("toSupportedLocale", () => {
   it.each(CASES)("%s를 지원 locale %s로 정규화한다", (value, expected) => {
-    expect(toSupportedLocale(value)).toBe(expected);
+    // When
+    const locale = toSupportedLocale(value);
+
+    // Then
+    expect(locale).toBe(expected);
   });
 });

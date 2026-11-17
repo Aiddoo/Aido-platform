@@ -68,34 +68,43 @@ function graphemeCount(value: string): number {
 describe("알림 문구 생성", () => {
   describe("createNotificationLabelPreview", () => {
     it("한국어는 말줄임표를 포함해 최대 24 grapheme으로 줄인다", () => {
+      // When
       const preview = createNotificationLabelPreview({ label: "가".repeat(30), locale: "ko" });
+
+      // Then
       const graphemes = Array.from(
         new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(preview),
       );
-
       expect(graphemes).toHaveLength(24);
       expect(preview).toBe(`${"가".repeat(23)}…`);
     });
 
     it("영어는 말줄임표를 포함해 최대 16 grapheme으로 줄인다", () => {
+      // When
       const preview = createNotificationLabelPreview({
         label: "Write the quarterly report",
         locale: "en",
       });
 
+      // Then
       expect(graphemeCount(preview)).toBe(16);
       expect(preview).toBe("Write the quart…");
     });
 
     it("결합 emoji sequence를 중간에서 자르지 않는다", () => {
+      // Given
       const family = "👨‍👩‍👧‍👦";
+
+      // When
       const preview = createNotificationLabelPreview({ label: family.repeat(25), locale: "ko" });
 
+      // Then
       expect(preview).toBe(`${family.repeat(23)}…`);
     });
   });
 
   it("같은 variant context는 재시도에도 같은 결과를 만든다", () => {
+    // When
     const first = createMorningReminderNotificationMessage({
       count: 4,
       variantContext: VARIANT_CONTEXT,
@@ -105,11 +114,13 @@ describe("알림 문구 생성", () => {
       variantContext: VARIANT_CONTEXT,
     });
 
+    // Then
     expect(retry).toEqual(first);
     expect(first.variantId).toMatch(/^copy_test_v1\.morning\.has_todo\.v[1-5]$/);
   });
 
   it("locale은 variant 선택과 독립적이다", () => {
+    // When
     const korean = createWinbackNotificationMessage({
       inactiveDays: 7,
       locale: "ko",
@@ -121,17 +132,22 @@ describe("알림 문구 생성", () => {
       variantContext: VARIANT_CONTEXT,
     });
 
+    // Then
     expect(english.variantId).toBe(korean.variantId);
     expect(english.title).not.toBe(korean.title);
   });
 
   it("긴 todo 제목은 title이 아니라 24-grapheme body preview에만 둔다", () => {
+    // Given
     const todoTitle = "긴할일".repeat(60);
+
+    // When
     const message = createTodoReminderNotificationMessage({
       todoTitle,
       stage: "60min",
     });
 
+    // Then
     expect(message.title).not.toContain(todoTitle);
     expect(message.body).toContain(
       createNotificationLabelPreview({ label: todoTitle, locale: "ko" }),
@@ -140,9 +156,13 @@ describe("알림 문구 생성", () => {
   });
 
   it("nudge의 todo 제목도 동일한 preview 경계를 통과한다", () => {
+    // Given
     const todoTitle = "🏃‍♀️".repeat(40);
+
+    // When
     const message = createNudgeReceivedNotificationMessage({ senderName: "민재", todoTitle });
 
+    // Then
     expect(message.title).not.toContain(todoTitle);
     expect(message.body).toContain(
       createNotificationLabelPreview({ label: todoTitle, locale: "ko" }),
@@ -150,10 +170,12 @@ describe("알림 문구 생성", () => {
   });
 
   it("영어 할 일 알림은 최대 제목에서도 잠금 화면 길이 예산을 지킨다", () => {
+    // Given
     const stages: readonly ("60min" | "10min")[] = ["60min", "10min"];
 
     for (const stage of stages) {
       for (let occurrenceIndex = 0; occurrenceIndex < 30; occurrenceIndex += 1) {
+        // When
         const message = createTodoReminderNotificationMessage({
           todoTitle: "T".repeat(200),
           stage,
@@ -165,6 +187,7 @@ describe("알림 문구 생성", () => {
           },
         });
 
+        // Then
         expect(graphemeCount(message.title)).toBeLessThanOrEqual(30);
         expect(graphemeCount(message.body)).toBeLessThanOrEqual(40);
       }
@@ -172,41 +195,52 @@ describe("알림 문구 생성", () => {
   });
 
   it("사용자 작성 메시지를 placeholder로 재해석하거나 자르지 않는다", () => {
+    // Given
     const userMessage = "{senderName:이/가} 그대로 {count}";
+
+    // When
     const message = createNudgeReceivedNotificationMessage({
       senderName: "민재",
       message: userMessage,
     });
 
+    // Then
     expect(message.body).toBe(userMessage);
   });
 
   it("공유 schema 최대 입력을 렌더링한다", () => {
+    // When
     const message = createNudgeReceivedNotificationMessage({
       senderName: "가".repeat(20),
       todoTitle: "나".repeat(200),
       message: "다".repeat(200),
     });
 
+    // Then
     expect(message.title.length).toBeLessThanOrEqual(200);
     expect(message.body.length).toBeLessThanOrEqual(500);
     expect(message.body).toContain("다".repeat(200));
   });
 
   it("공유 schema를 넘는 동적 본문은 경계에서 거부한다", () => {
-    expect(() =>
+    // When
+    const create = () =>
       createNudgeReceivedNotificationMessage({
         senderName: "민재",
         message: "가".repeat(501),
-      }),
-    ).toThrow();
+      });
+
+    // Then
+    expect(create).toThrow();
   });
 
   it.each(COMMENT_ACTIVITY_CASES)(
     "%s activity를 의미에 맞게 렌더링한다 (%o)",
     (_label, activity, text) => {
+      // When
       const message = createTodoCommentNotificationMessage({ ...activity, senderName: "민재" });
 
+      // Then
       expect(`${message.title} ${message.body}`).toContain(text);
     },
   );
@@ -342,28 +376,33 @@ describe("알림 문구 생성", () => {
   });
 
   it("댓글 좋아요는 개수를 받지 않고 actor를 먼저 알린다", () => {
+    // When
     const message = createTodoCommentNotificationMessage({
       activityKind: "LIKE",
       senderName: "John 🐈",
       locale: "ko",
     });
 
+    // Then
     expect(message.title).toContain("John 🐈");
     expect(message.title).toContain("댓글");
   });
 
   it("댓글 개수는 양의 정수만 허용한다", () => {
-    expect(() =>
+    // When
+    const create = () =>
       createTodoCommentNotificationMessage({
         activityKind: "COMMENT",
         senderName: "민재",
         commentCount: 0,
-      }),
-    ).toThrow(RangeError);
+      });
+
+    // Then
+    expect(create).toThrow(RangeError);
   });
 
   it("댓글 factory 계약에는 댓글 원문 필드가 없다", () => {
-    // Given
+    // When
     type Input = Parameters<typeof createTodoCommentNotificationMessage>[0];
 
     // Then
@@ -390,11 +429,13 @@ describe("알림 문구 생성", () => {
   it.each(EVENING_REMINDER_CASES)(
     "저녁 알림 상태를 %s template으로 분류한다",
     (templateKey, input) => {
+      // When
       const message = createEveningReminderNotificationMessage({
         ...input,
         variantContext: VARIANT_CONTEXT,
       });
 
+      // Then
       expect(message.variantId).toMatch(
         new RegExp(`^copy_test_v1\\.${templateKey}\\.(?:v[1-5]|default)$`),
       );
@@ -402,20 +443,29 @@ describe("알림 문구 생성", () => {
   );
 
   it.each(ONBOARDING_CASES)("%s 온보딩 알림을 지원한다", (templateKey, input) => {
+    // When
     const message = createOnboardingNotificationMessage({
       ...input,
       variantContext: VARIANT_CONTEXT,
     });
 
+    // Then
     expect(message.variantId).toBe(`copy_test_v1.${templateKey}.default`);
   });
 
   it("완료율에 맞는 주간 성취 copy를 선택한다", () => {
-    expect(
-      createWeeklyAchievementNotificationMessage({ completedCount: 10, totalCount: 10 }).title,
-    ).toContain("100%");
-    expect(
-      createWeeklyAchievementNotificationMessage({ completedCount: 9, totalCount: 10 }).title,
-    ).toContain("90%");
+    // When
+    const allCompleted = createWeeklyAchievementNotificationMessage({
+      completedCount: 10,
+      totalCount: 10,
+    });
+    const mostCompleted = createWeeklyAchievementNotificationMessage({
+      completedCount: 9,
+      totalCount: 10,
+    });
+
+    // Then
+    expect(allCompleted.title).toContain("100%");
+    expect(mostCompleted.title).toContain("90%");
   });
 });

@@ -130,7 +130,10 @@ describe("premiumAccessSummaryOf — 이벤트 뒤 프리미엄 상태", () => {
       },
     },
   ])("$label 출처와 보상 일수를 그대로 싣는다", ({ access, expected }) => {
-    // When / Then
-    expect(premiumAccessSummaryOf(access)).toEqual(expected);
+    // When
+    const summary = premiumAccessSummaryOf(access);
+
+    // Then
+    expect(summary).toEqual(expected);
   });
 });

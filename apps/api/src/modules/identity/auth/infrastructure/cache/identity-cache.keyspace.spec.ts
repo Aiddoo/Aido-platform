@@ -45,7 +45,9 @@ describe("userProfileTtlMs — 프로필 캐시 TTL", () => {
   });
 
   it("결제 유예 중이면 유예 끝(premiumPeriodEndsAt)에 캐시가 만료된다", () => {
-    // Given 만료 10일 뒤, 유예는 1초 남았다
+    // Given
+    // 만료 10일 뒤, 유예는 1초 남았다
+
     const graceEndsAt = isoAfter(SECOND_MS);
 
     // When

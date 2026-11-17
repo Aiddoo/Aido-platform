@@ -185,7 +185,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
   });
 
   it("endDate가 null이면 단일 날짜 일정으로 생성된다", () => {
-    // Given & When
+    // When
     const schedule = TodoSchedule.create({
       startDate: Temporal.PlainDate.from("2026-03-01"),
       endDate: null,
@@ -200,7 +200,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
   });
 
   it("endDate가 startDate보다 빠르면 DomainException(SYS_0002)을 던진다", () => {
-    // Given - 역전된 날짜 범위
+    // When
     const create = () =>
       TodoSchedule.create({
         startDate: Temporal.PlainDate.from("2026-03-05"),
@@ -210,7 +210,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
         timezone: "UTC",
       });
 
-    // When & Then
+    // Then
     expect(create).toThrow(DomainException);
     expect(create).toThrow("종료 날짜는 시작 날짜보다 빠를 수 없습니다.");
     try {
@@ -223,8 +223,10 @@ describe("TodoSchedule — 일정 값 객체", () => {
   });
 
   it("endDate와 startDate가 같으면 허용한다 (경계값)", () => {
-    // Given & When
+    // Given
     const sameDay = Temporal.PlainDate.from("2026-03-01");
+
+    // When
     const schedule = TodoSchedule.create({
       startDate: sameDay,
       endDate: sameDay,
@@ -239,7 +241,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
 
   describe("reconstitute", () => {
     it("역전된 날짜 범위도 재검증 없이 복원한다 (가드 도입 이전 데이터 보호)", () => {
-      // Given - 불변식을 위반하는 저장 데이터
+      // When
       const schedule = TodoSchedule.reconstitute({
         startDate: Temporal.PlainDate.from("2026-03-05"),
         endDate: Temporal.PlainDate.from("2026-03-01"),
@@ -248,7 +250,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
         isAllDay: true,
       });
 
-      // When & Then - 복원은 항상 성공하고 값을 그대로 노출한다
+      // Then
       expect(schedule.startDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
       expect(schedule.endDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
     });
@@ -265,11 +267,11 @@ describe("TodoSchedule — 일정 값 객체", () => {
         timezone: "UTC",
       });
 
-      // When - 시간/isAllDay만 패치
+      // When
       const scheduledTime = Temporal.Instant.from("2026-03-01T06:00:00.000Z");
       const patched = base.patch({ scheduledLocalTime: "06:00", isAllDay: false }, "UTC");
 
-      // Then - 날짜는 유지, 시간·종일 여부만 변경 (원본 VO는 불변)
+      // Then
       expect(patched.startDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
       expect(patched.endDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
       expect(patched.scheduledTime).toEqual(scheduledTime);
@@ -296,7 +298,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
     });
 
     it("날짜를 건드리는 패치는 머지 결과를 재검증해 역전이면 DomainException(SYS_0002)을 던진다", () => {
-      // Given - startDate가 2026-03-01인 일정
+      // Given
       const base = TodoSchedule.create({
         startDate: Temporal.PlainDate.from("2026-03-01"),
         endDate: null,
@@ -304,9 +306,12 @@ describe("TodoSchedule — 일정 값 객체", () => {
         isAllDay: true,
         timezone: "UTC",
       });
+
+      // When
+      // 단일 필드 패치도 교차 검증
       const patch = () => base.patch({ endDate: Temporal.PlainDate.from("2026-02-20") }, "UTC");
 
-      // When & Then - 단일 필드 패치도 교차 검증
+      // Then
       expect(patch).toThrow(DomainException);
       try {
         patch();
@@ -318,7 +323,8 @@ describe("TodoSchedule — 일정 값 객체", () => {
     });
 
     it("시간만 바꾸는 패치는 재검증하지 않아 위반 상태의 기존 날짜가 살아남는다 (기존 API 동작 보존)", () => {
-      // Given - 가드 도입 이전에 저장된 역전 날짜 데이터
+      // Given
+      // 가드 도입 이전에 저장된 역전 날짜 데이터
       const legacyViolating = TodoSchedule.reconstitute({
         startDate: Temporal.PlainDate.from("2026-03-05"),
         endDate: Temporal.PlainDate.from("2026-03-01"),
@@ -327,13 +333,13 @@ describe("TodoSchedule — 일정 값 객체", () => {
         isAllDay: true,
       });
 
-      // When - 날짜를 건드리지 않는 패치
+      // When
       const patched = legacyViolating.patch(
         { scheduledLocalTime: "09:00", isAllDay: false },
         "UTC",
       );
 
-      // Then - 실패 없이 위반 날짜가 그대로 유지된다
+      // Then
       expect(patched.startDate).toEqual(Temporal.PlainDate.from("2026-03-05"));
       expect(patched.endDate).toEqual(Temporal.PlainDate.from("2026-03-01"));
       expect(patched.isAllDay).toBe(false);

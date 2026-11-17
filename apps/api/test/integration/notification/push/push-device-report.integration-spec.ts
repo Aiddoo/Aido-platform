@@ -107,7 +107,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   });
 
   it("허용 기기가 토큰 발급 실패로 null을 보고해도 토큰 행을 지우지 않고 지금 세션으로 옮긴다", async () => {
-    // Given 이전 세션에서 토큰을 등록하고 다시 로그인한 기기
+    // Given
     const [oldSession, newSession] = [
       SessionFixture.create({ userId: firstUserId }),
       SessionFixture.create({ userId: firstUserId }),
@@ -139,13 +139,16 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   });
 
   it("계정을 바꿔 로그인한 기기는 이전 사용자의 기기·토큰 행을 지운다", async () => {
+    // Given
     const { reportPushDevice } = createReportPushDevice();
     await reportPushDevice.execute(command({ userId: firstUserId }));
 
+    // When
     await reportPushDevice.execute(
       command({ userId: secondUserId, permission: { status: "DENIED", canAskAgain: false } }),
     );
 
+    // Then
     expect(await client.select().from(pushToken)).toEqual([]);
     expect(await client.select({ userId: pushDevice.userId }).from(pushDevice)).toEqual([
       { userId: secondUserId },
@@ -153,24 +156,26 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   });
 
   it("세션이 만료돼도 지우는 작업이 없어 그 세션의 기기는 계정 푸시 대상에 남는다", async () => {
-    // Given 갱신 기한(7일)이 지나 앱이 로그인 화면으로 돌아간 세션의 기기
+    // Given
+    // 갱신 기한(7일)이 지나 앱이 로그인 화면으로 돌아간 세션의 기기
     const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
     await client.insert(session).values(expiredSession);
     const { reportPushDevice, txHost } = createReportPushDevice();
     await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
 
-    // When 발송 경로가 계정의 활성 토큰을 읽는다
+    // When
     const tokens = await new DrizzlePushTokenRepository(txHost).findActivePushTokensByUsers([
       UserId.reconstitute(firstUserId),
     ]);
 
-    // Then 재방문 알림을 막지 않으려 세션으로 거르지 않는다. 앱이 공개 해제로 뺀다
+    // Then
+    // 재방문 알림을 막지 않으려 세션으로 거르지 않는다. 앱이 공개 해제로 뺀다
     expect(tokens.map((token) => token.deviceId)).toEqual(["ios_first"]);
     expect(await client.$count(session, eq(session.id, expiredSession.id))).toBe(1);
   });
 
   it("세션이 끝난 기기가 기기 ID와 토큰으로 해제하면 그 기기만 계정 푸시 대상에서 빠진다", async () => {
-    // Given 만료 세션의 휴대폰과 아직 로그인한 태블릿
+    // Given
     const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
     const activeSession = SessionFixture.create({ userId: firstUserId });
     await client.insert(session).values([expiredSession, activeSession]);
@@ -204,7 +209,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   });
 
   it("해제 직후 다른 요청이 같은 토큰을 먼저 커밋하면 새 트랜잭션에서 한 번 재시도해 토큰을 옮긴다", async () => {
-    // Given 첫 해제가 끝난 뒤 다른 연결이 같은 토큰을 다른 사용자로 커밋한다
+    // Given
+    // 첫 해제가 끝난 뒤 다른 연결이 같은 토큰을 다른 사용자로 커밋한다
     const { txHost } = createDatabaseTransactionFixture(client);
     const repository = new DrizzlePushTokenRepository(txHost);
     let releaseCalls = 0;

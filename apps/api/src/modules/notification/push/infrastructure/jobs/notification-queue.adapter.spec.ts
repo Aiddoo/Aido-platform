@@ -74,7 +74,8 @@ describe("NotificationQueueAdapter — 알림 이벤트 등록", () => {
     const jobQueue = new InMemoryJobQueue();
     const service = new NotificationQueueAdapter(jobQueue, clock);
 
-    // When: UTC 15:30은 서울 다음 날 00:30이다
+    // When
+    // UTC 15:30은 서울 다음 날 00:30이다
     await service.enqueueFriendCompleted({
       friendId: "f",
       friendName: "F",

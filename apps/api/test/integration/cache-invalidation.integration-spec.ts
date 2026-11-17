@@ -69,7 +69,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
   describe("세션 캐시 무효화 시나리오", () => {
     it("로그인 후 세션이 캐시되고 로그아웃 시 무효화된다", async () => {
-      // Given - 사용자 로그인 시뮬레이션
+      // Given
       const sessionId = "sess_integration_test_123";
       const session = {
         userId: "user_integration_1",
@@ -77,30 +77,30 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         revokedAt: null,
       };
 
-      // When - 세션 저장 (로그인)
+      // When
       await cacheService.set(
         IdentityCacheKey.session(sessionId),
         session,
         IDENTITY_CACHE_TTL_MS.SESSION,
       );
 
-      // Then - 세션 조회 가능
+      // Then
       const cachedSession = await cacheService.get(
         IdentityCacheKey.session(sessionId),
         z.unknown(),
       );
       expect(cachedSession).toEqual(session);
 
-      // When - 세션 무효화 (로그아웃)
+      // When
       await cacheService.del(IdentityCacheKey.session(sessionId));
 
-      // Then - 세션 조회 불가
+      // Then
       const afterLogout = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
       expect(afterLogout).toBeUndefined();
     });
 
     it("세션 TTL 만료 시 자동으로 삭제된다", async () => {
-      // Given - 짧은 TTL로 새 캐시 모듈 생성
+      // Given
       const baseTime = Date.now();
       const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
       const shortTtlModule = await Test.createTestingModule({
@@ -133,16 +133,16 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           revokedAt: null,
         };
 
-        // When - 세션 저장 (setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정)
+        // setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정
         await shortTtlCache.set(IdentityCacheKey.session(sessionId), session, 50);
         expect(await shortTtlCache.get(IdentityCacheKey.session(sessionId), z.unknown())).toEqual(
           session,
         );
 
-        // When - 실제 대기 없이 TTL 이후로 시간 이동
+        // When
         now.mockReturnValue(baseTime + 100);
 
-        // Then - 세션 자동 삭제
+        // Then
         const afterExpiry = await shortTtlCache.get(
           IdentityCacheKey.session(sessionId),
           z.unknown(),
@@ -157,7 +157,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
   describe("사용자 프로필 캐시 무효화 시나리오", () => {
     it("프로필 수정 시 캐시가 무효화된다", async () => {
-      // Given - 사용자 프로필 캐시
+      // Given
       const userId = "user_profile_integration";
       const originalProfile = createMockUserProfile({
         id: userId,
@@ -170,22 +170,20 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         originalProfile,
         IDENTITY_CACHE_TTL_MS.USER_PROFILE,
       );
-
-      // When - 프로필 조회 (캐시 히트)
       const cachedProfile = await cacheService.get(
         IdentityCacheKey.userProfile(userId),
         z.unknown(),
       );
       expect(cachedProfile).toEqual(originalProfile);
 
-      // When - 프로필 업데이트 시뮬레이션 (캐시 무효화)
+      // When
       await cacheService.del(IdentityCacheKey.userProfile(userId));
 
-      // Then - 캐시 미스
+      // Then
       const afterUpdate = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
       expect(afterUpdate).toBeUndefined();
 
-      // When - 새 프로필 데이터로 캐시 업데이트
+      // When
       const updatedProfile = createMockUserProfile({
         ...originalProfile,
         name: "Updated Name",
@@ -196,7 +194,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         IDENTITY_CACHE_TTL_MS.USER_PROFILE,
       );
 
-      // Then - 새 데이터로 캐시 히트
+      // Then
       const newCachedProfile = await cacheService.get(
         IdentityCacheKey.userProfile(userId),
         z.unknown(),
@@ -205,7 +203,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     });
 
     it("여러 사용자 프로필이 독립적으로 관리된다", async () => {
-      // Given - 여러 사용자 프로필 캐시
+      // Given
       const users = [
         createMockUserProfile({
           id: "user_1",
@@ -235,10 +233,10 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         );
       }
 
-      // When - user_2 프로필만 무효화
+      // When
       await cacheService.del(IdentityCacheKey.userProfile("user_2"));
 
-      // Then - user_1, user_3는 캐시 유지, user_2는 삭제
+      // Then
       expect(await cacheService.get(IdentityCacheKey.userProfile("user_1"), z.unknown())).toEqual(
         users[0],
       );
@@ -253,7 +251,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
   describe("친구 관계 캐시 무효화 시나리오", () => {
     it("친구 추가/삭제 시 관련 캐시가 패턴으로 무효화된다", async () => {
-      // Given - 친구 관계 캐시
+      // Given
       const userId = "user_friend_integration";
       await cacheService.set(
         FriendshipCacheKey.mutual(userId, "friend_1"),
@@ -271,7 +269,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
 
-      // Then - 친구 관계 조회 가능
+      // Then
       expect(
         await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_1"), z.unknown()),
       ).toBe(true);
@@ -282,12 +280,12 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_3"), z.unknown()),
       ).toBe(false);
 
-      // When - 친구 관계 변경으로 인한 일괄 무효화
+      // When
       const deletedCount = await cacheService.delByPattern(
         cachePattern("follow", "mutual", userId),
       );
 
-      // Then - 모든 친구 관계 캐시 삭제
+      // Then
       expect(deletedCount).toBe(3);
       expect(
         await cacheService.get(FriendshipCacheKey.mutual(userId, "friend_1"), z.unknown()),
@@ -301,7 +299,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     });
 
     it("양방향 친구 관계가 독립적으로 캐시된다", async () => {
-      // Given - 양방향 친구 관계 캐시
+      // Given
       await cacheService.set(
         FriendshipCacheKey.mutual("user_a", "user_b"),
         true,
@@ -313,10 +311,10 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
       );
 
-      // When - user_a의 친구 관계만 무효화
+      // When
       await cacheService.delByPattern(cachePattern("follow", "mutual", "user_a"));
 
-      // Then - user_a→user_b는 삭제, user_b→user_a는 유지
+      // Then
       expect(
         await cacheService.get(FriendshipCacheKey.mutual("user_a", "user_b"), z.unknown()),
       ).toBeUndefined();
@@ -328,11 +326,11 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
   describe("캐시 통계 모니터링 시나리오", () => {
     it("캐시 히트율을 추적할 수 있다", async () => {
-      // Given - 캐시 데이터 설정
+      // Given
       await cacheService.set("key_1", "value_1");
       await cacheService.set("key_2", "value_2");
 
-      // When - 히트 5회, 미스 2회
+      // When
       await cacheService.get("key_1", z.unknown()); // hit
       await cacheService.get("key_2", z.unknown()); // hit
       await cacheService.get("key_1", z.unknown()); // hit
@@ -341,7 +339,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       await cacheService.get("non_existent_1", z.unknown()); // miss
       await cacheService.get("non_existent_2", z.unknown()); // miss
 
-      // Then - 통계 확인
+      // Then
       const stats = cacheService.getStats();
       expect(stats.hits).toBe(5);
       expect(stats.misses).toBe(2);
@@ -352,7 +350,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     });
 
     it("리셋 후 통계가 초기화된다", async () => {
-      // Given - 캐시 사용
+      // Given
       await cacheService.set("key_1", "value_1");
       await cacheService.get("key_1", z.unknown());
       await cacheService.get("miss", z.unknown());
@@ -361,10 +359,10 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       expect(statsBefore.hits).toBeGreaterThan(0);
       expect(statsBefore.misses).toBeGreaterThan(0);
 
-      // When - 리셋
+      // When
       await cacheService.reset();
 
-      // Then - 통계 초기화
+      // Then
       const statsAfter = cacheService.getStats();
       expect(statsAfter.hits).toBe(0);
       expect(statsAfter.misses).toBe(0);
@@ -374,7 +372,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
 
   describe("캐시 키 충돌 방지 시나리오", () => {
     it("서로 다른 도메인의 캐시가 충돌하지 않는다", async () => {
-      // Given - 같은 ID를 가진 서로 다른 도메인 데이터
+      // Given
       const id = "same_id_123";
 
       const session = { userId: id, expiresAt: new Date(), revokedAt: null };
@@ -386,7 +384,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       });
       const subscription = { status: "ACTIVE" as const };
 
-      // When - 각 도메인에 저장
+      // When
       await cacheService.set(IdentityCacheKey.session(id), session, IDENTITY_CACHE_TTL_MS.SESSION);
       await cacheService.set(
         IdentityCacheKey.userProfile(id),
@@ -399,7 +397,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ENTITLEMENT_CACHE_TTL_MS,
       );
 
-      // Then - 각 도메인에서 올바른 데이터 조회
+      // Then
       expect(await cacheService.get(IdentityCacheKey.session(id), z.unknown())).toEqual(session);
       expect(await cacheService.get(IdentityCacheKey.userProfile(id), z.unknown())).toEqual(
         profile,
@@ -408,10 +406,10 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         subscription,
       );
 
-      // When - 프로필만 무효화
+      // When
       await cacheService.del(IdentityCacheKey.userProfile(id));
 
-      // Then - 프로필만 삭제, 다른 도메인은 유지
+      // Then
       expect(await cacheService.get(IdentityCacheKey.session(id), z.unknown())).toEqual(session);
       expect(await cacheService.get(IdentityCacheKey.userProfile(id), z.unknown())).toBeUndefined();
       expect(await cacheService.get(EntitlementCacheKey.subscription(id), z.unknown())).toEqual(
@@ -420,25 +418,27 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     });
 
     it("캐시 키가 설계대로 생성된다", async () => {
-      // Given - 캐시 키 확인용 데이터
+      // Given
       const userId = "user_key_test";
       const targetId = "target_key_test";
 
-      // Then - 캐시 키 형식 검증
-      expect(IdentityCacheKey.session("sess_123")).toBe("aido:v1:auth:session:sess_123");
-      expect(IdentityCacheKey.userProfile(userId)).toBe(`aido:v1:auth:user-profile:${userId}`);
-      expect(EntitlementCacheKey.subscription(userId)).toBe(
-        `aido:v1:subscription:status:v2:${userId}`,
-      );
-      expect(FriendshipCacheKey.mutual(userId, targetId)).toBe(
-        `aido:v1:follow:mutual:${userId}:${targetId}`,
-      );
+      // When
+      const sessionKey = IdentityCacheKey.session("sess_123");
+      const userProfileKey = IdentityCacheKey.userProfile(userId);
+      const subscriptionKey = EntitlementCacheKey.subscription(userId);
+      const mutualKey = FriendshipCacheKey.mutual(userId, targetId);
+
+      // Then
+      expect(sessionKey).toBe("aido:v1:auth:session:sess_123");
+      expect(userProfileKey).toBe(`aido:v1:auth:user-profile:${userId}`);
+      expect(subscriptionKey).toBe(`aido:v1:subscription:status:v2:${userId}`);
+      expect(mutualKey).toBe(`aido:v1:follow:mutual:${userId}:${targetId}`);
     });
   });
 
   describe("LRU 캐시 퇴출 시나리오", () => {
     it("최대 항목 수 초과 시 가장 오래된 항목이 퇴출된다", async () => {
-      // Given - 최대 항목 수가 5개인 캐시
+      // Given
       const smallCacheModule = await Test.createTestingModule({
         imports: [
           ConfigModule.forRoot({
@@ -462,19 +462,20 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const smallCache = smallCacheModule.get(CacheStorePort);
 
       try {
-        // When - 5개 항목 저장
+        // When
         for (let i = 1; i <= 5; i++) {
           await smallCache.set(`key_${i}`, `value_${i}`);
         }
 
-        // Then - 5개 모두 존재
+        // Then
         expect(smallCache.getStats().keys).toBe(5);
         expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");
 
-        // When - 6번째 항목 추가 (방금 읽은 key_1 대신 가장 오래 쓰지 않은 key_2 퇴출)
+        // When
+        // 방금 읽은 key_1 대신 가장 오래 쓰지 않은 key_2 퇴출
         await smallCache.set("key_6", "value_6");
 
-        // Then - key_2는 퇴출, key_1·key_6은 존재
+        // Then
         expect(smallCache.getStats().keys).toBe(5);
         expect(await smallCache.get("key_2", z.unknown())).toBeUndefined();
         expect(await smallCache.get("key_1", z.unknown())).toBe("value_1");

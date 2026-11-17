@@ -10,6 +10,10 @@ describe("supportsFeatureDiscoveryMarketing", () => {
     [{ payloadVersion: 2, appVersion: null }, false],
     [{ payloadVersion: 2, appVersion: "unknown" }, false],
   ])("payload/app capability %o => %s", (capability, supported) => {
-    expect(supportsFeatureDiscoveryMarketing(capability)).toBe(supported);
+    // When
+    const result = supportsFeatureDiscoveryMarketing(capability);
+
+    // Then
+    expect(result).toBe(supported);
   });
 });

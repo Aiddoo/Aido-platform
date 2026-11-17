@@ -84,7 +84,7 @@ describe("Discord 결제 알림 embed", () => {
       ["expired", "⌛ 구독 만료", RED],
       ["trial_expired", "📉 체험 종료 (전환 안 됨)", RED],
     ])("%s → [운영] %s", (event, title, color) => {
-      // Given / When
+      // When
       const embed = render({ event });
 
       // Then
@@ -94,7 +94,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("운영 갱신은 사용자 블록 → 국가·프리미엄·고객 링크 → 결제 블록 순으로 그린다", () => {
-    // Given / When
+    // When
     const embed = render();
 
     // Then
@@ -133,7 +133,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("샌드박스는 같은 색에 [샌드박스] 배지와 매출 아님 안내를 붙인다", () => {
-    // Given / When
+    // When
     const embed = render({ event: "purchased", environment: "SANDBOX" });
 
     // Then
@@ -144,7 +144,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("환경을 모르면 배지 없이 보내고 환경 칸은 —로 둔다", () => {
-    // Given / When
+    // When
     const embed = render({ environment: undefined });
 
     // Then
@@ -162,7 +162,7 @@ describe("Discord 결제 알림 embed", () => {
       ["SUBSCRIPTION_PAUSED", "구독 일시정지 (SUBSCRIPTION_PAUSED)"],
       ["UNKNOWN", "알 수 없음 (UNKNOWN)"],
     ] as const)("%s → %s", (endReason, label) => {
-      // Given / When
+      // When
       const embed = render({ event: "expired", endReason });
 
       // Then
@@ -170,7 +170,7 @@ describe("Discord 결제 알림 embed", () => {
     });
 
     it("해지 예약에 사유가 없으면 사유 칸을 —로 보여 빠졌음을 알린다", () => {
-      // Given / When
+      // When
       const embed = render({ event: "cancellation_scheduled" });
 
       // Then
@@ -179,7 +179,11 @@ describe("Discord 결제 알림 embed", () => {
     });
 
     it("갱신처럼 사유가 없는 이벤트에는 사유 칸을 만들지 않는다", () => {
-      expect(valueOf(render(), "사유")).toBeUndefined();
+      // When
+      const embed = render();
+
+      // Then
+      expect(valueOf(embed, "사유")).toBeUndefined();
     });
   });
 
@@ -196,7 +200,11 @@ describe("Discord 결제 알림 embed", () => {
       ],
       ["금액 없음", {}, "—"],
     ] as const)("%s → %s", (_label, price, expected) => {
-      expect(valueOf(render({ price }), "금액")).toBe(expected);
+      // When
+      const embed = render({ price });
+
+      // Then
+      expect(valueOf(embed, "금액")).toBe(expected);
     });
   });
 
@@ -220,16 +228,24 @@ describe("Discord 결제 알림 embed", () => {
       ],
       ["프리미엄 아님", { source: null, bankedDays: 0, isTrial: false }, "무료"],
     ] as const)("%s → %s", (_label, premium, expected) => {
-      expect(valueOf(render({ premium }), "프리미엄")).toBe(expected);
+      // When
+      const embed = render({ premium });
+
+      // Then
+      expect(valueOf(embed, "프리미엄")).toBe(expected);
     });
 
     it("구독 행을 바꾸지 않아 상태를 모르면 확인 안 됨으로 적는다", () => {
-      expect(valueOf(render({ premium: undefined }), "프리미엄")).toBe("확인 안 됨");
+      // When
+      const embed = render({ premium: undefined });
+
+      // Then
+      expect(valueOf(embed, "프리미엄")).toBe("확인 안 됨");
     });
   });
 
   it("결제 문제는 기간 끝과 스토어 결제 재시도 끝을 KST로 적는다", () => {
-    // Given / When
+    // When
     const embed = render({
       event: "billing_issue",
       expiresAt: "2026-11-10T00:00:00.000Z",
@@ -246,7 +262,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("체험 시작은 기간 끝을 첫 결제 시각으로 적는다", () => {
-    // Given / When
+    // When
     const embed = render({ event: "trial_started", periodKind: "TRIAL", price: { usd: 0 } });
 
     // Then
@@ -255,11 +271,15 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("새 구독은 첫 스토어 구매인지 적는다", () => {
-    expect(valueOf(render({ event: "purchased", isFirstPurchase: true }), "첫 구매")).toBe("예");
+    // When
+    const embed = render({ event: "purchased", isFirstPurchase: true });
+
+    // Then
+    expect(valueOf(embed, "첫 구매")).toBe("예");
   });
 
   it("상품 변경 예약은 바뀔 요금제와 상품을 적는다", () => {
-    // Given / When
+    // When
     const embed = render({
       event: "product_change_scheduled",
       newProductId: "com.aido.pro.monthly",
@@ -275,7 +295,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("이전은 보낸·받은 계정을 셋까지 적고 나머지는 개수로 줄인다", () => {
-    // Given / When
+    // When
     const embed = render({
       event: "transferred",
       productId: undefined,
@@ -288,7 +308,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("닉네임·태그·가입 정보를 모르면 칸은 —로 두고 본문은 이메일 앞부분으로 부른다", () => {
-    // Given / When
+    // When
     const embed = render({}, { userId: "user-1", email: "fallback@example.com" });
 
     // Then
@@ -302,7 +322,7 @@ describe("Discord 결제 알림 embed", () => {
   });
 
   it("고객 링크가 없으면 url을 만들지 않고 RevenueCat 칸은 —로 둔다", () => {
-    // Given / When
+    // When
     const embed = render({ customerUrl: undefined });
 
     // Then
@@ -317,7 +337,7 @@ describe("Discord 결제 알림 embed", () => {
     "transferred",
     "expired",
   ])("%s 알림도 Discord 한도(필드 25개·값 1~1024자) 안에 든다", (event) => {
-    // Given / When
+    // When
     const embed = render({
       event,
       isFirstPurchase: true,

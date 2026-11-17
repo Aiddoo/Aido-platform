@@ -40,49 +40,48 @@ describe("사용자 설정 E2E", () => {
   describe("알림 환경설정", () => {
     describe("GET /auth/preference - 환경설정 조회", () => {
       it("사용자의 환경설정을 조회한다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("settings-pref@example.com", "Test1234!");
 
-        // When - 환경설정 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // Then - 환경설정 응답 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data).toHaveProperty("pushEnabled");
         expect(response.body.data).toHaveProperty("timezone");
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
+        // When
+        const response = await request(ctx.app.getHttpServer()).get("/v1/auth/preference");
 
-        // When - 인증 없이 환경설정 조회 API 호출
-        await request(ctx.app.getHttpServer()).get("/v1/auth/preference").expect(401);
-
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
 
     describe("PATCH /auth/preference - 환경설정 수정", () => {
       it("푸시 알림 설정을 변경한다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("settings-push@example.com", "Test1234!");
 
-        // When - 푸시 알림 비활성화
+        // When
         const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ pushEnabled: false })
           .expect(200);
 
-        // Then - 설정 변경 성공 검증
+        // Then
         expect(response.body.success).toBe(true);
       });
 
       it("AI 제안·리포트 알림을 끄면 다시 읽어도 꺼져 있고 출시 앱 모양 요청은 그 값을 두고 저장된다", async () => {
-        // Given - 기본값(켜짐)인 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "settings-ai-push@example.com",
           "Test1234!",
@@ -92,7 +91,8 @@ describe("사용자 설정 E2E", () => {
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // When - 새 앱이 끄고, aiPushEnabled를 모르는 출시 앱이 야간 수신만 바꾼다
+        // When
+        // 새 앱이 끄고, aiPushEnabled를 모르는 출시 앱이 야간 수신만 바꾼다
         const turnedOff = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
@@ -115,30 +115,28 @@ describe("사용자 설정 E2E", () => {
       });
 
       it("타임존을 변경한다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("settings-tz@example.com", "Test1234!");
 
-        // When - 타임존 변경
+        // When
         const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/preference")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ timezone: "Asia/Seoul" })
           .expect(200);
 
-        // Then - 설정 변경 성공 검증
+        // Then
         expect(response.body.success).toBe(true);
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
-
-        // When - 인증 없이 환경설정 수정 API 호출
-        await request(ctx.app.getHttpServer())
+        // When
+        const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/preference")
-          .send({ pushEnabled: false })
-          .expect(401);
+          .send({ pushEnabled: false });
 
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
   });
@@ -300,56 +298,55 @@ describe("사용자 설정 E2E", () => {
   describe("동의 정보", () => {
     describe("GET /auth/consent - 동의 정보 조회", () => {
       it("사용자의 동의 정보를 조회한다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "settings-consent@example.com",
           "Test1234!",
         );
 
-        // When - 동의 정보 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/auth/consent")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // Then - 동의 정보 응답 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data).toHaveProperty("termsAgreedAt");
         expect(response.body.data).toHaveProperty("privacyAgreedAt");
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
+        // When
+        const response = await request(ctx.app.getHttpServer()).get("/v1/auth/consent");
 
-        // When - 인증 없이 동의 정보 조회 API 호출
-        await request(ctx.app.getHttpServer()).get("/v1/auth/consent").expect(401);
-
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
 
     describe("PATCH /auth/consent/marketing - 마케팅 동의 변경", () => {
       it("마케팅 동의를 활성화한다", async () => {
-        // Given - 인증된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "settings-mkt-on@example.com",
           "Test1234!",
         );
 
-        // When - 마케팅 동의 활성화
+        // When
         const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ agreed: true })
           .expect(200);
 
-        // Then - 동의 활성화 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.marketingAgreedAt).toBeDefined();
       });
 
       it("마케팅 동의를 철회한다", async () => {
-        // Given - 마케팅 동의가 활성화된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "settings-mkt-off@example.com",
           "Test1234!",
@@ -360,28 +357,26 @@ describe("사용자 설정 E2E", () => {
           .send({ agreed: true })
           .expect(200);
 
-        // When - 마케팅 동의 철회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ agreed: false })
           .expect(200);
 
-        // Then - 동의 철회 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.marketingAgreedAt).toBeNull();
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
-
-        // When - 인증 없이 마케팅 동의 변경 API 호출
-        await request(ctx.app.getHttpServer())
+        // When
+        const response = await request(ctx.app.getHttpServer())
           .patch("/v1/auth/consent/marketing")
-          .send({ agreed: true })
-          .expect(401);
+          .send({ agreed: true });
 
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
   });

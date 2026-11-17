@@ -131,8 +131,11 @@ describe.each([
       const release = await lock.acquire("resource", 5000);
       client.disconnect();
 
-      // When / Then
-      await expect(release?.()).resolves.toBeUndefined();
+      // When
+      const result = release?.();
+
+      // Then
+      await expect(result).resolves.toBeUndefined();
       expect(warnings).toHaveLength(1);
       expect(await redis.pttl("lock:resource")).toBeGreaterThan(0);
     });

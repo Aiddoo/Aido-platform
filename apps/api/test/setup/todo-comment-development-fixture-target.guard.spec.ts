@@ -8,7 +8,11 @@ const LOCAL_TARGET = {
 
 describe("assertTodoCommentDevelopmentFixtureTarget", () => {
   it("명시적인 local development API와 DB만 허용한다", () => {
-    expect(assertTodoCommentDevelopmentFixtureTarget(LOCAL_TARGET)).toMatchObject({
+    // When
+    const result = assertTodoCommentDevelopmentFixtureTarget(LOCAL_TARGET);
+
+    // Then
+    expect(result).toMatchObject({
       apiBaseUrl: "http://localhost:8080",
       databaseHost: "127.0.0.1",
       databaseName: "aido",
@@ -25,8 +29,10 @@ describe("assertTodoCommentDevelopmentFixtureTarget", () => {
     { ...LOCAL_TARGET, apiBaseUrl: "not-a-url" },
     { ...LOCAL_TARGET, databaseUrl: "postgresql://localhost:5433" },
   ])("환경이 불명확하거나 원격이면 거부한다", (target) => {
-    expect(() => assertTodoCommentDevelopmentFixtureTarget(target)).toThrow(
-      "[todo-comment-fixture]",
-    );
+    // When
+    const check = () => assertTodoCommentDevelopmentFixtureTarget(target);
+
+    // Then
+    expect(check).toThrow("[todo-comment-fixture]");
   });
 });

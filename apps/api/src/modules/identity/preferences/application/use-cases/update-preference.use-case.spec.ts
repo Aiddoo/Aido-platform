@@ -162,7 +162,8 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
   });
   it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
-    // Given: 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
+    // Given
+    // 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();
     await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
     const failure = new Error("synthetic cache unavailable");
@@ -174,10 +175,12 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         },
       },
     });
-    // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
-    await expect(useCase.execute({ userId: fixture.userId, pushEnabled: false })).rejects.toBe(
-      failure,
-    );
+
+    // When
+    const result = useCase.execute({ userId: fixture.userId, pushEnabled: false });
+
+    // Then
+    await expect(result).rejects.toBe(failure);
     expect(fixture.preferenceRepository.stored(fixture.userId)).toMatchObject({
       pushEnabled: false,
     });
@@ -185,7 +188,8 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     expect(fixture.reminderEnqueuer.jobs).toEqual([]);
   });
   it("timezone 목록 무효화가 완료될 때까지 응답과 완료 로그를 기다린다", async () => {
-    // Given: 새 timezone은 저장할 수 있지만 캐시 삭제가 아직 완료되지 않았다.
+    // Given
+    // 새 timezone은 저장할 수 있지만 캐시 삭제가 아직 완료되지 않았다.
     const fixture = createUserSettingsFixture();
     const entered = Promise.withResolvers<void>();
     const deletion = Promise.withResolvers<void>();
@@ -198,12 +202,15 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
         },
       },
     });
-    // When: 저장 흐름이 목록 삭제에 도달한다.
+
+    // When
     const execution = useCase.execute({ userId: fixture.userId, timezone: "Asia/Seoul" });
     try {
       await entered.promise;
-      // Then: 캐시 삭제 전 완료 로그를 남기지 않고, 삭제 완료 뒤 응답한다.
+
+      // Then
       expect(fixture.logger.messages).toEqual([]);
+
       deletion.resolve();
       await expect(execution).resolves.toMatchObject({ timezone: "Asia/Seoul" });
       expect(fixture.logger.messages).toMatchObject([

@@ -40,7 +40,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   });
 
   it("Day 0 가입 사용자에게 사용법 안내를 서비스 알림으로 보낸다", async () => {
-    // Given 오늘 가입한 사용자
+    // Given
     reader.onboardingCandidates = [
       { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
     ];
@@ -48,7 +48,8 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
     // When
     const result = await strategy.execute(ctx);
 
-    // Then 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
+    // Then
+    // 사용법 안내는 서비스 알림이라 광고성 동의가 없어도 받는다
     expect(result).toEqual({ sent: 1 });
     const expected = createOnboardingNotificationMessage({
       day: 0,
@@ -69,7 +70,8 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   });
 
   it("Day 5에는 완료한 할 일 수를 담아 보낸다", async () => {
-    // Given 5일 전 가입, 완료한 할 일 3개
+    // Given
+    // 5일 전 가입, 완료한 할 일 3개
     reader.onboardingCandidates = [
       { id: "user-1", createdAt: Temporal.Instant.from("2024-01-11T00:00:00Z") },
     ];
@@ -148,7 +150,7 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
   });
 
   it("오늘 이미 안내를 받은 사용자는 건너뛴다", async () => {
-    // Given 오늘 가입한 두 명 중 한 명은 이미 받았다
+    // Given
     reader.onboardingCandidates = [
       { id: "user-1", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },
       { id: "user-2", createdAt: ctx.today.toZonedDateTime("UTC").toInstant() },

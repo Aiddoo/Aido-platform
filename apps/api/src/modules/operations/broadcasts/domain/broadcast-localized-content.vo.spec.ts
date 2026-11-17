@@ -19,14 +19,22 @@ describe("BroadcastLocalizedContent — 언어별 문구", () => {
   });
 
   it("없거나 비어 있으면 아무 언어도 담지 않는다", () => {
-    expect(BroadcastLocalizedContent.create(undefined).isEmpty).toBe(true);
-    expect(BroadcastLocalizedContent.create({}).isEmpty).toBe(true);
-    expect(BroadcastLocalizedContent.create(null).isEmpty).toBe(true);
+    // When
+    const missing = BroadcastLocalizedContent.create(undefined);
+    const empty = BroadcastLocalizedContent.create({});
+    const nullContent = BroadcastLocalizedContent.create(null);
+
+    // Then
+    expect(missing.isEmpty).toBe(true);
+    expect(empty.isEmpty).toBe(true);
+    expect(nullContent.isEmpty).toBe(true);
   });
 
   it("언어별 제목이나 본문이 비어 있으면 SYS_0002로 거부한다", () => {
-    expect(() => BroadcastLocalizedContent.create({ en: { title: " ", body: "body" } })).toThrow(
-      expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }),
-    );
+    // When
+    const create = () => BroadcastLocalizedContent.create({ en: { title: " ", body: "body" } });
+
+    // Then
+    expect(create).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
   });
 });

@@ -82,7 +82,9 @@ describe("SentryOperationalAlertAdapter", () => {
   });
 
   it("웹훅 영구 실패처럼 업무 거부가 원인이면 예외가 아니라 경보 문장과 오류 코드로 보낸다", () => {
-    // Given - 없는 구독 사용자(404)로 닫은 RevenueCat 웹훅
+    // Given
+    // 없는 구독 사용자(404)로 닫은 RevenueCat 웹훅
+
     const cause = new ApplicationException(ErrorCode.SUBSCRIPTION_1602);
 
     // When

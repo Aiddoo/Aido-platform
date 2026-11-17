@@ -92,8 +92,11 @@ describe("toEmailMessage — 렌더된 본문을 발송 메시지로 조립", ()
   });
 
   it("수신자가 비어 있으면 조립에 실패한다", () => {
-    expect(() =>
-      toEmailMessage("   ", { kind: "verification", data: { code: "1", expiryMinutes: 1 } }, body),
-    ).toThrow();
+    // When
+    const build = () =>
+      toEmailMessage("   ", { kind: "verification", data: { code: "1", expiryMinutes: 1 } }, body);
+
+    // Then
+    expect(build).toThrow();
   });
 });

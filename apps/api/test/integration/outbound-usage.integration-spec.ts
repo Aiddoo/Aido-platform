@@ -68,8 +68,11 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
   });
 
   it("운영 모듈은 Postgres 어댑터를 쓴다", () => {
+    // When
+    const resolved = context.module.get(UsageMeterPort);
+
     // Then
-    expect(meter).toBeInstanceOf(DrizzleUsageMeterAdapter);
+    expect(resolved).toBeInstanceOf(DrizzleUsageMeterAdapter);
   });
 
   it("한도 10에 50건이 동시에 예약해도 정확히 10건만 받는다", async () => {

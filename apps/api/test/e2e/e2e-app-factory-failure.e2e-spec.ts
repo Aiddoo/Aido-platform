@@ -8,16 +8,20 @@ const realCanActivate = ThrottlerGuard.prototype.canActivate;
 
 describe("E2E 앱 factory의 throttler 생명주기 실패", () => {
   it("DB setup 시작이 실패해도 원래 오류를 유지하고 전역 guard를 변경하지 않는다", async () => {
-    // Given - real throttler opt-in 직후 DB setup이 실패
+    // Given
     const setupError = new Error("fault: test database start");
     vi.spyOn(TestDatabase.prototype, "start").mockRejectedValueOnce(setupError);
 
-    await expect(createE2eApp({ withRealThrottler: true })).rejects.toBe(setupError);
+    // When
+    const creating = createE2eApp({ withRealThrottler: true });
+
+    // Then
+    await expect(creating).rejects.toBe(setupError);
     expect(ThrottlerGuard.prototype.canActivate).toBe(realCanActivate);
   });
 
   it("application teardown이 실패해도 원래 오류를 유지하고 전역 guard를 변경하지 않는다", async () => {
-    // Given - 정상 생성된 real-throttler app
+    // Given
     const ctx = await createE2eApp({ withRealThrottler: true });
     const teardownError = new Error("fault: application close");
     const closeApplication = ctx.app.close.bind(ctx.app);
@@ -30,7 +34,7 @@ describe("E2E 앱 factory의 throttler 생명주기 실패", () => {
       // When
       const closing = ctx.closeApplicationResources();
 
-      // Then - teardown 오류를 그대로 보존 + bypass 복원
+      // Then
       await expect(closing).rejects.toBe(teardownError);
       expect(ThrottlerGuard.prototype.canActivate).toBe(realCanActivate);
     } finally {

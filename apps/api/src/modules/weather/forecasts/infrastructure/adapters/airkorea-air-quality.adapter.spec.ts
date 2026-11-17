@@ -69,16 +69,16 @@ describe("AirkoreaAirQualityAdapter — 에어코리아 대기질 프로바이�
       );
 
     it("정상 응답 시 PM10/PM25 값을 반환해야 한다", async () => {
-      // Given - API 키 설정 및 측정소/대기질 정상 응답 준비
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy
         .mockResolvedValueOnce(mockStationResponse("종로구"))
         .mockResolvedValueOnce(mockAirQualityResponse("45", "23"));
 
-      // When - 대기질 조회
+      // When
       const result = await provider.getAirQuality(lat, lon);
 
-      // Then - PM10/PM25 숫자 값 반환 확인
+      // Then
       expect(result).not.toBeNull();
       expect(result?.pm10).toBe(45);
       expect(result?.pm25).toBe(23);
@@ -86,19 +86,19 @@ describe("AirkoreaAirQualityAdapter — 에어코리아 대기질 프로바이�
     });
 
     it("API 키가 없으면 null을 반환해야 한다", async () => {
-      // Given - API 키 미설정
+      // Given
       config.kmaApiKey = undefined;
 
-      // When - 대기질 조회
+      // When
       const result = await provider.getAirQuality(lat, lon);
 
-      // Then - null 반환 및 fetch 미호출
+      // Then
       expect(result).toBeNull();
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("측정소 조회 실패 시 null을 반환해야 한다", async () => {
-      // Given - API 키 설정 및 측정소 조회 실패
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy.mockResolvedValueOnce(
         new Response(null, {
@@ -107,39 +107,40 @@ describe("AirkoreaAirQualityAdapter — 에어코리아 대기질 프로바이�
         }),
       );
 
-      // When - 대기질 조회
+      // When
       const result = await provider.getAirQuality(lat, lon);
 
-      // Then - null 반환 및 대기질 API 미호출
+      // Then
+      // null 반환 및 대기질 API 미호출
       expect(result).toBeNull();
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
     it('측정값이 "-"이면 해당 필드를 null로 반환해야 한다', async () => {
-      // Given - API 키 설정 및 측정값이 "-"인 응답
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy
         .mockResolvedValueOnce(mockStationResponse("종로구"))
         .mockResolvedValueOnce(mockAirQualityResponse("-", "-"));
 
-      // When - 대기질 조회
+      // When
       const result = await provider.getAirQuality(lat, lon);
 
-      // Then - PM10/PM25 모두 null
+      // Then
       expect(result).not.toBeNull();
       expect(result?.pm10).toBeNull();
       expect(result?.pm25).toBeNull();
     });
 
     it("API 에러 시 null을 반환해야 한다", async () => {
-      // Given - API 키 설정 및 fetch 네트워크 에러
+      // Given
       config.kmaApiKey = "test-api-key";
       fetchSpy.mockRejectedValue(new Error("Network error"));
 
-      // When - 대기질 조회
+      // When
       const result = await provider.getAirQuality(lat, lon);
 
-      // Then - null 반환
+      // Then
       expect(result).toBeNull();
     });
   });

@@ -200,7 +200,8 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
   });
 
   it("지우는 트랜잭션을 기다린 할 일 수정은 행을 되살리지 못하고 부재 오류로 롤백된다", async () => {
-    // Given - 할 일 수정은 할 일 잠금만 잡아 카테고리 삭제 잠금과 겹치지 않는다. 행 잠금에서 만난다
+    // Given
+    // 할 일 수정은 할 일 잠금만 잡아 카테고리 삭제 잠금과 겹치지 않는다. 행 잠금에서 만난다
     const [targetId = 0] = removed.todoIds;
     const deleted = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -227,7 +228,8 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     );
     release.resolve();
 
-    // Then: 잠금이 풀리기 전에는 끝나지 않으므로 removal을 기다리기 전에 거부 처리기를 건다
+    // Then
+    // 잠금이 풀리기 전에는 끝나지 않으므로 removal을 기다리기 전에 거부 처리기를 건다
     await expect(update).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
     await removal;
     expect(await client.$count(todo, eq(todo.id, targetId))).toBe(0);

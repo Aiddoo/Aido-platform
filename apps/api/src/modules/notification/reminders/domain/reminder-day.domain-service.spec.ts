@@ -65,7 +65,7 @@ describe("리마인더 날짜 경계", () => {
     { date: "2026-12-31", expected: "2026-W53" },
     { date: "2027-01-03", expected: "2026-W53" },
   ])("isoWeekIdOf($date) = $expected", ({ date, expected }) => {
-    // Given·When
+    // When
     const weekId = isoWeekIdOf(Temporal.PlainDate.from(date));
 
     // Then

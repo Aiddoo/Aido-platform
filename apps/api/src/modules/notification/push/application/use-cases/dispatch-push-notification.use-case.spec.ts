@@ -120,7 +120,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
   });
 
   it("활성 토큰이 없으면 최근 보고한 기기 권한으로 건너뜀 사유를 나눈다", async () => {
-    // Given - user-1은 거절, user-2는 아직 묻지 않음, user-3은 90일 넘게 보고가 없다
+    // Given
     const { service } = createDispatchUseCase({
       devices: [
         reportedDevice({ userId: "user-1", status: "DENIED" }),
@@ -340,7 +340,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
   });
 
   it("한 사용자의 기기 셋 중 하나가 미등록으로 실패해도 나머지 둘에 한 번씩 보내고 실패한 기기 토큰만 끈다", async () => {
-    // Given 휴대폰·태블릿·노트북 앱을 함께 쓰는 사용자
+    // Given
     const deviceTokens = ["phone-token", "tablet-token", "laptop-token"];
     const { service, pushTokenRepository, pushProvider } = createDispatchUseCase({
       activeTokens: [["user-1", deviceTokens]],

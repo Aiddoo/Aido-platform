@@ -8,6 +8,7 @@ const YESTERDAY = Temporal.PlainDate.from("2024-01-15");
 
 describe("computeEffectiveStreak", () => {
   it("전체 완료 + 오늘 이미 반영 → 현재 스트릭 유지", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 5,
       lastCompletedDate: TODAY,
@@ -15,10 +16,13 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 2,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 5, isAtRisk: false });
   });
 
   it("전체 완료 + 어제 완료(미반영) → 스트릭 +1", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 5,
       lastCompletedDate: YESTERDAY,
@@ -26,10 +30,13 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 3,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 6, isAtRisk: false });
   });
 
   it("전체 완료 + 연속 아님 → 스트릭 1로 새 시작", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 9,
       lastCompletedDate: null,
@@ -37,10 +44,13 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 1,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 1, isAtRisk: false });
   });
 
   it("미완료 + 어제 완료 + 스트릭 2+ → 위기(streak 유지)", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 7,
       lastCompletedDate: YESTERDAY,
@@ -48,10 +58,13 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 1,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 7, isAtRisk: true });
   });
 
   it("미완료 + 스트릭 1 → 위기 아님", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 1,
       lastCompletedDate: YESTERDAY,
@@ -59,10 +72,13 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 2,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 1, isAtRisk: false });
   });
 
   it("todosTotal 0 → 위기 아님", () => {
+    // When
     const r = computeEffectiveStreak({
       currentStreak: 5,
       lastCompletedDate: YESTERDAY,
@@ -70,6 +86,8 @@ describe("computeEffectiveStreak", () => {
       todosTotal: 0,
       today: TODAY,
     });
+
+    // Then
     expect(r).toEqual({ streak: 5, isAtRisk: false });
   });
 });

@@ -73,6 +73,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
   it.each(["1.7.x", "1.8.2", "1.9.0"])(
     "%s의 인증·할 일·날짜·커서·알림·오류 payload를 그대로 수용한다",
     async (clientVersion) => {
+      // Given
       const email = `legacy-${clientVersion}@example.com`;
       const password = "Test1234!";
       const user = await ctx.helpers.createVerifiedUser(email, password);
@@ -89,28 +90,35 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       const authorization = `Bearer ${refreshed.accessToken}`;
       const categoryId = await ctx.helpers.getDefaultCategoryId(refreshed.accessToken);
 
+      // When
       const created = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", authorization)
         .send({ title: "구 앱의 할 일", categoryId, startDate: "2024-02-29" })
         .expect(201);
+
+      // Then
       const todo = legacySuccess(z.object({ todo: legacyTodoSchema, message: z.string() })).parse(
         created.body,
       ).data.todo;
       expect(todo).toMatchObject({ startDate: "2024-02-29", scheduledTime: null, isAllDay: true });
       expect(todo).not.toHaveProperty("commentCount");
 
+      // When
       const updated = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todo.id}`)
         .set("Authorization", authorization)
         .send({ startDate: "2024-02-29", scheduledTime: "09:30", isAllDay: false })
         .expect(200);
+
+      // Then
       const scheduled = legacySuccess(
         z.object({ todo: legacyTodoSchema, message: z.string() }),
       ).parse(updated.body).data.todo;
       expect(scheduled.startDate).toBe("2024-02-29");
       expect(scheduled.scheduledTime).toMatch(/Z$/);
 
+      // When
       const list = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", authorization)
@@ -121,12 +129,15 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
           endDate: "2024-02-29",
         })
         .expect(200);
+
+      // Then
       const page = legacySuccess(
         z.object({ items: z.array(legacyTodoSchema), pagination: legacyPaginationSchema }),
       ).parse(list.body).data;
       expect(page.items.map((item) => item.id)).toContain(todo.id);
       expect(page.pagination.size).toBe(1);
 
+      // Given
       await ctx.testDatabase
         .getClient()
         .insert(notification)
@@ -138,32 +149,44 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
             body: title,
           })),
         );
+
+      // When
       const notifications = await request(ctx.app.getHttpServer())
         .get("/v1/notifications")
         .set("Authorization", authorization)
         .query({ limit: "1" })
         .expect(200);
+
+      // Then
       const firstPage = legacySuccess(legacyNotificationsSchema).parse(notifications.body).data;
       expect(firstPage.hasMore).toBe(true);
+
+      // When
       const next = await request(ctx.app.getHttpServer())
         .get("/v1/notifications")
         .set("Authorization", authorization)
         .query({ limit: "1", cursor: String(firstPage.nextCursor) })
         .expect(200);
+
+      // Then
       expect(
         legacySuccess(legacyNotificationsSchema).parse(next.body).data.notifications,
       ).toHaveLength(1);
 
+      // When
       const invalid = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", authorization)
         .send({ title: "잘못된 날짜", categoryId, startDate: "invalid-date" })
         .expect(400);
+
+      // Then
       expect(legacyErrorSchema.parse(invalid.body).error.code).toBe(ErrorCode.SYS_0002);
     },
   );
 
   it("이전 1.9 댓글 payload와 읽기 응답을 유지한다", async () => {
+    // Given
     const user = await ctx.helpers.createVerifiedUser("legacy-comments@example.com", "Test1234!");
     const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
     const created = await request(ctx.app.getHttpServer())
@@ -172,19 +195,27 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       .send({ title: "댓글의 할 일", categoryId, startDate: "2024-02-29" })
       .expect(201);
     const todo = legacySuccess(z.object({ todo: legacyTodoSchema })).parse(created.body).data.todo;
+
+    // When
     const written = await request(ctx.app.getHttpServer())
       .post(`/v1/todos/${todo.id}/comments`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ parentId: null, items: [{ clientRequestId: randomUUID(), content: "이전 앱 댓글" }] })
       .expect(201);
+
+    // Then
     const comments = legacySuccess(
       z.object({ comments: z.array(z.object({ id: z.string(), content: z.string() })) }),
     ).parse(written.body).data.comments;
     expect(comments[0]?.content).toBe("이전 앱 댓글");
+
+    // When
     const conversation = await request(ctx.app.getHttpServer())
       .get(`/v1/todos/${todo.id}/conversation`)
       .set("Authorization", `Bearer ${user.accessToken}`)
       .expect(200);
+
+    // Then
     const read = legacySuccess(
       z.object({
         items: z.array(z.object({ comment: z.object({ id: z.string(), content: z.string() }) })),

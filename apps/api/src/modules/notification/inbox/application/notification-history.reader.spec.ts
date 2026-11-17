@@ -36,7 +36,7 @@ function setup() {
 
 describe("NotificationHistoryReader — 이미 알림 받은 사용자 조회", () => {
   it("warm(센티넬 존재)이면 Redis 결과만 믿고 DB를 보지 않는다", async () => {
-    // Given Redis에는 user-1만 기록돼 있다
+    // Given
     const { reader, notificationDedup } = setup();
     await notificationDedup.recordNotifiedUsers([
       { userId: "user-1", type: "FRIEND_COMPLETED", notificationDate: NOTIFICATION_DATE },

@@ -18,7 +18,7 @@ describe("요청 ID E2E", () => {
   });
 
   it("앱이 보낸 X-Request-Id를 응답 헤더로 그대로 돌려준다", async () => {
-    // Given / When
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/invites/availability")
       .set("X-Request-Id", APP_REQUEST_ID)
@@ -45,7 +45,7 @@ describe("요청 ID E2E", () => {
   });
 
   it("guard가 거부한 오류 응답에도 같은 요청 ID를 돌려준다", async () => {
-    // Given / When
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/auth/me")
       .set("X-Request-Id", APP_REQUEST_ID)
@@ -57,7 +57,7 @@ describe("요청 ID E2E", () => {
   });
 
   it("CORS가 X-Request-Id 요청 헤더를 받고 응답 헤더를 브라우저에 노출한다", async () => {
-    // Given / When
+    // When
     const preflight = await request(ctx.app.getHttpServer())
       .options("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")

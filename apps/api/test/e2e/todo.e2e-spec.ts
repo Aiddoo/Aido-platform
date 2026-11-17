@@ -31,12 +31,12 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("할 일 생성 → 조회 → 수정 → 삭제 전체 플로우", async () => {
-      // Given - 인증된 사용자와 기본 카테고리
+      // Given
       const user = await ctx.helpers.createVerifiedUser(testEmail, testPassword);
       const accessToken = user.accessToken;
       const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-      // When - 필수 필드만으로 할 일 생성
+      // When
       const createResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -47,7 +47,7 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // Then - 할 일 생성 성공 검증
+      // Then
       expect(createResponse.body.data.message).toBe("할 일이 생성되었습니다.");
       expect(createResponse.body.data.todo).toMatchObject({
         title: "테스트 할 일",
@@ -62,7 +62,7 @@ describe("할 일 E2E", () => {
 
       const createdTodoId = createResponse.body.data.todo.id;
 
-      // When - 모든 필드를 포함하여 할 일 생성
+      // When
       const createAllResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -77,7 +77,7 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // Then - 모든 필드 검증
+      // Then
       expect(createAllResponse.body.data.todo).toMatchObject({
         title: "운동하기",
         startDate: "2024-01-20",
@@ -88,13 +88,13 @@ describe("할 일 E2E", () => {
       expect(createAllResponse.body.data.todo.scheduledTime).toBeTruthy();
       expect(createAllResponse.body.data.todo.category).toBeDefined();
 
-      // When - 할 일 목록 조회
+      // When
       const listResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 목록 검증
+      // Then
       expect(listResponse.body.data.items).toBeDefined();
       expect(Array.isArray(listResponse.body.data.items)).toBe(true);
       expect(listResponse.body.data.items.length).toBeGreaterThan(0);
@@ -107,67 +107,67 @@ describe("할 일 E2E", () => {
         expect(item.category.sortOrder).toBeDefined();
       }
 
-      // When - 할 일 상세 조회
+      // When
       const detailResponse = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 상세 정보 검증
+      // Then
       expect(detailResponse.body.data.id).toBe(createdTodoId);
       expect(detailResponse.body.data.title).toBe("테스트 할 일");
       expect(detailResponse.body.data.category).toBeDefined();
 
-      // When - 제목 수정
+      // When
       const updateTitleResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ title: "수정된 할 일" })
         .expect(200);
 
-      // Then - 수정 결과 검증
+      // Then
       expect(updateTitleResponse.body.data.message).toBe("할 일이 수정되었습니다.");
       expect(updateTitleResponse.body.data.todo.title).toBe("수정된 할 일");
 
-      // When - 완료 처리
+      // When
       const completeResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ completed: true })
         .expect(200);
 
-      // Then - 완료 상태 검증
+      // Then
       expect(completeResponse.body.data.todo.completed).toBe(true);
       expect(completeResponse.body.data.todo.completedAt).toBeTruthy();
 
-      // When - 완료 취소
+      // When
       const uncompleteResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ completed: false })
         .expect(200);
 
-      // Then - 미완료 상태 검증
+      // Then
       expect(uncompleteResponse.body.data.todo.completed).toBe(false);
       expect(uncompleteResponse.body.data.todo.completedAt).toBeNull();
 
-      // When - 여러 필드 동시 수정
+      // When
       const updateMultiResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ title: "최종 수정된 제목" })
         .expect(200);
 
-      // Then - 수정 결과 검증
+      // Then
       expect(updateMultiResponse.body.data.todo.title).toBe("최종 수정된 제목");
 
-      // When - 할 일 삭제
+      // When
       const deleteResponse = await request(ctx.app.getHttpServer())
         .delete(`/v1/todos/${createdTodoId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 삭제 성공 검증
+      // Then
       expect(deleteResponse.body.data.message).toBe("할 일이 삭제되었습니다.");
 
       // 삭제 확인
@@ -178,28 +178,26 @@ describe("할 일 E2E", () => {
     });
 
     it("인증 없이 생성 시도 시 401 에러", async () => {
-      // Given - 인증 토큰 없음
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-401@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 인증 없이 할 일 생성 API 호출
-      await request(ctx.app.getHttpServer())
-        .post("/v1/todos")
-        .send({
-          title: "테스트",
-          categoryId,
-          startDate: "2024-01-15",
-        })
-        .expect(401);
+      // When
+      const response = await request(ctx.app.getHttpServer()).post("/v1/todos").send({
+        title: "테스트",
+        categoryId,
+        startDate: "2024-01-15",
+      });
 
-      // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("필수 필드 누락 시 400 에러 (categoryId 누락)", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-nocat@example.com", testPassword);
 
-      // When - categoryId 없이 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -209,16 +207,16 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("필수 필드 누락 시 400 에러 (title 누락)", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-notitle@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - title 없이 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -227,16 +225,16 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("잘못된 날짜 형식 시 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-baddate@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 잘못된 날짜로 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -247,15 +245,15 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("존재하지 않는 카테고리로 생성 시 404 에러", async () => {
-      // Given - 인증된 사용자, 존재하지 않는 카테고리 ID
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-nocat404@example.com", testPassword);
 
-      // When - 존재하지 않는 카테고리로 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -266,12 +264,12 @@ describe("할 일 E2E", () => {
         })
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
     });
 
     it("페이지 크기 지정하여 조회", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-pagesize@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -287,20 +285,20 @@ describe("할 일 E2E", () => {
         .send({ title: "테스트 2", categoryId, startDate: "2024-01-15" })
         .expect(201);
 
-      // When - size 파라미터로 할 일 목록 조회 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ size: 1 })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 페이지 크기 검증
+      // Then
       expect(response.body.data.items.length).toBeLessThanOrEqual(1);
       expect(response.body.data.pagination.size).toBe(1);
     });
 
     it("완료 상태로 필터링", async () => {
-      // Given - 인증된 사용자와 미완료 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-filter@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -310,21 +308,21 @@ describe("할 일 E2E", () => {
         .send({ title: "미완료 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
 
-      // When - completed=false로 할 일 목록 조회 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ completed: false })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 미완료 항목만 검증
+      // Then
       for (const item of response.body.data.items) {
         expect(item.completed).toBe(false);
       }
     });
 
     it("날짜 범위로 필터링", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-daterange@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -334,19 +332,19 @@ describe("할 일 E2E", () => {
         .send({ title: "1월 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
 
-      // When - 날짜 범위로 할 일 목록 조회 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-01-01", endDate: "2024-01-31" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 결과 존재 검증
+      // Then
       expect(response.body.data.items).toBeDefined();
     });
 
     it("다중일 투두가 범위 필터에서 정상 노출된다", async () => {
-      // Given - 인증된 사용자와 다중일 투두 생성 (1/15 ~ 1/20)
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-multiday@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -361,20 +359,20 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - 1/18로 필터
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-01-18", endDate: "2024-01-18" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 다중일 투두 포함 확인
+      // Then
       const titles = response.body.data.items.map((t: Todo) => t.title);
       expect(titles).toContain("다중일 할 일");
     });
 
     it("특정 하루(2월 1일)만 조회할 수 있다", async () => {
-      // Given - 인증된 사용자와 2월 1일, 2일 투두 생성
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-singleday@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -390,21 +388,21 @@ describe("할 일 E2E", () => {
         .send({ title: "2월2일 단건", categoryId, startDate: "2024-02-02" })
         .expect(201);
 
-      // When - 2월 1일만 조회
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-02-01", endDate: "2024-02-01" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 2월 1일 투두만 포함 검증
+      // Then
       const titles = response.body.data.items.map((t: Todo) => t.title);
       expect(titles).toContain("2월1일 단건");
       expect(titles).not.toContain("2월2일 단건");
     });
 
     it("기간(2월 2일~2월 3일) 조회가 가능하다", async () => {
-      // Given - 인증된 사용자와 2월 2일, 3일, 4일 투두 생성
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-period@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -426,14 +424,14 @@ describe("할 일 E2E", () => {
         .send({ title: "2월4일 제외", categoryId, startDate: "2024-02-04" })
         .expect(201);
 
-      // When - 2월 2일~3일 기간 조회
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-02-02", endDate: "2024-02-03" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 범위 내 투두만 포함 검증
+      // Then
       const titles = response.body.data.items.map((t: Todo) => t.title);
       expect(titles).toContain("2월2일 포함");
       expect(titles).toContain("2월3일 포함");
@@ -441,7 +439,7 @@ describe("할 일 E2E", () => {
     });
 
     it("카테고리로 필터링", async () => {
-      // Given - 인증된 사용자와 카테고리별 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-catfilter@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -455,69 +453,68 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - categoryId로 할 일 목록 조회 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ categoryId })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 해당 카테고리 투두만 검증
+      // Then
       for (const item of response.body.data.items) {
         expect(item.category.id).toBe(categoryId);
       }
     });
 
     it("인증 없이 조회 시도 시 401 에러", async () => {
-      // Given - 인증 토큰 없음
+      // When
+      const response = await request(ctx.app.getHttpServer()).get("/v1/todos");
 
-      // When - 인증 없이 할 일 목록 조회 API 호출
-      await request(ctx.app.getHttpServer()).get("/v1/todos").expect(401);
-
-      // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("존재하지 않는 ID로 조회 시 404 에러", async () => {
-      // Given - 인증된 사용자, 존재하지 않는 할 일 ID
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-get404@example.com", testPassword);
 
-      // When - 존재하지 않는 ID로 조회 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos/999999")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("TODO_0801");
     });
 
     it("존재하지 않는 ID로 수정 시 404 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-patch404@example.com", testPassword);
 
-      // When - 존재하지 않는 ID로 수정 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch("/v1/todos/999999")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "수정" })
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_0801");
     });
 
     it("존재하지 않는 ID로 삭제 시 404 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-del404@example.com", testPassword);
 
-      // When - 존재하지 않는 ID로 삭제 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .delete("/v1/todos/999999")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_0801");
     });
   });
@@ -526,7 +523,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("미완료 상태에서 완료 처리 성공", async () => {
-      // Given - 인증된 사용자와 미완료 Todo 생성
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-complete@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -541,20 +538,20 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 완료 처리
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/complete`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ completed: true })
         .expect(200);
 
-      // Then - 완료 상태 검증
+      // Then
       expect(response.body.data.todo.completed).toBe(true);
       expect(response.body.data.todo.completedAt).toBeTruthy();
     });
 
     it("완료 상태에서 미완료 처리 성공", async () => {
-      // Given - 인증된 사용자와 완료된 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-uncomplete@example.com",
         testPassword,
@@ -579,38 +576,38 @@ describe("할 일 E2E", () => {
         .send({ completed: true })
         .expect(200);
 
-      // When - 미완료 처리
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/complete`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ completed: false })
         .expect(200);
 
-      // Then - 미완료 상태 검증
+      // Then
       expect(response.body.data.todo.completed).toBe(false);
       expect(response.body.data.todo.completedAt).toBeNull();
     });
 
     it("존재하지 않는 Todo는 404 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-complete-404@example.com",
         testPassword,
       );
 
-      // When - 존재하지 않는 ID로 완료 처리 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch("/v1/todos/999999/complete")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ completed: true })
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_0801");
     });
 
     it("completed 필드 누락 시 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-complete-400@example.com",
         testPassword,
@@ -624,14 +621,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - completed 필드 없이 완료 처리 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/complete`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({})
-        .expect(400);
+        .send({});
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
   });
 
@@ -639,7 +636,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("PUBLIC에서 PRIVATE으로 변경 성공", async () => {
-      // Given - 인증된 사용자와 PUBLIC Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-vis-priv@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -655,19 +652,19 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - PRIVATE으로 변경
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/visibility`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ visibility: "PRIVATE" })
         .expect(200);
 
-      // Then - 변경 결과 검증
+      // Then
       expect(response.body.data.todo.visibility).toBe("PRIVATE");
     });
 
     it("PRIVATE에서 PUBLIC으로 변경 성공", async () => {
-      // Given - 인증된 사용자와 PRIVATE Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-vis-pub@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -683,19 +680,19 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - PUBLIC으로 변경
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/visibility`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ visibility: "PUBLIC" })
         .expect(200);
 
-      // Then - 변경 결과 검증
+      // Then
       expect(response.body.data.todo.visibility).toBe("PUBLIC");
     });
 
     it("잘못된 visibility 값은 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-vis-invalid@example.com",
         testPassword,
@@ -709,14 +706,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 잘못된 visibility 값으로 변경 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/visibility`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ visibility: "INVALID" })
-        .expect(400);
+        .send({ visibility: "INVALID" });
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
   });
 
@@ -724,7 +721,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("카테고리 변경 성공", async () => {
-      // Given - 인증된 사용자, 두 번째 카테고리 생성
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-catchange@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -746,19 +743,19 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 카테고리 변경 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/category`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ categoryId: secondCategoryId })
         .expect(200);
 
-      // Then - 변경 결과 검증
+      // Then
       expect(response.body.data.todo.category.id).toBe(secondCategoryId);
     });
 
     it("존재하지 않는 카테고리는 404 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-catchange-404@example.com",
         testPassword,
@@ -772,14 +769,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 존재하지 않는 카테고리로 변경 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/category`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ categoryId: 999_999 })
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
     });
   });
@@ -788,7 +785,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("일정 변경 성공 (종일 이벤트)", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-sched-allday@example.com",
         testPassword,
@@ -802,7 +799,7 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 종일 일정으로 변경 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/schedule`)
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -813,14 +810,14 @@ describe("할 일 E2E", () => {
         })
         .expect(200);
 
-      // Then - 일정 변경 검증
+      // Then
       expect(response.body.data.todo.startDate).toBe("2024-02-01");
       expect(response.body.data.todo.endDate).toBe("2024-02-02");
       expect(response.body.data.todo.isAllDay).toBe(true);
     });
 
     it("일정 변경 성공 (시간 지정)", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-sched-time@example.com",
         testPassword,
@@ -834,7 +831,7 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 시간 지정 일정으로 변경 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/schedule`)
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -845,14 +842,14 @@ describe("할 일 E2E", () => {
         })
         .expect(200);
 
-      // Then - 일정 변경 검증
+      // Then
       expect(response.body.data.todo.startDate).toBe("2024-02-15");
       expect(response.body.data.todo.isAllDay).toBe(false);
       expect(response.body.data.todo.scheduledTime).toBeTruthy();
     });
 
     it("startDate 필드 누락 시 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-sched-nostart@example.com",
         testPassword,
@@ -866,18 +863,18 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - startDate 없이 일정 변경 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/schedule`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ endDate: "2024-02-01" })
-        .expect(400);
+        .send({ endDate: "2024-02-01" });
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("endDate가 startDate보다 이전이면 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-sched-badrange@example.com",
         testPassword,
@@ -891,14 +888,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - endDate < startDate로 일정 변경 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/schedule`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ startDate: "2024-02-15", endDate: "2024-02-10" })
-        .expect(400);
+        .send({ startDate: "2024-02-15", endDate: "2024-02-10" });
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
   });
 
@@ -906,7 +903,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("제목 수정 성공", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-title-update@example.com",
         testPassword,
@@ -920,19 +917,19 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 제목 수정 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/title`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "SRP로 수정된 제목" })
         .expect(200);
 
-      // Then - 수정 결과 검증
+      // Then
       expect(response.body.data.todo.title).toBe("SRP로 수정된 제목");
     });
 
     it("빈 요청은 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-title-empty@example.com",
         testPassword,
@@ -946,18 +943,18 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 빈 요청으로 수정 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/title`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({})
-        .expect(400);
+        .send({});
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("제목이 200자 초과하면 400 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-title-long@example.com",
         testPassword,
@@ -971,14 +968,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = createResponse.body.data.todo.id;
 
-      // When - 긴 제목으로 수정 API 호출
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/title`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ title: "a".repeat(201) })
-        .expect(400);
+        .send({ title: "a".repeat(201) });
 
-      // Then - 400 Bad Request 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
   });
 
@@ -986,7 +983,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("특정 Todo 앞/뒤로 이동 및 맨 앞으로 이동 성공", async () => {
-      // Given - 인증된 사용자와 3개의 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-reorder@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -1011,35 +1008,36 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todo3Id = res3.body.data.todo.id;
 
-      // When - todo3를 todo1 앞으로 이동 (before)
+      // When
       const beforeResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todo3Id}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ targetTodoId: todo1Id, position: "before" })
         .expect(200);
 
-      // Then - 이동 성공 검증
+      // Then
       expect(beforeResponse.body.data.message).toBe("할 일 순서가 변경되었습니다.");
       expect(beforeResponse.body.data.todo.id).toBe(todo3Id);
 
-      // When - todo1을 todo2 뒤로 이동 (after)
+      // When
       const afterResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todo1Id}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ targetTodoId: todo2Id, position: "after" })
         .expect(200);
 
-      // Then - 이동 성공 검증
+      // Then
       expect(afterResponse.body.data.todo.id).toBe(todo1Id);
 
-      // When - todo2를 맨 앞으로 이동 (targetTodoId 없이 before)
+      // When
       const firstResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todo2Id}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ position: "before" })
         .expect(200);
 
-      // Then - 맨 앞으로 옮겨져 목록 첫 자리다(3 → 1 → 2 순서에서 2가 맨 앞)
+      // Then
+      // 3 → 1 → 2 순서에서 2가 맨 앞
       expect(firstResponse.body.data.todo.id).toBe(todo2Id);
       const listResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
@@ -1054,7 +1052,7 @@ describe("할 일 E2E", () => {
     });
 
     it("존재하지 않는 Todo로 이동 시도 시 404 에러", async () => {
-      // Given - 인증된 사용자와 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-reorder-404@example.com",
         testPassword,
@@ -1068,14 +1066,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const todoId = res.body.data.todo.id;
 
-      // When - 존재하지 않는 Todo로 이동 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ targetTodoId: 999_999, position: "before" })
         .expect(404);
 
-      // Then - 404 에러 검증
+      // Then
       expect(response.body.error.code).toBe("TODO_0810");
     });
   });
@@ -1084,7 +1082,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("다른 사용자의 할 일에 접근/수정/삭제 시 404 에러", async () => {
-      // Given - 두 명의 사용자 생성
+      // Given
       const user1 = await ctx.helpers.createVerifiedUser("user1@example.com", testPassword);
       const user2 = await ctx.helpers.createVerifiedUser("user2@example.com", testPassword);
       const user1CategoryId = await ctx.helpers.getDefaultCategoryId(user1.accessToken);
@@ -1100,31 +1098,37 @@ describe("할 일 E2E", () => {
         .expect(201);
       const user1TodoId = response.body.data.todo.id;
 
-      // When/Then - 다른 사용자의 할 일 조회 시 404 에러
+      // When
       const getResponse = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/${user1TodoId}`)
-        .set("Authorization", `Bearer ${user2.accessToken}`)
-        .expect(404);
+        .set("Authorization", `Bearer ${user2.accessToken}`);
+
+      // Then
+      expect(getResponse.status).toBe(404);
       expect(getResponse.body.error.code).toBe("TODO_0801");
 
-      // When/Then - 다른 사용자의 할 일 수정 시 404 에러
+      // When
       const patchResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${user1TodoId}`)
         .set("Authorization", `Bearer ${user2.accessToken}`)
-        .send({ title: "해킹 시도" })
-        .expect(404);
+        .send({ title: "해킹 시도" });
+
+      // Then
+      expect(patchResponse.status).toBe(404);
       expect(patchResponse.body.error.code).toBe("TODO_0801");
 
-      // When/Then - 다른 사용자의 할 일 삭제 시 404 에러
+      // When
       const deleteResponse = await request(ctx.app.getHttpServer())
         .delete(`/v1/todos/${user1TodoId}`)
-        .set("Authorization", `Bearer ${user2.accessToken}`)
-        .expect(404);
+        .set("Authorization", `Bearer ${user2.accessToken}`);
+
+      // Then
+      expect(deleteResponse.status).toBe(404);
       expect(deleteResponse.body.error.code).toBe("TODO_0801");
     });
 
     it("각 사용자는 자신의 할 일만 목록에서 조회됨", async () => {
-      // Given - 두 명의 사용자와 각자의 할 일
+      // Given
       const user1 = await ctx.helpers.createVerifiedUser("user1-list@example.com", testPassword);
       const user2 = await ctx.helpers.createVerifiedUser("user2-list@example.com", testPassword);
       const user1CategoryId = await ctx.helpers.getDefaultCategoryId(user1.accessToken);
@@ -1150,19 +1154,18 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - user1의 목록 조회
+      // When
       const user1List = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", `Bearer ${user1.accessToken}`)
         .expect(200);
 
-      // When - user2의 목록 조회
       const user2List = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", `Bearer ${user2.accessToken}`)
         .expect(200);
 
-      // Then - 각 사용자는 자신의 할 일만 볼 수 있음
+      // Then
       const user1Titles = user1List.body.data.items.map((t: Todo) => t.title);
       const user2Titles = user2List.body.data.items.map((t: Todo) => t.title);
 
@@ -1177,7 +1180,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("커서 기반 페이지네이션 동작 확인", async () => {
-      // Given - 인증된 사용자와 10개의 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("pagination@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -1193,26 +1196,26 @@ describe("할 일 E2E", () => {
           .expect(201);
       }
 
-      // When - 첫 페이지 조회 (5개)
+      // When
       const page1 = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ size: 5 })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 첫 페이지 검증
+      // Then
       expect(page1.body.data.items.length).toBe(5);
       expect(page1.body.data.pagination.hasNext).toBe(true);
       expect(page1.body.data.pagination.nextCursor).toBeTruthy();
 
-      // When - 두 번째 페이지 조회
+      // When
       const page2 = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ size: 5, cursor: page1.body.data.pagination.nextCursor })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 두 번째 페이지 검증 (중복 없음)
+      // Then
       expect(page2.body.data.items.length).toBe(5);
 
       const page1Ids = page1.body.data.items.map((t: Todo) => t.id);
@@ -1228,30 +1231,30 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("제목이 200자 초과하면 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "validation-title@example.com",
         testPassword,
       );
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 긴 제목으로 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "a".repeat(201), categoryId, startDate: "2024-01-15" })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("잘못된 visibility 값은 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("validation-vis@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 잘못된 visibility로 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1263,19 +1266,19 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("잘못된 scheduledTime 형식은 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "validation-time@example.com",
         testPassword,
       );
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 잘못된 시간으로 할 일 생성 API 호출
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1287,7 +1290,7 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
   });
@@ -1296,11 +1299,11 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("필수 필드로 반복 할 일 생성 후 조회 및 독립 완료 처리", async () => {
-      // Given - 인증된 사용자와 기본 카테고리
+      // Given
       const user = await ctx.helpers.createVerifiedUser("recurring-test@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 반복 할 일 생성 API 호출 (2026-03-02~2026-03-08, 월수금)
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/recurring")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1313,7 +1316,7 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // Then - 반복 할 일 생성 성공 검증
+      // Then
       expect(response.body.data.count).toBe(3);
       expect(response.body.data.todos).toHaveLength(3);
       expect(response.body.data.message).toContain("3개");
@@ -1328,20 +1331,20 @@ describe("할 일 E2E", () => {
       const groupIds = new Set(response.body.data.todos.map((t: Todo) => t.recurrenceGroupId));
       expect(groupIds.size).toBe(1);
 
-      // When - 생성된 반복 할 일이 GET /todos로 조회
+      // When
       const listResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2026-03-02", endDate: "2026-03-08" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 반복 할 일이 조회됨
+      // Then
       const recurringTodos = listResponse.body.data.items.filter(
         (t: Todo) => t.recurrenceGroupId !== null,
       );
       expect(recurringTodos.length).toBe(3);
 
-      // When - 첫 번째만 완료 처리
+      // When
       const firstTodoId = recurringTodos[0].id;
       const secondTodoId = recurringTodos[1].id;
 
@@ -1351,7 +1354,7 @@ describe("할 일 E2E", () => {
         .send({ completed: true })
         .expect(200);
 
-      // Then - 첫 번째만 완료, 나머지는 미완료
+      // Then
       const firstTodo = await request(ctx.app.getHttpServer())
         .get(`/v1/todos/${firstTodoId}`)
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1366,14 +1369,14 @@ describe("할 일 E2E", () => {
     });
 
     it("잘못된 요일 값은 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "recurring-badday@example.com",
         testPassword,
       );
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 잘못된 요일로 반복 할 일 생성
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/recurring")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1386,19 +1389,19 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("startDate > endDate이면 400 에러", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "recurring-badrange@example.com",
         testPassword,
       );
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
-      // When - 잘못된 날짜 범위로 반복 할 일 생성
+      // When
       const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/recurring")
         .set("Authorization", `Bearer ${user.accessToken}`)
@@ -1411,15 +1414,13 @@ describe("할 일 E2E", () => {
         })
         .expect(400);
 
-      // Then - 400 Bad Request 검증
+      // Then
       expect(response.body.success).toBe(false);
     });
 
     it("인증 없이 요청 시 401 에러", async () => {
-      // Given - 인증 토큰 없음
-
-      // When - 인증 없이 반복 할 일 생성
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/recurring")
         .send({
           title: "인증 없음",
@@ -1427,10 +1428,10 @@ describe("할 일 E2E", () => {
           startDate: "2026-03-01",
           endDate: "2026-03-31",
           daysOfWeek: ["MON"],
-        })
-        .expect(401);
+        });
 
-      // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+      // Then
+      expect(response.status).toBe(401);
     });
   });
 
@@ -1438,7 +1439,7 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("categoryId 없이 조회 시 category.sortOrder -> todo.sortOrder -> id 순으로 정렬된다", async () => {
-      // Given - 인증된 사용자와 카테고리별 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("sort-test@example.com", testPassword);
       const accessToken = user.accessToken;
 
@@ -1509,14 +1510,14 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - 할 일 목록 조회
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-06-01", endDate: "2024-06-01" })
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 카테고리 sortOrder 순 정렬 검증
+      // Then
       const items = response.body.data.items;
       expect(items.length).toBe(5);
 
@@ -1531,7 +1532,7 @@ describe("할 일 E2E", () => {
     });
 
     it("각 todo의 category 객체에 sortOrder 필드가 포함된다", async () => {
-      // Given - 인증된 사용자와 카테고리별 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("sort-field@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -1541,21 +1542,21 @@ describe("할 일 E2E", () => {
         .send({ title: "테스트", categoryId, startDate: "2024-06-01" })
         .expect(201);
 
-      // When - 할 일 목록 조회
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-06-01", endDate: "2024-06-01" })
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - sortOrder 필드 포함 검증
+      // Then
       for (const item of response.body.data.items) {
         expect(typeof item.category.sortOrder).toBe("number");
       }
     });
 
     it("페이지네이션 시 카테고리 순서가 유지된다", async () => {
-      // Given - 인증된 사용자와 여러 카테고리의 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("sort-page@example.com", testPassword);
       const accessToken = user.accessToken;
 
@@ -1597,18 +1598,18 @@ describe("할 일 E2E", () => {
           .expect(201);
       }
 
-      // When - 첫 페이지 (3개)
+      // When
       const page1 = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-06-01", endDate: "2024-06-01", size: 3 })
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 첫 페이지 검증
+      // Then
       expect(page1.body.data.items.length).toBe(3);
       expect(page1.body.data.pagination.hasNext).toBe(true);
 
-      // When - 두 번째 페이지
+      // When
       const page2 = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({
@@ -1620,14 +1621,14 @@ describe("할 일 E2E", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 페이지 간 카테고리 순서 유지 검증
+      // Then
       const page1Last = page1.body.data.items[page1.body.data.items.length - 1];
       const page2First = page2.body.data.items[0];
       expect(page1Last.category.sortOrder).toBeLessThanOrEqual(page2First.category.sortOrder);
     });
 
     it("카테고리 reorder 후 조회하면 새 순서가 반영된다", async () => {
-      // Given - 인증된 사용자와 카테고리별 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("sort-reorder@example.com", testPassword);
       const accessToken = user.accessToken;
 
@@ -1665,14 +1666,13 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - 카테고리3(공부)를 카테고리1(중요한 일) 앞으로 이동
+      // When
       await request(ctx.app.getHttpServer())
         .patch(`/v1/todo-categories/${category3Id}/reorder`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ targetCategoryId: category1Id, position: "before" })
         .expect(200);
 
-      // When - 할 일 목록 조회
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .query({ startDate: "2024-06-01", endDate: "2024-06-01" })
@@ -1681,7 +1681,7 @@ describe("할 일 E2E", () => {
 
       const items = response.body.data.items;
 
-      // Then - 카테고리3(공부)의 할 일이 카테고리1(중요한 일) 할 일보다 먼저 나옴
+      // Then
       const firstCat3Index = items.findIndex((t: Todo) => t.category.id === category3Id);
       const firstCat1Index = items.findIndex((t: Todo) => t.category.id === category1Id);
 
@@ -1693,12 +1693,12 @@ describe("할 일 E2E", () => {
     const testPassword = "Test1234!";
 
     it("인라인 체크리스트 생성 → 추가 → 수정 → 삭제 → 순서 변경 전체 플로우", async () => {
-      // Given - 인증된 사용자와 카테고리
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-item-test@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
       const accessToken = user.accessToken;
 
-      // When - items 배열과 함께 할 일 생성
+      // When
       const createResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1710,14 +1710,14 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // Then - items와 itemStats가 올바르게 포함
+      // Then
       expect(createResponse.body.data.todo.items).toHaveLength(3);
       expect(createResponse.body.data.todo.itemStats).toEqual({
         total: 3,
         completed: 0,
       });
 
-      // When - items 없이 생성 시
+      // When
       const noItemsResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1728,14 +1728,14 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // Then - 빈 items 배열과 초기 itemStats
+      // Then
       expect(noItemsResponse.body.data.todo.items).toEqual([]);
       expect(noItemsResponse.body.data.todo.itemStats).toEqual({
         total: 0,
         completed: 0,
       });
 
-      // Given - 부모 Todo 생성
+      // Given
       const parentRes = await request(ctx.app.getHttpServer())
         .post("/v1/todos")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1743,14 +1743,14 @@ describe("할 일 E2E", () => {
         .expect(201);
       const parentTodoId = parentRes.body.data.todo.id;
 
-      // When - 하위 항목 추가
+      // When
       const addResponse = await request(ctx.app.getHttpServer())
         .post(`/v1/todos/${parentTodoId}/items`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ title: "새 하위 항목" })
         .expect(201);
 
-      // Then - 하위 항목이 추가되고 completed=false
+      // Then
       expect(addResponse.body.data.todo.items.length).toBeGreaterThanOrEqual(1);
       const addedItem = addResponse.body.data.todo.items.find(
         (i: { title: string }) => i.title === "새 하위 항목",
@@ -1758,7 +1758,7 @@ describe("할 일 E2E", () => {
       expect(addedItem).toBeDefined();
       expect(addedItem.completed).toBe(false);
 
-      // When - 하위 항목 추가 (토글 테스트용)
+      // When
       const toggleAddRes = await request(ctx.app.getHttpServer())
         .post(`/v1/todos/${parentTodoId}/items`)
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1768,21 +1768,20 @@ describe("할 일 E2E", () => {
         (i: { title: string }) => i.title === "토글 테스트",
       ).id;
 
-      // When - 하위 항목 완료 토글
       const toggleResponse = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${parentTodoId}/items/${toggleItemId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ completed: true })
         .expect(200);
 
-      // Then - 완료 상태 변경 및 itemStats 반영
+      // Then
       const updatedItem = toggleResponse.body.data.todo.items.find(
         (i: { id: number }) => i.id === toggleItemId,
       );
       expect(updatedItem.completed).toBe(true);
       expect(toggleResponse.body.data.todo.itemStats.completed).toBeGreaterThanOrEqual(1);
 
-      // When - 하위 항목 추가 (삭제 테스트용)
+      // When
       const deleteAddRes = await request(ctx.app.getHttpServer())
         .post(`/v1/todos/${parentTodoId}/items`)
         .set("Authorization", `Bearer ${accessToken}`)
@@ -1794,13 +1793,12 @@ describe("할 일 E2E", () => {
       ).id;
       const countBefore = deleteItemsBefore.length;
 
-      // When - 하위 항목 삭제
       const deleteResponse = await request(ctx.app.getHttpServer())
         .delete(`/v1/todos/${parentTodoId}/items/${deleteItemId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 항목이 제거되고 itemStats 재계산
+      // Then
       expect(deleteResponse.body.data.todo.items).toHaveLength(countBefore - 1);
       const deletedItem = deleteResponse.body.data.todo.items.find(
         (i: { id: number }) => i.id === deleteItemId,
@@ -1810,21 +1808,21 @@ describe("할 일 E2E", () => {
     });
 
     it("존재하지 않는 Todo에 추가 시 404", async () => {
-      // Given - 인증된 사용자
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-item-404@example.com", testPassword);
 
-      // When - 존재하지 않는 Todo에 하위 항목 추가 시도
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/999999/items")
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ title: "테스트 항목" })
-        .expect(404);
+        .send({ title: "테스트 항목" });
 
-      // Then - 404 Not Found (expect에서 검증)
+      // Then
+      expect(response.status).toBe(404);
     });
 
     it("빈 제목 시 400", async () => {
-      // Given - 인증된 사용자와 부모 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-item-empty@example.com",
         testPassword,
@@ -1838,30 +1836,28 @@ describe("할 일 E2E", () => {
         .expect(201);
       const parentTodoId = parentRes.body.data.todo.id;
 
-      // When - 빈 제목으로 하위 항목 추가 시도
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .post(`/v1/todos/${parentTodoId}/items`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ title: "" })
-        .expect(400);
+        .send({ title: "" });
 
-      // Then - 400 Bad Request (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("인증 없이 시도 시 401", async () => {
-      // Given - 인증 토큰 없음
-
-      // When - 인증 없이 하위 항목 추가 시도
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .post("/v1/todos/1/items")
-        .send({ title: "테스트 항목" })
-        .expect(401);
+        .send({ title: "테스트 항목" });
 
-      // Then - 401 Unauthorized (expect에서 검증)
+      // Then
+      expect(response.status).toBe(401);
     });
 
     it("존재하지 않는 itemId 시 404", async () => {
-      // Given - 인증된 사용자와 부모 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-item-itemid404@example.com",
         testPassword,
@@ -1875,18 +1871,18 @@ describe("할 일 E2E", () => {
         .expect(201);
       const parentTodoId = parentRes.body.data.todo.id;
 
-      // When - 존재하지 않는 하위 항목 수정 시도
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${parentTodoId}/items/999999`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ completed: true })
-        .expect(404);
+        .send({ completed: true });
 
-      // Then - 404 Not Found (expect에서 검증)
+      // Then
+      expect(response.status).toBe(404);
     });
 
     it("전체 ID 배열로 순서 변경 성공", async () => {
-      // Given - 인증된 사용자와 인라인 items가 있는 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-item-reorder@example.com",
         testPassword,
@@ -1906,7 +1902,7 @@ describe("할 일 E2E", () => {
       const todoId = createRes.body.data.todo.id;
       const itemIds = createRes.body.data.todo.items.map((i: { id: number }) => i.id);
 
-      // When - 역순으로 재정렬
+      // When
       const reversedIds = [...itemIds].reverse();
       const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/items/reorder`)
@@ -1914,13 +1910,13 @@ describe("할 일 E2E", () => {
         .send({ itemIds: reversedIds })
         .expect(200);
 
-      // Then - 순서가 변경됨
+      // Then
       const reorderedIds = response.body.data.todo.items.map((i: { id: number }) => i.id);
       expect(reorderedIds).toEqual(reversedIds);
     });
 
     it("부분 ID 전달 시 400", async () => {
-      // Given - 인증된 사용자와 인라인 items가 있는 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-item-partial@example.com",
         testPassword,
@@ -1940,18 +1936,18 @@ describe("할 일 E2E", () => {
       const todoId = createRes.body.data.todo.id;
       const itemIds = createRes.body.data.todo.items.map((i: { id: number }) => i.id);
 
-      // When - 일부 ID만 전달
-      await request(ctx.app.getHttpServer())
+      // When
+      const response = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/items/reorder`)
         .set("Authorization", `Bearer ${user.accessToken}`)
-        .send({ itemIds: [itemIds[0]] })
-        .expect(400);
+        .send({ itemIds: [itemIds[0]] });
 
-      // Then - 400 Bad Request (expect에서 검증)
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("목록 조회 시 각 투두에 items, itemStats 필드 존재", async () => {
-      // Given - 인증된 사용자와 하위 항목이 있는 할 일
+      // Given
       const user = await ctx.helpers.createVerifiedUser("todo-item-list@example.com", testPassword);
       const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
@@ -1966,13 +1962,13 @@ describe("할 일 E2E", () => {
         })
         .expect(201);
 
-      // When - 할 일 목록 조회
+      // When
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos")
         .set("Authorization", `Bearer ${user.accessToken}`)
         .expect(200);
 
-      // Then - 각 투두에 items와 itemStats 필드 포함
+      // Then
       for (const todo of response.body.data.items) {
         expect(todo.items).toBeDefined();
         expect(Array.isArray(todo.items)).toBe(true);
@@ -1983,7 +1979,7 @@ describe("할 일 E2E", () => {
     });
 
     it("부모 완료해도 하위 항목 completed 변경 없음", async () => {
-      // Given - 인증된 사용자와 하위 항목이 있는 Todo
+      // Given
       const user = await ctx.helpers.createVerifiedUser(
         "todo-item-indep@example.com",
         testPassword,
@@ -2010,14 +2006,14 @@ describe("할 일 E2E", () => {
         .send({ completed: true })
         .expect(200);
 
-      // When - 부모 Todo 완료 처리
+      // When
       const completeRes = await request(ctx.app.getHttpServer())
         .patch(`/v1/todos/${todoId}/complete`)
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ completed: true })
         .expect(200);
 
-      // Then - 부모는 완료되었지만 하위 항목 상태는 변경 없음
+      // Then
       const items = completeRes.body.data.todo.items;
       const completedItem = items.find((i: { id: number }) => i.id === firstItemId);
       const incompletedItem = items.find((i: { id: number }) => i.id !== firstItemId);

@@ -39,13 +39,15 @@ describe("BroadcastCampaign — 브로드캐스트 분배 진행", () => {
     // Given
     const campaign = createBroadcastCampaignFixture();
 
-    // Then
-    expect(() =>
+    // When
+    const recordPage = () =>
       campaign.recordPage(
         { lastUserId: UserId.reconstitute("user-1"), processedCount: 1, queuedCount: 1 },
         NOW,
-      ),
-    ).toThrow();
+      );
+
+    // Then
+    expect(recordPage).toThrow();
   });
 
   it("이미 그 상태인 캠페인에 같은 전이를 다시 요청하면 바꾸지 않고 false다", () => {
@@ -54,10 +56,15 @@ describe("BroadcastCampaign — 브로드캐스트 분배 진행", () => {
     const completed = createBroadcastCampaignFixture({ status: "COMPLETED", completedAt: NOW });
     const failed = createBroadcastCampaignFixture({ status: "FAILED", completedAt: NOW });
 
+    // When
+    const startedAgain = fanningOut.start(NOW);
+    const completedAgain = completed.complete(NOW);
+    const failedAgain = failed.fail("late", NOW);
+
     // Then
-    expect(fanningOut.start(NOW)).toBe(false);
-    expect(completed.complete(NOW)).toBe(false);
-    expect(failed.fail("late", NOW)).toBe(false);
+    expect(startedAgain).toBe(false);
+    expect(completedAgain).toBe(false);
+    expect(failedAgain).toBe(false);
     expect([fanningOut.status, completed.status, failed.status]).toEqual([
       "FANNING_OUT",
       "COMPLETED",
@@ -71,11 +78,17 @@ describe("BroadcastCampaign — 브로드캐스트 분배 진행", () => {
     const failed = createBroadcastCampaignFixture({ status: "FAILED", completedAt: NOW });
     const finished = expect.objectContaining({ errorCode: ErrorCode.SYS_0002 });
 
+    // When
+    const startCompleted = () => completed.start(NOW);
+    const failCompleted = () => completed.fail("late", NOW);
+    const startFailed = () => failed.start(NOW);
+    const completeFailed = () => failed.complete(NOW);
+
     // Then
-    expect(() => completed.start(NOW)).toThrow(finished);
-    expect(() => completed.fail("late", NOW)).toThrow(finished);
-    expect(() => failed.start(NOW)).toThrow(finished);
-    expect(() => failed.complete(NOW)).toThrow(finished);
+    expect(startCompleted).toThrow(finished);
+    expect(failCompleted).toThrow(finished);
+    expect(startFailed).toThrow(finished);
+    expect(completeFailed).toThrow(finished);
     expect([completed.status, failed.status]).toEqual(["COMPLETED", "FAILED"]);
   });
 
@@ -86,38 +99,43 @@ describe("BroadcastCampaign — 브로드캐스트 분배 진행", () => {
     });
     const same = createBroadcastCampaignFixture({ action: { type: "DEEP_LINK", url: "/feed" } });
 
+    // When
+    const sameContent = campaign.isSameRequest(same);
+    const differentBody = campaign.isSameRequest(
+      createBroadcastCampaignFixture({
+        action: { type: "DEEP_LINK", url: "/feed" },
+        body: "다른 본문",
+      }),
+    );
+    const differentAction = campaign.isSameRequest(
+      createBroadcastCampaignFixture({ action: null }),
+    );
+
     // Then
-    expect(campaign.isSameRequest(same)).toBe(true);
-    expect(
-      campaign.isSameRequest(
-        createBroadcastCampaignFixture({
-          action: { type: "DEEP_LINK", url: "/feed" },
-          body: "다른 본문",
-        }),
-      ),
-    ).toBe(false);
-    expect(campaign.isSameRequest(createBroadcastCampaignFixture({ action: null }))).toBe(false);
+    expect(sameContent).toBe(true);
+    expect(differentBody).toBe(false);
+    expect(differentAction).toBe(false);
   });
 
   it("언어별 문구나 발송 시점이 다르면 다른 요청으로 본다", () => {
     // Given
     const campaign = createBroadcastCampaignFixture();
 
+    // When
+    const differentLocalizedContent = campaign.isSameRequest(
+      createBroadcastCampaignFixture({
+        localizedContent: { en: { title: "New feature", body: "Check it out." } },
+      }),
+    );
+    const differentDelivery = campaign.isSameRequest(
+      createBroadcastCampaignFixture({
+        delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2026-11-04" },
+      }),
+    );
+
     // Then
-    expect(
-      campaign.isSameRequest(
-        createBroadcastCampaignFixture({
-          localizedContent: { en: { title: "New feature", body: "Check it out." } },
-        }),
-      ),
-    ).toBe(false);
-    expect(
-      campaign.isSameRequest(
-        createBroadcastCampaignFixture({
-          delivery: { mode: "RECIPIENT_LOCAL_TIME", localTime: "10:00", date: "2026-11-04" },
-        }),
-      ),
-    ).toBe(false);
+    expect(differentLocalizedContent).toBe(false);
+    expect(differentDelivery).toBe(false);
   });
 });
 
@@ -128,12 +146,16 @@ describe("BroadcastCampaign.contentFor — 수신자 언어별 문구", () => {
       localizedContent: { en: { title: "New feature", body: "Check it out." } },
     });
 
+    // When
+    const english = campaign.contentFor("en");
+    const korean = campaign.contentFor("ko");
+
     // Then
-    expect(campaign.contentFor("en").value).toEqual({
+    expect(english.value).toEqual({
       title: "New feature",
       body: "Check it out.",
     });
-    expect(campaign.contentFor("ko").value).toEqual({
+    expect(korean.value).toEqual({
       title: "새 기능 안내",
       body: "지금 확인해 보세요.",
     });

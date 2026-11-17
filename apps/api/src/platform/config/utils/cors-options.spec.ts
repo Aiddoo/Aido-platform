@@ -30,7 +30,7 @@ describe("createCorsOptions", () => {
   });
 
   it("요청 ID를 받고 응답의 요청 ID를 브라우저에 노출하며 쓰지 않는 X-Requested-With는 받지 않는다", () => {
-    // Given / When
+    // When
     const options = createCorsOptions({ corsOrigins: [], localCorsOrigins: false });
 
     // Then

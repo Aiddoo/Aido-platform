@@ -36,28 +36,29 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 
   describe("Free 유저 카테고리 제한", () => {
     it("3번째 카테고리 생성 성공 후 4번째 생성 시 403 에러, 리소스 제한 조회 확인", async () => {
-      // Given - 기본 카테고리 2개가 자동 생성된 Free 유저
+      // Given
+      // 기본 카테고리 2개가 자동 생성된 Free 유저
       const user = await ctx.helpers.createVerifiedUser("cat-limit-free@test.com", password);
       const accessToken = user.accessToken;
 
-      // When - 3번째 카테고리 생성
+      // When
       const createResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "추가 카테고리", color: "#00FF00" })
         .expect(201);
 
-      // Then - 카테고리 생성 성공
+      // Then
       expect(createResponse.body.data.category.name).toBe("추가 카테고리");
 
-      // When - 4번째 카테고리 생성 시도
+      // When
       const overResponse = await request(ctx.app.getHttpServer())
         .post("/v1/todo-categories")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ name: "초과 카테고리", color: "#0000FF" })
         .expect(403);
 
-      // Then - 403 에러와 TODO_CATEGORY_0857 코드 반환
+      // Then
       expect(overResponse.body.success).toBe(false);
       expect(overResponse.body.error.code).toBe("TODO_CATEGORY_0857");
       expect(quotaErrorDetailsSchema.parse(overResponse.body.error.details)).toEqual({
@@ -75,13 +76,13 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
         },
       });
 
-      // When - 리소스 제한 조회
+      // When
       const limitResponse = await request(ctx.app.getHttpServer())
         .get("/v1/todo-categories/resource-limit")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
 
-      // Then - 현재 카테고리 수와 한도가 FREE_LIMIT과 일치
+      // Then
       expect(limitResponse.body.data.categoryCount).toBe(FREE_LIMIT);
       expect(limitResponse.body.data.maxCount).toBe(FREE_LIMIT);
     });
@@ -126,7 +127,8 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
     const PREMIUM_LIMIT = PLAN_CATALOG.TODO_CATEGORY.premium;
 
     it("한도보다 많이 가진 ADMIN은 목록·수정·순서 변경은 그대로 하고 새로 만들기만 프리미엄 한도로 막힌다", async () => {
-      // Given - 기본 2개에 더해 프리미엄 한도를 하나 넘게 가진 ADMIN
+      // Given
+      // 기본 2개에 더해 프리미엄 한도를 하나 넘게 가진 ADMIN
       const admin = await ctx.helpers.createVerifiedUser("cat-limit-admin@test.com", password);
       const client = ctx.testDatabase.getClient();
       await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, admin.userId));

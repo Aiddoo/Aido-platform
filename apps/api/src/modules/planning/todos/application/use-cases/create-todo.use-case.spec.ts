@@ -112,13 +112,16 @@ describe("할 일 생성", () => {
       startDate: plainDateFromDate(PLANNING_TIME),
       timezone: "UTC",
     };
-    // When / Then
-    await expect(useCase.execute(input)).rejects.toMatchObject({
+    // When
+    const otherOwnerResult = useCase.execute(input);
+    // Then
+    await expect(otherOwnerResult).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_CATEGORY_0851,
     });
-    await expect(useCase.execute({ ...input, title: "가".repeat(201) })).rejects.toMatchObject({
-      errorCode: ErrorCode.SYS_0002,
-    });
+    // When
+    const longTitleResult = useCase.execute({ ...input, title: "가".repeat(201) });
+    // Then
+    await expect(longTitleResult).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect([...fixture.records.values()]).toEqual(before);
     expect(fixture.eventPublisher.publishedEvents).toEqual([]);
   });
@@ -127,16 +130,16 @@ describe("할 일 생성", () => {
     for (let id = 2; id <= TODO_LIMITS.MAX_PER_CATEGORY; id++) {
       fixture.records.set(id, createPlanningTodo(fixture.userId, id));
     }
-    // When / Then
-    await expect(
-      useCase.execute({
-        userId: UserId.reconstitute(fixture.userId),
-        title: "초과 할 일",
-        categoryId: TodoCategoryId.reconstitute(1),
-        startDate: plainDateFromDate(PLANNING_TIME),
-        timezone: "UTC",
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
+    // When
+    const result = useCase.execute({
+      userId: UserId.reconstitute(fixture.userId),
+      title: "초과 할 일",
+      categoryId: TodoCategoryId.reconstitute(1),
+      startDate: plainDateFromDate(PLANNING_TIME),
+      timezone: "UTC",
+    });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0811 });
     expect(fixture.records.size).toBe(TODO_LIMITS.MAX_PER_CATEGORY);
   });
   it.each(["cache"])(
@@ -148,16 +151,16 @@ describe("할 일 생성", () => {
       fixture.todoCache.invalidateTodoCategories = async () => {
         throw failure;
       };
-      // When / Then
-      await expect(
-        useCase.execute({
-          userId: UserId.reconstitute(fixture.userId),
-          title: "새 할 일",
-          categoryId: TodoCategoryId.reconstitute(1),
-          startDate: plainDateFromDate(PLANNING_TIME),
-          timezone: "UTC",
-        }),
-      ).rejects.toBe(failure);
+      // When
+      const result = useCase.execute({
+        userId: UserId.reconstitute(fixture.userId),
+        title: "새 할 일",
+        categoryId: TodoCategoryId.reconstitute(1),
+        startDate: plainDateFromDate(PLANNING_TIME),
+        timezone: "UTC",
+      });
+      // Then
+      await expect(result).rejects.toBe(failure);
       expect(fixture.records.size).toBe(1);
     },
   );
@@ -302,8 +305,10 @@ describe("할 일 생성", () => {
     it("맞는 날짜가 없으면 TODO_0843이고 아무것도 저장하지 않는다", async () => {
       // Given
       const repeat = { frequency: "DAILY", end: { type: "UNTIL", date: "2026-05-17" } } as const;
-      // When / Then
-      await expect(useCase.execute(seriesInput({ repeat }))).rejects.toMatchObject({
+      // When
+      const result = useCase.execute(seriesInput({ repeat }));
+      // Then
+      await expect(result).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_0843,
         details: { startDate: "2026-05-18", repeat },
       });
@@ -314,8 +319,10 @@ describe("할 일 생성", () => {
     it("반복과 기간 종료일을 함께 보내면 TODO_0845다", async () => {
       // Given
       const endDate = Temporal.PlainDate.from("2026-05-20");
-      // When / Then
-      await expect(useCase.execute(seriesInput({ endDate }))).rejects.toMatchObject({
+      // When
+      const result = useCase.execute(seriesInput({ endDate }));
+      // Then
+      await expect(result).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_0845,
         details: { field: "endDate" },
       });
@@ -328,16 +335,22 @@ describe("할 일 생성", () => {
         await useCase.execute(seriesInput({ startDate: Temporal.PlainDate.from("2027-01-01") }));
       }
       const finished = { frequency: "DAILY", end: { type: "COUNT", count: 1 } } as const;
-      // When / Then
-      await expect(useCase.execute(seriesInput())).rejects.toMatchObject({
+      // When
+      const overLimitResult = useCase.execute(seriesInput());
+      // Then
+      await expect(overLimitResult).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_0842,
         details: { limit, activeCount: limit },
       });
+      // Given
       for (const series of fixture.seriesStore.values()) {
         series.stopAfter("2026-12-31");
         await fixture.todoSeriesRepository.update(series);
       }
-      await expect(useCase.execute(seriesInput({ repeat: finished }))).resolves.toBeDefined();
+      // When
+      const finishedResult = useCase.execute(seriesInput({ repeat: finished }));
+      // Then
+      await expect(finishedResult).resolves.toBeDefined();
     });
 
     it("카테고리 한도에서 규칙은 1개로만 센다", async () => {
@@ -357,10 +370,10 @@ describe("할 일 생성", () => {
       for (let id = 1; id <= TODO_LIMITS.MAX_PER_CATEGORY; id++) {
         fixture.records.set(id, createPlanningTodo(fixture.userId, id));
       }
-      // When / Then
-      await expect(useCase.execute(seriesInput())).rejects.toMatchObject({
-        errorCode: ErrorCode.TODO_0813,
-      });
+      // When
+      const result = useCase.execute(seriesInput());
+      // Then
+      await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0813 });
       expect(fixture.seriesStore.size).toBe(0);
     });
 

@@ -256,7 +256,7 @@ describe("댓글 v2 묶음·답글 읽기 (실제 PostgreSQL)", () => {
   });
 
   it("대표 답글은 할 일 주인의 답글이고 답글 수는 지운 답글을 빼고 센다", async () => {
-    // Given / When
+    // When
     const page = await threads.execute({
       todoId,
       viewerId: OWNER_ID,

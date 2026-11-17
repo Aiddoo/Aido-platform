@@ -387,7 +387,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       ["America/Los_Angeles", "07:59", true],
       ["America/Los_Angeles", "08:00", false],
     ] as const)("%s 현지 %s(야간 %s)", async (timeZone, localTime, isNight) => {
-      // Given 야간 수신을 끄고 광고성 수신에 동의한 사용자
+      // Given
       const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase(
         localInstant(timeZone, localTime),
       );
@@ -420,7 +420,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     });
 
     it("단건도 야간에 할 일 리마인더는 보내고 소셜 알림은 야간 설정을 따른다", async () => {
-      // Given 서울 22:00, 야간 수신을 끈 사용자
+      // Given
       const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
         localInstant("Asia/Seoul", "22:00"),
       );

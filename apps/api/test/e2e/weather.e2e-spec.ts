@@ -73,20 +73,20 @@ describe("날씨 E2E", () => {
   describe("위치 등록", () => {
     describe("PUT /weather/location - 위치 등록/수정", () => {
       it("유효한 좌표로 위치를 등록한다", async () => {
-        // Given - 인증된 사용자와 유효한 한국 좌표
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-loc-reg@example.com",
           "Test1234!",
         );
 
-        // When - 위치 등록 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
-        // Then - 위치 등록 성공 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.latitude).toBe(37.5665);
         expect(response.body.data.longitude).toBe(126.978);
@@ -95,7 +95,7 @@ describe("날씨 E2E", () => {
       });
 
       it("위치를 등록한 뒤 수정하면 새 좌표가 반환된다", async () => {
-        // Given - 이미 위치가 등록된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-loc-mod@example.com",
           "Test1234!",
@@ -106,65 +106,63 @@ describe("날씨 E2E", () => {
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
-        // When - 새 좌표로 위치 수정
+        // When
         const response = await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 35.1796, longitude: 129.0756 })
           .expect(200);
 
-        // Then - 수정된 좌표 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.latitude).toBe(35.1796);
         expect(response.body.data.longitude).toBe(129.0756);
       });
 
       it("범위를 벗어난 위도이면 400 에러 반환", async () => {
-        // Given - 인증된 사용자, 한국 범위를 벗어난 위도 (33.0~39.0)
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-loc-badlat@example.com",
           "Test1234!",
         );
 
-        // When - 범위 밖 좌표로 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 50.0, longitude: 126.978 })
           .expect(400);
 
-        // Then - 유효성 검증 에러 검증
+        // Then
         expect(response.body.success).toBe(false);
       });
 
       it("범위를 벗어난 경도이면 400 에러 반환", async () => {
-        // Given - 인증된 사용자, 한국 범위를 벗어난 경도 (124.0~132.0)
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-loc-badlng@example.com",
           "Test1234!",
         );
 
-        // When - 범위 밖 좌표로 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .send({ latitude: 37.5665, longitude: 100.0 })
           .expect(400);
 
-        // Then - 유효성 검증 에러 검증
+        // Then
         expect(response.body.success).toBe(false);
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
-
-        // When - 인증 없이 위치 등록 API 호출
-        await request(ctx.app.getHttpServer())
+        // When
+        const response = await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
-          .send({ latitude: 37.5665, longitude: 126.978 })
-          .expect(401);
+          .send({ latitude: 37.5665, longitude: 126.978 });
 
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
   });
@@ -172,25 +170,25 @@ describe("날씨 E2E", () => {
   describe("날씨 예보 조회", () => {
     describe("GET /weather/forecast - 날씨 예보 조회", () => {
       it("위치 미등록 시 WEATHER_1902 에러 반환", async () => {
-        // Given - 위치를 등록하지 않은 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-fc-noloc@example.com",
           "Test1234!",
         );
 
-        // When - 예보 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/forecast")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(404);
 
-        // Then - 위치 미등록 에러 검증
+        // Then
         expect(response.body.success).toBe(false);
         expect(response.body.error.code).toBe("WEATHER_1902");
       });
 
       it("위치 등록 후 예보를 조회한다", async () => {
-        // Given - 위치가 등록된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser("weather-fc-ok@example.com", "Test1234!");
         await request(ctx.app.getHttpServer())
           .put("/v1/weather/location")
@@ -198,13 +196,13 @@ describe("날씨 E2E", () => {
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
-        // When - 예보 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/forecast")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // Then - 예보 응답 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.skyCondition).toBeDefined();
         expect(response.body.data.temperatureMin).toBeDefined();
@@ -216,7 +214,7 @@ describe("날씨 E2E", () => {
       });
 
       it("date 파라미터로 특정 날짜 예보를 조회한다", async () => {
-        // Given - 위치가 등록된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-fc-date@example.com",
           "Test1234!",
@@ -227,43 +225,42 @@ describe("날씨 E2E", () => {
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
-        // When - 특정 날짜 예보 조회
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/forecast")
           .query({ date: kstDate(1) })
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // Then - 예보 응답 검증
+        // Then
         expect(response.body.success).toBe(true);
         expect(response.body.data.skyCondition).toBeDefined();
       });
 
       it("잘못된 date 형식이면 400 에러 반환", async () => {
-        // Given - 인증된 사용자, 잘못된 날짜 형식
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-fc-baddate@example.com",
           "Test1234!",
         );
 
-        // When - 잘못된 date 파라미터로 요청
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/forecast")
           .query({ date: "invalid-date" })
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(400);
 
-        // Then - 유효성 검증 에러 검증
+        // Then
         expect(response.body.success).toBe(false);
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
+        // When
+        const response = await request(ctx.app.getHttpServer()).get("/v1/weather/forecast");
 
-        // When - 인증 없이 예보 조회 API 호출
-        await request(ctx.app.getHttpServer()).get("/v1/weather/forecast").expect(401);
-
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
   });
@@ -271,25 +268,25 @@ describe("날씨 E2E", () => {
   describe("날씨 부가 정보 조회", () => {
     describe("GET /weather/conditions - 부가 정보 조회", () => {
       it("위치 미등록 시 WEATHER_1902 에러 반환", async () => {
-        // Given - 위치를 등록하지 않은 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-cond-noloc@example.com",
           "Test1234!",
         );
 
-        // When - 부가 정보 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/conditions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(404);
 
-        // Then - 위치 미등록 에러 검증
+        // Then
         expect(response.body.success).toBe(false);
         expect(response.body.error.code).toBe("WEATHER_1902");
       });
 
       it("위치 등록 후 부가 정보를 조회한다", async () => {
-        // Given - 위치가 등록된 사용자
+        // Given
         const user = await ctx.helpers.createVerifiedUser(
           "weather-cond-ok@example.com",
           "Test1234!",
@@ -300,13 +297,13 @@ describe("날씨 E2E", () => {
           .send({ latitude: 37.5665, longitude: 126.978 })
           .expect(200);
 
-        // When - 부가 정보 조회 API 호출
+        // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/weather/conditions")
           .set("Authorization", `Bearer ${user.accessToken}`)
           .expect(200);
 
-        // Then - 부가 정보 응답 검증
+        // Then
         expect(response.body.success).toBe(true);
         const data = response.body.data;
         expect(data).toHaveProperty("feelsLikeTemperature");
@@ -318,12 +315,11 @@ describe("날씨 E2E", () => {
       });
 
       it("인증 없이 요청 시 401 에러 반환", async () => {
-        // Given - 인증 토큰 없음
+        // When
+        const response = await request(ctx.app.getHttpServer()).get("/v1/weather/conditions");
 
-        // When - 인증 없이 부가 정보 조회 API 호출
-        await request(ctx.app.getHttpServer()).get("/v1/weather/conditions").expect(401);
-
-        // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+        // Then
+        expect(response.status).toBe(401);
       });
     });
   });
@@ -477,7 +473,7 @@ describe("날씨 E2E", () => {
     );
 
     it("격자를 옮겨도 이전 격자의 공유 cache를 지우지 않아 남은 사용자는 공급자를 다시 부르지 않고 옮긴 사용자는 새 격자를 조회한다", async () => {
-      // Given - 두 사용자가 같은 서울 grid를 공유하고 두 날짜의 cache가 채워져 있다.
+      // Given
       const mover = await ctx.helpers.createVerifiedUser("weather-move@example.com", "Test1234!");
       const remaining = await ctx.helpers.createVerifiedUser(
         "weather-remain@example.com",

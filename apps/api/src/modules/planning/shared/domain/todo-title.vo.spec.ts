@@ -12,7 +12,7 @@ import { TodoTitle } from "./todo-title.vo.js";
 
 describe("TodoTitle — 제목 값 객체", () => {
   it("1자 제목이면 생성된다 (하한 경계값)", () => {
-    // Given & When
+    // When
     const title = TodoTitle.create("가");
 
     // Then
@@ -20,7 +20,7 @@ describe("TodoTitle — 제목 값 객체", () => {
   });
 
   it("200자 제목이면 생성된다 (상한 경계값)", () => {
-    // Given & When
+    // When
     const title = TodoTitle.create("가".repeat(200));
 
     // Then
@@ -28,10 +28,10 @@ describe("TodoTitle — 제목 값 객체", () => {
   });
 
   it("빈 문자열이면 DomainException(SYS_0002)을 던진다", () => {
-    // Given
+    // When
     const create = () => TodoTitle.create("");
 
-    // When & Then
+    // Then
     expect(create).toThrow(DomainException);
     expect(create).toThrow("제목은 1~200자여야 합니다.");
     try {
@@ -44,10 +44,10 @@ describe("TodoTitle — 제목 값 객체", () => {
   });
 
   it("201자 제목이면 DomainException(SYS_0002)을 던진다", () => {
-    // Given
+    // When
     const create = () => TodoTitle.create("가".repeat(201));
 
-    // When & Then
+    // Then
     expect(create).toThrow(DomainException);
     try {
       create();

@@ -31,23 +31,38 @@ describe("HmacMarketingPushOptOutTokenAdapter", () => {
   });
 
   it("발급한 토큰에서 사용자 ID를 복원한다", () => {
+    // Given
     const token = adapter.issue("user.with.dots");
 
-    expect(adapter.verify(token)).toBe("user.with.dots");
+    // When
+    const userId = adapter.verify(token);
+
+    // Then
+    expect(userId).toBe("user.with.dots");
   });
 
   it("서명이 변조된 토큰을 거부한다", () => {
+    // Given
     const token = adapter.issue("user-1");
     const tampered = `${token.slice(0, -1)}${token.endsWith("a") ? "b" : "a"}`;
 
-    expect(adapter.verify(tampered)).toBeNull();
+    // When
+    const userId = adapter.verify(tampered);
+
+    // Then
+    expect(userId).toBeNull();
   });
 
   it("90일 유효기간이 지난 토큰을 기기 시각과 무관하게 거부한다", () => {
+    // Given
     const token = adapter.issue("user-1");
     vi.advanceTimersByTime(90 * 24 * 60 * 60 * 1000 + 1000);
 
-    expect(adapter.verify(token)).toBeNull();
+    // When
+    const userId = adapter.verify(token);
+
+    // Then
+    expect(userId).toBeNull();
   });
 
   it("새 서명 키가 없으면 배포 전과 바이트 단위로 같은 토큰을 만든다", () => {

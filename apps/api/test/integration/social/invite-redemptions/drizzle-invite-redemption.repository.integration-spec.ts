@@ -87,7 +87,8 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
   });
 
   it("활동일은 DATE 칸에 그 날짜 그대로 남고 다시 읽어도 하루 밀리지 않는다", async () => {
-    // Given 서울 2/29 00:01 완료
+    // Given
+    // 서울 2/29 00:01 완료
     const { redemptions } = createRepositories();
     const redemption = createInviteRedemptionFixture({ id: InviteRedemptionId.generate().value });
     await redemptions.save(redemption);

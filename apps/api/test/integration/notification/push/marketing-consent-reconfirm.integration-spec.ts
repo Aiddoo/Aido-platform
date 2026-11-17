@@ -145,7 +145,8 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   });
 
   it("10:00 KST가 현지 야간인 사용자는 남겨 두었다가 현지 낮의 매시 실행에서 알린다", async () => {
-    // Given: 런던은 10:00 KST(01:00Z)에 01:00, 19:00 KST(10:00Z)에 10:00이다
+    // Given
+    // 런던은 10:00 KST(01:00Z)에 01:00, 19:00 KST(10:00Z)에 10:00이다
     const userId = await givenUser("RECONF08", {
       marketingAgreedAt: Temporal.Instant.from("2023-01-01T00:00:00.000Z"),
     });

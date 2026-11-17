@@ -52,8 +52,12 @@ describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
   });
 
   it("어댑터가 정상적으로 주입되어야 함", () => {
-    expect(adapter).toBeDefined();
-    expect(adapter).toBeInstanceOf(EmailInquiryMailerAdapter);
+    // When
+    const injected = module.get(EmailInquiryMailerAdapter);
+
+    // Then
+    expect(injected).toBeDefined();
+    expect(injected).toBeInstanceOf(EmailInquiryMailerAdapter);
   });
 
   it("설정의 supportEmail로 문의를 위임한다", async () => {

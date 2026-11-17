@@ -147,21 +147,36 @@ describe("EntitlementReaderAdapter", () => {
   it.each(["FREE", "EXPIRED", "CANCELLED"])(
     "fresh premium은 warm ACTIVE cache와 달라진 %s 상태를 읽는다",
     async (status) => {
+      // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
-      expect(await fixture.reader.can(fixture.userId, "AI_REPORT")).toBe(true);
+      const warmed = await fixture.reader.can(fixture.userId, "AI_REPORT");
       fixture.users.set(
         fixture.userId.value,
         createAccessUserFixture({ role: "USER", subscriptionStatus: status }),
       );
-      expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
-      expect(await fixture.reader.can(fixture.userId, "AI_REPORT")).toBe(true);
+
+      // When
+      const fresh = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+      const cached = await fixture.reader.can(fixture.userId, "AI_REPORT");
+
+      // Then
+      expect(warmed).toBe(true);
+      expect(fresh).toBe(false);
+      expect(cached).toBe(true);
     },
   );
   it("fresh premium은 존재하지 않는 사용자와 ADMIN 삭제를 허용하지 않는다", async () => {
+    // Given
     const fixture = createEntitlementFixture({ role: "ADMIN" });
-    expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(true);
+    const beforeDeletion = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
     fixture.users.delete(fixture.userId.value);
-    expect(await fixture.reader.canInTx(fixture.userId, "AI_REPORT")).toBe(false);
+
+    // When
+    const afterDeletion = await fixture.reader.canInTx(fixture.userId, "AI_REPORT");
+
+    // Then
+    expect(beforeDeletion).toBe(true);
+    expect(afterDeletion).toBe(false);
   });
 
   describe("역할이 바뀐 사용자의 권한 캐시", () => {

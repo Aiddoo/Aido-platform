@@ -38,7 +38,7 @@ describe("할 일 리소스 한도 조회", () => {
     expect(result).toEqual({ activeCount: 1, maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY });
   });
   it("카테고리를 생략하면 공통 최대 한도만 반환한다", async () => {
-    // Given / When
+    // When
     const result = await useCase.execute({ userId: fixture.userId });
     // Then
     expect(result).toEqual({ maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY });

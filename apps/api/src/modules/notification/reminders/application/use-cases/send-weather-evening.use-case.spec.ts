@@ -72,7 +72,7 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
   });
 
   it("내일 비가 시작하는 때와 쌀쌀함을 알린다", async () => {
-    // Given 내일 서울 10시 비, 최저 6°C
+    // Given
     reader.usersWithLocation = [
       { id: "u1", timezone: "Asia/Seoul", preference: null, location: TOKYO },
     ];

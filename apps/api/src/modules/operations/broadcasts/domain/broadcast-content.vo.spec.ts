@@ -17,7 +17,11 @@ describe("BroadcastContent — 발송 내용 검증", () => {
     { title: "   ", body: "본문" },
     { title: "제목", body: "" },
   ])("제목 또는 본문이 비어 있을 때 생성하면 기존 SYS_0002로 거부한다: %o", (input) => {
-    expect(() => BroadcastContent.create(input)).toThrow(
+    // When
+    const create = () => BroadcastContent.create(input);
+
+    // Then
+    expect(create).toThrow(
       expect.objectContaining({
         errorCode: "SYS_0002",
         details: { reason: "브로드캐스트 제목/본문은 비어 있을 수 없습니다" },

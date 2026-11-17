@@ -118,7 +118,8 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
     const grantLastMoment = await meAt(new Date(GRANT_ENDS_AT.getTime() - 1));
     const afterGrant = await meAt(new Date(GRANT_ENDS_AT.getTime() + 1000));
 
-    // Then 스토어가 보낸 체험 끝(윤년 2월 29일)을 서버가 다시 계산하지 않고 그대로 쓴다
+    // Then
+    // 스토어가 보낸 체험 끝(윤년 2월 29일)을 서버가 다시 계산하지 않고 그대로 쓴다
     expect(
       await context.testDatabase
         .getClient()

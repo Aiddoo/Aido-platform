@@ -115,7 +115,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("2시간 안에 강수 예보가 없으면 30분 동안 캐시를 쓰고 그 뒤 공급자를 다시 부른다", async () => {
-    // Given 맑은 리포트
+    // Given
     await useCase.execute({ userId: "weather-user", language: "ko" });
     // When
     moveClockTo("2026-11-02T06:49:59.000Z");
@@ -127,7 +127,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("2시간 안에 강수 확률 50% 이상이면 10분만 캐시를 쓴다", async () => {
-    // Given 1시간 뒤 강수 확률 70%
+    // Given
+    // 1시간 뒤 강수 확률 70%
     const rainy = weatherReportFixture(now);
     provider.report = weatherReportFixture(now, {
       hourly: rainy.hourly.map((hour, index) =>
@@ -143,7 +144,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("번역 문구가 없는 칸은 언어가 달라도 캐시를 함께 쓴다", async () => {
-    // Given 특보를 제공하지 않는 칸(한국)
+    // Given
+    // 특보를 제공하지 않는 칸(한국)
     provider.hasLocalizedContent = false;
     await useCase.execute({ userId: "weather-user", language: "ko" });
     // When
@@ -153,7 +155,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("언어 공유 캐시를 쓰는 칸도 공급자 표기는 요청 언어를 따른다", async () => {
-    // Given 특보를 제공하지 않는 칸에 한국어 요청이 먼저 캐시를 채운다
+    // Given
+    // 특보를 제공하지 않는 칸에 한국어 요청이 먼저 캐시를 채운다
     provider.hasLocalizedContent = false;
     const korean = await useCase.execute({ userId: "weather-user", language: "ko" });
     // When
@@ -165,7 +168,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("특보처럼 번역 문구가 있는 칸은 언어별로 캐시를 나눈다", async () => {
-    // Given 특보를 제공하는 칸
+    // Given
+    // 특보를 제공하는 칸
     provider.hasLocalizedContent = true;
     await useCase.execute({ userId: "weather-user", language: "ko" });
     // When
@@ -225,7 +229,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("WeatherKit 자격 증명이 없어 칸 언어 판단부터 실패해도 500이 아닌 WEATHER_1901이다", async () => {
-    // Given 자격 없음: 가용성 판단과 본 호출이 모두 같은 오류로 실패한다
+    // Given
+    // 자격 없음: 가용성 판단과 본 호출이 모두 같은 오류로 실패한다
     provider.localizationFailure = new WeatherKitNotConfiguredError();
     provider.failure = new WeatherKitNotConfiguredError();
     // When
@@ -288,7 +293,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   });
 
   it("응답 시간대는 저장된 위치 시간대가 아니라 일별 date를 정한 칸 중심 시간대다", async () => {
-    // Given 저장 시간대와 칸 중심 시간대가 다르다(시간대 경계 근처)
+    // Given
+    // 저장 시간대와 칸 중심 시간대가 다르다(시간대 경계 근처)
     repository.set(createUserLocationFixture({ userId: "weather-user", timezone: "Asia/Tokyo" }));
     // When
     const result = await useCase.execute({ userId: "weather-user", language: "ko" });
@@ -327,7 +333,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
         timezone: "Asia/Seoul",
       });
 
-      // Then - 서울 오늘(15:00Z까지)만 보므로 자정 이후 할 일과 다른 사용자의 할 일은 빠진다
+      // Then
+      // 서울 오늘(15:00Z까지)만 보므로 자정 이후 할 일과 다른 사용자의 할 일은 빠진다
       expect(result.briefing?.reason).toBe("rain");
       expect(result.briefing?.affectedTodoIds).toEqual([7]);
     });

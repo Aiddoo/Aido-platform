@@ -73,13 +73,18 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
   }
 
   it("재시작 후 같은 dispatch를 재시도해도 quota를 한 번만 예약한다", async () => {
+    // Given
     const userId = await createUser("retry");
     const dispatchId = await createDispatch(userId, "retry");
 
-    await expect(limiter.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
+    // When
+    const firstDecision = await limiter.reserveGeneral({ dispatchId, userId });
     const restarted = new PostgresPushRateLimiterAdapter(client);
-    await expect(restarted.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
+    const retriedDecision = await restarted.reserveGeneral({ dispatchId, userId });
 
+    // Then
+    expect(firstDecision).toBe(false);
+    expect(retriedDecision).toBe(false);
     await expect(
       countReservations(
         and(
@@ -91,6 +96,7 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
   });
 
   it("동일 사용자의 경계 동시 요청을 Serializable 재시도로 정확히 한 건만 허용한다", async () => {
+    // Given
     const userId = await createUser("race");
     const dispatchIds = await Promise.all(
       Array.from({ length: 16 }, (_, index) => createDispatch(userId, `race-${index}`)),
@@ -99,9 +105,12 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
       await expect(limiter.reserveGeneral({ dispatchId, userId })).resolves.toBe(false);
     }
 
+    // When
     const decisions = await Promise.all(
       dispatchIds.slice(14).map((dispatchId) => limiter.reserveGeneral({ dispatchId, userId })),
     );
+
+    // Then
     expect(decisions.toSorted()).toEqual([false, true]);
     await expect(
       countReservations(
@@ -114,21 +123,24 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
   });
 
   it("배치 예약은 서로 다른 사용자를 한 트랜잭션에서 일반·engagement로 저장한다", async () => {
+    // Given
     const firstUserId = await createUser("batch-a");
     const secondUserId = await createUser("batch-b");
     const firstDispatchId = await createDispatch(firstUserId, "batch-a");
     const secondDispatchId = await createDispatch(secondUserId, "batch-b");
 
-    await expect(
-      limiter.reserveBatch([
-        {
-          dispatchId: firstDispatchId,
-          userId: firstUserId,
-          engagementLocalDate: "2026-08-29",
-        },
-        { dispatchId: secondDispatchId, userId: secondUserId },
-      ]),
-    ).resolves.toEqual([false, false]);
+    // When
+    const decisions = await limiter.reserveBatch([
+      {
+        dispatchId: firstDispatchId,
+        userId: firstUserId,
+        engagementLocalDate: "2026-08-29",
+      },
+      { dispatchId: secondDispatchId, userId: secondUserId },
+    ]);
+
+    // Then
+    expect(decisions).toEqual([false, false]);
     await expect(countReservations()).resolves.toBe(3);
   });
 });

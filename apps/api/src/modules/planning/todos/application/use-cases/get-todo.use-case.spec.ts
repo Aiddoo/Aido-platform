@@ -38,12 +38,17 @@ describe("할 일 상세 조회", () => {
     expect(result.items[0]?.title).toBe("하위 항목");
   });
   it("없는 할 일과 다른 사용자의 할 일은 같은 오류를 반환한다", async () => {
-    // Given / When / Then
-    await expect(useCase.execute({ id: 999, userId: fixture.userId })).rejects.toMatchObject({
+    // When
+    const missingTodoResult = useCase.execute({ id: 999, userId: fixture.userId });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_0801,
       details: { todoId: 999 },
     });
-    await expect(useCase.execute({ id: 1, userId: "other-user" })).rejects.toMatchObject({
+    // When
+    const otherUserResult = useCase.execute({ id: 1, userId: "other-user" });
+    // Then
+    await expect(otherUserResult).rejects.toMatchObject({
       errorCode: ErrorCode.TODO_0801,
       details: { todoId: 1 },
     });

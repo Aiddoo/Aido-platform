@@ -354,7 +354,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   }
 
   it("RevenueCat 문서 샘플 TRANSFER는 넘겨받은 사용자에게 체인 행을 옮기고 두 사용자를 모두 다시 계산한다", async () => {
-    // Given 넘겨준 사용자(현재 사용자)는 구독 중, 넘겨받은 사용자는 무료
+    // Given
+    // 넘겨준 사용자(현재 사용자)는 구독 중, 넘겨받은 사용자는 무료
     const giverAppUserId = "00005A1C-6091-4F81-BE77-F0A83A271AB6";
     const receiverAppUserId = "4BEDB450-8EF2-11E9-B475-0800200C9A66";
     const receiverId = await createUser("PGRANT0T");

@@ -14,7 +14,11 @@ describe("AdminNotificationMessage — 관리자 내용 검증", () => {
   });
 
   it("제목과 본문이 모두 비어 있을 때 생성하면 제목 오류를 먼저 반환한다", () => {
-    expect(() => AdminNotificationMessage.create({ title: " ", body: " " })).toThrow(
+    // When
+    const create = () => AdminNotificationMessage.create({ title: " ", body: " " });
+
+    // Then
+    expect(create).toThrow(
       expect.objectContaining({
         errorCode: "SYS_0002",
         details: { field: "title", reason: "관리자 알림 제목은 비어 있을 수 없습니다" },
@@ -23,7 +27,11 @@ describe("AdminNotificationMessage — 관리자 내용 검증", () => {
   });
 
   it("제목이 유효하고 본문만 비어 있을 때 생성하면 본문 오류를 반환한다", () => {
-    expect(() => AdminNotificationMessage.create({ title: "공지", body: " " })).toThrow(
+    // When
+    const create = () => AdminNotificationMessage.create({ title: "공지", body: " " });
+
+    // Then
+    expect(create).toThrow(
       expect.objectContaining({
         errorCode: "SYS_0002",
         details: { field: "body", reason: "관리자 알림 본문은 비어 있을 수 없습니다" },

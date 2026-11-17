@@ -118,13 +118,13 @@ describe("TodoComment — 댓글 Aggregate", () => {
     // Given
     const comment = createComment({ deletedAt: LATER });
 
-    // When / Then
-    expect(() => comment.placeReply()).toThrow(
-      expect.objectContaining({ errorCode: ErrorCode.TODO_0833 }),
-    );
-    expect(() => comment.addLike(LATER)).toThrow(
-      expect.objectContaining({ errorCode: ErrorCode.TODO_0833 }),
-    );
+    // When
+    const replying = () => comment.placeReply();
+    const liking = () => comment.addLike(LATER);
+
+    // Then
+    expect(replying).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0833 }));
+    expect(liking).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0833 }));
   });
 
   it("댓글은 자기 자신이 묶음 머리이고, 답글에 답한 자리는 같은 묶음에 붙는다", () => {

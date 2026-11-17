@@ -278,7 +278,11 @@ describe("푸시 카탈로그 locale 계약", () => {
   });
 
   it.each(LOCALES)("%s의 모든 템플릿이 최대 대표 입력으로 유효한 copy를 렌더링한다", (locale) => {
-    for (const notification of renderCatalog(locale)) {
+    // When
+    const notifications = renderCatalog(locale);
+
+    // Then
+    for (const notification of notifications) {
       expect(`${notification.title}${notification.body}`, notification.copyKey).not.toMatch(/[{}]/);
     }
   });
@@ -310,7 +314,11 @@ describe("푸시 카피 품질 계약", () => {
   ];
 
   it.each(forbiddenPhraseCases)("%s 카피에는 죄책감·조롱 문구가 없다", (locale, phrases) => {
-    for (const notification of renderCatalog(locale)) {
+    // When
+    const notifications = renderCatalog(locale);
+
+    // Then
+    for (const notification of notifications) {
       const text = `${notification.title} ${notification.body}`.toLowerCase();
       for (const phrase of phrases) {
         expect(text).not.toContain(phrase.toLowerCase());

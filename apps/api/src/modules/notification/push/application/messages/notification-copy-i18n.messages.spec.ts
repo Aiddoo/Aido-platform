@@ -59,7 +59,7 @@ describe("푸시 문구 렌더러와 @nestjs/i18n", () => {
   let i18n: I18nService;
 
   beforeAll(async () => {
-    // Given - AppI18nModule과 같은 설정으로 src/i18n 카탈로그를 읽는다
+    // AppI18nModule과 같은 설정으로 실제 src/i18n 카탈로그를 읽는다
     const moduleRef = await Test.createTestingModule({ imports: [AppI18nModule] }).compile();
     i18n = moduleRef.get(I18nService);
   });
@@ -71,8 +71,11 @@ describe("푸시 문구 렌더러와 @nestjs/i18n", () => {
   );
 
   it("모든 언어의 문구를 검사한다", () => {
+    // When
+    const caseCount = cases.length;
+
     // Then
-    expect(cases.length).toBeGreaterThan(600);
+    expect(caseCount).toBeGreaterThan(600);
   });
 
   it.each(cases)(

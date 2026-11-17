@@ -11,7 +11,8 @@ describe("truncateGraphemes", () => {
   });
 
   it("서로게이트 쌍 이모지를 반으로 자르지 않는다", () => {
-    // Given - 이모지 하나는 UTF-16 두 단위다
+    // Given
+    // 이모지 하나는 UTF-16 두 단위다
     const value = "가".repeat(9) + "😀";
     // When
     const result = truncateGraphemes(value, 10);
@@ -21,7 +22,9 @@ describe("truncateGraphemes", () => {
   });
 
   it("결합 이모지 시퀀스는 통째로 남기거나 통째로 버린다", () => {
-    // Given - 가족 이모지는 ZWJ로 이어진 한 문자다
+    // Given
+    // 가족 이모지는 ZWJ로 이어진 한 문자다
+
     const family = "👨‍👩‍👧";
     // When
     const kept = truncateGraphemes(`a${family}b`, 1 + family.length);

@@ -87,7 +87,8 @@ describe("오늘의 할 일 요약", () => {
     expect(result.currentStreak).toBe(6);
   });
   it("내일 요약을 요청하면 그 날짜의 통계와 자정 시점의 스트릭을 반환한다", async () => {
-    // Given - 오늘 전체 완료로 스트릭이 이어진 상태
+    // Given
+    // 오늘 전체 완료로 스트릭이 이어진 상태
     fixture.todoReadRepository.dayStats = { total: 2, completed: 0 };
     fixture.streakContext.currentStreak = 6;
     fixture.streakContext.lastCompletedDate = Temporal.PlainDate.from("2026-05-15");

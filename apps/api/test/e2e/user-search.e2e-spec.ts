@@ -37,13 +37,17 @@ describe("사용자 검색 E2E", () => {
   });
 
   it("미인증 요청은 401을 반환한다", async () => {
-    await request(ctx.app.getHttpServer())
+    // When
+    const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
-      .query({ q: "김철수" })
-      .expect(401);
+      .query({ q: "김철수" });
+
+    // Then
+    expect(response.status).toBe(401);
   });
 
   it("이름으로 검색하면 매칭 사용자를 반환하고 본인은 제외한다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-search@example.com", password, {
       name: "검색하는나",
     });
@@ -51,12 +55,14 @@ describe("사용자 검색 E2E", () => {
       name: "김철수",
     });
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "김철수" })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     expect(response.body.success).toBe(true);
     const names = response.body.data.items.map((u: { name: string | null }) => u.name);
     expect(names).toContain("김철수");
@@ -66,22 +72,26 @@ describe("사용자 검색 E2E", () => {
   });
 
   it("태그로 검색하면 해당 사용자를 반환한다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-tag@example.com", password);
     const target = await ctx.helpers.createVerifiedUser("target-tag@example.com", password, {
       name: "박영희",
     });
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: target.userTag })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     const tags = response.body.data.items.map((u: { userTag: string }) => u.userTag);
     expect(tags).toContain(target.userTag);
   });
 
   it("동명이인은 모두 반환되고 userTag로 구분된다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-dup@example.com", password);
     const a = await ctx.helpers.createVerifiedUser("dup-a@example.com", password, {
       name: "홍길동",
@@ -90,12 +100,14 @@ describe("사용자 검색 E2E", () => {
       name: "홍길동",
     });
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "홍길동" })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     const dupItems = response.body.data.items.filter(
       (u: { name: string | null }) => u.name === "홍길동",
     );
@@ -107,6 +119,7 @@ describe("사용자 검색 E2E", () => {
   });
 
   it("보낸 친구 요청은 requestPending=true로 표시된다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-pending@example.com", password);
     const target = await ctx.helpers.createVerifiedUser("target-pending@example.com", password, {
       name: "요청대상자",
@@ -117,12 +130,14 @@ describe("사용자 검색 E2E", () => {
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(201);
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "요청대상자" })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     const found = response.body.data.items.find(
       (u: { userTag: string }) => u.userTag === target.userTag,
     );
@@ -132,6 +147,7 @@ describe("사용자 검색 E2E", () => {
   });
 
   it("맞팔 친구는 isFriend=true로 표시된다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-friend@example.com", password);
     const friend = await ctx.helpers.createVerifiedUser("friend-search@example.com", password, {
       name: "내친구야",
@@ -139,12 +155,14 @@ describe("사용자 검색 E2E", () => {
 
     await ctx.helpers.createFriendship(me, friend);
 
+    // When
     const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "내친구야" })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     const found = response.body.data.items.find(
       (u: { userTag: string }) => u.userTag === friend.userTag,
     );
@@ -155,16 +173,21 @@ describe("사용자 검색 E2E", () => {
   });
 
   it("검색어가 2자 미만이면 400을 반환한다", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-short@example.com", password);
 
-    await request(ctx.app.getHttpServer())
+    // When
+    const response = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "a" })
-      .set("Authorization", `Bearer ${me.accessToken}`)
-      .expect(400);
+      .set("Authorization", `Bearer ${me.accessToken}`);
+
+    // Then
+    expect(response.status).toBe(400);
   });
 
   it("nextCursor로 다음 페이지를 이어서 조회한다 (중복 없음)", async () => {
+    // Given
     const me = await ctx.helpers.createVerifiedUser("me-page@example.com", password);
     // 동일 접두어 이름 3명
     await ctx.helpers.createVerifiedUser("page-1@example.com", password, {
@@ -177,16 +200,19 @@ describe("사용자 검색 E2E", () => {
       name: "페이지유저",
     });
 
+    // When
     const first = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({ q: "페이지유저", limit: "2" })
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     expect(first.body.data.items.length).toBe(2);
     expect(first.body.data.hasMore).toBe(true);
     expect(first.body.data.nextCursor).not.toBeNull();
 
+    // When
     const second = await request(ctx.app.getHttpServer())
       .get("/v1/follows/search")
       .query({
@@ -197,6 +223,7 @@ describe("사용자 검색 E2E", () => {
       .set("Authorization", `Bearer ${me.accessToken}`)
       .expect(200);
 
+    // Then
     const firstIds = first.body.data.items.map((u: { id: string }) => u.id);
     const secondIds = second.body.data.items.map((u: { id: string }) => u.id);
     // 페이지 간 중복 없음

@@ -113,7 +113,8 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
   });
 
   it("어제 완료하고 오늘도 전체 완료한 사용자는 이어진 연속 기록으로 완료 메시지를 받는다", async () => {
-    // Given 어제(2024-01-15)까지 5일 연속 → 오늘 완료로 6일
+    // Given
+    // 어제(2024-01-15)까지 5일 연속 → 오늘 완료로 6일
     const ctx = makeCtx();
     reader.premiumEveningUsers = [
       user(TEST_CUID.USER_1, [true, true], {

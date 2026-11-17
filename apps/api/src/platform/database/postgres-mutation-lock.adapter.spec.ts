@@ -38,10 +38,12 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
     // Given
     const { adapter, lockStatements } = setup();
 
-    // When / Then
-    await expect(adapter.acquire(["mutation:v1:cheer:daily:user-1:2026-07-26"])).rejects.toThrow(
-      "Mutation lock requires an active transaction",
-    );
+    // When
+    const result = adapter.acquire(["mutation:v1:cheer:daily:user-1:2026-07-26"]);
+
+    // Then
+    await expect(result).rejects.toThrow("Mutation lock requires an active transaction");
+
     expect(lockStatements()).toHaveLength(0);
   });
 

@@ -256,11 +256,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
-      // Given — DB에는 변경된 제목
+      // Given
       reader.todos.set(1, activeTodo({ title: "밥먹고 약먹기" }));
       // When
       await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
-      // Then — DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
+      // Then
+      // DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
       const payload = publisher.published[0]?.data;
       expect(payload?.body).toContain("밥먹고 약먹기");
       expect(`${payload?.title}${payload?.body}`).not.toContain("{todoTitle}");
@@ -269,7 +270,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
   describe("늦은 리마인더", () => {
     it("울려야 했던 시각보다 15분을 넘게 늦으면 보내지 않고 사유를 남긴다", async () => {
-      // Given: 60분 단계가 16분 전에 울렸어야 했다(배포로 worker가 멈춘 사이)
+      // Given
+      // 60분 단계가 16분 전에 울렸어야 했다(배포로 worker가 멈춘 사이)
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 44 }) }));
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
@@ -309,7 +311,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("정확히 15분 늦은 리마인더는 보낸다", async () => {
-      // Given: 60분 단계가 15분 전에 울렸어야 했다
+      // Given
+      // 60분 단계가 15분 전에 울렸어야 했다
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 45 }) }));
       // When
       await processor.process(makeJob({ stageLabel: "60min" }));
@@ -318,7 +321,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("할 일 시각이 지난 10분 단계는 15분 안으로 늦어도 보내지 않고 사유를 남긴다", async () => {
-      // Given: 10분 단계가 11분 늦었다. 할 일은 1분 전에 시작했다
+      // Given
+      // 10분 단계가 11분 늦었다. 할 일은 1분 전에 시작했다
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 1 }) }));
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
@@ -348,7 +352,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
   describe("투두 유효성 검증", () => {
     it("투두가 완료·삭제되었으면 알림을 발송하지 않는다", async () => {
-      // Given — findActiveTodo가 null 반환
+      // Given
       reader.todos.clear();
       // When
       await processor.process(makeJob());
@@ -477,15 +481,23 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     it("알림 발송 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       publisher.failWith = new Error("Push failed");
-      // When & Then
-      await expect(processor.process(makeJob())).rejects.toThrow("Push failed");
+
+      // When
+      const result = processor.process(makeJob());
+
+      // Then
+      await expect(result).rejects.toThrow("Push failed");
     });
 
     it("DB 조회 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       reader.failWith = new Error("DB connection failed");
-      // When & Then
-      await expect(processor.process(makeJob())).rejects.toThrow("DB connection failed");
+
+      // When
+      const result = processor.process(makeJob());
+
+      // Then
+      await expect(result).rejects.toThrow("DB connection failed");
     });
   });
 });

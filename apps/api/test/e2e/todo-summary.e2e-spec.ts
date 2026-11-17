@@ -295,7 +295,8 @@ describe("오늘의 할 일 요약 E2E", () => {
       // Given
       const user = await ctx.helpers.createVerifiedUser("todo-summary-route@test.com", password);
 
-      // When - :id 라우트였다면 "summary"가 숫자 파싱에 실패해 400이 됐을 것
+      // When
+      // :id 라우트였다면 "summary"가 숫자 파싱에 실패해 400이 됐을 것
       const response = await request(ctx.app.getHttpServer())
         .get("/v1/todos/summary")
         .set("Authorization", `Bearer ${user.accessToken}`)

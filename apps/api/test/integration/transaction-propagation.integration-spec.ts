@@ -15,6 +15,7 @@ import { assertManagedTestDatabaseEnvironment } from "#test/setup/managed-test-d
 class DrizzleTestModule {}
 
 it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커밋 뒤에만 실행하며 실패하면 롤백한다", async () => {
+  // Given
   const { connectionUri } = assertManagedTestDatabaseEnvironment(process.env);
   const client = createTestClient(connectionUri);
   const databaseModule = {
@@ -44,6 +45,7 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
   const rollbackId = "cdrizzlerollback000000001";
   const tasks: string[] = [];
   try {
+    // When
     await uow.run(async () => {
       await txHost.tx.insert(user).values({
         id: committedId,
@@ -77,22 +79,27 @@ it("중첩 UoW는 같은 트랜잭션을 공유하고 커밋 후 작업은 커�
       });
       expect(tasks).toEqual([]);
     });
+
+    // Then
     expect(tasks).toEqual(["root", "nested"]);
-    await expect(
-      uow.run(async () => {
-        await txHost.tx.insert(user).values({
-          id: rollbackId,
-          email: "drizzle-rollback@test.aido.app",
-          userTag: "DRIZZLR1",
-          updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
-        });
-        await txHost.tx.update(user).set({ aiUsageCount: 3 }).where(eq(user.id, committedId));
-        uow.register(async () => {
-          tasks.push("rolled-back");
-        });
-        throw new Error("rollback");
-      }),
-    ).rejects.toThrow("rollback");
+
+    // When
+    const result = uow.run(async () => {
+      await txHost.tx.insert(user).values({
+        id: rollbackId,
+        email: "drizzle-rollback@test.aido.app",
+        userTag: "DRIZZLR1",
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      });
+      await txHost.tx.update(user).set({ aiUsageCount: 3 }).where(eq(user.id, committedId));
+      uow.register(async () => {
+        tasks.push("rolled-back");
+      });
+      throw new Error("rollback");
+    });
+
+    // Then
+    await expect(result).rejects.toThrow("rollback");
     expect(await client.query.user.findFirst({ where: { id: rollbackId } })).toBeUndefined();
     expect((await client.query.user.findFirst({ where: { id: committedId } }))?.aiUsageCount).toBe(
       1,

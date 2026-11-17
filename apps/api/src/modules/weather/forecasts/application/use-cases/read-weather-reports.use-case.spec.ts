@@ -44,7 +44,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   });
 
   it("같은 칸의 사용자 여러 명은 공급자를 한 번만 부르고 모두 같은 리포트를 받는다", async () => {
-    // Given 같은 칸의 50명
+    // Given
     const requests = Array.from({ length: 50 }, (_, index) => ({
       key: `user-${index}`,
       ...(index % 2 === 0 ? SEOUL : SEOUL_NEARBY),
@@ -85,7 +85,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   });
 
   it("캐시가 지나 공급자가 실패하면 마지막 리포트를, 그것도 없으면 그 키를 결과에서 뺀다", async () => {
-    // Given 서울만 한 번 성공해 둔다
+    // Given
     await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.failure = new Error("weatherkit 429");
     const later = Temporal.Instant.from("2026-11-02T08:00:00.000Z");
@@ -108,7 +108,8 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   });
 
   it("장애로 언어 판단이 실패해 공유 scope가 되어도 언어별로 받아 둔 리포트로 폴백한다", async () => {
-    // Given 특보가 있는 칸이라 ko scope로 한 번 받아 두었다
+    // Given
+    // 특보가 있는 칸이라 ko scope로 한 번 받아 두었다
     provider.hasLocalizedContent = true;
     await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.localizationFailure = new Error("availability timeout");
@@ -133,7 +134,8 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   });
 
   it("응답은 읽는 시각 기준으로 지난 시간을 잘라 돌려준다", async () => {
-    // Given 두 시간 전 받은 리포트가 캐시에 있다
+    // Given
+    // 두 시간 전 받은 리포트가 캐시에 있다
     provider.report = weatherReportFixture(Temporal.Instant.from("2026-11-02T04:20:00.000Z"));
     // When
     const reports = await reader.execute({

@@ -69,7 +69,8 @@ describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
     // When
     await useCase.execute();
 
-    // Then - 외부 전송 latency를 고려한 15분 lease만 복구한다. PUBLISHED generation은 시간 경과만으로 무효화하지 않는다
+    // Then
+    // 외부 전송 latency를 고려한 15분 lease만 복구한다. PUBLISHED generation은 시간 경과만으로 무효화하지 않는다
     expect(steps.steps).toEqual([
       `lifecycle-recover:${processingStaleBefore}`,
       `outbox-recover:${processingStaleBefore}`,
@@ -87,7 +88,8 @@ describe("RelayPushDeliveryOutboxUseCase — stale recovery와 relay", () => {
     // When
     await useCase.execute();
 
-    // Then - 한 worker가 queue를 독점하지 않도록 1,000개에서 양보
+    // Then
+    // 한 worker가 queue를 독점하지 않도록 1,000개에서 양보
     expect(steps.publishInputs).toHaveLength(10);
   });
 });

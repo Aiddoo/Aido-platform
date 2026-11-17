@@ -46,7 +46,7 @@ describe("앱 HTTP 경계 E2E", () => {
   });
 
   it("CORS preflight가 X-Timezone 요청 헤더를 허용한다", async () => {
-    // When - 웹 클라이언트가 timezone 헤더를 포함한 preflight를 보내면
+    // When
     const response = await request(ctx.app.getHttpServer())
       .options("/v1/invites/availability")
       .set("Origin", "http://localhost:3000")
@@ -54,7 +54,8 @@ describe("앱 HTTP 경계 E2E", () => {
       .set("Access-Control-Request-Headers", "x-timezone")
       .expect(204);
 
-    // Then - 브라우저가 실제 인증 요청을 보낼 수 있도록 명시적으로 허용한다
+    // Then
+    // 브라우저가 실제 인증 요청을 보낼 수 있도록 명시적으로 허용한다
     const allowedHeaders = String(response.headers["access-control-allow-headers"])
       .toLowerCase()
       .split(",")

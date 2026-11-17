@@ -13,7 +13,7 @@ describe("selectPushRateLimiter", () => {
   const database = createDatabase(new Pool());
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
-    // Given / When
+    // When
     const limiter = selectPushRateLimiter("postgres", { database });
 
     // Then
@@ -33,7 +33,7 @@ describe("selectPushRateLimiter", () => {
   });
 
   it("Redis를 선택하고 client가 없으면 메모리로 폴백하지 않는다", () => {
-    // Given / When
+    // When
     const create = () => selectPushRateLimiter("redis", { database });
 
     // Then
@@ -43,7 +43,7 @@ describe("selectPushRateLimiter", () => {
   });
 
   it("memory는 명시적으로 선택한 개발·테스트 환경에서만 생성한다", () => {
-    // Given / When
+    // When
     const limiter = selectPushRateLimiter("memory", { database });
 
     // Then

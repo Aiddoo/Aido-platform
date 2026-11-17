@@ -73,7 +73,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
     ["빈 시간대", { "x-timezone": "  " }, "timezone"],
     ["중복 헤더(배열)", { "x-device-name": ["a", "b"] }, "deviceName"],
   ])("%s는 null로 둔다", (_name, headers, field) => {
-    // Given / When
+    // When
     const client = parseRequestClient(headers, REQUEST_ID);
 
     // Then
@@ -94,7 +94,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
   it.each(["ja", "ja-JP", "fr,en;q=0.9", "zh-CN"])(
     "지원하지 않는 언어 '%s'는 기존 @Locale처럼 ko로 둔다",
     (acceptLanguage) => {
-      // Given / When
+      // When
       const client = parseRequestClient({ "accept-language": acceptLanguage }, REQUEST_ID);
 
       // Then
@@ -113,13 +113,21 @@ describe("parseAcceptLanguage", () => {
     ["ko-KR,ko;q=0.9", "ko"],
     ["EN-us", "en"],
   ])("'%s' 헤더는 %s로 파싱된다", (header, expected) => {
-    expect(parseAcceptLanguage(header)).toBe(expected);
+    // When
+    const locale = parseAcceptLanguage(header);
+
+    // Then
+    expect(locale).toBe(expected);
   });
 
   it.each([undefined, null, "", 123, ["en"]])(
     "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다",
     (header) => {
-      expect(parseAcceptLanguage(header)).toBeUndefined();
+      // When
+      const locale = parseAcceptLanguage(header);
+
+      // Then
+      expect(locale).toBeUndefined();
     },
   );
 });
@@ -144,13 +152,23 @@ describe("resolveResponseLocale — 응답 문구 언어", () => {
 
 describe("요청 시간대 규칙", () => {
   it("날짜 경계 계산은 시간대가 없으면 UTC를 쓴다", () => {
-    expect(requestTimezoneOrUtc({ timezone: null })).toBe("UTC");
-    expect(requestTimezoneOrUtc({ timezone: "Asia/Seoul" })).toBe("Asia/Seoul");
+    // When
+    const missing = requestTimezoneOrUtc({ timezone: null });
+    const sent = requestTimezoneOrUtc({ timezone: "Asia/Seoul" });
+
+    // Then
+    expect(missing).toBe("UTC");
+    expect(sent).toBe("Asia/Seoul");
   });
 
   it("저장값을 쓰는 경로는 보낸 시간대만 넘기고 없으면 undefined로 저장값을 유지한다", () => {
-    expect(requestTimezoneIfSent({ timezone: null })).toBeUndefined();
-    expect(requestTimezoneIfSent({ timezone: "Asia/Seoul" })).toBe("Asia/Seoul");
+    // When
+    const missing = requestTimezoneIfSent({ timezone: null });
+    const sent = requestTimezoneIfSent({ timezone: "Asia/Seoul" });
+
+    // Then
+    expect(missing).toBeUndefined();
+    expect(sent).toBe("Asia/Seoul");
   });
 
   it.each([

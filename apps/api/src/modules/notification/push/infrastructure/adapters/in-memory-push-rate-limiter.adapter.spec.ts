@@ -20,13 +20,19 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     const reserve = (dispatchId: number) =>
       limiter.reserveEngagement({ userId: USER_ID, localDate: "2026-07-15", dispatchId });
 
-    // When & Then
-    expect(await reserve(1)).toBe(false);
-    expect(await reserve(2)).toBe(true);
+    // When
+    const first = await reserve(1);
+    const second = await reserve(2);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
-    expect(await reserve(3)).toBe(false);
+    const third = await reserve(3);
     vi.advanceTimersByTime(4 * 60 * 60 * 1000);
-    expect(await reserve(4)).toBe(true);
+    const fourth = await reserve(4);
+
+    // Then
+    expect(first).toBe(false);
+    expect(second).toBe(true);
+    expect(third).toBe(false);
+    expect(fourth).toBe(true);
   });
 
   it("48시간 지난 날짜별 참여 유도 카운터는 만료된다", async () => {
@@ -49,19 +55,19 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     // Given
     const limiter = new InMemoryPushRateLimiterAdapter();
 
-    // When & Then
-    await expect(
-      limiter.reserveBatch([
-        { userId: USER_ID, dispatchId: 1, engagementLocalDate: "2026-07-15" },
-        { userId: "user-2", dispatchId: 2 },
-      ]),
-    ).resolves.toEqual([false, false]);
-    await expect(
-      limiter.reserveBatch([
-        { userId: USER_ID, dispatchId: 3, engagementLocalDate: "2026-07-15" },
-        { userId: "user-2", dispatchId: 4 },
-      ]),
-    ).resolves.toEqual([true, false]);
+    // When
+    const firstBatch = await limiter.reserveBatch([
+      { userId: USER_ID, dispatchId: 1, engagementLocalDate: "2026-07-15" },
+      { userId: "user-2", dispatchId: 2 },
+    ]);
+    const secondBatch = await limiter.reserveBatch([
+      { userId: USER_ID, dispatchId: 3, engagementLocalDate: "2026-07-15" },
+      { userId: "user-2", dispatchId: 4 },
+    ]);
+
+    // Then
+    expect(firstBatch).toEqual([false, false]);
+    expect(secondBatch).toEqual([true, false]);
   });
 
   it("같은 dispatch 예약은 재시도와 새 publication generation에서도 한 번만 소비한다", async () => {
@@ -69,10 +75,15 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     const limiter = new InMemoryPushRateLimiterAdapter();
     const request = { userId: USER_ID, engagementLocalDate: "2026-07-15", dispatchId: 501 };
 
-    // When & Then
-    await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
-    await expect(limiter.reserveBatch([request])).resolves.toEqual([false]);
-    await expect(limiter.reserveBatch([{ ...request, dispatchId: 502 }])).resolves.toEqual([true]);
+    // When
+    const first = await limiter.reserveBatch([request]);
+    const retry = await limiter.reserveBatch([request]);
+    const otherDispatch = await limiter.reserveBatch([{ ...request, dispatchId: 502 }]);
+
+    // Then
+    expect(first).toEqual([false]);
+    expect(retry).toEqual([false]);
+    expect(otherDispatch).toEqual([true]);
   });
 
   it("engagement 제한은 Redis 계약과 동일하게 general quota를 소비하지 않는다", async () => {
@@ -102,11 +113,17 @@ describe("InMemoryPushRateLimiterAdapter — 참여 알림 발송 한도 정책"
     const general = { userId: USER_ID, dispatchId: 601 };
     const engagement = { ...general, localDate: "2026-07-15" };
 
-    // When & Then
-    await expect(limiter.reserveGeneral(general)).resolves.toBe(false);
-    await expect(limiter.reserveEngagement(engagement)).resolves.toBe(false);
-    await expect(limiter.reserveGeneral(general)).resolves.toBe(false);
-    await expect(limiter.reserveEngagement(engagement)).resolves.toBe(false);
+    // When
+    const firstGeneral = await limiter.reserveGeneral(general);
+    const firstEngagement = await limiter.reserveEngagement(engagement);
+    const retriedGeneral = await limiter.reserveGeneral(general);
+    const retriedEngagement = await limiter.reserveEngagement(engagement);
+
+    // Then
+    expect(firstGeneral).toBe(false);
+    expect(firstEngagement).toBe(false);
+    expect(retriedGeneral).toBe(false);
+    expect(retriedEngagement).toBe(false);
   });
 
   it("batch 예약 marker는 general window와 현지 날짜가 바뀌어도 같은 dispatch를 재사용한다", async () => {

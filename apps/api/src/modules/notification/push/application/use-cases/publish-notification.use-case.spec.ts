@@ -30,14 +30,17 @@ function createPublisher(targets = new Map([[42, { ownerId: "owner-1", date: "20
 
 describe("PublishNotificationUseCase", () => {
   it("할 일이 없는 발행 요청은 그대로 목적별 유스케이스에 위임한다", async () => {
+    // Given
     const { publisher, send, sendWithDeduplication, sendBatch, todoTargetReader } =
       createPublisher();
     const input = { userId: "user-1", type: "SYSTEM_NOTICE" as const, title: "제목", body: "본문" };
 
+    // When
     await publisher.publish(input);
     await publisher.publishWithDeduplication(input);
     await publisher.publishBatch([input]);
 
+    // Then
     expect(send.execute).toHaveBeenCalledWith(input);
     expect(sendWithDeduplication.execute).toHaveBeenCalledWith(input);
     expect(sendBatch.execute).toHaveBeenCalledWith([input], {});
@@ -45,6 +48,7 @@ describe("PublishNotificationUseCase", () => {
   });
 
   it("할 일 알림은 기존 metadata를 지키며 할 일 주인과 날짜를 더한다", async () => {
+    // Given
     const { publisher, send, sendBatch } = createPublisher();
     const comment = {
       userId: "user-1",
@@ -56,9 +60,11 @@ describe("PublishNotificationUseCase", () => {
     };
     const deleted = { ...comment, todoId: 7, metadata: null };
 
+    // When
     await publisher.publish(comment);
     await publisher.publishBatch([comment, deleted]);
 
+    // Then
     const enriched = {
       ...comment,
       metadata: { commentId: "comment-1", todoOwnerId: "owner-1", todoDate: "2026-10-27" },

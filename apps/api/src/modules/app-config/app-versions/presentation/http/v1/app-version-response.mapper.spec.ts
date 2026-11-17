@@ -7,9 +7,13 @@ describe("toAppVersionResponse — 앱 버전 응답", () => {
     // Given
     const iosOnly = [createAppReleaseFixture({ platform: "ios", latestVersion: "1.9.1" })];
 
+    // When
+    const withoutReleases = toAppVersionResponse([]);
+    const withIosOnly = toAppVersionResponse(iosOnly);
+
     // Then
-    expect(toAppVersionResponse([])).toEqual({ enabled: false });
-    expect(toAppVersionResponse(iosOnly)).toEqual({ enabled: false });
+    expect(withoutReleases).toEqual({ enabled: false });
+    expect(withIosOnly).toEqual({ enabled: false });
   });
 
   it("두 플랫폼의 최신 버전을 플랫폼별로 보낸다", () => {
@@ -19,8 +23,11 @@ describe("toAppVersionResponse — 앱 버전 응답", () => {
       createAppReleaseFixture({ platform: "ios", latestVersion: "1.9.1" }),
     ];
 
+    // When
+    const response = toAppVersionResponse(releases);
+
     // Then
-    expect(toAppVersionResponse(releases)).toEqual({
+    expect(response).toEqual({
       enabled: true,
       ios: { latestVersion: "1.9.1" },
       android: { latestVersion: "1.9.2" },

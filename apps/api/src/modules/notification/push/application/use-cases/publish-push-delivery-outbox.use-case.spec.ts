@@ -63,7 +63,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
   });
 
   it("enqueue가 거부되면 같은 generation을 backoff 시점까지 defer한다", async () => {
-    // Given - 두 번째 generation을 claim한 뒤 queue backend가 enqueue를 거부
+    // Given
     const { outbox, enqueuer, logger, useCase } = createPublishUseCase([
       InMemoryPushDeliveryOutboxRepository.pending(41, { publishAttempts: 1 }),
     ]);
@@ -72,7 +72,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     // When
     const publishedCount = await useCase.execute({ kind: "dispatches", dispatchIds: [41] });
 
-    // Then - capped backoff로 PENDING 복구하고 published로 표시하지 않음
+    // Then
     expect(publishedCount).toBe(0);
     expect(outbox.rowOf(41)).toMatchObject({
       status: "PENDING",
@@ -102,7 +102,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
   });
 
   it("enqueue 성공 뒤 publish mark가 실패하면 generation을 defer하지 않는다", async () => {
-    // Given - queue가 job을 수락했지만 publish mark 저장이 일시적으로 실패
+    // Given
     const { outbox, enqueuer, useCase } = createPublishUseCase([
       InMemoryPushDeliveryOutboxRepository.pending(52, { publishAttempts: 2 }),
     ]);
@@ -111,7 +111,8 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     // When
     const publishedCount = await useCase.execute({ kind: "dispatches", dispatchIds: [52] });
 
-    // Then - 이미 enqueue된 generation은 lease recovery에 맡기고 되돌리지 않음
+    // Then
+    // 이미 enqueue된 generation은 lease recovery에 맡기고 되돌리지 않음
     expect(publishedCount).toBe(0);
     expect(enqueuer.jobs).toEqual([
       { publications: [{ dispatchId: 52, publishAttempt: 3 }], lane: "TRANSACTIONAL" },
@@ -125,7 +126,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
   });
 
   it("거래성과 마케팅 publication은 차선별 작업으로 나눠 발행하고 key 입력에는 차선을 싣지 않는다", async () => {
-    // Given - 한 claim에 두 차선이 섞여 있다
+    // Given
     const { enqueuer, useCase } = createPublishUseCase([
       InMemoryPushDeliveryOutboxRepository.pending(61, { lane: "MARKETING" }),
       InMemoryPushDeliveryOutboxRepository.pending(62, { lane: "TRANSACTIONAL" }),
@@ -135,7 +136,7 @@ describe("PublishPushDeliveryOutboxUseCase — outbox job 발행", () => {
     // When
     const publishedCount = await useCase.execute({ kind: "available", limit: 100 });
 
-    // Then - 거래성 작업을 먼저 넣고 각 작업은 한 차선만 담는다
+    // Then
     expect(publishedCount).toBe(3);
     expect(enqueuer.jobs).toEqual([
       { publications: [{ dispatchId: 62, publishAttempt: 1 }], lane: "TRANSACTIONAL" },

@@ -172,9 +172,10 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      await expect(loginWithPassword.execute({ email, password: currentPassword })).rejects.toThrow(
-        ApplicationException,
-      );
+      const result = loginWithPassword.execute({ email, password: currentPassword });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("현재 세션은 유지되고 다른 세션은 폐기된다", async () => {
@@ -211,13 +212,14 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       const userId = await createCredentialUser(email, currentPassword);
 
       // When
-      await expect(
-        changePassword.execute({
-          userId,
-          currentPassword: "WrongPassword999!",
-          newPassword: "NewPassword456!",
-        }),
-      ).rejects.toThrow(ApplicationException);
+      const result = changePassword.execute({
+        userId,
+        currentPassword: "WrongPassword999!",
+        newPassword: "NewPassword456!",
+      });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("소셜 전용 사용자가 비밀번호 변경을 시도하면 에러를 던진다", async () => {
@@ -226,13 +228,14 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       const userId = await createSocialOnlyUser(email);
 
       // When
-      await expect(
-        changePassword.execute({
-          userId,
-          currentPassword: "AnyPassword123!",
-          newPassword: "NewPassword456!",
-        }),
-      ).rejects.toThrow(ApplicationException);
+      const result = changePassword.execute({
+        userId,
+        currentPassword: "AnyPassword123!",
+        newPassword: "NewPassword456!",
+      });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("SecurityLog에 PASSWORD_CHANGED 이벤트와 metadata가 기록된다", async () => {

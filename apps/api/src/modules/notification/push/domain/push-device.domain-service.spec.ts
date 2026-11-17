@@ -7,7 +7,11 @@ describe("platformFromDeviceId — deviceId 접두어로 플랫폼 판정", () =
     ["default", null],
     ["IOS_upper", null],
   ] as const)("%s → %s", (deviceId, platform) => {
-    expect(platformFromDeviceId(deviceId)).toBe(platform);
+    // When
+    const result = platformFromDeviceId(deviceId);
+
+    // Then
+    expect(result).toBe(platform);
   });
 });
 
@@ -20,6 +24,10 @@ describe("noActiveTokenSkipReason — 토큰 없는 사용자의 건너뜀 사�
     [["DENIED", "GRANTED"], "NO_ACTIVE_TOKEN"],
     [["PROVISIONAL"], "NO_ACTIVE_TOKEN"],
   ] as const)("기기 권한 %j → %s", (statuses, reason) => {
-    expect(noActiveTokenSkipReason(statuses)).toBe(reason);
+    // When
+    const result = noActiveTokenSkipReason(statuses);
+
+    // Then
+    expect(result).toBe(reason);
   });
 });

@@ -104,9 +104,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When
-      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
-        ApplicationException,
-      );
+      const result = requestPasswordSetupCode.execute({ userId });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
   });
 
@@ -187,9 +188,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       await requestPasswordSetupCode.execute({ userId });
 
       // When
-      await expect(
-        setPassword.execute({ userId, code: "000000", newPassword: "NewPassword1" }),
-      ).rejects.toThrow(ApplicationException);
+      const result = setPassword.execute({ userId, code: "000000", newPassword: "NewPassword1" });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("이미 CREDENTIAL 계정이 있으면 에러를 던진다", async () => {
@@ -203,9 +205,10 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When
-      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
-        ApplicationException,
-      );
+      const result = requestPasswordSetupCode.execute({ userId });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("기존 소셜 계정은 유지된다", async () => {

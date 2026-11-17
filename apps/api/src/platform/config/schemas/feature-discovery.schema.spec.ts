@@ -9,10 +9,10 @@ const requiredEnvironment = {
 
 describe("기능 발견 환경 설정", () => {
   it("기능 발견 환경 변수가 없으면 기본값으로 비활성화한다", () => {
-    // Given / When
+    // When
     const result = envSchema.parse(requiredEnvironment);
 
-    // Then - an unset rollout must fail closed without companion variables
+    // Then
     expect(result.FEATURE_DISCOVERY_ENABLED).toBe(false);
     expect(result.FEATURE_DISCOVERY_CAMPAIGN_ID).toBeUndefined();
     expect(result.FEATURE_DISCOVERY_MIN_APP_VERSION).toBeUndefined();
@@ -21,18 +21,18 @@ describe("기능 발견 환경 설정", () => {
   });
 
   it("캠페인 설정이 없는 활성 rollout을 거부한다", () => {
-    // Given / When
+    // When
     const result = envSchema.safeParse({
       ...requiredEnvironment,
       FEATURE_DISCOVERY_ENABLED: "true",
     });
 
-    // Then - enabled is never allowed to expose an incomplete campaign
+    // Then
     expect(result.success).toBe(false);
   });
 
   it("활성 캠페인의 모든 값을 검증하고 auto-open 기본값을 true로 설정한다", () => {
-    // Given / When
+    // When
     const result = envSchema.parse({
       ...requiredEnvironment,
       FEATURE_DISCOVERY_ENABLED: "true",
@@ -46,7 +46,7 @@ describe("기능 발견 환경 설정", () => {
   });
 
   it("버전이나 출시 시각 형식이 잘못된 활성 캠페인을 거부한다", () => {
-    // Given / When
+    // When
     const result = envSchema.safeParse({
       ...requiredEnvironment,
       FEATURE_DISCOVERY_ENABLED: "true",

@@ -15,9 +15,11 @@ type ContractMatchesDomain = Expect<Extends<ContractNotificationType, DomainNoti
 
 describe("NotificationType — 알림 유형 계약", () => {
   it("도메인은 공유 계약 타입 집합에 서버 전용 타입만 더한다", () => {
+    // When
     const domainMatchesContract: DomainMatchesContract = true;
     const contractMatchesDomain: ContractMatchesDomain = true;
 
+    // Then
     expect(domainMatchesContract && contractMatchesDomain).toBe(true);
   });
 });

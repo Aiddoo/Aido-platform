@@ -406,7 +406,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         .where(eq(userTable.id, userId));
 
       // When
-      await expect(loginWithPassword.execute({ email, password })).rejects.toThrow(DomainException);
+      const result = loginWithPassword.execute({ email, password });
+
+      // Then
+      await expect(result).rejects.toThrow(DomainException);
     });
   });
 

@@ -167,7 +167,7 @@ describe("카테고리 재정렬", () => {
   });
 
   it("사용자 카테고리 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
-    // Given - 재배치 transaction 경계와 구조 읽기 순서 기록
+    // Given
     const events: string[] = [];
     class OrderedUnitOfWork extends ImmediateUnitOfWork {
       override async run<T>(work: () => Promise<T>): Promise<T> {

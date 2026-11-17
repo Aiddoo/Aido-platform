@@ -190,10 +190,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const code = getCode(email);
       await resetPassword.execute({ email, code, newPassword });
 
-      // When & Then
-      await expect(
-        loginWithPassword.execute({ email, password: originalPassword }),
-      ).rejects.toThrow(ApplicationException);
+      // When
+      const result = loginWithPassword.execute({ email, password: originalPassword });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("재설정 후 모든 세션이 무효화된다", async () => {
@@ -260,7 +261,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     });
 
     it("소셜 전용 사용자가 비밀번호 재설정을 시도하면 에러를 던진다", async () => {
-      // Given - 소셜 전용 사용자 (Credential 계정 없음)
+      // Given
       const email = "social-only-reset@example.com";
       await createSocialOnlyUser(email);
 
@@ -268,10 +269,12 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await requestPasswordReset.execute({ email });
       const code = getCode(email);
 
-      // When & Then - resetPassword에서 USER_0613 에러
-      await expect(
-        resetPassword.execute({ email, code, newPassword: "NewPassword456!" }),
-      ).rejects.toThrow(ApplicationException);
+      // When
+      const result = resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
+
+      // Then
+      // resetPassword에서 USER_0613 에러
+      await expect(result).rejects.toThrow(ApplicationException);
     });
 
     it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {
@@ -281,10 +284,15 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 
       await requestPasswordReset.execute({ email });
 
-      // When & Then
-      await expect(
-        resetPassword.execute({ email, code: "000000", newPassword: "NewPassword456!" }),
-      ).rejects.toThrow(ApplicationException);
+      // When
+      const result = resetPassword.execute({
+        email,
+        code: "000000",
+        newPassword: "NewPassword456!",
+      });
+
+      // Then
+      await expect(result).rejects.toThrow(ApplicationException);
     });
   });
 });

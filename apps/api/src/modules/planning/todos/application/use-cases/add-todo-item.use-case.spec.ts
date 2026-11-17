@@ -83,35 +83,47 @@ describe("하위 항목 추가", () => {
       await fixture.todoRepository.seedItem(1, { title: `항목 ${sortOrder}`, sortOrder });
     }
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({
-        todoId: 1,
-        userId: fixture.userId,
-        title: "초과 항목",
-        timezone: TIMEZONE,
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0821 });
+    // When
+    const overLimitResult = useCase.execute({
+      todoId: 1,
+      userId: fixture.userId,
+      title: "초과 항목",
+      timezone: TIMEZONE,
+    });
+    // Then
+    await expect(overLimitResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0821 });
     expect(fixture.records.get(1)).toEqual(before);
-    await expect(
-      useCase.execute({ todoId: 999, userId: fixture.userId, title: "항목", timezone: TIMEZONE }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const missingTodoResult = useCase.execute({
+      todoId: 999,
+      userId: fixture.userId,
+      title: "항목",
+      timezone: TIMEZONE,
+    });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
   });
   it("잘못된 항목 제목을 거부하고 소유자만 항목을 추가할 수 있다", async () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({
-        todoId: 1,
-        userId: fixture.userId,
-        title: "가".repeat(201),
-        timezone: TIMEZONE,
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    await expect(
-      useCase.execute({ todoId: 1, userId: "other-user", title: "항목", timezone: TIMEZONE }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const longTitleResult = useCase.execute({
+      todoId: 1,
+      userId: fixture.userId,
+      title: "가".repeat(201),
+      timezone: TIMEZONE,
+    });
+    // Then
+    await expect(longTitleResult).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const otherUserResult = useCase.execute({
+      todoId: 1,
+      userId: "other-user",
+      title: "항목",
+      timezone: TIMEZONE,
+    });
+    // Then
+    await expect(otherUserResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
   });
 });

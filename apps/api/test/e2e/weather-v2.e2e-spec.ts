@@ -81,7 +81,8 @@ describe("날씨 v2 E2E", () => {
     });
 
     it("시간대 경계 칸은 칸 중심 시간대를 저장·응답해 GET 리포트의 시간대와 같다", async () => {
-      // Given - 좌표 자체는 Europe/Madrid, 칸 중심은 Europe/Lisbon
+      // Given
+      // 좌표 자체는 Europe/Madrid, 칸 중심은 Europe/Lisbon
       const user = await ctx.helpers.createVerifiedUser("v2-border@example.com", "Test1234!");
       reportProvider.report = weatherReportFixture(Temporal.Now.instant());
       // When
@@ -256,7 +257,8 @@ describe("날씨 v2 E2E", () => {
           hourly: base.hourly.map((hour) => ({ ...hour, precipitationChance: 90 })),
         });
         await createTimedTodo(user.accessToken, { at: new Date(), isAllDay: true });
-        // When - 출시 앱처럼 X-Timezone 없이 조회한다
+        // When
+        // 출시 앱처럼 X-Timezone 없이 조회한다
         const response = await getReport(user.accessToken).expect(200);
         // Then
         expect(response.body.data.briefing).toEqual({

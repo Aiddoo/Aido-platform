@@ -674,7 +674,7 @@ describe("PremiumAccessDomainService", () => {
       { remainingMs: 2 * 24 * 60 * 60 * 1000, expected: 2 },
       { remainingMs: 2 * 24 * 60 * 60 * 1000 + 1, expected: 3 },
     ])("남은 $remainingMs ms는 표시 일수 $expected일로 올린다", ({ remainingMs, expected }) => {
-      // Given / When
+      // When
       const days = premiumGrantDaysOf(remainingMs);
 
       // Then

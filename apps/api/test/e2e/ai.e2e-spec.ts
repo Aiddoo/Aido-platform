@@ -455,8 +455,6 @@ describe("AI E2E", () => {
 
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
@@ -468,8 +466,6 @@ describe("AI E2E", () => {
       });
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
@@ -484,8 +480,6 @@ describe("AI E2E", () => {
 
     describe("유효성 검증 에러", () => {
       it("빈 텍스트 요청 시 400 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
@@ -499,8 +493,6 @@ describe("AI E2E", () => {
       });
 
       it("text 필드 누락 시 400 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-todo")
@@ -618,8 +610,6 @@ describe("AI E2E", () => {
   describe("GET /ai/usage", () => {
     describe("성공 케이스", () => {
       it("사용량이 0인 경우", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
@@ -671,8 +661,6 @@ describe("AI E2E", () => {
       });
 
       it("리셋 시간이 ISO 8601 형식임", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
@@ -690,8 +678,6 @@ describe("AI E2E", () => {
 
     describe("인증 에러", () => {
       it("인증 토큰 없이 요청 시 401 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer()).get("/v1/ai/usage");
 
@@ -700,8 +686,6 @@ describe("AI E2E", () => {
       });
 
       it("유효하지 않은 토큰으로 요청 시 401 에러", async () => {
-        // Given
-
         // When
         const response = await request(ctx.app.getHttpServer())
           .get("/v1/ai/usage")
@@ -905,28 +889,34 @@ describe("AI E2E", () => {
 
     describe("에러 케이스", () => {
       it("인증 없이 요청 시 401", async () => {
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .send({ content: "테스트", categoryId: 1 });
 
+        // Then
         expect(response.status).toBe(401);
       });
 
       it("빈 content 시 400", async () => {
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ content: "", categoryId: 1 });
 
+        // Then
         expect(response.status).toBe(400);
       });
 
       it("categoryId 누락 시 400", async () => {
+        // When
         const response = await request(ctx.app.getHttpServer())
           .post("/v1/ai/parse-memo")
           .set("Authorization", `Bearer ${accessToken}`)
           .send({ content: "테스트" });
 
+        // Then
         expect(response.status).toBe(400);
       });
 

@@ -145,7 +145,7 @@ describe("카테고리 생성", () => {
   });
 
   it("사용자 카테고리 키를 UoW 안에서 모든 guarded read 전에 잠그고 UoW callback 성공 후 캐시를 무효화한다", async () => {
-    // Given - UoW/lock/read/write/cache 경계의 관찰 가능한 순서
+    // Given
     const events: string[] = [];
     class OrderedUnitOfWork extends ImmediateUnitOfWork {
       override async run<T>(work: () => Promise<T>): Promise<T> {
@@ -200,10 +200,10 @@ describe("카테고리 생성", () => {
       unitOfWork: new OrderedUnitOfWork(),
     });
 
-    // When - 새 카테고리 생성
+    // When
     await useCase.execute({ userId: USER_ID, name: "새 카테고리", color: "#FFB3B3" });
 
-    // Then - 한 user-scoped key가 모든 구조 읽기보다 먼저이고 cache는 callback 성공 뒤
+    // Then
     expect(mutationLock.acquiredKeys).toEqual([[`mutation:v1:todo-category:${USER_ID}`]]);
     expect(events).toEqual([
       "uow:start",

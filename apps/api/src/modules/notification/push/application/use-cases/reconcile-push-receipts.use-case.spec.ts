@@ -105,7 +105,7 @@ function ticketIds(count: number): string[] {
 
 describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
   it("한 실행 안에서 남은 ticket을 배치 단위로 모두 반영한다", async () => {
-    // Given - 한 배치보다 많은 ticket이 밀려 있다
+    // Given
     const { useCase, repository, logger } = setup();
     repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 2 + 10);
     repository.expiredCount = 3;
@@ -199,7 +199,8 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
   });
 
   it("수락한 지 15분이 지난 ticket만 조회하고 24시간이 지난 ticket은 결과 미상으로 닫는다", async () => {
-    // Given: 5분마다 도는 실행이라도 Expo 권장(발송 약 15분 뒤)보다 이른 ticket은 묻지 않는다
+    // Given
+    // 5분마다 도는 실행이라도 Expo 권장(발송 약 15분 뒤)보다 이른 ticket은 묻지 않는다
     const { useCase, repository } = setup();
     repository.pendingTicketIds = ["ticket-1"];
 
@@ -231,7 +232,7 @@ describe("ReconcilePushReceiptsUseCase — 공급자 쪽 실패 비율 경보", 
   }
 
   it("한 실행에서 받은 receipt의 공급자 실패가 20% 이상이면 가장 많은 실패 종류와 함께 경보한다", async () => {
-    // Given - 받은 25건 중 5건이 자격 증명 문제로 거절됐다
+    // Given
     const { useCase, alert } = receiptsWith(5, 25, "PROVIDER_REJECTED");
 
     // When

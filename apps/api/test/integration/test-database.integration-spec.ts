@@ -18,9 +18,12 @@ describe("TestDatabase 통합 테스트 (실제 DB)", () => {
     // Given
     const client = testDatabase.getClient();
 
+    // When
     const { rows } = await client.execute<{ history: string | null; user_table: string | null }>(
       sql`SELECT to_regclass('drizzle.__drizzle_migrations')::text AS history, to_regclass('public."User"')::text AS user_table`,
     );
+
+    // Then
     expect(rows).toEqual([{ history: "drizzle.__drizzle_migrations", user_table: '"User"' }]);
   });
 

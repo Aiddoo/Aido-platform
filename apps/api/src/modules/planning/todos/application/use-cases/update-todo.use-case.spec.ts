@@ -100,7 +100,7 @@ describe("할 일 부분 수정", () => {
     });
   });
   it("시간만 수정하면 저장된 날짜와 사용자 timezone으로 변환한다", async () => {
-    // Given / When
+    // When
     const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
@@ -223,31 +223,35 @@ describe("할 일 부분 수정", () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));
     fixture.categoryOwners.set(1, "other-user");
-    // When / Then
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { categoryId: 1, title: "변경" },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { endDate: Temporal.PlainDate.from("2026-05-14") },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    await expect(
-      useCase.execute({
-        id: 999,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { title: "변경" },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const otherOwnerCategoryResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { categoryId: 1, title: "변경" },
+    });
+    // Then
+    await expect(otherOwnerCategoryResult).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0851,
+    });
+    // When
+    const reversedPeriodResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { endDate: Temporal.PlainDate.from("2026-05-14") },
+    });
+    // Then
+    await expect(reversedPeriodResult).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const missingTodoResult = useCase.execute({
+      id: 999,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { title: "변경" },
+    });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
   });
 });

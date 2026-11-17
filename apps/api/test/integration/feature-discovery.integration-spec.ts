@@ -57,33 +57,33 @@ describe("기능 발견 설정 route (Integration)", () => {
 
   it("캐시할 수 없는 비활성 응답을 제공한다", async () => {
     // When
-    const response = await request(app.getHttpServer())
-      .get("/v1/app-config/feature-discovery")
-      .expect(200);
+    const response = await request(app.getHttpServer()).get("/v1/app-config/feature-discovery");
 
-    // Then - no authorization, user data, or campaign copy is involved
+    // Then
+    expect(response.status).toBe(200);
     expect(response.headers["cache-control"]).toBe("private, no-store");
     expect(response.body).toEqual({ enabled: false });
   });
 
   it("활성 캠페인은 응답 인터셉터가 있어도 래핑 없이 전체 설정을 제공한다", async () => {
-    // Given - 실제 모듈에 활성 설정과 전역 응답 인터셉터가 연결되어 있다
+    // Given
     campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
       campaignId: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
       launchedAt: Temporal.Instant.from(enabledCampaign.launchedAt),
     });
-    // When - 공개 route를 조회한다
-    const response = await request(app.getHttpServer())
-      .get("/v1/app-config/feature-discovery")
-      .expect(200);
-    // Then - campaign copy나 success envelope 없이 계약된 설정만 반환한다
+
+    // When
+    const response = await request(app.getHttpServer()).get("/v1/app-config/feature-discovery");
+
+    // Then
+    expect(response.status).toBe(200);
     expect(response.body).toEqual(enabledCampaign);
     expect(response.headers["cache-control"]).toBe("private, no-store");
   });
 
   it("운영 중 kill switch가 꺼지면 같은 앱의 다음 요청에 바로 반영된다", async () => {
-    // Given - 첫 요청에서 활성 캠페인이 반환된다
+    // Given
     campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
       campaignId: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
@@ -93,32 +93,34 @@ describe("기능 발견 설정 route (Integration)", () => {
       .get("/v1/app-config/feature-discovery")
       .expect(200);
     expect(active.body).toEqual(enabledCampaign);
-    // When - 설정 Stub의 현재 값만 비활성화한다
+
+    // When
     campaignRepository.campaign = null;
-    const disabled = await request(app.getHttpServer())
-      .get("/v1/app-config/feature-discovery")
-      .expect(200);
-    // Then - 이전 캠페인 필드가 남지 않고 재요청도 캐시하지 않는다
+    const disabled = await request(app.getHttpServer()).get("/v1/app-config/feature-discovery");
+
+    // Then
+    expect(disabled.status).toBe(200);
     expect(disabled.body).toEqual({ enabled: false });
     expect(disabled.headers["cache-control"]).toBe("private, no-store");
   });
 
   it("앱 버전 조회는 비활성과 플랫폼별 활성 버전을 raw 응답으로 제공한다", async () => {
-    // Given - 버전 공개 설정이 비활성 상태다
+    // Given
     const disabled = await request(app.getHttpServer())
       .get("/v1/app-config/app-version")
       .expect(200);
     expect(disabled.body).toEqual({ enabled: false });
     expect(disabled.headers["cache-control"]).toBe("private, no-store");
-    // When - iOS와 Android의 배포 버전을 각각 설정한다
+
+    // When
     appReleaseRepository.releases = [
       createAppReleaseFixture({ platform: "ios", latestVersion: "1.9.1" }),
       createAppReleaseFixture({ platform: "android", latestVersion: "1.9.2" }),
     ];
-    const enabled = await request(app.getHttpServer())
-      .get("/v1/app-config/app-version")
-      .expect(200);
-    // Then - 플랫폼별 버전을 그대로 반환하고 재요청 캐시를 막는다
+    const enabled = await request(app.getHttpServer()).get("/v1/app-config/app-version");
+
+    // Then
+    expect(enabled.status).toBe(200);
     expect(enabled.body).toEqual({
       enabled: true,
       ios: { latestVersion: "1.9.1" },
@@ -135,7 +137,7 @@ describe("기능 발견 설정 route (Integration)", () => {
     );
     const response = document.paths["/v1/app-config/feature-discovery"]?.get?.responses?.["200"];
 
-    // Then - the endpoint contract is raw (not the ordinary success wrapper)
+    // Then
     expect(response).toMatchObject({
       headers: {
         "Cache-Control": {

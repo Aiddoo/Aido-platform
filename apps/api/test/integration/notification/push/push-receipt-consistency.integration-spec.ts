@@ -309,7 +309,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   });
 
   it("5분마다 도는 receipt 확인은 수락 15분 전 ticket을 묻지 않고 15분이 된 다음 실행에서 묻는다", async () => {
-    // Given: 03:00 실행 10분 전에 수락된 ticket
+    // Given
+    // 03:00 실행 10분 전에 수락된 ticket
     const f = await fixture("cadence", {
       acceptedAt: Temporal.Instant.from("2026-10-08T02:50:00.000Z"),
     });
@@ -345,7 +346,8 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
   });
 
   it("아직 결과가 없는 ticket은 확인 시각만 남겨 다른 ticket보다 뒤로 미룬다", async () => {
-    // Given: 가장 오래된 ticket의 receipt가 아직 오지 않는다
+    // Given
+    // 가장 오래된 ticket의 receipt가 아직 오지 않는다
     const stuck = await fixture("stuck", {
       acceptedAt: Temporal.Instant.from("2026-10-08T01:00:00.000Z"),
     });

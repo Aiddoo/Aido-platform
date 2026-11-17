@@ -18,7 +18,10 @@ const row = (date: string, count: number) => ({
 
 describe("보고서 DATE label과 실제 시각", () => {
   it("저장된 월요일 DATE는 실행 타임존과 무관하게 월요일이다", () => {
+    // When
     const patterns = computeDayPatterns([row("2026-03-16", 2)], [row("2026-03-16", 1)]);
+
+    // Then
     expect(patterns.find((pattern) => pattern.day === "MON")).toEqual({
       day: "MON",
       total: 2,
@@ -30,30 +33,37 @@ describe("보고서 DATE label과 실제 시각", () => {
   it.each(["Asia/Seoul", "America/Los_Angeles", "America/New_York"])(
     "%s의 실제 기간 경계와 DATE label을 결합해 월~일 streak을 계산한다",
     (timezone) => {
+      // Given
       const groups = [row("2026-03-09", 1), row("2026-03-15", 1)];
-      expect(
-        computeStreakDays(
-          groups,
-          groups,
-          localMidnight("2026-03-09", timezone),
-          localMidnight("2026-03-16", timezone),
-          timezone,
-        ),
-      ).toBe(2);
+
+      // When
+      const streakDays = computeStreakDays(
+        groups,
+        groups,
+        localMidnight("2026-03-09", timezone),
+        localMidnight("2026-03-16", timezone),
+        timezone,
+      );
+
+      // Then
+      expect(streakDays).toBe(2);
     },
   );
   it("LA 마지막 일요일 미완료 기록은 월요일 경계 전에 streak을 끊는다", () => {
-    expect(
-      computeStreakDays(
-        [row("2026-03-09", 1), row("2026-03-15", 2)],
-        [row("2026-03-09", 1), row("2026-03-15", 1)],
-        localMidnight("2026-03-09", "America/Los_Angeles"),
-        localMidnight("2026-03-16", "America/Los_Angeles"),
-        "America/Los_Angeles",
-      ),
-    ).toBe(0);
+    // When
+    const streakDays = computeStreakDays(
+      [row("2026-03-09", 1), row("2026-03-15", 2)],
+      [row("2026-03-09", 1), row("2026-03-15", 1)],
+      localMidnight("2026-03-09", "America/Los_Angeles"),
+      localMidnight("2026-03-16", "America/Los_Angeles"),
+      "America/Los_Angeles",
+    );
+
+    // Then
+    expect(streakDays).toBe(0);
   });
   it("완료 시각은 DATE label과 달리 실제 instant를 사용자 타임존으로 변환한다", () => {
+    // Given
     const todos = [
       {
         startDate: new Date("2026-03-16T00:00:00.000Z"),
@@ -61,7 +71,12 @@ describe("보고서 DATE label과 실제 시각", () => {
       },
       { startDate: new Date("2026-03-16T00:00:00.000Z"), completedAt: null },
     ];
-    expect(computeTimePatterns(todos, "America/Los_Angeles")).toEqual([{ hour: 10, count: 1 }]);
+
+    // When
+    const timePatterns = computeTimePatterns(todos, "America/Los_Angeles");
+
+    // Then
+    expect(timePatterns).toEqual([{ hour: 10, count: 1 }]);
   });
 });
 
