@@ -6,9 +6,16 @@ import {
   type Plan,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
-import { hasInstantPassed, type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
+import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import {
+  diffMs,
+  hasInstantPassed,
+  type Instant,
+  instantSchema,
+  toEpochMs,
+} from '@src/shared/date/instant';
 import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
-import { minBy } from 'es-toolkit';
+import { clamp, minBy } from 'es-toolkit';
 import { z } from 'zod';
 
 const entitlementFeatureSchema = z.enum(PLAN_FEATURE_KEYS);
@@ -174,12 +181,24 @@ function getResetNotice(
   return daysLeft === 1 ? { type: 'tomorrow' } : { type: 'date', date: quota.resetsAt };
 }
 
-/** 가장 먼저 오는 기능 초기화 순간. 그때 남은 횟수가 바뀌므로 다시 받는다. 초기화가 없으면 null이다 */
-function findEarliestResetAt(snapshot: EntitlementSnapshot): Instant | null {
-  const resetInstants = Object.values(snapshot.features).flatMap((quota) =>
-    quota?.resetsAt == null ? [] : [quota.resetsAt],
+/** 아직 오지 않은 초기화 중 가장 이른 순간. 이미 지난 것(오래된 스냅샷·서버 시계 지연)은 건너뛴다 */
+function findNextResetAt(snapshot: EntitlementSnapshot, now: Instant): Instant | null {
+  const upcomingInstants = Object.values(snapshot.features).flatMap((quota) =>
+    quota?.resetsAt == null || hasInstantPassed(quota.resetsAt, now) ? [] : [quota.resetsAt],
   );
-  return minBy(resetInstants, toEpochMs) ?? null;
+  return minBy(upcomingInstants, toEpochMs) ?? null;
+}
+
+/**
+ * 남은 횟수는 초기화 순간(resetsAt)에 바뀌므로 그 순간에 다시 받는다. 한 달 뒤 초기화는 타이머 상한을 넘지 않게
+ * 하루마다 다시 재고, 올 초기화가 없으면 시각으로 묻지 않는다(false)
+ */
+function getRefetchIntervalMs(snapshot: EntitlementSnapshot, now: Instant): number | false {
+  const nextResetAt = findNextResetAt(snapshot, now);
+  if (nextResetAt == null) {
+    return false;
+  }
+  return clamp(diffMs(nextResetAt, now), MINUTE_MS, DAY_MS);
 }
 
 /** 요금제의 집행 한도. null은 무제한이다 */
@@ -238,7 +257,7 @@ export const EntitlementPolicy = {
   getMaxSeconds,
   getQuotaStatus,
   getResetNotice,
-  findEarliestResetAt,
+  getRefetchIntervalMs,
   withFeatureQuota,
   shouldOfferPremium,
   getFreeLimit,

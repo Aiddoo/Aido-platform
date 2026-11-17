@@ -5,7 +5,7 @@ import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { getNowInstant } from '@src/shared/date/clock';
 import { queryOptions } from '@tanstack/react-query';
 
-import { getEntitlementsRefetchInterval } from './entitlement-cache';
+import { EntitlementPolicy } from '../domains/entitlement.model';
 import { ENTITLEMENT_QUERY_KEYS } from './entitlement-query-keys';
 
 /** 한도·사용량이 서버에서 바뀌어도 1분 안에는 다시 묻지 않는다. AI 응답의 featureQuota가 그 사이를 채운다 */
@@ -19,7 +19,8 @@ export function useGetEntitlementsQueryOptions() {
     queryFn: async ({ signal }) => unwrap(await entitlementApi.getEntitlements(signal)),
     staleTime: ENTITLEMENTS_STALE_TIME_MS,
     // 화면을 켜 둔 채 자정·월초를 넘겨도 "1번 남음"이 남지 않게 초기화 순간에 다시 받는다
-    refetchInterval: (query) => getEntitlementsRefetchInterval(query.state.data, getNowInstant()),
+    refetchInterval: ({ state: { data: snapshot } }) =>
+      snapshot == null ? false : EntitlementPolicy.getRefetchIntervalMs(snapshot, getNowInstant()),
     // 오프라인으로 다시 열어도 구독 화면·프리미엄 판정이 마지막 서버 값을 유지한다
     ...PERSISTED_QUERY_OPTIONS,
     meta: { ...PERSISTED_QUERY_OPTIONS.meta, refreshOnPremiumChange: true },

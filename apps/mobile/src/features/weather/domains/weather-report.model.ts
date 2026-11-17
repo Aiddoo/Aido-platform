@@ -14,7 +14,7 @@ import {
   WEATHER_WET_HAZARDS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import {
   type Instant,
@@ -24,6 +24,7 @@ import {
   toEpochMs,
 } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
+import { clamp } from 'es-toolkit';
 import { z } from 'zod';
 
 const weatherConditionSchema = z.enum(WEATHER_CONDITIONS);
@@ -388,6 +389,33 @@ function findHourlyPrecipitationOutlook(
 /** 서버가 같은 리포트를 주는 남은 시간. 공급자 장애로 받은 마지막 리포트와 이미 지난 만료는 0이다 */
 export function getReportFreshForMs(report: Pick<WeatherReport, 'expiresAt'>, at: Instant): number {
   return report.expiresAt == null ? 0 : Math.max(0, diffMs(report.expiresAt, at));
+}
+
+/** 만료가 지난 리포트는 이만큼 뒤에 다시 묻는다. 서버도 공급자 실패를 1분 기억한다 */
+const REPORT_MIN_REFRESH_MS = MINUTE_MS;
+/** 공급자 장애로 받은 마지막 리포트(expiresAt 없음)는 모든 기기가 1분마다 묻지 않게 더 길게 기다린다 */
+const REPORT_NO_EXPIRY_REFRESH_MS = 5 * MINUTE_MS;
+
+/** 만료 순간까지 기다리되 위·아래 한도를 둔다. 상한은 먼 만료가 타이머 최대치(2^31-1ms)를 넘지 않게 한다 */
+function getReportRefreshMs(report: Pick<WeatherReport, 'expiresAt'>, at: Instant): number {
+  const floorMs = report.expiresAt == null ? REPORT_NO_EXPIRY_REFRESH_MS : REPORT_MIN_REFRESH_MS;
+  return clamp(getReportFreshForMs(report, at), floorMs, DAY_MS);
+}
+
+/** 서버가 리포트를 다시 받기 시작하는 순간(expiresAt)까지는 같은 리포트라 묻지 않는다. 받은 때부터 센다. 리포트가 없으면 0이다 */
+export function getReportStaleTimeMs(
+  report: Pick<WeatherReport, 'expiresAt'> | undefined,
+  dataUpdatedAt: Instant,
+): number {
+  return report == null ? 0 : getReportRefreshMs(report, dataUpdatedAt);
+}
+
+/** 화면을 켜 둔 동안에도 서버가 새 리포트를 받기 시작하는 순간에 다시 받는다. 리포트가 없으면 간격이 없다 */
+export function getReportRefetchIntervalMs(
+  report: Pick<WeatherReport, 'expiresAt'> | undefined,
+  now: Instant,
+): number | false {
+  return report == null ? false : getReportRefreshMs(report, now);
 }
 
 /** 서버가 새 리포트를 받기 시작한 뒤에도 새것을 받지 못했다. 공급자 장애로 받은 마지막 리포트는 처음부터 오래된 정보다 */
