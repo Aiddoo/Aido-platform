@@ -218,6 +218,60 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/*.errors.ts",
+        "apps/api/src/shared/**/*.exception.ts",
+        "**/*.spec.ts",
+        "**/*.integration-spec.ts"
+      ],
+      "rules": {
+        "aido/error-class-location": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/application/**/*.ts", "apps/api/src/**/domain/**/*.ts"],
+      "excludeFiles": [
+        "**/*.errors.ts",
+        "apps/api/src/shared/**/*.exception.ts",
+        "**/*.spec.ts",
+        "**/*.integration-spec.ts"
+      ],
+      "rules": {
+        "aido/error-class-location": ["off", { "inlineThrow": true }]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/application/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts"],
+      "rules": {
+        "aido/read-model-suffix": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.read-model.ts"],
+      "rules": {
+        "aido/read-model-suffix": ["off", { "exportSuffix": "ReadModel" }]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "apps/api/src/modules/*/*/presentation/http/*.rate-limits.ts",
+        "**/*.spec.ts",
+        "**/*.integration-spec.ts"
+      ],
+      "rules": {
+        "aido/rate-limit-location": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/modules/*/*/presentation/http/*.rate-limits.ts"],
+      "rules": {
+        "aido/rate-limit-location": ["off", { "definitionFile": true }]
+      }
+    },
+    {
       "files": ["apps/api/src/**/index.ts"],
       "excludeFiles": ["apps/api/src/platform/database/schema/index.ts"],
       "rules": {

@@ -172,3 +172,39 @@ tester.run('no-abbreviation', rules['no-abbreviation'], {
     },
   ],
 });
+
+tester.run('read-model-suffix', rules['read-model-suffix'], {
+  valid: [
+    'export interface TodoCommentThreadReadModel { readonly total: number }',
+    'interface CreateMemoDependencies { readonly clock: ClockPort }',
+    'type UserRecordWithId = { readonly id: string };',
+    {
+      code: 'export type TodoSummaryReadModel = { readonly count: number };\nexport const LIMIT = 3;',
+      options: [{ exportSuffix: 'ReadModel' }],
+    },
+  ],
+  invalid: [
+    {
+      code: 'export interface PreferenceSnapshot { readonly locale: string }',
+      errors: [
+        {
+          message:
+            /PreferenceSnapshot: application 타입 이름에 Record·Row·View·Snapshot 접미사를 쓰지 않는다/,
+        },
+      ],
+    },
+    { code: 'type TodoRow = { readonly id: number };', errors: 1 },
+    { code: 'export type UserConsentRecord = { readonly agreed: boolean };', errors: 1 },
+    { code: 'class FriendView {}', errors: 1 },
+    {
+      code: 'export interface TodoSummary { readonly count: number }',
+      options: [{ exportSuffix: 'ReadModel' }],
+      errors: [{ message: /TodoSummary: \*\.read-model\.ts가 내보내는 타입은 ReadModel로 끝낸다/ }],
+    },
+    {
+      code: 'export type FriendSnapshot = { readonly id: string };',
+      options: [{ exportSuffix: 'ReadModel' }],
+      errors: [{ message: /Snapshot 접미사를 쓰지 않는다/ }],
+    },
+  ],
+});

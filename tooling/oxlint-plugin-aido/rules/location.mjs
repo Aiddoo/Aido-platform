@@ -1,3 +1,5 @@
+import { basename } from 'node:path';
+
 import { getCalleeName, getImportedName, unwrap } from '../ast.mjs';
 
 // 정해진 층·파일에서만 쓰는 것. 규칙은 쓰임만 찾고 허용 경로는 .oxlintrc.json의 overrides가 끈다
@@ -241,6 +243,93 @@ const backHandlerLocation = createReactNativeImportRule(
   'react-native의 BackHandler를 직접 듣지 않습니다. shared/hooks의 useAndroidBackHandler({ isEnabled, onBack })를 쓰세요.',
 );
 
+const RATE_LIMITS_FILE_SUFFIX = '.rate-limits.ts';
+const RATE_LIMITS_NAME = /^([A-Z][A-Za-z0-9]*)RateLimits$/u;
+const EXPRESSION_WRAPPERS = new Set([
+  'TSAsExpression',
+  'TSSatisfiesExpression',
+  'ParenthesizedExpression',
+]);
+
+function toKebabCase(name) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/gu, '$1-$2')
+    .replace(/([A-Z])([A-Z][a-z])/gu, '$1-$2')
+    .toLowerCase();
+}
+
+function toPlural(word) {
+  if (word.endsWith('series')) {
+    return word;
+  }
+  if (/[^aeiou]y$/u.test(word)) {
+    return `${word.slice(0, -1)}ies`;
+  }
+  if (/(?:s|x|z|ch|sh)$/u.test(word)) {
+    return `${word}es`;
+  }
+  return `${word}s`;
+}
+
+// 약어는 파일 이름에서 붙여 쓰고(OAuthState → oauth-states) 이미 복수형인 이름(LinkedAccounts)은 그대로 쓴다
+function matchesSlicesName(aggregate, slices) {
+  const kebab = toKebabCase(aggregate);
+  const plurals = kebab.endsWith('s') ? [toPlural(kebab), kebab] : [toPlural(kebab)];
+  const compact = (value) => value.replaceAll('-', '');
+  return plurals.some((plural) => compact(plural) === compact(slices));
+}
+
+function findAssignedDeclarator(node) {
+  let current = node.parent;
+  while (current != null && EXPRESSION_WRAPPERS.has(current.type)) {
+    current = current.parent;
+  }
+  return current?.type === 'VariableDeclarator' ? current : null;
+}
+
+// 요청 한도는 slice의 presentation/http/<slices>.rate-limits.ts 한 곳이다. 그 파일은 definitionFile 옵션으로 이름만 본다
+const rateLimitLocation = {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: { definitionFile: { type: 'boolean' } },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const isDefinitionFile = context.options[0]?.definitionFile ?? false;
+    return {
+      CallExpression(node) {
+        if (getCalleeName(node.callee) !== 'defineRateLimits') {
+          return;
+        }
+        if (!isDefinitionFile) {
+          context.report({
+            node,
+            message:
+              'defineRateLimits는 slice의 presentation/http/<slices>.rate-limits.ts에서만 부른다. 라우트는 그 상수를 @RateLimit(…)으로 쓴다.',
+          });
+          return;
+        }
+        const declarator = findAssignedDeclarator(node);
+        const name = declarator?.id.type === 'Identifier' ? declarator.id.name : null;
+        const slices = basename(context.filename).slice(0, -RATE_LIMITS_FILE_SUFFIX.length);
+        const aggregate = name == null ? null : RATE_LIMITS_NAME.exec(name)?.[1];
+        if (aggregate != null && matchesSlicesName(aggregate, slices)) {
+          return;
+        }
+        context.report({
+          node: declarator?.id ?? node,
+          message: `${name ?? 'defineRateLimits(…)'}: 요청 한도는 상수 <Aggregate>RateLimits 하나다. Aggregate 이름의 kebab 복수형이 파일 이름 ${slices}와 같다.`,
+        });
+      },
+    };
+  },
+};
+
 export default {
   'track-location': trackLocation,
   'query-client-location': queryClientLocation,
@@ -248,4 +337,5 @@ export default {
   'http-status-literal': httpStatusLiteral,
   'app-state-location': appStateLocation,
   'back-handler-location': backHandlerLocation,
+  'rate-limit-location': rateLimitLocation,
 };

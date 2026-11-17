@@ -25,7 +25,7 @@
 | 주기 작업       | `timezone-reminder-sweep.scheduler.ts`                               | `TimezoneReminderSweepScheduler`                      |                                                                                                                                                                               |
 | 이벤트 구독     | `invitee-activity.event-handler.ts`                                  | `InviteeActivityEventHandler`                         |                                                                                                                                                                               |
 | HTTP            | `http/v1/memo.controller.ts`·`memo.dto.ts`·`memo-response.mapper.ts` | `MemoController`·`CreateMemoDto`·`toMemoResponse()`   | DTO는 컨트롤러별 한 파일, 응답 문구는 매퍼                                                                                                                                    |
-| 요청 한도       | `http/inquiries.rate-limits.ts`                                      | `InquiryRateLimits`                                   | `defineRateLimits({ submit: { limitPerMinute } })`, 라우트는 `@RateLimit(…)`                                                                                                  |
+| 요청 한도       | `http/inquiries.rate-limits.ts`                                      | `InquiryRateLimits`                                   | `defineRateLimits({ submit: { limitPerMinute } })`는 이 파일에서만(`aido/rate-limit-location`), 라우트는 `@RateLimit(…)`                                                      |
 | 로그·경보·오류  | `memos.log-events.ts`·`weather-reports.alerts.ts`·`memos.errors.ts`  | `MemoLogEvent`·`WeatherReportAlerts`·`memoNotFound()` | 로그 상수는 이벤트 이름 상수와 겹치지 않게                                                                                                                                    |
 
 - 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
@@ -59,7 +59,7 @@
 
 ## 용어
 
-- 쓰기 모델은 Entity·Aggregate·VO, 조회 결과는 Read Model, HTTP는 Dto 세 용어만 쓴다. `record`·`model`·`view`·`types`를 같은 뜻으로 쓰지 않는다.
+- 쓰기 모델은 Entity·Aggregate·VO, 조회 결과는 Read Model, HTTP는 Dto 세 용어만 쓴다. `record`·`model`·`view`·`types`를 같은 뜻으로 쓰지 않는다. `*.read-model.ts`가 내보내는 타입은 `ReadModel`로 끝나고 application 타입 이름은 `Record`·`Row`·`View`·`Snapshot`으로 끝나지 않는다(`aido/read-model-suffix`).
 - Entity를 평범한 값으로 꺼내는 메서드는 `toPrimitives()`, 타입은 `<Noun>Primitives`다. `snapshot`은 이벤트 소싱의 저장 사본과 헷갈려 쓰지 않는다. Temporal 값은 불변이라 primitives에 그대로 둔다.
 - 순수 판단 함수 모음은 `*.domain-service.ts`다. `policy`는 바깥 호출 정책(`<vendor>-outbound.policy.ts`)에만 쓴다.
 

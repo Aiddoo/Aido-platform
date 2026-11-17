@@ -93,3 +93,68 @@ tester.run('back-handler-location', rules['back-handler-location'], {
   valid: ["import { Keyboard } from 'react-native';"],
   invalid: [{ code: "import { BackHandler, Keyboard } from 'react-native';", errors: 1 }],
 });
+
+const RATE_LIMITS_FILE =
+  'apps/api/src/modules/engagement/todo-comments/presentation/http/todo-comments.rate-limits.ts';
+
+tester.run('rate-limit-location', rules['rate-limit-location'], {
+  valid: [
+    '@RateLimit(TodoCommentRateLimits.write)\nclass TodoCommentController {}',
+    {
+      code: 'export const TodoCommentRateLimits = defineRateLimits({ write: { limitPerMinute: 10 } });',
+      filename: RATE_LIMITS_FILE,
+      options: [{ definitionFile: true }],
+    },
+    {
+      code: 'export const TodoSeriesRateLimits = defineRateLimits({});',
+      filename:
+        'apps/api/src/modules/planning/todo-series/presentation/http/todo-series.rate-limits.ts',
+      options: [{ definitionFile: true }],
+    },
+    {
+      code: 'export const InquiryRateLimits = defineRateLimits({}) satisfies RateLimits;',
+      filename: 'apps/api/src/modules/support/inquiries/presentation/http/inquiries.rate-limits.ts',
+      options: [{ definitionFile: true }],
+    },
+    {
+      code: 'export const OAuthStateRateLimits = defineRateLimits({});',
+      filename:
+        'apps/api/src/modules/identity/oauth-states/presentation/http/oauth-states.rate-limits.ts',
+      options: [{ definitionFile: true }],
+    },
+    {
+      code: 'export const LinkedAccountsRateLimits = defineRateLimits({});',
+      filename:
+        'apps/api/src/modules/identity/linked-accounts/presentation/http/linked-accounts.rate-limits.ts',
+      options: [{ definitionFile: true }],
+    },
+  ],
+  invalid: [
+    {
+      code: 'const limits = defineRateLimits({ write: { limitPerMinute: 10 } });',
+      errors: [
+        {
+          message: /defineRateLimits는 slice의 presentation\/http\/<slices>\.rate-limits\.ts에서만/,
+        },
+      ],
+    },
+    {
+      code: 'export const CommentRateLimits = defineRateLimits({});',
+      filename: RATE_LIMITS_FILE,
+      options: [{ definitionFile: true }],
+      errors: [{ message: /CommentRateLimits: 요청 한도는 상수 <Aggregate>RateLimits 하나다/ }],
+    },
+    {
+      code: 'export const TODO_COMMENT_LIMITS = defineRateLimits({});',
+      filename: RATE_LIMITS_FILE,
+      options: [{ definitionFile: true }],
+      errors: 1,
+    },
+    {
+      code: 'export default defineRateLimits({});',
+      filename: RATE_LIMITS_FILE,
+      options: [{ definitionFile: true }],
+      errors: [{ message: /defineRateLimits\(…\): 요청 한도는/ }],
+    },
+  ],
+});

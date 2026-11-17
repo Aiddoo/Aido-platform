@@ -469,6 +469,68 @@ const noAbbreviation = {
   },
 };
 
+const FORBIDDEN_TYPE_NAME = /^.+(?:Record|Row|View|Snapshot)$/u;
+const TYPE_DECLARATIONS = new Set([
+  'TSTypeAliasDeclaration',
+  'TSInterfaceDeclaration',
+  'ClassDeclaration',
+]);
+
+// 조회 결과는 Read Model 한 용어다. record·row·view·snapshot이 섞이면 쓰기 모델·DB 행과 구별되지 않는다
+const readModelSuffix = {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: { exportSuffix: { type: 'string' } },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const exportSuffix = context.options[0]?.exportSuffix ?? null;
+    let reportedNames = new Set();
+    function checkDeclaration(node) {
+      const name = node.id?.name;
+      if (name == null || !FORBIDDEN_TYPE_NAME.test(name)) {
+        return;
+      }
+      reportedNames.add(name);
+      context.report({
+        node: node.id,
+        message: `${name}: application 타입 이름에 Record·Row·View·Snapshot 접미사를 쓰지 않는다. 조회 결과는 <Noun>ReadModel, 쓰기 모델은 Entity·VO다.`,
+      });
+    }
+    return {
+      Program() {
+        reportedNames = new Set();
+      },
+      TSTypeAliasDeclaration: checkDeclaration,
+      TSInterfaceDeclaration: checkDeclaration,
+      ClassDeclaration: checkDeclaration,
+      'ExportNamedDeclaration:exit'(node) {
+        const { declaration } = node;
+        if (
+          exportSuffix == null ||
+          declaration == null ||
+          !TYPE_DECLARATIONS.has(declaration.type)
+        ) {
+          return;
+        }
+        const name = declaration.id?.name;
+        if (name == null || name.endsWith(exportSuffix) || reportedNames.has(name)) {
+          return;
+        }
+        context.report({
+          node: declaration.id,
+          message: `${name}: *.read-model.ts가 내보내는 타입은 ${exportSuffix}로 끝낸다(<Noun>${exportSuffix}).`,
+        });
+      },
+    };
+  },
+};
+
 export default {
   'component-name': componentName,
   'function-name': functionName,
@@ -478,4 +540,5 @@ export default {
   'loading-namespace-name': loadingNamespaceName,
   'namespace-function-name': namespaceFunctionName,
   'no-abbreviation': noAbbreviation,
+  'read-model-suffix': readModelSuffix,
 };
