@@ -6,7 +6,7 @@ import {
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import type { ReportDraft } from "../../domain/ai-reports.constants.js";
+import type { ReportDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { numbersIn } from "../../domain/grounded-numbers.domain-service.js";
 import { ReportDraftRejectedError } from "../ai-reports.errors.js";
 import { buildReportContext } from "./report-context.messages.js";

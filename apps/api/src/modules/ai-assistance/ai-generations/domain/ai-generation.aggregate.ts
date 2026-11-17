@@ -3,7 +3,6 @@ import { omit } from "es-toolkit";
 
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { AiGenerationId } from "./ai-generation-id.vo.js";
 import { invalidAiGeneration } from "./ai-generations.errors.js";
 
 export interface AiGenerationUsage {
@@ -33,7 +32,6 @@ export interface AiGenerationMeta extends AiGenerationUsage {
 }
 
 export interface AiGenerationPrimitives<TOutput> extends AiGenerationMeta {
-  readonly id: string;
   readonly output: TOutput;
   /** 이 요청이 차례로 시도한 처리 업체 */
   readonly route: readonly AiProviderId[];
@@ -46,17 +44,14 @@ interface AiGenerationProps<TOutput> extends AiGenerationMeta {
 
 export type CreateAiGenerationParams<TOutput> = Omit<
   AiGenerationPrimitives<TOutput>,
-  "id" | "fallbackFrom"
+  "fallbackFrom"
 >;
 
 /**
  * 스키마에 맞는 출력을 낸 생성 한 건. 저장하지 않고 정규화·로그에만 쓴다.
  * 응답한 업체는 시도 경로 안에 있어야 하고, 경로의 첫 업체가 아니면 그 업체에서 넘어온 것이다.
  */
-export class AiGeneration<TOutput> extends AggregateRoot<
-  AiGenerationId,
-  AiGenerationProps<TOutput>
-> {
+export class AiGeneration<TOutput> extends AggregateRoot<null, AiGenerationProps<TOutput>> {
   static create<TOutput>(params: CreateAiGenerationParams<TOutput>): AiGeneration<TOutput> {
     const { output, route, provider, attempts, latencyMs, estimatedCostMicroUsd } = params;
     if (output == null) {
@@ -72,7 +67,7 @@ export class AiGeneration<TOutput> extends AggregateRoot<
       throw invalidAiGeneration("latency and cost must not be negative");
     }
     const first = route[0] ?? null;
-    return new AiGeneration(AiGenerationId.generate(), {
+    return new AiGeneration(null, {
       output,
       route: [...route],
       provider,
@@ -119,6 +114,6 @@ export class AiGeneration<TOutput> extends AggregateRoot<
   }
 
   toPrimitives(): AiGenerationPrimitives<TOutput> {
-    return { ...this.props, id: this.id.value, route: [...this.props.route] };
+    return { ...this.props, route: [...this.props.route] };
   }
 }

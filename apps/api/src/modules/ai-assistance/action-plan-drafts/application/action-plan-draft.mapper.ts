@@ -5,17 +5,19 @@ import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { removeInvisibleCharacters } from "../../ai-generations/application/messages/untrusted-input.messages.js";
 import { cleanTitle } from "../../parsed-drafts/application/todo-draft.mapper.js";
+import type {
+  MemoActionDraft,
+  QuickPlanDraft,
+  TodoActionDraft,
+  VoiceNoteDigestDraft,
+} from "../../shared/domain/ai-task-outputs.constants.js";
 import type { RepeatPattern } from "../../shared/domain/todo-draft.constants.js";
 import type {
   ActionPlanWarning,
-  MemoActionDraft,
   NormalizedActionPlan,
   NormalizedVoiceNoteDigest,
   PlannedMemoDraft,
   PlannedTodoDraft,
-  QuickPlanDraft,
-  TodoActionDraft,
-  VoiceNoteDigestDraft,
 } from "../domain/action-plan-drafts.constants.js";
 
 export interface ActionPlanNormalizeContext {

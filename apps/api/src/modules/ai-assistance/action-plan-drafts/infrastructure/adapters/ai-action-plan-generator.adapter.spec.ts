@@ -14,6 +14,8 @@ import {
 } from "../../application/messages/planning-context.constants.js";
 import { quickPlanPrompt } from "../../application/messages/quick-plan-prompt.messages.js";
 import { voiceNoteDigestPrompt } from "../../application/messages/voice-note-digest-prompt.messages.js";
+import { ActionPlanDraft } from "../../domain/action-plan-draft.aggregate.js";
+import { invalidActionPlanDraft } from "../../domain/action-plan-drafts.errors.js";
 import { AiActionPlanGeneratorAdapter } from "./ai-action-plan-generator.adapter.js";
 
 const consentReader = new StubAiDataSharingConsentReader();
@@ -110,6 +112,26 @@ describe("AiActionPlanGeneratorAdapter", () => {
       await expect(failure).rejects.toMatchObject({ errorCode, details: { charged: false } });
     },
   );
+
+  it("계획 초안 불변식이 깨지면 SYS_0001이 아니라 AI_1302와 charged:false로 던져 환불하게 한다", async () => {
+    // Given
+    const { aiGenerator, generator, logger } = setup();
+    aiGenerator.setRawResponse({ todos: [todoActionDraft()], memo: null });
+    vi.spyOn(ActionPlanDraft, "create").mockImplementation(() => {
+      throw invalidActionPlanDraft("action plan must keep at most MAX_TODOS todos");
+    });
+    // When
+    const failure = generator.generateQuickPlan({ ...planningInput, text: "회의" });
+    // Then
+    await expect(failure).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1302,
+      details: { charged: false },
+    });
+    expect(logger.log).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "FAILED", quotaCharged: false }),
+    );
+  });
 
   it("할 일 없는 빠른 계획은 차감하지 않는 결과로 남긴다", async () => {
     // Given

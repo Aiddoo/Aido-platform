@@ -15,6 +15,7 @@ import {
   type ExistingTodo,
   findDuplicateTodoId,
 } from "../../shared/domain/action-plan-dedupe.domain-service.js";
+import type { MemoDraft } from "../../shared/domain/ai-task-outputs.constants.js";
 import type {
   DateRef,
   ScheduleDraft,
@@ -24,7 +25,6 @@ import {
   isSingleWeekendRepeat,
   resolveTodoSchedule,
 } from "../../shared/domain/todo-schedule.domain-service.js";
-import type { MemoDraft } from "../domain/parsed-drafts.constants.js";
 
 /** 공개 계약의 할 일·하위 할 일·메모 제목 상한 */
 const TITLE_MAX_LENGTH = 200;

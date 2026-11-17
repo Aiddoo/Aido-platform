@@ -3,13 +3,13 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
+  MemoDraft,
   QuickPlanDraft,
+  ReportDraft,
+  SuggestionDraft,
   VoiceNoteDigestDraft,
-} from "../../../action-plan-drafts/domain/action-plan-drafts.constants.js";
-import type { ReportDraft } from "../../../ai-reports/domain/ai-reports.constants.js";
-import type { MemoDraft } from "../../../parsed-drafts/domain/parsed-drafts.constants.js";
+} from "../../../shared/domain/ai-task-outputs.constants.js";
 import type { TodoDraft } from "../../../shared/domain/todo-draft.constants.js";
-import type { SuggestionDraft } from "../../../suggestions/domain/suggestions.constants.js";
 import type { AiGeneration } from "../../domain/ai-generation.aggregate.js";
 import type { AiTaskClass } from "../../domain/ai-spend.domain-service.js";
 

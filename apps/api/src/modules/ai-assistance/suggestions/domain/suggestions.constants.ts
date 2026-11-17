@@ -10,17 +10,6 @@ export type SuggestionAction = SuggestionActionKind;
 
 export const SUGGESTION_ANALYSIS_PERIOD_DAYS = 7 * AI_SUGGESTION_LIMITS.ANALYSIS_WEEKS;
 
-/** 모델이 고른 후보 하나. 근거 문장·신뢰도·상한은 서버가 정한다 */
-interface SuggestionPickDraft {
-  readonly candidateId: string;
-  readonly daysOfWeek: readonly DayOfWeek[];
-  readonly useRecordedTime: boolean;
-}
-
-export interface SuggestionDraft {
-  readonly picks: readonly SuggestionPickDraft[];
-}
-
 /**
  * AI가 감지한 반복 패턴
  */

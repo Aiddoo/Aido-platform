@@ -27,6 +27,12 @@ class Draft extends Entity<NoteId, NoteProps> {
   }
 }
 
+class Preview extends Entity<null, NoteProps> {
+  static create(title: string): Preview {
+    return new Preview(null, { title });
+  }
+}
+
 describe("Entity — 엔티티 베이스", () => {
   it("상태가 달라도 id가 같으면 같은 엔티티다", () => {
     // Given
@@ -62,5 +68,17 @@ describe("Entity — 엔티티 베이스", () => {
 
     // Then
     expect(isEqual).toBe(false);
+  });
+
+  it("id가 없는 엔티티는 상태가 같아도 자기 자신과만 같다", () => {
+    // Given
+    const preview = Preview.create("장보기");
+    const sameTitle = Preview.create("장보기");
+
+    // When
+    const equality = { self: preview.equals(preview), other: preview.equals(sameTitle) };
+
+    // Then
+    expect(equality).toEqual({ self: true, other: false });
   });
 });

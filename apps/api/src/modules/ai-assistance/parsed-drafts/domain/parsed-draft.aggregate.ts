@@ -2,14 +2,12 @@ import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { ParsedDraftId } from "./parsed-draft-id.vo.js";
 import type { ParsedTodo } from "./parsed-drafts.constants.js";
 import { invalidParsedDraft } from "./parsed-drafts.errors.js";
 
 type ParsedTodos<TTodo extends ParsedTodo> = readonly [TTodo, ...TTodo[]];
 
 export interface ParsedDraftPrimitives<TTodo extends ParsedTodo> {
-  readonly id: string;
   readonly todos: ParsedTodos<TTodo>;
   readonly omittedTodoCount: number;
   readonly hasAction: boolean;
@@ -34,7 +32,7 @@ interface CreateParsedDraftParams<TTodo extends ParsedTodo> {
  * 할 일은 1개 이상 메모 상한 이하이고, 실행할 할 일이 없던 초안은 만들지 않은 할 일도 없다.
  */
 export class ParsedDraft<TTodo extends ParsedTodo = ParsedTodo> extends AggregateRoot<
-  ParsedDraftId,
+  null,
   ParsedDraftProps<TTodo>
 > {
   static create<TTodo extends ParsedTodo>(
@@ -51,7 +49,7 @@ export class ParsedDraft<TTodo extends ParsedTodo = ParsedTodo> extends Aggregat
     if (!hasAction && omittedTodoCount > 0) {
       throw invalidParsedDraft("draft without action cannot omit todos");
     }
-    return new ParsedDraft(ParsedDraftId.generate(), {
+    return new ParsedDraft(null, {
       todos: [first, ...rest],
       omittedTodoCount,
       hasAction,
@@ -72,6 +70,6 @@ export class ParsedDraft<TTodo extends ParsedTodo = ParsedTodo> extends Aggregat
   }
 
   toPrimitives(): ParsedDraftPrimitives<TTodo> {
-    return { id: this.id.value, ...this.props };
+    return { ...this.props };
   }
 }

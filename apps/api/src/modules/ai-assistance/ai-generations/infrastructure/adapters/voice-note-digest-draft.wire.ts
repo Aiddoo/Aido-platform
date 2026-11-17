@@ -1,7 +1,7 @@
 import { ACTION_PLAN_LIMITS } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import type { VoiceNoteDigestDraft } from "../../../action-plan-drafts/domain/action-plan-drafts.constants.js";
+import type { VoiceNoteDigestDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { llmInteger, llmObject } from "./llm-output.wire.js";
 import { actionPlanDraftShape } from "./quick-plan-draft.wire.js";
 

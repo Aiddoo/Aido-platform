@@ -85,14 +85,6 @@ export const REPORT_CONTENT_SOURCES = ["AI", "FALLBACK", "TEMPLATE", "NO_AI_CONS
 
 export type ReportContentSource = (typeof REPORT_CONTENT_SOURCES)[number];
 
-/** 모델이 쓴 코치 카드 한 장. 길이·개수·숫자 근거는 서버가 맞춘다 */
-export interface ReportDraft {
-  /** report_data.focus.items의 key. null이면 전체에 대한 글이다 */
-  readonly insightKey: string | null;
-  readonly insight: string;
-  readonly tips: readonly string[];
-}
-
 /**
  * AI가 생성한 리포트 콘텐츠
  */

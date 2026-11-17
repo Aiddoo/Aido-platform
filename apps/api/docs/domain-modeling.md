@@ -24,7 +24,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 | `reconstitute` | 신뢰한 저장값 복원. 검증·이벤트가 없다. 한도가 줄어도 옛 데이터를 읽는다  |
 
 - `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다.
-- DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 "id 없는 Aggregate"가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
+- DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 id 없는 저장 Aggregate가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
 - 복원 위치는 infrastructure의 출처별 매퍼 한 곳이다: DB 행 `*-row.mapper.ts`, env `*-env.mapper.ts`, 캐시 값 `*-cache.mapper.ts`. Application이 행·값을 받아 복원하지 않는다.
 
 ## 상태 전이
@@ -55,6 +55,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 - 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. 세 번째 인자 `{ message?, cause? }`로 응답 문구를 정하거나 감싼 원본 오류를 남긴다. HTTP 변환은 [오류 규칙](../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. 거부는 `application/<slice>.errors.ts`, 불변식은 `domain/<slice>.errors.ts`(Domain은 Application을 import하지 못한다)이고, 같은 Context의 slice가 함께 쓰는 불변식은 `<context>/shared/domain/<context>.errors.ts`(`planning.errors.ts`), 공용 식별자는 `shared/domain/exceptions/shared-domain.errors.ts`다. 이 파일 밖에서 `new ApplicationException`·`new DomainException`·`new ErrorCodedException`(별칭 import 포함)을 쓰지 않고 이 클래스들을 잇는 예외 클래스도 만들지 않는다(Oxlint `aido/no-inline-coded-exception`, spec 제외). port·use-case 파일 안에 오류 클래스를 선언하지 않는다.
+- 생성만 하는 Aggregate는 id를 저장·참조·전송할 때만 둔다(캐시 키인 날씨 보고의 칸 `WeatherReportId`). 아무도 읽지 않는 id VO를 만들지 않고 `AggregateRoot<null, Props>`로 `create`가 `null`을 넘긴다(`ParsedDraft`·`ActionPlanDraft`·`AiGeneration`·`VoiceDigest`·`Inquiry`·`DailyCompletion`). id가 없는 Aggregate는 자기 자신과만 같다(`equals`).
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Aggregate id(`TodoId`)는 소유 slice `domain/`에 두고 다른 slice·Context는 그 slice `*.public.ts`로 import한다. Props도 다른 Aggregate를 원시값이 아닌 id VO로 참조한다.
 - 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다. 조회 결과가 없으면 `undefined`가 아닌 `null`이다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
 - 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 앱 릴리스, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.

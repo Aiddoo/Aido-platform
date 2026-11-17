@@ -1,5 +1,5 @@
 import { renderExample } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
-import type { SuggestionDraft } from "../../domain/suggestions.constants.js";
+import type { SuggestionDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import type { SuggestionData } from "./suggestion-data.messages.js";
 
 interface SuggestionExample {

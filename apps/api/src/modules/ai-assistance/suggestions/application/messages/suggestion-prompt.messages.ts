@@ -4,6 +4,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { PromptDefinition } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import { wrapUntrusted } from "../../../ai-generations/application/messages/untrusted-input.messages.js";
+import type { SuggestionDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { dedupeByTitlePrefixAndDays } from "../../domain/pattern-filter.domain-service.js";
 import type { SuggestionAnalysisTrigger } from "../../domain/suggestion-analysis.constants.js";
 import {
@@ -11,7 +12,7 @@ import {
   resolveSuggestionPicks,
   suggestionModeOf,
 } from "../../domain/suggestion-candidates.domain-service.js";
-import type { DetectedPattern, SuggestionDraft } from "../../domain/suggestions.constants.js";
+import type { DetectedPattern } from "../../domain/suggestions.constants.js";
 import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
 import { buildSuggestionData } from "./suggestion-data.messages.js";
 import { suggestionReasonCopy } from "./suggestion-reason.messages.js";

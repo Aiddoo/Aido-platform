@@ -1,18 +1,6 @@
 import type { DayOfWeek } from "@aido/api/vocabulary";
 
-import type { TodoDraft, TodoRepeatRule } from "../../shared/domain/todo-draft.constants.js";
-
-/** 메모 draft의 할 일. 하위 단계와 겹친다고 본 다가오는 할 일 id를 더한다 */
-interface MemoTodoDraft extends TodoDraft {
-  readonly items: readonly { readonly title: string }[];
-  readonly duplicateOfTodoId: number | null;
-}
-
-/** 모델이 돌려준 메모 draft. totalTaskCount는 모델이 쓰지 않은 할 일까지 센 메모 전체 할 일 수다. */
-export interface MemoDraft {
-  readonly todos: readonly MemoTodoDraft[];
-  readonly totalTaskCount: number | null;
-}
+import type { TodoRepeatRule } from "../../shared/domain/todo-draft.constants.js";
 
 /**
  * 서버가 날짜·시각·반복을 계산하고 공개 계약으로 검증한 할 일 초안. 출시 앱이 읽는 요일+종료일(recurrence)과

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ReportDraft } from "../../../ai-reports/domain/ai-reports.constants.js";
+import type { ReportDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { llmObject } from "./llm-output.wire.js";
 
 /** 코치 카드 한 장. 길이·개수·숫자 근거는 서버가 맞춘다. */

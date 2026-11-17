@@ -19,6 +19,17 @@ module.exports = {
       },
     },
     {
+      name: "ai-generations-knows-no-consumer",
+      comment:
+        "ai-generations는 그것을 쓰는 ai-assistance slice를 모른다. 작업 출력 타입은 ai-assistance/shared/domain에 둔다.",
+      severity: "error",
+      from: { path: "^src/modules/ai-assistance/ai-generations/" },
+      to: {
+        path: "^src/modules/ai-assistance/",
+        pathNot: "^src/modules/ai-assistance/(ai-generations|shared)/",
+      },
+    },
+    {
       name: "express-only-in-platform-http",
       comment:
         "Express 전용 API는 platform/http에만 둔다. 요청·응답 타입은 platform/http/http-request.ts를 쓴다.",

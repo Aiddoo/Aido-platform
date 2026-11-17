@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { MemoDraft } from "../../../parsed-drafts/domain/parsed-drafts.constants.js";
+import type { MemoDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { llmInteger, llmObject } from "./llm-output.wire.js";
 import { todoDraftShape } from "./parse-todo-draft.wire.js";
 

@@ -1,9 +1,8 @@
 import type { DomainEvent } from "./domain-event.js";
-import type { EntityId } from "./entity-id.js";
-import { Entity } from "./entity.js";
+import { Entity, type EntityIdentity } from "./entity.js";
 
 export abstract class AggregateRoot<
-  TId extends EntityId<string | number>,
+  TId extends EntityIdentity,
   TProps extends object,
   TEvent extends DomainEvent = DomainEvent,
 > extends Entity<TId, TProps> {

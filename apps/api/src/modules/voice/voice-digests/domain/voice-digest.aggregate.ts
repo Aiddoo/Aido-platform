@@ -1,6 +1,5 @@
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { VoiceDigestId } from "./voice-digest-id.vo.js";
 import type { VoiceTranscript } from "./voice-transcript.vo.js";
 
 interface VoiceDigestKeyPoint {
@@ -10,7 +9,6 @@ interface VoiceDigestKeyPoint {
 }
 
 export interface VoiceDigestPrimitives {
-  readonly id: string;
   readonly title: string;
   readonly summary: string;
   readonly keyPoints: readonly VoiceDigestKeyPoint[];
@@ -36,9 +34,9 @@ interface CreateVoiceDigestParams {
  * AI가 정리한 녹음 한 건. 저장하지 않고 응답과 재요청 재생에만 쓴다. 핵심 내용의 시각은 AI가 지어내지
  * 못하게 AI가 고른 문장 번호로 전사에서만 찾는다.
  */
-export class VoiceDigest extends AggregateRoot<VoiceDigestId, VoiceDigestProps> {
+export class VoiceDigest extends AggregateRoot<null, VoiceDigestProps> {
   static create(params: CreateVoiceDigestParams): VoiceDigest {
-    return new VoiceDigest(VoiceDigestId.generate(), {
+    return new VoiceDigest(null, {
       title: params.title,
       summary: params.summary,
       keyPoints: params.keyPoints.map((point) => ({
@@ -50,7 +48,6 @@ export class VoiceDigest extends AggregateRoot<VoiceDigestId, VoiceDigestProps> 
 
   toPrimitives(): VoiceDigestPrimitives {
     return {
-      id: this.id.value,
       title: this.props.title,
       summary: this.props.summary,
       keyPoints: this.props.keyPoints.map((point) => ({ ...point })),

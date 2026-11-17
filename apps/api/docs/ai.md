@@ -18,7 +18,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 읽는다. 코드
 
 ## 프롬프트 구성
 
-모든 작업은 `ai-generations/application/messages/prompt-definition.messages.ts`의 `PromptDefinition<TTask, I, R, C>` 하나로 정의한다: `id`(AiTaskId), `version`(`<task>@<n>`), `build(input, locale) → { system, prompt }`, `normalize(raw, ctx) → R`. 모델 출력 모양은 업체 중립 타입(`AiTaskOutputs`, `ai-generator.port.ts`)이고, 그 LLM schema(Zod, 구조화 출력)는 그것을 파싱하는 어댑터 옆 `ai-generations/infrastructure/adapters/ai-task-output.wire.ts`가 작업별로 묶는다. use case는 `generateWithPrompt(generator, definition, { built, context, agreedConsentVersion, userId })`로 부른다. 버전 폴더(v1·v2)와 `AI_PROMPT_VERSION_*` 전환은 없다.
+모든 작업은 `ai-generations/application/messages/prompt-definition.messages.ts`의 `PromptDefinition<TTask, I, R, C>` 하나로 정의한다: `id`(AiTaskId), `version`(`<task>@<n>`), `build(input, locale) → { system, prompt }`, `normalize(raw, ctx) → R`. 모델 출력 모양은 업체 중립 타입(`AiTaskOutputs`, `ai-generator.port.ts`. 타입은 `shared/domain/ai-task-outputs.constants.ts`·`todo-draft.constants.ts`)이고, 그 LLM schema(Zod, 구조화 출력)는 그것을 파싱하는 어댑터 옆 `ai-generations/infrastructure/adapters/ai-task-output.wire.ts`가 작업별로 묶는다. use case는 `generateWithPrompt(generator, definition, { built, context, agreedConsentVersion, userId })`로 부른다. 버전 폴더(v1·v2)와 `AI_PROMPT_VERSION_*` 전환은 없다.
 
 | 작업              | 정의 파일                                                                      | 버전                   |
 | ----------------- | ------------------------------------------------------------------------------ | ---------------------- |

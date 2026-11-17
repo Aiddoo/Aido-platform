@@ -2,7 +2,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { topLevelTags } from "#test/fixtures/ai-prompt.fixture";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
-import type { QuickPlanDraft } from "../../../action-plan-drafts/domain/action-plan-drafts.constants.js";
+import type { QuickPlanDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { buildLanguagePolicy } from "./language-policy.messages.js";
 import {
   composeSystem,

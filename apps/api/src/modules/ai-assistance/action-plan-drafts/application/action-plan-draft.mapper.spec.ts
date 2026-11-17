@@ -6,7 +6,7 @@ import type {
   QuickPlanDraft,
   TodoActionDraft,
   VoiceNoteDigestDraft,
-} from "../domain/action-plan-drafts.constants.js";
+} from "../../shared/domain/ai-task-outputs.constants.js";
 import {
   isEmptyActionPlan,
   isEmptyVoiceNoteDigest,

@@ -12,7 +12,8 @@ AI 생성·파싱·계획 초안·리포트·제안과 제안 분석 실행을 �
 | `ai-reports`         | `AiReport`(저장)          | 주기 하나의 분석 결과. 만든 뒤 바뀌지 않는다                                                                                                        |
 | `suggestions`        | `Suggestion`(저장)        | 반복 할 일로 만들 만한 활동 하나(아래 표)                                                                                                           |
 
-- 모델 출력은 업체 중립 타입(`AiTaskOutputs`: `TodoDraft`·`MemoDraft`·`QuickPlanDraft`·`VoiceNoteDigestDraft`·`ReportDraft`·`SuggestionDraft`)이고 LLM schema(`*.wire.ts`)는 그것을 파싱하는 `ai-generations` 어댑터 옆에 둔다.
+- 모델 출력은 업체 중립 타입(`AiTaskOutputs`: `TodoDraft`·`MemoDraft`·`QuickPlanDraft`·`VoiceNoteDigestDraft`·`ReportDraft`·`SuggestionDraft`)이고 LLM schema(`*.wire.ts`)는 그것을 파싱하는 `ai-generations` 어댑터 옆에 둔다. 출력 타입은 생성 slice와 정규화하는 slice가 함께 써서 `shared/domain`(`TodoDraft`는 `todo-draft.constants.ts`, 나머지는 `ai-task-outputs.constants.ts`)에 두고, `ai-generations`는 그것을 쓰는 slice를 import하지 않는다.
+- `ParsedDraft`·`ActionPlanDraft`는 생성 실패 처리 안에서 만든다. 불변식이 깨지면 `SYS_0001`이 아니라 `AI_1302`(`charged: false`, 환불)다.
 - 체인 제한 시간을 나누는 업체별 몫은 설정 `providerTimeWeights`(`ai-assistance-ai-generations.config.ts`)이고 도메인 서비스 `resolveAttemptTime`은 그 몫을 입력으로 받는다.
 
 ## 제안

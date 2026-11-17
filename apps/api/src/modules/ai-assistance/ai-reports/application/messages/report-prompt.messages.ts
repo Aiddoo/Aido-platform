@@ -6,11 +6,11 @@ import {
   removeInvisibleCharacters,
   wrapUntrusted,
 } from "../../../ai-generations/application/messages/untrusted-input.messages.js";
+import type { ReportDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import {
   type GeneratedReportContent,
   REPORT_MAX_TIPS,
   REPORT_TEXT_MAX_LENGTH,
-  type ReportDraft,
 } from "../../domain/ai-reports.constants.js";
 import {
   isGroundedTip,

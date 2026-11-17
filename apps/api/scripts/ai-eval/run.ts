@@ -56,7 +56,6 @@ import {
   type GeneratedReportContent,
   REPORT_MAX_TIPS,
   REPORT_TEXT_MAX_LENGTH,
-  type ReportDraft,
 } from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
 import {
   hasOnlyGroundedNames,
@@ -65,8 +64,11 @@ import {
 } from "#api/modules/ai-assistance/ai-reports/domain/report-grounding.domain-service";
 import { parseMemoPrompt } from "#api/modules/ai-assistance/parsed-drafts/application/messages/parse-memo-prompt.messages";
 import { parseTodoPrompt } from "#api/modules/ai-assistance/parsed-drafts/application/messages/parse-todo-prompt.messages";
+import type {
+  ReportDraft,
+  SuggestionDraft,
+} from "#api/modules/ai-assistance/shared/domain/ai-task-outputs.constants";
 import { suggestionPrompt } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-prompt.messages";
-import type { SuggestionDraft } from "#api/modules/ai-assistance/suggestions/domain/suggestions.constants";
 import { countGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
 import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.js";

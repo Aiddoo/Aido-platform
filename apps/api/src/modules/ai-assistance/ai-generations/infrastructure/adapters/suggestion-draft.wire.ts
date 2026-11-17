@@ -1,7 +1,7 @@
 import { DAYS_OF_WEEK } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import type { SuggestionDraft } from "../../../suggestions/domain/suggestions.constants.js";
+import type { SuggestionDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { llmObject } from "./llm-output.wire.js";
 
 /** 모델은 후보만 고른다. 근거 문장·신뢰도·상한은 서버가 정한다. */

@@ -46,6 +46,12 @@ interface PlanGenerationRequest<C> {
   readonly signal?: AbortSignal;
 }
 
+interface PlanGenerationOutcome<R, T> {
+  // 계획 초안(ActionPlanDraft)도 생성 실패 처리 안에서 만들어 불변식 위반이 AI_1302·환불로 끝나게 한다
+  readonly toResult: (value: R) => T;
+  readonly keepsCharge: (value: R) => boolean;
+}
+
 interface ActionPlanGeneratorDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly consentReader: Pick<AiDataSharingConsentReaderPort, "findAiDataSharingConsent">;
@@ -102,12 +108,12 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
     const { value, meta } = await this.#generate(
       definition,
       { built, context: normalizeContext(input), userId: input.userId, signal: input.signal },
-      (plan) => plan.todos.length > 0,
+      {
+        toResult: (plan) => toActionPlanDraft(plan, { now: at, timeZone: input.timezone }),
+        keepsCharge: (plan) => plan.todos.length > 0,
+      },
     );
-    return {
-      plan: toActionPlanDraft(value, { now: at, timeZone: input.timezone }),
-      meta: { ...meta, promptVersion: definition.version },
-    };
+    return { plan: value, meta: { ...meta, promptVersion: definition.version } };
   }
 
   async digestVoiceNote(input: VoiceNoteDigestGenerationInput): Promise<VoiceNoteDigestGeneration> {
@@ -122,23 +128,25 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
         userId: input.userId,
         signal: input.signal,
       },
-      (digest) => !isEmptyVoiceNoteDigest(digest),
+      {
+        toResult: (digest) => ({
+          title: digest.title,
+          summary: digest.summary,
+          keyPoints: digest.keyPoints,
+          plan: toActionPlanDraft(digest.plan, { now: at, timeZone: input.timezone }),
+          isEmpty: isEmptyVoiceNoteDigest(digest),
+        }),
+        keepsCharge: (digest) => !isEmptyVoiceNoteDigest(digest),
+      },
     );
-    return {
-      title: value.title,
-      summary: value.summary,
-      keyPoints: value.keyPoints,
-      plan: toActionPlanDraft(value.plan, { now: at, timeZone: input.timezone }),
-      isEmpty: isEmptyVoiceNoteDigest(value),
-      meta: { ...meta, promptVersion: definition.version },
-    };
+    return { ...value, meta: { ...meta, promptVersion: definition.version } };
   }
 
-  async #generate<TTask extends AiTaskId, I, R, C>(
+  async #generate<TTask extends AiTaskId, I, R, C, T>(
     definition: PromptDefinition<TTask, I, R, C>,
     request: PlanGenerationRequest<C>,
-    keepsCharge: (result: R) => boolean,
-  ): Promise<PromptGeneration<R>> {
+    outcome: PlanGenerationOutcome<R, T>,
+  ): Promise<PromptGeneration<T>> {
     const { generator, consentReader, clock, logger } = this.#dependencies;
     const { built, context, userId: owner, signal } = request;
     const userId = owner.value;
@@ -154,14 +162,15 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
         userId: owner,
         signal,
       });
-      const quotaCharged = keepsCharge(generation.value);
+      const value = outcome.toResult(generation.value);
+      const quotaCharged = outcome.keepsCharge(generation.value);
       logger.log(
         buildGenerationCompletedLog(
           { ...logBase, outcome: quotaCharged ? "SUCCESS" : "NO_ACTION", quotaCharged },
           generation.meta,
         ),
       );
-      return generation;
+      return { value, meta: generation.meta };
     } catch (error) {
       const failure = describeGenerationFailure(error);
       logger.error(

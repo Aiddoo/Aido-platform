@@ -5,7 +5,7 @@ import type {
   MemoActionDraft,
   QuickPlanDraft,
   TodoActionDraft,
-} from "../../../action-plan-drafts/domain/action-plan-drafts.constants.js";
+} from "../../../shared/domain/ai-task-outputs.constants.js";
 import { llmInteger, llmObject, nullableLlmObject } from "./llm-output.wire.js";
 import {
   dateRefSchema,

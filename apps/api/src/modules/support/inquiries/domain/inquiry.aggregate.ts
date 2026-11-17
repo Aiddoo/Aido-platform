@@ -4,10 +4,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import type { InquiryContent } from "./inquiry-content.vo.js";
-import type { InquiryId } from "./inquiry-id.vo.js";
 
 export interface InquiryPrimitives {
-  readonly id: string;
   readonly userId: string;
   readonly userEmail: string;
   readonly category: InquiryCategory;
@@ -24,7 +22,6 @@ interface InquiryProps {
 }
 
 interface CreateInquiryParams {
-  readonly id: InquiryId;
   readonly userId: UserId;
   readonly userEmail: string;
   readonly category: InquiryCategory;
@@ -33,9 +30,9 @@ interface CreateInquiryParams {
 }
 
 // 저장하지 않는다. 접수한 문의를 담당자에게 전달하는 동안만 존재한다
-export class Inquiry extends AggregateRoot<InquiryId, InquiryProps> {
+export class Inquiry extends AggregateRoot<null, InquiryProps> {
   static create(params: CreateInquiryParams): Inquiry {
-    return new Inquiry(params.id, {
+    return new Inquiry(null, {
       userId: params.userId,
       userEmail: params.userEmail,
       category: params.category,
@@ -54,7 +51,6 @@ export class Inquiry extends AggregateRoot<InquiryId, InquiryProps> {
 
   toPrimitives(): InquiryPrimitives {
     return {
-      id: this.id.value,
       userId: this.props.userId.value,
       userEmail: this.props.userEmail,
       category: this.props.category,
