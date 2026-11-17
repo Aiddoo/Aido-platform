@@ -132,6 +132,23 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     );
   }
 
+  async findPayload<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    idempotencyKey: string,
+  ): Promise<TPayload | null> {
+    await this.#ensure(queue);
+    const job = await this.#boss.getJobById(
+      queue.name,
+      deterministicJobId(queue.name, idempotencyKey),
+      { db: transactionJobDatabase(this.#transactionHost.tx) },
+    );
+    if (job == null) {
+      return null;
+    }
+    const payload = queue.payloadSchema.safeParse(job.data);
+    return payload.success ? payload.data : null;
+  }
+
   async cancel(queue: QueueDefinition<object>, idempotencyKeys: readonly string[]): Promise<void> {
     if (idempotencyKeys.length === 0) {
       return;

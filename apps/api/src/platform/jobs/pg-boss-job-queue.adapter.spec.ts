@@ -109,6 +109,7 @@ class FakePgBossClient implements PgBossClient {
   readonly stopCalls: StopOptions[] = [];
   readonly handlers = new Map<string, (jobs: JobWithMetadata<object>[]) => Promise<unknown>>();
   readonly listeners: PgBossListener[] = [];
+  readonly storedJobs: JobWithMetadata<object>[] = [];
   queues: PgBossQueueCounts[] = [];
   deleteError?: Error;
 
@@ -171,6 +172,14 @@ class FakePgBossClient implements PgBossClient {
     }
     this.deleteCalls.push({ name, ids, options });
     return { jobs: ids, requested: ids.length, affected: ids.length };
+  }
+
+  async getJobById(
+    name: string,
+    id: string,
+    _options?: { db?: Db },
+  ): Promise<JobWithMetadata<object> | null> {
+    return this.storedJobs.find((stored) => stored.name === name && stored.id === id) ?? null;
   }
 
   async work(
@@ -391,6 +400,24 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
       id: "01d4ac50-5c6a-5317-bd4e-b1cf809b8f59",
       singletonKey: "document_42",
     });
+  });
+
+  it("findPayload는 결정적 id로 읽고 schema에 맞는 payload만 돌려준다", async () => {
+    // Given
+    boss.storedJobs.push(
+      job({ id: deterministicJobId(QUEUE, "document_42"), data: { documentId: 42 } }),
+      job({ id: deterministicJobId(QUEUE, "document_broken"), data: { documentId: "42" } }),
+    );
+
+    // When
+    const payloads = await Promise.all(
+      ["document_42", "document_broken", "document_missing"].map((key) =>
+        jobQueue.findPayload(DOCUMENT_QUEUE, key),
+      ),
+    );
+
+    // Then
+    expect(payloads).toEqual([{ documentId: 42 }, null, null]);
   });
 
   it("정의의 스케줄을 key로 upsert하고 작업 id·트랜잭션은 넘기지 않는다", async () => {

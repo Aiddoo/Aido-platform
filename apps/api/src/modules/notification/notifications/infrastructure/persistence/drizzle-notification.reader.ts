@@ -6,6 +6,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { notification } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationMilestone } from "../../../shared/domain/notification-milestone.constants.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type {
@@ -31,6 +32,17 @@ export class DrizzleNotificationReader
 
   get #db() {
     return this.#transactionHost.tx;
+  }
+
+  async findInboxNotification(
+    notificationId: NotificationId,
+  ): Promise<InboxNotificationReadModel | null> {
+    const [row] = await this.#db
+      .select()
+      .from(notification)
+      .where(eq(notification.id, notificationId.value))
+      .limit(1);
+    return row ?? null;
   }
 
   async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {

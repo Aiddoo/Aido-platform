@@ -16,6 +16,7 @@ import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/n
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
+import type { SnoozedReminderBooking } from "#api/modules/notification/reminders/application/ports/todo-reminder-snooze-scheduler.port";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TodoReminderSnoozeSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-snooze-scheduler.adapter";
@@ -469,12 +470,16 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       return rows[0]?.id ?? 0;
     }
 
-    function snoozeFrom(todoId: number, notificationId: number): Promise<boolean> {
+    function snoozeFrom(
+      todoId: number,
+      notificationId: number,
+      remindAt = Temporal.Instant.fromEpochMilliseconds(nowInstant().epochMilliseconds),
+    ): Promise<SnoozedReminderBooking> {
       return new TodoReminderSnoozeSchedulerAdapter(jobQueue).scheduleSnooze({
         todoId: TodoId.reconstitute(todoId),
         userId: UserId.reconstitute(userId),
         notificationId: NotificationId.reconstitute(notificationId),
-        remindAt: nowInstant(),
+        remindAt,
       });
     }
 
@@ -501,14 +506,21 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       const id = await seedTodo(0, "10:00");
       await fireStage(id, "10min");
       const reminderId = await latestNotificationId(id);
+      const bookedAt = Temporal.Instant.fromEpochMilliseconds(nowInstant().epochMilliseconds);
       // When
-      const scheduled = [await snoozeFrom(id, reminderId), await snoozeFrom(id, reminderId)];
+      const bookings = [
+        await snoozeFrom(id, reminderId, bookedAt),
+        await snoozeFrom(id, reminderId, bookedAt.add({ minutes: 1 })),
+      ];
       await fireSnooze(id, reminderId, 2);
       const snoozedId = await latestNotificationId(id);
       await snoozeFrom(id, snoozedId);
       await fireSnooze(id, snoozedId);
       // Then
-      expect(scheduled).toEqual([true, false]);
+      expect(bookings).toEqual([
+        { remindAt: bookedAt, isNew: true },
+        { remindAt: bookedAt, isNew: false },
+      ]);
       expect(await readSent(id)).toEqual({
         sent: ["D0 10min", "D0 snooze", "D0 snooze"],
         dispatches: 3,

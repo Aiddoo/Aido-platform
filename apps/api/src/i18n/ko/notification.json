@@ -13,6 +13,9 @@
     "TODO_REMINDER_SNOOZED": {
       "v1": { "title": "다시 알려드려요 ⏰", "body": "‘{todoTitle}’ 이제 시작해볼까요?" }
     },
+    "TODO_REMINDER_SNOOZED_BEFORE_START": {
+      "v1": { "title": "다시 알려드려요 ⏰", "body": "‘{todoTitle}’ 곧 시작이에요" }
+    },
     "TODO_SERIES_PAUSED": {
       "v1": { "title": "반복 할 일 알림을 잠시 멈췄어요", "body": "앱을 열면 다시 시작돼요" }
     },

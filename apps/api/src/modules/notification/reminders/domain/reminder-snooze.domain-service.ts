@@ -1,13 +1,47 @@
 import { TODO_REMINDER_SNOOZE_MINUTES } from "@aido/api/vocabulary";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { NotificationId } from "../../shared/domain/notification-id.vo.js";
+import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
+import { isActionableTodoReminderStage } from "../../shared/domain/todo-reminder-stage.constants.js";
 import { REMINDER_LATE_SKIP_REASON } from "./notification-schedule.domain-service.js";
 
-/** 다시 알림의 단계 값. 회차 단계(60min·10min)와 달라 중복 방지 유니크 인덱스에서 따로 센다 */
-export const SNOOZED_REMINDER_STAGE = "snooze";
+// 알림 센터에 남은 오래된 알림 id로 자기 푸시를 쌓지 못하게 받은 지 하루 안의 알림만 받는다
+const SNOOZE_SOURCE_MAX_AGE_HOURS = 24;
+
+interface SnoozeSourceNotification {
+  readonly recipientId: UserId;
+  readonly type: NotificationType;
+  readonly todoId: number | null;
+  readonly stage: string | null;
+  readonly createdAt: Temporal.Instant;
+}
+
+/** 다시 알림 문구. 할 일 시각 전에 울리면 곧 시작, 시각이 지났거나 없으면 이제 시작을 권한다 */
+export type SnoozedReminderTiming = "before-start" | "started";
 
 export function snoozedReminderFireAt(pressedAt: Temporal.Instant): Temporal.Instant {
   return pressedAt.add({ minutes: TODO_REMINDER_SNOOZE_MINUTES });
+}
+
+/** 다시 알림을 걸 수 있는 알림인가. 누른 사람이 받은, 그 할 일을 알린 리마인드 알림만 받는다 */
+export function canSnoozeFromNotification(params: {
+  readonly notification: SnoozeSourceNotification;
+  readonly userId: UserId;
+  readonly todoId: TodoId;
+  readonly now: Temporal.Instant;
+}): boolean {
+  const { notification, userId, todoId, now } = params;
+  const expiresAt = notification.createdAt.add({ hours: SNOOZE_SOURCE_MAX_AGE_HOURS });
+  return (
+    notification.recipientId.equals(userId) &&
+    notification.type === "TODO_REMINDER" &&
+    notification.todoId === todoId.value &&
+    isActionableTodoReminderStage(notification.stage) &&
+    Temporal.Instant.compare(now, expiresAt) <= 0
+  );
 }
 
 /**
@@ -21,6 +55,18 @@ export function snoozedReminderLateSkipReason(params: {
 }): typeof REMINDER_LATE_SKIP_REASON | null {
   const lateLimit = params.remindAt.add({ minutes: params.limitMinutes });
   return Temporal.Instant.compare(params.now, lateLimit) > 0 ? REMINDER_LATE_SKIP_REASON : null;
+}
+
+// 늦게 꺼내면 예약 시각과 보내는 시각이 달라 받는 사람이 읽을 때에 맞춰 보내는 시각으로 고른다
+export function snoozedReminderTiming(params: {
+  readonly sentAt: Temporal.Instant;
+  readonly scheduledAt: Temporal.Instant | null;
+}): SnoozedReminderTiming {
+  const { sentAt, scheduledAt } = params;
+  if (scheduledAt != null && Temporal.Instant.compare(sentAt, scheduledAt) < 0) {
+    return "before-start";
+  }
+  return "started";
 }
 
 /**

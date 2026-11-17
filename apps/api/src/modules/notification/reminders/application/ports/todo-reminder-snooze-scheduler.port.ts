@@ -11,8 +11,13 @@ export interface SnoozedReminderSchedule {
   readonly remindAt: Temporal.Instant;
 }
 
+export interface SnoozedReminderBooking {
+  /** 다시 알림이 울릴 시각. 같은 알림으로 이미 예약했으면 그 예약의 시각이다 */
+  readonly remindAt: Temporal.Instant;
+  readonly isNew: boolean;
+}
+
 // 다시 알림 한 번을 리마인더 큐에 예약한다
 export abstract class TodoReminderSnoozeSchedulerPort {
-  /** 새로 예약했으면 true, 같은 알림으로 이미 예약했으면 false다 */
-  abstract scheduleSnooze(schedule: SnoozedReminderSchedule): Promise<boolean>;
+  abstract scheduleSnooze(schedule: SnoozedReminderSchedule): Promise<SnoozedReminderBooking>;
 }

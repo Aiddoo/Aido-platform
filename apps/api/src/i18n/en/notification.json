@@ -13,6 +13,9 @@
     "TODO_REMINDER_SNOOZED": {
       "v1": { "title": "Reminding you again ⏰", "body": "Ready to start “{todoTitle}”?" }
     },
+    "TODO_REMINDER_SNOOZED_BEFORE_START": {
+      "v1": { "title": "Reminding you again ⏰", "body": "“{todoTitle}” starts soon" }
+    },
     "TODO_SERIES_PAUSED": {
       "v1": {
         "title": "Repeating reminders paused",

@@ -57,6 +57,7 @@ export interface PgBossClient {
   schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
   unschedule(name: string, key?: string): Promise<void>;
   deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown>;
+  getJobById(name: string, id: string, options?: { db?: Db }): Promise<JobWithMetadata | null>;
   work(
     name: string,
     options: WorkOptions & { includeMetadata: true },
@@ -145,6 +146,14 @@ export class LazyPgBossClient implements PgBossClient {
 
   async deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
     return (await this.#ensureStarted()).deleteJob(name, ids, options);
+  }
+
+  async getJobById(
+    name: string,
+    id: string,
+    options?: { db?: Db },
+  ): Promise<JobWithMetadata | null> {
+    return (await this.#ensureStarted()).getJobById(name, id, options);
   }
 
   async work(

@@ -14,6 +14,7 @@ import {
   toWireNotificationType,
 } from "../../../shared/domain/notification-client-capability.domain-service.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import { isActionableTodoReminderStage } from "../../../shared/domain/todo-reminder-stage.constants.js";
 import { type MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
 import {
   type BatchPushNotificationPayload,
@@ -32,12 +33,15 @@ function isMarketingPush(data: CreateNotificationData): boolean {
   return data.purpose === "ENGAGEMENT" || isMarketingNotification(data.type);
 }
 
-/** 버튼 카테고리. 앱이 같은 id로 버튼을 등록하고, 등록하지 않은 앱은 버튼 없이 보여 앱 버전으로 나누지 않는다 */
+/**
+ * 버튼 카테고리. 앱이 같은 id로 버튼을 등록하고, 등록하지 않은 앱은 버튼 없이 보여 앱 버전으로 나누지 않는다.
+ * 리마인드 버튼은 할 일을 알리는 단계에만 붙는다(반복 알림 멈춤 안내에는 없다)
+ */
 function pushCategoryIdOf(data: CreateNotificationData, isMarketing: boolean): string | null {
   if (isMarketing) {
     return MARKETING_PUSH_CATEGORY_ID;
   }
-  if (data.type === "TODO_REMINDER") {
+  if (data.type === "TODO_REMINDER" && isActionableTodoReminderStage(data.metadata?.stage)) {
     return TODO_REMINDER_PUSH_CATEGORY_ID;
   }
   return null;

@@ -66,6 +66,20 @@ export class InMemoryJobQueue extends JobQueuePort {
     }
   }
 
+  async findPayload<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    idempotencyKey: string,
+  ): Promise<TPayload | null> {
+    const job = this.jobs.find(
+      (stored) => stored.queue === queue.name && stored.options.idempotencyKey === idempotencyKey,
+    );
+    if (job == null) {
+      return null;
+    }
+    const payload = queue.payloadSchema.safeParse(job.payload);
+    return payload.success ? payload.data : null;
+  }
+
   async cancel(queue: QueueDefinition<object>, idempotencyKeys: readonly string[]): Promise<void> {
     for (const idempotencyKey of idempotencyKeys) {
       this.#keys.delete(`${queue.name}:${idempotencyKey}`);

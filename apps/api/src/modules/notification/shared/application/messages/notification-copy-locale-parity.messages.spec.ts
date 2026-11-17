@@ -53,6 +53,7 @@ const REPRESENTATIVE_FACTS: Readonly<Record<string, readonly NotificationCopyFac
   "scheduler.TODO_REMINDER_60MIN": [{ todoTitle }],
   "scheduler.TODO_REMINDER_10MIN": [{ todoTitle }],
   "scheduler.TODO_REMINDER_SNOOZED": [{ todoTitle }],
+  "scheduler.TODO_REMINDER_SNOOZED_BEFORE_START": [{ todoTitle }],
   "scheduler.MORNING_REMINDER": [{ count: 999 }],
   "scheduler.EVENING_PARTIAL": [{ remaining: 999 }],
   "scheduler.EVENING_STREAK": [{ streak: 999 }],

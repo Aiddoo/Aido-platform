@@ -7,6 +7,8 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
+
 /** 아침 리마인더 수신자 (오늘 시작 투두 개수 포함) */
 export interface ReminderCountUserReadModel {
   readonly id: string;
@@ -139,6 +141,15 @@ export interface ActiveTodoReadModel {
 export interface SnoozeTodoReadModel {
   readonly ownerId: UserId;
   readonly completed: boolean;
+}
+
+/** 다시 알림 버튼을 누른 알림. 단계는 metadata.stage이고 없거나 문자열이 아니면 null이다 */
+export interface SnoozeNotificationReadModel {
+  readonly recipientId: UserId;
+  readonly type: NotificationType;
+  readonly todoId: number | null;
+  readonly stage: string | null;
+  readonly createdAt: Temporal.Instant;
 }
 
 /** 유저 ID → 푸시 로케일 매핑 */

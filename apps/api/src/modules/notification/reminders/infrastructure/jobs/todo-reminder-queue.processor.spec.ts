@@ -527,6 +527,34 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       },
     );
 
+    it.each([
+      { locale: "ko", title: "다시 알려드려요 ⏰", body: `‘${TODO_TITLE}’ 곧 시작이에요` },
+      { locale: "en", title: "Reminding you again ⏰", body: `“${TODO_TITLE}” starts soon` },
+    ] as const)(
+      "할 일 시각 전에 울리면 $locale 곧 시작 문구로 보낸다",
+      async ({ locale, title, body }) => {
+        // Given
+        // 60분 전 알림에서 눌러 할 일 시각 50분 전에 울린다
+        reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 50 }) }));
+        localeReader.locale = locale;
+        // When
+        await processor.process(snoozeJob());
+        // Then
+        expect(publisher.published).toEqual([
+          {
+            mode: "batch",
+            data: expect.objectContaining({
+              campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
+              title,
+              body,
+              copyKey: "scheduler.TODO_REMINDER_SNOOZED_BEFORE_START.v1",
+              metadata: { stage: "snooze" },
+            }),
+          },
+        ]);
+      },
+    );
+
     it("반복 회차라도 방금 누른 소유자라 휴면을 묻지 않는다", async () => {
       // Given
       reader.todos.set(1, activeTodo({ seriesId: "series-1" }));

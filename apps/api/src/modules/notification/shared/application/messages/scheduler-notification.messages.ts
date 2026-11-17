@@ -66,16 +66,24 @@ export function createTodoReminderNotificationMessage({
   );
 }
 
+export interface TodoReminderSnoozedNotificationInput extends LocalizedVariantInput {
+  readonly todoTitle: string;
+  /** 할 일 시각 전에 울리면 before-start(곧 시작), 지났거나 시각이 없으면 started(이제 시작) */
+  readonly timing: "before-start" | "started";
+}
+
 export function createTodoReminderSnoozedNotificationMessage({
   todoTitle,
+  timing,
   locale = DEFAULT_LOCALE,
   variantContext,
-}: Omit<TodoReminderNotificationInput, "stage">): NotificationMessage {
-  return renderNotificationTemplate(SCHEDULER_COPY.TODO_REMINDER_SNOOZED, {
-    facts: { todoTitle },
-    locale,
-    variantContext,
-  });
+}: TodoReminderSnoozedNotificationInput): NotificationMessage {
+  return renderNotificationTemplate(
+    timing === "before-start"
+      ? SCHEDULER_COPY.TODO_REMINDER_SNOOZED_BEFORE_START
+      : SCHEDULER_COPY.TODO_REMINDER_SNOOZED,
+    { facts: { todoTitle }, locale, variantContext },
+  );
 }
 
 export function createTodoSeriesPausedNotificationMessage({

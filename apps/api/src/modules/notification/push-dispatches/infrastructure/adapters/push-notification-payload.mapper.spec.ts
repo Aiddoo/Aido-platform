@@ -119,13 +119,16 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
   });
 
   it.each([
-    { type: "TODO_REMINDER" as const, categoryId: "TODO_REMINDER" },
-    { type: "TODO_SHARED" as const, categoryId: undefined },
-    { type: "MORNING_REMINDER" as const, categoryId: undefined },
-    { type: "EVENING_REMINDER" as const, categoryId: undefined },
+    { type: "TODO_REMINDER" as const, stage: "60min", categoryId: "TODO_REMINDER" },
+    { type: "TODO_REMINDER" as const, stage: "10min", categoryId: "TODO_REMINDER" },
+    { type: "TODO_REMINDER" as const, stage: "snooze", categoryId: "TODO_REMINDER" },
+    { type: "TODO_REMINDER" as const, stage: "series-paused", categoryId: undefined },
+    { type: "TODO_SHARED" as const, stage: undefined, categoryId: undefined },
+    { type: "MORNING_REMINDER" as const, stage: undefined, categoryId: undefined },
+    { type: "EVENING_REMINDER" as const, stage: undefined, categoryId: undefined },
   ])(
-    "$type의 버튼 카테고리는 $categoryId이고 광고 표기·수신 거부 토큰은 없다",
-    ({ type, categoryId }) => {
+    "$type($stage)의 버튼 카테고리는 $categoryId이고 광고 표기·수신 거부 토큰은 없다",
+    ({ type, stage, categoryId }) => {
       // Given
       const data = {
         userId: "user-1",
@@ -134,6 +137,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         title: "10분 뒤 시작이에요",
         body: "‘저녁 운동’ 준비됐나요?",
         todoId: 42,
+        metadata: { stage },
       };
 
       // When

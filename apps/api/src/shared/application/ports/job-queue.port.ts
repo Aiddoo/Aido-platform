@@ -158,6 +158,11 @@ export abstract class JobQueuePort {
     queue: QueueDefinition<TPayload>,
     jobs: readonly EnqueueManyJob<TPayload>[],
   ): Promise<void>;
+  /** 같은 idempotencyKey로 등록해 아직 남은 작업의 payload. 없거나 schema에 맞지 않으면 null이다. */
+  abstract findPayload<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    idempotencyKey: string,
+  ): Promise<TPayload | null>;
   /** 작업을 상태와 상관없이 지워 같은 key로 다시 등록할 수 있게 한다. 없는 key는 무시한다. */
   abstract cancel(
     queue: QueueDefinition<object>,

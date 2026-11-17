@@ -104,6 +104,12 @@ export class InMemoryNotificationRepository
     });
   }
 
+  async findInboxNotification(
+    notificationId: NotificationId,
+  ): Promise<InboxNotificationReadModel | null> {
+    return this.#rows.get(notificationId.value) ?? null;
+  }
+
   async createNotification(data: CreateNotificationData): Promise<InboxNotificationReadModel> {
     const created = this.#insert(data);
     if (created == null) {

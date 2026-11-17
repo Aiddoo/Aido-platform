@@ -16,6 +16,7 @@ import { ReminderWeatherReportReaderPort } from "./application/ports/reminder-we
 import { ScheduledReminderReaderPort } from "./application/ports/scheduled-reminder-reader.port.js";
 import { SchedulerDeduplicationPort } from "./application/ports/scheduler-deduplication.port.js";
 import { SchedulerPreferenceReaderPort } from "./application/ports/scheduler-preference-reader.port.js";
+import { SnoozeNotificationReaderPort } from "./application/ports/snooze-notification.reader.port.js";
 import { SnoozeTodoReaderPort } from "./application/ports/snooze-todo.reader.port.js";
 import { TimezoneReminderEnqueuerPort } from "./application/ports/timezone-reminder-enqueuer.port.js";
 import { TodoReminderReaderPort } from "./application/ports/todo-reminder-reader.port.js";
@@ -41,6 +42,7 @@ import { SendWeeklyReportUseCase } from "./application/use-cases/send-weekly-rep
 import { SendWinbackUseCase } from "./application/use-cases/send-winback.use-case.js";
 import { SnoozeTodoReminderUseCase } from "./application/use-cases/snooze-todo-reminder.use-case.js";
 import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
+import { InboxSnoozeNotificationAdapter } from "./infrastructure/adapters/inbox-snooze-notification.adapter.js";
 import { PlanningSnoozeTodoAdapter } from "./infrastructure/adapters/planning-snooze-todo.adapter.js";
 import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/planning-weather-briefing-todo.adapter.js";
 import { SchedulerDeduplicationAdapter } from "./infrastructure/adapters/scheduler-deduplication.adapter.js";
@@ -67,6 +69,7 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
   { provide: TodoSeriesOwnerDormancyPort, useClass: TodoSeriesOwnerDormancyAdapter },
   { provide: TodoReminderSchedulerPort, useClass: TodoReminderSchedulerAdapter },
   { provide: SnoozeTodoReaderPort, useClass: PlanningSnoozeTodoAdapter },
+  { provide: SnoozeNotificationReaderPort, useClass: InboxSnoozeNotificationAdapter },
   { provide: TodoReminderSnoozeSchedulerPort, useClass: TodoReminderSnoozeSchedulerAdapter },
   // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다
   {
@@ -192,6 +195,7 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SnoozeTodoReminderUseCase, {
     todoReader: SnoozeTodoReaderPort,
+    notificationReader: SnoozeNotificationReaderPort,
     snoozeScheduler: TodoReminderSnoozeSchedulerPort,
     clock: ClockPort,
     logger: loggerFor(SnoozeTodoReminderUseCase),

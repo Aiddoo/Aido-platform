@@ -29,6 +29,10 @@ import { NotificationJobLogEvent } from "../../../shared/application/notificatio
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import {
+  SNOOZED_TODO_REMINDER_STAGE,
+  TODO_SERIES_PAUSED_STAGE,
+} from "../../../shared/domain/todo-reminder-stage.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
@@ -43,8 +47,8 @@ import {
 } from "../../domain/reminder-plan.domain-service.js";
 import {
   createSnoozeOccurrenceKey,
-  SNOOZED_REMINDER_STAGE,
   snoozedReminderLateSkipReason,
+  snoozedReminderTiming,
 } from "../../domain/reminder-snooze.domain-service.js";
 import { todoSeriesPausedJobKey } from "./reminder-job-keys.constants.js";
 import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
@@ -284,7 +288,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     { todoId, userId, notificationId, remindAt }: SnoozedReminderJobData,
     context: ReminderBatchContext,
   ): ReminderDraft | null {
-    const stage = SNOOZED_REMINDER_STAGE;
+    const stage = SNOOZED_TODO_REMINDER_STAGE;
     this.#logger.debug({ event: NotificationJobLogEvent.JOB_STARTED, todoId, userId, stage });
 
     const todo = context.todos.get(todoId);
@@ -312,6 +316,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
 
     const message = createTodoReminderSnoozedNotificationMessage({
       todoTitle: todo.title,
+      timing: snoozedReminderTiming({ sentAt: now, scheduledAt: todo.scheduledAt }),
       locale: context.locales.get(userId),
       variantContext: {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
@@ -457,7 +462,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       variantContext: {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
         recipientId: userId,
-        occurrenceKey: `${todoId}:series-paused`,
+        occurrenceKey: `${todoId}:${TODO_SERIES_PAUSED_STAGE}`,
       },
     });
     // 리마인더와 같은 종류·목적으로 보내 기존 알림 동의를 그대로 따른다. 탭하면 그 할 일로 간다.
@@ -472,7 +477,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       copyKey: message.copyKey,
       copyFacts: message.copyFacts,
       todoId,
-      metadata: { stage: "series-paused" },
+      metadata: { stage: TODO_SERIES_PAUSED_STAGE },
     });
     this.#logger.log({
       event: ReminderJobLogEvent.TODO_SERIES_PAUSED_SENT,

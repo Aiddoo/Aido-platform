@@ -4,10 +4,18 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
-import { snoozedReminderFireAt } from "../../domain/reminder-snooze.domain-service.js";
+import {
+  canSnoozeFromNotification,
+  snoozedReminderFireAt,
+} from "../../domain/reminder-snooze.domain-service.js";
+import type { SnoozeNotificationReaderPort } from "../ports/snooze-notification.reader.port.js";
 import type { SnoozeTodoReaderPort } from "../ports/snooze-todo.reader.port.js";
 import type { TodoReminderSnoozeSchedulerPort } from "../ports/todo-reminder-snooze-scheduler.port.js";
-import { reminderTodoAlreadyCompleted, reminderTodoNotFound } from "../reminders.errors.js";
+import {
+  reminderNotificationNotFound,
+  reminderTodoAlreadyCompleted,
+  reminderTodoNotFound,
+} from "../reminders.errors.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 export interface SnoozeTodoReminderCommand {
@@ -22,6 +30,7 @@ export interface TodoReminderSnooze {
 
 export interface SnoozeTodoReminderDependencies {
   readonly todoReader: Pick<SnoozeTodoReaderPort, "findTodo">;
+  readonly notificationReader: Pick<SnoozeNotificationReaderPort, "findNotification">;
   readonly snoozeScheduler: Pick<TodoReminderSnoozeSchedulerPort, "scheduleSnooze">;
   readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -35,32 +44,40 @@ export class SnoozeTodoReminderUseCase {
   }
 
   async execute(command: SnoozeTodoReminderCommand): Promise<TodoReminderSnooze> {
-    const { todoReader, snoozeScheduler, clock, logger } = this.#dependencies;
+    const { todoReader, notificationReader, snoozeScheduler, clock, logger } = this.#dependencies;
     const userId = UserId.reconstitute(command.userId);
     const todoId = TodoId.reconstitute(command.todoId);
+    const notificationId = NotificationId.reconstitute(command.notificationId);
+    const now = clock.now();
 
-    const todo = await todoReader.findTodo(todoId);
+    // 서로 다른 slice의 읽기라 함께 보낸다
+    const [todo, notification] = await Promise.all([
+      todoReader.findTodo(todoId),
+      notificationReader.findNotification(notificationId),
+    ]);
     if (todo == null || !todo.ownerId.equals(userId)) {
       throw reminderTodoNotFound(todoId);
+    }
+    if (notification == null || !canSnoozeFromNotification({ notification, userId, todoId, now })) {
+      throw reminderNotificationNotFound(notificationId);
     }
     if (todo.completed) {
       throw reminderTodoAlreadyCompleted(todoId);
     }
 
-    const remindAt = snoozedReminderFireAt(clock.now());
-    const isScheduled = await snoozeScheduler.scheduleSnooze({
+    const booking = await snoozeScheduler.scheduleSnooze({
       todoId,
       userId,
-      notificationId: NotificationId.reconstitute(command.notificationId),
-      remindAt,
+      notificationId,
+      remindAt: snoozedReminderFireAt(now),
     });
     logger.log({
       event: ReminderLogEvent.TODO_REMINDER_SNOOZE_SCHEDULED,
       todoId: command.todoId,
       userId: command.userId,
       notificationId: command.notificationId,
-      isScheduled,
+      isScheduled: booking.isNew,
     });
-    return { remindAt };
+    return { remindAt: booking.remindAt };
   }
 }
