@@ -18,7 +18,7 @@ import { FakeEmailService } from "#test/mocks/fake-email.service";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
 const at = new Date("2026-12-31T23:59:00.000Z");
 const atInstant = Temporal.Instant.fromEpochMilliseconds(at.getTime());

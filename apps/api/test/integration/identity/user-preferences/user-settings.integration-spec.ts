@@ -35,7 +35,7 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "../../../e2e/helpers/e2e-app-factory.js";
 
 type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 

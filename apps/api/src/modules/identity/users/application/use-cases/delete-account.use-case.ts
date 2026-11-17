@@ -16,7 +16,7 @@ import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata
 import type { SecurityLogRepositoryPort } from "../ports/security-log.repository.port.js";
 import type { UserProfileInvalidatorPort } from "../ports/user-profile-invalidator.port.js";
 import type { UserRepositoryPort } from "../ports/user.repository.port.js";
-import type { DeleteAccountResult } from "../read-models/user-account.read-model.js";
+import type { AccountDeletionReadModel } from "../read-models/user-account.read-model.js";
 import { accountDeleted } from "../users.errors.js";
 import { deletionPasswordRequired, invalidCredentials, userNotFound } from "../users.errors.js";
 import { UserLogEvent } from "../users.log-events.js";
@@ -49,7 +49,7 @@ export class DeleteAccountUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteAccountCommand): Promise<DeleteAccountResult> {
+  async execute(input: DeleteAccountCommand): Promise<AccountDeletionReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {

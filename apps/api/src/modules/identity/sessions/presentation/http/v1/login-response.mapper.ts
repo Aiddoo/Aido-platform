@@ -1,13 +1,16 @@
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
 import type {
-  LoginResult,
-  RefreshTokensResult,
-  SocialLoginResult,
-  VerifyEmailResult,
+  LoginReadModel,
+  RefreshedTokensReadModel,
+  SocialLoginReadModel,
+  EmailVerificationReadModel,
 } from "../../../application/read-models/login.read-model.js";
 
-export function toAuthTokensResponse(result: VerifyEmailResult | LoginResult, appVersion?: string) {
+export function toAuthTokensResponse(
+  result: EmailVerificationReadModel | LoginReadModel,
+  appVersion?: string,
+) {
   return {
     userId: result.userId,
     userTag: result.userTag,
@@ -20,14 +23,14 @@ export function toAuthTokensResponse(result: VerifyEmailResult | LoginResult, ap
 }
 
 /** 신규 가입이면 `isNewUser: true`를 싣는다 */
-export function toSocialAuthTokensResponse(result: SocialLoginResult, appVersion?: string) {
+export function toSocialAuthTokensResponse(result: SocialLoginReadModel, appVersion?: string) {
   return {
     ...toAuthTokensResponse(result, appVersion),
     isNewUser: result.isNewUser,
   };
 }
 
-export function toRefreshTokensResponse(result: RefreshTokensResult) {
+export function toRefreshTokensResponse(result: RefreshedTokensReadModel) {
   return {
     accessToken: result.tokens.accessToken,
     refreshToken: result.tokens.refreshToken,

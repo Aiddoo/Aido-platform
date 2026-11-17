@@ -12,7 +12,7 @@ import type { UserProfileCachePort } from "../ports/user-profile-cache.port.js";
 import type { UserRepositoryPort } from "../ports/user.repository.port.js";
 import type {
   CurrentUserEntitlements,
-  CurrentUserResult,
+  CurrentUserReadModel,
 } from "../read-models/current-user.read-model.js";
 import { userNotFound } from "../users.errors.js";
 
@@ -45,7 +45,7 @@ export class GetCurrentUserUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetCurrentUserQuery): Promise<CurrentUserResult> {
+  async execute(input: GetCurrentUserQuery): Promise<CurrentUserReadModel> {
     const { sessionId } = input;
     const userId = UserId.reconstitute(input.userId);
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(

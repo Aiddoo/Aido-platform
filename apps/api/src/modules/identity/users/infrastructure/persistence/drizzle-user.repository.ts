@@ -11,7 +11,7 @@ import type {
 } from "#api/modules/identity/users/application/ports/user-activity.reader.port";
 import type { UserAppVersionReaderPort } from "#api/modules/identity/users/application/ports/user-app-version.reader.port";
 import {
-  type UserProfileRecord,
+  type UserProfileReadModel,
   UserRepositoryPort,
   type PurgeEligibleUsersQuery,
 } from "#api/modules/identity/users/application/ports/user.repository.port";
@@ -36,7 +36,7 @@ import { generateUserTag } from "./user-tag.adapter.js";
 
 type UserInsert = typeof user.$inferInsert;
 
-export interface UserWithProfile extends UserProfileRecord {
+export interface UserWithProfile extends UserProfileReadModel {
   lastLoginAt: Temporal.Instant | null;
 }
 

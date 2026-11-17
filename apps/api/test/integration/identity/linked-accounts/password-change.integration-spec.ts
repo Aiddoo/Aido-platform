@@ -10,9 +10,9 @@ import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-import { FakeEmailService } from "../mocks/fake-email.service.js";
-import { TestDatabase } from "../setup/test-database.js";
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
+import { FakeEmailService } from "../../../mocks/fake-email.service.js";
+import { TestDatabase } from "../../../setup/test-database.js";
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
 describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -125,7 +125,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       // Then
       expect(result.message).toContain("비밀번호가 변경되었습니다");
 
-      const account = await testDb.getClient().query.account.findFirst({
+      const account = await testDb.getClient().query.linkedAccount.findFirst({
         where: { userId, provider: "CREDENTIAL" },
       });
       expect(account?.password).toBeTruthy();

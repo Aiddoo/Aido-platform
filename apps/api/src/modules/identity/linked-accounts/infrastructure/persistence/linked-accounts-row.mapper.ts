@@ -1,19 +1,19 @@
-import type { account as accountTable } from "#api/platform/database/schema/index";
+import type { linkedAccount } from "#api/platform/database/schema/index";
 
-import type { LinkedAccountRecord } from "../../application/ports/linked-accounts.repository.port.js";
+import type { LinkedAccountReadModel } from "../../application/ports/linked-accounts.repository.port.js";
 import { LinkedAccounts } from "../../domain/linked-accounts.aggregate.js";
 
 type AccountRow = Pick<
-  typeof accountTable.$inferSelect,
+  typeof linkedAccount.$inferSelect,
   "id" | "provider" | "providerAccountId" | "createdAt"
 >;
 
-export function toLinkedAccountRecord(
+export function toLinkedAccountReadModel(
   row: Pick<
-    typeof accountTable.$inferSelect,
+    typeof linkedAccount.$inferSelect,
     "id" | "userId" | "provider" | "providerAccountId" | "password" | "createdAt"
   >,
-): LinkedAccountRecord {
+): LinkedAccountReadModel {
   return {
     id: row.id,
     userId: row.userId,

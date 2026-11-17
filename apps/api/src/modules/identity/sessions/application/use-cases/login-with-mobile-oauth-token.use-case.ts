@@ -1,5 +1,5 @@
 import type { NotifyOAuthSignupUseCase } from "../../../users/application/use-cases/notify-oauth-signup.use-case.js";
-import type { SocialLoginResult } from "../read-models/login.read-model.js";
+import type { SocialLoginReadModel } from "../read-models/login.read-model.js";
 import type {
   LoginWithOAuthTokenUseCase,
   LoginWithOAuthTokenCommand,
@@ -17,7 +17,7 @@ export class LoginWithMobileOAuthTokenUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginResult> {
+  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginReadModel> {
     const result = await this.#dependencies.loginWithOAuthToken.execute(input);
     if (result.isNewUser) {
       await this.#dependencies.oauthSignupNotifier.notify({

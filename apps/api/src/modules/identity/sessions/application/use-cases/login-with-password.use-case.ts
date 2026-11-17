@@ -1,7 +1,7 @@
 import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import type { LoginResult } from "#api/modules/identity/sessions/application/read-models/login.read-model";
+import type { LoginReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import { LOGIN_FAILURE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { Email } from "#api/modules/identity/shared/domain/email.vo";
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
@@ -62,7 +62,7 @@ export class LoginWithPasswordUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithPasswordCommand): Promise<LoginResult> {
+  async execute(input: LoginWithPasswordCommand): Promise<LoginReadModel> {
     const metadata = input.metadata;
     const { password, deviceName } = input;
     const email = Email.create(input.email).value;

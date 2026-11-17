@@ -1,8 +1,8 @@
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
-import type { ExchangeCodeResult } from "../../../application/read-models/oauth-exchange.read-model.js";
+import type { OAuthExchangeReadModel } from "../../../application/read-models/oauth-exchange.read-model.js";
 
-export function toExchangeCodeResponse(result: ExchangeCodeResult, appVersion?: string) {
+export function toExchangeCodeResponse(result: OAuthExchangeReadModel, appVersion?: string) {
   return {
     userId: result.userId,
     accessToken: result.accessToken,

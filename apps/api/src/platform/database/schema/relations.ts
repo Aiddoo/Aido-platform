@@ -3,8 +3,8 @@ import { defineRelations } from "drizzle-orm";
 import * as schema from "./tables.schema.js";
 
 export const relations = defineRelations(schema, (r) => ({
-  account: {
-    user: r.one.user({ from: r.account.userId, to: r.user.id, optional: false }),
+  linkedAccount: {
+    user: r.one.user({ from: r.linkedAccount.userId, to: r.user.id, optional: false }),
   },
   aiReport: {
     user: r.one.user({ from: r.aiReport.userId, to: r.user.id, optional: false }),
@@ -240,7 +240,7 @@ export const relations = defineRelations(schema, (r) => ({
     viewer: r.one.user({ from: r.todoView.viewerId, to: r.user.id, optional: false }),
   },
   user: {
-    accounts: r.many.account(),
+    accounts: r.many.linkedAccount(),
     aiReports: r.many.aiReport(),
     dailyCompletions: r.many.dailyCompletion(),
     memos: r.many.memo(),

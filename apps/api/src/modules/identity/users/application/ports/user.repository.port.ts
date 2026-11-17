@@ -6,7 +6,7 @@ import type { AccountProvider } from "../../../linked-accounts/domain/linked-acc
 import type { User } from "../../domain/user.aggregate.js";
 import type { UserStatus } from "../../domain/users.constants.js";
 
-interface UserRecord {
+interface UserAccountReadModel {
   id: string;
   email: string;
   userTag: string;
@@ -19,7 +19,7 @@ interface UserRecord {
   deletedAt: Temporal.Instant | null;
 }
 
-export interface UserProfileRecord extends UserRecord {
+export interface UserProfileReadModel extends UserAccountReadModel {
   profile: { name: string | null; profileImage: string | null } | null;
   accounts: Array<{ provider: AccountProvider }>;
 }
@@ -34,7 +34,7 @@ export interface PurgeEligibleUsersQuery {
 export abstract class UserRepositoryPort {
   abstract findByEmail(email: string): Promise<User | null>;
   abstract findById(id: UserId): Promise<User | null>;
-  abstract findByIdWithProfile(id: UserId): Promise<UserProfileRecord | null>;
+  abstract findByIdWithProfile(id: UserId): Promise<UserProfileReadModel | null>;
   /** 이메일이 이미 있으면 IdentityPersistenceConflict(EMAIL_ALREADY_EXISTS)다 */
   abstract create(data: {
     readonly email: string;

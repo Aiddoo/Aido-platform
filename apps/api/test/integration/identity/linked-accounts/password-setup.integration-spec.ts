@@ -9,9 +9,9 @@ import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-import { FakeEmailService } from "../mocks/fake-email.service.js";
-import { TestDatabase } from "../setup/test-database.js";
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
+import { FakeEmailService } from "../../../mocks/fake-email.service.js";
+import { TestDatabase } from "../../../setup/test-database.js";
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
@@ -126,7 +126,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       // Then
       expect(result.message).toBeDefined();
 
-      const accounts = await testDb.getClient().query.account.findMany({ where: { userId } });
+      const accounts = await testDb.getClient().query.linkedAccount.findMany({ where: { userId } });
 
       const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
       expect(credentialAccount).toBeDefined();
@@ -223,7 +223,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // Then
-      const accounts = await testDb.getClient().query.account.findMany({
+      const accounts = await testDb.getClient().query.linkedAccount.findMany({
         where: { userId },
         orderBy: { provider: "asc" },
       });

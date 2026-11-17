@@ -3,7 +3,7 @@ import { sortBy } from "es-toolkit";
 import type { LinkedAccountsRepositoryPort } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import {
-  type UserProfileRecord,
+  type UserProfileReadModel,
   UserRepositoryPort,
   type PurgeEligibleUsersQuery,
 } from "#api/modules/identity/users/application/ports/user.repository.port";
@@ -13,7 +13,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
-type UserProfile = NonNullable<UserProfileRecord["profile"]>;
+type UserProfile = NonNullable<UserProfileReadModel["profile"]>;
 
 export class InMemoryUserRepository extends UserRepositoryPort {
   readonly #users = new Map<string, UserPrimitives>();
@@ -65,7 +65,7 @@ export class InMemoryUserRepository extends UserRepositoryPort {
     return this.findById(id);
   }
 
-  async findByIdWithProfile(id: UserId): Promise<UserProfileRecord | null> {
+  async findByIdWithProfile(id: UserId): Promise<UserProfileReadModel | null> {
     const user = this.#users.get(id.value);
     if (user == null) {
       return null;

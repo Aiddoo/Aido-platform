@@ -1,14 +1,14 @@
-import type { ExchangeCodeResult } from "#api/modules/identity/oauth-states/application/read-models/oauth-exchange.read-model";
+import type { OAuthExchangeReadModel } from "#api/modules/identity/oauth-states/application/read-models/oauth-exchange.read-model";
 import type {
-  LoginResult,
-  RefreshTokensResult,
-  SocialLoginResult,
-  VerifyEmailResult,
+  LoginReadModel,
+  RefreshedTokensReadModel,
+  SocialLoginReadModel,
+  EmailVerificationReadModel,
 } from "#api/modules/identity/sessions/application/read-models/login.read-model";
-import type { CurrentUserResult } from "#api/modules/identity/users/application/read-models/current-user.read-model";
+import type { CurrentUserReadModel } from "#api/modules/identity/users/application/read-models/current-user.read-model";
 import type {
-  RegisterResult,
-  UpdateProfileResult,
+  RegistrationReadModel,
+  UpdatedProfileReadModel,
 } from "#api/modules/identity/users/application/read-models/user-account.read-model";
 import { createFeatureEntitlementsFixture } from "#test/fixtures/access/access-user.fixture";
 
@@ -29,7 +29,7 @@ describe("인증 응답 매퍼", () => {
   describe("toRegisterResponse", () => {
     it("회원가입 결과를 응답 형식으로 변환한다", () => {
       // Given
-      const result: RegisterResult = {
+      const result: RegistrationReadModel = {
         userId: "user-123",
         email: "test@example.com",
         emailSent: true,
@@ -51,7 +51,7 @@ describe("인증 응답 매퍼", () => {
   describe("toAuthTokensResponse", () => {
     it("이메일 인증 결과를 토큰 응답으로 변환한다", () => {
       // Given
-      const result: VerifyEmailResult = {
+      const result: EmailVerificationReadModel = {
         userId: "user-123",
         userTag: "user#1234",
         tokens: {
@@ -80,7 +80,7 @@ describe("인증 응답 매퍼", () => {
 
     it("로그인 결과를 토큰 응답으로 변환한다", () => {
       // Given
-      const result: LoginResult = {
+      const result: LoginReadModel = {
         userId: "user-456",
         userTag: "login#5678",
         tokens: {
@@ -110,7 +110,7 @@ describe("인증 응답 매퍼", () => {
 
     it("계정 복구 로그인 시 accountRestored: true를 포함한다", () => {
       // Given
-      const result: LoginResult = {
+      const result: LoginReadModel = {
         userId: "user-789",
         userTag: "rest#1234",
         tokens: {
@@ -135,7 +135,7 @@ describe("인증 응답 매퍼", () => {
   describe("toSocialAuthTokensResponse", () => {
     it("소셜 로그인 결과의 신규 가입 여부를 응답에 싣는다", () => {
       // Given
-      const result: SocialLoginResult = {
+      const result: SocialLoginReadModel = {
         userId: "user-social",
         userTag: "soci#1234",
         tokens: {
@@ -169,7 +169,7 @@ describe("인증 응답 매퍼", () => {
   describe("toRefreshTokensResponse", () => {
     it("토큰 갱신 결과를 응답으로 변환한다", () => {
       // Given
-      const result: RefreshTokensResult = {
+      const result: RefreshedTokensReadModel = {
         tokens: {
           accessToken: "new-access",
           refreshToken: "new-refresh",
@@ -194,7 +194,7 @@ describe("인증 응답 매퍼", () => {
       // Given
       const features = createFeatureEntitlementsFixture("PREMIUM");
       const usage = { used: 1, resetsAt: "2024-02-01T00:00:00.000Z" };
-      const result: CurrentUserResult = {
+      const result: CurrentUserReadModel = {
         userId: "user-123",
         email: "test@example.com",
         sessionId: "session-456",
@@ -237,7 +237,7 @@ describe("인증 응답 매퍼", () => {
   describe("toUpdateProfileResponse", () => {
     it("프로필 수정 결과를 응답으로 변환한다", () => {
       // Given
-      const result: UpdateProfileResult = {
+      const result: UpdatedProfileReadModel = {
         message: "프로필이 수정되었습니다.",
         name: "새이름",
         profileImage: "https://example.com/new.jpg",
@@ -271,7 +271,7 @@ describe("인증 응답 매퍼", () => {
   describe("toExchangeCodeResponse", () => {
     it("OAuth 코드 교환 결과를 응답으로 변환한다", () => {
       // Given
-      const result: ExchangeCodeResult = {
+      const result: OAuthExchangeReadModel = {
         userId: "user-789",
         accessToken: "oauth-access",
         refreshToken: "oauth-refresh",
@@ -297,7 +297,7 @@ describe("인증 응답 매퍼", () => {
 
     it("userName이 undefined면 null로 변환한다", () => {
       // Given
-      const result: ExchangeCodeResult = {
+      const result: OAuthExchangeReadModel = {
         userId: "user-789",
         accessToken: "oauth-access",
         refreshToken: "oauth-refresh",
@@ -315,7 +315,7 @@ describe("인증 응답 매퍼", () => {
 
     it("계정 복구 시 accountRestored: true를 포함한다", () => {
       // Given
-      const result: ExchangeCodeResult = {
+      const result: OAuthExchangeReadModel = {
         userId: "user-restored",
         accessToken: "restored-access",
         refreshToken: "restored-refresh",

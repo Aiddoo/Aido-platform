@@ -2,9 +2,11 @@ import type { LinkedAccountsResponse } from "@aido/api/contracts/auth";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { ListLinkedAccountsResult } from "../../../application/use-cases/list-linked-accounts.use-case.js";
+import type { LinkedAccountListReadModel } from "../../../application/use-cases/list-linked-accounts.use-case.js";
 
-export function toLinkedAccountsResponse(result: ListLinkedAccountsResult): LinkedAccountsResponse {
+export function toLinkedAccountsResponse(
+  result: LinkedAccountListReadModel,
+): LinkedAccountsResponse {
   return {
     accounts: result.accounts.map((account) => ({
       ...account,

@@ -1,4 +1,4 @@
-import type { LinkedAccountRecord } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
+import type { LinkedAccountReadModel } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
 import {
   OAuthState,
   type OAuthStatePrimitives,
@@ -49,8 +49,8 @@ export function createOAuthStateFixture(overrides: Partial<OAuthStatePrimitives>
 }
 
 export function createLinkedAccountFixture(
-  overrides: Partial<LinkedAccountRecord> = {},
-): LinkedAccountRecord {
+  overrides: Partial<LinkedAccountReadModel> = {},
+): LinkedAccountReadModel {
   return {
     id: 1,
     userId: AUTH_FIXTURE_USER_ID,

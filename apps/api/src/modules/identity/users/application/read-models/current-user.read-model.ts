@@ -25,7 +25,7 @@ export type CurrentUserEntitlements = Readonly<Record<PremiumFeature, FeatureEnt
 };
 
 /** 내 정보. 시각은 프로필 캐시에 담아 온 ISO 문자열이다 */
-export interface CurrentUserResult {
+export interface CurrentUserReadModel {
   readonly userId: string;
   readonly email: string;
   readonly sessionId: string;

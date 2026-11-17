@@ -18,7 +18,7 @@ import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
 import type { TokenIssuerPort } from "../ports/token-issuer.port.js";
 import type {
-  RefreshTokensResult,
+  RefreshedTokensReadModel,
   VerifiedRefreshPayload,
 } from "../read-models/login.read-model.js";
 import { SessionAlerts } from "../sessions.alerts.js";
@@ -61,7 +61,7 @@ export class RefreshTokensUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RefreshTokensCommand): Promise<RefreshTokensResult> {
+  async execute(input: RefreshTokensCommand): Promise<RefreshedTokensReadModel> {
     const { sessionId } = input.verifiedPayload;
     if (!sessionId) {
       throw sessionNotFound();
@@ -128,7 +128,7 @@ export class RefreshTokensUseCase {
     session: Session,
     input: RefreshTokensCommand,
     retryWithinGracePeriod: boolean,
-  ): Promise<RefreshTokensResult> {
+  ): Promise<RefreshedTokensReadModel> {
     const now = this.#dependencies.clock.now();
     const validity = session.validityAt(now);
     if (validity === "revoked") {

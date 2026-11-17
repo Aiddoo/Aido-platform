@@ -21,7 +21,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { unsupportedOAuthProvider } from "../../../linked-accounts/application/linked-accounts.errors.js";
 import type {
-  LinkedAccountRecord,
+  LinkedAccountReadModel,
   LinkedAccountsRepositoryPort,
 } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import type {
@@ -38,7 +38,7 @@ import type { RestoreAccountUseCase } from "../../../users/application/use-cases
 import { userNotFound } from "../../../users/application/users.errors.js";
 import { UserLogEvent } from "../../../users/application/users.log-events.js";
 import type { LoginAttemptRepositoryPort } from "../ports/login-attempt.repository.port.js";
-import type { LoginResult, SocialLoginResult } from "../read-models/login.read-model.js";
+import type { LoginReadModel, SocialLoginReadModel } from "../read-models/login.read-model.js";
 import { oauthAccountNotLinked } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
@@ -81,7 +81,7 @@ export class LoginWithOAuthTokenUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginResult> {
+  async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginReadModel> {
     const strategy = this.#dependencies.registry.get(input.provider);
     if (strategy == null) {
       throw unsupportedOAuthProvider(input.provider);
@@ -122,7 +122,7 @@ export class LoginWithOAuthTokenUseCase {
       profileImage?: string;
       metadata?: RequestMetadata;
     },
-  ): Promise<SocialLoginResult> {
+  ): Promise<SocialLoginReadModel> {
     const { accountRepository, userRepository, logger } = this.#dependencies;
     const ip = options.metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;
     const userAgent = options.metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;
@@ -186,7 +186,7 @@ export class LoginWithOAuthTokenUseCase {
   async #loginLinkedUser(
     userId: string,
     request: { ip: string; userAgent: string; provider: AccountProvider },
-  ): Promise<SocialLoginResult> {
+  ): Promise<SocialLoginReadModel> {
     const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
     if (user == null) {
       throw userNotFound(userId);
@@ -214,7 +214,7 @@ export class LoginWithOAuthTokenUseCase {
     error: unknown,
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountRecord | null> {
+  ): Promise<LinkedAccountReadModel | null> {
     if (!(error instanceof IdentityPersistenceConflict)) {
       throw error;
     }
@@ -305,7 +305,7 @@ export class LoginWithOAuthTokenUseCase {
       restorationAt: Temporal.Instant;
     },
     onLinkInTransaction?: () => Promise<void>,
-  ): Promise<LoginResult> {
+  ): Promise<LoginReadModel> {
     const userId = user.id.value;
     // 복구와 발급 사이에 역할이 바뀌었을 수 있어 최신 행의 역할로 토큰을 만든다
     const latest = await this.#dependencies.userRepository.findById(user.id);
@@ -365,7 +365,7 @@ export class LoginWithOAuthTokenUseCase {
       userAgent: string;
       provider: AccountProvider;
     },
-  ): Promise<LoginResult> {
+  ): Promise<LoginReadModel> {
     const user = await this.#dependencies.userRepository.findById(UserId.reconstitute(userId));
 
     if (user == null) {
@@ -412,7 +412,7 @@ export class LoginWithOAuthTokenUseCase {
       ip: string;
       userAgent: string;
     },
-  ): Promise<LoginResult> {
+  ): Promise<LoginReadModel> {
     const restorationAt = this.#dependencies.clock.now();
     const needsRestore = existingUser.requiresRestoration(restorationAt);
 

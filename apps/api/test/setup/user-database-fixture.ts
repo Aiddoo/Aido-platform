@@ -1,6 +1,6 @@
 import type { Database } from "#api/platform/database/database.client";
 import {
-  account,
+  linkedAccount,
   pushToken,
   user,
   userConsent,
@@ -20,7 +20,7 @@ interface RelatedFixtures {
   consent?: RelatedInput<typeof userConsent>;
   location?: RelatedInput<typeof userLocation>;
   pushTokens?: RelatedInput<typeof pushToken>;
-  accounts?: RelatedInput<typeof account>[];
+  accounts?: RelatedInput<typeof linkedAccount>[];
 }
 
 type UserInput = Omit<typeof user.$inferInsert, "updatedAt"> &
@@ -55,7 +55,7 @@ export function createUserDatabaseFixture(
     }
     if (related.accounts !== undefined && related.accounts.length > 0) {
       await transaction
-        .insert(account)
+        .insert(linkedAccount)
         .values(related.accounts.map((item) => ({ ...item, userId })));
     }
     if (related.pushTokens !== undefined) {

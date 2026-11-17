@@ -1,4 +1,4 @@
-export interface ExchangeCodeResult {
+export interface OAuthExchangeReadModel {
   userId: string;
   accessToken: string;
   refreshToken: string;

@@ -4,7 +4,7 @@ import { Email } from "#api/modules/identity/shared/domain/email.vo";
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
-import type { RegisterResult } from "#api/modules/identity/users/application/read-models/user-account.read-model";
+import type { RegistrationReadModel } from "#api/modules/identity/users/application/read-models/user-account.read-model";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -58,7 +58,7 @@ export class RegisterUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: RegisterCommand): Promise<RegisterResult> {
+  async execute(input: RegisterCommand): Promise<RegistrationReadModel> {
     const metadata = input.metadata;
     const ip = metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;

@@ -1,4 +1,4 @@
-import type { UpdateProfileResult } from "#api/modules/identity/users/application/read-models/user-account.read-model";
+import type { UpdatedProfileReadModel } from "#api/modules/identity/users/application/read-models/user-account.read-model";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -26,7 +26,7 @@ export class UpdateProfileUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateProfileCommand): Promise<UpdateProfileResult> {
+  async execute(input: UpdateProfileCommand): Promise<UpdatedProfileReadModel> {
     const { userId: rawUserId, ...data } = input;
     const userId = UserId.reconstitute(rawUserId);
     const profile = await this.#dependencies.userRepository.updateProfile(userId, data);

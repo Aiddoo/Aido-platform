@@ -10,7 +10,7 @@ import {
   rawTimestampSchema,
 } from "#api/platform/database/raw-timestamp.schema";
 import {
-  account,
+  linkedAccount,
   user,
   userActivityDay,
   userPreference,
@@ -58,7 +58,7 @@ const d7Activity = alias(userActivityDay, "d7_activity");
 const d30Activity = alias(userActivityDay, "d30_activity");
 const appUser = alias(user, "app_user");
 const activeUser = alias(user, "active_user");
-const accountRow = alias(account, "account");
+const accountRow = alias(linkedAccount, "account");
 const preference = alias(userPreference, "preference");
 
 /**
@@ -183,7 +183,7 @@ function localizedSignupsSql(params: {
       WHERE ${appUser.deletedAt} IS NULL
         AND EXISTS (
           SELECT 1
-          FROM ${account} AS account
+          FROM ${linkedAccount} AS account
           WHERE ${accountRow.userId} = ${appUser.id}
         )
         AND ${appUser.createdAt} >=

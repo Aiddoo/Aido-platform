@@ -19,7 +19,7 @@ export interface CompleteOAuthAuthorizationCommand {
   readonly metadata?: RequestMetadata;
 }
 
-export interface CompleteOAuthAuthorizationResult {
+export interface CompletedOAuthAuthorizationReadModel {
   exchangeCode: string;
   redirectUri: string;
   userId: string;
@@ -47,7 +47,7 @@ export class CompleteOAuthAuthorizationUseCase {
 
   async execute(
     input: CompleteOAuthAuthorizationCommand,
-  ): Promise<CompleteOAuthAuthorizationResult> {
+  ): Promise<CompletedOAuthAuthorizationReadModel> {
     const { provider, code, state, metadata } = input;
     const strategy = this.#dependencies.registry.get(provider);
     if (strategy == null) {

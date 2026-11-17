@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import { accountAlreadyExists } from "#api/modules/identity/linked-accounts/application/linked-accounts.errors";
 import {
-  type LinkedAccountRecord,
+  type LinkedAccountReadModel,
   LinkedAccountsRepositoryPort,
   type NewOAuthAccount,
 } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
@@ -13,12 +13,12 @@ import type { AccountProvider } from "#api/modules/identity/linked-accounts/doma
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { account } from "#api/platform/database/schema/index";
+import { linkedAccount } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { toLinkedAccountRecord, toLinkedAccounts } from "./linked-accounts-row.mapper.js";
+import { toLinkedAccountReadModel, toLinkedAccounts } from "./linked-accounts-row.mapper.js";
 
 @Injectable()
 export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPort {
@@ -44,31 +44,33 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
   async findByUserIdAndProvider(
     userId: UserId,
     provider: AccountProvider,
-  ): Promise<LinkedAccountRecord | null> {
-    const row = await this.#db.query.account.findFirst({
+  ): Promise<LinkedAccountReadModel | null> {
+    const row = await this.#db.query.linkedAccount.findFirst({
       where: { userId: userId.value, provider },
     });
-    return row == null ? null : toLinkedAccountRecord(row);
+    return row == null ? null : toLinkedAccountReadModel(row);
   }
 
   async findByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountRecord | null> {
-    const row = await this.#db.query.account.findFirst({ where: { provider, providerAccountId } });
-    return row == null ? null : toLinkedAccountRecord(row);
+  ): Promise<LinkedAccountReadModel | null> {
+    const row = await this.#db.query.linkedAccount.findFirst({
+      where: { provider, providerAccountId },
+    });
+    return row == null ? null : toLinkedAccountReadModel(row);
   }
 
-  async findAllByUserId(userId: UserId): Promise<LinkedAccountRecord[]> {
-    const rows = await this.#db.query.account.findMany({
+  async findAllByUserId(userId: UserId): Promise<LinkedAccountReadModel[]> {
+    const rows = await this.#db.query.linkedAccount.findMany({
       where: { userId: userId.value },
       orderBy: { id: "asc" },
     });
-    return rows.map(toLinkedAccountRecord);
+    return rows.map(toLinkedAccountReadModel);
   }
 
   async findLinkedAccounts(userId: UserId): Promise<LinkedAccounts> {
-    const rows = await this.#db.query.account.findMany({
+    const rows = await this.#db.query.linkedAccount.findMany({
       columns: { id: true, provider: true, providerAccountId: true, createdAt: true },
       where: { userId: userId.value },
       orderBy: { id: "asc" },
@@ -78,7 +80,7 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
 
   async createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void> {
     try {
-      await this.#db.insert(account).values({
+      await this.#db.insert(linkedAccount).values({
         userId: userId.value,
         provider: "CREDENTIAL",
         // 이메일 계정은 공급자 계정 id가 없어 userId로 유일 제약을 채운다
@@ -97,9 +99,9 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
 
   async updatePassword(userId: UserId, hashedPassword: string): Promise<void> {
     await this.#db
-      .update(account)
+      .update(linkedAccount)
       .set({ password: hashedPassword, updatedAt: this.#clock.now() })
-      .where(and(eq(account.userId, userId.value), eq(account.provider, "CREDENTIAL")));
+      .where(and(eq(linkedAccount.userId, userId.value), eq(linkedAccount.provider, "CREDENTIAL")));
   }
 
   async updatePasswordIfUnchanged(
@@ -108,22 +110,22 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
     passwordHash: string,
   ): Promise<boolean> {
     const updated = await this.#db
-      .update(account)
+      .update(linkedAccount)
       .set({ password: passwordHash, updatedAt: this.#clock.now() })
       .where(
         and(
-          eq(account.userId, userId.value),
-          eq(account.provider, "CREDENTIAL"),
-          eq(account.password, expectedPasswordHash),
+          eq(linkedAccount.userId, userId.value),
+          eq(linkedAccount.provider, "CREDENTIAL"),
+          eq(linkedAccount.password, expectedPasswordHash),
         ),
       )
-      .returning({ id: account.id });
+      .returning({ id: linkedAccount.id });
     return updated.length === 1;
   }
 
   async createOAuthAccount(newAccount: NewOAuthAccount): Promise<void> {
     try {
-      await this.#db.insert(account).values({
+      await this.#db.insert(linkedAccount).values({
         userId: newAccount.userId.value,
         provider: newAccount.provider,
         providerAccountId: newAccount.providerAccountId,
@@ -143,7 +145,7 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
 
   async deleteAccount(userId: UserId, provider: AccountProvider): Promise<void> {
     await this.#db
-      .delete(account)
-      .where(and(eq(account.userId, userId.value), eq(account.provider, provider)));
+      .delete(linkedAccount)
+      .where(and(eq(linkedAccount.userId, userId.value), eq(linkedAccount.provider, provider)));
   }
 }

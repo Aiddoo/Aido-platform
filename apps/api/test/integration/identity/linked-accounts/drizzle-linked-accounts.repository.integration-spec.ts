@@ -1,5 +1,5 @@
 import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
-import { account, user } from "#api/platform/database/schema/index";
+import { linkedAccount, user } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeLinkedAccountsRepositoryContract } from "#test/contracts/identity/linked-accounts-repository.contract";
@@ -64,7 +64,7 @@ describe("DrizzleLinkedAccountsRepository (실제 PostgreSQL)", () => {
       providerAccountId: "apple-account",
       refreshToken: "plain-refresh",
     });
-    const [row] = await client.select().from(account);
+    const [row] = await client.select().from(linkedAccount);
 
     // Then
     expect(row?.refreshToken).not.toBeNull();

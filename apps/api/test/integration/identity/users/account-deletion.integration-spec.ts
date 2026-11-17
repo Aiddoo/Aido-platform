@@ -53,7 +53,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { DRIZZLE } from "#api/platform/database/database.client";
-import { account, user as userTable } from "#api/platform/database/schema/index";
+import { linkedAccount, user as userTable } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -65,31 +65,31 @@ import { RecordingOperationalAlert } from "#test/doubles/platform/recording-oper
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-import { requestPasswordResetProvider } from "../../src/modules/identity/linked-accounts/identity-linked-accounts.providers.js";
+import { requestPasswordResetProvider } from "../../../../src/modules/identity/linked-accounts/identity-linked-accounts.providers.js";
 import {
   loginWithPasswordProvider,
   issueLoginProvider,
   createSessionProvider,
-} from "../../src/modules/identity/sessions/identity-sessions.providers.js";
+} from "../../../../src/modules/identity/sessions/identity-sessions.providers.js";
 import {
   registerProvider,
   restoreAccountProvider,
   provisionUserProvider,
-} from "../../src/modules/identity/users/identity-users.providers.js";
+} from "../../../../src/modules/identity/users/identity-users.providers.js";
 import {
   deleteAccountProvider,
   purgeDeletedAccountsProvider,
-} from "../../src/modules/identity/users/identity-users.providers.js";
+} from "../../../../src/modules/identity/users/identity-users.providers.js";
 import {
   issueVerificationCodeProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
-} from "../../src/modules/identity/verifications/identity-verifications.providers.js";
-import { FakeEmailService } from "../mocks/fake-email.service.js";
-import { TestDatabase, type TestDatabaseClient } from "../setup/test-database.js";
-import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
-import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
-import { sessionPushDeviceReleaserTestProvider } from "./helpers/session-push-device-releaser.provider.js";
+} from "../../../../src/modules/identity/verifications/identity-verifications.providers.js";
+import { FakeEmailService } from "../../../mocks/fake-email.service.js";
+import { TestDatabase, type TestDatabaseClient } from "../../../setup/test-database.js";
+import { provisioningSeederTestProvider } from "../../helpers/provisioning-seeder.provider.js";
+import { retentionEnrollerTestProvider } from "../../helpers/retention-enroller.provider.js";
+import { sessionPushDeviceReleaserTestProvider } from "../../helpers/session-push-device-releaser.provider.js";
 
 function daysAgo(days: number): Temporal.Instant {
   return Temporal.Now.instant().subtract({ hours: days * 24 });
@@ -353,7 +353,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         })
         .returning();
       const user = requireRecord(created);
-      await client.insert(account).values({
+      await client.insert(linkedAccount).values({
         userId: user.id,
         provider: "GOOGLE",
         providerAccountId: "google-123",

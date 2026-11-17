@@ -7,7 +7,7 @@ import type { NotifyOAuthSignupUseCase } from "../../../users/application/use-ca
 import { invalidCredentials } from "../../../users/application/users.errors.js";
 import { OAuthStateLogEvent } from "../oauth-states.log-events.js";
 import type { OAuthStateRepositoryPort } from "../ports/oauth-state.repository.port.js";
-import type { ExchangeCodeResult } from "../read-models/oauth-exchange.read-model.js";
+import type { OAuthExchangeReadModel } from "../read-models/oauth-exchange.read-model.js";
 
 export interface ExchangeOAuthCodeCommand {
   readonly code: string;
@@ -31,7 +31,7 @@ export class ExchangeOAuthCodeUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ExchangeOAuthCodeCommand): Promise<ExchangeCodeResult> {
+  async execute(input: ExchangeOAuthCodeCommand): Promise<OAuthExchangeReadModel> {
     const at = this.#dependencies.clock.now();
     const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(input.code, at);
     if (state == null || state.validityAt(at) !== "valid") {

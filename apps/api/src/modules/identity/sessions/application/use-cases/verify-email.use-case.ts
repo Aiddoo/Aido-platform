@@ -1,6 +1,6 @@
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
-import type { VerifyEmailResult } from "#api/modules/identity/sessions/application/read-models/login.read-model";
+import type { EmailVerificationReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { accountDeleted } from "#api/modules/identity/users/application/users.errors";
@@ -44,7 +44,7 @@ export class VerifyEmailUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: VerifyEmailCommand): Promise<VerifyEmailResult> {
+  async execute(input: VerifyEmailCommand): Promise<EmailVerificationReadModel> {
     const metadata = input.metadata;
     const { email, code } = input;
     const ip = metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;

@@ -12,7 +12,7 @@ import type { AdminNoticePrimitives } from "#api/modules/operations/admin-notice
 import { renderDiscordEmbed } from "#api/modules/operations/admin-notices/infrastructure/adapters/discord-embed.mapper";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.queue";
-import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
+import { linkedAccount, user as userTable, userProfile } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -75,7 +75,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
     // 가입 방식은 처음 만든 계정이다. 나중에 연결한 Google 계정이 아니다
-    await client.insert(account).values([
+    await client.insert(linkedAccount).values([
       AccountFixture.create({
         userId: owner.id,
         provider: "APPLE",

@@ -1,6 +1,6 @@
 import type * as tables from "#api/platform/database/schema/index";
 
-export type Account = typeof tables.account.$inferSelect;
+export type Account = typeof tables.linkedAccount.$inferSelect;
 export type Cheer = typeof tables.cheer.$inferSelect;
 export type Follow = typeof tables.friendship.$inferSelect;
 export type Nudge = typeof tables.nudge.$inferSelect;

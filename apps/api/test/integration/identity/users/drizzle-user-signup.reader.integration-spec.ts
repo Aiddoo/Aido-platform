@@ -1,5 +1,5 @@
 import { DrizzleUserSignupReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-signup.reader";
-import { account, user, userProfile } from "#api/platform/database/schema/index";
+import { linkedAccount, user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -32,7 +32,7 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
     const owner = UserFixture.create({ userTag: "MATT2025", createdAt: JOINED_AT });
     await client.insert(user).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
-    await client.insert(account).values([
+    await client.insert(linkedAccount).values([
       AccountFixture.create({ userId: owner.id, provider: "APPLE", createdAt: JOINED_AT }),
       AccountFixture.create({
         userId: owner.id,
@@ -90,7 +90,9 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
     for (const signup of signups) {
       const created = UserFixture.create({ createdAt: signup.createdAt });
       await client.insert(user).values(created);
-      await client.insert(account).values(AccountFixture.create({ ...signup, userId: created.id }));
+      await client
+        .insert(linkedAccount)
+        .values(AccountFixture.create({ ...signup, userId: created.id }));
     }
 
     // When
@@ -109,7 +111,7 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
     // Given
     const existing = UserFixture.create({ createdAt: START.subtract({ hours: 24 }) });
     await client.insert(user).values(existing);
-    await client.insert(account).values([
+    await client.insert(linkedAccount).values([
       AccountFixture.create({
         userId: existing.id,
         provider: "KAKAO",
@@ -137,7 +139,7 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
     const deleted = UserFixture.create({ deletedAt: START });
     await client.insert(user).values([active, deleted, UserFixture.create()]);
     await client
-      .insert(account)
+      .insert(linkedAccount)
       .values([
         AccountFixture.create({ userId: active.id, provider: "KAKAO" }),
         AccountFixture.create({ userId: deleted.id, provider: "GOOGLE" }),

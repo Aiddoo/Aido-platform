@@ -1,6 +1,6 @@
 import { accountAlreadyExists } from "#api/modules/identity/linked-accounts/application/linked-accounts.errors";
 import {
-  type LinkedAccountRecord,
+  type LinkedAccountReadModel,
   LinkedAccountsRepositoryPort,
   type NewOAuthAccount,
 } from "#api/modules/identity/linked-accounts/application/ports/linked-accounts.repository.port";
@@ -12,10 +12,10 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 const IN_MEMORY_ACCOUNT_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPort {
-  readonly #accounts = new Map<number, LinkedAccountRecord>();
+  readonly #accounts = new Map<number, LinkedAccountReadModel>();
   #sequence: number;
 
-  constructor(accounts: readonly LinkedAccountRecord[] = []) {
+  constructor(accounts: readonly LinkedAccountReadModel[] = []) {
     super();
     for (const account of accounts) {
       this.#accounts.set(account.id, account);
@@ -23,14 +23,14 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
     this.#sequence = Math.max(0, ...this.#accounts.keys());
   }
 
-  get all(): readonly LinkedAccountRecord[] {
+  get all(): readonly LinkedAccountReadModel[] {
     return [...this.#accounts.values()].toSorted((left, right) => left.id - right.id);
   }
 
   async findByUserIdAndProvider(
     userId: UserId,
     provider: AccountProvider,
-  ): Promise<LinkedAccountRecord | null> {
+  ): Promise<LinkedAccountReadModel | null> {
     return (
       this.all.find(
         (account) => account.userId === userId.value && account.provider === provider,
@@ -41,7 +41,7 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
   async findByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountRecord | null> {
+  ): Promise<LinkedAccountReadModel | null> {
     return (
       this.all.find(
         (account) =>
@@ -50,7 +50,7 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
     );
   }
 
-  async findAllByUserId(userId: UserId): Promise<LinkedAccountRecord[]> {
+  async findAllByUserId(userId: UserId): Promise<LinkedAccountReadModel[]> {
     return this.all.filter((account) => account.userId === userId.value);
   }
 
@@ -126,7 +126,7 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
     );
   }
 
-  #insert(account: Omit<LinkedAccountRecord, "id" | "createdAt">): void {
+  #insert(account: Omit<LinkedAccountReadModel, "id" | "createdAt">): void {
     this.#sequence += 1;
     this.#accounts.set(this.#sequence, {
       ...account,

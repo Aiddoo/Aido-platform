@@ -9,7 +9,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { DrizzleTodoActivationReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-activation.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
-  account,
+  linkedAccount,
   todo,
   todoCategory,
   user as userTable,
@@ -327,7 +327,7 @@ async function seedGrowthScenario(client: TestDatabaseClient): Promise<void> {
       createdAt: Temporal.Instant.from("2026-06-05T00:00:00.000Z"),
     },
   ]);
-  await client.insert(account).values(
+  await client.insert(linkedAccount).values(
     users.map((user) => ({
       userId: user.id,
       provider: "CREDENTIAL" as const,
@@ -414,7 +414,7 @@ async function seedDeletedGrowthUser(client: TestDatabaseClient): Promise<void> 
     updatedAt: instantFromDate(signupAt),
     deletedAt: Temporal.Instant.from("2026-07-31T00:00:00.000Z"),
   });
-  await client.insert(account).values({
+  await client.insert(linkedAccount).values({
     userId: "deleted-growth-user",
     provider: "CREDENTIAL",
     providerAccountId: "growth-deleted-growth-user",

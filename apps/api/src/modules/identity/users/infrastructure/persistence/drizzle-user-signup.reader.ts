@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, count, eq, exists, gte, isNull, lt, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { account, user, userProfile } from "#api/platform/database/schema/index";
+import { linkedAccount, user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { UserSignupReaderPort } from "../../application/ports/user-signup.reader.port.js";
@@ -38,10 +38,10 @@ export class DrizzleUserSignupReader extends UserSignupReaderPort {
       return null;
     }
     const [firstAccount] = await this.#db
-      .select({ provider: account.provider })
-      .from(account)
-      .where(eq(account.userId, userId.value))
-      .orderBy(asc(account.createdAt), asc(account.id))
+      .select({ provider: linkedAccount.provider })
+      .from(linkedAccount)
+      .where(eq(linkedAccount.userId, userId.value))
+      .orderBy(asc(linkedAccount.createdAt), asc(linkedAccount.id))
       .limit(1);
 
     return {
@@ -60,9 +60,12 @@ export class DrizzleUserSignupReader extends UserSignupReaderPort {
     readonly end: Temporal.Instant;
   }): Promise<SignupCountReadModel[]> {
     const firstAccount = this.#db
-      .selectDistinctOn([account.userId], { userId: account.userId, provider: account.provider })
-      .from(account)
-      .orderBy(account.userId, asc(account.createdAt), asc(account.id))
+      .selectDistinctOn([linkedAccount.userId], {
+        userId: linkedAccount.userId,
+        provider: linkedAccount.provider,
+      })
+      .from(linkedAccount)
+      .orderBy(linkedAccount.userId, asc(linkedAccount.createdAt), asc(linkedAccount.id))
       .as("first_account");
 
     const rows = await this.#db
@@ -82,8 +85,8 @@ export class DrizzleUserSignupReader extends UserSignupReaderPort {
         exists(
           this.#db
             .select({ one: sql`1` })
-            .from(account)
-            .where(eq(account.userId, user.id)),
+            .from(linkedAccount)
+            .where(eq(linkedAccount.userId, user.id)),
         ),
       ),
     );

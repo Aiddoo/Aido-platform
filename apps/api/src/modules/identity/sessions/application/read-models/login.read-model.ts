@@ -2,7 +2,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 
 import type { TokenPair } from "../ports/token-issuer.port.js";
 
-export interface VerifyEmailResult {
+export interface EmailVerificationReadModel {
   userId: string;
   userTag: string;
   tokens: TokenPair;
@@ -11,7 +11,7 @@ export interface VerifyEmailResult {
   accountRestored?: boolean;
 }
 
-export interface LoginResult {
+export interface LoginReadModel {
   userId: string;
   userTag: string;
   tokens: TokenPair;
@@ -22,11 +22,11 @@ export interface LoginResult {
 }
 
 /** `isNewUser`는 이번 요청에서 사용자를 새로 만들었을 때만 true다 */
-export interface SocialLoginResult extends LoginResult {
+export interface SocialLoginReadModel extends LoginReadModel {
   isNewUser: boolean;
 }
 
-export interface RefreshTokensResult {
+export interface RefreshedTokensReadModel {
   tokens: TokenPair;
   sessionId: string;
 }

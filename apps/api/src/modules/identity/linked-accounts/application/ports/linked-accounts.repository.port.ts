@@ -3,7 +3,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { LinkedAccounts } from "../../domain/linked-accounts.aggregate.js";
 import type { AccountProvider } from "../../domain/linked-accounts.constants.js";
 
-export interface LinkedAccountRecord {
+export interface LinkedAccountReadModel {
   readonly id: number;
   readonly userId: string;
   readonly provider: AccountProvider;
@@ -23,12 +23,12 @@ export abstract class LinkedAccountsRepositoryPort {
   abstract findByUserIdAndProvider(
     userId: UserId,
     provider: AccountProvider,
-  ): Promise<LinkedAccountRecord | null>;
+  ): Promise<LinkedAccountReadModel | null>;
   abstract findByProviderAccountId(
     provider: AccountProvider,
     providerAccountId: string,
-  ): Promise<LinkedAccountRecord | null>;
-  abstract findAllByUserId(userId: UserId): Promise<LinkedAccountRecord[]>;
+  ): Promise<LinkedAccountReadModel | null>;
+  abstract findAllByUserId(userId: UserId): Promise<LinkedAccountReadModel[]>;
   abstract findLinkedAccounts(userId: UserId): Promise<LinkedAccounts>;
   /** 같은 사용자에게 이메일 계정이 이미 있으면 USER_0604로 거절한다 */
   abstract createCredentialAccount(userId: UserId, hashedPassword: string): Promise<void>;

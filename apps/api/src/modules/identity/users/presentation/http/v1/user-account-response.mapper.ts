@@ -3,13 +3,13 @@ import type { z } from "zod";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 
-import type { CurrentUserResult } from "../../../application/read-models/current-user.read-model.js";
+import type { CurrentUserReadModel } from "../../../application/read-models/current-user.read-model.js";
 import type {
-  RegisterResult,
-  UpdateProfileResult,
+  RegistrationReadModel,
+  UpdatedProfileReadModel,
 } from "../../../application/read-models/user-account.read-model.js";
 
-export function toRegisterResponse(result: RegisterResult) {
+export function toRegisterResponse(result: RegistrationReadModel) {
   return {
     message: result.message,
     email: result.email,
@@ -18,7 +18,7 @@ export function toRegisterResponse(result: RegisterResult) {
 }
 
 export function toCurrentUserResponse(
-  result: CurrentUserResult,
+  result: CurrentUserReadModel,
   appVersion?: string,
 ): z.input<typeof currentUserSchema> {
   return {
@@ -48,7 +48,7 @@ export function toCurrentUserResponse(
   };
 }
 
-export function toUpdateProfileResponse(result: UpdateProfileResult, appVersion?: string) {
+export function toUpdateProfileResponse(result: UpdatedProfileReadModel, appVersion?: string) {
   return {
     message: result.message,
     name: result.name,

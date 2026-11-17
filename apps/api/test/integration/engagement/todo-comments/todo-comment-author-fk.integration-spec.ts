@@ -5,7 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
-import { account, user } from "#api/platform/database/schema/index";
+import { linkedAccount, user } from "#api/platform/database/schema/index";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const foreignKeyRuleSchema = z.object({
@@ -94,9 +94,9 @@ describe("댓글 작성자 삭제 대비 제약", () => {
           .from(user)
           .where(eq(user.id, DELETED_COMMENT_AUTHOR.id));
         accounts = await transaction
-          .select({ id: account.id })
-          .from(account)
-          .where(eq(account.userId, DELETED_COMMENT_AUTHOR.id));
+          .select({ id: linkedAccount.id })
+          .from(linkedAccount)
+          .where(eq(linkedAccount.userId, DELETED_COMMENT_AUTHOR.id));
         throw new RollbackSeed();
       })
       .catch((error: unknown) => {

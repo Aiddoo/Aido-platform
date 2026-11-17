@@ -8,7 +8,7 @@ export interface ListLinkedAccountsQuery {
   readonly userId: string;
 }
 
-export interface ListLinkedAccountsResult {
+export interface LinkedAccountListReadModel {
   accounts: Array<{
     provider: (typeof OAUTH_PROVIDERS)[number];
     linked: boolean;
@@ -29,7 +29,7 @@ export class ListLinkedAccountsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: ListLinkedAccountsQuery): Promise<ListLinkedAccountsResult> {
+  async execute(input: ListLinkedAccountsQuery): Promise<LinkedAccountListReadModel> {
     const identityAccounts = await this.#dependencies.accountRepository.findLinkedAccounts(
       UserId.reconstitute(input.userId),
     );

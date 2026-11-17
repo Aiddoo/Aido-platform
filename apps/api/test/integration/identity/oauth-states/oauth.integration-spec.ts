@@ -29,7 +29,7 @@ import { RecordingOperationalAlert } from "#test/mocks/recording-operational-ale
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
 type SocialProvider = Exclude<AccountProvider, "CREDENTIAL">;
 const profileProviders = {
@@ -421,7 +421,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(result.message).toBe("계정이 연결되었습니다.");
 
-      const accounts = await client.query.account.findMany({ where: { userId: testUserId } });
+      const accounts = await client.query.linkedAccount.findMany({ where: { userId: testUserId } });
       expect(accounts).toHaveLength(2);
       expect(accounts.map((a) => a.provider)).toContain("GOOGLE");
       expect(accounts.map((a) => a.provider)).toContain("NAVER");
@@ -460,7 +460,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(result.message).toBe("계정 연결이 해제되었습니다.");
 
-      const accounts = await client.query.account.findMany({ where: { userId: testUserId } });
+      const accounts = await client.query.linkedAccount.findMany({ where: { userId: testUserId } });
       expect(accounts).toHaveLength(1);
       expect(accounts[0]?.provider).toBe("GOOGLE");
     });
@@ -897,7 +897,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       // Then
       expect(result.message).toBe("계정이 연결되었습니다.");
 
-      const accounts = await client.query.account.findMany({ where: { userId: testUserId } });
+      const accounts = await client.query.linkedAccount.findMany({ where: { userId: testUserId } });
       expect(accounts).toHaveLength(2);
       expect(accounts.map((a) => a.provider)).toContain("KAKAO");
     });
@@ -963,7 +963,9 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         // Then
         expect(googleResult.userId).toBe(existingUserId);
 
-        const accounts = await client.query.account.findMany({ where: { userId: existingUserId } });
+        const accounts = await client.query.linkedAccount.findMany({
+          where: { userId: existingUserId },
+        });
         expect(accounts).toHaveLength(2);
         expect(accounts.map((a) => a.provider).sort()).toEqual(["APPLE", "GOOGLE"]);
 
@@ -1120,7 +1122,9 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
           reason: "untrusted_provider",
         });
 
-        const accounts = await client.query.account.findMany({ where: { userId: existingUserId } });
+        const accounts = await client.query.linkedAccount.findMany({
+          where: { userId: existingUserId },
+        });
         expect(accounts).toHaveLength(1);
         expect(accounts[0]?.provider).toBe("GOOGLE");
       });
@@ -1474,7 +1478,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       expect(result.userId).toBe(userId);
       expect(result.sessionId).toBeDefined();
 
-      const accounts = await client.query.account.findMany({ where: { userId } });
+      const accounts = await client.query.linkedAccount.findMany({ where: { userId } });
       expect(accounts.map((a) => a.provider).sort()).toEqual(["APPLE", "GOOGLE"]);
 
       const sessions = await client.query.session.findMany({ where: { userId } });
@@ -1521,7 +1525,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
         loginWithOAuthToken.execute({ provider: "APPLE", token: conflictToken }),
       ).rejects.toThrow();
 
-      const conflictAccount = await client.query.account.findFirst({
+      const conflictAccount = await client.query.linkedAccount.findFirst({
         where: { userId, providerAccountId: "atomic-conflict-apple-id" },
       });
       expect(conflictAccount).toBeUndefined();

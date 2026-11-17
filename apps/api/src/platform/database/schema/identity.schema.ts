@@ -79,7 +79,7 @@ export const user = pgTable(
   ],
 );
 
-export const account = pgTable(
+export const linkedAccount = pgTable(
   "Account",
   {
     accessToken: text(),

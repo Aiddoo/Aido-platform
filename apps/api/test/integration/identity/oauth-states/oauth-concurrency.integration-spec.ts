@@ -9,7 +9,7 @@ import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/oauth-states/app
 import { LinkOAuthAccountWithCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/link-oauth-account-with-code.use-case";
 import { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
-import type { SocialLoginResult } from "#api/modules/identity/sessions/application/read-models/login.read-model";
+import type { SocialLoginReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-oauth-token.use-case";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
@@ -23,7 +23,7 @@ import { CountingOAuthIdentityProvider } from "#test/mocks/ports/auth-oauth.stub
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
 const at = new Date("2027-01-01T00:00:00.000Z");
 const atInstant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
@@ -169,7 +169,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     };
   }
 
-  function loggedInUserIds(outcomes: PromiseSettledResult<SocialLoginResult>[]) {
+  function loggedInUserIds(outcomes: PromiseSettledResult<SocialLoginReadModel>[]) {
     return outcomes.map((result) => {
       if (result.status === "rejected") {
         throw result.reason;
@@ -324,7 +324,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     expect(
       outcomes.map((result) => (result.status === "fulfilled" ? result.value.isNewUser : null)),
     ).toEqual(expect.arrayContaining([true, false]));
-    const linked = await client.query.account.findMany({
+    const linked = await client.query.linkedAccount.findMany({
       columns: { userId: true },
       where: { provider: "GOOGLE", providerAccountId: "google-first" },
     });
