@@ -6,7 +6,7 @@ export const TodoCommentLogEvent = {
   WRITE_NOTIFICATION_FAILED: "engagement.comment.write.notification.failed",
   LIKE_NOTIFICATION_FAILED: "engagement.comment.like.notification.failed",
   ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED:
-    "engagement.comment.account-cleanup.cache.invalidation.failed",
+    "engagement.comment.account-cleanup.cache-invalidation.failed",
 } as const;
 
 type TodoCommentFailureEvent = (typeof TodoCommentLogEvent)[keyof typeof TodoCommentLogEvent];

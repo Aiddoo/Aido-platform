@@ -193,7 +193,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     );
     expect(provider.calls).toHaveLength(2);
     expect(logger.messages).toContainEqual({
-      event: "weather.report.fallback_used",
+      event: "weather.report.fallback.used",
       cellKey: "wydm9",
       fallback: true,
       fetchedAt: toIsoString(now),
@@ -277,7 +277,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     expect(result.report.current.temperature).toBe(12.4);
     expect(logger.messages).toContainEqual(
       expect.objectContaining({
-        event: "weather.report.air_quality_unavailable",
+        event: "weather.report.air-quality.unavailable",
         cellKey: "wydm9",
       }),
     );
@@ -350,7 +350,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
       expect(result.briefing).toBeNull();
       expect(result.report.current.temperature).toBe(12.4);
       expect(logger.messages).toContainEqual(
-        expect.objectContaining({ event: "weather.report.briefing_todos_unavailable" }),
+        expect.objectContaining({ event: "weather.report.briefing-todos.unavailable" }),
       );
     });
   });

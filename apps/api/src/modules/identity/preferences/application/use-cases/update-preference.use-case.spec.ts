@@ -214,7 +214,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       deletion.resolve();
       await expect(execution).resolves.toMatchObject({ timezone: "Asia/Seoul" });
       expect(fixture.logger.messages).toMatchObject([
-        { event: PreferenceLogEvent.PREFERENCE_UPDATED, timezone: "Asia/Seoul" },
+        { event: PreferenceLogEvent.UPDATED, timezone: "Asia/Seoul" },
       ]);
     } finally {
       deletion.resolve();

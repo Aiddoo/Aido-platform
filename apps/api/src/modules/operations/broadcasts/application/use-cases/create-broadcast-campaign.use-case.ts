@@ -95,9 +95,7 @@ export class CreateBroadcastCampaignUseCase {
     });
 
     logger.log({
-      event: result.created
-        ? BroadcastLogEvent.BROADCAST_ACCEPTED
-        : BroadcastLogEvent.BROADCAST_REPLAYED,
+      event: result.created ? BroadcastLogEvent.ACCEPTED : BroadcastLogEvent.REPLAYED,
       campaignId: result.campaign.id.value,
       targetFilter: command.targetFilter,
       targetCount: result.targetCount,

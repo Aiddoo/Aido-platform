@@ -82,7 +82,7 @@ export class SweepPremiumGrantsUseCase {
       premiumGrantRepository.listUserIdsToReconcile(page),
     );
     logger.log({
-      event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEPT,
+      event: PremiumGrantLogEvent.SWEPT,
       userCount: grants.userCount,
       changedGrantCount: grants.changedGrantCount,
       failedUserCount: grants.failedUserCount,
@@ -154,7 +154,7 @@ export class SweepPremiumGrantsUseCase {
       });
     } catch (error) {
       this.#dependencies.logger.error({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
+        event: PremiumGrantLogEvent.RECONCILE_FAILED,
         userId: userId.value,
         errorType: toErrorType(error),
       });
@@ -165,7 +165,7 @@ export class SweepPremiumGrantsUseCase {
       await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
+        event: PremiumGrantLogEvent.CACHE_INVALIDATION_FAILED,
         userId: userId.value,
         errorType: toErrorType(error),
       });

@@ -75,7 +75,7 @@ describe("AdminEventNotifierAdapter — 격리된 관리자 이벤트 알림", (
     // Then
     expect(logger.messages).toEqual([
       {
-        event: "operations.notifications.signup.enqueue-failed",
+        event: "operations.notifications.signup.enqueue.failed",
         userId: "user-1",
         errorType: "queue-enqueue",
       },
@@ -95,7 +95,7 @@ describe("AdminEventNotifierAdapter — 격리된 관리자 이벤트 알림", (
     // Then
     expect(logger.messages).toEqual([
       {
-        event: "operations.notifications.subscription.enqueue-failed",
+        event: "operations.notifications.subscription.enqueue.failed",
         userId: "user-1",
         errorType: "queue-enqueue",
       },

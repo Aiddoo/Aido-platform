@@ -116,10 +116,10 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
       }),
     ]);
     expect(logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.suggestion-analysis.requested" }),
+      expect.objectContaining({ event: "ai-assistance.suggestion-analysis.requested" }),
     );
     expect(logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.suggestion-analysis.deduplicated" }),
+      expect.objectContaining({ event: "ai-assistance.suggestion-analysis.deduplicated" }),
     );
   });
 });

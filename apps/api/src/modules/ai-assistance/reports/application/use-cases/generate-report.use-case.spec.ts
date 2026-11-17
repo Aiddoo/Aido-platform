@@ -492,7 +492,7 @@ describe("GenerateReportUseCase", () => {
       });
       expect(f.logger.error).toHaveBeenCalledWith(
         expect.objectContaining({
-          event: "ai.generation.failed",
+          event: "ai-assistance.generation.failed",
           task: "report",
           outcome: "FALLBACK",
           errorType: "RATE_LIMITED",
@@ -552,7 +552,7 @@ describe("GenerateReportUseCase", () => {
         expect(result).not.toBeNull();
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
         expect(f.logger.warn).toHaveBeenCalledWith({
-          event: "ai.report.provider.unavailable",
+          event: "ai-assistance.report.provider.unavailable",
           userId: f.userId,
           errorType: kind,
         });

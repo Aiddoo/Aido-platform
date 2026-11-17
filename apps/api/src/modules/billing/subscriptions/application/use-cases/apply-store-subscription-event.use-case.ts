@@ -549,7 +549,7 @@ export class ApplyStoreSubscriptionEventUseCase {
       }),
     );
     this.#dependencies.logger.log({
-      event: SubscriptionLogEvent.SUBSCRIPTION_CHAIN_ADOPTED,
+      event: SubscriptionLogEvent.CHAIN_ADOPTED,
       eventKind: event.kind,
       userId: user.id,
     });

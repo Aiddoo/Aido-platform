@@ -10,10 +10,10 @@ import type { AiGenerationMeta, AiTaskId } from "./ports/ai-generator.port.js";
 
 /** 모든 AI 작업이 같은 필드로 남기는 생성 결과 이벤트. 사용자 원문·제목·카테고리 이름은 남기지 않는다. */
 export const AiGenerationLogEvent = {
-  COMPLETED: "ai.generation.completed",
-  FAILED: "ai.generation.failed",
-  COMMIT_MISSED: "ai.generation.commit-missed",
-  QUOTA_READ_FAILED: "ai.generation.quota-read-failed",
+  COMPLETED: "ai-assistance.generation.completed",
+  FAILED: "ai-assistance.generation.failed",
+  COMMIT_MISSED: "ai-assistance.generation.commit.missed",
+  QUOTA_READ_FAILED: "ai-assistance.generation.quota-read.failed",
 } as const;
 
 const AI_GENERATION_OUTCOMES = ["SUCCESS", "NO_ACTION", "FALLBACK", "RETRYING", "FAILED"] as const;

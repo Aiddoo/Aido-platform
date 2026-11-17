@@ -66,7 +66,7 @@ export class FanOutBroadcastCampaignUseCase {
           cursorUserId: outcome.cursorUserId,
         });
         logger.log({
-          event: BroadcastLogEvent.BROADCAST_CONTINUED,
+          event: BroadcastLogEvent.CONTINUED,
           campaignId: command.campaignId.value,
         });
         return;
@@ -99,7 +99,7 @@ export class FanOutBroadcastCampaignUseCase {
     await campaignRepository.save(campaign);
     if (isLastPage || lastUserId == null) {
       logger.log({
-        event: BroadcastLogEvent.BROADCAST_COMPLETED,
+        event: BroadcastLogEvent.COMPLETED,
         campaignId: campaignId.value,
         processedCount: campaign.processedCount,
         queuedCount: campaign.queuedCount,

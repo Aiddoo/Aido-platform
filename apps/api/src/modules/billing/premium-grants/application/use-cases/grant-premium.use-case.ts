@@ -43,7 +43,7 @@ export class GrantPremiumUseCase {
       // 호출자 UoW에 Required로 참여하므로 바깥이 rollback되면 기록되지 않은 지급을 로그에 남기지 않는다
       afterCommit.register(async () => {
         logger.log({
-          event: PremiumGrantLogEvent.PREMIUM_GRANT_RECORDED,
+          event: PremiumGrantLogEvent.RECORDED,
           userId: command.userId.value,
           source: command.source,
           durationDays: command.durationDays,

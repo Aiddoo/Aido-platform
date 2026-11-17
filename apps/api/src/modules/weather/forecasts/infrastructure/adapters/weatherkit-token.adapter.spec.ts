@@ -129,7 +129,7 @@ describe("WeatherKitTokenAdapter — ES256 개발자 토큰", () => {
     const token = await resolver.resolve();
     // Then
     expect(debugSpy).toHaveBeenCalledWith({
-      event: "weather.weatherkit.token_signed",
+      event: "weather.weatherkit.token.signed",
       expiresAt: "2026-11-02T07:00:00.000Z",
     });
     const logged = JSON.stringify(debugSpy.mock.calls);

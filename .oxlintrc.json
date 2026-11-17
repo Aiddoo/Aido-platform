@@ -116,6 +116,34 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.log-events.ts"],
+      "rules": {
+        "aido/log-event-key": [
+          "error",
+          {
+            "constantPattern": "LogEvent$",
+            "minSegments": 3,
+            "maxSegments": 5,
+            "singleWordOutcome": true,
+            "contextFromPath": true
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.ts"],
+      "excludeFiles": ["apps/api/src/**/*.spec.ts"],
+      "rules": {
+        "aido/logger-event-constant": [
+          "error",
+          {
+            "eventProperty": "event",
+            "methods": ["log", "debug", "warn", "error", "verbose", "fatal"]
+          }
+        ]
+      }
+    },
+    {
       "files": [
         "apps/api/src/**/*.ts",
         "apps/api/test/**/*.ts",

@@ -31,6 +31,7 @@ import {
   type AiGenerationPolicy,
   resolveGenerationPolicy,
 } from "./ai-generation-policy.constants.js";
+import { AiGuardLogEvent } from "./ai-guard.log-events.js";
 import { estimateCostMicroUsd, estimateSpendMicroUsd } from "./ai-model-pricing.constants.js";
 import {
   AI_TASK_CLASS_POLICIES,
@@ -42,7 +43,7 @@ import {
   AiProviderCatalog,
   type AiProviderModel,
 } from "./ai-provider.adapter.js";
-import { AiGuardLogEvent, AiProviderLogEvent } from "./ai-provider.log-events.js";
+import { AiProviderLogEvent } from "./ai-provider.log-events.js";
 import {
   describeUpstreamCause,
   readFailedUsage,

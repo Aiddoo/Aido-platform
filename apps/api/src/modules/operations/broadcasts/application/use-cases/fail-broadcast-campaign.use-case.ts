@@ -41,7 +41,7 @@ export class FailBroadcastCampaignUseCase {
     });
     if (failed) {
       logger.error({
-        event: BroadcastLogEvent.BROADCAST_FAILED,
+        event: BroadcastLogEvent.FAILED,
         campaignId: command.campaignId.value,
         reason: BROADCAST_FAN_OUT_EXHAUSTED_REASON,
       });

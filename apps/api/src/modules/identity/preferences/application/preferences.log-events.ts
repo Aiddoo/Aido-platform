@@ -1,6 +1,6 @@
 export const PreferenceLogEvent = {
   TIMEZONE_HEAL_FAILED: "identity.settings.timezone.heal.failed",
-  PREFERENCE_UPDATED: "identity.settings.preference.updated",
+  UPDATED: "identity.settings.preference.updated",
   MARKETING_CONSENT_UPDATED: "identity.settings.marketing-consent.updated",
   MARKETING_PUSH_CONSENT_UPDATED: "identity.settings.marketing-push-consent.updated",
   AI_DATA_SHARING_CONSENT_UPDATED: "identity.settings.ai-data-sharing-consent.updated",

@@ -96,7 +96,7 @@ export class UpdatePreferenceUseCase {
     }
 
     this.#dependencies.logger.log({
-      event: PreferenceLogEvent.PREFERENCE_UPDATED,
+      event: PreferenceLogEvent.UPDATED,
       userId: input.userId,
       pushEnabled: updated.pushEnabled,
       nightPushEnabled: updated.nightPushEnabled,

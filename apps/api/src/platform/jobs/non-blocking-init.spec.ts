@@ -53,7 +53,7 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
     // Then
     await expect(result).resolves.toBeUndefined();
     expect(logger.error).toHaveBeenCalledWith({
-      event: "bootstrap.background-init.failed",
+      event: "server.background-initialization.failed",
       task: "Scheduler registration",
       errorType: "Error",
     });

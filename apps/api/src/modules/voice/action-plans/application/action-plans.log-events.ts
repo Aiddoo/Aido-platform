@@ -5,6 +5,6 @@ export const ActionPlanLogEvent = {
   PLAN_APPLY_COMPLETED: "voice.plan-apply.completed",
   PLAN_APPLY_REPLAYED: "voice.plan-apply.replayed",
   PLAN_APPLICATION_PURGED: "voice.plan-application.purged",
-  PLAN_APPLICATION_PURGE_FAILED: "voice.plan-application.purge-failed",
-  PLAN_CLEANUP_SCHEDULER_REGISTERED: "voice.plan-application.scheduler-registered",
+  PLAN_APPLICATION_PURGE_FAILED: "voice.plan-application.purge.failed",
+  PLAN_CLEANUP_SCHEDULER_REGISTERED: "voice.plan-application.scheduler.registered",
 } as const;

@@ -13,13 +13,13 @@
 ## 이벤트 키와 필드 (서버·앱 공통)
 
 - 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
-- 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`·`database`·`events`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
+- 첫 마디는 Bounded Context 폴더 이름, platform은 기술 영역(`server`·`http`·`redis`·`cache`·`lock`·`dedup`·`jobs`·`database`·`events`·`outbound`·`observability`·`metering`·`config`)이다. 마디는 3~5개이고 마지막은 하이픈 없는 결과 한 단어(`failed`·`completed`·`skipped` …)다. Oxlint `aido/log-event-key`·`aido/logger-event-constant`가 강제한다.
 - Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/docs/observability.md)와 같은 축).
 - `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다.
 - 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남기고 키 필드 이름은 `event` 하나다.
 - 결과는 마지막 마디 하나다. 동작과 결과를 하이픈으로 붙이지 않는다(`todo-series.materialization.failed`, `materialize-failed` 금지).
 - 상수는 slice `<slice>.log-events.ts`의 `<Aggregate>LogEvent` 객체이고 키는 `<SUBJECT_OUTCOME>`이다. Aggregate 이름을 키에 다시 쓰지 않는다(`PremiumGrantLogEvent.RECORDED`).
-- 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지한다. 새 키만 이 형식이다.
+- 경보 key(`<slice>.alerts.ts`)는 Sentry 경보 규칙이 참조하는 운영 계약이라 로그 키와 따로 두고 이름을 바꾸지 않는다.
 
 레벨: log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 거부, error는 최종 실패, debug는 진단이다.
 
@@ -101,7 +101,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | Cron 모니터 `aido-job-worker`    | 감시 작업 check-in이 두 번 연속 빠지거나 실패(약 35분). worker·pg-boss가 통째로 멈춘 경우                             | `SentryJobHeartbeatAdapter`(`withMonitor`, 설정 upsert) |
 
 - 태그는 `queue`·`job.name`·`job.attempt`·`error.type`·`schedule.key`뿐이고 payload 값·예외 message는 싣지 않는다. 판정은 순수 함수 [schedule-watchdog.domain-service.ts](../src/platform/jobs/schedule-watchdog.domain-service.ts)다.
-- 판정하지 않는 것: 앞 예정 시각 뒤에 등록된 스케줄, 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 실행, 등록되지 않은 스케줄(`bootstrap.background-init.failed` 로그).
+- 판정하지 않는 것: 앞 예정 시각 뒤에 등록된 스케줄, 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 실행, 등록되지 않은 스케줄(`server.background-initialization.failed` 로그).
 - 모니터 slug는 상수 `JOB_WORKER_MONITOR_SLUG`다. Sentry가 environment별로 나눠 보여 env로 바꾸지 않는다.
 
 ### 중복 제거

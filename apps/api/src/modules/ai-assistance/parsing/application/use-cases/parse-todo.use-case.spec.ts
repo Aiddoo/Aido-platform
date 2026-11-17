@@ -256,7 +256,7 @@ describe("ParseTodoUseCase", () => {
     expect(result.data).toBeDefined();
     expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
     expect(fixture.logger.warn).toHaveBeenCalledWith({
-      event: "ai.generation.quota-read-failed",
+      event: "ai-assistance.generation.quota-read.failed",
       feature: "AI_PARSE",
       task: "parse-todo",
       errorType: "TypeError",
@@ -358,7 +358,7 @@ describe("ParseTodoUseCase", () => {
       agreedConsentVersion: "2026-10-26",
     });
     expect(fixture.logger.log).toHaveBeenCalledWith({
-      event: "ai.generation.completed",
+      event: "ai-assistance.generation.completed",
       task: "parse-todo",
       promptVersion: "parse-todo@10",
       provider: "google",

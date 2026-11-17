@@ -1,10 +1,10 @@
 export const AiJobLogEvent = {
-  FAILURE_RETENTION_DELEGATED: "ai.job.failure-retention.delegated",
-  STARTED: "ai.job.started",
-  SKIPPED: "ai.job.skipped",
-  COMPLETED: "ai.job.completed",
-  SCHEDULED: "ai.job.scheduled",
-  DISPATCH_STARTED: "ai.job.dispatch_started",
-  DISPATCH_COMPLETED: "ai.job.dispatch_completed",
-  CATCH_UP: "ai.job.catch_up",
+  FAILURE_RETENTION_DELEGATED: "ai-assistance.job.failure-retention.delegated",
+  STARTED: "ai-assistance.job.started",
+  SKIPPED: "ai-assistance.job.skipped",
+  COMPLETED: "ai-assistance.job.completed",
+  SCHEDULED: "ai-assistance.job.scheduled",
+  DISPATCH_STARTED: "ai-assistance.job.dispatch.started",
+  DISPATCH_COMPLETED: "ai-assistance.job.dispatch.completed",
+  CATCH_UP: "ai-assistance.job.catch-up.dispatched",
 } as const;

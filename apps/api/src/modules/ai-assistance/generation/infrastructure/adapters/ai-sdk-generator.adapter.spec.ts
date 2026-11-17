@@ -154,7 +154,7 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
       estimatedCostMicroUsd: 1000 * 0.25 + 200 * 1.5,
     });
     expect(warn).toHaveBeenCalledWith({
-      event: "ai.provider.fallback",
+      event: "ai-assistance.provider.fallback",
       task: "parse-todo",
       from: "anthropic",
       to: "google",
@@ -214,7 +214,10 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
     await generate(chain.generator);
     // Then
     expect(error).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.provider.fallback", errorType: "BAD_REQUEST" }),
+      expect.objectContaining({
+        event: "ai-assistance.provider.fallback",
+        errorType: "BAD_REQUEST",
+      }),
     );
   });
 
@@ -322,7 +325,7 @@ describe("AiSdkGeneratorAdapter — 업체 체인·폴백·제한 시간", () =>
     expect(result).toMatchObject({ provider: "google", fallbackFrom: "anthropic", attempts: 2 });
     expect(result.latencyMs).toBeLessThan(200);
     expect(warn).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.provider.fallback", errorType: "TIMEOUT" }),
+      expect.objectContaining({ event: "ai-assistance.provider.fallback", errorType: "TIMEOUT" }),
     );
   });
 
@@ -690,7 +693,7 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
     expect(failure).toMatchObject({ kind: "BAD_REQUEST", errorCode: "AI_1302", attempts: 0 });
     expect(chain.anthropic.callCount).toBe(0);
     expect(error).toHaveBeenCalledWith({
-      event: "ai.generation.input-rejected",
+      event: "ai-assistance.generation.input.rejected",
       task: "parse-todo",
       inputChars: 11,
       maxInputChars: 10,
@@ -714,7 +717,7 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
       expect(failure).toMatchObject({ kind: "HALTED", errorCode: "AI_1301", attempts: 0 });
       expect(chain.anthropic.callCount).toBe(0);
       expect(warn).toHaveBeenCalledWith({
-        event: "ai.spend.halted",
+        event: "ai-assistance.spend.halted",
         task,
         taskClass,
         reason: "kill-switch",
@@ -826,9 +829,15 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
     const result = await generate(chain.generator);
     // Then
     expect(result.provider).toBe("anthropic");
-    expect(error).toHaveBeenCalledWith({ event: "ai.spend.read-failed", errorType: "TypeError" });
+    expect(error).toHaveBeenCalledWith({
+      event: "ai-assistance.spend.read.failed",
+      errorType: "TypeError",
+    });
     expect(error).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.spend.record-failed", errorType: "TypeError" }),
+      expect.objectContaining({
+        event: "ai-assistance.spend.record.failed",
+        errorType: "TypeError",
+      }),
     );
   });
 
@@ -964,7 +973,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     expect([recovered.provider, next.provider]).toEqual(["anthropic", "anthropic"]);
     expect(chain.alert.alerts).toHaveLength(1);
     expect(log).toHaveBeenCalledWith({
-      event: "outbound.circuit.half-open",
+      event: "outbound.circuit.half-open.entered",
       policy: "ai:anthropic",
       breaker: "billing",
     });

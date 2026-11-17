@@ -67,7 +67,7 @@ export class ReadWeatherForecastUseCase {
         );
       } catch (error) {
         logger.warn({
-          event: ForecastLogEvent.FORECAST_PROVIDER_FAILED,
+          event: ForecastLogEvent.PROVIDER_FAILED,
           provider: weatherProvider.name,
           errorType: toErrorType(error),
         });
@@ -77,7 +77,7 @@ export class ReadWeatherForecastUseCase {
 
     const latest = await weatherCache.getLatestForecast(grid);
     if (latest != null) {
-      logger.warn({ event: ForecastLogEvent.FORECAST_FALLBACK_USED });
+      logger.warn({ event: ForecastLogEvent.FALLBACK_USED });
       return latest;
     }
 

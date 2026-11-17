@@ -117,7 +117,7 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
     // Then
     expect(fixture.chargeOf(next.chargeId)).toMatchObject({ status: "REFUNDED" });
     expect(fixture.logger.messages).toContainEqual({
-      event: "access.quota.refund-failed",
+      event: "access.quota.refund.failed",
       chargeId: failing.chargeId,
       meter: "AI_PLAN",
       errorType: "TypeError",

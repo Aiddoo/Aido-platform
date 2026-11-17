@@ -122,7 +122,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
       },
     ]);
     expect(warn).toHaveBeenCalledWith({
-      event: "notification.push_ticket_failed",
+      event: "notification.push-ticket.failed",
       provider: "expo",
       failureKind: "DEVICE_UNREGISTERED",
     });
@@ -209,7 +209,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     });
     expect(error).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: "notification.push_transport_failed",
+        event: "notification.push-transport.failed",
         statusCode: 500,
         acceptedTicketCountBeforeFailure: 100,
       }),

@@ -237,7 +237,7 @@ describe("ParseMemoUseCase", () => {
     expect(result.data).toBeDefined();
     expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
     expect(fixture.logger.warn).toHaveBeenCalledWith({
-      event: "ai.generation.quota-read-failed",
+      event: "ai-assistance.generation.quota-read.failed",
       feature: "AI_PARSE",
       task: "parse-memo",
       errorType: "TypeError",
@@ -363,7 +363,7 @@ describe("ParseMemoUseCase", () => {
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: "ai.generation.failed",
+        event: "ai-assistance.generation.failed",
         task: "parse-memo",
         userId: fixture.userId,
         errorType: "INVALID_OUTPUT",
@@ -397,7 +397,7 @@ describe("ParseMemoUseCase", () => {
     );
     expect(fixture.logger.log).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: "ai.generation.completed",
+        event: "ai-assistance.generation.completed",
         task: "parse-memo",
         quotaCharged: true,
         todoCount: 1,
@@ -420,7 +420,10 @@ describe("ParseMemoUseCase", () => {
     );
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.generation.failed", errorType: "RATE_LIMITED" }),
+      expect.objectContaining({
+        event: "ai-assistance.generation.failed",
+        errorType: "RATE_LIMITED",
+      }),
     );
   });
 

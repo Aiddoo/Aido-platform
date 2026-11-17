@@ -1,9 +1,9 @@
 export const PremiumGrantLogEvent = {
-  PREMIUM_GRANT_RECORDED: "billing.premium-grant.recorded",
-  PREMIUM_GRANT_SWEPT: "billing.premium-grant.swept",
+  RECORDED: "billing.premium-grant.recorded",
+  SWEPT: "billing.premium-grant.swept",
   LAPSED_PREMIUM_SWEPT: "billing.premium-access.lapsed.swept",
-  PREMIUM_GRANT_REVOKED: "billing.premium-grant.revoked",
-  PREMIUM_GRANT_RECONCILE_FAILED: "billing.premium-grant.reconcile.failed",
-  PREMIUM_GRANT_CACHE_INVALIDATION_FAILED: "billing.premium-grant.cache-invalidation.failed",
-  PREMIUM_GRANT_ENDING_NOTIFIED: "billing.premium-grant.ending.notified",
+  REVOKED: "billing.premium-grant.revoked",
+  RECONCILE_FAILED: "billing.premium-grant.reconcile.failed",
+  CACHE_INVALIDATION_FAILED: "billing.premium-grant.cache-invalidation.failed",
+  ENDING_NOTIFIED: "billing.premium-grant.ending.notified",
 } as const;

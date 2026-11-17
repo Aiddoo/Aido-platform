@@ -241,7 +241,7 @@ describe("ReportPushDeviceUseCase — 푸시 기기 보고", () => {
     expect(tokens.tokenOf("user-a", "ios_device-a")?.token).toBe(VALID_TOKEN);
     expect(logger.messages).toContainEqual(
       expect.objectContaining({
-        event: "notification.delivery.report-push-device.token-conflict-retried",
+        event: "notification.delivery.report-push-device.token-conflict.retried",
       }),
     );
   });

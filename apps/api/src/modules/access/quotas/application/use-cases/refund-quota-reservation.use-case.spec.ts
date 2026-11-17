@@ -133,13 +133,13 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
     expect([refunded, committed]).toEqual([false, false]);
     expect(await fixture.used()).toBe(1);
     expect(fixture.logger.messages).toContainEqual({
-      event: "access.quota.refund-failed",
+      event: "access.quota.refund.failed",
       chargeId: reservation.chargeId,
       meter: "AI_PLAN",
       errorType: "Error",
     });
     expect(fixture.logger.messages).toContainEqual({
-      event: "access.quota.commit-failed",
+      event: "access.quota.commit.failed",
       chargeId: reservation.chargeId,
       meter: "AI_PLAN",
       errorType: "Error",

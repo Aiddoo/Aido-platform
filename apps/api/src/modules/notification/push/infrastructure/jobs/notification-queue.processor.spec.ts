@@ -133,7 +133,7 @@ describe("NotificationQueueProcessor", () => {
     // Then
     expect(units.sendBillingIssue.execute).not.toHaveBeenCalled();
     expect(error).toHaveBeenCalledWith({
-      event: "notification.job_dead_lettered",
+      event: "notification.job.dead-letter.sent",
       jobName: NotificationJobName.BILLING_ISSUE,
     });
   });

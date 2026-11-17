@@ -109,7 +109,7 @@ describe("OutboundPolicy — 회로·bulkhead·시도별 timeout", () => {
     // Then
     expect([beforeTrial, result, policy.isOpen()]).toEqual([false, "ok", false]);
     expect(log).toHaveBeenCalledWith({
-      event: "outbound.circuit.half-open",
+      event: "outbound.circuit.half-open.entered",
       policy: "vendor",
       breaker: "health",
     });

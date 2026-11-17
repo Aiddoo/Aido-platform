@@ -191,7 +191,10 @@ describe("CreateQuickPlanUseCase", () => {
     expect(response.featureQuota).toBeNull();
     expect(response.plan.actions).toHaveLength(1);
     expect(logger.messages).toContainEqual(
-      expect.objectContaining({ event: "ai.generation.quota-read-failed", feature: "AI_PARSE" }),
+      expect.objectContaining({
+        event: "ai-assistance.generation.quota-read.failed",
+        feature: "AI_PARSE",
+      }),
     );
     quota.read = async () => {
       throw new Error("db down");

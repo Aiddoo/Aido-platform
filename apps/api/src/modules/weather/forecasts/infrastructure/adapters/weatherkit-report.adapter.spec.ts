@@ -217,7 +217,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     );
     expect(report.current.condition).toBe("RAIN");
     expect(warnSpy).toHaveBeenCalledWith({
-      event: "weather.weatherkit.availability_failed",
+      event: "weather.weatherkit.availability.failed",
       cellKey: cell.key,
       status: 503,
       errorType: "http_failure",
@@ -274,7 +274,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     await provider.getReport(cell, REQUEST);
     // Then
     expect(logSpy).toHaveBeenCalledWith({
-      event: "weather.weatherkit.request_completed",
+      event: "weather.weatherkit.request.completed",
       cellKey: cell.key,
       status: 200,
       latencyMs: expect.any(Number),
@@ -301,7 +301,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     // Then
     expect(report.nextHour).toBeNull();
     expect(warnSpy).toHaveBeenCalledWith({
-      event: "weather.weatherkit.dataset_dropped",
+      event: "weather.weatherkit.dataset.dropped",
       cellKey: cell.key,
       dataSets: ["forecastNextHour", "weatherAlerts"],
     });
@@ -321,7 +321,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
       // Then
       await expect(result).rejects.toBeInstanceOf(WeatherKitRequestError);
       expect(warnSpy).toHaveBeenCalledWith({
-        event: "weather.weatherkit.request_failed",
+        event: "weather.weatherkit.request.failed",
         cellKey: cell.key,
         status,
         latencyMs: expect.any(Number),
@@ -384,7 +384,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     expect(await settled).toMatchObject({ name: "HttpTimeoutError" });
     expect(warnSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: "weather.weatherkit.request_failed",
+        event: "weather.weatherkit.request.failed",
         status: null,
         errorType: "HttpTimeoutError",
       }),
