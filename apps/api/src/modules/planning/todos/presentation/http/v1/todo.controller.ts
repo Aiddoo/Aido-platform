@@ -916,7 +916,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     };
   }
 
-  // ===== 하위 항목 (체크리스트) 관리 =====
+  // 하위 항목 (체크리스트) 관리
   // 선언 순서: POST → reorder(정적) → PATCH :itemId(동적) → DELETE :itemId
 
   @Post(":id/items")

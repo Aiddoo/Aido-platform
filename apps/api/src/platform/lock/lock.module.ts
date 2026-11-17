@@ -12,14 +12,6 @@ import { LockProviderPort } from "./lock-provider.port.js";
  * 잠금 모듈
  *
  * 환경변수 기반으로 인메모리/Redis 어댑터 선택
- *
- * @example
- * // app.module.ts
- * imports: [LockModule.forRoot()]
- *
- * @example
- * // 테스트에서
- * imports: [LockModule.forTesting(mockAdapter)]
  */
 @Global()
 @Module({})
@@ -52,12 +44,6 @@ export class LockModule {
    * 테스트용 모듈 설정
    *
    * 특정 어댑터를 직접 주입하여 사용
-   *
-   * @example
-   * const mockAdapter = { acquire: vi.fn(), isLocked: vi.fn() };
-   * const module = await Test.createTestingModule({
-   *   imports: [LockModule.forTesting(mockAdapter)],
-   * }).compile();
    */
   static forTesting(adapter: LockProviderPort): DynamicModule {
     return {

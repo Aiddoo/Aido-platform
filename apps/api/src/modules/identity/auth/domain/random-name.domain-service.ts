@@ -72,8 +72,6 @@ const NOUNS = [
 /**
  * 재미있는 랜덤 한국어 이름을 생성합니다.
  * 형용사 + 공백 + 명사 조합으로, 항상 20자 이내입니다.
- *
- * @example "치맥하는 매튜", "코딩하는 판다"
  */
 export function generateRandomName(): string {
   const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];

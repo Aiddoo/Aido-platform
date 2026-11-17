@@ -60,8 +60,6 @@ export class TestDatabase {
 
   /**
    * globalSetup이 준비한 PostgreSQL에 연결
-   *
-   * @returns TestDatabaseClient 인스턴스
    */
   async start(): Promise<TestDatabaseClient> {
     if (this.#client) {

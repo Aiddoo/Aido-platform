@@ -30,8 +30,6 @@ export interface TmCoordinate {
 
 /**
  * WGS84 위경도를 TM 중부원점 좌표로 변환합니다.
- *
- * @example convertToTm(37.5665, 126.978) // { tmX: ~198079, tmY: ~451847 }
  */
 export function convertToTm(lat: number, lon: number): TmCoordinate {
   const { a, f } = GRS80;

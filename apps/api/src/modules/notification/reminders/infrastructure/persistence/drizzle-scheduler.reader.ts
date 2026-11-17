@@ -107,9 +107,7 @@ export class DrizzleSchedulerReader
     return instantToDate(this.#clock.now());
   }
 
-  // ─────────────────────────────────────────────────────────────
   // ScheduledReminderReaderPort — 아침/저녁 리마인더·리포트·점심 넛지
-  // ─────────────────────────────────────────────────────────────
 
   async findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
@@ -249,9 +247,7 @@ export class DrizzleSchedulerReader
     });
   }
 
-  // ─────────────────────────────────────────────────────────────
   // ReEngagementReaderPort — winback·온보딩·넛지추천·소셜다이제스트·스트릭
-  // ─────────────────────────────────────────────────────────────
 
   async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUser[]> {
     const { timezones, inactiveSince, inactiveUntil } = params;
@@ -432,9 +428,7 @@ export class DrizzleSchedulerReader
     return rows;
   }
 
-  // ─────────────────────────────────────────────────────────────
   // WeatherReminderReaderPort — 아침/저녁 날씨 알림
-  // ─────────────────────────────────────────────────────────────
 
   async findWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
@@ -528,9 +522,7 @@ export class DrizzleSchedulerReader
     });
   }
 
-  // ─────────────────────────────────────────────────────────────
   // WeeklyAchievementStatsReaderPort — 주간 달성 집계
-  // ─────────────────────────────────────────────────────────────
 
   groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
     return this.#countTodoDaysByUser(params);
@@ -575,9 +567,7 @@ export class DrizzleSchedulerReader
     return new Set(rows.map((row) => row.id));
   }
 
-  // ─────────────────────────────────────────────────────────────
   // TodoReminderReaderPort — 지연 잡 처리용
-  // ─────────────────────────────────────────────────────────────
 
   async findActiveTodos(todoIds: readonly TodoId[]): Promise<ReadonlyMap<number, ActiveTodo>> {
     if (todoIds.length === 0) {
@@ -602,9 +592,7 @@ export class DrizzleSchedulerReader
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
   // SchedulerPreferenceReaderPort — 활성 타임존·푸시 로케일
-  // ─────────────────────────────────────────────────────────────
 
   async findActiveTimezones(): Promise<string[]> {
     return this.#cacheService.wrap(

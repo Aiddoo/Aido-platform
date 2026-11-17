@@ -103,11 +103,10 @@ export class FakeOAuthTokenVerifierService {
     return this.#createDefaultProfile("NAVER", `naver-${accessToken.slice(0, 8)}`);
   }
 
-  // ===== 테스트 유틸리티 메서드 =====
+  // 테스트 유틸리티 메서드
 
   /**
    * 실패 시뮬레이션 활성화
-   * @param error 던질 에러 (기본값: null - provider별 ApplicationException 사용)
    */
   simulateFailure(error?: Error): void {
     this.#shouldFail = true;
@@ -124,9 +123,6 @@ export class FakeOAuthTokenVerifierService {
 
   /**
    * 특정 토큰에 대한 커스텀 프로필 설정
-   * @param provider OAuth 제공자 (apple, google, kakao, naver)
-   * @param token 토큰 값
-   * @param profile 반환할 프로필
    */
   setCustomProfile(
     provider: "apple" | "google" | "kakao" | "naver",
@@ -151,11 +147,10 @@ export class FakeOAuthTokenVerifierService {
     this.clearCustomProfiles();
   }
 
-  // ===== Private 메서드 =====
+  // Private 메서드
 
   /**
    * 실패 시뮬레이션 체크 및 에러 발생
-   * @param provider OAuth 제공자 (APPLE, GOOGLE, KAKAO, NAVER)
    */
   #checkFailure(provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER"): void {
     if (this.#shouldFail) {

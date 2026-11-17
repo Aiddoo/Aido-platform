@@ -368,8 +368,6 @@ export const getTodoSummaryQuerySchema = z.object({
 
 export type GetTodoSummaryQuery = z.infer<typeof getTodoSummaryQuerySchema>;
 
-// ===== 하위 항목 (체크리스트) =====
-
 export const createTodoItemSchema = z.object({
   title: z
     .string()

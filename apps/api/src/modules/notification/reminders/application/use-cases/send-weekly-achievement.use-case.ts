@@ -39,7 +39,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     // 월요일 실행 → 이전 주(월~일) 집계
     const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);
 
-    // ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
+    // A. DB 집계 (모든 유저, pushEnabled 무관)
     const [totalByUser, completedByUser] = await Promise.all([
       this.#dependencies.reader.groupTotalTodosByUser({
         timezones,
@@ -68,12 +68,12 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       achievedAt: today,
     }));
 
-    // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
+    // B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관)
     await this.#dependencies.weeklyAchievementWriter.execute({
       records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
     });
 
-    // ─── C. 알림 발송 (completed > 0 + dedup) ────
+    // C. 알림 발송 (completed > 0 + dedup)
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
 
     if (completedUserIds.length === 0) {

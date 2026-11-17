@@ -10,15 +10,6 @@ let verificationCounter = 0;
 
 /**
  * Session Fixture 팩토리
- *
- * @example
- * ```typescript
- * // 기본 Session 생성
- * const session = SessionFixture.create({ userId: 'user-1' });
- *
- * // 만료된 Session 생성
- * const expired = SessionFixture.createExpired({ userId: 'user-1' });
- * ```
  */
 export const SessionFixture = {
   /**

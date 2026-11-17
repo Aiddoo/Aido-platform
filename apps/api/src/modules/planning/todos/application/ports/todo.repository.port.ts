@@ -199,7 +199,7 @@ export abstract class TodoRepositoryPort {
 
   abstract getMaxSortOrder(userId: UserId): Promise<number>;
 
-  // ===== 하위 항목 (체크리스트) =====
+  // 하위 항목 (체크리스트)
 
   abstract insertItem(todoId: TodoId, item: TodoItem): Promise<void>;
 

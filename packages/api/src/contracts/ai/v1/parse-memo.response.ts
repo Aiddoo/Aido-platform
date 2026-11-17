@@ -7,10 +7,6 @@ import { featureQuotaSchema } from "../../entitlement/v1/entitlement.response.js
 import { dayOfWeekSchema, todoRepeatSchema } from "../../todo/v1/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
-// ============================================================================
-// 메모 파싱 결과 스키마 (API 응답용)
-// ============================================================================
-
 const parsedMemoTodoItemSchema = z.object({
   title: z
     .string()

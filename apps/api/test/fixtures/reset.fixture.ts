@@ -15,13 +15,6 @@ import { AccountFixture, UserFixture } from "./user.fixture.js";
  *
  * Jest의 afterAll 또는 afterEach에서 호출하여
  * 테스트 간 격리를 보장
- *
- * @example
- * ```typescript
- * afterAll(() => {
- *   resetAllFixtures();
- * });
- * ```
  */
 export function resetAllFixtures(): void {
   UserFixture.reset();

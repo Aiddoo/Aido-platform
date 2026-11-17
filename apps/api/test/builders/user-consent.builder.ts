@@ -1,11 +1,5 @@
 /**
  * UserConsent 모델 테스트 데이터 빌더
- *
- * @example
- * ```typescript
- * const consent = UserConsentBuilder.create("user-123").build();
- * const withMarketing = UserConsentBuilder.create("user-123").withMarketingConsent().build();
- * ```
  */
 
 import * as crypto from "node:crypto";

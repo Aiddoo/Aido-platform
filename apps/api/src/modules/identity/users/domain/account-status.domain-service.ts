@@ -10,9 +10,6 @@ import { accountLocked, accountSuspended } from "./users.errors.js";
  * status를 넓은 string으로 받는 이유: 호출측 읽기 모델의 status 타입이
  * UserStatus 유니온과 raw string으로 혼재하며, 스위치가 LOCKED/SUSPENDED만
  * 판정하고 나머지는 통과시키므로 기존 동작과 byte-identical하다.
- *
- * @param identifier 오류 details에 담을 사용자 식별자(이메일 로그인=email,
- *   소셜 로그인=식별 불가 시 플레이스홀더). 기존 계약을 그대로 보존한다.
  */
 export function assertStatusAllowsLogin(status: string, identifier: string): void {
   switch (status) {

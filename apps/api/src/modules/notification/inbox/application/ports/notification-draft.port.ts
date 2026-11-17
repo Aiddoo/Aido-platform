@@ -10,18 +10,6 @@ type NotificationMetadataInput = Record<string, unknown>;
  *
  * 푸시 알림 탭 시 수행할 액션을 정의합니다.
  * 기본값은 DEEP_LINK (앱 내부 이동, 클라이언트가 라우팅 결정)
- *
- * @example
- * // 외부 브라우저로 열기
- * { type: "BROWSER", url: "https://aido.kr/notice" }
- *
- * @example
- * // 인앱 웹뷰로 열기
- * { type: "WEBVIEW", url: "https://aido.kr/terms" }
- *
- * @example
- * // 앱 내부 이동 (기본값, 클라이언트가 type+context로 라우팅 결정)
- * { type: "DEEP_LINK" }
  */
 export interface NotificationAction {
   /**
@@ -52,36 +40,6 @@ export interface NotificationAction {
  * 푸시 알림을 생성하고 발송할 때 사용하는 데이터 구조입니다.
  * **클라이언트 중심 라우팅 방식**으로, 서버는 context만 전달하고
  * 클라이언트가 type + context 기반으로 라우트를 결정합니다.
- *
- * @example
- * // 기본 사용 (DEEP_LINK, 클라이언트가 라우트 결정)
- * {
- *   userId: "user-123",
- *   type: "FOLLOW_NEW",
- *   title: "홍길동님이 친구 요청을 보냈어요",
- *   body: "수락하면 서로의 할 일을 보고 응원할 수 있어요",
- *   friendId: "friend-456",  // context로 전달
- * }
- *
- * @example
- * // 외부 브라우저로 열기 (BROWSER)
- * {
- *   userId: "user-123",
- *   type: "SYSTEM_NOTICE",
- *   title: "공지사항",
- *   body: "새로운 업데이트가 있습니다",
- *   action: { type: "BROWSER", url: "https://aido.kr/notice" },
- * }
- *
- * @example
- * // 인앱 웹뷰로 열기 (WEBVIEW)
- * {
- *   userId: "user-123",
- *   type: "SYSTEM_NOTICE",
- *   title: "이용약관 변경",
- *   body: "이용약관이 변경되었습니다",
- *   action: { type: "WEBVIEW", url: "https://aido.kr/terms" },
- * }
  */
 export interface CreateNotificationData {
   userId: string;
@@ -191,14 +149,6 @@ export interface CreateNotificationData {
    *
    * DB에 저장되는 추가 정보. 알림 상세 조회 시 활용됩니다.
    * 푸시 페이로드에는 포함되지 않습니다.
-   *
-   * @example
-   * // 응원 메시지가 있는 경우
-   * { message: "오늘도 파이팅!" }
-   *
-   * @example
-   * // 시스템 공지 관련 정보
-   * { noticeId: "notice-123", category: "update" }
    */
   metadata?: NotificationMetadataInput | null;
 

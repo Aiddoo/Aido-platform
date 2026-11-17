@@ -31,16 +31,6 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 export const AuthMapper = {
   /**
    * 회원가입 결과를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - 회원가입 처리 결과
-   * @returns 회원가입 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await authService.register(dto);
-   * return AuthMapper.toRegisterResponse(result);
-   * // { message: "...", email: "user@example.com" }
-   * ```
    */
   toRegisterResponse(result: RegisterResult) {
     return {
@@ -52,15 +42,6 @@ export const AuthMapper = {
 
   /**
    * 이메일 인증 결과를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - 이메일 인증 처리 결과
-   * @returns 인증 토큰 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await authService.verifyEmail(dto, metadata);
-   * return AuthMapper.toAuthTokensResponse(result);
-   * ```
    */
   toAuthTokensResponse(result: VerifyEmailResult | LoginResult, appVersion?: string) {
     return {
@@ -91,15 +72,6 @@ export const AuthMapper = {
 
   /**
    * 현재 사용자 정보를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - 현재 사용자 정보 조회 결과
-   * @returns 현재 사용자 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await authService.getCurrentUser(userId, sessionId);
-   * return AuthMapper.toCurrentUserResponse(result);
-   * ```
    */
   toCurrentUserResponse(
     result: CurrentUserResult,
@@ -134,15 +106,6 @@ export const AuthMapper = {
 
   /**
    * 프로필 수정 결과를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - 프로필 수정 처리 결과
-   * @returns 프로필 수정 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await authService.updateProfile(userId, dto);
-   * return AuthMapper.toUpdateProfileResponse(result);
-   * ```
    */
   toUpdateProfileResponse(result: UpdateProfileResult, appVersion?: string) {
     return {
@@ -154,14 +117,6 @@ export const AuthMapper = {
 
   /**
    * 단순 메시지 응답을 생성합니다.
-   *
-   * @param message - 응답 메시지
-   * @returns 메시지 응답 객체
-   *
-   * @example
-   * ```typescript
-   * return AuthMapper.toMessageResponse("로그아웃되었습니다.");
-   * ```
    */
   toMessageResponse(message: string) {
     return { message };
@@ -169,15 +124,6 @@ export const AuthMapper = {
 
   /**
    * OAuth 코드 교환 결과를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - OAuth 코드 교환 처리 결과
-   * @returns 인증 토큰 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await oauthService.exchangeCodeForTokens(code);
-   * return AuthMapper.toExchangeCodeResponse(result);
-   * ```
    */
   toExchangeCodeResponse(result: ExchangeCodeResult, appVersion?: string) {
     return {

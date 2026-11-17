@@ -152,7 +152,8 @@
         "packages/api/test/**/*.ts"
       ],
       "rules": {
-        "aido/no-abbreviation": "error"
+        "aido/no-abbreviation": "error",
+        "aido/no-restating-comment": "error"
       }
     },
     {

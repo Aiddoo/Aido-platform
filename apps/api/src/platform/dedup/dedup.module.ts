@@ -12,14 +12,6 @@ import { DedupProviderPort } from "./dedup-provider.port.js";
  * 중복 방지 모듈
  *
  * 환경변수 기반으로 인메모리/Redis 어댑터 선택
- *
- * @example
- * // app.module.ts
- * imports: [DedupModule.forRoot()]
- *
- * @example
- * // 테스트에서
- * imports: [DedupModule.forTesting(mockAdapter)]
  */
 @Global()
 @Module({})
@@ -52,12 +44,6 @@ export class DedupModule {
    * 테스트용 모듈 설정
    *
    * 특정 어댑터를 직접 주입하여 사용
-   *
-   * @example
-   * const adapter = new InMemoryDedupAdapter();
-   * const module = await Test.createTestingModule({
-   *   imports: [DedupModule.forTesting(adapter)],
-   * }).compile();
    */
   static forTesting(adapter: DedupProviderPort): DynamicModule {
     return {

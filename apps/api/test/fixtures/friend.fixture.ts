@@ -11,21 +11,6 @@ let cheerCounter = 0;
 
 /**
  * Follow Fixture 팩토리
- *
- * @example
- * ```typescript
- * // 팔로우 관계 생성
- * const follow = FollowFixture.create({
- *   followerId: 'user-1',
- *   followingId: 'user-2',
- * });
- *
- * // 수락된 팔로우 생성
- * const accepted = FollowFixture.createAccepted({
- *   followerId: 'user-1',
- *   followingId: 'user-2',
- * });
- * ```
  */
 export const FollowFixture = {
   /**

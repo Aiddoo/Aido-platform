@@ -47,10 +47,6 @@ export class JwtTokenIssuerAdapter extends AuthTokenIssuerPort {
     this.#jwt = jwt;
   }
 
-  /**
-   * @param tokenFamily - 토큰 패밀리 (기존 값 또는 새로 생성, Token Rotation용)
-   * @param tokenVersion - 토큰 버전 (Token Rotation 시 +1)
-   */
   async generateTokenPair(
     userId: UserId,
     email: string,

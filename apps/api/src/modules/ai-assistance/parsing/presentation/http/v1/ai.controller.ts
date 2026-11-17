@@ -75,32 +75,6 @@ export class AiController {
     this.#getAiUsageUseCase = getAiUsageUseCase;
   }
 
-  /**
-   * @example
-   * ```
-   * // Request
-   * POST /ai/parse-todo
-   * { "text": "내일 오후 3시에 팀 미팅" }
-   *
-   * // Response
-   * {
-   *   "success": true,
-   *   "data": {
-   *     "title": "팀 미팅",
-   *     "startDate": "2025-01-26",
-   *     "scheduledTime": "15:00",
-   *     "isAllDay": false,
-   *     "isRecurring": false,
-   *     "recurrence": null
-   *   },
-   *   "meta": {
-   *     "model": "google:gemini-3.1-flash-lite",
-   *     "processingTimeMs": 185,
-   *     "tokenUsage": { "input": 180, "output": 45 }
-   *   }
-   * }
-   * ```
-   */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
   // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
@@ -254,63 +228,6 @@ if (confirmed) {
     };
   }
 
-  /**
-   * @example
-   * ```
-   * // Request
-   * POST /ai/parse-memo
-   * { "content": "내일 오후 2시까지 버그 수정하고 정산 로직도 확인. 금요일엔 스터디 자료 올리기", "categoryId": 1 }
-   *
-   * // Response
-   * {
-   *   "success": true,
-   *   "data": {
-   *     "todos": [
-   *       {
-   *         "title": "버그 수정",
-   *         "startDate": "2026-04-12",
-   *         "endDate": null,
-   *         "scheduledTime": "14:00",
-   *         "isAllDay": false,
-   *         "isRecurring": false,
-   *         "recurrence": null,
-   *         "categoryId": 1,
-   *         "items": []
-   *       },
-   *       {
-   *         "title": "정산 로직 확인",
-   *         "startDate": "2026-04-12",
-   *         "endDate": null,
-   *         "scheduledTime": null,
-   *         "isAllDay": true,
-   *         "isRecurring": false,
-   *         "recurrence": null,
-   *         "categoryId": 1,
-   *         "items": []
-   *       },
-   *       {
-   *         "title": "스터디 자료 올리기",
-   *         "startDate": "2026-04-17",
-   *         "endDate": null,
-   *         "scheduledTime": null,
-   *         "isAllDay": true,
-   *         "isRecurring": false,
-   *         "recurrence": null,
-   *         "categoryId": 1,
-   *         "items": []
-   *       }
-   *     ]
-   *   },
-   *   "meta": {
-   *     "model": "google:gemini-3.1-flash-lite",
-   *     "processingTimeMs": 350,
-   *     "tokenUsage": { "input": 450, "output": 280 },
-   *     "promptVersion": "parse-memo@3",
-   *     "omittedTodoCount": 0
-   *   }
-   * }
-   * ```
-   */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
   // 데코레이터는 아래부터 붙으므로 동의 확인이 남은 횟수 확인보다 먼저 돈다
@@ -424,33 +341,6 @@ ${AI_PARSE_QUOTA_DOC}`,
     };
   }
 
-  /**
-   * @example
-   * ```
-   * // Request
-   * GET /ai/usage
-   *
-   * // Response (무료 유저)
-   * {
-   *   "success": true,
-   *   "data": {
-   *     "used": 3,
-   *     "limit": 5,
-   *     "resetsAt": "2026-04-30T15:00:00.000Z"
-   *   }
-   * }
-   *
-   * // Response (프리미엄 유저)
-   * {
-   *   "success": true,
-   *   "data": {
-   *     "used": 12,
-   *     "limit": null,
-   *     "resetsAt": "2026-04-30T15:00:00.000Z"
-   *   }
-   * }
-   * ```
-   */
   @Get("usage")
   @HttpCode(HttpStatus.OK)
   @ApiDoc({

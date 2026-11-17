@@ -131,8 +131,6 @@ function documentErrorCode(
  * 기존 ERROR_CODE, ERROR_MESSAGE, ERROR_HTTP_STATUS 상수를 재사용하여
  * Swagger 에러 응답 문서를 생성합니다.
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiErrorResponse({ errorCode: 'USER_NOT_FOUND' })
  * findById(@Param('id') id: number) { ... }
@@ -148,8 +146,6 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
 /**
  * 404 Not Found 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiNotFoundError('USER_NOT_FOUND')
  * findById(@Param('id') id: number) { ... }
@@ -162,8 +158,6 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
 /**
  * 401 Unauthorized 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get('profile')
  * @ApiUnauthorizedError(ErrorCode.AUTH_0107)
  * getProfile() { ... }
@@ -180,8 +174,6 @@ export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator
 /**
  * 403 Forbidden 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Delete(':id')
  * @ApiForbiddenError(ErrorCode.AUTH_0108)
  * delete(@Param('id') id: number) { ... }
@@ -194,8 +186,6 @@ export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
 /**
  * 409 Conflict 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post()
  * @ApiConflictError('EMAIL_ALREADY_EXISTS')
  * create(@Body() dto: CreateUserDto) { ... }
@@ -208,8 +198,6 @@ export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
 /**
  * 422 Unprocessable Entity 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('verify')
  * @ApiUnprocessableError('VERIFICATION_CODE_EXPIRED')
  * verify(@Body() dto: VerifyDto) { ... }
@@ -222,8 +210,6 @@ export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator
 /**
  * 400 Bad Request 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post(':userId')
  * @ApiBadRequestError('CANNOT_FOLLOW_SELF')
  * sendRequest(@Param('userId') userId: string) { ... }
@@ -236,8 +222,6 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
 /**
  * 503 Service Unavailable 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('parse')
  * @ApiServiceUnavailableError('AI_SERVICE_UNAVAILABLE')
  * parse(@Body() dto: ParseDto) { ... }
@@ -250,8 +234,6 @@ export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDeco
 /**
  * 429 Too Many Requests 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('parse')
  * @ApiTooManyRequestsError('AI_USAGE_LIMIT_EXCEEDED')
  * parse(@Body() dto: ParseDto) { ... }
@@ -272,8 +254,6 @@ export function ApiTooManyRequestsError(
 /**
  * 410 Gone 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get(':code')
  * @ApiGoneError(ErrorCode.INVITE_2102)
  * preview(@Param() params: InviteCodeParamDto) { ... }
@@ -288,8 +268,6 @@ export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
  *
  * 같은 상태의 단일 코드 데코레이터를 겹쳐 써도 코드가 모이지만, 한 줄로 읽히도록 함께 선언한다.
  *
- * @example
- * ```typescript
  * @Post(':code/redeem')
  * @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
  * redeem(@Param() params: InviteCodeParamDto) { ... }

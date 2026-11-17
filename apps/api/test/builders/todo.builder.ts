@@ -1,17 +1,5 @@
 /**
  * Todo 모델 테스트 데이터 빌더
- *
- * @example
- * ```typescript
- * // 기본 Todo
- * const todo = TodoBuilder.create('user-123').build();
- *
- * // 완료된 Todo
- * const completed = TodoBuilder.create('user-123').completed().build();
- *
- * // 비공개 Todo
- * const privateTodo = TodoBuilder.create('user-123').asPrivate().build();
- * ```
  */
 import type {
   TodoItemRow,
@@ -64,21 +52,21 @@ export class TodoBuilder {
     TodoBuilder.#idCounter = 0;
   }
 
-  // === ID 관련 ===
+  // ID 관련
 
   withId(id: number): TodoBuilder {
     this.#data.id = id;
     return this;
   }
 
-  // === 제목 관련 ===
+  // 제목 관련
 
   withTitle(title: string): TodoBuilder {
     this.#data.title = title;
     return this;
   }
 
-  // === 카테고리 관련 ===
+  // 카테고리 관련
 
   withCategoryId(categoryId: number): TodoBuilder {
     this.#data.categoryId = categoryId;
@@ -100,7 +88,7 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 일정 관련 ===
+  // 일정 관련
 
   withStartDate(date: Temporal.PlainDate): TodoBuilder {
     this.#data.startDate = date;
@@ -128,14 +116,14 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 정렬 관련 ===
+  // 정렬 관련
 
   withSortOrder(sortOrder: number): TodoBuilder {
     this.#data.sortOrder = sortOrder;
     return this;
   }
 
-  // === 공개 범위 관련 ===
+  // 공개 범위 관련
 
   withVisibility(visibility: "PUBLIC" | "PRIVATE"): TodoBuilder {
     this.#data.visibility = visibility;
@@ -152,7 +140,7 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 반복 생성 그룹 관련 ===
+  // 반복 생성 그룹 관련
 
   withOccurrenceDate(occurrenceDate: Temporal.PlainDate | null): TodoBuilder {
     this.#data.occurrenceDate = occurrenceDate;
@@ -164,7 +152,7 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 완료 상태 관련 ===
+  // 완료 상태 관련
 
   completed(completedAt?: Temporal.Instant): TodoBuilder {
     this.#data.completed = true;
@@ -178,14 +166,14 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 하위 항목 관련 ===
+  // 하위 항목 관련
 
   withItems(items: TodoItemRow[]): TodoBuilder {
     this.#data.items = items;
     return this;
   }
 
-  // === 타임스탬프 관련 ===
+  // 타임스탬프 관련
 
   withCreatedAt(date: Temporal.Instant): TodoBuilder {
     this.#data.createdAt = date;
@@ -197,7 +185,7 @@ export class TodoBuilder {
     return this;
   }
 
-  // === 빌드 ===
+  // 빌드
 
   build(): TodoWithCategory {
     return {

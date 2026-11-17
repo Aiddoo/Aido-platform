@@ -7,8 +7,6 @@ import { authenticatedUserSchema } from "./authenticated-user.dto.js";
 /**
  * JWT 토큰에서 추출된 현재 사용자 정보를 주입하는 데코레이터
  *
- * @example
- * ```typescript
  * @Get('me')
  * async getMe(@CurrentUser() user: CurrentUserPayload) {
  *   return user;

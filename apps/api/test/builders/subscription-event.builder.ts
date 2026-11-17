@@ -3,18 +3,6 @@
  *
  * RevenueCat 웹훅 이벤트 payload를 쉽게 생성하는 Builder.
  * static factory method로 이벤트 타입별 기본값 제공.
- *
- * @example
- * ```typescript
- * // 기본 초기 구매 이벤트
- * const payload = SubscriptionEventBuilder.initialPurchase().build();
- *
- * // 커스텀 설정
- * const payload = SubscriptionEventBuilder.renewal()
- *   .withAppUserId('user-123')
- *   .withProductId('premium_monthly')
- *   .build();
- * ```
  */
 import type { RevenueCatWebhookPayload } from "@aido/api";
 
@@ -41,9 +29,7 @@ export class SubscriptionEventBuilder {
     };
   }
 
-  // =========================================================================
   // Static Factory Methods
-  // =========================================================================
 
   static initialPurchase(): SubscriptionEventBuilder {
     return new SubscriptionEventBuilder("INITIAL_PURCHASE");
@@ -109,9 +95,7 @@ export class SubscriptionEventBuilder {
     return new SubscriptionEventBuilder(type);
   }
 
-  // =========================================================================
   // Chaining Methods
-  // =========================================================================
 
   /** TRANSFER에서 구매를 넘겨준 app_user_id 목록 */
   withTransferredFrom(appUserIds: string[]): this {
@@ -237,9 +221,7 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
-  // =========================================================================
   // Build
-  // =========================================================================
 
   build(): RevenueCatWebhookPayload {
     return {

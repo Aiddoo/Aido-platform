@@ -47,18 +47,6 @@ export const TodoCategoryFixture = {
 
 /**
  * Todo Fixture 팩토리
- *
- * @example
- * ```typescript
- * // 기본 Todo 생성
- * const todo = TodoFixture.create({ userId: 'user-1', categoryId: 1 });
- *
- * // 완료된 Todo 생성
- * const completedTodo = TodoFixture.createCompleted({ userId: 'user-1', categoryId: 1 });
- *
- * // 여러 개 생성
- * const todos = TodoFixture.createMany(5, { userId: 'user-1', categoryId: 1 });
- * ```
  */
 export const TodoFixture = {
   /**

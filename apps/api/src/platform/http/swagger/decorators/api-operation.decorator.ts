@@ -70,8 +70,6 @@ function ApiValidationErrorResponse(): MethodDecorator {
  * - Zod로 검증하는 입력이 있으면 400에 SYS_0002 추가
  * - 공통 에러 응답 (400, 500) 자동 추가 (옵션)
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiDoc({ summary: 'Todo 상세 조회' })
  * findById(@Param('id') id: number) { ... }

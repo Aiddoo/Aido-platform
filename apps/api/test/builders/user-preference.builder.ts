@@ -1,17 +1,5 @@
 /**
  * UserPreference 모델 테스트 데이터 빌더
- *
- * @example
- * ```typescript
- * // 기본 설정
- * const pref = UserPreferenceBuilder.create('user-123').build();
- *
- * // 푸시 비활성화
- * const noPush = UserPreferenceBuilder.create('user-123').withPushDisabled().build();
- *
- * // 야간 푸시 허용
- * const nightPush = UserPreferenceBuilder.create('user-123').withNightPushEnabled().build();
- * ```
  */
 import type { TimeFormat, UserPreference } from "#test/types/database-rows";
 
@@ -55,14 +43,14 @@ export class UserPreferenceBuilder {
     UserPreferenceBuilder.#idCounter = 0;
   }
 
-  // === ID 관련 ===
+  // ID 관련
 
   withId(id: string): UserPreferenceBuilder {
     this.#data.id = id;
     return this;
   }
 
-  // === 푸시 설정 ===
+  // 푸시 설정
 
   withPushEnabled(enabled = true): UserPreferenceBuilder {
     this.#data.pushEnabled = enabled;
@@ -79,7 +67,7 @@ export class UserPreferenceBuilder {
     return this;
   }
 
-  // === 타임존 & 리마인더 ===
+  // 타임존 & 리마인더
 
   withLocale(locale: string): UserPreferenceBuilder {
     this.#data.locale = locale;
@@ -116,7 +104,7 @@ export class UserPreferenceBuilder {
     return this;
   }
 
-  // === 빌드 ===
+  // 빌드
 
   build(): UserPreference {
     return { ...this.#data };

@@ -90,3 +90,22 @@ tester.run('no-return-type-of-hook', rules['no-return-type-of-hook'], {
     { code: 'function f(picker: ReturnType<typeof useVoiceCaptureSession>) {}', errors: 1 },
   ],
 });
+
+tester.run('no-restating-comment', rules['no-restating-comment'], {
+  valid: [
+    '// 잠금 순서가 바뀌면 교착이 난다\nconst x = 1;',
+    '/** 출시 앱 1.14 이하가 이 칸을 필수로 읽는다 */\nconst y = 2;',
+    'const email = "user@example.com";',
+    '// a - b 비교\nconst z = 3;',
+  ],
+  invalid: [
+    {
+      code: '/**\n * 메모를 만든다\n * @param input 입력\n */\nfunction create(input) {}',
+      errors: 1,
+    },
+    { code: '/**\n * @returns 결과\n */\nfunction read() {}', errors: 1 },
+    { code: '/**\n * @example\n * create()\n */\nfunction create() {}', errors: 1 },
+    { code: '// ========================\nconst a = 1;', errors: 1 },
+    { code: '// ─── 조회 ───\nconst b = 1;', errors: 1 },
+  ],
+});
