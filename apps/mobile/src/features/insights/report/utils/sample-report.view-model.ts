@@ -1,3 +1,4 @@
+import { completionRate } from '@aido/api/vocabulary';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
@@ -56,7 +57,7 @@ export function createSampleReport(
     stats: {
       totalTodos,
       completedTodos,
-      completionRate: calculateCompletionRate(completedTodos, totalTodos),
+      completionRate: completionRate(completedTodos, totalTodos),
       prevCompletionRate: getSampleCompletionRate(type, periodsAgo + 1, todayKey),
       streakDays: takeRightWhile(dailyCompletions, (day) => day.completed === day.total).length,
     },
@@ -130,15 +131,10 @@ function createSampleDays(
 
 function getSampleCompletionRate(type: ReportType, periodsAgo: number, todayKey: DateKey) {
   const days = createSampleDays(type, periodsAgo, todayKey);
-  return calculateCompletionRate(
+  return completionRate(
     sumBy(days, (day) => day.completed),
     sumBy(days, (day) => day.total),
   );
-}
-
-/** 서버 집계와 같이 반올림한 백분율이다 */
-function calculateCompletionRate(completedTodos: number, totalTodos: number): number {
-  return totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
 }
 
 function createSampleCategories(
@@ -182,7 +178,7 @@ function createSampleCategory(
   missed: number,
 ): AiReport['categoryBreakdown'][number] {
   const completed = total - missed;
-  return { name, color, total, completed, rate: calculateCompletionRate(completed, total) };
+  return { name, color, total, completed, rate: completionRate(completed, total) };
 }
 
 function createSampleTimePatterns(completedTodos: number): AiReport['timePatterns'] {

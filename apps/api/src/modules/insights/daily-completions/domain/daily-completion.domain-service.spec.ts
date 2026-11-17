@@ -27,6 +27,8 @@ const SHARED_DAY_TALLY_CASES = z
             endDate: z.iso.date().nullable(),
             completed: z.boolean(),
             categoryColor: z.string(),
+            // 같은 할 일 여러 개(199/200 같은 날)를 한 줄로 적는다
+            count: z.int().positive().default(1),
           }),
         ),
         expected: z
@@ -223,7 +225,7 @@ describe("일일 완료 집계", () => {
       endDate: todo.endDate == null ? null : calendarDate(todo.endDate),
       completed: todo.completed,
       categoryColor: todo.categoryColor,
-      todoCount: 1,
+      todoCount: todo.count,
     }));
 
     // When

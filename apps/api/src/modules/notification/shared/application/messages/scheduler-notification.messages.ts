@@ -1,4 +1,5 @@
-import { weeklyAchievementBadge } from "@aido/api/vocabulary";
+import { completionRate, weeklyAchievementBadge } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
@@ -184,30 +185,32 @@ export function createWeeklyAchievementNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: WeeklyAchievementNotificationInput): NotificationMessage {
-  const badge = weeklyAchievementBadge(completedCount, totalCount);
-  const rate = Math.min(99, Math.round((completedCount / totalCount) * 100));
-  if (badge === "perfect") {
-    return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_PERFECT, {
-      facts: {},
-      locale,
-      variantContext,
-      templateKey: "weekly_achievement.perfect",
-    });
-  }
-  if (badge === "almost") {
-    return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_ALMOST, {
-      facts: { rate },
-      locale,
-      variantContext,
-      templateKey: "weekly_achievement.almost",
-    });
-  }
-  return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT, {
-    facts: { completedCount },
-    locale,
-    variantContext,
-    templateKey: "weekly_achievement.standard",
-  });
+  return match(weeklyAchievementBadge(completedCount, totalCount))
+    .with("perfect", () =>
+      renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_PERFECT, {
+        facts: {},
+        locale,
+        variantContext,
+        templateKey: "weekly_achievement.perfect",
+      }),
+    )
+    .with("almost", () =>
+      renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_ALMOST, {
+        facts: { rate: completionRate(completedCount, totalCount) },
+        locale,
+        variantContext,
+        templateKey: "weekly_achievement.almost",
+      }),
+    )
+    .with("completed", () =>
+      renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT, {
+        facts: { completedCount },
+        locale,
+        variantContext,
+        templateKey: "weekly_achievement.standard",
+      }),
+    )
+    .exhaustive();
 }
 
 export function createSocialDigestNotificationMessage(

@@ -1,4 +1,9 @@
-import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek, type DayOfWeek } from "@aido/api/vocabulary";
+import {
+  completionRate,
+  DAY_OF_WEEK_ORDER,
+  dayIndexToDayOfWeek,
+  type DayOfWeek,
+} from "@aido/api/vocabulary";
 import { groupBy, keyBy, mapValues, orderBy, range, sumBy } from "es-toolkit";
 
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
@@ -70,7 +75,7 @@ export function computeCategoryBreakdown(
       color: category?.color ?? FALLBACK_CATEGORY_COLOR,
       total,
       completed,
-      rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      rate: completionRate(completed, total),
     };
   });
 
@@ -94,7 +99,7 @@ export function computeDayPatterns(
       day,
       total,
       completed,
-      rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      rate: completionRate(completed, total),
     };
   });
 }
@@ -212,11 +217,11 @@ export function assembleAggregatedData(
   // 전체/완료 계산
   const totalTodos = sumBy(dailyTotalGroups, (g) => g._count.id);
   const completedTodosCount = sumBy(dailyCompletedGroups, (g) => g._count.id);
-  const completionRate = totalTodos > 0 ? Math.round((completedTodosCount / totalTodos) * 100) : 0;
+  const overallCompletionRate = completionRate(completedTodosCount, totalTodos);
 
   // 이전 기간 달성률
   const prevCompletionRate =
-    prevTotalCount > 0 ? Math.round((prevCompletedCount / prevTotalCount) * 100) : null;
+    prevTotalCount > 0 ? completionRate(prevCompletedCount, prevTotalCount) : null;
 
   const categoryBreakdown = computeCategoryBreakdown(
     { total: catTotalGroups, completed: catCompletedGroups },
@@ -247,7 +252,7 @@ export function assembleAggregatedData(
   return {
     totalTodos,
     completedTodos: completedTodosCount,
-    completionRate,
+    completionRate: overallCompletionRate,
     prevCompletionRate,
     streakDays,
     categoryBreakdown,

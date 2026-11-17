@@ -1,3 +1,5 @@
+import { completionRate } from "@aido/api/vocabulary";
+
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
 import { invalidCompletedTodos, invalidTotalTodos } from "./insights.errors.js";
@@ -31,10 +33,8 @@ export class TodoCompletionCount extends ValueObject<TodoCompletionCountValue> {
     return this.value.completed;
   }
 
-  /** 0~100으로 반올림한 완료율. 할 일이 없으면 0이다 */
   get rate(): number {
-    const { total, completed } = this.value;
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
+    return completionRate(this.value.completed, this.value.total);
   }
 
   /** 할 일이 하나 이상이고 모두 끝냈다 */

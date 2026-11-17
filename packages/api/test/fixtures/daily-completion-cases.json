@@ -32,6 +32,32 @@
       }
     },
     {
+      "name": "199/200처럼 반올림하면 100%여도 하나라도 남은 날은 99다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#FF0000",
+          "count": 199
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": false,
+          "categoryColor": "#0000FF"
+        }
+      ],
+      "expected": {
+        "totalTodos": 200,
+        "completedTodos": 199,
+        "isComplete": false,
+        "completionRate": 99,
+        "categoryColors": ["#0000FF", "#FF0000"]
+      }
+    },
+    {
       "name": "모두 끝낸 날은 달성한 날이고 완료율 100이다",
       "date": "2026-11-05",
       "todos": [

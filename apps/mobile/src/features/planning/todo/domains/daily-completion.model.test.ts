@@ -22,6 +22,8 @@ const SHARED_DAY_TALLY_CASES = z
             endDate: z.iso.date().nullable(),
             completed: z.boolean(),
             categoryColor: z.string(),
+            // 같은 할 일 여러 개(199/200 같은 날)를 한 줄로 적는다
+            count: z.int().positive().default(1),
           }),
         ),
         expected: z
@@ -50,15 +52,17 @@ describe('withTodoDailyCompletion — 서버와 같은 하루 집계 표', () =>
         endDate: addDaysToDateKey(dateKey, 7),
       },
     };
-    const dayTodos = todos.map((todo, index) =>
-      createParentTodo({
-        id: index + 1,
-        startDate: createDateKey(todo.startDate),
-        endDate: todo.endDate == null ? null : createDateKey(todo.endDate),
-        completed: todo.completed,
-        category: { id: index + 1, name: `카테고리 ${index + 1}`, color: todo.categoryColor },
-      }),
-    );
+    const dayTodos = todos
+      .flatMap((todo) => Array.from({ length: todo.count }, () => todo))
+      .map((todo, index) =>
+        createParentTodo({
+          id: index + 1,
+          startDate: createDateKey(todo.startDate),
+          endDate: todo.endDate == null ? null : createDateKey(todo.endDate),
+          completed: todo.completed,
+          category: { id: index + 1, name: `카테고리 ${index + 1}`, color: todo.categoryColor },
+        }),
+      );
 
     // When
     const result = DailyCompletionPolicy.withTodoDailyCompletion(empty, dateKey, dayTodos);
