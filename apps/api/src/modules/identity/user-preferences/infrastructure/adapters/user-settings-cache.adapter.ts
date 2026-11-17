@@ -6,6 +6,10 @@ import {
   USER_SETTINGS_CACHE_TTL_MS,
 } from "#api/modules/identity/user-preferences/infrastructure/cache/user-settings-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { UserSettingsCachePort } from "../../application/ports/user-settings-cache.port.js";
@@ -30,20 +34,28 @@ const PREFERENCE_SNAPSHOT_SCHEMA = z.looseObject({
   aiPushEnabled: z.boolean(),
 }) satisfies z.ZodType<PreferenceSnapshot>;
 
+function preferenceKey(userId: UserId): GenerationGuardedCacheKey {
+  return {
+    valueKey: UserSettingsCacheKey.preference(userId.value),
+    generationKey: UserSettingsCacheKey.preferenceGeneration(userId.value),
+  };
+}
+
+// 변경 커밋 전에 읽기 시작한 GET이 무효화 뒤에 옛 설정을 다시 넣지 않게 세대로 막는다
 @Injectable()
 export class UserSettingsCacheAdapter implements UserSettingsCachePort {
-  readonly #cacheService: CacheStorePort;
+  readonly #preferences: GenerationGuardedCache;
 
   constructor(cacheService: CacheStorePort) {
-    this.#cacheService = cacheService;
+    this.#preferences = new GenerationGuardedCache(cacheService, USER_SETTINGS_CACHE_TTL_MS);
   }
 
   wrapUserPreference(
     userId: UserId,
     factory: () => Promise<PreferenceSnapshot>,
   ): Promise<PreferenceSnapshot> {
-    return this.#cacheService.wrap(
-      UserSettingsCacheKey.preference(userId.value),
+    return this.#preferences.wrap(
+      preferenceKey(userId),
       PREFERENCE_SNAPSHOT_SCHEMA,
       factory,
       USER_SETTINGS_CACHE_TTL_MS,
@@ -51,6 +63,6 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
   }
 
   invalidateUserPreference(userId: UserId): Promise<void> {
-    return this.#cacheService.del(UserSettingsCacheKey.preference(userId.value));
+    return this.#preferences.invalidate(preferenceKey(userId));
   }
 }
