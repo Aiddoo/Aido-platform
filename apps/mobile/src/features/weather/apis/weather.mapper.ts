@@ -1,14 +1,17 @@
 import type {
   WeatherBriefing,
+  WeatherHeadline as WeatherHeadlineDto,
   WeatherLocationResponse,
   WeatherReportResponse,
 } from '@aido/api/contracts/weather/v2';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { isPlainObject, uniq } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 import type {
   RegisteredLocation,
+  WeatherHeadline,
   WeatherReport,
   WeatherReportBriefing,
 } from '../domains/weather-report.model';
@@ -30,6 +33,25 @@ function toWeatherReportBriefing(dto: WeatherBriefing): WeatherReportBriefing {
       options: options.map((option) => ({ ...option, startsAt: toInstant(option.startsAt) })),
     })),
   };
+}
+
+function toHourWindow(window: { startsAt: string; endsAt: string }) {
+  return { startsAt: toInstant(window.startsAt), endsAt: toInstant(window.endsAt) };
+}
+
+function toWeatherHeadline(dto: WeatherHeadlineDto): WeatherHeadline {
+  return match(dto)
+    .returnType<WeatherHeadline>()
+    .with({ kind: 'todoWet' }, { kind: 'todoHot' }, { kind: 'clear' }, (headline) => ({
+      ...headline,
+      window: toHourWindow(headline.window),
+    }))
+    .with({ kind: 'wetLater' }, (headline) => ({
+      ...headline,
+      startsAt: toInstant(headline.startsAt),
+    }))
+    .with({ kind: 'wetTomorrow' }, { kind: 'tomorrow' }, { kind: 'calm' }, (headline) => headline)
+    .exhaustive();
 }
 
 export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
@@ -68,6 +90,7 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     attribution: dto.attribution,
     fetchedAt: toInstant(dto.fetchedAt),
     briefing: dto.briefing == null ? null : toWeatherReportBriefing(dto.briefing),
+    headline: dto.headline == null ? null : toWeatherHeadline(dto.headline),
   };
 }
 

@@ -145,6 +145,8 @@ export function createWeatherReportDto(
     attribution: createAttributionDto(),
     fetchedAt: '2026-11-02T06:20:00.000Z',
     briefing: createBriefingDto(),
+    // 서버 머리글. 기본은 알릴 날씨가 없다
+    headline: { kind: 'calm' },
     ...overrides,
   };
 }

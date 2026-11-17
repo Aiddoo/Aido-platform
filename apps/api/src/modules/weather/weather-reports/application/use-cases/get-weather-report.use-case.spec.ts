@@ -336,9 +336,10 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
       // 서울 오늘(15:00Z까지)만 보므로 자정 이후 할 일과 다른 사용자의 할 일은 빠진다
       expect(result.briefing?.reason).toBe("rain");
       expect(result.briefing?.affectedTodoIds).toEqual([7]);
+      expect(result.headline).toMatchObject({ kind: "todoWet", hazard: "rain" });
     });
 
-    it("할 일 조회가 실패하면 briefing만 빠지고 리포트는 성공한다", async () => {
+    it("할 일 조회가 실패하면 briefing·headline만 빠지고 리포트는 성공한다", async () => {
       // Given
       todos.failure = new Error("db down");
 
@@ -347,6 +348,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
 
       // Then
       expect(result.briefing).toBeNull();
+      expect(result.headline).toBeNull();
       expect(result.report.current.temperature).toBe(12.4);
       expect(logger.messages).toContainEqual(
         expect.objectContaining({ event: "weather.report.briefing-todos.unavailable" }),

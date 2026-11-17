@@ -2,10 +2,9 @@ import {
   NUDGE_REPLY_KINDS,
   SUBSCRIPTION_PLAN_TYPES,
   WEATHER_CONDITIONS,
+  WEATHER_DAY_PARTS,
 } from "@aido/api/vocabulary";
 import { z } from "zod";
-
-import type { WeatherDayPart } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 
 import type {
   NotificationCopy,
@@ -21,13 +20,6 @@ import {
   defineNotificationCopy,
   type NotificationCopyContext,
 } from "./notification-copy.messages.js";
-
-const WEATHER_DAY_PARTS = [
-  "dawn",
-  "morning",
-  "afternoon",
-  "evening",
-] as const satisfies readonly WeatherDayPart[];
 
 const noFacts = z.object({});
 const nameFact = z.string().nullable();

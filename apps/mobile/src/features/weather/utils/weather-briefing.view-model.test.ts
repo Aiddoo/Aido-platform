@@ -28,6 +28,12 @@ const rainyReport = createWeatherReport({
       },
     ],
   }),
+  headline: {
+    kind: 'todoWet',
+    hazard: 'rain',
+    precipitationChance: 70,
+    window: { startsAt: '2026-11-02T07:00:00.000Z', endsAt: '2026-11-02T09:00:00.000Z' },
+  },
 });
 
 const DEPS: BriefingViewPorts = {
@@ -40,10 +46,7 @@ const DEPS: BriefingViewPorts = {
 };
 
 function viewFor(report: WeatherReport, todos: BriefingTodo[]) {
-  const briefing = getWeatherBriefing(report, todos, {
-    now: NOW,
-    timeZone: 'Asia/Seoul',
-  });
+  const briefing = getWeatherBriefing(report, todos, { now: NOW });
   if (briefing == null) {
     throw new Error('서버 브리핑이 있는 리포트여야 한다');
   }
@@ -76,8 +79,14 @@ describe('toBriefingView', () => {
   });
 
   it('할 일이 없고 오늘 늦게 비가 오면 비 시작 시각만 알리고 할 일 제안은 하지 않는다', () => {
+    // Given
+    const report = createWeatherReport({
+      hourly: HOURLY,
+      headline: { kind: 'wetLater', startsAt: '2026-11-02T07:00:00.000Z', isSnow: false },
+    });
+
     // When
-    const view = viewFor(createWeatherReport({ hourly: HOURLY }), []);
+    const view = viewFor(report, []);
 
     // Then
     expect(view.body).toEqual({
@@ -86,5 +95,19 @@ describe('toBriefingView', () => {
     });
     expect(view.rows).toEqual([]);
     expect(view.action).toBeNull();
+  });
+
+  it('서버가 지금부터 온다고 한 비·눈은 시작 시각 대신 지금 온다고 알린다', () => {
+    // Given
+    const report = createWeatherReport({
+      hourly: HOURLY,
+      headline: { kind: 'wetLater', startsAt: '2026-11-02T06:26:00.000Z', isSnow: true },
+    });
+
+    // When
+    const view = viewFor(report, []);
+
+    // Then
+    expect(view.body).toEqual({ key: 'briefing.rainLater.nowSnowBody' });
   });
 });

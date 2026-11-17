@@ -37,7 +37,8 @@
 | 날씨 브리핑      | `planWeatherBriefing`, `WeatherBriefing`                       | 남은 오늘 할 일 중 비 오는 시간(없으면 더운 시간)에 걸린 할 일과, 같은 날 옮길 시간 후보 4개(첫째가 추천)                                                  |
 | 비·더운 시간     | `isWetHour`·`isHotHour`                                        | 강수 확률 `WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE` 이상 / 낮 체감 온도 `HOT_APPARENT_TEMPERATURE` 이상                                                     |
 | 날씨 알림 판단   | `decideMorningWeatherBriefing`·`decideEveningWeatherBriefing`  | 아침은 할 일과 겹친 비·뇌우·눈 → 더위 → 늦게 오는 비 → 요약, 저녁은 내일 비가 시작하는 때·쌀쌀함. 그날 일별이 없으면 null                                  |
-| 하루 구분        | `WEATHER_DAY_PARTS`                                            | 저녁 알림이 고르는 새벽·오전·오후·저녁(알림 시간대). 경계는 `WEATHER_BRIEFING_RULES`다                                                                     |
+| 화면 머리글      | `decideWeatherHeadline`, 응답 `headline`                       | 브리핑 카드가 알릴 종류와 사실. 오늘 날씨는 아침 알림(`decideTodayWeather`), 내일 비·요약은 저녁 알림과 같은 판단이고 맑은 날 추천 시간만 화면 전용이다    |
+| 하루 구분        | `WEATHER_DAY_PARTS`(`@aido/api/vocabulary`)                    | 저녁 알림·화면 머리글이 고르는 새벽·오전·오후·저녁(알림 시간대). 경계는 `WEATHER_BRIEFING_RULES`다                                                         |
 | v1 예보          | `WeatherForecastReadModel`, `GetWeatherForecastUseCase`        | 예보 격자의 하루치 예보(1.13.x 이하 앱)                                                                                                                    |
 | 예보 읽기        | `ReadWeatherForecastUseCase`                                   | 한 격자는 캐시 → 1분 실패 차단 → 공급자 → latest(24시간)                                                                                                   |
 | 발표 시점        | `ForecastTiming`, `resolveAvailability`                        | 예보 대상 순간과 그 예보를 받을 발표 순간. 공급자가 줄 수 없는 날짜는 공급자를 부르지 않고 400 `SYS_0002`다                                                |

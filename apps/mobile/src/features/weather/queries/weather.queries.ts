@@ -236,7 +236,7 @@ function selectHourly(report: WeatherReport, now: Instant) {
 }
 
 function selectBriefing(report: WeatherReport) {
-  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt', 'briefing']);
+  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt', 'briefing', 'headline']);
 }
 
 function selectDaily(report: WeatherReport) {

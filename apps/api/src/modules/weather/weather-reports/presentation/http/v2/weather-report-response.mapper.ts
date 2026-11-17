@@ -1,13 +1,19 @@
 import type {
   WeatherBriefing as WeatherBriefingResponse,
   WeatherDayPartForecast,
+  WeatherHeadline as WeatherHeadlineResponse,
   WeatherReportResponse,
 } from "@aido/api/contracts/weather/v2";
+import { match } from "ts-pattern";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { WeatherReportResult } from "../../../application/use-cases/get-weather-report.use-case.js";
-import type { WeatherBriefing } from "../../../domain/weather-briefing.domain-service.js";
+import type {
+  WeatherBriefing,
+  WeatherHourWindow,
+} from "../../../domain/weather-briefing.domain-service.js";
+import type { WeatherHeadline } from "../../../domain/weather-headline.domain-service.js";
 import type { WeatherReportDayPart } from "../../../domain/weather-report.aggregate.js";
 
 /** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
@@ -32,9 +38,38 @@ function toBriefingResponse(briefing: WeatherBriefing): WeatherBriefingResponse 
   };
 }
 
+function toHourWindowResponse(window: WeatherHourWindow) {
+  return { startsAt: toIsoString(window.startsAt), endsAt: toIsoString(window.endsAt) };
+}
+
+function toHeadlineResponse(headline: WeatherHeadline): WeatherHeadlineResponse {
+  return match(headline)
+    .returnType<WeatherHeadlineResponse>()
+    .with({ kind: "todoWet" }, ({ window, ...facts }) => ({
+      ...facts,
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "todoHot" }, ({ window, ...facts }) => ({
+      ...facts,
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "wetLater" }, ({ startsAt, ...facts }) => ({
+      ...facts,
+      startsAt: toIsoString(startsAt),
+    }))
+    .with({ kind: "clear" }, ({ window }) => ({
+      kind: "clear",
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "wetTomorrow" }, { kind: "tomorrow" }, { kind: "calm" }, (facts) => ({
+      ...facts,
+    }))
+    .exhaustive();
+}
+
 /** 시각은 UTC ISO 문자열로, 일별 date는 이미 위치 시간대 달력 날짜다. */
 export function toWeatherReportResponse(result: WeatherReportResult): WeatherReportResponse {
-  const { location, report, expiresAt, airQuality, attribution, briefing } = result;
+  const { location, report, expiresAt, airQuality, attribution, briefing, headline } = result;
   return {
     location: { ...location },
     current: { ...report.current, observedAt: toIsoString(report.current.observedAt) },
@@ -86,5 +121,6 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
     fetchedAt: toIsoString(report.fetchedAt),
     expiresAt: expiresAt == null ? undefined : toIsoString(expiresAt),
     briefing: briefing == null ? undefined : toBriefingResponse(briefing),
+    headline: headline == null ? null : toHeadlineResponse(headline),
   };
 }

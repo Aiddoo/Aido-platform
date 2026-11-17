@@ -99,7 +99,7 @@ export function WeatherBriefing() {
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
     ),
-    { now, timeZone: deviceTimeZone },
+    { now },
   );
   if (briefing == null) {
     return <WeatherBriefing.Empty />;

@@ -14,6 +14,10 @@ import {
   type WeatherBriefing,
   type WeatherBriefingTodo,
 } from "../../domain/weather-briefing.domain-service.js";
+import {
+  decideWeatherHeadline,
+  type WeatherHeadline,
+} from "../../domain/weather-headline.domain-service.js";
 import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
 import type { WeatherReport } from "../../domain/weather-report.aggregate.js";
 import type { AirQuality, AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
@@ -46,6 +50,8 @@ export interface WeatherReportResult {
   readonly attribution: WeatherReportAttributionReadModel;
   /** 오늘 할 일 조회가 실패하면 브리핑만 빠진다. */
   readonly briefing: WeatherBriefing | null;
+  /** 브리핑 카드 머리글. 날씨 알림과 같은 판단이고, 오늘 할 일이나 오늘 일별 예보가 없으면 null이다 */
+  readonly headline: WeatherHeadline | null;
 }
 
 export interface GetWeatherReportDependencies {
@@ -114,6 +120,7 @@ export class GetWeatherReportUseCase {
     }
 
     const report = reportResult.value.report.windowAt(now, region.timezone);
+    const todos = todosResult.status === "fulfilled" ? todosResult.value : null;
     return {
       location: {
         latitude: location.latitude,
@@ -125,14 +132,15 @@ export class GetWeatherReportUseCase {
       airQuality: airQualityResult.status === "fulfilled" ? airQualityResult.value : null,
       attribution: attributionResult.value,
       briefing:
-        todosResult.status === "fulfilled"
-          ? planWeatherBriefing({
-              hourly: report.hourly,
-              todos: todosResult.value,
+        todos == null ? null : planWeatherBriefing({ hourly: report.hourly, todos, now, timezone }),
+      headline:
+        todos == null
+          ? null
+          : decideWeatherHeadline(report, todos, {
               now,
               timezone,
-            })
-          : null,
+              locationTimezone: region.timezone,
+            }),
     };
   }
 

@@ -7,6 +7,5 @@ export {
   type MorningWeatherBriefing,
   type WeatherBriefingDay,
   type WeatherBriefingForecast,
-  type WeatherDayPart,
 } from "./domain/weather-notification-briefing.domain-service.js";
 export { WeatherWeatherReportsModule } from "./weather-weather-reports.module.js";

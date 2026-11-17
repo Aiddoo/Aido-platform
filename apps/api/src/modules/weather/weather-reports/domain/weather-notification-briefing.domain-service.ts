@@ -1,13 +1,16 @@
 import {
   WEATHER_BRIEFING_RULES,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
+  type WeatherDayPart,
   type WeatherPrecipitationType,
+  type WeatherWetHazard,
 } from "@aido/api/vocabulary";
 import { maxBy } from "es-toolkit";
 
 import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import {
+  findContiguousHours,
   findHourIndexAt,
   type ForecastTodo,
   isHotHour,
@@ -16,7 +19,6 @@ import {
   type WeatherBriefingTodo,
 } from "./weather-briefing.domain-service.js";
 import type { WeatherReportDay, WeatherReportHour } from "./weather-report.aggregate.js";
-import type { WEATHER_DAY_PARTS, WEATHER_WET_HAZARDS } from "./weather-reports.constants.js";
 
 /**
  * 아침·저녁 날씨 알림에 담을 내용을 고른다. 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 planWeatherBriefing이 정한다.
@@ -62,26 +64,27 @@ export interface WeatherBriefingClock {
   readonly locationTimezone: string;
 }
 
-type WetHazard = (typeof WEATHER_WET_HAZARDS)[number];
-export type WeatherDayPart = (typeof WEATHER_DAY_PARTS)[number];
-
-export type MorningWeatherBriefing =
+/** 할 일과 겹친 날씨와 오늘 늦게 오는 비·눈. 아침 알림과 날씨 화면 머리글이 함께 쓴다 */
+export type TodayWeatherBriefing<TTodo extends WeatherBriefingTodo = TitledWeatherBriefingTodo> =
   | {
       readonly kind: "todoWet";
-      readonly hazard: WetHazard;
+      readonly hazard: WeatherWetHazard;
       /** 문구에 쓸 할 일. 뇌우면 뇌우와 겹친 첫 할 일, 아니면 가장 이른 할 일 */
-      readonly todo: TitledWeatherBriefingTodo;
+      readonly todo: TTodo;
       readonly todoIds: readonly number[];
       readonly precipitationChance: number;
     }
   | {
       readonly kind: "todoHot";
-      readonly todo: TitledWeatherBriefingTodo;
+      readonly todo: TTodo;
       readonly todoIds: readonly number[];
       /** 그 할 일이 걸린 더운 시간대의 가장 높은 체감 온도 */
       readonly peakApparentTemperature: number;
     }
-  | { readonly kind: "wetLater"; readonly startsAt: Temporal.Instant; readonly isSnow: boolean }
+  | { readonly kind: "wetLater"; readonly startsAt: Temporal.Instant; readonly isSnow: boolean };
+
+export type MorningWeatherBriefing =
+  | TodayWeatherBriefing
   | { readonly kind: "summary"; readonly day: WeatherBriefingDay };
 
 export type EveningWeatherBriefing =
@@ -99,9 +102,12 @@ export type EveningWeatherBriefing =
       readonly isChilly: boolean;
     };
 
-type AffectedTodo = ForecastTodo<TitledWeatherBriefingTodo, WeatherBriefingReportHour>;
+type AffectedTodo<TTodo extends WeatherBriefingTodo> = ForecastTodo<
+  TTodo,
+  WeatherBriefingReportHour
+>;
 
-function isThunderHour(hour: WeatherBriefingReportHour): boolean {
+export function isThunderHour(hour: Pick<WeatherBriefingReportHour, "condition">): boolean {
   return hour.condition === "THUNDERSTORMS";
 }
 
@@ -124,39 +130,20 @@ function toDayPart(instant: Temporal.Instant, timezone: string): WeatherDayPart 
   return hour < WEATHER_BRIEFING_RULES.EVENING_HOUR ? "afternoon" : "evening";
 }
 
-/** 기준 시간에서 앞뒤로 조건이 이어지는 시간 */
-function contiguousHours(
-  hourly: readonly WeatherBriefingReportHour[],
-  anchor: number,
-  isIncluded: (hour: WeatherBriefingReportHour) => boolean,
-): WeatherBriefingReportHour[] {
-  const isRunAt = (index: number) => {
-    const hour = hourly[index];
-    return hour != null && isIncluded(hour);
-  };
-  if (!isRunAt(anchor)) {
-    return [];
-  }
-  let first = anchor;
-  let last = anchor;
-  while (isRunAt(first - 1)) {
-    first -= 1;
-  }
-  while (isRunAt(last + 1)) {
-    last += 1;
-  }
-  return hourly.slice(first, last + 1);
-}
-
 /** 뇌우와 겹친 할 일이 있으면 뇌우, 모두 눈이면 눈, 그 밖은 비다 */
-function toWetHazard(wetTodos: readonly AffectedTodo[], isStormy: boolean): WetHazard {
+function toWetHazard<TTodo extends WeatherBriefingTodo>(
+  wetTodos: readonly AffectedTodo<TTodo>[],
+  isStormy: boolean,
+): WeatherWetHazard {
   if (isStormy) {
     return "storm";
   }
   return wetTodos.every(({ hour }) => isFrozen(hour.precipitationType)) ? "snow" : "rain";
 }
 
-function toWetBriefing(wetTodos: readonly AffectedTodo[]): MorningWeatherBriefing | null {
+function toWetBriefing<TTodo extends WeatherBriefingTodo>(
+  wetTodos: readonly AffectedTodo<TTodo>[],
+): TodayWeatherBriefing<TTodo> | null {
   const [earliest] = wetTodos;
   if (earliest == null) {
     return null;
@@ -172,15 +159,15 @@ function toWetBriefing(wetTodos: readonly AffectedTodo[]): MorningWeatherBriefin
   };
 }
 
-function toHotBriefing(
+function toHotBriefing<TTodo extends WeatherBriefingTodo>(
   hourly: readonly WeatherBriefingReportHour[],
-  hotTodos: readonly AffectedTodo[],
-): MorningWeatherBriefing | null {
+  hotTodos: readonly AffectedTodo<TTodo>[],
+): TodayWeatherBriefing<TTodo> | null {
   const [earliest] = hotTodos;
   if (earliest == null) {
     return null;
   }
-  const hotRun = contiguousHours(
+  const hotRun = findContiguousHours(
     hourly,
     findHourIndexAt(hourly, earliest.hour.startsAt),
     isHotHour,
@@ -194,11 +181,11 @@ function toHotBriefing(
   };
 }
 
-/** 지금 시간부터 오늘(알림 시간대) 안에 처음 비·눈이 오는 시간 */
-function toWetLaterBriefing(
+/** 지금 시간부터 오늘(알림 시간대) 안에 처음 비·눈이 오는 시간. 지금 시간이 비면 지금이다 */
+function toWetLaterBriefing<TTodo extends WeatherBriefingTodo>(
   hourly: readonly WeatherBriefingReportHour[],
   { now, timezone }: WeatherBriefingClock,
-): MorningWeatherBriefing | null {
+): TodayWeatherBriefing<TTodo> | null {
   const today = localDateIn(now, timezone);
   const wetHour = hourly.find(
     (hour) =>
@@ -214,19 +201,14 @@ function toWetLaterBriefing(
 }
 
 /**
- * 아침 알림: 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비 → 오늘 요약 순.
- * 위치 시간대의 오늘 일별 예보가 없으면 판단하지 않는다(null).
+ * 오늘 알릴 날씨: 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비·눈 순. 없으면 null이다.
+ * 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 planWeatherBriefing이 정한다.
  */
-export function decideMorningWeatherBriefing(
+export function decideTodayWeather<TTodo extends WeatherBriefingTodo>(
   forecast: WeatherBriefingForecast,
-  todos: readonly TitledWeatherBriefingTodo[],
+  todos: readonly TTodo[],
   clock: WeatherBriefingClock,
-): MorningWeatherBriefing | null {
-  const locationToday = localDateIn(clock.now, clock.locationTimezone);
-  const today = forecast.daily.find((day) => day.date.equals(locationToday));
-  if (today == null) {
-    return null;
-  }
+): TodayWeatherBriefing<TTodo> | null {
   const briefing = planWeatherBriefing({
     hourly: forecast.hourly,
     todos,
@@ -239,7 +221,33 @@ export function decideMorningWeatherBriefing(
   if (briefing.reason === "heat") {
     return toHotBriefing(forecast.hourly, briefing.affected);
   }
-  return toWetLaterBriefing(forecast.hourly, clock) ?? { kind: "summary", day: today };
+  return toWetLaterBriefing(forecast.hourly, clock);
+}
+
+/** 위치 시간대 달력으로 오늘에서 days만큼 지난 날의 일별 예보 */
+export function findLocationDay(
+  forecast: WeatherBriefingForecast,
+  { now, locationTimezone }: WeatherBriefingClock,
+  days: number,
+): WeatherBriefingDay | null {
+  const date = localDateIn(now, locationTimezone).add({ days });
+  return forecast.daily.find((day) => day.date.equals(date)) ?? null;
+}
+
+/**
+ * 아침 알림: 오늘 알릴 날씨(decideTodayWeather)가 없으면 오늘 요약이다.
+ * 위치 시간대의 오늘 일별 예보가 없으면 판단하지 않는다(null).
+ */
+export function decideMorningWeatherBriefing(
+  forecast: WeatherBriefingForecast,
+  todos: readonly TitledWeatherBriefingTodo[],
+  clock: WeatherBriefingClock,
+): MorningWeatherBriefing | null {
+  const today = findLocationDay(forecast, clock, 0);
+  if (today == null) {
+    return null;
+  }
+  return decideTodayWeather(forecast, todos, clock) ?? { kind: "summary", day: today };
 }
 
 /**
@@ -250,8 +258,7 @@ export function decideEveningWeatherBriefing(
   forecast: WeatherBriefingForecast,
   clock: WeatherBriefingClock,
 ): EveningWeatherBriefing | null {
-  const locationTomorrow = localDateIn(clock.now, clock.locationTimezone).add({ days: 1 });
-  const tomorrow = forecast.daily.find((day) => day.date.equals(locationTomorrow));
+  const tomorrow = findLocationDay(forecast, clock, 1);
   if (tomorrow == null) {
     return null;
   }

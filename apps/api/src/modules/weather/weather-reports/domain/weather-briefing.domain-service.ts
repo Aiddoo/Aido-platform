@@ -79,6 +79,48 @@ export function findHourIndexAt(
   );
 }
 
+/** 같은 날씨가 이어지는 시간. endsAt은 마지막 시간이 끝나는 순간이다 */
+export interface WeatherHourWindow {
+  readonly startsAt: Temporal.Instant;
+  readonly endsAt: Temporal.Instant;
+}
+
+/** 기준 시간에서 앞뒤로 조건이 이어지는 시간. 기준 시간이 조건에 맞지 않으면 빈 목록이다 */
+export function findContiguousHours<THour>(
+  hourly: readonly THour[],
+  anchor: number,
+  isIncluded: (hour: THour) => boolean,
+): THour[] {
+  const isRunAt = (index: number) => {
+    const hour = hourly[index];
+    return hour != null && isIncluded(hour);
+  };
+  if (!isRunAt(anchor)) {
+    return [];
+  }
+  let first = anchor;
+  let last = anchor;
+  while (isRunAt(first - 1)) {
+    first -= 1;
+  }
+  while (isRunAt(last + 1)) {
+    last += 1;
+  }
+  return hourly.slice(first, last + 1);
+}
+
+/** 이어진 시간의 처음부터 마지막 시간의 끝까지. 빈 목록이면 null이다 */
+export function toHourWindow(
+  hours: readonly Pick<WeatherBriefingHour, "startsAt">[],
+): WeatherHourWindow | null {
+  const first = hours.at(0);
+  const last = hours.at(-1);
+  if (first == null || last == null) {
+    return null;
+  }
+  return { startsAt: first.startsAt, endsAt: last.startsAt.add({ hours: 1 }) };
+}
+
 /** 지금 이후 시각의 할 일을 그 시각의 시간별 예보와 묶는다. 예보 범위 밖이면 뺀다. */
 function toForecastTodos<TTodo extends WeatherBriefingTodo, THour extends WeatherBriefingHour>(
   hourly: readonly THour[],

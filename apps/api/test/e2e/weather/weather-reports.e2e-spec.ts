@@ -206,7 +206,7 @@ describe("날씨 v2 E2E", () => {
 
     describe("briefing", () => {
       const SEOUL_ZONE = "Asia/Seoul";
-      const releasedReportSchema = weatherReportSchema.omit({ briefing: true });
+      const releasedReportSchema = weatherReportSchema.omit({ briefing: true, headline: true });
 
       async function createTimedTodo(
         accessToken: string,
@@ -267,6 +267,7 @@ describe("날씨 v2 E2E", () => {
         const report = weatherReportSchema.parse(response.body.data);
         expect(report.briefing?.reason).toBe("rain");
         expect(report.briefing?.affectedTodoIds).toEqual([todo.id]);
+        expect(report.headline).toMatchObject({ kind: "todoWet", hazard: "rain" });
         const [entry] = report.briefing?.rescheduleOptions ?? [];
         expect(entry?.todoId).toBe(todo.id);
         expect(entry?.options.every((option) => option.precipitationChance < 50)).toBe(true);
@@ -275,7 +276,7 @@ describe("날씨 v2 E2E", () => {
         );
       });
 
-      it("종일 할 일과 할 일이 없는 날은 빈 브리핑이고 출시 앱 응답 계약도 그대로 읽힌다", async () => {
+      it("종일 할 일만 있는 날은 빈 브리핑과 지금 오는 비 머리글이고 출시 앱 응답 계약도 그대로 읽힌다", async () => {
         // Given
         const user = await testContext.helpers.createVerifiedUser(
           "v2-brief-empty@example.com",
@@ -297,6 +298,7 @@ describe("날씨 v2 E2E", () => {
           affectedTodoIds: [],
           rescheduleOptions: [],
         });
+        expect(response.body.data.headline).toMatchObject({ kind: "wetLater", isSnow: false });
         expect(releasedReportSchema.safeParse(response.body.data).success).toBe(true);
       });
     });

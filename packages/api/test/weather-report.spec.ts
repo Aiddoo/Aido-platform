@@ -34,6 +34,7 @@ describe("weatherReportSchema", () => {
         pm25: 15,
         source: FUTURE_VALUE,
       }),
+      headline: weatherReportSchema.shape.headline.parse({ kind: FUTURE_VALUE }),
     };
 
     // Then
@@ -49,6 +50,7 @@ describe("weatherReportSchema", () => {
       severity: "UNKNOWN",
       reason: null,
       airQuality: null,
+      headline: null,
     });
   });
 

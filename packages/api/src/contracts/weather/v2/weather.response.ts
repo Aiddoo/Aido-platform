@@ -5,6 +5,7 @@ import {
   WEATHER_AIR_QUALITY_SOURCES,
   WEATHER_ALERT_SEVERITIES,
   WEATHER_CONDITIONS,
+  WEATHER_DAY_PARTS,
   WEATHER_MOON_PHASES,
   WEATHER_NEXT_HOUR_CONDITIONS,
   WEATHER_PRECIPITATION_TYPES,
@@ -13,6 +14,7 @@ import {
   WEATHER_REPORT_LIMITS,
   WEATHER_RESCHEDULE_MAX_TODO_IDS,
   WEATHER_RESCHEDULE_REASONS,
+  WEATHER_WET_HAZARDS,
 } from "../../../vocabulary/weather.constants.js";
 
 const percentSchema = z.int().min(0).max(100);
@@ -215,6 +217,70 @@ export const weatherBriefingSchema = z.object({
 
 export type WeatherBriefing = z.infer<typeof weatherBriefingSchema>;
 
+const weatherHourWindowSchema = z
+  .object({
+    startsAt: datetimeSchema.meta({ description: "그 날씨가 시작하는 시간별 예보 시작 시각" }),
+    endsAt: datetimeSchema.meta({ description: "그 날씨가 이어지는 마지막 시간이 끝나는 시각" }),
+  })
+  .meta({ description: "같은 날씨가 이어지는 시간" });
+
+export const weatherHeadlineSchema = z
+  .discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("todoWet").meta({ description: "할 일 시각에 비·뇌우·눈이 겹친다" }),
+      hazard: z
+        .enum(WEATHER_WET_HAZARDS)
+        .meta({ description: "겹친 날씨. 뇌우가 하나라도 있으면 storm" }),
+      precipitationChance: percentSchema.meta({
+        description: "알림이 고른 할 일 시각의 강수 확률 (%)",
+      }),
+      window: weatherHourWindowSchema,
+    }),
+    z.object({
+      kind: z.literal("todoHot").meta({ description: "할 일 시각이 더운 낮 시간과 겹친다" }),
+      peakApparentTemperature: z
+        .number()
+        .meta({ description: "그 더운 시간대의 가장 높은 체감 온도 (°C)" }),
+      window: weatherHourWindowSchema,
+    }),
+    z.object({
+      kind: z
+        .literal("wetLater")
+        .meta({ description: "할 일과 겹치지 않지만 오늘 안에 비·눈이 온다" }),
+      startsAt: datetimeSchema.meta({
+        description: "비·눈이 시작하는 시각. 지금 오고 있으면 응답 시각이다",
+      }),
+      isSnow: z.boolean().meta({ description: "눈·진눈깨비·우박인지" }),
+    }),
+    z.object({
+      kind: z.literal("wetTomorrow").meta({ description: "오늘은 비가 없고 내일 비·눈이 온다" }),
+      dayPart: z
+        .enum(WEATHER_DAY_PARTS)
+        .nullable()
+        .meta({ description: "내일 비·눈이 시작하는 때(요청 시간대). 일별 확률로만 알면 null" }),
+      isSnow: z.boolean().meta({ description: "눈·진눈깨비·우박인지" }),
+    }),
+    z.object({
+      kind: z.literal("clear").meta({ description: "오늘 남은 낮이 맑고 덥지 않다" }),
+      window: weatherHourWindowSchema.meta({ description: "야외 할 일 하기 가장 좋은 시간" }),
+    }),
+    z.object({
+      kind: z
+        .literal("tomorrow")
+        .meta({ description: "저녁이고 오늘 남은 할 일이 없어 내일 날씨를 알린다" }),
+      temperatureMin: z.number().meta({ description: "내일 최저 기온 (°C)" }),
+      temperatureMax: z.number().meta({ description: "내일 최고 기온 (°C)" }),
+      isChilly: z.boolean().meta({ description: "내일 최저 기온이 쌀쌀한 기준 이하인지" }),
+    }),
+    z.object({ kind: z.literal("calm").meta({ description: "알릴 날씨가 없다" }) }),
+  ])
+  .meta({
+    description:
+      "브리핑 카드가 알릴 것(서버 판단). 날씨 알림과 같은 판단이고 문구는 앱이 kind와 사실로 만든다",
+  });
+
+export type WeatherHeadline = z.infer<typeof weatherHeadlineSchema>;
+
 export const weatherReportSchema = z
   .object({
     location: weatherLocationSchema,
@@ -249,6 +315,11 @@ export const weatherReportSchema = z
     briefing: weatherBriefingSchema.optional().meta({
       description:
         "영향받는 할 일과 옮길 시간 후보(서버가 판단). 오늘 할 일을 읽지 못하면 빠진다. 1.15.1에서 추가했다",
+    }),
+    // 서버가 앞으로 더할 kind는 앱이 리포트를 버리지 않게 머리글만 없는 것처럼 읽는다
+    headline: weatherHeadlineSchema.nullable().catch(null).meta({
+      description:
+        "브리핑 카드 머리글. 오늘 할 일이나 위치의 오늘 일별 예보를 읽지 못하면 null이다",
     }),
   })
   .meta({
@@ -365,6 +436,7 @@ export const weatherReportSchema = z
       },
       fetchedAt: "2026-11-02T06:20:00.000Z",
       expiresAt: "2026-11-02T06:30:00.000Z",
+      headline: { kind: "wetLater", startsAt: "2026-11-02T06:26:00.000Z", isSnow: false },
     },
   });
 

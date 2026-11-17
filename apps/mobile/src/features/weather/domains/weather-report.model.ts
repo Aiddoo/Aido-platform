@@ -3,6 +3,7 @@ import {
   WEATHER_ALERT_SEVERITIES,
   WEATHER_BRIEFING_RULES,
   WEATHER_CONDITIONS,
+  WEATHER_DAY_PARTS,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
   WEATHER_MOON_PHASES,
   WEATHER_NEXT_HOUR_CONDITIONS,
@@ -10,6 +11,7 @@ import {
   WEATHER_PRESSURE_TRENDS,
   WEATHER_PROVIDERS,
   WEATHER_RESCHEDULE_REASONS,
+  WEATHER_WET_HAZARDS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
@@ -165,6 +167,39 @@ const weatherReportBriefingSchema = z.object({
 });
 export type WeatherReportBriefing = z.infer<typeof weatherReportBriefingSchema>;
 
+const hourWindowSchema = z.object({ startsAt: instantSchema, endsAt: instantSchema });
+export type HourWindow = z.infer<typeof hourWindowSchema>;
+
+/** 브리핑 카드가 알릴 것. 날씨 알림과 같은 서버 판단이고 앱은 그대로 그린다 */
+const weatherHeadlineSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('todoWet'),
+    hazard: z.enum(WEATHER_WET_HAZARDS),
+    precipitationChance: z.number(),
+    window: hourWindowSchema,
+  }),
+  z.object({
+    kind: z.literal('todoHot'),
+    peakApparentTemperature: z.number(),
+    window: hourWindowSchema,
+  }),
+  z.object({ kind: z.literal('wetLater'), startsAt: instantSchema, isSnow: z.boolean() }),
+  z.object({
+    kind: z.literal('wetTomorrow'),
+    dayPart: z.enum(WEATHER_DAY_PARTS).nullable(),
+    isSnow: z.boolean(),
+  }),
+  z.object({ kind: z.literal('clear'), window: hourWindowSchema }),
+  z.object({
+    kind: z.literal('tomorrow'),
+    temperatureMin: z.number(),
+    temperatureMax: z.number(),
+    isChilly: z.boolean(),
+  }),
+  z.object({ kind: z.literal('calm') }),
+]);
+export type WeatherHeadline = z.infer<typeof weatherHeadlineSchema>;
+
 export const weatherReportSchema = z.object({
   location: registeredLocationSchema,
   current: currentWeatherSchema,
@@ -177,6 +212,8 @@ export const weatherReportSchema = z.object({
   fetchedAt: instantSchema,
   // 서버가 오늘 할 일을 읽지 못하면 null이다
   briefing: weatherReportBriefingSchema.nullable(),
+  // 서버가 판단하지 못했거나 이 앱이 모르는 종류면 null이다
+  headline: weatherHeadlineSchema.nullable(),
 });
 export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
