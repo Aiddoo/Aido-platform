@@ -79,6 +79,12 @@ function isThisParameter(parameter) {
   return parameter.type === 'Identifier' && parameter.name === 'this';
 }
 
+// @Param()·@Body()·@CurrentUser()처럼 Nest가 요청에서 채우는 인자는 호출하는 쪽이 넘기지 않는다
+function isDecoratedParameter(parameter) {
+  const target = parameter.type === 'AssignmentPattern' ? parameter.left : parameter;
+  return (parameter.decorators?.length ?? 0) > 0 || (target.decorators?.length ?? 0) > 0;
+}
+
 // Nest는 데코레이터를 단 클래스의 생성자 인자 타입으로 의존성을 주입한다. 그 생성자는 인자 수가 의존성 수다
 function isInjectedConstructor(node) {
   const method = node.parent;
@@ -89,7 +95,7 @@ function isInjectedConstructor(node) {
   return (classNode?.decorators?.length ?? 0) > 0;
 }
 
-// 내장 max-params는 생성자를 뺄 옵션이 없어 Nest 주입 생성자만 빼고 같은 기준으로 센다
+// 내장 max-params는 생성자·데코레이터 인자를 뺄 옵션이 없어 Nest가 채우는 것만 빼고 같은 기준으로 센다
 const maxParams = {
   meta: {
     type: 'suggestion',
@@ -104,13 +110,15 @@ const maxParams = {
   create(context) {
     const max = context.options[0]?.max ?? 3;
     function check(node) {
-      const count = node.params.filter((parameter) => !isThisParameter(parameter)).length;
+      const count = node.params.filter(
+        (parameter) => !isThisParameter(parameter) && !isDecoratedParameter(parameter),
+      ).length;
       if (count <= max || isInjectedConstructor(node)) {
         return;
       }
       context.report({
         node,
-        message: `인자가 ${count}개다. ${max}개 이하로 두고, 넘으면 이름 붙은 객체 하나로 받는다(Nest가 주입하는 생성자는 세지 않는다).`,
+        message: `인자가 ${count}개다. ${max}개 이하로 두고, 넘으면 이름 붙은 객체 하나로 받는다(Nest가 주입하는 생성자와 데코레이터 인자는 세지 않는다).`,
       });
     }
     return {

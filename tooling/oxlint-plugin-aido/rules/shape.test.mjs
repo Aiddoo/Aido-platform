@@ -48,6 +48,8 @@ tester.run('max-params', rules['max-params'], {
     'function plan(first, second, third) {}',
     'function bind(this: Memo, first, second, third) {}',
     '@Injectable()\nclass MemoAdapter { constructor(a: A, b: B, c: C, d: D) {} }',
+    '@Controller()\nclass MemoController { list(@Param() a, @Body() b, @Query() c, @CurrentUser() d) {} }',
+    '@Controller()\nclass MemoController { list(@Param() a, @Query() size = 20, @Query() c, d, e, f) {} }',
     { code: 'const plan = (first, second) => {};', options: [{ max: 2 }] },
   ],
   invalid: [
@@ -58,8 +60,8 @@ tester.run('max-params', rules['max-params'], {
     { code: 'const plan = (first, second, third, fourth) => {};', errors: 1 },
     { code: 'class MemoEvent { constructor(a, b, c, d) {} }', errors: 1 },
     {
-      code: '@Controller()\nclass MemoController { list(@Param() a, @Body() b, @Query() c, @CurrentUser() d) {} }',
-      errors: 1,
+      code: '@Controller()\nclass MemoController { list(@Param() a, @Body() b, @Query() c, d, e, f, g) {} }',
+      errors: [{ message: /인자가 4개다/ }],
     },
     { code: 'abstract class MemoPort { abstract plan(a, b, c, d): void; }', errors: 1 },
     { code: 'declare function plan(a, b, c, d): void;', errors: 1 },
