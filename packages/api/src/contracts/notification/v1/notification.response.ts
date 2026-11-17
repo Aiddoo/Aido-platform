@@ -95,8 +95,6 @@ export const notificationListResponseSchema = z
     },
   });
 
-export type NotificationListResponse = z.infer<typeof notificationListResponseSchema>;
-
 export const notificationInboxItemSchema = notificationSchema.extend({
   type: notificationTypeSchema,
   // 모양이 맞지 않으면 navigation만 버려 type·action으로 이동하던 기존 경로를 잃지 않는다
@@ -121,8 +119,6 @@ export const unreadCountResponseSchema = z
       unreadCount: 5,
     },
   });
-
-export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
 
 export const registerTokenResponseSchema = z
   .object({

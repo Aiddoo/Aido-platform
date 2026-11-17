@@ -113,8 +113,6 @@ export const myInviteResponseSchema = z
     },
   });
 
-export type MyInviteResponse = z.infer<typeof myInviteResponseSchema>;
-
 export const invitedFriendResponseSchema = z
   .object({
     userId: entityIdSchema.meta({
@@ -147,8 +145,6 @@ export const invitedFriendResponseSchema = z
       qualifiedAt: null,
     },
   });
-
-export type InvitedFriendResponse = z.infer<typeof invitedFriendResponseSchema>;
 
 export const invitedFriendsListResponseSchema = z
   .object({
@@ -221,8 +217,6 @@ export const redeemInviteResponseSchema = z
       rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 7 }],
     },
   });
-
-export type RedeemInviteResponse = z.infer<typeof redeemInviteResponseSchema>;
 
 export const inviteAvailabilityResponseSchema = z
   .object({
