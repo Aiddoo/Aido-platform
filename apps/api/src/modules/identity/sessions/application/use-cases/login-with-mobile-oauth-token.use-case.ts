@@ -7,7 +7,7 @@ import type {
 
 interface LoginWithMobileOAuthTokenDependencies {
   readonly loginWithOAuthToken: Pick<LoginWithOAuthTokenUseCase, "execute">;
-  readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "notify">;
+  readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "execute">;
 }
 
 export class LoginWithMobileOAuthTokenUseCase {
@@ -20,7 +20,7 @@ export class LoginWithMobileOAuthTokenUseCase {
   async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginReadModel> {
     const result = await this.#dependencies.loginWithOAuthToken.execute(input);
     if (result.isNewUser) {
-      await this.#dependencies.oauthSignupNotifier.notify({
+      await this.#dependencies.oauthSignupNotifier.execute({
         userId: result.userId,
         provider: input.provider,
         device: input.metadata?.device,

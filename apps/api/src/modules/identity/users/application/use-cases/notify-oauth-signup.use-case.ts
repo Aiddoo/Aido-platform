@@ -44,7 +44,7 @@ export class NotifyOAuthSignupUseCase {
   }
 
   /** 토큰이 이미 발급된 뒤에 불리므로 실패해도 던지지 않는다. 알림 때문에 로그인을 잃으면 안 된다. */
-  async notify(input: NotifyOAuthSignupCommand): Promise<void> {
+  async execute(input: NotifyOAuthSignupCommand): Promise<void> {
     try {
       const user = await this.#dependencies.userRepository.findByIdWithProfile(
         UserId.reconstitute(input.userId),

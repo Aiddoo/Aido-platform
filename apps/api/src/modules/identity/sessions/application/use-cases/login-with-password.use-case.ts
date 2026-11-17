@@ -14,6 +14,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { LinkedAccountsLogEvent } from "../../../linked-accounts/application/linked-accounts.log-events.js";
 import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../../../linked-accounts/application/ports/password-hasher.port.js";
+import type { LinkedAccounts } from "../../../linked-accounts/domain/linked-accounts.aggregate.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
 import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
 import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
@@ -21,6 +22,7 @@ import type { UserRepositoryPort } from "../../../users/application/ports/user.r
 import type { RestoreAccountUseCase } from "../../../users/application/use-cases/restore-account.use-case.js";
 import { invalidCredentials } from "../../../users/application/users.errors.js";
 import { UserLogEvent } from "../../../users/application/users.log-events.js";
+import type { User } from "../../../users/domain/user.aggregate.js";
 import { accountLocked } from "../../../users/domain/users.errors.js";
 import type { LoginAttemptRepositoryPort } from "../ports/login-attempt.repository.port.js";
 import { emailNotVerified } from "../sessions.errors.js";
@@ -54,6 +56,12 @@ interface LoginWithPasswordDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
+interface LoginAttemptContext {
+  readonly email: string;
+  readonly ipAddress: string;
+  readonly userAgent: string;
+}
+
 export class LoginWithPasswordUseCase {
   readonly #dependencies: LoginWithPasswordDependencies;
 
@@ -62,99 +70,107 @@ export class LoginWithPasswordUseCase {
   }
 
   async execute(input: LoginWithPasswordCommand): Promise<LoginReadModel> {
-    const metadata = input.metadata;
-    const { password, deviceName } = input;
-    const email = Email.create(input.email).value;
-    const ip = metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;
-    const userAgent = metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;
-    const attemptContext = { email, ipAddress: ip, userAgent };
+    const attempt: LoginAttemptContext = {
+      email: Email.create(input.email).value,
+      ipAddress: input.metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP,
+      userAgent: input.metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT,
+    };
+    const recentFailures = await this.#assertNotLockedOut(attempt);
 
-    const lockoutSince = this.#dependencies.clock
-      .now()
-      .subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES });
-    const recentFailures =
-      await this.#dependencies.loginAttemptRepository.countRecentFailuresByEmail(
-        email,
-        lockoutSince,
-      );
-
-    if (recentFailures >= LOGIN_ATTEMPT.MAX_FAILURES) {
-      await this.#dependencies.securityLogRepository.create({
-        event: SECURITY_EVENT.ACCOUNT_LOCKED,
-        ipAddress: ip,
-        userAgent,
-        metadata: { email, recentFailures },
-      });
-
-      throw accountLocked(email);
-    }
-
-    const user = await this.#dependencies.userRepository.findByEmail(email);
+    const user = await this.#dependencies.userRepository.findByEmail(attempt.email);
     if (user == null) {
-      await this.#recordFailure({
-        ...attemptContext,
-        failureReason: LOGIN_FAILURE_REASON.USER_NOT_FOUND,
-      });
+      await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.USER_NOT_FOUND);
       throw invalidCredentials();
     }
 
     const accounts = await this.#dependencies.accountRepository.findByUserId(user.id);
     const passwordHash = accounts?.passwordHash;
     if (accounts == null || passwordHash == null || !accounts.hasPassword()) {
-      await this.#recordFailure({
-        ...attemptContext,
-        failureReason: LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT,
-      });
+      await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT);
       throw invalidCredentials();
     }
 
-    const isPasswordValid = await this.#dependencies.passwordService.verify(passwordHash, password);
+    const isPasswordValid = await this.#dependencies.passwordService.verify(
+      passwordHash,
+      input.password,
+    );
     if (!isPasswordValid) {
-      await this.#recordFailure({
-        ...attemptContext,
-        failureReason: LOGIN_FAILURE_REASON.INVALID_PASSWORD,
-      });
-
+      await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.INVALID_PASSWORD);
       const remainingAttempts = LOGIN_ATTEMPT.MAX_FAILURES - recentFailures - 1;
       if (remainingAttempts <= 0) {
-        throw accountLocked(email);
+        throw accountLocked(attempt.email);
       }
-
       throw invalidCredentials();
     }
 
     if (this.#dependencies.passwordService.needsRehash(passwordHash)) {
-      // 응답과 따로 다시 만들고, 그사이 비밀번호가 바뀌었으면 저장이 false라 새 비밀번호를 덮지 않는다
-      this.#dependencies.passwordService
-        .hash(password)
-        .then((rehashed) => {
-          accounts.changePassword(rehashed, this.#dependencies.clock.now());
-          return this.#dependencies.unitOfWork.run(
-            async () =>
-              (await this.#dependencies.userMutationLock.lockById(user.id)) &&
-              this.#dependencies.accountRepository.save(accounts),
-          );
-        })
-        .then((updated) => {
-          if (updated) {
-            this.#dependencies.logger.debug({
-              event: LinkedAccountsLogEvent.PASSWORD_REHASHED,
-              userId: user.id.value,
-            });
-          }
-        })
-        .catch((error: unknown) =>
-          this.#dependencies.logger.error({
-            event: LinkedAccountsLogEvent.PASSWORD_REHASH_FAILED,
-            userId: user.id.value,
-            errorType: error instanceof Error ? error.name : "unknown",
-          }),
-        );
+      this.#rehashInBackground({ user, accounts, password: input.password });
     }
+    return this.#issueLogin(user, attempt, input.deviceName);
+  }
 
-    const identityUser = user;
+  async #assertNotLockedOut(attempt: LoginAttemptContext): Promise<number> {
+    const { loginAttemptRepository, securityLogRepository, clock } = this.#dependencies;
+    const lockoutSince = clock.now().subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES });
+    const recentFailures = await loginAttemptRepository.countRecentFailuresByEmail(
+      attempt.email,
+      lockoutSince,
+    );
+    if (recentFailures >= LOGIN_ATTEMPT.MAX_FAILURES) {
+      await securityLogRepository.create({
+        event: SECURITY_EVENT.ACCOUNT_LOCKED,
+        ipAddress: attempt.ipAddress,
+        userAgent: attempt.userAgent,
+        metadata: { email: attempt.email, recentFailures },
+      });
+      throw accountLocked(attempt.email);
+    }
+    return recentFailures;
+  }
+
+  // 응답과 따로 다시 만들고, 그사이 비밀번호가 바뀌었으면 저장이 false라 새 비밀번호를 덮지 않는다
+  #rehashInBackground(input: {
+    readonly user: User;
+    readonly accounts: LinkedAccounts;
+    readonly password: string;
+  }): void {
+    const { passwordService, unitOfWork, userMutationLock, accountRepository, clock, logger } =
+      this.#dependencies;
+    const { user, accounts } = input;
+    passwordService
+      .hash(input.password)
+      .then((rehashed) => {
+        accounts.changePassword(rehashed, clock.now());
+        return unitOfWork.run(
+          async () =>
+            (await userMutationLock.lockById(user.id)) && accountRepository.save(accounts),
+        );
+      })
+      .then((updated) => {
+        if (updated) {
+          logger.debug({
+            event: LinkedAccountsLogEvent.PASSWORD_REHASHED,
+            userId: user.id.value,
+          });
+        }
+      })
+      .catch((error: unknown) =>
+        logger.error({
+          event: LinkedAccountsLogEvent.PASSWORD_REHASH_FAILED,
+          userId: user.id.value,
+          errorType: error instanceof Error ? error.name : "unknown",
+        }),
+      );
+  }
+
+  async #issueLogin(
+    user: User,
+    attempt: LoginAttemptContext,
+    deviceName: string | undefined,
+  ): Promise<LoginReadModel> {
+    const { email, ipAddress: ip, userAgent } = attempt;
     const restorationAt = this.#dependencies.clock.now();
-    const needsRestore = identityUser.requiresRestoration(restorationAt);
+    const needsRestore = user.requiresRestoration(restorationAt);
 
     if (!needsRestore) {
       if (user.status === "PENDING_VERIFY") {
@@ -166,7 +182,7 @@ export class LoginWithPasswordUseCase {
     const result = await this.#dependencies.unitOfWork.run(async () => {
       if (needsRestore) {
         await this.#dependencies.restoreAccount.execute({
-          user: identityUser,
+          user,
           metadata: { ip, userAgent },
           at: restorationAt,
         });
@@ -212,14 +228,10 @@ export class LoginWithPasswordUseCase {
     };
   }
 
-  async #recordFailure(input: {
-    readonly email: string;
-    readonly ipAddress: string;
-    readonly userAgent: string;
-    readonly failureReason: string;
-  }): Promise<void> {
+  async #recordFailure(attempt: LoginAttemptContext, failureReason: string): Promise<void> {
     await this.#dependencies.loginAttemptRepository.create({
-      ...input,
+      ...attempt,
+      failureReason,
       provider: "CREDENTIAL",
       success: false,
       attemptedAt: this.#dependencies.clock.now(),

@@ -16,7 +16,7 @@ export interface ExchangeOAuthCodeCommand {
 
 interface ExchangeOAuthCodeDependencies {
   readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "findByExchangeCode" | "save">;
-  readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "notify">;
+  readonly oauthSignupNotifier: Pick<NotifyOAuthSignupUseCase, "execute">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
 }
@@ -50,7 +50,7 @@ export class ExchangeOAuthCodeUseCase {
     this.#dependencies.logger.debug({ event: OAuthStateLogEvent.OAUTH_EXCHANGE_CONSUMED, userId });
     // 웹 콜백은 시스템 브라우저 요청이라 앱 버전·기기가 없다. 코드는 일회용이라 알림도 한 번만 나간다.
     if (state.isNewUser() === true) {
-      await this.#dependencies.oauthSignupNotifier.notify({
+      await this.#dependencies.oauthSignupNotifier.execute({
         userId,
         provider: state.provider,
         device: input.device,
