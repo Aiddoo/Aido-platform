@@ -11,4 +11,4 @@
 | 전달      | `InquiryMailerPort.deliver`           | 담당 채널(지금은 이메일)로 한 번 보낸다. 결과는 `sent`·`rejected` 값이다                |
 | 제출 시각 | `submittedAt`, `formatSubmittedAtKst` | 접수한 시각. 담당자가 한국에서 읽으므로 KST로 적는다                                    |
 
-문의는 상태가 없다(만들고 전달하면 끝난다).
+문의는 생성만 하는 Aggregate(`create`·`toPrimitives`)라 상태·복원·저장소가 없다(만들고 전달하면 끝난다).

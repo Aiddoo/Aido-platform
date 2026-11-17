@@ -1,21 +1,11 @@
-/**
- * Inquiry E2E 테스트
- *
- * @description
- * 문의 접수 기능 전체 플로우 테스트
- * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
- *
- * 테스트 시나리오:
- * 1. 인증된 사용자 문의 접수 성공
- * 2. 인증 없이 요청 시 401
- * 3. 잘못된 카테고리 → 400
- * 4. 내용 너무 짧음 → 400
- * 5. 각 카테고리 타입 정상 작동
- */
-
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  type SupportInquiriesConfig,
+  supportInquiriesConfig,
+} from "#api/modules/support/inquiries/support-inquiries.config";
+
+import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 describe("문의 E2E", () => {
   let testContext: E2eTestContext;
@@ -55,7 +45,7 @@ describe("문의 E2E", () => {
       expect(response.body.data.message).toBe("문의가 접수되었습니다.");
     });
 
-    it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
+    it("문의를 설정한 고객센터 주소로 라벨과 원문을 담아 보낸다", async () => {
       // Given
       const user = await testContext.helpers.createVerifiedUser(
         "inquiry-email@example.com",
@@ -73,8 +63,12 @@ describe("문의 E2E", () => {
         .expect(201);
 
       // Then
+      const { supportEmail } = testContext.app.get<SupportInquiriesConfig>(
+        supportInquiriesConfig.KEY,
+        { strict: false },
+      );
       const lastInquiry = testContext.fakeEmailService.getLastInquiry();
-      expect(lastInquiry).toBeDefined();
+      expect(lastInquiry?.to).toBe(supportEmail);
       expect(lastInquiry?.data).toMatchObject({
         userEmail: "inquiry-email@example.com",
         category: "BUG_REPORT",

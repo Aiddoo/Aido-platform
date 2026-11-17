@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
 
 import {
   type InquiryDeliveryResult,
   InquiryMailerPort,
 } from "../../application/ports/inquiry-mailer.port.js";
-import type { InquirySubmission } from "../../application/read-models/inquiry-submission.read-model.js";
+import type { InquirySubmissionReadModel } from "../../application/read-models/inquiry-submission.read-model.js";
 import {
   type SupportInquiriesConfig,
   supportInquiriesConfig,
@@ -14,11 +14,11 @@ import {
 
 @Injectable()
 export class EmailInquiryMailerAdapter extends InquiryMailerPort {
-  readonly #emailSender: TransactionalEmailSender;
+  readonly #emailSender: Pick<SendTransactionalEmailUseCase, "sendInquiry">;
   readonly #supportEmail: string;
 
   constructor(
-    emailSender: TransactionalEmailSender,
+    emailSender: SendTransactionalEmailUseCase,
     @Inject(supportInquiriesConfig.KEY) config: SupportInquiriesConfig,
   ) {
     super();
@@ -26,7 +26,7 @@ export class EmailInquiryMailerAdapter extends InquiryMailerPort {
     this.#supportEmail = config.supportEmail;
   }
 
-  deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
+  deliver(submission: InquirySubmissionReadModel): Promise<InquiryDeliveryResult> {
     return this.#emailSender.sendInquiry(this.#supportEmail, {
       userEmail: submission.userEmail,
       category: submission.category,

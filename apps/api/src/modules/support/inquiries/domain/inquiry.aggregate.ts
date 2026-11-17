@@ -1,10 +1,10 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { InquiryContent } from "./inquiry-content.vo.js";
-import { InquiryId } from "./inquiry-id.vo.js";
+import type { InquiryContent } from "./inquiry-content.vo.js";
+import type { InquiryId } from "./inquiry-id.vo.js";
 
 export interface InquiryPrimitives {
   readonly id: string;
@@ -44,34 +44,12 @@ export class Inquiry extends AggregateRoot<InquiryId, InquiryProps> {
     });
   }
 
-  static reconstitute(primitives: InquiryPrimitives): Inquiry {
-    return new Inquiry(InquiryId.reconstitute(primitives.id), {
-      userId: UserId.reconstitute(primitives.userId),
-      userEmail: primitives.userEmail,
-      category: primitives.category,
-      content: InquiryContent.reconstitute(primitives.content),
-      submittedAt: primitives.submittedAt,
-    });
-  }
-
   get userId(): UserId {
     return this.props.userId;
   }
 
-  get userEmail(): string {
-    return this.props.userEmail;
-  }
-
   get category(): InquiryCategory {
     return this.props.category;
-  }
-
-  get content(): InquiryContent {
-    return this.props.content;
-  }
-
-  get submittedAt(): Temporal.Instant {
-    return this.props.submittedAt;
   }
 
   toPrimitives(): InquiryPrimitives {

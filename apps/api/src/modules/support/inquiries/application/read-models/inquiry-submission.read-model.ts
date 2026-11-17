@@ -1,6 +1,6 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
-export interface InquirySubmission {
+export interface InquirySubmissionReadModel {
   readonly userEmail: string;
   readonly category: InquiryCategory;
   readonly categoryLabel: string;
