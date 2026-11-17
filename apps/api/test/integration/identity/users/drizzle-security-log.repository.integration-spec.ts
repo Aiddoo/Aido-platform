@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import type { NewSecurityLog } from "#api/modules/identity/users/application/ports/security-log.repository.port";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { securityLog, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -61,9 +62,21 @@ describe("DrizzleSecurityLogRepository (실제 PostgreSQL)", () => {
     }));
   }
 
+  async function recordAt(entry: NewSecurityLog, recordedAt: Temporal.Instant): Promise<void> {
+    await client.insert(securityLog).values({
+      userId: entry.userId?.value,
+      event: entry.event,
+      ipAddress: entry.ipAddress,
+      userAgent: entry.userAgent,
+      metadata: entry.metadata,
+      createdAt: recordedAt,
+    });
+  }
+
   describeSecurityLogRepositoryContract(async () => ({
     repository: createRepository(),
     listEntries,
+    recordAt,
   }));
 
   it("기록 시각은 DB가 남기고 사용자가 지워지면 사용자 칸만 비운다", async () => {

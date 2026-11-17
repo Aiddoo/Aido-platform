@@ -1,5 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { inArray, lt } from "drizzle-orm";
 
 import {
   SecurityLogRepositoryPort,
@@ -26,5 +27,18 @@ export class DrizzleSecurityLogRepository extends SecurityLogRepositoryPort {
       userAgent: entry.userAgent,
       metadata: entry.metadata,
     });
+  }
+
+  async deleteRecordedBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const oldLogs = this.#transactionHost.tx
+      .select({ id: securityLog.id })
+      .from(securityLog)
+      .where(lt(securityLog.createdAt, cutoff))
+      .limit(limit);
+    const deleted = await this.#transactionHost.tx
+      .delete(securityLog)
+      .where(inArray(securityLog.id, oldLogs))
+      .returning({ id: securityLog.id });
+    return deleted.length;
   }
 }

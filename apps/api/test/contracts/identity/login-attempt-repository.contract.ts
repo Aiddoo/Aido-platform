@@ -61,5 +61,34 @@ export function describeLoginAttemptRepositoryContract(
       // Then
       expect(count).toBe(0);
     });
+
+    it("시도 시각이 기준 시각 전인 기록만 limit개씩 지운다", async () => {
+      // Given
+      const repository = await createRepository();
+      await repository.create(
+        attempt({ attemptedAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }) }),
+      );
+      await repository.create(
+        attempt({
+          success: true,
+          failureReason: undefined,
+          attemptedAt: AUTH_FIXTURE_NOW.subtract({ hours: 1 }),
+        }),
+      );
+      await repository.create(attempt());
+
+      // When
+      const deletedCounts = [
+        await repository.deleteAttemptedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteAttemptedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteAttemptedBefore(AUTH_FIXTURE_NOW, 1),
+      ];
+
+      // Then
+      expect(deletedCounts).toEqual([1, 1, 0]);
+      expect(
+        await repository.countRecentFailuresByEmail(EMAIL, AUTH_FIXTURE_NOW.subtract({ hours: 2 })),
+      ).toBe(1);
+    });
   });
 }

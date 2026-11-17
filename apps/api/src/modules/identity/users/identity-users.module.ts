@@ -12,6 +12,7 @@ import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.pub
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
 import { IdentityLinkedAccountsModule } from "../linked-accounts/identity-linked-accounts.module.js";
+import { IdentityOAuthStatesQueriesModule } from "../oauth-states/identity-oauth-states-queries.module.js";
 import { IdentitySessionsQueriesModule } from "../sessions/identity-sessions-queries.module.js";
 import { IdentityUserPreferencesModule } from "../user-preferences/identity-user-preferences.module.js";
 import { IdentityVerificationsModule } from "../verifications/identity-verifications.module.js";
@@ -23,6 +24,8 @@ import { IdentityUsersQueriesModule } from "./identity-users-queries.module.js";
 import { IDENTITY_USERS_PROVIDERS } from "./identity-users.providers.js";
 import { AccountPurgeProcessor } from "./infrastructure/jobs/account-purge.processor.js";
 import { AccountPurgeScheduler } from "./infrastructure/jobs/account-purge.scheduler.js";
+import { ExpiredRecordPurgeProcessor } from "./infrastructure/jobs/expired-record-purge.processor.js";
+import { ExpiredRecordPurgeScheduler } from "./infrastructure/jobs/expired-record-purge.scheduler.js";
 import { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
 import { RegistrationController } from "./presentation/http/v1/registration.controller.js";
 import { UserAccountController } from "./presentation/http/v1/user-account.controller.js";
@@ -33,6 +36,7 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
   imports: [
     IdentityUsersQueriesModule,
     IdentitySessionsQueriesModule,
+    IdentityOAuthStatesQueriesModule,
     IdentityLinkedAccountsModule,
     IdentityVerificationsModule,
     IdentityUserPreferencesModule,
@@ -52,6 +56,8 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
     ...IDENTITY_USERS_PROVIDERS,
     AccountPurgeScheduler,
     AccountPurgeProcessor,
+    ExpiredRecordPurgeScheduler,
+    ExpiredRecordPurgeProcessor,
     LastActiveInterceptor,
   ],
   exports: [

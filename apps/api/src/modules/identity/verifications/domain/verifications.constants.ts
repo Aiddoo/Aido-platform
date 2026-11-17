@@ -10,3 +10,6 @@ export const VERIFICATION_REJECTIONS = [
   "exhausted",
   "mismatch",
 ] as const;
+
+/** 만료한 코드 hash는 다시 읽지 않아 하루만 둔다 */
+export const VERIFICATION_RETENTION_DAYS = 1;

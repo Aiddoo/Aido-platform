@@ -1,6 +1,6 @@
 # 보안
 
-인증 토큰·서명 키·암호화·DB 연결·웹훅·AI 데이터 처리를 바꿀 때 읽는다. 로그·Sentry에 남기면 안 되는 값은 [관측](observability.md#남기면-안-되는-값), env 목록은 [설정](configuration.md)에 있다.
+인증 토큰·서명 키·암호화·DB 연결·웹훅·AI 데이터 처리·식별 기록 보관 기한을 바꿀 때 읽는다. 로그·Sentry에 남기면 안 되는 값은 [관측](observability.md#남기면-안-되는-값), env 목록은 [설정](configuration.md)에 있다.
 
 ## 규칙
 
@@ -42,6 +42,23 @@
 - `JWT_REFRESH_SECRET` 회전은 전체 유저 즉시 로그아웃이다. 불가피하면 이중 키 검증 기간을 두고 회전한다.
 - `JWT_REFRESH_EXPIRES_IN`(기본 30d)은 회전 때마다 새로 계산되어 활성 유저는 만료되지 않는다(sliding). 그 기간 이상 접속하지 않은 유저는 다시 로그인한다. 이미 발급한 토큰은 발급 때의 `exp`를 그대로 쓴다. 운영 env에 이 값이 있으면 기본값보다 먼저라 배포 때 확인한다.
 - 리프레시 토큰 재사용 grace는 10초(`TOKEN_REUSE_GRACE_PERIOD_MS`)다. 앱의 갱신 타임아웃(8초)보다 항상 길게 둔다.
+
+## 식별 기록 보관 기한
+
+identity가 매일 03:40 KST에 보관 기한이 지난 행을 지운다(`PurgeExpiredIdentityRecordsUseCase`, 큐 `identity.expired-record-purge.v1`). 기한은 테이블을 가진 slice의 상수이고 UTC 24시간 단위다. 기한 시각과 같은 행은 남긴다.
+
+| 테이블         | 지우는 때                                     | 상수                           |
+| -------------- | --------------------------------------------- | ------------------------------ |
+| `Session`      | 폐기 또는 만료 30일 뒤(아래 푸시 기기 예외)   | `SESSION_RETENTION_DAYS`       |
+| `LoginAttempt` | 시도 90일 뒤                                  | `LOGIN_ATTEMPT_RETENTION_DAYS` |
+| `Verification` | 만료 1일 뒤                                   | `VERIFICATION_RETENTION_DAYS`  |
+| `OAuthState`   | 만료 1일 뒤. 암호화한 소셜 토큰이 남는 행이다 | `OAUTH_STATE_RETENTION_DAYS`   |
+| `SecurityLog`  | 기록 365일 뒤                                 | `SECURITY_LOG_RETENTION_DAYS`  |
+
+- 테이블마다 500행씩 지우고 문장마다 커밋한다. 한 문장으로 모두 지우지 않는다.
+- 세션을 지우면 FK CASCADE로 그 세션의 푸시 기기·토큰도 지워진다. 그래서 기기·토큰이 남은 만료 세션은 두어, 앱을 열지 않고 알림만 받는 사용자([휴면](todo-series-dormancy.md#휴면))의 알림을 끊지 않는다. 폐기한 세션은 폐기 때 기기를 놓으므로([푸시 발송](push-delivery.md#기기와-토큰)) 해제에 실패해 남은 기기와 함께 지운다.
+- `Session.revokedAt`·`Verification.expiresAt`·`SecurityLog.createdAt`은 인덱스가 없어 묶음마다 순차 읽기다. 정리 시간이 길어지면 그 칸 인덱스를 더한다.
+- 탈퇴 계정 영구 삭제(30일 유예)는 03:00 KST의 다른 작업이다([identity](glossary/identity.md#users)). 실패는 재시도 뒤 작업 실패 경보로 알리고, 결과는 `identity.expired-record-purge.completed` 로그(테이블별 지운 수)다.
 
 ## AI
 

@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt } from "drizzle-orm";
 
 import {
   type OAuthLinkingData,
@@ -117,6 +117,19 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
 
   generateExchangeCode(): string {
     return randomBytes(32).toString("base64url");
+  }
+
+  async deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const expiredStates = this.#db
+      .select({ id: oAuthState.id })
+      .from(oAuthState)
+      .where(lt(oAuthState.expiresAt, cutoff))
+      .limit(limit);
+    const deleted = await this.#db
+      .delete(oAuthState)
+      .where(inArray(oAuthState.id, expiredStates))
+      .returning({ id: oAuthState.id });
+    return deleted.length;
   }
 
   // 저장한 토큰은 암호문이라 복원 전에 푼다

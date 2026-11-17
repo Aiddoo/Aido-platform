@@ -29,4 +29,9 @@ export abstract class SessionRepositoryPort {
     readonly now: Temporal.Instant;
     readonly exceptSessionId?: SessionId;
   }): Promise<readonly SessionId[]>;
+  /**
+   * 폐기나 만료가 cutoff 전인 세션을 limit개까지 지우고 지운 수를 준다.
+   * 지우면 묶인 푸시 기기도 지워지므로 푸시 기기가 남은 만료 세션은 두고, 폐기한 세션은 기기째 지운다
+   */
+  abstract deleteEndedBefore(cutoff: Temporal.Instant, limit: number): Promise<number>;
 }

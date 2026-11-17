@@ -129,6 +129,19 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
     );
   }
 
+  // 푸시 기기는 notification 테이블이라 대역에 없다. 기기가 묶이지 않은 Drizzle 저장소와 같다
+  async deleteEndedBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const isBeforeCutoff = (instant: Temporal.Instant | null): boolean =>
+      instant != null && Temporal.Instant.compare(instant, cutoff) < 0;
+    const ended = this.all
+      .filter((session) => isBeforeCutoff(session.revokedAt) || isBeforeCutoff(session.expiresAt))
+      .slice(0, limit);
+    for (const session of ended) {
+      this.#sessions.delete(session.id);
+    }
+    return ended.length;
+  }
+
   #revokeWhere(
     predicate: (session: SessionPrimitives) => boolean,
     reason: RevokeReason,

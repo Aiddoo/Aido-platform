@@ -18,4 +18,14 @@ export class InMemoryLoginAttemptRepository extends LoginAttemptRepositoryPort {
         Temporal.Instant.compare(attempt.attemptedAt, since) >= 0,
     ).length;
   }
+
+  async deleteAttemptedBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const oldAttempts = this.attempts
+      .filter((attempt) => Temporal.Instant.compare(attempt.attemptedAt, cutoff) < 0)
+      .slice(0, limit);
+    for (const attempt of oldAttempts) {
+      this.attempts.splice(this.attempts.indexOf(attempt), 1);
+    }
+    return oldAttempts.length;
+  }
 }

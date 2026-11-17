@@ -36,7 +36,6 @@ import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
-import { DrizzleLoginAttemptRepository } from "./infrastructure/persistence/drizzle-login-attempt.repository.js";
 
 export const createSessionProvider = provideUseCase(CreateSessionUseCase, {
   sessionRepository: SessionRepositoryPort,
@@ -154,7 +153,6 @@ const revokeSessionProvider = provideUseCase(RevokeSessionUseCase, {
 });
 
 export const IDENTITY_SESSIONS_PROVIDERS = [
-  { provide: LoginAttemptRepositoryPort, useClass: DrizzleLoginAttemptRepository },
   { provide: TokenIssuerPort, useClass: JwtTokenIssuerAdapter },
   createSessionProvider,
   authenticateSessionProvider,

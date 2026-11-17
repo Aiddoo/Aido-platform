@@ -48,4 +48,5 @@ export abstract class OAuthStateRepositoryPort {
   /** 교환(consume)한 state를 저장한다. 그 사이 다른 요청이 교환했거나 만료·코드가 바뀌었으면 false다 */
   abstract save(state: OAuthState): Promise<boolean>;
   abstract generateExchangeCode(): string;
+  abstract deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number>;
 }

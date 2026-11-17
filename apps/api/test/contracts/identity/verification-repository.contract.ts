@@ -238,5 +238,33 @@ export function describeVerificationRepositoryContract(
         ),
       ).toBeNull();
     });
+
+    it("만료가 기준 시각 전인 코드만 쓴 코드까지 limit개씩 지운다", async () => {
+      // Given
+      const repository = await createRepository();
+      await saveVerification(repository, {
+        expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }),
+      });
+      await saveVerification(repository, {
+        expiresAt: AUTH_FIXTURE_NOW.subtract({ hours: 1 }),
+        usedAt: AUTH_FIXTURE_NOW.subtract({ hours: 2 }),
+      });
+      await saveVerification(repository, { expiresAt: AUTH_FIXTURE_NOW });
+
+      // When
+      const deletedCounts = [
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+      ];
+      const remaining = await repository.deleteExpiredBefore(
+        AUTH_FIXTURE_NOW.add({ milliseconds: 1 }),
+        10,
+      );
+
+      // Then
+      expect(deletedCounts).toEqual([1, 1, 0]);
+      expect(remaining).toBe(1);
+    });
   });
 }

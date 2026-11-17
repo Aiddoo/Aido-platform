@@ -130,4 +130,12 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
     this.#exchangeSequence += 1;
     return `exchange-code-${this.#exchangeSequence}`;
   }
+
+  async deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const expired = this.all.filter((state) => isAfter(cutoff, state.expiresAt)).slice(0, limit);
+    for (const state of expired) {
+      this.#states.delete(state.id);
+    }
+    return expired.length;
+  }
 }

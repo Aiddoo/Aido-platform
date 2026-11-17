@@ -125,4 +125,14 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
       attempts: verification.attempts + 1,
     });
   }
+
+  async deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const expired = this.all
+      .filter((verification) => isAfter(cutoff, verification.expiresAt))
+      .slice(0, limit);
+    for (const verification of expired) {
+      this.#verifications.delete(verification.id);
+    }
+    return expired.length;
+  }
 }

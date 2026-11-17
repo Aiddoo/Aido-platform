@@ -17,9 +17,12 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { LinkedAccountsRepositoryPort } from "../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import { PasswordHasherPort } from "../linked-accounts/application/ports/password-hasher.port.js";
+import { OAuthStateRepositoryPort } from "../oauth-states/application/ports/oauth-state.repository.port.js";
+import { LoginAttemptRepositoryPort } from "../sessions/application/ports/login-attempt.repository.port.js";
 import { SessionCachePort } from "../sessions/application/ports/session-cache.port.js";
 import { SessionPushDeviceReleaserPort } from "../sessions/application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "../sessions/application/ports/session.repository.port.js";
+import { VerificationRepositoryPort } from "../verifications/application/ports/verification.repository.port.js";
 import { IssueVerificationCodeUseCase } from "../verifications/application/use-cases/issue-verification-code.use-case.js";
 import { SendVerificationCodeUseCase } from "../verifications/application/use-cases/send-verification-code.use-case.js";
 import {
@@ -42,6 +45,7 @@ import { GetGrowthSummaryUseCase } from "./application/use-cases/get-growth-summ
 import { NotifyOAuthSignupUseCase } from "./application/use-cases/notify-oauth-signup.use-case.js";
 import { ProvisionUserUseCase } from "./application/use-cases/provision-user.use-case.js";
 import { PurgeDeletedAccountsUseCase } from "./application/use-cases/purge-deleted-accounts.use-case.js";
+import { PurgeExpiredIdentityRecordsUseCase } from "./application/use-cases/purge-expired-identity-records.use-case.js";
 import { RegisterUseCase } from "./application/use-cases/register.use-case.js";
 import { RestoreAccountUseCase } from "./application/use-cases/restore-account.use-case.js";
 import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
@@ -159,6 +163,16 @@ export const purgeDeletedAccountsProvider = provideUseCase(PurgeDeletedAccountsU
   alert: OperationalAlertPort,
 });
 
+const purgeExpiredIdentityRecordsProvider = provideUseCase(PurgeExpiredIdentityRecordsUseCase, {
+  sessionRepository: SessionRepositoryPort,
+  loginAttemptRepository: LoginAttemptRepositoryPort,
+  verificationRepository: VerificationRepositoryPort,
+  oauthStateRepository: OAuthStateRepositoryPort,
+  securityLogRepository: SecurityLogRepositoryPort,
+  clock: ClockPort,
+  logger: loggerFor(PurgeExpiredIdentityRecordsUseCase),
+});
+
 export const IDENTITY_USERS_PROVIDERS = [
   { provide: UserProfileCachePort, useClass: UserProfileCacheAdapter },
   { provide: UserActivityWriterPort, useClass: DrizzleUserRepository },
@@ -176,6 +190,7 @@ export const IDENTITY_USERS_PROVIDERS = [
   updateProfileProvider,
   deleteAccountProvider,
   purgeDeletedAccountsProvider,
+  purgeExpiredIdentityRecordsProvider,
 ] satisfies Provider[];
 
 export const IDENTITY_USERS_ADMIN_PROVIDERS = [

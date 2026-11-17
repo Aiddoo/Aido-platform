@@ -7,12 +7,14 @@ import {
   type SecurityLogRecord,
   toSecurityLogRecord,
 } from "#test/doubles/identity/in-memory-security-log.repository";
-import { AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
+import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
 
-// 보안 로그는 쓰기만 하는 감사 기록이라 포트에 조회가 없다. 계약은 저장소마다 남은 기록을 읽는 방법을 받는다
+// 보안 로그는 쓰기만 하는 감사 기록이라 포트에 조회가 없고 시각은 저장소가 정한다.
+// 계약은 저장소마다 남은 기록을 읽고 지난 시각의 기록을 놓는 방법을 받는다
 export interface SecurityLogRepositorySubject {
   readonly repository: SecurityLogRepositoryPort;
   readonly listEntries: () => Promise<readonly SecurityLogRecord[]>;
+  readonly recordAt: (entry: NewSecurityLog, recordedAt: Temporal.Instant) => Promise<void>;
 }
 
 export function describeSecurityLogRepositoryContract(
@@ -62,6 +64,30 @@ export function describeSecurityLogRepositoryContract(
 
       // Then
       expect(await listEntries()).toEqual([toSecurityLogRecord(entry)]);
+    });
+
+    it("기록 시각이 기준 시각 전인 기록만 limit개씩 지운다", async () => {
+      // Given
+      const { repository, listEntries, recordAt } = await createSubject();
+      const entry = (event: NewSecurityLog["event"]): NewSecurityLog => ({
+        event,
+        ipAddress: "127.0.0.1",
+        userAgent: "Aido/1.15.1",
+      });
+      await recordAt(entry("LOGIN_SUCCESS"), AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }));
+      await recordAt(entry("LOGOUT"), AUTH_FIXTURE_NOW.subtract({ hours: 1 }));
+      await recordAt(entry("LOGIN_FAILURE"), AUTH_FIXTURE_NOW);
+
+      // When
+      const deletedCounts = [
+        await repository.deleteRecordedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteRecordedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteRecordedBefore(AUTH_FIXTURE_NOW, 1),
+      ];
+
+      // Then
+      expect(deletedCounts).toEqual([1, 1, 0]);
+      expect(await listEntries()).toEqual([entry("LOGIN_FAILURE")]);
     });
   });
 }

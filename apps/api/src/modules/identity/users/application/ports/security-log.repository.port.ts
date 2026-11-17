@@ -12,4 +12,5 @@ export interface NewSecurityLog {
 
 export abstract class SecurityLogRepositoryPort {
   abstract create(entry: NewSecurityLog): Promise<void>;
+  abstract deleteRecordedBefore(cutoff: Temporal.Instant, limit: number): Promise<number>;
 }

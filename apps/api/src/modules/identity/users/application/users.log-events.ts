@@ -12,6 +12,8 @@ export const UserLogEvent = {
   ACCOUNT_PURGE_SCHEDULER_REGISTERED: "identity.account-purge.scheduler.registered",
   ACCOUNT_PURGE_CATCH_UP_DISPATCHED: "identity.account-purge.catch-up.dispatched",
   ACCOUNT_PURGE_JOB_STARTED: "identity.account-purge.job.started",
+  EXPIRED_RECORD_PURGE_COMPLETED: "identity.expired-record-purge.completed",
+  EXPIRED_RECORD_PURGE_SCHEDULER_REGISTERED: "identity.expired-record-purge.scheduler.registered",
   LAST_ACTIVE_UPDATE_FAILED: "identity.last-active.update.failed",
   USER_TAG_COLLIDED: "identity.user-tag.collided",
 } as const;

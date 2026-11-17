@@ -232,5 +232,38 @@ export function describeOAuthStateRepositoryContract(
       // Then
       expect(codes[0]).not.toBe(codes[1]);
     });
+
+    it("만료가 기준 시각 전인 state만 limit개씩 지운다", async () => {
+      // Given
+      const repository = await createRepository();
+      const states = [
+        { state: "expired-before", expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }) },
+        { state: "expired-earlier", expiresAt: AUTH_FIXTURE_NOW.subtract({ hours: 1 }) },
+        { state: "expires-at-cutoff", expiresAt: AUTH_FIXTURE_NOW },
+      ];
+      for (const { state, expiresAt } of states) {
+        await repository.create({
+          state,
+          provider: "GOOGLE",
+          redirectUri: "aido://auth/callback",
+          expiresAt,
+        });
+      }
+
+      // When
+      const deletedCounts = [
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteExpiredBefore(AUTH_FIXTURE_NOW, 1),
+      ];
+      const earlier = AUTH_FIXTURE_NOW.subtract({ hours: 2 });
+      const remaining = await Promise.all(
+        states.map(async ({ state }) => (await repository.findByState(state, earlier)) != null),
+      );
+
+      // Then
+      expect(deletedCounts).toEqual([1, 1, 0]);
+      expect(remaining).toEqual([false, false, true]);
+    });
   });
 }

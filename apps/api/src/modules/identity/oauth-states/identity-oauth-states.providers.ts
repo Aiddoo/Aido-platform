@@ -18,7 +18,6 @@ import { ExchangeOAuthCodeUseCase } from "./application/use-cases/exchange-oauth
 import { GetOAuthRedirectUriUseCase } from "./application/use-cases/get-oauth-redirect-uri.use-case.js";
 import { LinkOAuthAccountWithCodeUseCase } from "./application/use-cases/link-oauth-account-with-code.use-case.js";
 import { StartOAuthAuthorizationUseCase } from "./application/use-cases/start-oauth-authorization.use-case.js";
-import { DrizzleOAuthStateRepository } from "./infrastructure/persistence/drizzle-oauth-state.repository.js";
 
 const oauthRuntimeConfigProvider: FactoryProvider<OAuthRuntimeConfigPort> = {
   provide: OAuthRuntimeConfigPort,
@@ -70,7 +69,6 @@ export const linkOAuthAccountWithCodeProvider = provideUseCase(LinkOAuthAccountW
 });
 
 export const IDENTITY_OAUTH_STATES_PROVIDERS = [
-  { provide: OAuthStateRepositoryPort, useClass: DrizzleOAuthStateRepository },
   oauthRuntimeConfigProvider,
   getOAuthRedirectUriProvider,
   startOAuthAuthorizationProvider,

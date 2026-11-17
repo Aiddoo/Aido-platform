@@ -323,5 +323,33 @@ export function describeSessionRepositoryContract(
         [first.id.value, second.id.value].toSorted(),
       );
     });
+
+    it("폐기나 만료가 기준 시각 전인 세션만 limit개씩 지우고 쓰는 세션은 둔다", async () => {
+      // Given
+      const repository = await createRepository();
+      const justBefore = AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 });
+      const revokedBefore = await saveSession(repository, { revokedAt: justBefore });
+      const expiredBefore = await saveSession(repository, { expiresAt: justBefore });
+      const kept = [
+        await saveSession(repository, { revokedAt: AUTH_FIXTURE_NOW }),
+        await saveSession(repository, { expiresAt: AUTH_FIXTURE_NOW }),
+        await saveSession(repository),
+      ];
+
+      // When
+      const deletedCounts = [
+        await repository.deleteEndedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteEndedBefore(AUTH_FIXTURE_NOW, 1),
+        await repository.deleteEndedBefore(AUTH_FIXTURE_NOW, 1),
+      ];
+
+      // Then
+      expect(deletedCounts).toEqual([1, 1, 0]);
+      expect(await repository.findById(revokedBefore.id)).toBeNull();
+      expect(await repository.findById(expiredBefore.id)).toBeNull();
+      for (const session of kept) {
+        expect((await repository.findById(session.id))?.id).toEqual(session.id);
+      }
+    });
   });
 }

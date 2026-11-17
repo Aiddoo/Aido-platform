@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, inArray, lt } from "drizzle-orm";
 
 import {
   LoginAttemptRepositoryPort,
@@ -39,5 +39,18 @@ export class DrizzleLoginAttemptRepository extends LoginAttemptRepositoryPort {
         gte(loginAttempt.createdAt, since),
       ),
     );
+  }
+
+  async deleteAttemptedBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const oldAttempts = this.#db
+      .select({ id: loginAttempt.id })
+      .from(loginAttempt)
+      .where(lt(loginAttempt.createdAt, cutoff))
+      .limit(limit);
+    const deleted = await this.#db
+      .delete(loginAttempt)
+      .where(inArray(loginAttempt.id, oldAttempts))
+      .returning({ id: loginAttempt.id });
+    return deleted.length;
   }
 }

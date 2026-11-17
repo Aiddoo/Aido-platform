@@ -1,7 +1,7 @@
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
 import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
@@ -122,5 +122,18 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
           lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
         ),
       );
+  }
+
+  async deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const expiredCodes = this.#db
+      .select({ id: verification.id })
+      .from(verification)
+      .where(lt(verification.expiresAt, cutoff))
+      .limit(limit);
+    const deleted = await this.#db
+      .delete(verification)
+      .where(inArray(verification.id, expiredCodes))
+      .returning({ id: verification.id });
+    return deleted.length;
   }
 }

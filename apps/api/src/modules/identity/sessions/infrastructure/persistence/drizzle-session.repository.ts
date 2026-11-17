@@ -1,11 +1,12 @@
 import type { RevokeReason } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, ne, not, or } from "drizzle-orm";
 
 import { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
+import { hasPushRegistrationForSessionCondition } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { session } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -118,5 +119,27 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
       )
       .returning({ id: session.id });
     return revoked.map((row) => SessionId.reconstitute(row.id));
+  }
+
+  async deleteEndedBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const endedSessions = this.#db
+      .select({ id: session.id })
+      .from(session)
+      .where(
+        or(
+          lt(session.revokedAt, cutoff),
+          and(
+            lt(session.expiresAt, cutoff),
+            // 앱을 열지 않고 알림만 받는 기기는 만료 세션에 묶여 있어 그 세션은 지우지 않는다
+            not(hasPushRegistrationForSessionCondition(session.id)),
+          ),
+        ),
+      )
+      .limit(limit);
+    const deleted = await this.#db
+      .delete(session)
+      .where(inArray(session.id, endedSessions))
+      .returning({ id: session.id });
+    return deleted.length;
   }
 }

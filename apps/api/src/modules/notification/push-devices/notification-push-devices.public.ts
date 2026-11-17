@@ -10,4 +10,7 @@ export {
   type NoActiveTokenSkipReason,
   PUSH_DEVICE_STALE_AFTER_DAYS,
 } from "./domain/push-device.domain-service.js";
-export { hasPushTokenCondition } from "./infrastructure/persistence/push-token-conditions.query-fragment.js";
+export {
+  hasPushRegistrationForSessionCondition,
+  hasPushTokenCondition,
+} from "./infrastructure/persistence/push-token-conditions.query-fragment.js";
