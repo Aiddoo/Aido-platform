@@ -21,7 +21,11 @@ async function pickShownTime(value: TimeOfDay) {
   const spinner = screen.getByTestId('spinner');
   await fireEvent(spinner, 'change', { nativeEvent: { timestamp: spinner.props.date } });
 
-  return { onChange, pickerDate: new Date(spinner.props.date) };
+  return {
+    onChange,
+    pickerDate: new Date(spinner.props.date),
+    timeZoneName: spinner.props.timeZoneName,
+  };
 }
 
 describe('TimeSpinner', () => {
@@ -40,12 +44,12 @@ describe('TimeSpinner', () => {
     expect(onChange).toHaveBeenCalledWith(time);
   });
 
-  it('피커 날짜는 오늘과 무관한 고정 날짜라 오늘이 전환일이어도 시각을 옮기지 않는다', async () => {
+  it('피커는 프로세스 시간대(뉴욕)가 아니라 UTC 벽시계로 시각을 보여 오늘이 전환일이어도 시각을 옮기지 않는다', async () => {
     // When
-    const { pickerDate } = await pickShownTime({ hour: 2, minute: 30 });
+    const { pickerDate, timeZoneName } = await pickShownTime({ hour: 2, minute: 30 });
 
     // Then
-    expect(pickerDate.toDateString()).not.toBe(DST_START_DAY.toDateString());
-    expect([pickerDate.getHours(), pickerDate.getMinutes()]).toEqual([2, 30]);
+    expect(timeZoneName).toBe('UTC');
+    expect(pickerDate.toISOString()).toBe('2000-01-15T02:30:00.000Z');
   });
 });

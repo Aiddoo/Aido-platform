@@ -48,7 +48,7 @@
     "minutesAgo_other": "{{count}} minutes ago",
     "hoursAgo_one": "{{count}} hour ago",
     "hoursAgo_other": "{{count}} hours ago",
-    "yesterday": "yesterday",
+    "yesterday": "Yesterday",
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago"
   },

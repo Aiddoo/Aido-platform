@@ -6,7 +6,7 @@ import {
   useGetAchievementYearsQueryOptions,
   useGetWeeklyAchievementsInfiniteQueryOptions,
 } from '@src/features/insights/achievement/queries/achievement.queries';
-import { getIsoWeekYear, getYearOfDateKey } from '@src/shared/date/date-key';
+import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -41,7 +41,7 @@ export default function AchievementsScreen() {
 
       <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         <QueryErrorBoundary
-          resetKeys={[selectedYear, getYearOfDateKey(todayKey)]}
+          resetKeys={[selectedYear, getIsoWeekYear(todayKey)]}
           fallback={WeeklyAchievementListErrorFallback}
         >
           <Suspense fallback={<WeeklyAchievementList.Loading header={<AchievementOverview />} />}>

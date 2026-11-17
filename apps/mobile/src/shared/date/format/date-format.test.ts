@@ -157,19 +157,29 @@ describe('formatTimeOfDay', () => {
 });
 
 describe('formatHourLabel', () => {
-  it('정시를 사용자 시간 형식과 로케일 순서로 표시한다', () => {
-    // When
-    const midnight = formatHourLabel(0, 'TWELVE_HOUR', KO_SEOUL);
-    const afternoon = formatHourLabel(15, 'TWELVE_HOUR', KO_SEOUL);
-    const twentyFour = formatHourLabel(15, 'TWENTY_FOUR_HOUR', KO_SEOUL);
-    const en = formatHourLabel(15, 'TWELVE_HOUR', EN_SEOUL);
+  it.each([
+    {
+      context: KO_SEOUL,
+      timeFormat: 'TWELVE_HOUR',
+      labels: ['오전\u00A012시', '오전\u00A09시', '오후\u00A03시'],
+    },
+    { context: KO_SEOUL, timeFormat: 'TWENTY_FOUR_HOUR', labels: ['0시', '9시', '15시'] },
+    {
+      context: EN_SEOUL,
+      timeFormat: 'TWELVE_HOUR',
+      labels: ['12\u00A0AM', '9\u00A0AM', '3\u00A0PM'],
+    },
+    { context: EN_SEOUL, timeFormat: 'TWENTY_FOUR_HOUR', labels: ['00:00', '09:00', '15:00'] },
+  ] as const)(
+    '$context.locale $timeFormat의 0·9·15시는 $labels다',
+    ({ context, timeFormat, labels }) => {
+      // When
+      const result = [0, 9, 15].map((hour) => formatHourLabel(hour, timeFormat, context));
 
-    // Then
-    expect(midnight).toBe('오전\u00A012시');
-    expect(afternoon).toBe('오후\u00A03시');
-    expect(twentyFour).toBe('15시');
-    expect(en).toBe('3\u00A0PM');
-  });
+      // Then
+      expect(result).toEqual(labels);
+    },
+  );
 });
 
 describe('formatInstantHour', () => {
@@ -190,6 +200,18 @@ describe('formatInstantHour', () => {
     expect(ko).toBe('오후\u00A03시');
     expect(en).toBe('3\u00A0PM');
     expect(losAngeles).toBe('23시');
+  });
+
+  it('en 24시간제는 시만 쓰지 않고 "15:00"처럼 분까지 붙인다', () => {
+    // Given
+    // 서울 15:20인 순간
+    const instant = new Date('2026-10-01T06:20:00Z');
+
+    // When
+    const label = formatInstantHour(instant, 'TWENTY_FOUR_HOUR', EN_SEOUL);
+
+    // Then
+    expect(label).toBe('15:00');
   });
 });
 

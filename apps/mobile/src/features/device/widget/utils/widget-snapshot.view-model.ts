@@ -1,6 +1,6 @@
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
-import { formatRangeLabel, formatWeekHeaderLabel } from '@src/shared/date/format/date-labels';
+import { formatCalendarWeekLabel, formatRangeLabel } from '@src/shared/date/format/date-labels';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
@@ -102,11 +102,8 @@ export function toWidgetWeek(
       hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
     };
   });
-  // 위젯은 늘 이번 주라 연도를 붙이지 않는다
-  const title = formatWeekHeaderLabel(
-    { monthDateKey: week.middleDateKey, weekOfMonth: week.weekOfMonth, hasYear: false },
-    dateFormatContext,
-  );
+  // 위젯은 늘 오늘이 든 주다. 연말·연초에는 주차 달의 해가 올해와 달라 앱 달력처럼 연도를 붙인다
+  const title = formatCalendarWeekLabel(summary.date, summary.date, dateFormatContext);
   const rangeLabel = formatRangeLabel(
     {
       start: formatDateKeyLabel(week.startDateKey, 'dottedMonthDay', dateFormatContext),

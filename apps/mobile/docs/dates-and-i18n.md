@@ -38,16 +38,16 @@ shared/date/
 - **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.
   2. 화면 글자가 iOS와 같다: `formatDateLabel` 10종(`monthDayYear`·`day` 포함)·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
-  3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`toPickerDate`의 고정 날짜, 서머타임 시작일 포함).
+  3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`timeZoneName="UTC"`, 서머타임 시작일과 피커를 연 채 기기 시간대를 바꾼 뒤 포함).
   4. 자정 전환: 앱을 켠 채 자정을 넘기면 오늘 key·피드·위젯(`readLocalDateKey`)이 함께 바뀐다.
-  5. 기기 시간대를 바꾸면 오늘·달력 칸·할 일 시각이 새 시간대로 다시 계산된다(`expo-localization` 달력 시간대와 JS 런타임 시간대가 같은지).
+  5. 앱을 켠 채 설정에서 시간대만 바꾸고 돌아오면 재시작 없이 오늘·달력 칸·받은 편지함 구역·콕 버튼이 새 시간대로 바뀐다. Android는 시간대 변경에 달력 변경 신호를 보내지 않아 `LocalDateProvider`가 복귀·자정마다 `getDeviceTimezone()`을 새로 읽는다. 요청 `X-Timezone`·위젯과 같은 값인지 본다.
 
 ### 오늘과 시계
 
-- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
+- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대는 `getDeviceTimezone()`으로 새로 읽는다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
 - 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
-- 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목은 같은 `formatWeekHeaderLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
+- 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목도 `formatCalendarWeekLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
 - 배지 화면이 보이는 해는 오늘의 ISO 연도가 아니라 기록 있는 가장 최근 해다(`AchievementYearsPolicy.getShownYear`, 서버 `GET /v1/weekly-achievements/years`). 해가 바뀐 월요일에 알림 받은 지난해 53주가 빈 새해 대신 보이고, 연도 막대(`AchievementYearBar`)로 기록 있는 앞뒤 해로 옮긴다. 연속 주는 서버가 해를 넘어 센다.
 - 지난 기록·결제일처럼 다른 해일 수 있는 날짜는 year-aware helper에 오늘 key를 넘겨 올해면 월·일(ko "11월 12일", en "Nov 12"), 아니면 연도까지(`monthDayYear`, ko "2025년 11월 12일", en "Nov 12, 2025") 보인다. 7일이 지난 상대 시간과 동의일도 같은 형식이다.
 - 언어는 글자만 바꾼다. 오늘·시간대·주 시작·날짜 key에 영향을 주지 않는다.
@@ -56,14 +56,14 @@ shared/date/
 
 `shared/date/format/`의 helper만 쓴다. 모두 `DateFormatContext { locale, timeZone }`를 인자로 받고 컴포넌트는 `useDateFormatContext()`로 읽는다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
 
-- 달력 날짜 `formatDateKeyLabel`, 순간 `formatDateLabel`, 벽시계 `formatTimeOfDay`, 시각 `formatClockTime`, 시 `formatHourLabel`, year-aware 변형(`date-format.ts`, Intl만 쓴다).
+- 달력 날짜 `formatDateKeyLabel`, 순간 `formatDateLabel`, 벽시계 `formatTimeOfDay`, 시각 `formatClockTime`, 시 `formatHourLabel`(ko "오후 3시"·"15시", en "3 PM". en 24시간제는 시 단위 글자가 없어 "15:00"), year-aware 변형(`date-format.ts`, Intl만 쓴다).
 - 카탈로그 문구가 필요한 것은 `date-labels.ts`의 label helper다. 상대 시간 `formatRelativeTimeLabel`(하루가 지나면 달력 날짜로 "어제"·"n일 전"), 오늘·내일 `formatRelativeDayLabel`(`common:relativeDay`), 주차 `formatCalendarWeekLabel`·`formatIsoWeekLabel`, 요일 목록 `formatDaysOfWeek`(구분자 `common:daysOfWeekSeparator`, ko "·", en ", "), 기간 `formatDateKeyRange`·`formatDateKeyCompactRange`와 날짜가 아닌 범위 `formatRangeLabel`(구분자 `common:dateRange.full|compact`, ko "~", en "–")이다. 범위 구분자를 코드나 기능 카탈로그에 다시 쓰지 않는다.
 - 할 일 기간 한 줄(일정 칩·상세·음성 계획 카드·삭제 확인)은 `formatTodoPeriod` 하나다. 오늘·내일은 말로, 여러 날은 짧은 범위다.
 - 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다. 설정을 읽지 못한 시간 표기는 `USER_PREFERENCE_DEFAULTS.TIME_FORMAT`이다.
 
 ### 시간 피커
 
-시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 피커와는 시와 분(`TimeOfDay`)만 주고받고 할 일 날짜나 앱 시간대를 넘기지 않는다. 피커 날짜는 서머타임 전환이 없는 고정 날짜(`toPickerDate`)라 전환일에도 02:30이 03:30으로 밀리지 않는다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
+시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 피커와는 시와 분(`TimeOfDay`)만 주고받고 할 일 날짜나 앱 시간대를 넘기지 않는다. 피커는 `timeZoneName={PICKER_TIME_ZONE}`(UTC)으로 그리고 JS는 같은 UTC로 `Date`를 만들고 읽어(`toPickerDate`·`getPickerTimeOfDay`) 서머타임 전환일에도, 기기 시간대가 JS 런타임과 어긋나도 02:30이 다른 시각으로 밀리지 않는다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
 
 ### 숫자
 

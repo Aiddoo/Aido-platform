@@ -1,5 +1,5 @@
 import { PREMIUM_TRIAL_ENDING_NOTICE_DAYS } from '@aido/api/vocabulary';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
+import { DAYS_PER_WEEK, MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   addMonthsToDateKey,
@@ -10,8 +10,6 @@ import { planTypeSchema } from '@src/shared/domains/plan-type.model';
 import { round } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-
-const MONTHS_PER_YEAR = 12;
 
 const freeTrialSchema = z.object({
   periodUnit: z.enum(['day', 'week', 'month', 'year']),

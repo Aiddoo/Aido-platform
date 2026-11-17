@@ -3,7 +3,7 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
-import { getPickerTimeOfDay, toPickerDate } from '@src/shared/date/native-date';
+import { getPickerTimeOfDay, PICKER_TIME_ZONE, toPickerDate } from '@src/shared/date/native-date';
 import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
@@ -21,6 +21,8 @@ interface TimeSpinnerProps extends Omit<
   | 'minimumDate'
   | 'maximumDate'
   | 'minuteInterval'
+  | 'timeZoneName'
+  | 'timeZoneOffsetInMinutes'
 > {
   value: TimeOfDay;
   onChange: (value: TimeOfDay) => void;
@@ -29,7 +31,7 @@ interface TimeSpinnerProps extends Omit<
   maximum?: TimeOfDay;
 }
 
-/** iOS 시각 휠. 시와 분만 주고받아 피커 날짜가 서머타임 전환일이어도 02:30이 03:30으로 밀리지 않는다 */
+/** iOS 시각 휠. 시와 분만 UTC로 주고받아 서머타임 전환일이나 기기 시간대 변경에도 02:30이 다른 시각으로 밀리지 않는다 */
 export function TimeSpinner({
   value,
   onChange,
@@ -48,6 +50,7 @@ export function TimeSpinner({
       mode="time"
       display="spinner"
       minuteInterval={1}
+      timeZoneName={PICKER_TIME_ZONE}
       locale={getTimePickerLocale(language, timeFormat)}
       minimumDate={minimum == null ? undefined : toPickerDate(minimum)}
       maximumDate={maximum == null ? undefined : toPickerDate(maximum)}
@@ -73,6 +76,7 @@ export function openAndroidTimePicker({
       mode: 'time',
       display: 'spinner',
       minuteInterval: 1,
+      timeZoneName: PICKER_TIME_ZONE,
       is24Hour: timeFormat === 'TWENTY_FOUR_HOUR',
       onValueChange: (_event, date) => resolve(getPickerTimeOfDay(date)),
       onDismiss: () => resolve(null),

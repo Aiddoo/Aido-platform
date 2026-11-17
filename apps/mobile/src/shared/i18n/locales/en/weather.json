@@ -42,7 +42,7 @@
     "temperatureBelowZero_one": "minus {{count}} degree",
     "temperatureBelowZero_other": "minus {{count}} degrees",
     "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
-    "stale": "Data from {{relative}}"
+    "stale": "Last updated: {{relative}}"
   },
   "alerts": {
     "issuedBy": "Issued by {{source}}",

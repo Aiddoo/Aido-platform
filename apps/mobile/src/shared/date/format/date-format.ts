@@ -176,6 +176,9 @@ export function formatTimeOfDay(
   return formatClockTime(toUtcDateAtTime(time), timeFormat, toUtcContext(context));
 }
 
+const BARE_NUMBER = /^\d+$/;
+
+/** 정시를 시 단위로 쓴다(ko "오후 3시"·"15시", en "3 PM"). en 24시간제처럼 시 단위 글자가 없으면 "15:00"으로 쓴다 */
 export function formatHourLabel(
   hour: number,
   timeFormat: TimeFormat,
@@ -185,12 +188,15 @@ export function formatHourLabel(
   if (!isValidDate(date)) {
     return '';
   }
-  return keepTimeTogether(
-    getFormatter(toUtcContext(context), {
-      hour: 'numeric',
-      ...getHourCycleOptions(timeFormat),
-    }).format(date),
-  );
+  const label = getFormatter(toUtcContext(context), {
+    hour: 'numeric',
+    ...getHourCycleOptions(timeFormat),
+  }).format(date);
+  // 숫자만 남으면 "15쯤 그쳐요"처럼 문장에서 시각으로 읽히지 않는다
+  if (BARE_NUMBER.test(label)) {
+    return formatTimeOfDay({ hour, minute: 0 }, timeFormat, context);
+  }
+  return keepTimeTogether(label);
 }
 
 /** 순간이 놓인 시각을 정시로 표시한다. 시는 context 시간대로 읽는다 (서울 15:20 → "오후 3시"). */
