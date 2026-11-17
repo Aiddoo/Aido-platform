@@ -18,14 +18,15 @@
 
 `shared/infra/observability/observability-env.ts`와 `create-device-ports.ts`가 정한다. 프로세스에 한 번 만들고 전역 `logger`도 이때 정한다(`composition-root.ts`).
 
-| 포트·설정                 | 운영                        | 개발·프리뷰                                           |
-| ------------------------- | --------------------------- | ----------------------------------------------------- |
-| `Analytics`               | Firebase                    | console. 네이티브 자동 수집은 `traffic_type=internal` |
-| `ErrorReporter`           | Sentry                      | console                                               |
-| `AppLogger`               | console(warn 이상) + Sentry | console                                               |
-| `Sentry.init`의 `enabled` | 항상                        | `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만                |
+| 포트·설정                     | 운영                                                                      | 개발·프리뷰                                             |
+| ----------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `Analytics`                   | Firebase                                                                  | console. 네이티브 자동 수집은 `traffic_type=internal`   |
+| `ErrorReporter`               | Sentry                                                                    | console                                                 |
+| `AppLogger`                   | console(warn 이상) + Sentry                                               | console                                                 |
+| `Sentry.init`의 `enabled`     | 항상                                                                      | `EXPO_PUBLIC_SENTRY_DEBUG=true`일 때만                  |
+| `Sentry.init`의 `environment` | `production`, 에뮬레이터·시뮬레이터는 `production-emulator`(운영 알림 밖) | `APP_ENV`, 에뮬레이터·시뮬레이터는 `-emulator`를 붙인다 |
 
-`EXPO_PUBLIC_SENTRY_DEBUG`는 SDK만 켠다. JS 어댑터는 운영 빌드에서만 Sentry라서 이 값으로는 개발 빌드의 `captureException`·`logger.error`를 확인할 수 없다.
+`environment`는 `sentry-environment.ts`가 `IS_PHYSICAL_DEVICE`로 정하고 Mac의 iOS 앱은 실기기다. `EXPO_PUBLIC_SENTRY_DEBUG`는 SDK만 켠다. JS 어댑터는 운영 빌드에서만 Sentry라서 이 값으로는 개발 빌드의 `captureException`·`logger.error`를 확인할 수 없다.
 
 ## Analytics
 

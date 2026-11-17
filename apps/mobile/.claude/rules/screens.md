@@ -13,7 +13,7 @@ paths:
 - route 파일은 `useRouteParamsOrRedirect(schema, { fallbackHref })`로 검증해 틀리면 그 `redirect`만 그리고 `params`를 읽지 않는다. 안쪽 화면(같은 파일의 지역 컴포넌트)이 같은 스키마의 튜플 훅(`useRouteParams`·`useTodoId`)으로 읽고 `resetKeys`도 거기서 정한다. 리다이렉트를 직접 만들지 않는다.
 - 이동은 typed `router.push({ pathname, params })`다. 문자열 href를 조립하지 않는다.
 - 상세 진입 행은 `Link`(+ `Link.Preview`·`Link.Menu`)를 쓴다. 끌기 모드에는 Menu를 붙이지 않는다.
-- 검색은 `Stack.SearchBar`다. 디바운스는 es-toolkit `debounce`다.
+- 검색은 `Stack.SearchBar`다(iPad·Mac은 UIKit 크래시로 `Input`, [검색](../../docs/architecture/state-and-routing.md#검색)). 디바운스는 es-toolkit `debounce`다.
 - 레이아웃은 자식 route params·내 정보·창 크기를 구독하지 않는다. 구독이 필요하면 null을 그리는 형제 컴포넌트로 옮긴다(`RouteWatchers`, `SessionWatchers`, `ForegroundPushPresentation`).
 - 네이티브 헤더(`Stack.Toolbar`)만 쓰고, 탭은 `NativeTabs` + 탭별 Stack이다.
 
