@@ -22,10 +22,6 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findActiveUserAccessState(userId: UserId): Promise<AccessState | null> {
     return this.#findAccessState(userId, { activeOnly: true });
   }
@@ -46,6 +42,10 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
         quantity == null ? [] : [[feature, Number(quantity)] as const],
       ),
     );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   // 스토어 유예(웹훅 대기·결제 유예)는 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 구독 행을 붙인다

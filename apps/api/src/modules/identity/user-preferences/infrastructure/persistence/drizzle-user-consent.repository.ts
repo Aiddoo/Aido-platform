@@ -54,10 +54,6 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByUserId(userId: UserId): Promise<UserConsentReadModel | null> {
     const row = await this.#db.query.userConsent.findFirst({ where: { userId: userId.value } });
     return row == null ? null : toUserConsentReadModel(row);
@@ -124,5 +120,9 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
         ),
       )
       .returning(reconfirmTargetColumns);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

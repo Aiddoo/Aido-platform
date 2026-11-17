@@ -63,10 +63,6 @@ export class DrizzleUserRepository
     this.#clock = clock;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByEmail(email: string): Promise<User | null> {
     const row = await this.#db.query.user.findFirst({ where: { email } });
     return row == null ? null : toUser(row);
@@ -131,24 +127,6 @@ export class DrizzleUserRepository
       }
       throw error;
     }
-  }
-
-  async #generateUniqueUserTag(): Promise<string> {
-    for (let i = 0; i < MAX_USER_TAG_RETRIES; i++) {
-      const tag = generateUserTag();
-      const exists = await this.#db.query.user.findFirst({
-        columns: { id: true },
-        where: { userTag: tag },
-      });
-
-      if (!exists) {
-        return tag;
-      }
-
-      this.#logger.warn({ event: UserLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
-    }
-
-    throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
   }
 
   async findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
@@ -313,6 +291,28 @@ export class DrizzleUserRepository
       .where(eq(user.id, id.value))
       .returning({ id: user.id });
     requireRecord(deleted[0]);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  async #generateUniqueUserTag(): Promise<string> {
+    for (let i = 0; i < MAX_USER_TAG_RETRIES; i++) {
+      const tag = generateUserTag();
+      const exists = await this.#db.query.user.findFirst({
+        columns: { id: true },
+        where: { userTag: tag },
+      });
+
+      if (!exists) {
+        return tag;
+      }
+
+      this.#logger.warn({ event: UserLogEvent.USER_TAG_COLLIDED, attempt: i + 1 });
+    }
+
+    throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
   }
 
   async #update(

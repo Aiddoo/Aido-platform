@@ -21,10 +21,6 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return this.#db
       .select()
@@ -103,5 +99,9 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(inArray(pushToken.token, tokens))
       .returning({ id: pushToken.id });
     return { count: updated.length };
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

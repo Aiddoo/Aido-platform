@@ -32,10 +32,6 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async save(device: PushDevice): Promise<SavedPushDeviceResult> {
     const releasedDevices = await this.#releaseDeviceHeldElsewhere(device.takeover);
     const releasedTokens = await this.#releaseTokenHeldElsewhere(device.takeover);
@@ -59,6 +55,56 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
       })
       .exhaustive();
     return { previousOwnerIds: [...releasedDevices, ...releasedTokens], hasActiveToken };
+  }
+
+  async deletePushDevice(userId: UserId, deviceId: PushDeviceId): Promise<void> {
+    await this.#db
+      .delete(pushDevice)
+      .where(and(eq(pushDevice.userId, userId.value), eq(pushDevice.deviceId, deviceId.value)));
+  }
+
+  async deleteAllPushDevicesByUser(userId: UserId): Promise<void> {
+    await this.#db.delete(pushDevice).where(eq(pushDevice.userId, userId.value));
+  }
+
+  async deletePushDevicesBySessions(
+    sessionIds: readonly string[],
+  ): Promise<{ readonly userIds: readonly string[] }> {
+    const deleted = await this.#db
+      .delete(pushDevice)
+      .where(inArray(pushDevice.sessionId, [...sessionIds]))
+      .returning({ userId: pushDevice.userId });
+    return { userIds: deleted.map((row) => row.userId) };
+  }
+
+  async findPermissionStatusesByUsers(
+    userIds: readonly UserId[],
+    reportedSince: Temporal.Instant,
+  ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.#db
+      .select({ userId: pushDevice.userId, status: pushDevice.permissionStatus })
+      .from(pushDevice)
+      .where(
+        and(
+          inArray(
+            pushDevice.userId,
+            userIds.map((userId) => userId.value),
+          ),
+          gte(pushDevice.reportedAt, reportedSince),
+        ),
+      );
+    const statusesByUser = mapValues(
+      groupBy(rows, (row) => row.userId),
+      (userRows) => userRows.map((row) => row.status),
+    );
+    return new Map(Object.entries(statusesByUser));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   async #releaseDeviceHeldElsewhere(takeover: PushDeviceTakeover): Promise<string[]> {
@@ -149,51 +195,5 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
       .where(
         and(eq(pushToken.userId, device.userId.value), eq(pushToken.deviceId, device.id.value)),
       );
-  }
-
-  async deletePushDevice(userId: UserId, deviceId: PushDeviceId): Promise<void> {
-    await this.#db
-      .delete(pushDevice)
-      .where(and(eq(pushDevice.userId, userId.value), eq(pushDevice.deviceId, deviceId.value)));
-  }
-
-  async deleteAllPushDevicesByUser(userId: UserId): Promise<void> {
-    await this.#db.delete(pushDevice).where(eq(pushDevice.userId, userId.value));
-  }
-
-  async deletePushDevicesBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
-    const deleted = await this.#db
-      .delete(pushDevice)
-      .where(inArray(pushDevice.sessionId, [...sessionIds]))
-      .returning({ userId: pushDevice.userId });
-    return { userIds: deleted.map((row) => row.userId) };
-  }
-
-  async findPermissionStatusesByUsers(
-    userIds: readonly UserId[],
-    reportedSince: Temporal.Instant,
-  ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {
-    if (userIds.length === 0) {
-      return new Map();
-    }
-    const rows = await this.#db
-      .select({ userId: pushDevice.userId, status: pushDevice.permissionStatus })
-      .from(pushDevice)
-      .where(
-        and(
-          inArray(
-            pushDevice.userId,
-            userIds.map((userId) => userId.value),
-          ),
-          gte(pushDevice.reportedAt, reportedSince),
-        ),
-      );
-    const statusesByUser = mapValues(
-      groupBy(rows, (row) => row.userId),
-      (userRows) => userRows.map((row) => row.status),
-    );
-    return new Map(Object.entries(statusesByUser));
   }
 }

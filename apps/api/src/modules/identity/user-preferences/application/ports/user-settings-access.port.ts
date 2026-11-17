@@ -30,6 +30,9 @@ export abstract class UserTimezoneReaderPort {
 
 /** notification이 푸시 발송 판단과 토큰 메타데이터 동기화에 사용하는 capability. */
 export abstract class UserNotificationSettingsAccessPort {
+  abstract findMarketingReconfirmTargets: UserConsentRepositoryPort["findMarketingReconfirmTargets"];
+  abstract claimMarketingReconfirm: UserConsentRepositoryPort["claimMarketingReconfirm"];
+
   abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
   abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
   abstract findPreferenceReadModel(userId: UserId): Promise<UserPreferenceReadModel | null>;
@@ -41,6 +44,4 @@ export abstract class UserNotificationSettingsAccessPort {
     userIds: readonly UserId[],
   ): Promise<UserConsentReadModel[]>;
   abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;
-  abstract findMarketingReconfirmTargets: UserConsentRepositoryPort["findMarketingReconfirmTargets"];
-  abstract claimMarketingReconfirm: UserConsentRepositoryPort["claimMarketingReconfirm"];
 }

@@ -82,6 +82,20 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
     };
   }
 
+  // 새로운 로그인 시 생성되는 고유 식별자, Token Rotation 시 동일 패밀리 내에서 버전 증가
+  generateTokenFamily(): string {
+    return randomBytes(16).toString("hex");
+  }
+
+  // DB에 저장할 때 사용 (토큰 자체는 저장하지 않음)
+  hashRefreshToken(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
+  }
+
+  getRefreshTokenExpiresInSeconds(): number {
+    return ms(this.#jwt.refreshExpiresIn) / MILLISECONDS_PER_SECOND;
+  }
+
   async #generateAccessToken(
     userId: string,
     email: string,
@@ -132,21 +146,7 @@ export class JwtTokenIssuerAdapter extends TokenIssuerPort {
     });
   }
 
-  // 새로운 로그인 시 생성되는 고유 식별자, Token Rotation 시 동일 패밀리 내에서 버전 증가
-  generateTokenFamily(): string {
-    return randomBytes(16).toString("hex");
-  }
-
-  // DB에 저장할 때 사용 (토큰 자체는 저장하지 않음)
-  hashRefreshToken(token: string): string {
-    return createHash("sha256").update(token).digest("hex");
-  }
-
   #getAccessTokenExpiresInSeconds(): number {
     return ms(this.#jwt.expiresIn) / MILLISECONDS_PER_SECOND;
-  }
-
-  getRefreshTokenExpiresInSeconds(): number {
-    return ms(this.#jwt.refreshExpiresIn) / MILLISECONDS_PER_SECOND;
   }
 }

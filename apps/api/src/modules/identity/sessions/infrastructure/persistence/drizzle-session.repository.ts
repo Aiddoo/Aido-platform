@@ -23,10 +23,6 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<SessionId> {
     return SessionId.reconstitute(createEntityId());
   }
@@ -141,5 +137,9 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
       .where(inArray(session.id, endedSessions))
       .returning({ id: session.id });
     return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

@@ -34,10 +34,6 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
     this.#encryptionService = encryptionService;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async create(input: NewOAuthState): Promise<void> {
     await this.#db.insert(oAuthState).values({
       state: input.state,
@@ -130,6 +126,10 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
       .where(inArray(oAuthState.id, expiredStates))
       .returning({ id: oAuthState.id });
     return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   // 저장한 토큰은 암호문이라 복원 전에 푼다

@@ -19,10 +19,6 @@ export class DrizzleUserAiUsageCounterAdapter implements UserAiUsageCounterPort 
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByUserId(userId: UserId): Promise<UserAiUsageCounter | null> {
     const [row] = await this.#db
       .select({ count: user.aiUsageCount, resetAt: user.aiUsageResetAt })
@@ -67,5 +63,9 @@ export class DrizzleUserAiUsageCounterAdapter implements UserAiUsageCounterPort 
       )
       .returning({ id: user.id });
     return updated.length === 1;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

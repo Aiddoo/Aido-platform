@@ -19,10 +19,6 @@ export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepo
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async listDue(
     params: ListDueBillingNoticesParams<TrialEndingNotice>,
   ): Promise<TrialEndingNotice[]> {
@@ -80,5 +76,9 @@ export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepo
       .returning({ id: subscription.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
     return notices.filter((notice) => claimedIds.has(notice.id.value));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

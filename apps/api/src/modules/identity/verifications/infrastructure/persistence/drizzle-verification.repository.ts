@@ -33,10 +33,6 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
     this.#baseDb = baseDb;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<VerificationId> {
     return VerificationId.reconstitute(await nextSequenceValue(this.#db, verification.id));
   }
@@ -138,5 +134,9 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
       .where(inArray(verification.id, expiredCodes))
       .returning({ id: verification.id });
     return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

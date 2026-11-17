@@ -21,10 +21,6 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<SubscriptionId> {
     return SubscriptionId.reconstitute(await nextSequenceValue(this.#db, subscription.id));
   }
@@ -92,5 +88,9 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
           updatedAt: row.updatedAt,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

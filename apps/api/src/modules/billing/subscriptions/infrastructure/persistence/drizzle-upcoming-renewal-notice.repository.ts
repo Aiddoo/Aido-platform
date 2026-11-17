@@ -23,10 +23,6 @@ export class DrizzleUpcomingRenewalNoticeRepository implements UpcomingRenewalNo
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async listDue(
     params: ListDueBillingNoticesParams<UpcomingRenewalNotice>,
   ): Promise<UpcomingRenewalNotice[]> {
@@ -70,6 +66,40 @@ export class DrizzleUpcomingRenewalNoticeRepository implements UpcomingRenewalNo
     );
   }
 
+  // 읽은 뒤 갱신으로 기간이 바뀐 행은 다음 기간을 미리 표시하지 않도록 읽은 만료 시각과 같을 때만 표시한다
+  async claim(
+    notices: readonly UpcomingRenewalNotice[],
+    claimedAt: Temporal.Instant,
+  ): Promise<UpcomingRenewalNotice[]> {
+    if (notices.length === 0) {
+      return [];
+    }
+    const claimed = await this.#db
+      .update(subscription)
+      .set({ renewalNoticeExpiresAt: sql`${subscription.expiresAt}`, updatedAt: claimedAt })
+      .where(
+        and(
+          or(
+            ...notices.map((notice) =>
+              and(
+                eq(subscription.id, notice.id.value),
+                eq(subscription.expiresAt, notice.expiresAt),
+              ),
+            ),
+          ),
+          eq(subscription.status, "ACTIVE"),
+          sql`${subscription.renewalNoticeExpiresAt} IS DISTINCT FROM ${subscription.expiresAt}`,
+        ),
+      )
+      .returning({ id: subscription.id });
+    const claimedIds = new Set(claimed.map((row) => row.id));
+    return notices.filter((notice) => claimedIds.has(notice.id.value));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
   // 현재 체인은 /me와 같은 도메인 규칙으로 고른다. 사용자 묶음을 한 번에 읽는다
   async #currentChainsOf(
     userIds: readonly string[],
@@ -101,35 +131,5 @@ export class DrizzleUpcomingRenewalNoticeRepository implements UpcomingRenewalNo
         return current == null ? [] : [[userId, current.storeSubscriptionId] as const];
       }),
     );
-  }
-
-  // 읽은 뒤 갱신으로 기간이 바뀐 행은 다음 기간을 미리 표시하지 않도록 읽은 만료 시각과 같을 때만 표시한다
-  async claim(
-    notices: readonly UpcomingRenewalNotice[],
-    claimedAt: Temporal.Instant,
-  ): Promise<UpcomingRenewalNotice[]> {
-    if (notices.length === 0) {
-      return [];
-    }
-    const claimed = await this.#db
-      .update(subscription)
-      .set({ renewalNoticeExpiresAt: sql`${subscription.expiresAt}`, updatedAt: claimedAt })
-      .where(
-        and(
-          or(
-            ...notices.map((notice) =>
-              and(
-                eq(subscription.id, notice.id.value),
-                eq(subscription.expiresAt, notice.expiresAt),
-              ),
-            ),
-          ),
-          eq(subscription.status, "ACTIVE"),
-          sql`${subscription.renewalNoticeExpiresAt} IS DISTINCT FROM ${subscription.expiresAt}`,
-        ),
-      )
-      .returning({ id: subscription.id });
-    const claimedIds = new Set(claimed.map((row) => row.id));
-    return notices.filter((notice) => claimedIds.has(notice.id.value));
   }
 }

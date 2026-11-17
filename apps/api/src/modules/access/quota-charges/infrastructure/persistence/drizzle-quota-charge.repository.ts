@@ -28,10 +28,6 @@ export class DrizzleQuotaChargeRepository implements QuotaChargeRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findById(chargeId: QuotaChargeId): Promise<QuotaCharge | null> {
     const [row] = await this.#db
       .select()
@@ -146,5 +142,9 @@ export class DrizzleQuotaChargeRepository implements QuotaChargeRepositoryPort {
       )
       .returning({ id: quotaCharge.id });
     return updated.length === 1;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

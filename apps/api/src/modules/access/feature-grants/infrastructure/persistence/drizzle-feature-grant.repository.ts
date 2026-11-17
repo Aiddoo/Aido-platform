@@ -16,10 +16,6 @@ export class DrizzleFeatureGrantRepository implements FeatureGrantRepositoryPort
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findBySourceKey(sourceKey: string): Promise<FeatureGrant | null> {
     const row = await this.#db.query.featureGrant.findFirst({ where: { sourceKey } });
     return row == null ? null : toFeatureGrant(row);
@@ -31,5 +27,9 @@ export class DrizzleFeatureGrantRepository implements FeatureGrantRepositoryPort
       .insert(featureGrant)
       .values(toFeatureGrantRow(grant))
       .onConflictDoNothing({ target: featureGrant.sourceKey });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

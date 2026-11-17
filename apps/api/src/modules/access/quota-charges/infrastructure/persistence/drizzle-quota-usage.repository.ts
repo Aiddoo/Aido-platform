@@ -30,10 +30,6 @@ export class DrizzleQuotaUsageRepository implements QuotaUsageRepositoryPort {
     this.#aiUsageCounter = aiUsageCounter;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async countUsage(params: {
     readonly userId: UserId;
     readonly meter: QuotaMeter;
@@ -148,5 +144,9 @@ export class DrizzleQuotaUsageRepository implements QuotaUsageRepositoryPort {
         return updated.length === 1;
       })
       .exhaustive();
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }
