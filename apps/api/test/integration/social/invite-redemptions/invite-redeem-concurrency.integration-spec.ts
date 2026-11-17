@@ -8,7 +8,7 @@ import { InviteConfigPort } from "#api/modules/social/invites/application/ports/
 import { IssueMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/issue-my-invite.use-case";
 import { RotateInviteCodeUseCase } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
 import {
-  follow,
+  friendship as friendshipTable,
   inviteRedemption,
   premiumGrant,
   rewardClaim,
@@ -258,11 +258,11 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const request = { inviteeId, code, installationId: "replay-device", timezone: "Asia/Seoul" };
     const first = await redeemInvite.execute(request);
     await client
-      .delete(follow)
+      .delete(friendshipTable)
       .where(
         and(
-          inArray(follow.followerId, [inviterId, inviteeId]),
-          inArray(follow.followingId, [inviterId, inviteeId]),
+          inArray(friendshipTable.followerId, [inviterId, inviteeId]),
+          inArray(friendshipTable.followingId, [inviterId, inviteeId]),
         ),
       );
 

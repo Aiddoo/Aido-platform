@@ -1,6 +1,6 @@
-import { FriendProfileReaderPort } from "#api/modules/social/friends/application/ports/friend-profile.reader.port";
-import type { FriendUserReadModel } from "#api/modules/social/friends/application/read-models/friend.read-model";
-import type { UserTag } from "#api/modules/social/friends/domain/user-tag.vo";
+import { FriendProfileReaderPort } from "#api/modules/social/friendships/application/ports/friend-profile.reader.port";
+import type { FriendUserReadModel } from "#api/modules/social/friendships/application/read-models/friend.read-model";
+import type { UserTag } from "#api/modules/social/friendships/domain/user-tag.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 interface FriendProfile {

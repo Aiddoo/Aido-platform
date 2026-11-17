@@ -1,28 +1,30 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
+
 export interface InviteJoinedNotification {
-  readonly inviterId: string;
+  readonly inviterId: UserId;
   readonly inviteeName: string;
-  readonly redemptionId: string;
+  readonly redemptionId: InviteRedemptionId;
 }
 
 export interface InviteRewardedNotification {
-  readonly recipientId: string;
-  readonly redemptionId: string;
+  readonly recipientId: UserId;
+  readonly redemptionId: InviteRedemptionId;
   readonly premiumDays: number;
   readonly friendSlots: number;
 }
 
 export interface InviteProgressNotification {
-  readonly inviterId: string;
+  readonly inviterId: UserId;
   readonly inviteeName: string;
-  readonly redemptionId: string;
+  readonly redemptionId: InviteRedemptionId;
 }
 
 export interface InviteQualifyReminderNotification {
-  readonly inviteeId: string;
+  readonly inviteeId: UserId;
   readonly inviterName: string;
-  readonly redemptionId: string;
+  readonly redemptionId: InviteRedemptionId;
 }
 
 export abstract class InviteNotifierPort {

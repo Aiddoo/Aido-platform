@@ -22,7 +22,7 @@ import {
 import {
   FriendshipCacheKey,
   FRIENDSHIP_CACHE_TTL_MS,
-} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
+} from "#api/modules/social/friendships/infrastructure/cache/friendship-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";

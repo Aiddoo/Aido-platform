@@ -110,9 +110,9 @@ export class SendInviteQualifyReminderUseCase {
       }
       await inviteRedemptionRepository.save(redemption);
       await notifier.notifyQualifyReminder({
-        inviteeId: redemption.inviteeId.value,
+        inviteeId: redemption.inviteeId,
         inviterName,
-        redemptionId: redemption.id.value,
+        redemptionId: redemption.id,
       });
       return { status: "sent" };
     });

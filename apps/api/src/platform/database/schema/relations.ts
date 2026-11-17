@@ -26,15 +26,15 @@ export const relations = defineRelations(schema, (r) => ({
   dailyCompletion: {
     user: r.one.user({ from: r.dailyCompletion.userId, to: r.user.id, optional: false }),
   },
-  follow: {
+  friendship: {
     follower: r.one.user({
-      from: r.follow.followerId,
+      from: r.friendship.followerId,
       to: r.user.id,
       optional: false,
       alias: "Follow_followerId_fkey",
     }),
     following: r.one.user({
-      from: r.follow.followingId,
+      from: r.friendship.followingId,
       to: r.user.id,
       optional: false,
       alias: "Follow_followingId_fkey",
@@ -267,8 +267,8 @@ export const relations = defineRelations(schema, (r) => ({
     weeklyAchievements: r.many.weeklyAchievement(),
     receivedCheers: r.many.cheer({ alias: "Cheer_receiverId_fkey" }),
     sentCheers: r.many.cheer({ alias: "Cheer_senderId_fkey" }),
-    following: r.many.follow({ alias: "Follow_followerId_fkey" }),
-    followers: r.many.follow({ alias: "Follow_followingId_fkey" }),
+    following: r.many.friendship({ alias: "Follow_followerId_fkey" }),
+    followers: r.many.friendship({ alias: "Follow_followingId_fkey" }),
     receivedNudges: r.many.nudge({ alias: "Nudge_receiverId_fkey" }),
     sentNudges: r.many.nudge({ alias: "Nudge_senderId_fkey" }),
     receivedRemindNudges: r.many.reminderNudge({ alias: "ReminderNudge_receiverId_fkey" }),

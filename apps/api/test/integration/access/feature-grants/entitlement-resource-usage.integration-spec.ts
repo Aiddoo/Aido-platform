@@ -5,9 +5,14 @@ import { eq } from "drizzle-orm";
 import { GetEntitlementUsageUseCase } from "#api/modules/access/feature-grants/application/use-cases/get-entitlement-usage.use-case";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
 import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
-import { SendFriendRequestUseCase } from "#api/modules/social/friends/application/use-cases/send-friend-request.use-case";
-import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { follow, featureGrant, todoCategory, user } from "#api/platform/database/schema/index";
+import { SendFriendRequestUseCase } from "#api/modules/social/friendships/application/use-cases/send-friend-request.use-case";
+import { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
+import {
+  friendship as friendshipTable,
+  featureGrant,
+  todoCategory,
+  user,
+} from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { FollowFixture, UserFixture } from "#test/fixtures/index";
@@ -82,7 +87,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
       throw new Error("친구 fixture 사용자가 만들어지지 않았습니다.");
     }
     await client
-      .insert(follow)
+      .insert(friendshipTable)
       .values([
         ...friends.flatMap((friend) =>
           Object.values(FollowFixture.createMutual(userId, friend.id)),

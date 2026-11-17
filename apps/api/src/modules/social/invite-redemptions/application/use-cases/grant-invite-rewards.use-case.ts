@@ -222,8 +222,8 @@ export class GrantInviteRewardsUseCase {
       );
     try {
       await this.#dependencies.notifier.notifyInviteRewarded({
-        recipientId: rewarded.inviterId.value,
-        redemptionId: redemptionId.value,
+        recipientId: rewarded.inviterId,
+        redemptionId,
         premiumDays: quantityOf(REWARD_TYPE.PREMIUM_DAYS),
         friendSlots: quantityOf(REWARD_TYPE.FRIEND_SLOT),
       });

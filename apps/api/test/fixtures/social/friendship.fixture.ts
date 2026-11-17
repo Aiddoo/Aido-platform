@@ -1,7 +1,7 @@
 import {
   Friendship,
   type FriendshipPrimitives,
-} from "#api/modules/social/friends/domain/friendship.aggregate";
+} from "#api/modules/social/friendships/domain/friendship.aggregate";
 
 export const FRIENDSHIP_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 export const FRIENDSHIP_FIXTURE_USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";

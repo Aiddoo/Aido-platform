@@ -17,10 +17,6 @@ export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async existsAnyOf(claims: readonly RewardClaim[]): Promise<boolean> {
     if (claims.length === 0) {
       return false;
@@ -55,5 +51,9 @@ export class DrizzleRewardClaimRepository implements RewardClaimRepositoryPort {
       );
     }
     return false;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

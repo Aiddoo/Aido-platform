@@ -199,7 +199,7 @@ describe("ReplyToNudgeUseCase — 받은 콕에 답장", () => {
     const nudgeRepository = await seedReceivedNudge();
     const mutualFriendReader = createFollowReader();
     const notifier = new RecordingNudgeNotifier();
-    const todoId = (await nudgeRepository.findById(NUDGE_ID))?.todoId ?? 0;
+    const todoId = (await nudgeRepository.findById(NUDGE_ID))?.todoId.value ?? 0;
     if (state === "친구 관계 해제") {
       mutualFriendReader.removeMutual(NUDGE_FIXTURE_SENDER_ID, NUDGE_FIXTURE_RECEIVER_ID);
     }

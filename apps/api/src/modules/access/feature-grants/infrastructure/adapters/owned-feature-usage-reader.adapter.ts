@@ -6,7 +6,7 @@ import {
   type DailySendUsage,
   type DailySendUsageReaderPort,
 } from "#api/modules/social/cheers/social-cheers.public";
-import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";

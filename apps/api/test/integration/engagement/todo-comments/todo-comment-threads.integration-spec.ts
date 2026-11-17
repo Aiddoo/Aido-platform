@@ -12,7 +12,7 @@ import { DrizzleTodoCommentReplyReader } from "#api/modules/engagement/todo-comm
 import { DrizzleTodoCommentThreadReader } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-thread.reader";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
-import { DrizzleUserBlockReader } from "#api/modules/social/blocks/infrastructure/persistence/drizzle-user-block.reader";
+import { DrizzleUserBlockReader } from "#api/modules/social/user-blocks/infrastructure/persistence/drizzle-user-block.reader";
 import { todo, todoCategory, todoComment, user } from "#api/platform/database/schema/index";
 import { nowInstant } from "#test/fixtures/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";

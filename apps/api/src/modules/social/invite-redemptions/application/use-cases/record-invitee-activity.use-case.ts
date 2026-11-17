@@ -6,6 +6,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import type { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {
   planInviterRewards,
@@ -145,9 +146,9 @@ export class RecordInviteeActivityUseCase {
         return;
       }
       await notifier.notifyInviteProgress({
-        inviterId: inviterId.value,
+        inviterId,
         inviteeName,
-        redemptionId,
+        redemptionId: InviteRedemptionId.reconstitute(redemptionId),
       });
       logger.log({ event: InviteRedemptionLogEvent.PROGRESS_NOTIFIED, redemptionId });
     } catch (error) {

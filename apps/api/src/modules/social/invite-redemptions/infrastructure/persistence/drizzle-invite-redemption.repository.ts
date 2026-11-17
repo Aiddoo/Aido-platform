@@ -33,10 +33,6 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
     this.#clock = clock;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async save(redemption: InviteRedemption): Promise<void> {
     const row = toInviteRedemptionRow(redemption);
     const updatedAt = this.#clock.now();
@@ -155,5 +151,9 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       redemptionRow,
       activeDays.map((day) => day.localDate),
     );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

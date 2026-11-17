@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { match } from "ts-pattern";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -13,12 +14,12 @@ export function nudgeTargetNotFriend(targetUserId: UserId): ApplicationException
 }
 
 // 없는 할 일·남의 할 일·비공개 할 일을 구분하지 않는다
-export function nudgeTodoNotFound(todoId: number): ApplicationException {
-  return new ApplicationException(ErrorCode.TODO_0801, { todoId });
+export function nudgeTodoNotFound(todoId: TodoId): ApplicationException {
+  return new ApplicationException(ErrorCode.TODO_0801, { todoId: todoId.value });
 }
 
-export function nudgeTodoNotActiveToday(todoId: number): ApplicationException {
-  return new ApplicationException(ErrorCode.NUDGE_1106, { todoId });
+export function nudgeTodoNotActiveToday(todoId: TodoId): ApplicationException {
+  return new ApplicationException(ErrorCode.NUDGE_1106, { todoId: todoId.value });
 }
 
 export function nudgeDailyLimitReached(featureQuota: DailySendFeatureQuota): ApplicationException {

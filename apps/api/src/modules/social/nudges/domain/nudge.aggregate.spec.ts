@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createNudgeFixture,
@@ -24,7 +25,7 @@ describe("Nudge — 콕", () => {
       id: NudgeId.reconstitute(3),
       senderId: SENDER_ID,
       receiverId: RECEIVER_ID,
-      todoId: 10,
+      todoId: TodoId.reconstitute(10),
       message: NudgeMessage.create("같이 해요"),
       now: NUDGE_FIXTURE_NOW,
     });
@@ -53,7 +54,7 @@ describe("Nudge — 콕", () => {
         id: NudgeId.reconstitute(3),
         senderId: SENDER_ID,
         receiverId: SENDER_ID,
-        todoId: 10,
+        todoId: TodoId.reconstitute(10),
         message: null,
         now: NUDGE_FIXTURE_NOW,
       });

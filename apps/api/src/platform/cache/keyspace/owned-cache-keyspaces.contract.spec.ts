@@ -9,7 +9,7 @@ import {
 import {
   FRIENDSHIP_CACHE_TTL_MS,
   FriendshipCacheKey,
-} from "#api/modules/social/friends/infrastructure/cache/friendship-cache.keyspace";
+} from "#api/modules/social/friendships/infrastructure/cache/friendship-cache.keyspace";
 describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
   describe("TTL 상수", () => {
     it("세션 TTL은 30초이다", () => {

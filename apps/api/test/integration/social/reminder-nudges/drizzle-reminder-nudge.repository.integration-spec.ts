@@ -1,7 +1,8 @@
 import { omit } from "es-toolkit";
 
+import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
+import { ReminderTargetReaderAdapter } from "#api/modules/social/reminder-nudges/infrastructure/adapters/reminder-target-reader.adapter";
 import { DrizzleReminderNudgeRepository } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-nudge.repository";
-import { DrizzleReminderTargetReader } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-target.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -71,7 +72,7 @@ describe("DrizzleReminderNudgeRepository·DrizzleReminderTargetReader (실제 Po
     const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
       repository: new DrizzleReminderNudgeRepository(transactionHost),
-      targetReader: new DrizzleReminderTargetReader(transactionHost),
+      targetReader: new ReminderTargetReaderAdapter(new DrizzleTodoBriefReader(transactionHost)),
       addTodo,
     };
   });

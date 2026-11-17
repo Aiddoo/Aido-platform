@@ -317,7 +317,7 @@ export class DrizzleSchedulerReader
     const activeWindow = {
       lastActiveAt: { gte: activeSince, lte: activeUntil },
     };
-    const rows = await this.#db.query.follow.findMany({
+    const rows = await this.#db.query.friendship.findMany({
       columns: { followerId: true, followingId: true },
       where: {
         OR: [
@@ -368,7 +368,7 @@ export class DrizzleSchedulerReader
   }
 
   findAcceptedFollows(candidateIds: string[]): Promise<FollowPair[]> {
-    return this.#db.query.follow.findMany({
+    return this.#db.query.friendship.findMany({
       columns: { followerId: true, followingId: true },
       where: {
         OR: [

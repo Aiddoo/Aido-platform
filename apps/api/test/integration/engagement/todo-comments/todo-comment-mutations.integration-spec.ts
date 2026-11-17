@@ -22,7 +22,7 @@ import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
-  follow,
+  friendship as friendshipTable,
   notification,
   pushDispatch,
   pushDispatchOutbox,
@@ -428,7 +428,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     // Given
     await client.update(todo).set({ visibility: "PRIVATE" }).where(eq(todo.id, todoId));
     await client
-      .insert(follow)
+      .insert(friendshipTable)
       .values([
         FollowFixture.create({ followerId: userId, followingId: authorId, status: "ACCEPTED" }),
         FollowFixture.create({ followerId: authorId, followingId: userId, status: "ACCEPTED" }),
@@ -443,11 +443,15 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
         TodoComment.reconstitute({ ...comment.toPrimitives(), id: createEntityId() }),
       );
       await client
-        .delete(follow)
-        .where(and(eq(follow.followerId, userId), eq(follow.followingId, authorId)));
+        .delete(friendshipTable)
+        .where(
+          and(eq(friendshipTable.followerId, userId), eq(friendshipTable.followingId, authorId)),
+        );
       await client
-        .delete(follow)
-        .where(and(eq(follow.followerId, authorId), eq(follow.followingId, userId)));
+        .delete(friendshipTable)
+        .where(
+          and(eq(friendshipTable.followerId, authorId), eq(friendshipTable.followingId, userId)),
+        );
       return save(comment);
     });
 

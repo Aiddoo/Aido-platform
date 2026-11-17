@@ -5,7 +5,7 @@ import { EngagementTodoCommentLikesModule } from "#api/modules/engagement/todo-c
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
-import { SocialBlockQueriesModule } from "#api/modules/social/blocks/social-block-queries.public";
+import { SocialUserBlocksQueriesModule } from "#api/modules/social/user-blocks/social-user-blocks.public";
 
 import { TodoCommentAccountCleanupPort } from "./application/ports/todo-comment-account-cleanup.port.js";
 import { engagementTodoCommentsConfig } from "./engagement-todo-comments.config.js";
@@ -19,7 +19,7 @@ import { TodoCommentThreadController } from "./presentation/http/v2/todo-comment
     NotificationPushModule,
     PlanningTodosModule,
     PlanningTodoQueriesModule,
-    SocialBlockQueriesModule,
+    SocialUserBlocksQueriesModule,
     ConfigModule.forFeature(engagementTodoCommentsConfig),
   ],
   controllers: [TodoCommentController, TodoCommentThreadController],

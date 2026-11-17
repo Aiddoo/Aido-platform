@@ -93,7 +93,7 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort {
   deleteTodo(todoId: number): void {
     this.#todos.delete(todoId);
     for (const [id, nudge] of this.#nudges) {
-      if (nudge.todoId === todoId) {
+      if (nudge.todoId.value === todoId) {
         this.#nudges.delete(id);
       }
     }
@@ -111,7 +111,7 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort {
 
   async findLastSentForTodo(senderId: UserId, todoId: TodoId): Promise<Nudge | null> {
     return this.#lastNudge(
-      (nudge) => nudge.senderId.equals(senderId) && nudge.todoId === todoId.value,
+      (nudge) => nudge.senderId.equals(senderId) && nudge.todoId.equals(todoId),
     );
   }
 
@@ -142,7 +142,7 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort {
       all
         .filter(
           (nudge) =>
-            nudge.todoId === query.todoId.value &&
+            nudge.todoId.equals(query.todoId) &&
             nudge.receiverId.equals(query.ownerId) &&
             nudge.thankedAt != null,
         )
@@ -151,7 +151,7 @@ export class InMemoryNudgeRepository extends NudgeRepositoryPort {
     const latestBySender = new Map<string, Nudge>();
     for (const nudge of all) {
       const isCandidate =
-        nudge.todoId === query.todoId.value &&
+        nudge.todoId.equals(query.todoId) &&
         nudge.receiverId.equals(query.ownerId) &&
         nudge.id.value <= query.throughNudgeId.value &&
         friends.has(nudge.senderId.value) &&

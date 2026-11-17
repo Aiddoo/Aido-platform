@@ -1,20 +1,25 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
+import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { NudgeId } from "../../domain/nudge-id.vo.js";
+
 export interface NudgeSentNotification {
-  readonly nudgeId: number;
-  readonly senderId: string;
-  readonly receiverId: string;
+  readonly nudgeId: NudgeId;
+  readonly senderId: UserId;
+  readonly receiverId: UserId;
   readonly senderName: string;
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly todoTitle: string;
   readonly message?: string;
 }
 
 interface NudgeInteractionNotificationBase {
-  readonly nudgeId: number;
-  readonly todoId: number;
-  readonly actorId: string;
-  readonly recipientId: string;
+  readonly nudgeId: NudgeId;
+  readonly todoId: TodoId;
+  readonly actorId: UserId;
+  readonly recipientId: UserId;
   readonly actorName: string;
   readonly todoTitle: string;
 }

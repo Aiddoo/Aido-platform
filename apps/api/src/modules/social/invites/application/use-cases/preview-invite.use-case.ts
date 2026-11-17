@@ -2,7 +2,7 @@ import { InviteCode } from "../../../shared/domain/invite-code.vo.js";
 import { assertInviteEnabled, inviteNotFound, inviteRevoked } from "../invites.errors.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteReaderPort } from "../ports/invite.reader.port.js";
-import type { InviterProfile } from "../read-models/inviter-profile.read-model.js";
+import type { InviterProfileReadModel } from "../read-models/inviter-profile.read-model.js";
 
 export interface PreviewInviteQuery {
   readonly code: string;
@@ -21,7 +21,7 @@ export class PreviewInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: PreviewInviteQuery): Promise<InviterProfile> {
+  async execute(query: PreviewInviteQuery): Promise<InviterProfileReadModel> {
     assertInviteEnabled(this.#dependencies.inviteConfig);
 
     const found = await this.#dependencies.inviteReader.findByCodeWithInviter(

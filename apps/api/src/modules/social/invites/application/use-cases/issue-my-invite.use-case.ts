@@ -10,7 +10,7 @@ import { InviteLockKeys } from "../invites.lock-keys.js";
 import { InviteLogEvent } from "../invites.log-events.js";
 import type { InviteConfigPort } from "../ports/invite-config.port.js";
 import type { InviteRepositoryPort } from "../ports/invite.repository.port.js";
-import type { MyInvite } from "../read-models/my-invite.read-model.js";
+import type { MyInviteReadModel } from "../read-models/my-invite.read-model.js";
 import type { IssueInviteCodeUseCase } from "./issue-invite-code.use-case.js";
 import type { SummarizeMyInviteUseCase } from "./summarize-my-invite.use-case.js";
 
@@ -37,7 +37,7 @@ export class IssueMyInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(command: IssueMyInviteCommand): Promise<MyInvite> {
+  async execute(command: IssueMyInviteCommand): Promise<MyInviteReadModel> {
     const { inviteRepository, inviteConfig, clock, summarizeMyInvite } = this.#dependencies;
     assertInviteEnabled(inviteConfig);
 

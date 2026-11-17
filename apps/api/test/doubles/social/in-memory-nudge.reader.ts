@@ -85,7 +85,7 @@ export class InMemoryNudgeReader extends NudgeReaderPort {
   async findLastReceivedNudgeId(todoId: TodoId, receiverId: UserId): Promise<NudgeId | null> {
     const [last] = this.#repository
       .listAll()
-      .filter((nudge) => nudge.todoId === todoId.value && nudge.receiverId.equals(receiverId))
+      .filter((nudge) => nudge.todoId.equals(todoId) && nudge.receiverId.equals(receiverId))
       .toSorted((left, right) => right.id.value - left.id.value);
     return last?.id ?? null;
   }
@@ -126,7 +126,7 @@ export class InMemoryNudgeReader extends NudgeReaderPort {
       .listAll()
       .filter(
         (nudge) =>
-          nudge.todoId === todoId.value &&
+          nudge.todoId.equals(todoId) &&
           nudge.receiverId.equals(receiverId) &&
           nudge.thankedAt != null,
       );
@@ -151,7 +151,7 @@ export class InMemoryNudgeReader extends NudgeReaderPort {
 
   // 대상 할 일이 지워지면 콕도 함께 지워지는 외래 키와 같게, 할 일이 없는 콕은 내보내지 않는다
   #toReadModel(nudge: Nudge): NudgeReadModel | null {
-    const todo = this.#repository.findTodo(nudge.todoId);
+    const todo = this.#repository.findTodo(nudge.todoId.value);
     if (todo == null) {
       return null;
     }

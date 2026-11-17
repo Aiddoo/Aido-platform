@@ -4,6 +4,8 @@ export {
   type SingleTodoCountQuery,
   SingleTodoCountReaderPort,
 } from "./application/ports/single-todo-count.reader.port.js";
+export { TodoBriefReaderPort } from "./application/ports/todo-brief.reader.port.js";
+export type { TodoBriefReadModel } from "./application/read-models/todo-brief.read-model.js";
 export { TodoCompletionGroupReaderPort } from "./application/ports/todo-completion-group.reader.port.js";
 export { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 export { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";

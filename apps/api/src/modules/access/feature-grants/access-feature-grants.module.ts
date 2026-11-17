@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
-import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
 import { AccessFeatureGrantsQueriesModule } from "./access-feature-grants-queries.module.js";
@@ -17,7 +17,7 @@ import { EntitlementController } from "./presentation/http/v1/entitlement.contro
     AccessQuotaChargesModule,
     SocialCheersModule,
     SocialNudgesModule,
-    SocialFriendsModule,
+    SocialFriendshipsModule,
     PlanningCategoriesModule,
   ],
   controllers: [EntitlementController],

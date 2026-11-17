@@ -4,7 +4,6 @@ import {
   and,
   countDistinct,
   eq,
-  exists,
   inArray,
   isNotNull,
   isNull,
@@ -12,20 +11,23 @@ import {
   max,
   notInArray,
   type SQL,
-  sql,
 } from "drizzle-orm";
-import { compact } from "es-toolkit";
+import { compact, keyBy, uniq } from "es-toolkit";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { hasNoBlockWith } from "#api/modules/social/blocks/social-block-queries.public";
 import {
-  USER_BRIEF_RELATION,
-  type UserBriefRow,
-} from "#api/modules/social/friends/social-friends.public";
+  UserBriefReaderPort,
+  type UserBriefReadModel,
+} from "#api/modules/identity/users/identity-users.public";
+import {
+  TodoBriefReaderPort,
+  type TodoBriefReadModel,
+  TodoId,
+} from "#api/modules/planning/todos/planning-todo-queries.public";
+import { hasNoBlockWith } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
-import { nudge as nudgeTable, todo as todoTable } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { nudge as nudgeTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   ListNudgesParams,
@@ -42,60 +44,17 @@ import type {
 } from "../../application/read-models/nudge.read-model.js";
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import type { NudgeDirection } from "../../domain/nudges.constants.js";
+import { toNudgeInteractionTodoReadModel } from "./nudge-row.mapper.js";
 
 type NudgeRow = typeof nudgeTable.$inferSelect;
-type TodoRow = typeof todoTable.$inferSelect;
-type InteractionTodoRow = Pick<TodoRow, "id" | "userId" | "title" | "completed" | "visibility">;
-type NudgeRowWithRelations = NudgeRow & {
-  readonly sender: UserBriefRow;
-  readonly receiver: UserBriefRow;
-  readonly todo: InteractionTodoRow;
-};
 type NudgeQueryExecutor = Pick<Database, "select">;
 
-const NUDGE_RELATIONS = {
-  sender: USER_BRIEF_RELATION,
-  receiver: USER_BRIEF_RELATION,
-  todo: { columns: { id: true, title: true, completed: true, userId: true, visibility: true } },
-} as const;
-
-export function toNudgeInteractionTodoReadModel(
-  row: InteractionTodoRow,
-): NudgeInteractionTodoReadModel {
+function toNudgeUserReadModel(brief: UserBriefReadModel): NudgeUserReadModel {
   return {
-    id: row.id,
-    ownerId: row.userId,
-    title: row.title,
-    completed: row.completed,
-    visibility: row.visibility,
-  };
-}
-
-function toNudgeUserReadModel(row: UserBriefRow): NudgeUserReadModel {
-  return {
-    id: row.id,
-    userTag: row.userTag,
-    name: row.profile?.name ?? null,
-    profileImage: row.profile?.profileImage ?? null,
-  };
-}
-
-function toNudgeReadModel(row: NudgeRowWithRelations): NudgeReadModel {
-  return {
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    todoId: row.todoId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-    replyKind: row.replyKind,
-    repliedAt: row.repliedAt,
-    replyUpdatedAt: row.replyUpdatedAt,
-    thankedAt: row.thankedAt,
-    sender: toNudgeUserReadModel(row.sender),
-    receiver: toNudgeUserReadModel(row.receiver),
-    todo: toNudgeInteractionTodoReadModel(row.todo),
+    id: brief.userId.value,
+    userTag: brief.userTag,
+    name: brief.name,
+    profileImage: brief.profileImage,
   };
 }
 
@@ -107,7 +66,16 @@ function thankedOnTodo(todoId: TodoId, receiverId: UserId): SQL | undefined {
   );
 }
 
-// 아직 고마움을 받지 않은 친구가 공개 할 일에 보낸 콕. 보낸 사람마다 묶으면 감사 후보 하나다
+// 감사는 받은 사람이 소유한 공개 할 일에서만 한다. 할 일은 planning이 소유해 조회 포트로 확인한다
+async function isThanksTodo(
+  todoBriefReader: Pick<TodoBriefReaderPort, "findByIds">,
+  query: NudgeThanksCandidateQuery,
+): Promise<boolean> {
+  const [todo] = await todoBriefReader.findByIds([query.todoId]);
+  return todo != null && todo.visibility === "PUBLIC" && todo.ownerId.equals(query.ownerId);
+}
+
+// 아직 고마움을 받지 않은 친구가 그 할 일에 보낸 콕. 보낸 사람마다 묶으면 감사 후보 하나다
 async function thanksCandidateCondition(
   db: NudgeQueryExecutor,
   query: NudgeThanksCandidateQuery,
@@ -127,27 +95,17 @@ async function thanksCandidateCondition(
     ),
     thankedSenderIds.length === 0 ? undefined : notInArray(nudgeTable.senderId, thankedSenderIds),
     isNull(nudgeTable.thankedAt),
-    exists(
-      db
-        .select({ one: sql`1` })
-        .from(todoTable)
-        .where(
-          and(
-            eq(todoTable.id, nudgeTable.todoId),
-            eq(todoTable.visibility, "PUBLIC"),
-            eq(todoTable.userId, query.ownerId.value),
-          ),
-        ),
-    ),
   );
 }
 
 // 감사 저장(저장소)과 감사 미리보기(조회)가 같은 후보를 고르도록 한 곳에 둔다. id 내림차순이다
-export async function listThanksCandidateIds(
-  db: NudgeQueryExecutor,
-  query: NudgeThanksCandidateQuery,
-): Promise<number[]> {
-  if (query.friendIds.length === 0) {
+export async function listThanksCandidateIds(source: {
+  readonly db: NudgeQueryExecutor;
+  readonly todoBriefReader: Pick<TodoBriefReaderPort, "findByIds">;
+  readonly query: NudgeThanksCandidateQuery;
+}): Promise<number[]> {
+  const { db, todoBriefReader, query } = source;
+  if (query.friendIds.length === 0 || !(await isThanksTodo(todoBriefReader, query))) {
     return [];
   }
   const groups = await db
@@ -158,16 +116,21 @@ export async function listThanksCandidateIds(
   return compact(groups.map((group) => group.latestId)).toSorted((left, right) => right - left);
 }
 
+// 콕 행은 이 Context에서 읽고, 보낸·받은 사람과 할 일은 identity·planning 조회 포트로 한 번씩 붙인다
 @Injectable()
 export class DrizzleNudgeReader implements NudgeReaderPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #userBriefReader: UserBriefReaderPort;
+  readonly #todoBriefReader: TodoBriefReaderPort;
 
-  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    userBriefReader: UserBriefReaderPort,
+    todoBriefReader: TodoBriefReaderPort,
+  ) {
     this.#transactionHost = transactionHost;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
+    this.#userBriefReader = userBriefReader;
+    this.#todoBriefReader = todoBriefReader;
   }
 
   listReceived(params: ListNudgesParams): Promise<NudgeReadModel[]> {
@@ -224,9 +187,12 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
           },
         ],
       },
-      with: NUDGE_RELATIONS,
     });
-    return row == null ? null : toNudgeReadModel(row);
+    if (row == null) {
+      return null;
+    }
+    const [interaction] = await this.#toNudgeReadModels([row]);
+    return interaction ?? null;
   }
 
   async listInteractions(params: {
@@ -248,22 +214,21 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
           ),
         ...(afterNudgeId != null && { id: { lt: afterNudgeId.value } }),
       },
-      with: NUDGE_RELATIONS,
       orderBy: { id: "desc" },
       limit,
     });
-    return rows.map(toNudgeReadModel);
+    return this.#toNudgeReadModels(rows);
   }
 
   async findInteractionTodo(
     todoId: TodoId,
     ownerId: UserId,
   ): Promise<NudgeInteractionTodoReadModel | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { id: true, userId: true, title: true, completed: true, visibility: true },
-      where: { id: todoId.value, userId: ownerId.value },
-    });
-    return row == null ? null : toNudgeInteractionTodoReadModel(row);
+    const [todo] = await this.#todoBriefReader.findByIds([todoId]);
+    if (todo == null || !todo.ownerId.equals(ownerId)) {
+      return null;
+    }
+    return toNudgeInteractionTodoReadModel(todo);
   }
 
   async findLastReceivedNudgeId(todoId: TodoId, receiverId: UserId): Promise<NudgeId | null> {
@@ -297,7 +262,11 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
       readonly limit: number | null;
     },
   ): Promise<NudgeThanksRecipientReadModel[]> {
-    const ids = await listThanksCandidateIds(this.#db, query);
+    const ids = await listThanksCandidateIds({
+      db: this.#db,
+      todoBriefReader: this.#todoBriefReader,
+      query,
+    });
     const { afterNudgeId, limit } = query;
     const remainingIds = afterNudgeId == null ? ids : ids.filter((id) => id < afterNudgeId.value);
     const pageIds = limit == null ? remainingIds : remainingIds.slice(0, limit);
@@ -305,16 +274,19 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
       return [];
     }
     const rows = await this.#db.query.nudge.findMany({
-      columns: { id: true },
+      columns: { id: true, senderId: true },
       where: { id: { in: pageIds } },
-      with: { sender: USER_BRIEF_RELATION },
       orderBy: { id: "desc" },
     });
-    return rows.map((row) => ({ nudgeId: row.id, sender: toNudgeUserReadModel(row.sender) }));
+    const senders = await this.#findUsers(rows.map((row) => row.senderId));
+    return rows.flatMap((row) => {
+      const sender = senders[row.senderId];
+      return sender == null ? [] : [{ nudgeId: row.id, sender: toNudgeUserReadModel(sender) }];
+    });
   }
 
   async countThanksRecipients(query: NudgeThanksCandidateQuery): Promise<number> {
-    if (query.friendIds.length === 0) {
+    if (query.friendIds.length === 0 || !(await isThanksTodo(this.#todoBriefReader, query))) {
       return 0;
     }
     // 후보는 보낸 사람마다 하나라 id를 가져오지 않고 보낸 사람 수를 센다
@@ -360,10 +332,61 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
               ]),
         ],
       },
-      with: NUDGE_RELATIONS,
       orderBy: { createdAt: "desc", id: "desc" },
       limit,
     });
-    return rows.map(toNudgeReadModel);
+    return this.#toNudgeReadModels(rows);
+  }
+
+  async #toNudgeReadModels(rows: readonly NudgeRow[]): Promise<NudgeReadModel[]> {
+    const [users, todos] = await Promise.all([
+      this.#findUsers(rows.flatMap((row) => [row.senderId, row.receiverId])),
+      this.#findTodos(rows.map((row) => row.todoId)),
+    ]);
+    // 사람·할 일은 FK로 지워지면 콕도 함께 지워진다. 그 사이에 사라진 행은 목록에서 뺀다
+    return rows.flatMap((row) => {
+      const sender = users[row.senderId];
+      const receiver = users[row.receiverId];
+      const todo = todos[row.todoId];
+      if (sender == null || receiver == null || todo == null) {
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          senderId: row.senderId,
+          receiverId: row.receiverId,
+          todoId: row.todoId,
+          message: row.message,
+          readAt: row.readAt,
+          createdAt: row.createdAt,
+          replyKind: row.replyKind,
+          repliedAt: row.repliedAt,
+          replyUpdatedAt: row.replyUpdatedAt,
+          thankedAt: row.thankedAt,
+          sender: toNudgeUserReadModel(sender),
+          receiver: toNudgeUserReadModel(receiver),
+          todo: toNudgeInteractionTodoReadModel(todo),
+        },
+      ];
+    });
+  }
+
+  async #findUsers(userIds: readonly string[]): Promise<Record<string, UserBriefReadModel>> {
+    const briefs = await this.#userBriefReader.findByUserIds(
+      uniq(userIds).map((userId) => UserId.reconstitute(userId)),
+    );
+    return keyBy(briefs, (brief) => brief.userId.value);
+  }
+
+  async #findTodos(todoIds: readonly number[]): Promise<Record<number, TodoBriefReadModel>> {
+    const todos = await this.#todoBriefReader.findByIds(
+      uniq(todoIds).map((todoId) => TodoId.reconstitute(todoId)),
+    );
+    return keyBy(todos, (todo) => todo.todoId.value);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

@@ -21,10 +21,6 @@ export class DrizzleInviteRepository implements InviteRepositoryPort {
     this.#clock = clock;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findActiveByInviterId(inviterId: UserId): Promise<Invite | null> {
     const row = await this.#db.query.invite.findFirst({
       columns: INVITE_COLUMNS,
@@ -49,5 +45,9 @@ export class DrizzleInviteRepository implements InviteRepositoryPort {
       .update(inviteTable)
       .set({ status: row.status, revokedAt: row.revokedAt, updatedAt: this.#clock.now() })
       .where(eq(inviteTable.id, row.id));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

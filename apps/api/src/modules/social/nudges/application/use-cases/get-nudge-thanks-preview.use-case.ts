@@ -1,7 +1,7 @@
 import { match } from "ts-pattern";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -114,7 +114,7 @@ export class GetNudgeThanksPreviewUseCase {
       ownerId,
       todoId,
       throughNudgeId,
-      friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
+      friendIds,
     };
     if (query.limit == null) {
       const recipients = await nudgeReader.listThanksRecipients({

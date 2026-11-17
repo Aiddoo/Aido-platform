@@ -1,3 +1,4 @@
+import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
 import { DrizzleCheerReader } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.reader";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
 import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
@@ -47,7 +48,7 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
 
   function createReader(): DrizzleCheerReader {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleCheerReader(transactionHost);
+    return new DrizzleCheerReader(transactionHost, new DrizzleUserBriefReader(transactionHost));
   }
 
   describeCheerRepositoryContract(async () => ({

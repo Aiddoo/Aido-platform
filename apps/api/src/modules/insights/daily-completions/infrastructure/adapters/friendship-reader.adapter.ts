@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendshipReaderPort } from "../../application/ports/friendship.reader.port.js";

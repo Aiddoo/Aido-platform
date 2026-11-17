@@ -1,7 +1,7 @@
-import { FriendSearchReaderPort } from "#api/modules/social/friends/application/ports/friend-search.reader.port";
-import type { UserSearchResultReadModel } from "#api/modules/social/friends/application/read-models/user-search-result.read-model";
-import type { UserSearchPosition } from "#api/modules/social/friends/domain/user-search-cursor.vo";
-import type { UserSearchTerm } from "#api/modules/social/friends/domain/user-search-term.vo";
+import { FriendSearchReaderPort } from "#api/modules/social/friendships/application/ports/friend-search.reader.port";
+import type { UserSearchResultReadModel } from "#api/modules/social/friendships/application/read-models/user-search-result.read-model";
+import type { UserSearchPosition } from "#api/modules/social/friendships/domain/user-search-cursor.vo";
+import type { UserSearchTerm } from "#api/modules/social/friendships/domain/user-search-term.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface RecordedFriendSearch {

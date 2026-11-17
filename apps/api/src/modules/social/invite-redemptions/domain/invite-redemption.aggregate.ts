@@ -83,7 +83,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
       inviteId: params.inviteId,
       inviterId: params.inviterId,
       inviteeId: params.inviteeId,
-      status: RedemptionStatus.JOINED,
+      status: RedemptionStatus.reconstitute(REDEMPTION_STATUS.JOINED),
       rejectionReason: null,
       timeZone: params.timeZone,
       inviterRewardEligible: params.inviterRewardEligible,

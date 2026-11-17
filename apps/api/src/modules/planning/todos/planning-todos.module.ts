@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
-import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
 import { PlanningTodoSeriesModule } from "../todo-series/planning-todo-series.module.js";
 import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
@@ -17,7 +17,7 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
   imports: [
     PlanningTodoPortsModule,
     PlanningTodoSeriesModule,
-    SocialFriendsModule,
+    SocialFriendshipsModule,
     NotificationPushModule,
     IdentitySettingsModule,
     AccessFeatureGrantsQueriesModule,

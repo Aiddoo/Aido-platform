@@ -1,9 +1,9 @@
-import type { UserBlockRepositoryPort } from "#api/modules/social/blocks/application/ports/user-block.repository.port";
-import { UserBlockId } from "#api/modules/social/blocks/domain/user-block-id.vo";
+import type { UserBlockRepositoryPort } from "#api/modules/social/user-blocks/application/ports/user-block.repository.port";
+import { UserBlockId } from "#api/modules/social/user-blocks/domain/user-block-id.vo";
 import type {
   UserBlock,
   UserBlockPrimitives,
-} from "#api/modules/social/blocks/domain/user-block.aggregate";
+} from "#api/modules/social/user-blocks/domain/user-block.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createUserBlockFixture,
@@ -15,7 +15,6 @@ import {
 const BLOCKER_ID = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKER_ID);
 const BLOCKED_ID = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKED_ID);
 const OTHER_USER_ID = UserId.reconstitute(USER_BLOCK_FIXTURE_OTHER_USER_ID);
-const MISSING_USER_ID = UserId.reconstitute("clz7x5p8k0999qz0z8z8z8z8z");
 
 async function saveBlock(
   repository: UserBlockRepositoryPort,
@@ -26,7 +25,7 @@ async function saveBlock(
   return block;
 }
 
-// 세 fixture 사용자가 활성 사용자로 있는 저장소를 만든다
+// 세 fixture 사용자가 있는 저장소를 만든다
 export function describeUserBlockRepositoryContract(
   createRepository: () => Promise<UserBlockRepositoryPort>,
 ): void {
@@ -60,20 +59,6 @@ export function describeUserBlockRepositoryContract(
       expect((await repository.findByPair(BLOCKER_ID, OTHER_USER_ID))?.id.value).toBe(
         other.id.value,
       );
-    });
-
-    it("활성 사용자는 있다고 보고 없는 사용자는 없다고 본다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const exists = [
-        await repository.existsActiveUser(BLOCKED_ID),
-        await repository.existsActiveUser(MISSING_USER_ID),
-      ];
-
-      // Then
-      expect(exists).toEqual([true, false]);
     });
   });
 }

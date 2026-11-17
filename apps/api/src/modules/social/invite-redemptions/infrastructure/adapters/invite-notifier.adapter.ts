@@ -43,19 +43,19 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_JOINED;
     const message = createInviteJoinedNotificationMessage({
       inviteeName: notification.inviteeName,
-      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviterId)),
+      locale: await this.#localeReader.getLocale(notification.inviterId),
       variantContext: {
         campaignKey,
-        recipientId: notification.inviterId,
-        occurrenceKey: notification.redemptionId,
+        recipientId: notification.inviterId.value,
+        occurrenceKey: notification.redemptionId.value,
       },
     });
     await this.#notificationPublisher.publish({
-      userId: notification.inviterId,
+      userId: notification.inviterId.value,
       type: "INVITE_JOINED",
       title: message.title,
       body: message.body,
-      metadata: { redemptionId: notification.redemptionId },
+      metadata: { redemptionId: notification.redemptionId.value },
       campaignKey,
       variantId: message.variantId,
     });
@@ -66,19 +66,19 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const message = createInviteRewardedNotificationMessage({
       premiumDays: notification.premiumDays,
       friendSlots: notification.friendSlots,
-      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.recipientId)),
+      locale: await this.#localeReader.getLocale(notification.recipientId),
       variantContext: {
         campaignKey,
-        recipientId: notification.recipientId,
-        occurrenceKey: notification.redemptionId,
+        recipientId: notification.recipientId.value,
+        occurrenceKey: notification.redemptionId.value,
       },
     });
     await this.#notificationPublisher.publish({
-      userId: notification.recipientId,
+      userId: notification.recipientId.value,
       type: "INVITE_REWARDED",
       title: message.title,
       body: message.body,
-      metadata: { redemptionId: notification.redemptionId },
+      metadata: { redemptionId: notification.redemptionId.value },
       campaignKey,
       variantId: message.variantId,
     });
@@ -88,19 +88,19 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_PROGRESS;
     const message = createInviteProgressNotificationMessage({
       inviteeName: notification.inviteeName,
-      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviterId)),
+      locale: await this.#localeReader.getLocale(notification.inviterId),
       variantContext: {
         campaignKey,
-        recipientId: notification.inviterId,
-        occurrenceKey: notification.redemptionId,
+        recipientId: notification.inviterId.value,
+        occurrenceKey: notification.redemptionId.value,
       },
     });
     await this.#notificationPublisher.publish({
-      userId: notification.inviterId,
+      userId: notification.inviterId.value,
       type: "INVITE_PROGRESS",
       title: message.title,
       body: message.body,
-      metadata: { redemptionId: notification.redemptionId },
+      metadata: { redemptionId: notification.redemptionId.value },
       campaignKey,
       variantId: message.variantId,
     });
@@ -110,19 +110,19 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
     const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_QUALIFY_REMINDER;
     const message = createInviteQualifyReminderNotificationMessage({
       inviterName: notification.inviterName,
-      locale: await this.#localeReader.getLocale(UserId.reconstitute(notification.inviteeId)),
+      locale: await this.#localeReader.getLocale(notification.inviteeId),
       variantContext: {
         campaignKey,
-        recipientId: notification.inviteeId,
-        occurrenceKey: notification.redemptionId,
+        recipientId: notification.inviteeId.value,
+        occurrenceKey: notification.redemptionId.value,
       },
     });
     await this.#notificationPublisher.publish({
-      userId: notification.inviteeId,
+      userId: notification.inviteeId.value,
       type: "INVITE_QUALIFY_REMINDER",
       title: message.title,
       body: message.body,
-      metadata: { redemptionId: notification.redemptionId },
+      metadata: { redemptionId: notification.redemptionId.value },
       // 사용자가 한 행동의 결과가 아니라 사용 시작을 권하는 알림이라 수신 동의·야간·하루 한도를 따른다
       purpose: "ENGAGEMENT",
       campaignKey,

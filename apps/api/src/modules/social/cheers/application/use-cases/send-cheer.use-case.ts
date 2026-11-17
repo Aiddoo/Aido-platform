@@ -1,4 +1,4 @@
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -118,9 +118,9 @@ export class SendCheerUseCase {
       });
       await cheerRepository.save(created);
       await notifier.notifyCheerSent({
-        cheerId: created.id.value,
-        senderId: senderId.value,
-        receiverId: receiverId.value,
+        cheerId: created.id,
+        senderId,
+        receiverId,
         senderName: await mutualFriendReader.getUserDisplayName(senderId),
         message: message?.value,
       });

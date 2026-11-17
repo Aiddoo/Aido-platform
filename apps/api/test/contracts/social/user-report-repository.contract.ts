@@ -1,11 +1,11 @@
-import type { UserReportRepositoryPort } from "#api/modules/social/reports/application/ports/user-report.repository.port";
-import { UserReportId } from "#api/modules/social/reports/domain/user-report-id.vo";
-import { UserReportResolutionNote } from "#api/modules/social/reports/domain/user-report-resolution-note.vo";
-import { UserReportTarget } from "#api/modules/social/reports/domain/user-report-target.vo";
+import type { UserReportRepositoryPort } from "#api/modules/social/user-reports/application/ports/user-report.repository.port";
+import { UserReportId } from "#api/modules/social/user-reports/domain/user-report-id.vo";
+import { UserReportResolutionNote } from "#api/modules/social/user-reports/domain/user-report-resolution-note.vo";
+import { UserReportTarget } from "#api/modules/social/user-reports/domain/user-report-target.vo";
 import type {
   UserReport,
   UserReportPrimitives,
-} from "#api/modules/social/reports/domain/user-report.aggregate";
+} from "#api/modules/social/user-reports/domain/user-report.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createUserReportFixture,
@@ -13,14 +13,11 @@ import {
   USER_REPORT_FIXTURE_COMMENT_ID,
   USER_REPORT_FIXTURE_NOW,
   USER_REPORT_FIXTURE_REPORTER_ID,
-  USER_REPORT_FIXTURE_REPORTER_TAG,
   USER_REPORT_FIXTURE_TARGET_USER_ID,
-  USER_REPORT_FIXTURE_TARGET_USER_TAG,
 } from "#test/fixtures/social/user-report.fixture";
 
 const REPORTER_ID = UserId.reconstitute(USER_REPORT_FIXTURE_REPORTER_ID);
 const TARGET_USER_ID = UserId.reconstitute(USER_REPORT_FIXTURE_TARGET_USER_ID);
-const MISSING_USER_ID = UserId.reconstitute("clz7x5p8k0999qz0z8z8z8z8z");
 const NOW = USER_REPORT_FIXTURE_NOW;
 const COMMENT_TARGET = UserReportTarget.reconstitute({
   type: "COMMENT",
@@ -158,40 +155,6 @@ export function describeUserReportRepositoryContract(
       // Then
       expect(saved).toEqual([true, false]);
       expect(stored?.toPrimitives()).toEqual(first.toPrimitives());
-    });
-
-    it("사용자 태그는 찾은 사용자만 담는다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const userTags = await repository.findUserTags([
-        REPORTER_ID,
-        TARGET_USER_ID,
-        MISSING_USER_ID,
-      ]);
-
-      // Then
-      expect(userTags).toEqual(
-        new Map([
-          [USER_REPORT_FIXTURE_REPORTER_ID, USER_REPORT_FIXTURE_REPORTER_TAG],
-          [USER_REPORT_FIXTURE_TARGET_USER_ID, USER_REPORT_FIXTURE_TARGET_USER_TAG],
-        ]),
-      );
-    });
-
-    it("활성 사용자는 있다고 보고 없는 사용자는 없다고 본다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const exists = [
-        await repository.existsActiveUser(TARGET_USER_ID),
-        await repository.existsActiveUser(MISSING_USER_ID),
-      ];
-
-      // Then
-      expect(exists).toEqual([true, false]);
     });
   });
 }

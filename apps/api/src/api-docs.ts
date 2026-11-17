@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppConfigAppVersionsAdminModule } from "#api/modules/app-config/app-versions/app-config-app-versions.public";
 import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
 import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
-import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
+import { SocialUserReportsAdminModule } from "#api/modules/social/user-reports/social-user-reports.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
   SWAGGER_TAG_DESCRIPTIONS,
@@ -188,7 +188,7 @@ ${adminErrorCodeTable()}
       AppConfigAppVersionsAdminModule,
       OperationsBroadcastsModule,
       OperationsMetricsModule,
-      SocialReportsAdminModule,
+      SocialUserReportsAdminModule,
     ],
     standardSchemaConverter: convertStandardSchema,
   });

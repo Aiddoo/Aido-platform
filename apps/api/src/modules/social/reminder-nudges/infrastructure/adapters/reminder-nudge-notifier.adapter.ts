@@ -16,6 +16,12 @@ export class ReminderNudgeNotifierAdapter implements ReminderNudgeNotifierPort {
   }
 
   notifyNudgeSent(notification: ReminderNudgeSentNotification): Promise<void> {
-    return this.#notificationQueue.enqueueNudgeSent(notification);
+    return this.#notificationQueue.enqueueNudgeSent({
+      nudgeId: notification.nudgeId.value,
+      senderId: notification.senderId.value,
+      receiverId: notification.receiverId.value,
+      senderName: notification.senderName,
+      message: notification.message,
+    });
   }
 }

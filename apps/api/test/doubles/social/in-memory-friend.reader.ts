@@ -1,10 +1,11 @@
-import { FriendReaderPort } from "#api/modules/social/friends/application/ports/friend.reader.port";
+import { FriendReaderPort } from "#api/modules/social/friendships/application/ports/friend.reader.port";
 import type {
   FriendReadModel,
+  FriendRelationReadModel,
   FriendRequestReadModel,
-} from "#api/modules/social/friends/application/read-models/friend.read-model";
-import type { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
-import type { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
+} from "#api/modules/social/friendships/application/read-models/friend.read-model";
+import type { FriendshipId } from "#api/modules/social/friendships/domain/friendship-id.vo";
+import type { Friendship } from "#api/modules/social/friendships/domain/friendship.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryFriendProfileReader } from "./in-memory-friend-profile.reader.js";
@@ -111,6 +112,30 @@ export class InMemoryFriendReader extends FriendReaderPort {
       .listAll()
       .filter((friendship) => friendship.isPending() && friendship.followerId.equals(userId))
       .length;
+  }
+
+  async findRelationsWith(
+    viewerId: UserId,
+    userIds: readonly UserId[],
+  ): Promise<FriendRelationReadModel[]> {
+    const all = this.#friendshipRepository.listAll();
+    return userIds.map((userId) => {
+      const outgoing = all.find(
+        (friendship) =>
+          friendship.followerId.equals(viewerId) && friendship.followingId.equals(userId),
+      );
+      const incoming = all.find(
+        (friendship) =>
+          friendship.followerId.equals(userId) && friendship.followingId.equals(viewerId),
+      );
+      return {
+        userId: userId.value,
+        isFollowing: outgoing?.isAccepted() === true,
+        isFollower: incoming?.isAccepted() === true,
+        isFriend: outgoing?.isAccepted() === true && incoming?.isAccepted() === true,
+        isRequestPending: outgoing?.isPending() === true,
+      };
+    });
   }
 
   #listRequests(

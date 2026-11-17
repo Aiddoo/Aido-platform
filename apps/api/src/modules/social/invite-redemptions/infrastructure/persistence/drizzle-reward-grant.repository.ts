@@ -29,10 +29,6 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async addPending(grants: readonly RewardGrant[]): Promise<number> {
     if (grants.length === 0) {
       return 0;
@@ -116,5 +112,9 @@ export class DrizzleRewardGrantRepository implements RewardGrantRepositoryPort {
       .orderBy(asc(rewardGrant.sourceId))
       .limit(params.limit);
     return groups.map((group) => InviteRedemptionId.reconstitute(group.sourceId));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

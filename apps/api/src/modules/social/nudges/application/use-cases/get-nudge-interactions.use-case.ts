@@ -1,4 +1,4 @@
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -49,7 +49,7 @@ export class GetNudgeInteractionsUseCase {
       }),
       mutualFriendReader.getCurrentMutualFriendIds(viewerId),
     ]);
-    const friends = new Set(friendIds);
+    const friends = new Set(friendIds.map((friendId) => friendId.value));
     const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });
 
     return {

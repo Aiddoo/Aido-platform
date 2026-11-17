@@ -1,7 +1,11 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { CheerId } from "../../domain/cheer-id.vo.js";
+
 export interface CheerSentNotification {
-  readonly cheerId: number;
-  readonly senderId: string;
-  readonly receiverId: string;
+  readonly cheerId: CheerId;
+  readonly senderId: UserId;
+  readonly receiverId: UserId;
   readonly senderName: string;
   readonly message?: string;
 }

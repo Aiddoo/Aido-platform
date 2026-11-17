@@ -21,10 +21,6 @@ export class DrizzleCheerRepository implements CheerRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<CheerId> {
     return CheerId.reconstitute(await nextSequenceValue(this.#db, cheerTable.id));
   }
@@ -87,5 +83,9 @@ export class DrizzleCheerRepository implements CheerRepositoryPort {
       )
       .returning({ id: cheerTable.id });
     return updated.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

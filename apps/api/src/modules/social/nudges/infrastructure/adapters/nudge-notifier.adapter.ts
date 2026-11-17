@@ -10,7 +10,6 @@ import {
   NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import {
@@ -38,12 +37,20 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
   }
 
   notifyNudgeSent(notification: NudgeSentNotification): Promise<void> {
-    return this.#notificationQueue.enqueueNudgeSent(notification);
+    return this.#notificationQueue.enqueueNudgeSent({
+      nudgeId: notification.nudgeId.value,
+      senderId: notification.senderId.value,
+      receiverId: notification.receiverId.value,
+      senderName: notification.senderName,
+      todoId: notification.todoId.value,
+      todoTitle: notification.todoTitle,
+      message: notification.message,
+    });
   }
 
   async recordInteraction(notification: NudgeInteractionNotification): Promise<void> {
     const locale = await this.#notificationRecipientLocaleReader.getLocale(
-      UserId.reconstitute(notification.recipientId),
+      notification.recipientId,
     );
     await this.#notificationPublisher.publish(this.#toNotificationData(notification, locale));
   }
@@ -53,13 +60,13 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
       return;
     }
     const locales = await this.#notificationRecipientLocaleReader.getLocales(
-      notifications.map((notification) => UserId.reconstitute(notification.recipientId)),
+      notifications.map((notification) => notification.recipientId),
     );
     await this.#notificationPublisher.publishBatch(
       notifications.map((notification) =>
         this.#toNotificationData(
           notification,
-          locales.get(notification.recipientId) ?? DEFAULT_LOCALE,
+          locales.get(notification.recipientId.value) ?? DEFAULT_LOCALE,
         ),
       ),
     );
@@ -77,8 +84,8 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
       locale,
       variantContext: {
         campaignKey,
-        recipientId: payload.recipientId,
-        occurrenceKey: String(payload.nudgeId),
+        recipientId: payload.recipientId.value,
+        occurrenceKey: String(payload.nudgeId.value),
       },
     };
     const message = match(payload)
@@ -88,13 +95,13 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
       .with({ kind: "thanks" }, () => createNudgeThanksNotificationMessage(copyInput))
       .exhaustive();
     return {
-      userId: payload.recipientId,
+      userId: payload.recipientId.value,
       type,
       title: message.title,
       body: message.body,
-      nudgeId: payload.nudgeId,
-      todoId: payload.todoId,
-      friendId: payload.actorId,
+      nudgeId: payload.nudgeId.value,
+      todoId: payload.todoId.value,
+      friendId: payload.actorId.value,
       campaignKey,
       variantId: message.variantId,
     };

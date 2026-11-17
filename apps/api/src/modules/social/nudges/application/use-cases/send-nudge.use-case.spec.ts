@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import type { NudgeTargetTodo } from "#api/modules/social/nudges/domain/nudge-target-todo.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -117,7 +117,10 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
       createdAt: NUDGE_FIXTURE_NOW,
     });
     expect(mutationLock.acquiredKeys).toEqual([
-      [NudgeLockKeys.dailyQuota(SENDER_ID), NudgeLockKeys.cooldown(SENDER_ID, todoId)],
+      [
+        NudgeLockKeys.dailyQuota(SENDER_ID),
+        NudgeLockKeys.cooldown(SENDER_ID, TodoId.reconstitute(todoId)),
+      ],
     ]);
     expect(countCache.invalidatedUserIds).toEqual([
       NUDGE_FIXTURE_SENDER_ID,

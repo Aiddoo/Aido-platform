@@ -1,7 +1,7 @@
 import {
   UserBlock,
   type UserBlockPrimitives,
-} from "#api/modules/social/blocks/domain/user-block.aggregate";
+} from "#api/modules/social/user-blocks/domain/user-block.aggregate";
 
 export const USER_BLOCK_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 export const USER_BLOCK_FIXTURE_BLOCKER_ID = "clz7x5p8k0101qz0z8z8z8z8z";

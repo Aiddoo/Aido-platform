@@ -23,8 +23,6 @@ const ALLOWED_TRANSITIONS: Readonly<
 };
 
 export class RedemptionStatus extends ValueObject<RedemptionStatusValue> {
-  static readonly JOINED: RedemptionStatus = new RedemptionStatus(REDEMPTION_STATUS.JOINED);
-
   static create(raw: string): RedemptionStatus {
     const status = REDEMPTION_STATUS_VALUES.find((candidate) => candidate === raw);
     if (status == null) {

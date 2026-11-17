@@ -1,7 +1,7 @@
 import { chunk } from "es-toolkit";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -96,7 +96,7 @@ export class SendNudgeThanksUseCase {
         ownerId,
         todoId,
         throughNudgeId,
-        friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
+        friendIds,
       });
       const actorName = cutoff.receiver.name ?? cutoff.receiver.userTag;
       const thankedAt = clock.now();
@@ -111,10 +111,10 @@ export class SendNudgeThanksUseCase {
         await notifier.recordInteractions(
           thanked.map<NudgeInteractionNotification>((nudge) => ({
             kind: "thanks",
-            nudgeId: nudge.id.value,
-            todoId: todo.id,
-            actorId: command.userId,
-            recipientId: nudge.senderId.value,
+            nudgeId: nudge.id,
+            todoId,
+            actorId: ownerId,
+            recipientId: nudge.senderId,
             actorName,
             todoTitle: todo.title,
           })),

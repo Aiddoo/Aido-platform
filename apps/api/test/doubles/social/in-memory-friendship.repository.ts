@@ -1,8 +1,8 @@
-import { friendRequestAlreadySent } from "#api/modules/social/friends/application/friends.errors";
-import { FriendshipRepositoryPort } from "#api/modules/social/friends/application/ports/friendship.repository.port";
-import type { SortOrderShift } from "#api/modules/social/friends/domain/friend-ordering.domain-service";
-import { FriendshipId } from "#api/modules/social/friends/domain/friendship-id.vo";
-import { Friendship } from "#api/modules/social/friends/domain/friendship.aggregate";
+import { friendRequestAlreadySent } from "#api/modules/social/friendships/application/friendships.errors";
+import { FriendshipRepositoryPort } from "#api/modules/social/friendships/application/ports/friendship.repository.port";
+import type { SortOrderShift } from "#api/modules/social/friendships/domain/friend-ordering.domain-service";
+import { FriendshipId } from "#api/modules/social/friendships/domain/friendship-id.vo";
+import { Friendship } from "#api/modules/social/friendships/domain/friendship.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다

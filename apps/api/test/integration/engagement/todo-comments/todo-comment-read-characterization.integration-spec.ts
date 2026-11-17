@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { TodoCommentController } from "#api/modules/engagement/todo-comments/presentation/http/v1/todo-comment.controller";
 import { TodoCommentThreadController } from "#api/modules/engagement/todo-comments/presentation/http/v2/todo-comment-thread.controller";
 import {
-  follow,
+  friendship as friendshipTable,
   todo,
   todoCategory,
   todoComment,
@@ -223,7 +223,7 @@ async function seed(client: TestDatabaseClient): Promise<void> {
     { id: commentId("p-a"), userId: FRIEND_A_ID, name: "친구A", profileImage: "cream_cat" },
     { id: commentId("p-c"), userId: FRIEND_C_ID, name: "친구C", profileImage: null },
   ]);
-  await client.insert(follow).values(
+  await client.insert(friendshipTable).values(
     [FRIEND_A_ID, FRIEND_B_ID, FRIEND_C_ID].map((friendId, index) => ({
       id: commentId(`f${index}`),
       followerId: OWNER_ID,

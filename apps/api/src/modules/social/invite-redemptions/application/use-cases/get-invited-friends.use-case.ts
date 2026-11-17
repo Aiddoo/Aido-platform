@@ -9,8 +9,9 @@ import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InviteRedemptionReaderPort } from "../ports/invite-redemption.reader.port.js";
-import type { InviteRedemptionSummary } from "../read-models/invite-redemption-summary.read-model.js";
-import type { InvitedFriendsPage } from "../read-models/invited-friend.read-model.js";
+import type { InvitedFriendReaderPort } from "../ports/invited-friend.reader.port.js";
+import type { InviteRedemptionSummaryReadModel } from "../read-models/invite-redemption-summary.read-model.js";
+import type { InvitedFriendsPageReadModel } from "../read-models/invited-friend.read-model.js";
 
 export interface GetInvitedFriendsQuery {
   readonly inviterId: string;
@@ -22,15 +23,16 @@ export interface GetInvitedFriendsQuery {
 }
 
 export interface GetInvitedFriendsDependencies {
-  readonly inviteRedemptionReader: Pick<
-    InviteRedemptionReaderPort,
-    "listInvitedFriends" | "summarizeByInviterId"
-  >;
+  readonly inviteRedemptionReader: Pick<InviteRedemptionReaderPort, "summarizeByInviterId">;
+  readonly invitedFriendReader: Pick<InvitedFriendReaderPort, "listInvitedFriends">;
   readonly inviteConfig: Pick<InviteConfigPort, "isEnabled">;
 }
 
 /** 상태로 거르면 그 상태의 수, 아니면 전체 수를 같은 집계에서 고른다. */
-function countOf(summary: InviteRedemptionSummary, status: RedemptionStatus | null): number {
+function countOf(
+  summary: InviteRedemptionSummaryReadModel,
+  status: RedemptionStatus | null,
+): number {
   if (status == null) {
     return (
       summary.joinedCount + summary.qualifiedCount + summary.rewardedCount + summary.rejectedCount
@@ -52,15 +54,15 @@ export class GetInvitedFriendsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetInvitedFriendsQuery): Promise<InvitedFriendsPage> {
-    const { inviteRedemptionReader, inviteConfig } = this.#dependencies;
+  async execute(query: GetInvitedFriendsQuery): Promise<InvitedFriendsPageReadModel> {
+    const { inviteRedemptionReader, invitedFriendReader, inviteConfig } = this.#dependencies;
     assertInviteEnabled(inviteConfig);
 
     const inviterId = UserId.reconstitute(query.inviterId);
     const size = clampPageSize(query.size);
     const status = query.status ?? null;
     const [friends, summary] = await Promise.all([
-      inviteRedemptionReader.listInvitedFriends({
+      invitedFriendReader.listInvitedFriends({
         inviterId,
         afterInviteeId: query.cursor == null ? null : UserId.reconstitute(query.cursor),
         status,

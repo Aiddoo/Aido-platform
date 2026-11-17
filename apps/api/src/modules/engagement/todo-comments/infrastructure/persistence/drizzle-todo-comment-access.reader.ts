@@ -77,7 +77,7 @@ export class DrizzleTodoCommentAccessReader implements TodoCommentAccessReaderPo
   }
 
   async #isAcceptedFriend(firstUserId: string, secondUserId: string): Promise<boolean> {
-    const friendship = await this.#db.query.follow.findFirst({
+    const friendship = await this.#db.query.friendship.findFirst({
       columns: { id: true },
       where: {
         status: "ACCEPTED",

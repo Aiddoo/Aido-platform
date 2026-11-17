@@ -21,6 +21,7 @@ import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/appl
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/reorder-todo-category.use-case";
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/categories/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
+import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { CheerLockKeys } from "#api/modules/social/cheers/application/cheers.lock-keys";
 import type { CheerLimitReaderPort } from "#api/modules/social/cheers/application/ports/cheer-limit.reader.port";
@@ -28,7 +29,7 @@ import type { CheerNotifierPort } from "#api/modules/social/cheers/application/p
 import { GetCheerLimitUseCase } from "#api/modules/social/cheers/application/use-cases/get-cheer-limit.use-case";
 import { SendCheerUseCase } from "#api/modules/social/cheers/application/use-cases/send-cheer.use-case";
 import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructure/persistence/drizzle-cheer.repository";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { NudgeLimitReaderPort } from "#api/modules/social/nudges/application/ports/nudge-limit.reader.port";
 import type { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import { GetNudgeLimitUseCase } from "#api/modules/social/nudges/application/use-cases/get-nudge-limit.use-case";
@@ -36,8 +37,8 @@ import { SendNudgeUseCase } from "#api/modules/social/nudges/application/use-cas
 import { DrizzleNudgeRepository } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.repository";
 import type { ReminderNudgeNotifierPort } from "#api/modules/social/reminder-nudges/application/ports/reminder-nudge-notifier.port";
 import { SendReminderNudgeUseCase } from "#api/modules/social/reminder-nudges/application/use-cases/send-reminder-nudge.use-case";
+import { ReminderTargetReaderAdapter } from "#api/modules/social/reminder-nudges/infrastructure/adapters/reminder-target-reader.adapter";
 import { DrizzleReminderNudgeRepository } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-nudge.repository";
-import { DrizzleReminderTargetReader } from "#api/modules/social/reminder-nudges/infrastructure/persistence/drizzle-reminder-target.reader";
 import type { DailySendQuotaUsage } from "#api/modules/social/shared/application/ports/daily-send-usage.reader.port";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
@@ -206,7 +207,7 @@ class RacingNudgeRepository extends DrizzleNudgeRepository {
     dailyBarrier?: BestEffortRendezvous,
     todoCooldownBarrier?: BestEffortRendezvous,
   ) {
-    super(transactionHost);
+    super(transactionHost, new DrizzleTodoBriefReader(transactionHost));
     this.#dailyBarrier = dailyBarrier;
     this.#todoCooldownBarrier = todoCooldownBarrier;
   }
@@ -1064,7 +1065,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const notifier: ReminderNudgeNotifierPort = { notifyNudgeSent: async () => undefined };
     const useCase = new SendReminderNudgeUseCase({
       reminderNudgeRepository,
-      targetReader: new DrizzleReminderTargetReader(transactionHost),
+      targetReader: new ReminderTargetReaderAdapter(new DrizzleTodoBriefReader(transactionHost)),
       notifier,
       mutationLock: new PostgresMutationLockAdapter(transactionHost),
       unitOfWork: uow,
@@ -1273,7 +1274,10 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     ]);
     const { transactionHost } = createTransactionHarness(client);
     const reader = new GetNudgeLimitUseCase({
-      nudgeRepository: new DrizzleNudgeRepository(transactionHost),
+      nudgeRepository: new DrizzleNudgeRepository(
+        transactionHost,
+        new DrizzleTodoBriefReader(transactionHost),
+      ),
       limitReader: createDailyLimitReader(3),
       clock: new DateClock(),
     });

@@ -1,5 +1,5 @@
-import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
+import type { UserBlockReaderPort } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface CheckInvitePairReachabilityQuery {

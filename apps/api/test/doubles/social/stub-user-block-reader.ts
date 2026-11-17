@@ -1,8 +1,8 @@
 import {
   UserBlockReaderPort,
   type UserBlockRelation,
-} from "#api/modules/social/blocks/social-block-queries.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/social/user-blocks/social-user-blocks.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // blockerId가 blockedId를 차단한 방향 있는 쌍만 들고 차단 관계를 돌려준다
 export class StubUserBlockReader extends UserBlockReaderPort {
@@ -32,5 +32,19 @@ export class StubUserBlockReader extends UserBlockReaderPort {
             this.#blocks.has(`${candidateId}>${viewerId.value}`),
         ),
     );
+  }
+
+  async listCounterpartIds(userId: UserId): Promise<UserId[]> {
+    const counterpartIds = [...this.#blocks].flatMap((pair) => {
+      const [blockerId, blockedId] = pair.split(">");
+      if (blockerId === userId.value && blockedId != null) {
+        return [blockedId];
+      }
+      if (blockedId === userId.value && blockerId != null) {
+        return [blockerId];
+      }
+      return [];
+    });
+    return [...new Set(counterpartIds)].map((counterpartId) => UserId.reconstitute(counterpartId));
   }
 }

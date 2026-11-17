@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeLockKeys } from "./nudges.lock-keys.js";
@@ -8,7 +9,10 @@ const SENDER = UserId.reconstitute("sender");
 describe("NudgeLockKeys", () => {
   it("콕 일간 한도·할 일 쿨다운 잠금 키는 옮기기 전 문자열과 같다", () => {
     // When
-    const keys = [NudgeLockKeys.dailyQuota(SENDER), NudgeLockKeys.cooldown(SENDER, 42)];
+    const keys = [
+      NudgeLockKeys.dailyQuota(SENDER),
+      NudgeLockKeys.cooldown(SENDER, TodoId.reconstitute(42)),
+    ];
 
     // Then
     expect(keys).toEqual([

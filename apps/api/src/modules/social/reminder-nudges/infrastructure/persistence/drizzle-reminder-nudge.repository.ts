@@ -19,10 +19,6 @@ export class DrizzleReminderNudgeRepository implements ReminderNudgeRepositoryPo
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<ReminderNudgeId> {
     return ReminderNudgeId.reconstitute(await nextSequenceValue(this.#db, reminderNudgeTable.id));
   }
@@ -37,5 +33,9 @@ export class DrizzleReminderNudgeRepository implements ReminderNudgeRepositoryPo
 
   async save(reminder: ReminderNudge): Promise<void> {
     await this.#db.insert(reminderNudgeTable).values(toReminderNudgeRow(reminder));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

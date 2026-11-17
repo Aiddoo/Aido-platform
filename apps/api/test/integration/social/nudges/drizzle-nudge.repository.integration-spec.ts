@@ -1,5 +1,7 @@
 import { omit } from "es-toolkit";
 
+import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
+import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
 import { MarkNudgeReadUseCase } from "#api/modules/social/nudges/application/use-cases/mark-nudge-read.use-case";
 import { ReplyToNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/reply-to-nudge.use-case";
 import { DrizzleNudgeReader } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.reader";
@@ -57,12 +59,16 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
 
   function createRepository(): DrizzleNudgeRepository {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeRepository(transactionHost);
+    return new DrizzleNudgeRepository(transactionHost, new DrizzleTodoBriefReader(transactionHost));
   }
 
   function createReader(): DrizzleNudgeReader {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeReader(transactionHost);
+    return new DrizzleNudgeReader(
+      transactionHost,
+      new DrizzleUserBriefReader(transactionHost),
+      new DrizzleTodoBriefReader(transactionHost),
+    );
   }
 
   // DATE 컬럼은 UTC 자정 Date로 넣는다
@@ -165,7 +171,10 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
   it("답장 전에 읽기 시작한 읽음 처리가 답장 뒤에 끝나도 답장을 지우지 않는다", async () => {
     // Given
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleNudgeRepository(transactionHost);
+    const repository = new DrizzleNudgeRepository(
+      transactionHost,
+      new DrizzleTodoBriefReader(transactionHost),
+    );
     const todoId = await addTodo(createNudgeTodoSeed());
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
@@ -175,7 +184,11 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     const reply = new ReplyToNudgeUseCase({
       unitOfWork: uow,
       nudgeRepository: repository,
-      nudgeReader: new DrizzleNudgeReader(transactionHost),
+      nudgeReader: new DrizzleNudgeReader(
+        transactionHost,
+        new DrizzleUserBriefReader(transactionHost),
+        new DrizzleTodoBriefReader(transactionHost),
+      ),
       interactionConfig: { isEnabled: true },
       mutualFriendReader,
       notifier: new RecordingNudgeNotifier(),
