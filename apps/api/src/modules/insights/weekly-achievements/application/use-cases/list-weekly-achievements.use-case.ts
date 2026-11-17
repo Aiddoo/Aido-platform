@@ -6,7 +6,7 @@ import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 import { summarizeWeeklyAchievements } from "../../domain/weekly-achievement.domain-service.js";
 import type { AchievementOwnerTimezoneReaderPort } from "../ports/achievement-owner-timezone.reader.port.js";
 import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
-import type { WeeklyAchievementList } from "../read-models/weekly-achievement-list.read-model.js";
+import type { WeeklyAchievementListReadModel } from "../read-models/weekly-achievement-list.read-model.js";
 
 export interface ListWeeklyAchievementsQuery {
   readonly userId: string;
@@ -31,7 +31,7 @@ export class ListWeeklyAchievementsUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: ListWeeklyAchievementsQuery): Promise<WeeklyAchievementList> {
+  async execute(query: ListWeeklyAchievementsQuery): Promise<WeeklyAchievementListReadModel> {
     const { weeklyAchievementRepository, ownerTimezoneReader, clock } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);

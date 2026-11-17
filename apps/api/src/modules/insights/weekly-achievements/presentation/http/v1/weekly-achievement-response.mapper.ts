@@ -7,7 +7,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { formatIsoWeekLabel } from "#api/shared/domain/time/week-of-month";
 
-import type { WeeklyAchievementList } from "../../../application/read-models/weekly-achievement-list.read-model.js";
+import type { WeeklyAchievementListReadModel } from "../../../application/read-models/weekly-achievement-list.read-model.js";
 import type { WeeklyAchievement } from "../../../domain/weekly-achievement.aggregate.js";
 
 /** `localToday`는 읽는 사용자 시간대의 오늘이다. 다른 해의 주는 라벨에 연도를 붙인다 */
@@ -31,7 +31,7 @@ export function toWeeklyAchievementResponse(
 }
 
 export function toWeeklyAchievementListResponse(
-  list: WeeklyAchievementList,
+  list: WeeklyAchievementListReadModel,
   locale: SupportedLocale,
 ): WeeklyAchievementListResponse {
   return {

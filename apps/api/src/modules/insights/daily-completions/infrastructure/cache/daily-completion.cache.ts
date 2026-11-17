@@ -10,7 +10,7 @@ import type {
   DailyCompletionCachePort,
   DailyCompletionCacheRead,
 } from "../../application/ports/daily-completion-cache.port.js";
-import type { DailyCompletionRange } from "../../application/read-models/daily-completion-range.read-model.js";
+import type { DailyCompletionRangeReadModel } from "../../application/read-models/daily-completion-range.read-model.js";
 import type { DateRange } from "../../domain/date-range.vo.js";
 import {
   DAILY_COMPLETION_RANGE_ROW_SCHEMA,
@@ -45,7 +45,7 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
   storeRangeIfCurrent(
     userId: UserId,
     generation: string,
-    value: DailyCompletionRange,
+    value: DailyCompletionRangeReadModel,
   ): Promise<void> {
     return this.#storeIfCurrent(
       userId,
@@ -74,7 +74,7 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
   storePublicRangeIfCurrent(
     ownerUserId: UserId,
     generation: string,
-    value: DailyCompletionRange,
+    value: DailyCompletionRangeReadModel,
   ): Promise<void> {
     return this.#storeIfCurrent(
       ownerUserId,
@@ -112,14 +112,14 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
     if (verifiedGeneration !== generation) {
       return { generation: verifiedGeneration, value: null };
     }
-    return { generation, value: cached == null ? null : toDailyCompletionRange(userId, cached) };
+    return { generation, value: cached == null ? null : toDailyCompletionRange(cached) };
   }
 
   async #storeIfCurrent(
     userId: UserId,
     generation: string,
     key: string,
-    value: DailyCompletionRange,
+    value: DailyCompletionRangeReadModel,
   ): Promise<void> {
     if ((await this.#getGeneration(userId)) !== generation) {
       return;

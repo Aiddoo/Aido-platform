@@ -95,7 +95,7 @@ describe("일일 완료 집계", () => {
     });
 
     // Then
-    expect(completion?.categoryColors).toEqual(["#00AA00", "#FF6B43", "#FFB3B3"]);
+    expect(completion?.toPrimitives().categoryColors).toEqual(["#00AA00", "#FF6B43", "#FFB3B3"]);
   });
 
   it.each([

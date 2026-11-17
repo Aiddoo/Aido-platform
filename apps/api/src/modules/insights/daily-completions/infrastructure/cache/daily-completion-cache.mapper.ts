@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-
-import type { DailyCompletionRange } from "../../application/read-models/daily-completion-range.read-model.js";
-import { DailyCompletion } from "../../domain/daily-completion.aggregate.js";
+import type { DailyCompletionRangeReadModel } from "../../application/read-models/daily-completion-range.read-model.js";
 import { DateRange } from "../../domain/date-range.vo.js";
 
 const PLAIN_DATE_SCHEMA = z.iso.date().transform((value) => Temporal.PlainDate.from(value));
@@ -30,33 +27,24 @@ type DailyCompletionRangeRow = z.infer<typeof DAILY_COMPLETION_RANGE_ROW_SCHEMA>
 type DailyCompletionRangeInsertRow = z.input<typeof DAILY_COMPLETION_RANGE_ROW_SCHEMA>;
 
 export function toDailyCompletionRange(
-  userId: UserId,
   row: DailyCompletionRangeRow,
-): DailyCompletionRange {
+): DailyCompletionRangeReadModel {
   return {
     range: DateRange.create(row.dateRange.startDate, row.dateRange.endDate),
-    completions: row.completions.map((completion) =>
-      DailyCompletion.reconstitute({
-        userId: userId.value,
-        date: completion.date,
-        totalTodos: completion.totalTodos,
-        completedTodos: completion.completedTodos,
-        categoryColors: completion.categoryColors,
-      }),
-    ),
+    completions: row.completions,
     totalCompleteDays: row.totalCompleteDays,
   };
 }
 
 export function toDailyCompletionRangeRow(
-  value: DailyCompletionRange,
+  value: DailyCompletionRangeReadModel,
 ): DailyCompletionRangeInsertRow {
   return {
     completions: value.completions.map((completion) => ({
       date: completion.date.toString(),
       totalTodos: completion.totalTodos,
       completedTodos: completion.completedTodos,
-      isComplete: completion.isComplete(),
+      isComplete: completion.isComplete,
       completionRate: completion.completionRate,
       categoryColors: [...completion.categoryColors],
     })),

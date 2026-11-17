@@ -1,6 +1,6 @@
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemoryDailyCompletionRepository } from "#test/doubles/insights/in-memory-daily-completion.repository";
+import { InMemoryCompletionGroupReader } from "#test/doubles/insights/in-memory-completion-group.reader";
 import { StubFriendshipReader } from "#test/doubles/insights/stub-friendship.reader";
 import {
   calendarDate,
@@ -22,25 +22,25 @@ const QUERY = {
 };
 
 function setup() {
-  const dailyCompletionRepository = new InMemoryDailyCompletionRepository();
+  const completionGroupReader = new InMemoryCompletionGroupReader();
   const dailyCompletionCache = new DailyCompletionCache(
     new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
   );
   const friendshipReader = new StubFriendshipReader();
   friendshipReader.addMutualFriends(VIEWER_ID, FRIEND_ID);
   const useCase = new GetFriendDailyCompletionsUseCase({
-    dailyCompletionRepository,
+    completionGroupReader,
     dailyCompletionCache,
     friendshipReader,
   });
-  return { dailyCompletionRepository, dailyCompletionCache, friendshipReader, useCase };
+  return { completionGroupReader, dailyCompletionCache, friendshipReader, useCase };
 }
 
 describe("GetFriendDailyCompletionsUseCase — 친구 공개 완료 조회", () => {
   it("맞팔 친구의 공개 할 일만 구간 끝날까지 세고 본인 조회 캐시와 나눠 담는다", async () => {
     // Given
-    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
-    dailyCompletionRepository.add(
+    const { completionGroupReader, dailyCompletionCache, useCase } = setup();
+    completionGroupReader.add(
       createTodoSeedFixture({ userId: FRIEND_ID, completed: true }),
       createTodoSeedFixture({ userId: FRIEND_ID, completed: false, isPublic: false }),
       createTodoSeedFixture({ userId: VIEWER_ID, completed: false }),
@@ -67,11 +67,11 @@ describe("GetFriendDailyCompletionsUseCase — 친구 공개 완료 조회", () 
 
   it("공개 결과가 캐시에 있어도 맞팔이 끊기면 FOLLOW_0906으로 거절한다", async () => {
     // Given
-    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
-    dailyCompletionRepository.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: true }));
+    const { completionGroupReader, dailyCompletionCache, useCase } = setup();
+    completionGroupReader.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: true }));
     await useCase.execute(QUERY);
     const withoutFriendship = new GetFriendDailyCompletionsUseCase({
-      dailyCompletionRepository,
+      completionGroupReader,
       dailyCompletionCache,
       friendshipReader: new StubFriendshipReader(),
     });
@@ -88,16 +88,16 @@ describe("GetFriendDailyCompletionsUseCase — 친구 공개 완료 조회", () 
 
   it("무효화와 겹친 늦은 공개 조회도 이후 공개 캐시를 덮어쓰지 않는다", async () => {
     // Given
-    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
-    dailyCompletionRepository.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: false }));
-    const held = dailyCompletionRepository.holdNextRead();
+    const { completionGroupReader, dailyCompletionCache, useCase } = setup();
+    completionGroupReader.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: false }));
+    const held = completionGroupReader.holdNextRead();
     const staleRead = useCase.execute(QUERY);
     await held.entered;
 
     // When
     await dailyCompletionCache.invalidate(UserId.reconstitute(FRIEND_ID));
-    dailyCompletionRepository.clear();
-    dailyCompletionRepository.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: true }));
+    completionGroupReader.clear();
+    completionGroupReader.add(createTodoSeedFixture({ userId: FRIEND_ID, completed: true }));
     held.release();
     const stale = await staleRead;
     const fresh = await useCase.execute(QUERY);

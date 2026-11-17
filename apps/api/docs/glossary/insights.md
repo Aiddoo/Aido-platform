@@ -11,16 +11,17 @@
 
 ## daily-completions
 
-| 용어           | 코드                                                         | 뜻                                                                                                               |
-| -------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 일일 완료 현황 | `DailyCompletion`(Aggregate), `GetDailyCompletionsUseCase`   | 한 사용자의 하루 할 일 수·끝낸 수·카테고리 색. 할 일이 있는 날만 있고 저장하지 않는다                            |
-| 조회 구간      | `DateRange`(VO)                                              | 양 끝을 포함한 달력 날짜. 앱이 보낸 날짜 그대로이고 시작이 끝보다 늦으면 `SYS_0002`다                            |
-| 그날의 할 일   | `tallyDailyCompletions`, `TodoCompletionGroup`               | 시작일 ≤ 그날 ≤ 종료일(없으면 시작일)인 할 일. 여러 날 할 일은 구간 안의 모든 날에 센다                          |
-| 완료한 날      | `isComplete()`                                               | 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기). planning의 "완료"는 할 일 하나의 상태다                       |
-| 완료일 수      | `totalCompleteDays`, `countCompleteDays`                     | 구간 안 완료한 날의 수                                                                                           |
-| 카테고리 색    | `categoryColors`                                             | 그날 할 일의 카테고리 색. 중복 없이 문자열 오름차순(앱 정렬과 같다)                                              |
-| 친구 완료 현황 | `GetFriendDailyCompletionsUseCase`, `listPublicByDateRange`  | 맞팔 친구(`FriendshipReaderPort`)의 공개 할 일만 센 현황. 맞팔이 아니면 날짜를 보기 전에 `FOLLOW_0906`이다       |
-| 캐시 세대      | `DailyCompletionCache`, `DailyCompletionCacheKey.generation` | 사용자별 본인·공개 현황 캐시의 namespace. planning 할 일·회차·카테고리 이벤트가 커밋되면 세대를 바꿔 모두 버린다 |
+| 용어           | 코드                                                                        | 뜻                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 일일 완료 현황 | `DailyCompletion`(Aggregate), `GetDailyCompletionsUseCase`                  | 한 사용자의 하루 할 일 수·끝낸 수·카테고리 색. 할 일이 있는 날만 있다. 생성만 하는 Aggregate라 조회마다 세고 저장·복원하지 않는다          |
+| 조회 구간      | `DateRange`(VO)                                                             | 양 끝을 포함한 달력 날짜. 앱이 보낸 날짜 그대로이고 시작이 끝보다 늦으면 `SYS_0002`다                                                      |
+| 그날의 할 일   | `tallyDailyCompletions`, `TodoCompletionGroup`, `CompletionGroupReaderPort` | 시작일 ≤ 그날 ≤ 종료일(없으면 시작일)인 할 일. planning 조회 포트로 구간에 걸친 할 일 묶음을 받아 여러 날 할 일은 구간 안의 모든 날에 센다 |
+| 완료한 날      | `isComplete()`                                                              | 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기). planning의 "완료"는 할 일 하나의 상태다                                                 |
+| 완료일 수      | `totalCompleteDays`, `countCompleteDays`                                    | 구간 안 완료한 날의 수                                                                                                                     |
+| 카테고리 색    | `categoryColors`                                                            | 그날 할 일의 카테고리 색. 중복 없이 문자열 오름차순(앱 정렬과 같다)                                                                        |
+| 친구 완료 현황 | `GetFriendDailyCompletionsUseCase`, `listPublicByDateRange`                 | 맞팔 친구(`FriendshipReaderPort`)의 공개 할 일만 센 현황. 맞팔이 아니면 날짜를 보기 전에 `FOLLOW_0906`이다                                 |
+| 구간 현황      | `DailyCompletionRangeReadModel`                                             | 날짜별 현황·완료일 수·조회 구간. 캐시에 담는 값이고 응답 매퍼가 응답 계약으로 바꾼다                                                       |
+| 캐시 세대      | `DailyCompletionCache`, `DailyCompletionCacheKey.generation`                | 사용자별 본인·공개 현황 캐시의 namespace. planning 할 일·회차·카테고리 이벤트가 커밋되면 세대를 바꿔 모두 버린다                           |
 
 `DailyCompletion` 테이블은 이 slice와 관계없다. insights는 읽지도 쓰지도 않고(운영 0행) ai-assistance 제안 활동 Reader만 읽어, Context 경계 층이 그 읽기를 옮긴 뒤 두 릴리스에 걸쳐 지운다([영속성](../persistence.md#마이그레이션)).
 

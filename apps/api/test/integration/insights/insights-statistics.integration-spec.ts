@@ -1,8 +1,9 @@
 import { count } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { tallyDailyCompletions } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
-import { PlanningDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/planning-daily-completion.repository";
+import { PlanningCompletionGroupReaderAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/planning-completion-group-reader.adapter";
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import { GetWeeklyAchievementUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
 import { ListWeeklyAchievementsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievements.use-case";
@@ -37,7 +38,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   let client: TestDatabaseClient;
   let context: E2eTestContext;
   let userId: string;
-  let daily: PlanningDailyCompletionRepository;
+  let daily: PlanningCompletionGroupReaderAdapter;
   let weekly: WeeklyAchievementRepositoryPort;
   beforeAll(async () => {
     db = new TestDatabase({
@@ -51,7 +52,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     client = await db.start();
     context = await createE2eApp({ testDatabase: db });
     weekly = context.module.get(WeeklyAchievementRepositoryPort);
-    daily = new PlanningDailyCompletionRepository(
+    daily = new PlanningCompletionGroupReaderAdapter(
       new DrizzleTodoCompletionGroupReader(
         createDatabaseTransactionFixture(client).transactionHost,
       ),
@@ -174,11 +175,13 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     );
 
     // Then
+    const allDays = tallyDailyCompletions({ ...range, groups: all.result });
+    const visibleDays = tallyDailyCompletions({ ...range, groups: visible.result });
     expect(all.count).toBe(2);
-    expect(all.result).toHaveLength(3);
-    expect(all.result.reduce((total, row) => total + row.totalTodos, 0)).toBe(9);
+    expect(allDays).toHaveLength(3);
+    expect(allDays.reduce((total, day) => total + day.toPrimitives().totalTodos, 0)).toBe(9);
     expect(visible.count).toBe(2);
-    expect(visible.result.reduce((total, row) => total + row.totalTodos, 0)).toBe(8);
+    expect(visibleDays.reduce((total, day) => total + day.toPrimitives().totalTodos, 0)).toBe(8);
     expect(empty.count).toBe(1);
     expect(empty.result).toEqual([]);
   });

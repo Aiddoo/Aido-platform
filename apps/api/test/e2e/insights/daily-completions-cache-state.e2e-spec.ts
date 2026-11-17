@@ -4,11 +4,11 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import {
-  type DailyCompletionRangeQuery,
-  DailyCompletionRepositoryPort,
-} from "#api/modules/insights/daily-completions/application/ports/daily-completion.repository.port";
-import type { DailyCompletion } from "#api/modules/insights/daily-completions/domain/daily-completion.aggregate";
-import { PlanningDailyCompletionRepository } from "#api/modules/insights/daily-completions/infrastructure/persistence/planning-daily-completion.repository";
+  type CompletionGroupQuery,
+  CompletionGroupReaderPort,
+} from "#api/modules/insights/daily-completions/application/ports/completion-group.reader.port";
+import type { TodoCompletionGroup } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
+import { PlanningCompletionGroupReaderAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/planning-completion-group-reader.adapter";
 import { todoCategory } from "#api/platform/database/schema/index";
 import {
   createE2eApp,
@@ -17,9 +17,9 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 import { DAILY_COMPLETION_FIXTURE_NOW } from "#test/fixtures/insights/daily-completion.fixture";
 
-// 실제 집계를 끝낸 직후 멈춰 조회와 완료 쓰기가 겹치는 순서를 재현한다
+// 실제 할 일 묶음을 읽은 직후 멈춰 조회와 완료 쓰기가 겹치는 순서를 재현한다
 @Injectable()
-class HoldableDailyCompletionRepository extends PlanningDailyCompletionRepository {
+class HoldableCompletionGroupReader extends PlanningCompletionGroupReaderAdapter {
   #held: { readonly entered: () => void; readonly release: Promise<void> } | null = null;
 
   holdNextRead(): { readonly entered: Promise<void>; readonly release: () => void } {
@@ -29,15 +29,15 @@ class HoldableDailyCompletionRepository extends PlanningDailyCompletionRepositor
     return { entered: entered.promise, release: release.resolve };
   }
 
-  override async listByDateRange(query: DailyCompletionRangeQuery): Promise<DailyCompletion[]> {
-    const completions = await super.listByDateRange(query);
+  override async listByDateRange(query: CompletionGroupQuery): Promise<TodoCompletionGroup[]> {
+    const groups = await super.listByDateRange(query);
     const held = this.#held;
     if (held != null) {
       this.#held = null;
       held.entered();
       await held.release;
     }
-    return completions;
+    return groups;
   }
 }
 
@@ -46,9 +46,7 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   beforeAll(async () => {
     context = await createE2eApp({
       customizeBuilder: (builder) =>
-        builder
-          .overrideProvider(DailyCompletionRepositoryPort)
-          .useClass(HoldableDailyCompletionRepository),
+        builder.overrideProvider(CompletionGroupReaderPort).useClass(HoldableCompletionGroupReader),
     });
   }, 60_000);
   beforeEach(async () => {
@@ -144,11 +142,11 @@ describe("일일 집계 캐시 정합성 실제 HTTP·PostgreSQL", () => {
   it("이전 집계 조회와 완료 쓰기가 겹쳐도 이후 응답은 새 완료 상태를 유지해야 한다", async () => {
     // Given
     const { user, todoId } = await prepare("insights-cache-race@example.com");
-    const repository = context.app.get(DailyCompletionRepositoryPort);
-    if (!(repository instanceof HoldableDailyCompletionRepository)) {
-      throw new Error("멈춤 지점이 있는 저장소로 바꿔 끼우지 못했습니다.");
+    const reader = context.app.get(CompletionGroupReaderPort);
+    if (!(reader instanceof HoldableCompletionGroupReader)) {
+      throw new Error("멈춤 지점이 있는 조회 포트로 바꿔 끼우지 못했습니다.");
     }
-    const held = repository.holdNextRead();
+    const held = reader.holdNextRead();
     const earlierRead = read(user.accessToken);
     await Promise.race([
       held.entered,

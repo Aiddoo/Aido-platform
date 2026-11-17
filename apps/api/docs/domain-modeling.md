@@ -6,7 +6,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 - 모든 slice는 Entity·Aggregate 클래스와 VO로 상태를 표현한다. Aggregate는 두 종류다.
   - 저장 Aggregate: `create`·`reconstitute`·`toPrimitives()`와 저장소 `save(aggregate)`.
-  - 생성만 하는 Aggregate: 저장하지 않고 계산·외부 결과(LLM 초안, 날씨 보고, 메일 메시지)를 검증해 만든다. `create`·`toPrimitives()`만 있고 저장소가 없다.
+  - 생성만 하는 Aggregate: 저장하지 않고 계산·외부 결과(LLM 초안, 날씨 보고, 메일 메시지, 일일 완료 현황)를 검증해 만든다. `create`·`toPrimitives()`만 있고 저장소가 없다.
 - 읽기만 하는 slice는 두지 않는다. 조회는 데이터를 소유한 slice의 UseCase와 Read Model이다. 여러 Context를 모으는 조회는 각 Context `-queries` 포트를 조합한다.
 - slice가 쓰는 테이블의 행 타입마다 Entity 클래스가 하나 있다. Root는 `*.aggregate.ts`(`AggregateRoot` 상속), Root를 거쳐서만 바뀌는 하위는 `*.entity.ts`다. slice 하나는 Aggregate Root 하나이고, 수명주기가 따로인 Root가 둘이면 slice를 나눈다. slice 폴더는 Root 이름의 kebab 복수형이고, `<context>/shared/domain`에는 두 slice 이상이 쓰는 VO·도메인 서비스만 두고 Aggregate를 두지 않는다.
 - 작업 원장(push outbox·발송 기록·receipt, 알림 보존, 결제 안내 기록처럼 많은 행을 한 번에 넘기는 상태)도 행 Entity 클래스를 둔다. 수백 행을 한 문장으로 바꿔야 하는 경로만 저장소에 업무 이름의 묶음 메서드(`claimDue`·`markExpired`)를 허용하고, 한 행을 바꾸는 경로는 Entity 행동 → `save`다.
