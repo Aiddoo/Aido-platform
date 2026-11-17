@@ -9,10 +9,11 @@ import { VerificationCodeEmailSenderPort } from "./application/ports/verificatio
 import { VerificationCodeSecurityPort } from "./application/ports/verification-code-security.port.js";
 import { VerificationEmailCapPort } from "./application/ports/verification-email-cap.port.js";
 import { VerificationRepositoryPort } from "./application/ports/verification.repository.port.js";
+import { CheckVerificationEmailCapUseCase } from "./application/use-cases/check-verification-email-cap.use-case.js";
 import { ConsumeVerificationCodeUseCase } from "./application/use-cases/consume-verification-code.use-case.js";
 import { IssueVerificationCodeUseCase } from "./application/use-cases/issue-verification-code.use-case.js";
+import { RecordVerificationEmailSentUseCase } from "./application/use-cases/record-verification-email-sent.use-case.js";
 import { ResendVerificationUseCase } from "./application/use-cases/resend-verification.use-case.js";
-import { ReserveVerificationEmailSlotUseCase } from "./application/use-cases/reserve-verification-email-slot.use-case.js";
 import { SendVerificationCodeUseCase } from "./application/use-cases/send-verification-code.use-case.js";
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/node-verification-code-security.adapter.js";
 import { VerificationCodeEmailSenderAdapter } from "./infrastructure/adapters/verification-code-email-sender.adapter.js";
@@ -26,8 +27,13 @@ export const issueVerificationCodeProvider = provideUseCase(IssueVerificationCod
   logger: loggerFor(IssueVerificationCodeUseCase),
 });
 
-export const reserveVerificationEmailSlotProvider = provideUseCase(
-  ReserveVerificationEmailSlotUseCase,
+export const checkVerificationEmailCapProvider = provideUseCase(CheckVerificationEmailCapUseCase, {
+  verificationEmailCap: VerificationEmailCapPort,
+  clock: ClockPort,
+});
+
+export const recordVerificationEmailSentProvider = provideUseCase(
+  RecordVerificationEmailSentUseCase,
   { verificationEmailCap: VerificationEmailCapPort, clock: ClockPort },
 );
 
@@ -45,7 +51,8 @@ export const consumeVerificationCodeProvider = provideUseCase(ConsumeVerificatio
 
 const resendVerificationProvider = provideUseCase(ResendVerificationUseCase, {
   userRepository: UserRepositoryPort,
-  reserveVerificationEmailSlot: ReserveVerificationEmailSlotUseCase,
+  checkVerificationEmailCap: CheckVerificationEmailCapUseCase,
+  recordVerificationEmailSent: RecordVerificationEmailSentUseCase,
   issueVerificationCode: IssueVerificationCodeUseCase,
   sendVerificationCode: SendVerificationCodeUseCase,
   unitOfWork: UnitOfWorkPort,
@@ -57,7 +64,8 @@ export const IDENTITY_VERIFICATIONS_PROVIDERS = [
   { provide: VerificationCodeSecurityPort, useClass: NodeVerificationCodeSecurityAdapter },
   { provide: VerificationCodeEmailSenderPort, useClass: VerificationCodeEmailSenderAdapter },
   { provide: VerificationEmailCapPort, useClass: VerificationEmailCapAdapter },
-  reserveVerificationEmailSlotProvider,
+  checkVerificationEmailCapProvider,
+  recordVerificationEmailSentProvider,
   issueVerificationCodeProvider,
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,

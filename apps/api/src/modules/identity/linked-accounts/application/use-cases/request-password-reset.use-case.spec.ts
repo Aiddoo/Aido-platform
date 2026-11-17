@@ -209,11 +209,40 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     );
 
     // Then
-    const remainingSeconds = 24 * 60 * 60 - 10 * 61;
+    // 출시 앱은 남은 초를 초 단위 타이머로만 보여 줘 상한에서도 60초를 넘기지 않는다
+    const remainingSeconds = 60;
     expect(capped).toEqual([
       expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
       expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753, details: { remainingSeconds } }),
     ]);
     expect(fixture.verificationRepository.all).toHaveLength(10);
+  });
+
+  it("60초 대기 중 다시 누른 요청은 상한을 쓰지 않아 하루 10번째 코드도 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    const request = () =>
+      useCase
+        .execute({ email: fixture.user.email, emailLocale: "ko" })
+        .catch((error: unknown) => error);
+    for (let issued = 0; issued < 9; issued += 1) {
+      await request();
+      for (let tap = 0; tap < 5; tap += 1) {
+        fixture.clock.advanceBy({ seconds: 10 });
+        await request();
+      }
+      fixture.clock.advanceBy({ seconds: 11 });
+    }
+
+    // When
+    const tenth = await request();
+    fixture.clock.advanceBy({ seconds: 61 });
+    const eleventh = await request();
+
+    // Then
+    expect(tenth).toEqual({ message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." });
+    expect(fixture.verificationRepository.all).toHaveLength(10);
+    expect(eleventh).toEqual(expect.objectContaining({ errorCode: ErrorCode.VERIFY_0753 }));
   });
 });

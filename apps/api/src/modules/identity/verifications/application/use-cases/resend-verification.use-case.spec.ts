@@ -86,4 +86,28 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
     expect(fixture.verificationRepository.all).toHaveLength(1);
     expect(JSON.stringify(fixture.logger.messages)).not.toContain("private SMTP payload");
   });
+
+  it("60초 대기 중 반복 탭과 이미 인증한 계정의 거절은 이메일 상한을 쓰지 않는다", async () => {
+    // Given
+    const fixture = given({ pending: true });
+    const resend = () =>
+      fixture.useCase
+        .execute({ email: fixture.user.email, emailLocale: "ko" })
+        .catch((error: unknown) => error);
+    for (let issued = 0; issued < 9; issued += 1) {
+      await resend();
+      for (let tap = 0; tap < 5; tap += 1) {
+        fixture.clock.advanceBy({ seconds: 10 });
+        await resend();
+      }
+      fixture.clock.advanceBy({ seconds: 11 });
+    }
+
+    // When
+    const tenth = await resend();
+
+    // Then
+    expect(tenth).toEqual({ message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요." });
+    expect(fixture.verificationRepository.all).toHaveLength(10);
+  });
 });

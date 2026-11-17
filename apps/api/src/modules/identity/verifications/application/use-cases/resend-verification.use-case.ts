@@ -7,8 +7,9 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { emailAlreadyVerified } from "../verifications.errors.js";
 import { VerificationLogEvent } from "../verifications.log-events.js";
+import type { CheckVerificationEmailCapUseCase } from "./check-verification-email-cap.use-case.js";
 import type { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";
-import type { ReserveVerificationEmailSlotUseCase } from "./reserve-verification-email-slot.use-case.js";
+import type { RecordVerificationEmailSentUseCase } from "./record-verification-email-sent.use-case.js";
 import type { SendVerificationCodeUseCase } from "./send-verification-code.use-case.js";
 
 export interface ResendVerificationCommand {
@@ -19,7 +20,8 @@ export interface ResendVerificationCommand {
 
 interface ResendVerificationDependencies {
   readonly userRepository: Pick<UserRepositoryPort, "findByEmail">;
-  readonly reserveVerificationEmailSlot: Pick<ReserveVerificationEmailSlotUseCase, "execute">;
+  readonly checkVerificationEmailCap: Pick<CheckVerificationEmailCapUseCase, "execute">;
+  readonly recordVerificationEmailSent: Pick<RecordVerificationEmailSentUseCase, "execute">;
   readonly issueVerificationCode: Pick<IssueVerificationCodeUseCase, "execute">;
   readonly sendVerificationCode: Pick<SendVerificationCodeUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -35,10 +37,11 @@ export class ResendVerificationUseCase {
 
   async execute(input: ResendVerificationCommand): Promise<{ message: string }> {
     const { email, emailLocale } = input;
-    // 상한은 계정을 찾기 전에 이메일마다 센다. 없는 이메일도 같은 VERIFY_0753·남은 초를 받는다
-    await this.#dependencies.reserveVerificationEmailSlot.execute({ email });
+    // 상한은 계정을 찾기 전에 이메일마다 본다. 없는 이메일도 보냈다고 답하므로 똑같이 센다
+    await this.#dependencies.checkVerificationEmailCap.execute({ email });
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
+      await this.#dependencies.recordVerificationEmailSent.execute({ email });
       return {
         message: "인증 코드가 발송되었습니다. 이메일을 확인해주세요.",
       };
@@ -57,6 +60,7 @@ export class ResendVerificationUseCase {
         type: "EMAIL_VERIFY",
       }),
     );
+    await this.#dependencies.recordVerificationEmailSent.execute({ email });
 
     try {
       await this.#dependencies.sendVerificationCode.execute({

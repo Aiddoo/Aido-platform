@@ -11,9 +11,10 @@ import { SecurityLogRepositoryPort } from "../users/application/ports/security-l
 import { UserMutationLockPort } from "../users/application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "../users/application/ports/user-profile-invalidator.port.js";
 import { UserRepositoryPort } from "../users/application/ports/user.repository.port.js";
+import { CheckVerificationEmailCapUseCase } from "../verifications/application/use-cases/check-verification-email-cap.use-case.js";
 import { ConsumeVerificationCodeUseCase } from "../verifications/application/use-cases/consume-verification-code.use-case.js";
 import { IssueVerificationCodeUseCase } from "../verifications/application/use-cases/issue-verification-code.use-case.js";
-import { ReserveVerificationEmailSlotUseCase } from "../verifications/application/use-cases/reserve-verification-email-slot.use-case.js";
+import { RecordVerificationEmailSentUseCase } from "../verifications/application/use-cases/record-verification-email-sent.use-case.js";
 import { SendVerificationCodeUseCase } from "../verifications/application/use-cases/send-verification-code.use-case.js";
 import { LinkedAccountsRepositoryPort } from "./application/ports/linked-accounts.repository.port.js";
 import { OAuthIdentityProviderRegistryPort } from "./application/ports/oauth-identity-provider.port.js";
@@ -81,7 +82,8 @@ export const changePasswordProvider = provideUseCase(ChangePasswordUseCase, {
 
 export const requestPasswordResetProvider = provideUseCase(RequestPasswordResetUseCase, {
   userRepository: UserRepositoryPort,
-  reserveVerificationEmailSlot: ReserveVerificationEmailSlotUseCase,
+  checkVerificationEmailCap: CheckVerificationEmailCapUseCase,
+  recordVerificationEmailSent: RecordVerificationEmailSentUseCase,
   issueVerificationCode: IssueVerificationCodeUseCase,
   sendVerificationCode: SendVerificationCodeUseCase,
   securityLogRepository: SecurityLogRepositoryPort,
@@ -108,7 +110,8 @@ export const resetPasswordProvider = provideUseCase(ResetPasswordUseCase, {
 export const requestPasswordSetupCodeProvider = provideUseCase(RequestPasswordSetupCodeUseCase, {
   userRepository: UserRepositoryPort,
   accountRepository: LinkedAccountsRepositoryPort,
-  reserveVerificationEmailSlot: ReserveVerificationEmailSlotUseCase,
+  checkVerificationEmailCap: CheckVerificationEmailCapUseCase,
+  recordVerificationEmailSent: RecordVerificationEmailSentUseCase,
   issueVerificationCode: IssueVerificationCodeUseCase,
   sendVerificationCode: SendVerificationCodeUseCase,
 });
