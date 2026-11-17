@@ -12,9 +12,9 @@ import {
   REPORT_TEXT_MAX_LENGTH,
 } from "../../domain/ai-report.constants.js";
 import {
-  isNumberFreeTip,
+  isGroundedTip,
   keepGroundedInsight,
-  type ReportNumberEvidence,
+  type ReportEvidence,
 } from "../../domain/report-grounding.domain-service.js";
 import { normalizeReportPersona } from "../../domain/report-persona.domain-service.js";
 import { type ReportDraft, reportDraftSchema } from "./report-content.wire.js";
@@ -39,7 +39,7 @@ const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
   en: REPORT_SYSTEM_EN,
 };
 
-export function buildReportEvidence({ stats, focus, period }: ReportContext): ReportNumberEvidence {
+export function buildReportEvidence({ stats, focus, period }: ReportContext): ReportEvidence {
   return {
     overallNumbers: [
       stats.totalTodos,
@@ -71,7 +71,7 @@ function normalizeReport(
   const insight = keepGroundedInsight(clean(draft.insight), draft.insightKey, evidence);
   const tips = draft.tips
     .map(clean)
-    .filter((tip) => fits(tip, maxLength.tip) && isNumberFreeTip(tip, evidence.quotedTexts))
+    .filter((tip) => fits(tip, maxLength.tip) && isGroundedTip(tip, evidence.quotedTexts))
     .slice(0, REPORT_MAX_TIPS);
   if (!fits(insight, maxLength.insight) || tips.length === 0) {
     throw new ReportDraftRejectedError();
@@ -86,7 +86,7 @@ export const reportPrompt: PromptDefinition<
   ReportNormalizeContext
 > = {
   id: "report",
-  version: "report@4",
+  version: "report@5",
   taskClass: "background",
   maxInputChars: 16_000,
   schema: reportDraftSchema,

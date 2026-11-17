@@ -231,7 +231,7 @@ describe("AI 리포트 E2E", () => {
       const stored = await ctx.testDatabase
         .getClient()
         .query.aiReport.findFirst({ where: { id: report.id.value } });
-      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@4" });
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@5" });
 
       // When
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");

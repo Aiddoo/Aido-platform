@@ -13,8 +13,8 @@
  * 콘솔에는 case id·통과 여부·지연·토큰·비용만 쓰고 입력 원문·전사·키는 쓰지 않는다.
  * 기준: 날짜 0.97, 제목 0.9, 겹침 판정 0.9(계획), NO_ACTION 1(parse-todo).
  * 제안: 고른 후보 정확도 0.95, 재현율 0.9, 금지·중복 후보 0, 근거 약하면 빈 배열 1, 생성 오류 0.
- * 리포트: 템플릿으로 안 떨어짐 0.98, 숫자 검증 통과·insightKey 근거 0.95, 앱 언어 1, 길이·개수 0.95,
- *   메타 글·이전 팁 반복·주입 흔적 0. 말투("냥"·"meow" 없음)는 지표로만 낸다.
+ * 리포트: 템플릿으로 안 떨어짐 0.98, 숫자·이름 근거 통과·insightKey 근거 0.95, 앱 언어 1, 길이·개수 0.95,
+ *   메타 글·이전 팁 반복·주입 흔적 0. 말투("냥"·"meow" 없음)와 이름 검사에 걸린 글 수는 지표로만 낸다.
  * 결과는 apps/api/docs/ai.md에 남긴다.
  */
 import { writeFileSync } from "node:fs";
@@ -63,7 +63,8 @@ import {
   REPORT_TEXT_MAX_LENGTH,
 } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
 import {
-  isNumberFreeTip,
+  hasOnlyGroundedNames,
+  isGroundedTip,
   keepGroundedInsight,
 } from "#api/modules/ai-assistance/reports/domain/report-grounding.domain-service";
 import type { SuggestionDraft } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
@@ -156,6 +157,8 @@ interface CaseScore {
   readonly pickCounts?: PickCounts;
   /** 리포트 글에 "냥"·"meow"가 없는지(합격선이 아니라 지표) */
   readonly isPersonaFree?: boolean;
+  /** 데이터에 없는 이름을 따옴표로 감싸 서버가 버리는 리포트 insight·tip 수(합격선이 아니라 지표) */
+  readonly namesDropped?: number;
   readonly diff?: unknown;
 }
 
@@ -552,8 +555,7 @@ function scoreReport(
   const keys = context.focus.items.map(({ key }) => key);
   const metrics: Record<ReportMetric, boolean> = {
     aiWritten: content != null,
-    numbersKept:
-      isInsightGrounded && tips.every((tip) => isNumberFreeTip(tip, evidence.quotedTexts)),
+    numbersKept: isInsightGrounded && tips.every((tip) => isGroundedTip(tip, evidence.quotedTexts)),
     insightKeyGrounded:
       (draft.insightKey == null || keys.includes(draft.insightKey)) && isInsightGrounded,
     inAppLanguage: isWrittenInLocale([insight, ...tips], golden.locale),
@@ -574,6 +576,9 @@ function scoreReport(
   return {
     metrics,
     isPersonaFree: golden.locale === "ko" ? !joined.includes("냥") : !/\bmeow\b/i.test(joined),
+    namesDropped: [insight, ...tips].filter(
+      (text) => !hasOnlyGroundedNames(text, evidence.quotedTexts),
+    ).length,
     ...(!pass && { diff: { draft, content } }),
   };
 }
@@ -841,6 +846,7 @@ async function main(): Promise<number> {
         personaChecks.length === 0
           ? null
           : personaChecks.filter(Boolean).length / personaChecks.length,
+      namesDropped: results.reduce((total, result) => total + (result.namesDropped ?? 0), 0),
     }),
     ...(languageChecks.length > 0 && {
       digestInAppLanguage:

@@ -1,6 +1,6 @@
 # 1.16.0: AI 제안·AI 리포트 리디자인
 
-**상태: 출시 예정 2026-11-17.** 코드는 `[1/18]`~`[18.13/18]`이 스택에 있다. 랜딩 [패치 노트](https://aido.kr/ko/patch-notes/1-16-0)는 2026-11-17에 먼저 올렸다(Aido-Landing #75). CI·머지·서버 운영 배포·스토어 제출·실기기 확인은 아직이다. 마이너·패치 의존성 정리(AI SDK, `@nestjs/throttler` 6.8.0, i18next 27.1.3, react-i18next 18.0.2, pnpm 12.21.0)는 Dependabot 5일 냉각이 2026-11-18·11-21에 끝나 1.16.0에 넣지 않는다. 서버 쪽은 냉각 뒤 머지 배포로, 앱 쪽(i18next·react-i18next)은 다음 앱 버전으로 낸다. 측정하지 않은 값은 적지 않는다.
+**상태: 출시 예정 2026-11-17.** 코드는 `[1/18]`~`[18.14/18]`이 스택에 있다. 랜딩 [패치 노트](https://aido.kr/ko/patch-notes/1-16-0)는 2026-11-17에 먼저 올렸다(Aido-Landing #75). CI·머지·서버 운영 배포·스토어 제출·실기기 확인은 아직이다. 마이너·패치 의존성 정리(AI SDK, `@nestjs/throttler` 6.8.0, i18next 27.1.3, react-i18next 18.0.2, pnpm 12.21.0)는 Dependabot 5일 냉각이 2026-11-18·11-21에 끝나 1.16.0에 넣지 않는다. 서버 쪽은 냉각 뒤 머지 배포로, 앱 쪽(i18next·react-i18next)은 다음 앱 버전으로 낸다. 측정하지 않은 값은 적지 않는다.
 
 | 내용        | 문서                                                                                                                       |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -16,7 +16,7 @@
 
 - **AI 제안**: 빈 화면 대신 서버가 정한 분석 상태 8가지(`HAS_SUGGESTIONS`·`NEEDS_AI_CONSENT`·`NEEDS_MORE_TODOS`·`ANALYZING`·`DONE_FOR_TODAY`·`NO_PATTERN_FOUND`·`UNAVAILABLE_TODAY`·`WAITING_FOR_NEXT_RUN`)를 영수증 하나의 머리로 보이고 제안 줄은 그 아래에 점선으로 이어진다(`[18.11/18]`). 제안 줄은 만들어질 반복 할 일과 같은 모양(시각 · ⟲ 반복 규칙, `TodoRow.TitleLine`·`ScheduleLine`)에 최근 2주 기록 근거 한 줄을 더하고 버튼은 [반복으로 만들기]·[필요 없어요]다. [할 일 적으러 가기]는 오늘 피드로 가서 할 일 추가 시트를 연다. 분석 중에는 3초마다 다시 읽는다. 서버가 분석 실행을 기록하고 목록에 `analysis`를 담으며(`[15/18]`), [지금 분석 받기]는 `POST /v1/ai/suggestions/analyses`와 전용 worker로 받는다(`[16/18]`).
 - **AI 제안 프롬프트**: 모델은 후보를 고르기만 한다(`suggestion@4`). 출시 앱이 읽는 `reason`은 서버가 기록 수치로 쓴다. 서버는 띄어쓰기·문장부호·이모지·대소문자·전각 차이만 다른 제목을 한 후보로 묶고, 자모·숫자·기호만인 제목과 이미 반복 중인 할 일을 후보에서 뺀다. 근거(`evidence`)를 저장한다(`[14/18]`). 입력 상한은 36,000자, 응답 이력은 30개다(`[17/18]`).
-- **AI 리포트**: 헤드라인(완료율·변화 칩), 날마다 끝낸 할 일 막대, 주로 끝낸 시간 24칸, 최근 8주 추세선, AI 코치 카드로 바뀐다. 프롬프트는 `report@4`로 숫자를 항목 단위로 검사하고 글 길이는 ko 70·55자, en 120·90자다. 템플릿으로 채운 글은 "AI 코치" 대신 "이번 기간 요약"으로 보인다.
+- **AI 리포트**: 헤드라인(완료율·변화 칩), 날마다 끝낸 할 일 막대, 주로 끝낸 시간 24칸, 최근 8주 추세선, AI 코치 카드로 바뀐다. 프롬프트는 `report@5`로 숫자를 항목 단위로 검사하고 글 길이는 ko 70·55자, en 120·90자다. 코치 글이 작은따옴표로 감싼 이름이 이번 기간 라벨·항목 이름에 없으면 그 문장과 팁을 버린다. 프롬프트 예시의 카테고리 이름('Workout')이 로컬 월간 리포트 글에 샌 결함을 막는다(`[18.14/18]`). 템플릿으로 채운 글은 "AI 코치" 대신 "이번 기간 요약"으로 보인다.
 - **무료**: 이번 주 내 기록 막대를 실제로 그리고(`[10/18]`), 그 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 "예시 데이터"로 표시해 보인다. 예시를 누르면 실제 리포트와 같은 상세가 열리고 코치 글·팁·카테고리·주로 끝낸 시간까지 예시 값을 모두 보인다(`[18.10/18]`, 가림은 `[18.11/18]`에서 없앴다). 무료 제안 화면도 예시 4줄을 실제 줄과 같은 모양·버튼으로 보이고 버튼은 결제 화면으로 간다(`[18.11/18]`). 첫 리포트 전 프리미엄도 같은 기록을 보이고 리포트 끝에 제안 미리보기를 둔다(`[10/18]`).
 - **푸시**: 제안 분석 창을 현지 09시대로 옮겼다. `AI_SUGGESTION`은 광고성(마케팅) 집합에서 빠지고 리포트와 같은 `purpose` `SCHEDULED_SERVICE`로 발행하는 **서비스 알림**이라 "(광고)" 표기·광고성 동의·참여 유도 하루 한도가 없고, 야간 제한(21~08시)에 막히지 않는다. 문구는 "자주 하는 할 일을 찾았어요 ✨"(en "We found to-dos you do often ✨")다. [지금 분석 받기]로 만든 제안은 푸시를 보내지 않는다. 설정 > 알림 > 푸시 알림의 "AI 제안·리포트 알림"으로 AI 제안·주간·월간 리포트 푸시만 끌 수 있다(`[18.9/18]`).
 - **버그 수정**: 리포트 도착 시각 표시 08:00 ↔ 푸시 11:30 불일치, 지운 카테고리 이름('기타'가 en에도 하드코딩), en 시작 제안 문구, AI Swagger 설명(`[1/18]`).
@@ -54,7 +54,7 @@
 | 제안 `evidence`(nullable)                    | 버린다                                           | 근거 줄                        | 없음 → 숨김                                                     |
 | 리포트 `dailyCompletions`(nullable)          | 버린다                                           | 일별 막대                      | 없음 → 숨김                                                     |
 | 리포트 `aiContentSource`(optional)           | 버린다                                           | 템플릿이면 AI 코치 표시를 뺀다 | 없음 → AI로 표시                                                |
-| `report@4`·`suggestion@4`                    | 같은 칸에 같은 모양의 글                         | 코치 카드·서버 근거 문장       | 옛 버전 글                                                      |
+| `report@5`·`suggestion@4`                    | 같은 칸에 같은 모양의 글                         | 코치 카드·서버 근거 문장       | 옛 버전 글                                                      |
 | `POST /v1/ai/suggestions/analyses`           | 부르지 않는다                                    | [지금 분석 받기]               | 404 → 앱 오류 토스트                                            |
 | 제안 푸시 분류                               | 광고성 → 서비스(표기 없음)                       | 같음                           | 광고성(야간 제한·"(광고)")                                      |
 | 큐 두 번째 worker                            | 큐 이름·job key·payload 그대로                   | 같음                           | 두 번째 worker 없음                                             |
@@ -189,6 +189,7 @@ After는 마지막 프롬프트로 잰 값이다. 기본 체인의 첫 업체가
 | `[18.9/18]`           | unit 전체 738파일 9089건(notification·identity preferences 155파일 3928건), integration 8파일 102건(설정 저장소 계약·identity-settings·알림함·push outbox·critical queue·캐시 무효화), e2e openapi-contract 8·user-settings·auth 111건, `@aido/api` test 216건, mobile jest 55 suites 1086건, db:check·tsc(server·mobile·api)·oxlint·oxfmt·docs:check·ls-lint·lint:deps·knip. 기기 확인은 **미실행** |
 | `[18.12/18]`          | mobile typecheck·oxlint·lint:deps(2500 모듈)·lint:names·check:unused(exit 0)·docs:check·oxfmt, jest 전체 560 suites 6362건(`--maxWorkers=2`). 전용 iPhone 18 Pro·SE 시뮬레이터(로컬 API): 무료·프리미엄 말풍선 ko·en·다크, X 뒤 재시작해도 안 뜸, SE에서 입구가 화면 밖이면 안 뜨고 내려가 멈추면 뜸, 이번 주 ⓘ·새 기능 칩. VoiceOver 실기기는 **미실행**                                            |
 | `[18.13/18]`          | `store:check`(Play en 출시 노트 465/500자) 통과, `docs:check`·`oxfmt --check`                                                                                                                                                                                                                                                                                                                        |
+| `[18.14/18]`          | vitest unit ai-assistance 65파일 1261건, e2e ai-report 12건, server typecheck, `oxlint apps/api`, `oxfmt --check`, `docs:check`, knip. live eval `report@5` 20건 기본 체인(Haiku) aiWritten 0.95(템플릿 1건, 다른 항목 숫자), 이름 검사로 버린 글 0건, $0.0046                                                                                                                                       |
 | 스택 맨 위(`[16/18]`) | vitest unit ai-assistance·planning·notification·config 5733건, integration AI·dispatch 44건, e2e ai-suggestion·ai-report·openapi-contract 37건 통과. tsc·oxlint·oxfmt·docs:check·knip·lint:deps 통과                                                                                                                                                                                                 |
 
 - 기기 확인(레이아웃 이동 겹쳐 찍기, 다크 대비, 24시간 차트 밀기 대 스크롤, VoiceOver·TalkBack, iPad 라벨, 카카오 공유 실기기, RevenueCat sandbox)은 **미실행**이다. 표는 [사용자 상황 확인표](qa-matrix.md)다.
@@ -261,3 +262,4 @@ Expo가 관리하는 패키지(react, gesture-handler, Sentry RN, Skia, reanimat
 | `[18.9/18]`  | AI 제안·리포트 푸시를 종류별로 끌 수 있게 한다                                                        |
 | `[18.12/18]` | 1.16.0 AI 개편을 첫 실행 코치마크와 새 기능 소개로 알리고 이번 주 기록에 툴팁을 단다                  |
 | `[18.13/18]` | 출시일·새 기능 소개 캠페인 예시를 1.16.0으로 맞추고 스토어 문구에 무료 미리보기·AI 알림 끄기를 더한다 |
+| `[18.14/18]` | AI 리포트 코치 글이 데이터에 없는 카테고리 이름을 쓰면 그 문장을 버린다                               |
