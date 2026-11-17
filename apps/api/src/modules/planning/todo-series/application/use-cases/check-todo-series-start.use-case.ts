@@ -1,9 +1,9 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
-import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import { todoNotFound } from "../../../todos/application/todos.errors.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { invalidRepeatRule, todoSeriesLimitReached } from "../todo-series.errors.js";

@@ -1,9 +1,9 @@
-import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
+import { todoNotFound } from "../../../todos/application/todos.errors.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import type {
   ApplyFollowingTodosUpdateUseCase,

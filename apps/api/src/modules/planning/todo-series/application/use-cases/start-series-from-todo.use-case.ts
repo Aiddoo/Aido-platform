@@ -1,11 +1,11 @@
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import { todoNotFound } from "../../../todos/application/todos.errors.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { TodoSchedule } from "../../../todos/domain/todo-schedule.vo.js";

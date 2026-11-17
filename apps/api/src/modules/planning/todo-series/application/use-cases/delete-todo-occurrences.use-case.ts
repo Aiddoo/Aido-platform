@@ -2,7 +2,6 @@ import type { TodoEditScope } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import { todoNotFound } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -11,6 +10,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TodoOccurrenceWriterPort } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
+import { todoNotFound } from "../../../todos/application/todos.errors.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
