@@ -30,6 +30,7 @@ import { NotifyEndingTrialsUseCase } from "./application/use-cases/notify-ending
 import { NotifyUpcomingRenewalsUseCase } from "./application/use-cases/notify-upcoming-renewals.use-case.js";
 import { ReconcileStoreSubscriptionsUseCase } from "./application/use-cases/reconcile-store-subscriptions.use-case.js";
 import { TransferSubscriptionsUseCase } from "./application/use-cases/transfer-subscriptions.use-case.js";
+import { IdentitySubscriptionUserAdapter } from "./infrastructure/adapters/identity-subscription-user.adapter.js";
 import { RevenueCatCustomerConsoleAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-customer-console.adapter.js";
 import { RevenueCatStoreSubscriptionStatusAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-store-subscription-status.adapter.js";
 import { RevenueCatStoreWebhookAdapter } from "./infrastructure/adapters/revenuecat/revenuecat-store-webhook.adapter.js";
@@ -41,7 +42,6 @@ import { PremiumGrantSweepScheduler } from "./infrastructure/jobs/premium-grant-
 import { StoreSubscriptionReconcileProcessor } from "./infrastructure/jobs/store-subscription-reconcile.processor.js";
 import { StoreSubscriptionReconcileScheduler } from "./infrastructure/jobs/store-subscription-reconcile.scheduler.js";
 import { DrizzleSubscriptionEventReceiptRepository } from "./infrastructure/persistence/drizzle-subscription-event-receipt.repository.js";
-import { DrizzleSubscriptionUserReader } from "./infrastructure/persistence/drizzle-subscription-user.reader.js";
 import { DrizzleSubscriptionRepository } from "./infrastructure/persistence/drizzle-subscription.repository.js";
 import { DrizzleTrialEndingNoticeRepository } from "./infrastructure/persistence/drizzle-trial-ending-notice.repository.js";
 import { DrizzleUpcomingRenewalNoticeRepository } from "./infrastructure/persistence/drizzle-upcoming-renewal-notice.repository.js";
@@ -49,7 +49,7 @@ import { StoreWebhookGuard } from "./presentation/http/guards/store-webhook.guar
 
 export const BILLING_SUBSCRIPTIONS_PROVIDERS = [
   { provide: SubscriptionRepositoryPort, useClass: DrizzleSubscriptionRepository },
-  { provide: SubscriptionUserReaderPort, useClass: DrizzleSubscriptionUserReader },
+  { provide: SubscriptionUserReaderPort, useClass: IdentitySubscriptionUserAdapter },
   {
     provide: SubscriptionEventReceiptRepositoryPort,
     useClass: DrizzleSubscriptionEventReceiptRepository,

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminNotificationQueue } from "#test/doubles/operations/recording-admin-notification-queue";
 import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -8,7 +9,7 @@ import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
 const payload: UserRegisteredNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "test@example.com",
   provider: "apple",
   registeredAt: "2026-03-07T12:00:00.000Z",

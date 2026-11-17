@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { OAuthStatePrimitives } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import { UserLogEvent } from "#api/modules/identity/users/application/users.log-events";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryOAuthStateRepository } from "#test/doubles/identity/in-memory-oauth-state.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
 import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
@@ -154,7 +155,7 @@ describe("ExchangeOAuthCode — 일회용 로그인 결과 교환", () => {
       expect(result.isNewUser).toBe(true);
       expect(fixture.adminEventNotifier.notifications).toEqual([
         {
-          userId: fixture.user.id,
+          userId: UserId.reconstitute(fixture.user.id),
           email: fixture.user.email,
           provider: "kakao",
           registeredAt: "2026-11-05T00:00:00.000Z",

@@ -5,10 +5,10 @@ import { uniq, uniqBy } from "es-toolkit";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { SubscriptionUserReaderPort } from "../../application/ports/subscription-user.reader.port.js";
-import type { SubscriptionUserReadModel } from "../../application/read-models/subscription-user.read-model.js";
+import { StoreAppUserReaderPort } from "../../application/ports/store-app-user.reader.port.js";
+import type { StoreAppUserReadModel } from "../../application/read-models/store-app-user.read-model.js";
 
-interface SubscriptionUserRow {
+interface StoreAppUserRow {
   readonly id: string;
   readonly email: string;
   readonly storeAppUserId: string | null;
@@ -16,22 +16,16 @@ interface SubscriptionUserRow {
 }
 
 @Injectable()
-export class DrizzleSubscriptionUserReader implements SubscriptionUserReaderPort {
+export class DrizzleStoreAppUserReader extends StoreAppUserReaderPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    super();
     this.#transactionHost = transactionHost;
   }
 
-  async findFirstByAppUserIds(
-    appUserIds: readonly string[],
-  ): Promise<SubscriptionUserReadModel | null> {
-    const [first] = await this.listByAppUserIds(appUserIds);
-    return first ?? null;
-  }
-
   // RevenueCat은 처음에 User.id를 appUserId로 쓰고, 별칭이 생기면 storeAppUserId가 달라진다
-  async listByAppUserIds(appUserIds: readonly string[]): Promise<SubscriptionUserReadModel[]> {
+  async listByStoreAppUserIds(appUserIds: readonly string[]): Promise<StoreAppUserReadModel[]> {
     const ids = uniq(appUserIds);
     if (ids.length === 0) {
       return [];
@@ -47,10 +41,10 @@ export class DrizzleSubscriptionUserReader implements SubscriptionUserReaderPort
         rows.find((candidate) => candidate.id === appUserId);
       return row == null ? [] : [row];
     });
-    return uniqBy(matched, (row) => row.id).map(toSubscriptionUser);
+    return uniqBy(matched, (row) => row.id).map(toStoreAppUser);
   }
 }
 
-function toSubscriptionUser(row: SubscriptionUserRow): SubscriptionUserReadModel {
+function toStoreAppUser(row: StoreAppUserRow): StoreAppUserReadModel {
   return { id: UserId.reconstitute(row.id), email: row.email, name: row.profile?.name ?? null };
 }

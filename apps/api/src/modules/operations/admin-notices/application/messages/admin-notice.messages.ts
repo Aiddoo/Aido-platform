@@ -70,7 +70,7 @@ export function subscriptionNoticeUserOf(payload: SubscriptionNoticeInput): Admi
 /** 사용자 조회가 실패하거나 사용자가 없을 때 가입 요청 값으로 채우는 사용자 블록 */
 export function registeredNoticeUserOf(payload: UserRegisteredNoticeInput): AdminNoticeUser {
   return {
-    userId: payload.userId,
+    userId: payload.userId.value,
     email: payload.email,
     ...(payload.name != null && { nickname: payload.name }),
     joinedAt: payload.registeredAt,

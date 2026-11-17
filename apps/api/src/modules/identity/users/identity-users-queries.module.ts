@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { SecurityLogRepositoryPort } from "./application/ports/security-log.repository.port.js";
+import { StoreAppUserReaderPort } from "./application/ports/store-app-user.reader.port.js";
 import { UserActivityReaderPort } from "./application/ports/user-activity.reader.port.js";
 import { UserAiUsageCounterPort } from "./application/ports/user-ai-usage-counter.port.js";
 import { UserAppVersionReaderPort } from "./application/ports/user-app-version.reader.port.js";
@@ -14,6 +15,7 @@ import { UserRepositoryPort } from "./application/ports/user.repository.port.js"
 import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
 import { UserProfileCacheAdapter } from "./infrastructure/adapters/user-profile-cache.adapter.js";
 import { DrizzleSecurityLogRepository } from "./infrastructure/persistence/drizzle-security-log.repository.js";
+import { DrizzleStoreAppUserReader } from "./infrastructure/persistence/drizzle-store-app-user.reader.js";
 import { DrizzleUserAiUsageCounterAdapter } from "./infrastructure/persistence/drizzle-user-ai-usage-counter.adapter.js";
 import { DrizzleUserBriefReader } from "./infrastructure/persistence/drizzle-user-brief.reader.js";
 import { DrizzleUserSearchReader } from "./infrastructure/persistence/drizzle-user-search.reader.js";
@@ -38,6 +40,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     { provide: UserSearchReaderPort, useClass: DrizzleUserSearchReader },
     { provide: UserSignupReaderPort, useClass: DrizzleUserSignupReader },
     { provide: UserSubscriptionProjectionPort, useClass: DrizzleUserSubscriptionProjectionAdapter },
+    { provide: StoreAppUserReaderPort, useClass: DrizzleStoreAppUserReader },
   ],
   exports: [
     UserRepositoryPort,
@@ -51,6 +54,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     UserSearchReaderPort,
     UserSignupReaderPort,
     UserSubscriptionProjectionPort,
+    StoreAppUserReaderPort,
   ],
 })
 export class IdentityUsersQueriesModule {}

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
@@ -33,7 +34,7 @@ describe("LoginWithMobileOAuthToken — 앱이 직접 보낸 소셜 로그인의
     expect(result.isNewUser).toBe(true);
     expect(fixture.adminEventNotifier.notifications).toEqual([
       {
-        userId: result.userId,
+        userId: UserId.reconstitute(result.userId),
         email: fixture.identityProvider.profile.email,
         provider: "google",
         registeredAt: toIsoString(AUTH_CREDENTIAL_NOW),

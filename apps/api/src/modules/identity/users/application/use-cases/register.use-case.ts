@@ -143,7 +143,7 @@ export class RegisterUseCase {
     });
 
     this.#dependencies.adminEventNotifier.notifyUserRegistered({
-      userId: result.user.id,
+      userId: UserId.reconstitute(result.user.id),
       email: result.user.email,
       provider: "credential",
       registeredAt: toIsoString(this.#dependencies.clock.now()),

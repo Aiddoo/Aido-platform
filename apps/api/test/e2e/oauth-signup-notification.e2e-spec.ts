@@ -1,6 +1,7 @@
 import request from "supertest";
 
 import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubUserRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -82,7 +83,7 @@ describe("소셜 가입 관리자 알림 E2E", () => {
     expect(exchanged.body.data.isNewUser).toBe(true);
     expect(notifier.notifications).toEqual([
       expect.objectContaining({
-        userId: exchanged.body.data.userId,
+        userId: UserId.reconstitute(exchanged.body.data.userId),
         email: "kakao-signup@test.com",
         provider: "kakao",
         name: "웹 가입자",

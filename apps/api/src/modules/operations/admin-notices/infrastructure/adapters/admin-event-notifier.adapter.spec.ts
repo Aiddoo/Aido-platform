@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import type {
@@ -7,7 +8,7 @@ import type {
 import { AdminEventNotifierAdapter } from "./admin-event-notifier.adapter.js";
 
 const userPayload: UserRegisteredNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "test@example.com",
   provider: "apple",
   registeredAt: "2026-03-07T12:00:00.000Z",

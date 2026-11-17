@@ -1,3 +1,5 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import type { SubscriptionNoticeInput } from "../ports/admin-event-notifier.port.js";
 import {
@@ -131,7 +133,7 @@ describe("registeredNoticeUserOf — 가입 요청으로 채우는 사용자 블
   ] as const)("%s 가입은 %s 가입 방식이다", (provider, signupMethod) => {
     // When
     const user = registeredNoticeUserOf({
-      userId: "user-1",
+      userId: UserId.reconstitute("user-1"),
       email: "u@example.com",
       provider,
       registeredAt: "2026-03-07T12:00:00.000Z",

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
@@ -116,7 +117,7 @@ describe("Register — 이메일 계정 등록", () => {
     ]);
     expect(fixture.adminEventNotifier.notifications).toEqual([
       {
-        userId: result.userId,
+        userId: UserId.reconstitute(result.userId),
         email: input.email,
         provider: "credential",
         registeredAt: "2026-11-10T00:00:00.000Z",

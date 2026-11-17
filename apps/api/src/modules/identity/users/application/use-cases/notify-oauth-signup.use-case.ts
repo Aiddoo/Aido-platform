@@ -58,7 +58,7 @@ export class NotifyOAuthSignupUseCase {
         return;
       }
       this.#dependencies.adminEventNotifier.notifyUserRegistered({
-        userId: user.id,
+        userId: UserId.reconstitute(user.id),
         email: user.email,
         provider: ACCOUNT_PROVIDER_TO_EVENT[input.provider],
         registeredAt: toIsoString(user.createdAt),

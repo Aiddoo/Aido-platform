@@ -6,6 +6,8 @@ import type {
   SubscriptionPlanType,
 } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
   NoticeEndReason,
   NoticeStore,
@@ -16,7 +18,7 @@ import type {
 
 /** 가입 알림 입력. 가입을 커밋한 identity가 요청에서 확인한 값을 넘긴다. */
 export interface UserRegisteredNoticeInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly email: string;
   readonly provider: SignupEventProvider;
   /** 가입 시각(ISO string) */

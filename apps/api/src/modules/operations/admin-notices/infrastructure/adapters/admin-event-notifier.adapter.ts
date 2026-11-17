@@ -29,7 +29,7 @@ export class AdminEventNotifierAdapter extends AdminEventNotifierPort {
     enqueueUserRegistered.execute(payload).catch(() => {
       logger.error({
         event: AdminNoticeLogEvent.SIGNUP_ENQUEUE_FAILED,
-        userId: payload.userId,
+        userId: payload.userId.value,
         errorType: "queue-enqueue",
       });
     });

@@ -1,9 +1,11 @@
 import type { DeviceType } from "@aido/api/vocabulary";
 
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
 
 export interface UserRegisteredNotification {
-  userId: string;
+  userId: UserId;
   email: string;
   provider: Lowercase<AccountProvider>;
   registeredAt: string;

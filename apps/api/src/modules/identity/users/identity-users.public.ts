@@ -14,6 +14,7 @@ export type {
 export { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 export { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 export { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
+export { StoreAppUserReaderPort } from "./application/ports/store-app-user.reader.port.js";
 export {
   UserSubscriptionProjectionPort,
   type UserSubscriptionProjection,
