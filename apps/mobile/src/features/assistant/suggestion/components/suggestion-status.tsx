@@ -22,13 +22,14 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useIsFetching, useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
+import { SUGGESTION_QUERY_KEYS } from '../queries/suggestion-query-keys';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getNextAnalysisLabels } from '../utils/suggestion-schedule.view-model';
@@ -175,9 +176,10 @@ SuggestionStatus.NeedsAiConsent = function NeedsAiConsent() {
   const { t } = useTranslation('ai');
   const aiConsent = useAiDataSharingConsentGate();
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
+  const isRefreshingStatus = useIsFetching({ queryKey: SUGGESTION_QUERY_KEYS.list() }) > 0;
 
-  // 동의를 저장하면 안내는 바로 숨고 제안 상태는 다시 받는 중이라 그동안 빈 머리 대신 받는 중 틀을 둔다
-  if (ConsentPolicy.hasAgreedToAiDataSharing(consent)) {
+  // 동의 저장 뒤 상태를 다시 받는 동안만 틀을 둔다. 받은 상태가 여전히 동의 전이면 안내를 다시 보인다
+  if (ConsentPolicy.hasAgreedToAiDataSharing(consent) && isRefreshingStatus) {
     return <StatusSkeleton />;
   }
 

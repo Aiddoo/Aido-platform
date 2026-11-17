@@ -258,7 +258,7 @@
     },
     "aiReport": {
       "title": "AI 주간·월간 리포트",
-      "description": "달성률과 잘 되는 요일·시간을 정리해 줘요"
+      "description": "달성률과 날마다 끝낸 할 일을 차트로 보여 줘요"
     },
     "aiSuggestion": {
       "title": "AI 반복 제안",
