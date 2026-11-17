@@ -233,7 +233,7 @@ describe("NestMailEmailSenderAdapter — ResendTransport 원문 fixture", () => 
     expect(outcome).toEqual({ status: "failed", reason: "unavailable", retryable: true });
     expect(http.requests).toHaveLength(5);
     expect(alerts.alerts).toEqual([
-      expect.objectContaining({ key: "notification.email.circuit-open", severity: "error" }),
+      expect.objectContaining({ key: "notification.email.circuit.opened", severity: "error" }),
     ]);
   });
 

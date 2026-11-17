@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const InviteRedemptionAlerts = defineAlerts("social", {
   REWARD_RETRY_EXHAUSTED: {
-    key: "social.invite-reward.retry-exhausted",
+    key: "social.invite-reward.retry.exhausted",
     severity: "error",
     summary: "초대 보상 지급이 자동 재시도를 다 썼다",
     runbook:

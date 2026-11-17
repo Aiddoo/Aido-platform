@@ -9,10 +9,10 @@ import type {
 } from "#api/shared/application/ports/operational-alert.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-// 같은 원인이 한 Sentry 이슈로 모이도록 subject에 큐·스케줄·오류 종류만 싣는다(`job.failed:<큐>:<오류 종류>`)
-export const JobAlerts = defineAlerts("job", {
+// 같은 원인이 한 Sentry 이슈로 모이도록 subject에 큐·스케줄·오류 종류만 싣는다(`jobs.job.failed:<큐>:<오류 종류>`)
+export const JobAlerts = defineAlerts("jobs", {
   FAILED: {
-    key: "job.failed",
+    key: "jobs.job.failed",
     severity: "error",
     summary: "작업이 재시도를 모두 쓰고 실패해 DLQ로 옮겨졌다",
     runbook:
@@ -20,30 +20,30 @@ export const JobAlerts = defineAlerts("job", {
   },
 });
 
-export const ScheduleAlerts = defineAlerts("schedule", {
+export const ScheduleAlerts = defineAlerts("jobs", {
   OVERDUE: {
-    key: "schedule.overdue",
+    key: "jobs.schedule.overdue",
     severity: "error",
     summary: "예정 실행 두 번이 지나도록 끝난 실행이 없다",
     runbook:
       "태그 schedule.key의 큐가 pg-boss에 스케줄로 남아 있는지, worker가 살아 있는지(/health jobs, Sentry cron 모니터)를 본다. 배포 직후면 다음 실행을 기다린다.",
   },
   FAILING: {
-    key: "schedule.failing",
+    key: "jobs.schedule.failing",
     severity: "error",
     summary: "최근 예정 실행이 모두 실패했다",
     runbook:
-      "같은 큐의 job.failed 경보와 로그에서 오류 종류를 찾아 고친다. 고친 뒤 다음 예정 실행이 끝나는지 확인한다.",
+      "같은 큐의 jobs.job.failed 경보와 로그에서 오류 종류를 찾아 고친다. 고친 뒤 다음 예정 실행이 끝나는지 확인한다.",
   },
 });
 
-export const QueueAlerts = defineAlerts("queue", {
+export const QueueAlerts = defineAlerts("jobs", {
   DEAD_LETTER: {
-    key: "queue.dead-letter",
+    key: "jobs.dead-letter.queued",
     severity: "warning",
     summary: "DLQ에 작업이 들어왔다",
     runbook:
-      "태그 queue의 원래 큐에서 같은 시각 job.failed 경보를 본다. 원인을 고친 뒤 DLQ 작업을 다시 넣거나 지운다.",
+      "태그 queue의 원래 큐에서 같은 시각 jobs.job.failed 경보를 본다. 원인을 고친 뒤 DLQ 작업을 다시 넣거나 지운다.",
   },
 });
 

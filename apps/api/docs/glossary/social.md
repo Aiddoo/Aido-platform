@@ -172,4 +172,4 @@
 | JOINED              | `expire(now)`·`expireJoinedBefore` | REJECTED(EXPIRED)          | JOINED 아니면 `false`                                                         |
 | JOINED              | `markQualifyReminderSent(now)`     | JOINED + 알림 시각         | 이미 보냈거나 JOINED 아니면 `false`                                           |
 | 지급 PENDING·FAILED | `markApplied`                      | APPLIED                    | 이미 APPLIED면 `false`(같은 지급 동시 적용을 막는 조건부 갱신)                |
-| 지급 PENDING·FAILED | `markFailed`                       | FAILED, 첫 실행만 시도 +1  | 5번 실패하면 자동 재시도를 멈추고 경보 `social.invite-reward.retry-exhausted` |
+| 지급 PENDING·FAILED | `markFailed`                       | FAILED, 첫 실행만 시도 +1  | 5번 실패하면 자동 재시도를 멈추고 경보 `social.invite-reward.retry.exhausted` |

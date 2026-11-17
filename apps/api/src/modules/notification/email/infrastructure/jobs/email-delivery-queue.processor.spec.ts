@@ -87,7 +87,7 @@ describe("EmailDeliveryQueueProcessor", () => {
     expect(deliverEmail.inputs).toEqual([]);
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "notification.email.delivery-unseal-failed",
+        key: "notification.email.delivery-unseal.failed",
         details: expect.objectContaining({ kind: "verification" }),
       }),
     ]);

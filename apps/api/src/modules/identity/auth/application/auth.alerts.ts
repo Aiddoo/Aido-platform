@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const AuthAlerts = defineAlerts("identity", {
   REFRESH_TOKEN_REUSED: {
-    key: "identity.session.refresh-token-reused",
+    key: "identity.session.refresh-token.reused",
     severity: "warning",
     summary: "이미 바꾼 refresh token이 다시 쓰여 그 로그인 묶음을 모두 끊었다",
     runbook:

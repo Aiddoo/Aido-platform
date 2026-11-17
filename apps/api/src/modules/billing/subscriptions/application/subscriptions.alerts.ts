@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const SubscriptionAlerts = defineAlerts("billing", {
   WEBHOOK_PROCESSING_FAILED: {
-    key: "billing.subscription.webhook.processing-failed",
+    key: "billing.subscription.webhook.processing.failed",
     severity: "error",
     summary: "결제 공급자 웹훅을 영구 실패로 닫아 구독 상태가 반영되지 않았다",
     runbook:

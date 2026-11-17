@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const BroadcastAlerts = defineAlerts("operations", {
   DELIVERY_EXHAUSTED: {
-    key: "operations.broadcast.delivery-exhausted",
+    key: "operations.broadcast.delivery.exhausted",
     severity: "error",
     summary: "수신자 현지 시각 브로드캐스트 발송이 재시도를 다 써 일부가 받지 못했다",
     runbook:

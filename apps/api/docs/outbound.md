@@ -8,7 +8,7 @@
 - HTTP는 `@nestjs/http-client` named client(`retry: false`, `throwOnHttpError: false`)로 보내고 JSON은 `requestVendorJson`(`platform/http/request-vendor-json.ts`)이 `success`·`http_failure`로 나눈다. 마감은 `AbortSignal.timeout`이다.
 - 재시도 층은 한 호출에 하나다. 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss다. cockatiel `retry`는 쓰지 않는다.
 - 회로를 다는 기준: 호출마다 돈이 들거나, 요청 경로에서 대기가 쌓이거나, 배치가 많은 호출로 퍼질 때. 회로는 전송 실패와 5xx(`isTransportFailure`·`isServerFailureOutcome`)만 센다. 4xx·응답 형식 오류는 그 요청의 문제다. 상태는 프로세스 메모리다.
-- 거절은 `OutboundRejectedError`(`circuit-open`·`bulkhead-full`)이고, 로그는 `outbound.circuit.{opened,half-open,closed}`·`outbound.bulkhead.rejected`다.
+- 거절은 `OutboundRejectedError`(`circuit-open`·`bulkhead-full`)이고, 로그는 `outbound.circuit.{opened,half-open.entered,closed}`·`outbound.bulkhead.rejected`다.
 - 누적 사용량은 `UsageMeterPort`(`add`·`tryReserve`·`release`·`read`·`prune`·`deleteSubject`, `OutboundUsage` 원자적 upsert)로 센다. 기간은 UTC 일·월이고 기준선 경보는 기간당 한 번이다. 90일 지난 행은 `outbound-usage-retention.v1`(04:30 KST)이 지운다.
 
 ## 체크리스트

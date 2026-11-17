@@ -81,7 +81,7 @@ describe("DigestVoiceNoteUseCase", () => {
       expect(response.charged).toBe(true);
       expect(alert.alerts).toEqual([
         expect.objectContaining({
-          key: "voice.note-digest.duration-over-limit",
+          key: "voice.note-digest.duration.exceeded",
           severity: "warning",
           details: { durationSeconds, maxSeconds: maxSeconds.free },
         }),

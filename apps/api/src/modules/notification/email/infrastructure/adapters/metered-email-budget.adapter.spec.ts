@@ -84,7 +84,7 @@ describe("MeteredEmailBudgetAdapter", () => {
     // Then
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "notification.email.daily-budget-near",
+        key: "notification.email.daily-budget.near",
         severity: "warning",
         details: { period: "2026-11-05", total: 80, threshold: 80 },
       }),
@@ -102,7 +102,7 @@ describe("MeteredEmailBudgetAdapter", () => {
     // Then
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "notification.email.budget-exhausted",
+        key: "notification.email.budget.exhausted",
         tags: { scope: "daily" },
       }),
     ]);
@@ -131,7 +131,7 @@ describe("MeteredEmailBudgetAdapter", () => {
     expect(await meter.read([DAY, MONTH])).toEqual([100, 10]);
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "notification.email.provider-quota-exhausted",
+        key: "notification.email.provider-quota.exhausted",
         tags: { scope: "daily" },
       }),
     ]);

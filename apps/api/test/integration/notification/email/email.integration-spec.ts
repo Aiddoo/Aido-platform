@@ -182,7 +182,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     // Then
     expect(http.requests).toHaveLength(1);
     expect(alerts.alerts).toEqual([
-      expect.objectContaining({ key: "notification.email.delivery-rejected" }),
+      expect.objectContaining({ key: "notification.email.delivery.rejected" }),
     ]);
     expect(JSON.stringify(alerts.alerts)).not.toContain(recipient);
     expect(JSON.stringify(alerts.alerts)).not.toContain(code);
@@ -198,7 +198,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
 
     // Then
     expect(alerts.alerts).toEqual([
-      expect.objectContaining({ key: "notification.email.delivery-retry-exhausted" }),
+      expect.objectContaining({ key: "notification.email.delivery-retry.exhausted" }),
     ]);
   });
 

@@ -87,7 +87,7 @@ describe("DeliverEmailUseCase", () => {
     expect(budget.releases).toBe(1);
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "notification.email.delivery-retry-exhausted",
+        key: "notification.email.delivery-retry.exhausted",
         tags: { kind: "verification", reason: "unavailable" },
       }),
     ]);
@@ -105,7 +105,7 @@ describe("DeliverEmailUseCase", () => {
       // Then
       expect(budget.releases).toBe(1);
       expect(alert.alerts).toEqual([
-        expect.objectContaining({ key: "notification.email.delivery-rejected" }),
+        expect.objectContaining({ key: "notification.email.delivery.rejected" }),
       ]);
     },
   );

@@ -79,10 +79,10 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
 
     // Then
     expect(
-      alerts.alerts.filter((alert) => alert.key === "notification.email.daily-budget-near"),
+      alerts.alerts.filter((alert) => alert.key === "notification.email.daily-budget.near"),
     ).toHaveLength(1);
     expect(
-      alerts.alerts.filter((alert) => alert.key === "notification.email.budget-exhausted"),
+      alerts.alerts.filter((alert) => alert.key === "notification.email.budget.exhausted"),
     ).toHaveLength(0);
   });
 
@@ -95,7 +95,7 @@ describe("이메일 발송 예산 (실제 PostgreSQL)", () => {
 
     // Then
     expect(
-      alerts.alerts.filter((alert) => alert.key === "notification.email.budget-exhausted"),
+      alerts.alerts.filter((alert) => alert.key === "notification.email.budget.exhausted"),
     ).toHaveLength(1);
   });
 

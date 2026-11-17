@@ -75,7 +75,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
     ).toEqual([1_200_000, 1_200_000, 600_000, 600_000]);
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "ai.spend.threshold-reached",
+        key: "ai-assistance.spend.threshold.reached",
         tags: { tier: "alert", window: "daily" },
       }),
     ]);

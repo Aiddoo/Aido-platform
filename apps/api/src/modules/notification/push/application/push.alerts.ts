@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const PushAlerts = defineAlerts("notification", {
   RECEIPT_FAILURE_RATIO_HIGH: {
-    key: "notification.push.receipt-failure-ratio-high",
+    key: "notification.push.receipt-failure-ratio.high",
     severity: "error",
     summary: "푸시 receipt의 공급자 쪽 실패 비율이 기준을 넘었다",
     runbook:

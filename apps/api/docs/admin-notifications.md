@@ -84,7 +84,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 
 ### 웹훅 처리 실패 (권고)
 
-웹훅 처리 실패(`SUBSCRIPTION_1602` 등)는 이 알림이 아니라 운영 경보 `billing.subscription.webhook.processing-failed`(Sentry)다. Sentry 알림 규칙으로 결제 채널에 보낼 때는 메시지에 태그 `storeEnvironment`(SANDBOX/PRODUCTION)·`eventKind`·`store`와 details의 `errorCode`·`eventId`·`productId`를 보이게 하고, 제목 앞에 `🚨`를 붙여 이 알림의 빨강(결제 문제·환불·만료)과 구분하기를 권한다. 사용자 이메일·닉네임은 Sentry에 싣지 않으므로 사용자는 RevenueCat 고객 화면이나 내부 사용자 ID로 찾는다.
+웹훅 처리 실패(`SUBSCRIPTION_1602` 등)는 이 알림이 아니라 운영 경보 `billing.subscription.webhook.processing.failed`(Sentry)다. Sentry 알림 규칙으로 결제 채널에 보낼 때는 메시지에 태그 `storeEnvironment`(SANDBOX/PRODUCTION)·`eventKind`·`store`와 details의 `errorCode`·`eventId`·`productId`를 보이게 하고, 제목 앞에 `🚨`를 붙여 이 알림의 빨강(결제 문제·환불·만료)과 구분하기를 권한다. 사용자 이메일·닉네임은 Sentry에 싣지 않으므로 사용자는 RevenueCat 고객 화면이나 내부 사용자 ID로 찾는다.
 
 ## 운영 채널 알림
 
@@ -93,7 +93,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 | 회원가입       | 신규 가입                                                                                           | 👋 새로운 회원가입             |
 | 일일 가입 요약 | 매일 KST 기준 전일 집계                                                                             | 일일 가입 리포트 \| YYYY-MM-DD |
 | (알림 없음)    | 로그인. 로그인마다 보내면 소음이 커서 보내지 않는다                                                 | -                              |
-| (알림 없음)    | RevenueCat 웹훅 실패는 운영 경보(`billing.subscription.webhook.processing-failed`, Sentry)로 올린다 | -                              |
+| (알림 없음)    | RevenueCat 웹훅 실패는 운영 경보(`billing.subscription.webhook.processing.failed`, Sentry)로 올린다 | -                              |
 
 ### 회원가입 알림
 

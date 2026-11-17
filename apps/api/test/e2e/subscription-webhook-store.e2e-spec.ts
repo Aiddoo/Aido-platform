@@ -184,7 +184,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
     // Then
     expect(alert.alerts).toMatchObject([
       {
-        key: "billing.subscription.webhook.processing-failed",
+        key: "billing.subscription.webhook.processing.failed",
         severity: "error",
         tags: { storeEnvironment: "PRODUCTION" },
       },

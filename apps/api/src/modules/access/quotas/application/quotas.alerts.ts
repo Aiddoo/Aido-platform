@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const QuotaAlerts = defineAlerts("access", {
   STALE_RESERVATION: {
-    key: "access.quota.stale-reservation",
+    key: "access.quota.reservation.stale",
     severity: "error",
     summary: "돌려주지 못한 횟수 예약이 남아 사용자 한도가 월말까지 깎인다",
     runbook:

@@ -83,7 +83,7 @@ describe("AiSpendBudgetAdapter — 기동 검사", () => {
     // Then
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "ai.spend.model-pricing-unknown",
+        key: "ai-assistance.spend.model-pricing.unknown",
         details: { providers: "anthropic" },
       }),
     ]);
@@ -865,7 +865,7 @@ describe("AiSdkGeneratorAdapter — 입력 상한·킬 스위치·비용 예산"
     // Then
     expect(chain.alert.alerts).toEqual([
       expect.objectContaining({
-        key: "ai.spend.threshold-reached",
+        key: "ai-assistance.spend.threshold.reached",
         severity: "warning",
         tags: { tier: "alert", window: "daily" },
       }),
@@ -916,7 +916,7 @@ describe("AiSdkGeneratorAdapter — 업체 회로 (공용 OutboundPolicy, 가짜
     expect(chain.anthropic.callCount).toBe(3);
     expect(chain.alert.alerts).toEqual([
       expect.objectContaining({
-        key: "ai.provider.auth-circuit-opened",
+        key: "ai-assistance.provider.auth-circuit.opened",
         tags: expect.objectContaining({ breaker: "auth", reason: "AUTH" }),
       }),
     ]);

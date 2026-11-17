@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const ForecastAlerts = defineAlerts("weather", {
   WEATHERKIT_MONTHLY_CALLS: {
-    key: "weather.weatherkit.monthly-calls",
+    key: "weather.weatherkit.monthly-calls.reached",
     severity: "warning",
     summary: "WeatherKit 이번 달 호출 수가 무료 한도 경고 기준선에 닿았다",
     runbook:

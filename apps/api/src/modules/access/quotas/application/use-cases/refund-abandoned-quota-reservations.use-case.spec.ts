@@ -77,7 +77,7 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
     // Then
     expect(fixture.alert.alerts).toEqual([
       expect.objectContaining({
-        key: "access.quota.stale-reservation",
+        key: "access.quota.reservation.stale",
         severity: "error",
         details: { failedCount: 0, staleCount: 1 },
       }),

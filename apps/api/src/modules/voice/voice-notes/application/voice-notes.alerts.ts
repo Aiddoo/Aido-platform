@@ -2,7 +2,7 @@ import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
 
 export const VoiceNoteAlerts = defineAlerts("voice", {
   DURATION_OVER_LIMIT: {
-    key: "voice.note-digest.duration-over-limit",
+    key: "voice.note-digest.duration.exceeded",
     severity: "warning",
     summary: "앱이 보낸 녹음 길이가 등급별 한 번 상한을 넘었다(앱 타이머 우회 의심)",
     runbook:

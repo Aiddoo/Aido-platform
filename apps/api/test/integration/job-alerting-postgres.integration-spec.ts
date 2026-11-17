@@ -208,8 +208,8 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     // Then
     expect(raisedWithinWindow).toBe(1);
     expect(recorded.alerts.map(alertIssueKey)).toEqual([
-      "job.failed:integration-alert-dedup:DocumentRenderError",
-      "job.failed:integration-alert-dedup:DocumentRenderError",
+      "jobs.job.failed:integration-alert-dedup:DocumentRenderError",
+      "jobs.job.failed:integration-alert-dedup:DocumentRenderError",
     ]);
   });
 
@@ -224,7 +224,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
     // Then
     expect(alerts.alerts.map(alertIssueKey)).toContain(
-      "schedule.overdue:integration-hourly-overdue",
+      "jobs.schedule.overdue:integration-hourly-overdue",
     );
     expect(heartbeat.schedules).toEqual([SCHEDULE_WATCHDOG_HEARTBEAT]);
     expect(heartbeat.succeeded).toBe(1);
@@ -248,8 +248,8 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
 
     // Then
     const keys = alerts.alerts.map(alertIssueKey);
-    expect(keys).not.toContain("schedule.overdue:integration-hourly-healthy");
-    expect(keys).not.toContain("schedule.failing:integration-hourly-healthy");
+    expect(keys).not.toContain("jobs.schedule.overdue:integration-hourly-healthy");
+    expect(keys).not.toContain("jobs.schedule.failing:integration-hourly-healthy");
   });
 
   it("최근 실행이 모두 실패한 스케줄은 failing으로 경보한다", async () => {
@@ -273,7 +273,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     // Then
     expect(alerts.alerts).toContainEqual(
       expect.objectContaining({
-        key: "schedule.failing",
+        key: "jobs.schedule.failing",
         subject: "integration-hourly-failing",
         details: expect.objectContaining({ failedRuns: 1 }),
       }),
@@ -307,7 +307,7 @@ describe("작업 실패 경보 통합 테스트 (실제 PostgreSQL·pg-boss)", (
     // Then
     expect(alerts.alerts).toContainEqual(
       expect.objectContaining({
-        key: "queue.dead-letter",
+        key: "jobs.dead-letter.queued",
         subject: "integration-watch-source-dead-letter",
         details: { arrivals: 1, windowMinutes: 15 },
       }),
