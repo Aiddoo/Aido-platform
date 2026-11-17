@@ -29,5 +29,10 @@ export {
   marketingAgreedSince,
   marketingReconfirmCutoff,
 } from "./preferences/domain/marketing-consent.domain-service.js";
+// 사람 id 칸 옆에 발송 설정을 붙이는 다른 Context의 한 SQL이 설정 테이블을 직접 읽지 않게 한다
+export {
+  userDeliveryPreference,
+  userMarketingPushConsent,
+} from "./preferences/infrastructure/persistence/user-delivery-settings.query-fragment.js";
 export { TimezoneSelfHealInterceptor } from "./preferences/presentation/http/interceptors/timezone-self-heal.interceptor.js";
 export { IdentityPreferencesModule as IdentitySettingsModule } from "./preferences/identity-preferences.module.js";

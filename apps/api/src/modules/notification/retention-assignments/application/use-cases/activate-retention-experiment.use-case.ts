@@ -2,11 +2,11 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
-import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
 
 interface ActivateRetentionExperimentDependencies {
-  readonly repository: Pick<RetentionRepositoryPort, "activate">;
+  readonly repository: Pick<RetentionAssignmentRepositoryPort, "activate">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;

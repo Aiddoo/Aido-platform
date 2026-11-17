@@ -1,4 +1,4 @@
-import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
+import { InMemoryRetentionAssignmentRepository } from "#test/doubles/notification/in-memory-retention-assignment.repository";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -14,7 +14,7 @@ import {
 const NOW = Temporal.Instant.from("2026-07-16T10:30:00Z");
 
 function setup(stages: readonly RetentionStageCandidateReadModel[]) {
-  const repository = new InMemoryRetentionRepository(stages);
+  const repository = new InMemoryRetentionAssignmentRepository(stages);
   const publisher = new RecordingNotificationPublisher();
   const clock = new FixedClock(NOW);
   const logger = new SilentLogger();

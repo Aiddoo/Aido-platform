@@ -3,11 +3,11 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { RETENTION_EXPERIMENT_KEY } from "../../domain/retention-assignments.constants.js";
 import type { ExperimentAssignerPort } from "../ports/experiment-assigner.port.js";
+import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
-import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
 
 interface EnrollRetentionExperimentDependencies {
-  readonly repository: Pick<RetentionRepositoryPort, "enroll">;
+  readonly repository: Pick<RetentionAssignmentRepositoryPort, "enroll">;
   readonly config: Pick<RetentionConfigPort, "enabled" | "treatmentPercent">;
   readonly experimentAssigner: ExperimentAssignerPort;
   readonly clock: ClockPort;

@@ -1,4 +1,4 @@
-import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
+import { InMemoryRetentionAssignmentRepository } from "#test/doubles/notification/in-memory-retention-assignment.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 
 import {
@@ -24,7 +24,7 @@ class FirstWeightedExperimentAssigner extends ExperimentAssignerPort {
 }
 
 function setup(config: { readonly enabled: boolean; readonly treatmentPercent: number }) {
-  const repository = new InMemoryRetentionRepository();
+  const repository = new InMemoryRetentionAssignmentRepository();
   const experimentAssigner = new FirstWeightedExperimentAssigner();
   const useCase = new EnrollRetentionExperimentUseCase({
     repository,

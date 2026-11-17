@@ -6,13 +6,13 @@ import {
   RETENTION_CACHE_TTL_MS,
   RetentionCacheKey,
 } from "#api/modules/notification/retention-assignments/infrastructure/cache/retention-cache.keyspace";
-import { DrizzleRetentionRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention.repository";
+import { DrizzleRetentionAssignmentRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention-assignment.repository";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { todo, todoCategory, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
-import { describeRetentionRepositoryContract } from "#test/contracts/notification/retention-repository.contract";
+import { describeRetentionAssignmentRepositoryContract } from "#test/contracts/notification/retention-assignment-repository.contract";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -24,7 +24,7 @@ import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   let testDb: TestDatabase;
   let db: TestDatabaseClient;
-  let repository: DrizzleRetentionRepository;
+  let repository: DrizzleRetentionAssignmentRepository;
   let unitOfWork: ReturnType<typeof createDatabaseTransactionFixture>["uow"];
 
   beforeAll(async () => {
@@ -32,7 +32,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     db = await testDb.start();
     const { transactionHost, uow } = createDatabaseTransactionFixture(db);
     unitOfWork = uow;
-    repository = new DrizzleRetentionRepository(
+    repository = new DrizzleRetentionAssignmentRepository(
       transactionHost,
       uow,
       new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 }),
@@ -88,7 +88,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
 
   const ALL_DUE_AT = Temporal.Instant.from("2026-08-01T00:00:00.000Z");
 
-  describeRetentionRepositoryContract(async () => ({
+  describeRetentionAssignmentRepositoryContract(async () => ({
     repository,
     givenUser: async ({ timezone, locale }) => {
       const userId = await createUser(`${createEntityId().slice(-8)}@example.com`, { timezone });
@@ -249,7 +249,11 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
     );
     const { transactionHost, uow } = createDatabaseTransactionFixture(db);
-    const staleTzdataRepository = new DrizzleRetentionRepository(transactionHost, uow, cache);
+    const staleTzdataRepository = new DrizzleRetentionAssignmentRepository(
+      transactionHost,
+      uow,
+      cache,
+    );
     const userId = await createUser("seoultz1@example.com", { timezone: "Asia/Seoul" });
     await staleTzdataRepository.enroll({
       userId: UserId.reconstitute(userId),

@@ -32,3 +32,4 @@ export {
   type UserAudienceFilter,
   userAudience,
 } from "./infrastructure/persistence/user-audience.query-fragment.js";
+export { userLastActivity } from "./infrastructure/persistence/user-activity.query-fragment.js";

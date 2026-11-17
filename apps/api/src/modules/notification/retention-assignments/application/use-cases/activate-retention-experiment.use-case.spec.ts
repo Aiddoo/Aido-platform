@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemoryRetentionRepository } from "#test/doubles/notification/in-memory-retention.repository";
+import { InMemoryRetentionAssignmentRepository } from "#test/doubles/notification/in-memory-retention-assignment.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
@@ -8,7 +8,7 @@ import { ActivateRetentionExperimentUseCase } from "./activate-retention-experim
 const NOW = Temporal.Instant.from("2026-07-15T00:00:00Z");
 
 async function setup(enabled: boolean) {
-  const repository = new InMemoryRetentionRepository();
+  const repository = new InMemoryRetentionAssignmentRepository();
   await repository.enroll({
     userId: UserId.reconstitute("new-user"),
     variant: "TREATMENT",

@@ -15,8 +15,8 @@ import {
   RETENTION_EXPERIMENT_KEY,
 } from "../../domain/retention-assignments.constants.js";
 import { decideRetentionStage } from "../../domain/retention-stage.domain-service.js";
+import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
-import type { RetentionRepositoryPort } from "../ports/retention.repository.port.js";
 import type {
   RetentionStageCandidateReadModel,
   RetentionStageCursorReadModel,
@@ -32,7 +32,7 @@ export const RETENTION_STAGE_SWEEP = {
 
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
-    RetentionRepositoryPort,
+    RetentionAssignmentRepositoryPort,
     | "findDueStages"
     | "linkStageNotification"
     | "markStageOutboxed"

@@ -1,4 +1,4 @@
-import { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
+import { RetentionAssignmentRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention-assignment.repository.port";
 import type {
   RetentionStageCandidateReadModel,
   RetentionStageCursorReadModel,
@@ -60,7 +60,7 @@ export type RetentionUserProfile = Partial<
 
 // Drizzle처럼 SCHEDULED이고 결정할 때가 된 단계만 생성 순서로 돌려주고 상태 전이는 한 번만 성공한다.
 // 등록·활성화로 만든 단계의 사용자 정보(시간대·언어 등)는 givenUser로 넣은 값, 없으면 fixture 기본값이다
-export class InMemoryRetentionRepository extends RetentionRepositoryPort {
+export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRepositoryPort {
   readonly stages: StoredRetentionStage[];
   readonly enrollments: RetentionEnrollment[] = [];
   readonly d7Results = new Map<string, D7Result>();

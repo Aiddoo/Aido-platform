@@ -1,4 +1,4 @@
-import type { RetentionRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention.repository.port";
+import type { RetentionAssignmentRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention-assignment.repository.port";
 import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
 import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -11,7 +11,7 @@ interface RetentionD7Result {
 }
 
 export interface RetentionRepositoryContractSubject {
-  readonly repository: RetentionRepositoryPort;
+  readonly repository: RetentionAssignmentRepositoryPort;
   givenUser(profile: {
     readonly timezone: string;
     readonly locale: SupportedLocale;
@@ -36,7 +36,7 @@ function byCreation(
 }
 
 async function dueStagesOf(
-  repository: RetentionRepositoryPort,
+  repository: RetentionAssignmentRepositoryPort,
   dueAt: Temporal.Instant = ALL_DUE_AT,
 ): Promise<RetentionStageCandidateReadModel[]> {
   return repository.findDueStages({ dueAt, limit: 200 });
@@ -51,10 +51,10 @@ function nextMillisecond(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 5));
 }
 
-export function describeRetentionRepositoryContract(
+export function describeRetentionAssignmentRepositoryContract(
   createSubject: () => Promise<RetentionRepositoryContractSubject>,
 ): void {
-  describe("리텐션 저장소 계약", () => {
+  describe("리텐션 배정 저장소 계약", () => {
     it("시작 시각과 함께 등록하면 한 배정에 네 단계를 만들고, 다시 등록해도 처음 배정을 바꾸지 않는다", async () => {
       // Given
       const { repository, givenUser } = await createSubject();

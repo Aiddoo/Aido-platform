@@ -3,6 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  userDeliveryPreference,
+  userMarketingPushConsent,
+} from "#api/modules/identity/identity-settings.public";
+import { userLastActivity } from "#api/modules/identity/users/identity-users.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -16,9 +21,6 @@ import {
   retentionExperimentResult,
   retentionExperimentStage,
   todo,
-  user,
-  userConsent,
-  userPreference,
 } from "#api/platform/database/schema/index";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -28,7 +30,7 @@ import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { NotificationId } from "../../../notifications/notification-notifications.public.js";
-import type { RetentionRepositoryPort } from "../../application/ports/retention.repository.port.js";
+import type { RetentionAssignmentRepositoryPort } from "../../application/ports/retention-assignment.repository.port.js";
 import type {
   RetentionStageCandidateReadModel,
   RetentionStageCursorReadModel,
@@ -69,7 +71,7 @@ const stageRowSchema = z.object({
 });
 
 @Injectable()
-export class DrizzleRetentionRepository implements RetentionRepositoryPort {
+export class DrizzleRetentionAssignmentRepository implements RetentionAssignmentRepositoryPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #uow: UnitOfWorkPort;
   readonly #cache: Pick<CacheStorePort, "wrap">;
@@ -163,6 +165,10 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
     );
     const { targetDay, sendLocalTime } = RETENTION_STAGE_TIMING;
     const validTimezones = await this.#scheduledStageTimezones();
+    const stagePreference = userDeliveryPreference();
+    const preference = userDeliveryPreference();
+    const consent = userMarketingPushConsent();
+    const appUser = userLastActivity();
     const afterCursor =
       params.after == null
         ? sql`TRUE`
@@ -181,10 +187,10 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				FROM ${retentionExperimentStage} AS stage
 				INNER JOIN ${retentionExperimentAssignment} AS assignment
 					ON assignment."id" = stage."assignmentId"
-				LEFT JOIN ${userPreference} AS preference
-					ON preference."userId" = assignment."userId"
+				LEFT JOIN ${stagePreference}
+					ON ${stagePreference.userId} = assignment."userId"
 				LEFT JOIN unnest(${sql.param(validTimezones)}::TEXT[]) AS valid_timezone(name)
-					ON valid_timezone.name = preference."timezone"
+					ON valid_timezone.name = ${stagePreference.timezone}
 				CROSS JOIN LATERAL (
 					SELECT COALESCE(valid_timezone.name, 'UTC') AS timezone
 				) AS stage_clock
@@ -227,28 +233,28 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 				due."stage",
 				assignment."startedAt" AT TIME ZONE 'UTC' AS "startedAt",
 				due.timezone AS "timezone",
-				COALESCE(preference."locale", 'ko') AS "locale",
-				COALESCE(preference."pushEnabled", FALSE) AS "pushEnabled",
-				COALESCE(preference."nightPushEnabled", FALSE) AS "nightPushEnabled",
-				consent."marketingPushAgreedAt" AT TIME ZONE 'UTC' AS "marketingPushAgreedAt",
+				COALESCE(${preference.locale}, 'ko') AS "locale",
+				COALESCE(${preference.pushEnabled}, FALSE) AS "pushEnabled",
+				COALESCE(${preference.nightPushEnabled}, FALSE) AS "nightPushEnabled",
+				${consent.marketingPushAgreedAt} AT TIME ZONE 'UTC' AS "marketingPushAgreedAt",
 				COALESCE(token_metrics."activeTokenCount", 0)::INT AS "activeTokenCount",
-				app_user."lastActiveAt" AT TIME ZONE 'UTC' AS "lastActiveAt",
+				${appUser.lastActiveAt} AT TIME ZONE 'UTC' AS "lastActiveAt",
 				COALESCE(todo_metrics."todoCount", 0)::INT AS "todoCount",
 				COALESCE(todo_metrics."completedCount", 0)::INT AS "completedCount",
 				COALESCE(todo_metrics."todoActionWithinWindow", FALSE) AS "todoActionWithinWindow"
 			FROM due_stages AS due
 			INNER JOIN ${retentionExperimentAssignment} AS assignment
 				ON assignment."id" = due."assignmentId"
-			INNER JOIN ${user} AS app_user
-				ON app_user."id" = assignment."userId"
-			LEFT JOIN ${userPreference} AS preference
-				ON preference."userId" = app_user."id"
-			LEFT JOIN ${userConsent} AS consent
-				ON consent."userId" = app_user."id"
+			INNER JOIN ${appUser}
+				ON ${appUser.userId} = assignment."userId"
+			LEFT JOIN ${preference}
+				ON ${preference.userId} = ${appUser.userId}
+			LEFT JOIN ${consent}
+				ON ${consent.userId} = ${appUser.userId}
 			LEFT JOIN LATERAL (
 				SELECT COUNT(*) AS "activeTokenCount"
 				FROM ${pushToken} AS token
-				WHERE token."userId" = app_user."id"
+				WHERE token."userId" = ${appUser.userId}
 					AND token."isActive" = TRUE
 			) AS token_metrics ON TRUE
 			LEFT JOIN LATERAL (
@@ -268,7 +274,7 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
 						)
 					) AS "todoActionWithinWindow"
 				FROM ${todo} AS todo
-				WHERE todo."userId" = app_user."id"
+				WHERE todo."userId" = ${appUser.userId}
 			) AS todo_metrics ON TRUE
 			ORDER BY due."createdAt" ASC, due."id" ASC
 		`)
@@ -286,14 +292,15 @@ export class DrizzleRetentionRepository implements RetentionRepositoryPort {
   // Intl 판정)도 받는 값이다. 고르지 못한 값은 SQL에서 UTC가 되어 PG가 모르는 이름으로 묶음이 실패하지 않는다
   async #scheduledStageTimezones(): Promise<string[]> {
     const postgresNames = new Set(await this.#postgresTimezoneNames());
+    const preference = userDeliveryPreference();
     const rows = await this.#db
-      .selectDistinct({ timezone: userPreference.timezone })
+      .selectDistinct({ timezone: preference.timezone })
       .from(retentionExperimentStage)
       .innerJoin(
         retentionExperimentAssignment,
         eq(retentionExperimentAssignment.id, retentionExperimentStage.assignmentId),
       )
-      .innerJoin(userPreference, eq(userPreference.userId, retentionExperimentAssignment.userId))
+      .innerJoin(preference, eq(preference.userId, retentionExperimentAssignment.userId))
       .where(
         and(
           eq(retentionExperimentStage.status, "SCHEDULED"),

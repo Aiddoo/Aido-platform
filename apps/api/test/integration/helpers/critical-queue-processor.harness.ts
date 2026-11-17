@@ -48,7 +48,7 @@ import { ExperimentAssignerPort } from "#api/modules/notification/retention-assi
 import { RetentionConfigPort } from "#api/modules/notification/retention-assignments/application/ports/retention-config.port";
 import { DeterministicHashExperimentAssignerAdapter } from "#api/modules/notification/retention-assignments/infrastructure/adapters/deterministic-hash-experiment-assigner.adapter";
 import { RetentionQueueProcessor } from "#api/modules/notification/retention-assignments/infrastructure/jobs/retention-queue.processor";
-import { DrizzleRetentionRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention.repository";
+import { DrizzleRetentionAssignmentRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention-assignment.repository";
 import {
   NOTIFICATION_RETENTION_ASSIGNMENTS_PERSISTENCE_PROVIDERS,
   NOTIFICATION_RETENTION_ASSIGNMENTS_USE_CASE_PROVIDERS,
@@ -124,7 +124,7 @@ export interface CriticalQueueProcessorHarness {
   readonly jobQueue: JobQueuePort;
   readonly pushProvider: FakePushProvider;
   readonly module: TestingModule;
-  readonly retentionRepository: DrizzleRetentionRepository;
+  readonly retentionRepository: DrizzleRetentionAssignmentRepository;
   readonly daytimeTimezone: string;
   cleanup(): Promise<void>;
   close(): Promise<void>;
@@ -206,7 +206,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     jobQueue,
     pushProvider,
     module,
-    retentionRepository: module.get(DrizzleRetentionRepository),
+    retentionRepository: module.get(DrizzleRetentionAssignmentRepository),
     daytimeTimezone,
     cleanup: async () => {
       await testDatabase.cleanup();

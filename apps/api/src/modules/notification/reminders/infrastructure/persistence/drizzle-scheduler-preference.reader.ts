@@ -1,10 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import { userDeliveryPreference } from "#api/modules/identity/identity-settings.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { userPreference } from "#api/platform/database/schema/index";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
@@ -30,9 +31,10 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
       ReminderCacheKey.activeTimezones(),
       z.array(z.string()),
       async (): Promise<string[]> => {
+        const preference = userDeliveryPreference();
         const rows = await this.#db
-          .selectDistinct({ timezone: userPreference.timezone })
-          .from(userPreference);
+          .selectDistinct({ timezone: preference.timezone })
+          .from(preference);
         return rows.flatMap((row) =>
           normalizeIanaTimezone(row.timezone) != null ? [row.timezone] : [],
         );
@@ -45,10 +47,11 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
     if (userIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#db.query.userPreference.findMany({
-      columns: { userId: true, locale: true },
-      where: { userId: { in: userIds } },
-    });
+    const preference = userDeliveryPreference();
+    const preferences = await this.#db
+      .select({ userId: preference.userId, locale: preference.locale })
+      .from(preference)
+      .where(inArray(preference.userId, userIds));
     return new Map(
       preferences.map((preference) => [
         preference.userId,

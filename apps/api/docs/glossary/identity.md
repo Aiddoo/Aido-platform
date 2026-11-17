@@ -24,6 +24,7 @@
 | 사용자 요약        | `UserBriefReaderPort`, `UserBriefReadModel`          | social이 사람을 확인·표시하는 문. id 묶음으로 태그·이름·프로필 이미지·탈퇴 대기를 한 번에 읽고, 활성 여부·태그 조회·가입 신원(로그인 수단)을 준다                  |
 | 사용자 검색        | `UserSearchReaderPort`, `UserExclusionCondition`     | ACTIVE이고 탈퇴 대기가 아닌 사람을 Aido ID·이름으로 찾는다. 순위는 태그 정확·태그 앞부분·이름 앞부분·부분 일치다. 뺄 사람은 부르는 쪽 조건이다                     |
 | 사용자 조건        | `undeletedUserCondition`, `userTagContainsCondition` | 다른 Context가 사람 id 칸으로 페이지를 고를 때 붙이는 SQL 조건. 사용자 테이블을 직접 읽지 않게 identity가 연다                                                     |
+| 활동 시각 조각     | `userLastActivity`                                   | 다른 Context가 사람 id 칸으로 마지막 활동 시각을 한 SQL에 붙이는 하위 질의. 탈퇴 대기도 담는다                                                                     |
 | 구독 projection 칸 | `UserSubscriptionProjectionPort`                     | 출시 앱 `/me`·권한 SQL이 읽는 `User.subscriptionStatus`·`subscriptionExpiresAt`. billing이 사용자 잠금 안에서 쓰고, 만료 웹훅을 잃은 사용자를 고르는 유일한 문이다 |
 
 ## sessions
@@ -169,6 +170,7 @@
 | 수신 동의 재확인    | `marketingReconfirmCutoff`, `marketingAgreedSince`, `MARKETING_CONSENT_RECONFIRM_YEARS`       | 동의(또는 마지막 재확인)가 2년 지난 활성 사용자에게 동의 사실을 다시 알린다. 두 실행이 같은 사용자를 골라도 한 번만 기록한다                                    |
 | AI 데이터 처리 동의 | `AiDataSharingConsent`(Entity), `AI_DATA_SHARING_DECISIONS`, `AiDataSharingConsentReaderPort` | 할 일·메모 글자를 AI 처리 업체로 보내도 되는지. AGREED·DECLINED·UNDECIDED. HTTP guard·예약 작업·음성 계획이 같은 판정을 쓴다                                    |
 | 안내 버전           | `AI_DATA_SHARING_CONSENT_VERSIONS`, `allowsAiProcessingAt`                                    | 버전마다 알린 업체가 다르다. 보내려는 업체를 처음 알린 버전 이상에 동의했을 때만 보낸다. 동의 시각이 지금보다 뒤면 아직 동의 전이다                             |
+| 발송 설정 조각      | `userDeliveryPreference`, `userMarketingPushConsent`                                          | 다른 Context가 사람 id 칸 옆에 시간대·언어·푸시·야간 설정과 광고성 푸시 동의 시각을 한 SQL로 붙이는 하위 질의. PG가 펼쳐 실행 계획은 테이블 조인과 같다         |
 
 연속 완료는 Aggregate가 다음 상태 계획을 주고(`planTodoCompletion`·`planTodoUncompletion`) 저장소가 조건부로 쓴다. 바꿀 것이 없으면 `null`이다. 설정·동의 값은 Aggregate를 거치지 않고 저장소 upsert로 바꾼다.
 

@@ -7,7 +7,7 @@ import type {
   RetentionStageCursorReadModel,
 } from "../read-models/retention-stage-candidate.read-model.js";
 
-export abstract class RetentionRepositoryPort {
+export abstract class RetentionAssignmentRepositoryPort {
   // 이미 등록한 사용자면 바꾸지 않는다. startedAt이 있으면 네 단계를 함께 만든다
   abstract enroll(input: {
     readonly userId: UserId;

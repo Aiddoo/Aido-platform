@@ -2,8 +2,9 @@ import type { TransactionHost } from "@nestjs-cls/transactional";
 import type { ConfigType } from "@nestjs/config";
 import { and, eq, gte, inArray, lt, type AnyColumn } from "drizzle-orm";
 
+import { userDeliveryPreference } from "#api/modules/identity/identity-settings.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, userPreference } from "#api/platform/database/schema/index";
+import { todo } from "#api/platform/database/schema/index";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
@@ -29,12 +30,13 @@ export function todayTodoCount(
 }
 
 export function userInTimezones(database: SchedulerDatabase, timezones: readonly string[]) {
+  const preference = userDeliveryPreference();
   return inArray(
     todo.userId,
     database
-      .select({ userId: userPreference.userId })
-      .from(userPreference)
-      .where(inArray(userPreference.timezone, [...timezones])),
+      .select({ userId: preference.userId })
+      .from(preference)
+      .where(inArray(preference.timezone, [...timezones])),
   );
 }
 
