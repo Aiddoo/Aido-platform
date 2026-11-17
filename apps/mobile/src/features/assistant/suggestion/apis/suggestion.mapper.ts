@@ -2,7 +2,7 @@ import type {
   RecurringSuggestion,
   SuggestionAnalysis as SuggestionAnalysisDto,
   SuggestionListResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/ai/v1';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 

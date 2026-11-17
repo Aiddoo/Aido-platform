@@ -1,4 +1,4 @@
-import type { UpdateProfileResponse } from '@aido/api';
+import type { UpdateProfileResponse } from '@aido/api/contracts/auth/v1';
 import { toInstant } from '@src/shared/date/instant';
 
 import { type User, userSchema } from '../domains/user.model';

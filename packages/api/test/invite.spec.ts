@@ -10,7 +10,7 @@ import {
   invitedFriendResponseSchema,
   redeemInviteResponseSchema,
   type RewardAmount,
-} from "../src/index.js";
+} from "../src/contracts/invite/v1/index.js";
 import { INVITEE_REWARDS, INVITER_REWARD_MILESTONES } from "../src/vocabulary/index.js";
 
 const inviter = {

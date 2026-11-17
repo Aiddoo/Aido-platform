@@ -1,9 +1,8 @@
+import { notificationActionSchema, notificationTypeSchema } from '@aido/api/common';
 import {
-  notificationActionSchema,
   notificationNavigationSchema,
-  notificationTypeSchema,
   pushNotificationDataSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import type { z } from 'zod';
 
 /**

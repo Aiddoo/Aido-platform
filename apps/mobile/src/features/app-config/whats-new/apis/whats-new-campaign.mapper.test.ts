@@ -1,4 +1,7 @@
-import { type FeatureDiscoveryResponse, featureDiscoveryResponseSchema } from '@aido/api';
+import {
+  type FeatureDiscoveryResponse,
+  featureDiscoveryResponseSchema,
+} from '@aido/api/contracts/app-config/v1';
 
 import { toWhatsNewCampaignConfig } from './whats-new-campaign.mapper';
 

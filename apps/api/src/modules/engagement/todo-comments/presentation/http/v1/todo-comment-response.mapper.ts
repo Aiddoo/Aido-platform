@@ -5,12 +5,12 @@ import type {
   TodoCommentLikeResponse,
   TodoCommentMutationResponse,
   TodoCommentOverviewResponse,
-  TodoCommentV2Author,
   TodoConversationConnection,
   TodoConversationItem,
   TodoConversationResponse,
   TodoDetailsResponse,
-} from "@aido/api/contracts/todo-comment";
+} from "@aido/api/contracts/todo-comment/v1";
+import type * as v2 from "@aido/api/contracts/todo-comment/v2";
 
 import { toFriendTodoResponse } from "#api/modules/planning/todos/planning-todos.public";
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
@@ -34,7 +34,7 @@ import {
 } from "../visible-todo-comment-response.mapper.js";
 
 /** v1 작성자는 userTag가 optional이라 값이 없으면 키를 뺀다 */
-function toTodoCommentAuthorResponse(author: TodoCommentV2Author): TodoCommentAuthor {
+function toTodoCommentAuthorResponse(author: v2.TodoCommentAuthor): TodoCommentAuthor {
   return {
     id: author.id,
     name: author.name,

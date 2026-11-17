@@ -1,11 +1,11 @@
+import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
 import {
-  dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   friendTodoListResponseSchema,
   type GetTodosQuery,
   todoOverviewResponseSchema,
   todoSummaryResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';

@@ -1,4 +1,4 @@
-import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api';
+import { todoRepeatSchema as todoRepeatDtoSchema } from '@aido/api/contracts/todo/v1';
 import { createDateKey } from '@src/testing/date-key';
 import { z } from 'zod';
 

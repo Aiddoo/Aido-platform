@@ -21,14 +21,13 @@ import { ErrorCode, type ErrorCodeType } from "./errors.js";
 /** 친구 한도 초과(FOLLOW_0909)일 때 앱이 한도 안내에 쓰는 값 */
 export const friendLimitErrorDetailsSchema = z
   .object({
-    current: z.number().int().nonnegative().describe("현재 친구 수"),
+    current: z.int().nonnegative().meta({ description: "현재 친구 수" }),
     limit: z
-      .number()
       .int()
       .positive()
-      .describe("현재 친구 한도 (초대 보상 친구 자리 포함, 양의 정수)"),
+      .meta({ description: "현재 친구 한도 (초대 보상 친구 자리 포함, 양의 정수)" }),
   })
-  .describe("친구 한도 초과 상세");
+  .meta({ description: "친구 한도 초과 상세" });
 
 export type FriendLimitErrorDetails = z.infer<typeof friendLimitErrorDetailsSchema>;
 
@@ -38,18 +37,17 @@ export type FriendLimitErrorDetails = z.infer<typeof friendLimitErrorDetailsSche
  */
 export const friendQuotaErrorDetailsSchema = quotaErrorDetailsSchema
   .extend(friendLimitErrorDetailsSchema.shape)
-  .describe("친구 한도 초과 상세 (current·limit + 차감 없음 + 현재 한도)");
+  .meta({ description: "친구 한도 초과 상세 (current·limit + 차감 없음 + 현재 한도)" });
 
 /** 인증 코드 재발송 대기(VERIFY_0753). 앱이 다시 보내기 타이머를 켜는 남은 초 */
 export const verificationResendCooldownErrorDetailsSchema = z
   .object({
     remainingSeconds: z
-      .number()
       .int()
       .nonnegative()
-      .describe("마지막 발급에서 다시 보낼 수 있을 때까지 남은 초"),
+      .meta({ description: "마지막 발급에서 다시 보낼 수 있을 때까지 남은 초" }),
   })
-  .describe("인증 코드 재발송 대기 상세");
+  .meta({ description: "인증 코드 재발송 대기 상세" });
 
 // 운영 응답에는 여기 등록한 코드의 검증된 필드만 싣고 나머지 details는 숨긴다
 const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {

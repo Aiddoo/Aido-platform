@@ -1,13 +1,15 @@
 import {
   type CreateTodoCommentChainInput,
-  type GetTodoCommentRepliesQuery,
-  type GetTodoCommentThreadsQuery,
   type UpdateTodoCommentInput,
   deleteTodoCommentResponseSchema,
   todoCommentLikeResponseSchema,
+} from '@aido/api/contracts/todo-comment/v1';
+import {
+  type GetTodoCommentRepliesQuery,
+  type GetTodoCommentThreadsQuery,
   todoCommentRepliesResponseSchema,
   todoCommentThreadsResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-comment/v2';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 

@@ -2,7 +2,7 @@ import {
   recurringSuggestionSchema,
   suggestionAnalysisResponseSchema,
   suggestionListResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";

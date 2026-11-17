@@ -4,7 +4,7 @@ import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from "../../../vocabulary/in
 
 export const createInquirySchema = z
   .object({
-    category: z.enum(INQUIRY_CATEGORY).describe("문의 카테고리"),
+    category: z.enum(INQUIRY_CATEGORY).meta({ description: "문의 카테고리" }),
     content: z
       .string()
       .min(
@@ -15,7 +15,7 @@ export const createInquirySchema = z
         INQUIRY_CONTENT_LIMITS.MAX_LENGTH,
         `내용은 최대 ${INQUIRY_CONTENT_LIMITS.MAX_LENGTH}자 이하여야 합니다`,
       )
-      .describe("문의 내용"),
+      .meta({ description: "문의 내용" }),
   })
   .meta({
     example: {

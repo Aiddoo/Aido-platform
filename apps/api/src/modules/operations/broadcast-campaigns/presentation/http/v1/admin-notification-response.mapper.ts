@@ -1,4 +1,4 @@
-import type { BroadcastResult } from "@aido/api/contracts/admin";
+import type { BroadcastResult } from "@aido/api/contracts/admin/v1";
 
 import type { BroadcastNotificationResult } from "../../../application/use-cases/broadcast-notification.use-case.js";
 import type { SendTargetedNotificationResult } from "../../../application/use-cases/send-targeted-notification.use-case.js";

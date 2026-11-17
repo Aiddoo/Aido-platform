@@ -1,4 +1,4 @@
-import type { AppVersionResponse } from '@aido/api';
+import type { AppVersionResponse } from '@aido/api/contracts/app-config/v1';
 
 import type { AppVersionConfig } from '../domains/app-version.model';
 

@@ -1,12 +1,11 @@
 import {
-  TODO_COMMENT_LIMITS,
-  TODO_COMMENT_SORT,
   getTodoCommentOverviewQuerySchema,
   todoCommentChainResponseSchema,
   todoCommentCursorPaginationSchema,
   todoCommentOverviewResponseSchema,
   todoConversationResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment/v1";
+import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 
 describe("getTodoCommentOverviewQuerySchema", () => {
   it("정렬과 페이지 크기의 기본값을 채운다", () => {

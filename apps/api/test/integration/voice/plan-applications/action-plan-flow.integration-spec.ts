@@ -1,4 +1,4 @@
-import type { TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";

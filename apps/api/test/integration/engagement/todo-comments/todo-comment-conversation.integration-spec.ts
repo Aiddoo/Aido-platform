@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { todoConversationConnectionSchema } from "@aido/api";
+import { todoConversationConnectionSchema } from "@aido/api/contracts/todo-comment/v1";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 

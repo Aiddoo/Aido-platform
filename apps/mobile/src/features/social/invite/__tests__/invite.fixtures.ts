@@ -7,7 +7,7 @@ import {
   myInviteResponseSchema,
   type RedeemInviteResponse,
   redeemInviteResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/invite/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 

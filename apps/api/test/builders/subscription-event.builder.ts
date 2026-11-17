@@ -4,7 +4,7 @@
  * RevenueCat 웹훅 이벤트 payload를 쉽게 생성하는 Builder.
  * static factory method로 이벤트 타입별 기본값 제공.
  */
-import type { RevenueCatWebhookPayload } from "@aido/api";
+import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 
 type EventData = RevenueCatWebhookPayload["event"];
 

@@ -1,4 +1,4 @@
-import { createInquiryResponseSchema, createInquirySchema } from "@aido/api/contracts/inquiry";
+import { createInquiryResponseSchema, createInquirySchema } from "@aido/api/contracts/inquiry/v1";
 import type { z } from "zod";
 
 export const CreateInquiryDto = createInquirySchema.meta({ id: "CreateInquiryDto" });

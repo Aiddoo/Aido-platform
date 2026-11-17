@@ -3,7 +3,7 @@ import {
   parsedMemoTodoSchema,
   parseMemoMetaSchema,
   parseMemoResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/ai/v1';
 import { AI_PARSE_LIMITS } from '@aido/api/vocabulary';
 import type { QuickPlanResult } from '@src/features/voice/domains/voice-plan.model';
 import { z } from 'zod';

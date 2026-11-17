@@ -10,7 +10,7 @@ import type {
   SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
-} from "@aido/api/contracts/follow";
+} from "@aido/api/contracts/follow/v1";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";

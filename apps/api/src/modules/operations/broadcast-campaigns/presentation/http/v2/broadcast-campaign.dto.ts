@@ -3,7 +3,7 @@ import {
   broadcastCampaignIdParamSchema,
   broadcastCampaignSchema,
   createBroadcastCampaignSchema,
-} from "@aido/api/contracts/admin";
+} from "@aido/api/contracts/admin/v2";
 import type { z } from "zod";
 
 export const CreateBroadcastCampaignDto = createBroadcastCampaignSchema.meta({

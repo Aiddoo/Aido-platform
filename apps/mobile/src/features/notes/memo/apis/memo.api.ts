@@ -5,7 +5,7 @@ import {
   memoListResponseSchema,
   memoMutationResponseSchema,
   memoResourceLimitResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/memo/v1';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';

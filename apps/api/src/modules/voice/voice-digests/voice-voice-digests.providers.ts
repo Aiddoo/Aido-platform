@@ -1,4 +1,4 @@
-import { voiceNoteDigestResponseSchema } from "@aido/api/contracts/voice";
+import { voiceNoteDigestResponseSchema } from "@aido/api/contracts/voice/v1";
 import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 

@@ -1,4 +1,4 @@
-import { INQUIRY_CATEGORY } from '@aido/api';
+import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';

@@ -7,7 +7,7 @@ import type {
   MarkCheerReadResponse,
   ReceivedCheersResponse,
   SentCheersResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/cheer/v1";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";

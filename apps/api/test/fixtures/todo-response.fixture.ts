@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { toIsoString } from "#api/shared/domain/time/instant";

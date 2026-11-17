@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config";
+import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config/v1";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 

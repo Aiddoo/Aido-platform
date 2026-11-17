@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 
 import { DeleteTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/delete-todo-occurrences.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";

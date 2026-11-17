@@ -1,13 +1,15 @@
 import type {
   DeleteTodoCommentResponse,
+  TodoCommentLikeResponse,
+} from '@aido/api/contracts/todo-comment/v1';
+import type {
   GetTodoCommentRepliesQuery,
   GetTodoCommentThreadsQuery,
-  TodoCommentLikeResponse,
+  TodoComment as TodoCommentDto,
   TodoCommentRepliesResponse,
   TodoCommentThread as TodoCommentThreadDto,
   TodoCommentThreadsResponse,
-  TodoCommentV2,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-comment/v2';
 import type { TodoCommentSort } from '@aido/api/vocabulary';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
@@ -28,7 +30,7 @@ import type {
   WrittenTodoCommentResponse,
 } from '../schemas/todo-comment-response.schema';
 
-function toTodoComment(dto: TodoCommentV2): TodoComment {
+function toTodoComment(dto: TodoCommentDto): TodoComment {
   return {
     ...pick(dto, [
       'id',

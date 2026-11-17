@@ -1,4 +1,4 @@
-import { todoListResponseSchema, todoSummaryResponseSchema } from "@aido/api";
+import { todoListResponseSchema, todoSummaryResponseSchema } from "@aido/api/contracts/todo/v1";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 

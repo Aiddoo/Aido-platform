@@ -1,4 +1,5 @@
-import { createTodoResponseSchema, weatherLocationSchema, weatherReportSchema } from "@aido/api";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
+import { weatherLocationSchema, weatherReportSchema } from "@aido/api/contracts/weather/v2";
 import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";

@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
+import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 
 import {
   PremiumAccessReaderPort,

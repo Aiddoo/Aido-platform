@@ -4,7 +4,7 @@ import {
   suggestionAnalysisResponseSchema,
   suggestionIdParamSchema,
   suggestionListResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import type { z } from "zod";
 
 export const SuggestionActionDto = suggestionActionSchema.meta({ id: "SuggestionActionDto" });

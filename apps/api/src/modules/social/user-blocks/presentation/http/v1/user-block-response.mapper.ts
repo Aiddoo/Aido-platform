@@ -3,7 +3,7 @@ import type {
   BlockedUsersResponse,
   BlockUserResponse,
   UnblockUserResponse,
-} from "@aido/api/contracts/user-block";
+} from "@aido/api/contracts/user-block/v1";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";

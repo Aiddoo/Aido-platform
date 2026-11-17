@@ -1,4 +1,4 @@
-import { locationResponseSchema, updateLocationSchema } from "@aido/api/contracts/weather";
+import { locationResponseSchema, updateLocationSchema } from "@aido/api/contracts/weather/v1";
 import type { z } from "zod";
 
 export const UpdateLocationDto = updateLocationSchema.meta({ id: "UpdateLocationDto" });

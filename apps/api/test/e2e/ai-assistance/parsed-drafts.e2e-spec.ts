@@ -1,5 +1,5 @@
-import { notChargedErrorDetailsSchema, parseTodoResponseSchema } from "@aido/api";
-import { ErrorCode, Errors } from "@aido/api/errors";
+import { parseTodoResponseSchema } from "@aido/api/contracts/ai/v1";
+import { notChargedErrorDetailsSchema, ErrorCode, Errors } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";

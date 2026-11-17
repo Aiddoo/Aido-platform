@@ -4,21 +4,22 @@
 
 ## Entry point
 
-| Import                          | 내용                                                                                |
-| ------------------------------- | ----------------------------------------------------------------------------------- |
-| `@aido/api`                     | 요청·응답 Zod 스키마, inferred type, 공통 envelope                                  |
-| `@aido/api/common`              | envelope(`response.ts`)·pagination·datetime·entity-id schema                        |
-| `@aido/api/errors`              | `ErrorCode`, HTTP 상태, 오류 응답 정의, 공개 details schema(`toPublicErrorDetails`) |
-| `@aido/api/vocabulary`          | Zod 없이 쓰는 순수 상수 튜플·union type                                             |
-| `@aido/api/contracts/<feature>` | 기능별 요청·응답 스키마                                                             |
+| Import                               | 내용                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `@aido/api/contracts/<feature>/v<n>` | 기능·버전별 요청·응답 Zod 스키마와 inferred type                                    |
+| `@aido/api/common`                   | envelope(`response.ts`)·pagination·datetime·entity-id schema                        |
+| `@aido/api/errors`                   | `ErrorCode`, HTTP 상태, 오류 응답 정의, 공개 details schema(`toPublicErrorDetails`) |
+| `@aido/api/vocabulary`               | Zod 없이 쓰는 순수 상수 튜플·union type                                             |
+
+루트 `@aido/api`와 버전 없는 `contracts/<feature>` 진입 파일은 identity·notification·insights가 버전 경로로 옮길 때까지만 남긴다. 새 코드는 위 경로만 쓴다.
 
 ## 작성 규칙
 
-- `src/contracts/<feature>/v<n>/`는 `<feature>.request.ts`, `<feature>.response.ts`, 필요하면 `<feature>.common.ts`로 나눈다. 버전 폴더는 출시 앱 계약이 갈라질 때만 더한다.
+- `src/contracts/<feature>/v<n>/`는 `<feature>.request.ts`, `<feature>.response.ts`, 필요하면 `<feature>.common.ts`로 나누고 공개 진입 파일 `index.ts`를 둔다. 버전 폴더는 출시 앱 계약이 갈라질 때만 더한다. 버전은 경로에만 두고 이름에 `V2`를 붙이지 않는다.
 - 서버·앱이 함께 아는 값 목록(상태·종류·언어·한도)은 `src/vocabulary/`의 `as const` 튜플 한 곳에 둔다. vocabulary에는 Zod를 넣지 않는다.
 - 저장소 Entity나 ORM row를 공유 REST 타입으로 쓰지 않는다. HTTP 검증과 날짜 변환은 서버 presentation이 맡는다.
 - PATCH에서 빠진 필드는 기존 값을 유지하고, nullable 필드의 `null`은 값을 비운다. `false`와 `0`은 유효한 값이다([nullish](../../docs/conventions/nullish.md#4-계약-aidoapi-zod)).
-- 스키마를 옮길 때 required/optional/nullish/default, 검증 메시지, `.describe()`, 날짜 표현을 바꾸지 않는다. 배포된 앱의 OpenAPI fixture는 현재 스키마로 재생성하지 않는다.
+- 설명은 `.meta({ description })`, 정수는 `z.int()`로 쓴다. 스키마를 옮길 때 required/optional/nullish/default, 검증 메시지, 설명, 날짜 표현을 바꾸지 않는다. 배포된 앱의 OpenAPI fixture는 현재 스키마로 재생성하지 않는다.
 - 서버와 앱이 각자 구현한 규칙은 `test/fixtures/`의 표를 양쪽 테스트가 읽어 맞춘다(`repeat-occurrence-cases.json`·`repeat-last-occurrence-cases.json`: 서버 `RepeatRule`, 앱 `TodoRepeatPolicy`). `test/`는 `dist`와 패키지 `files` 밖이라 번들에 들어가지 않는다.
 
 상세: [HTTP 계약](../../apps/api/docs/http-contracts.md), [호환](../../docs/conventions/compatibility.md), [오류](../../docs/conventions/errors.md)

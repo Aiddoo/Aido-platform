@@ -1,4 +1,4 @@
-import { weatherReportSchema } from "@aido/api/contracts/weather";
+import { weatherReportSchema } from "@aido/api/contracts/weather/v2";
 import type { z } from "zod";
 
 export const WeatherReportResponseDto = weatherReportSchema.meta({

@@ -7,17 +7,15 @@ import {
   USER_REPORT_TARGET_TYPES,
 } from "../../../vocabulary/user-report.constants.js";
 
-export const userReportReasonSchema = z
-  .enum(USER_REPORT_REASONS)
-  .describe(
+export const userReportReasonSchema = z.enum(USER_REPORT_REASONS).meta({
+  description:
     "신고 사유 (SPAM: 스팸·광고 | HARASSMENT: 괴롭힘·혐오 | INAPPROPRIATE: 부적절한 내용 | IMPERSONATION: 사칭 | OTHER: 기타)",
-  );
+});
 
-export const userReportTargetTypeSchema = z
-  .enum(USER_REPORT_TARGET_TYPES)
-  .describe(
+export const userReportTargetTypeSchema = z.enum(USER_REPORT_TARGET_TYPES).meta({
+  description:
     "신고 대상 종류 (PROFILE: 프로필·닉네임 | TODO: 할 일 | COMMENT: 댓글 | NUDGE_MESSAGE: 콕 찌르기 메시지 | CHEER_MESSAGE: 응원 메시지)",
-  );
+});
 
 /** 신고 시트가 사용자에게 받는 값. 대상은 시트를 연 화면이 정한다. */
 export const userReportFormSchema = z.object({
@@ -30,16 +28,16 @@ export const userReportFormSchema = z.object({
       `상세 내용은 최대 ${USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}자까지 입력할 수 있습니다`,
     )
     .optional()
-    .describe(`신고 상세 내용 (선택, 최대 ${USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}자)`),
+    .meta({ description: `신고 상세 내용 (선택, 최대 ${USER_REPORT_LIMITS.MAX_DETAIL_LENGTH}자)` }),
 });
 
 export type UserReportFormInput = z.infer<typeof userReportFormSchema>;
 
 export const createUserReportSchema = z
   .object({
-    targetUserId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").describe(
-      "신고할 콘텐츠를 만든 사용자 ID",
-    ),
+    targetUserId: entityIdSchemaWithMessage("유효하지 않은 사용자 ID입니다").meta({
+      description: "신고할 콘텐츠를 만든 사용자 ID",
+    }),
     targetType: userReportTargetTypeSchema,
     targetId: z
       .string()
@@ -47,9 +45,10 @@ export const createUserReportSchema = z
       .min(1)
       .max(USER_REPORT_LIMITS.MAX_TARGET_ID_LENGTH)
       .optional()
-      .describe(
-        "신고할 콘텐츠 ID (할 일·콕·응원은 숫자 ID 문자열, 댓글은 댓글 ID). PROFILE이면 보내지 않습니다",
-      ),
+      .meta({
+        description:
+          "신고할 콘텐츠 ID (할 일·콕·응원은 숫자 ID 문자열, 댓글은 댓글 ID). PROFILE이면 보내지 않습니다",
+      }),
     ...userReportFormSchema.shape,
   })
   .check(({ value, issues }) => {
@@ -78,9 +77,9 @@ export const createUserReportSchema = z
 export type CreateUserReportInput = z.infer<typeof createUserReportSchema>;
 
 export const resolveUserReportParamSchema = z.object({
-  reportId: entityIdSchemaWithMessage("유효하지 않은 신고 ID입니다").describe(
-    "처리할 신고 ID (신고 접수 이메일의 신고 ID)",
-  ),
+  reportId: entityIdSchemaWithMessage("유효하지 않은 신고 ID입니다").meta({
+    description: "처리할 신고 ID (신고 접수 이메일의 신고 ID)",
+  }),
 });
 
 export type ResolveUserReportParam = z.infer<typeof resolveUserReportParamSchema>;
@@ -96,9 +95,9 @@ export const resolveUserReportSchema = z
         USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH,
         `조치 내용은 최대 ${USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH}자까지 입력할 수 있습니다`,
       )
-      .describe(
-        `조치 내용 (예: 댓글 삭제·계정 경고·위반 아님, 최대 ${USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH}자)`,
-      ),
+      .meta({
+        description: `조치 내용 (예: 댓글 삭제·계정 경고·위반 아님, 최대 ${USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH}자)`,
+      }),
   })
   .meta({ example: { note: "약관 위반 댓글을 삭제하고 작성자에게 경고했습니다." } });
 

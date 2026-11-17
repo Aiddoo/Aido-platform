@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { eq } from "drizzle-orm";
 
 import { TodoCommentController } from "#api/modules/engagement/todo-comments/presentation/http/v1/todo-comment.controller";

@@ -1,4 +1,4 @@
-import type { AiReport as AiReportResponse, ReportStatus } from "@aido/api";
+import type { AiReport as AiReportResponse, ReportStatus } from "@aido/api/contracts/ai/v1";
 import { match } from "ts-pattern";
 
 import { toIsoString } from "#api/shared/domain/time/instant";

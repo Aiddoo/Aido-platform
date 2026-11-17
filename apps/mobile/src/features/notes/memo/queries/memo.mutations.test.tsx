@@ -1,4 +1,4 @@
-import type { Memo as MemoDto } from '@aido/api';
+import type { Memo as MemoDto } from '@aido/api/contracts/memo/v1';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { registerSchema, updateProfileSchema } from "../src/contracts/auth/v1/index.js";
 import {
   createTodoCategorySchema,
-  registerSchema,
-  updateProfileSchema,
   updateTodoCategorySchema,
-} from "../src/index.js";
+} from "../src/contracts/todo-category/v1/index.js";
 
 const nameSchemas = [
   ["가입 이름", registerSchema.shape.name.unwrap(), 20],

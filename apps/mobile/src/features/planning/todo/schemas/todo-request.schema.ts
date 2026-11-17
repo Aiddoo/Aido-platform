@@ -3,7 +3,7 @@ import type {
   reorderTodoSchema,
   toggleTodoCompleteSchema,
   updateTodoScheduleSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import type { z } from 'zod';
 
 export type TodoCompletionChange = z.infer<typeof toggleTodoCompleteSchema>;

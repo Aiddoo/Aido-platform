@@ -6,7 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import type { Todo } from "@aido/api";
+import type { Todo } from "@aido/api/contracts/todo/v1";
 import request from "supertest";
 
 import { todayIn } from "#test/fixtures/clock.fixture";

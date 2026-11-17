@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
+import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";

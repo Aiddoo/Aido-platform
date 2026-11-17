@@ -1,4 +1,4 @@
-import { featureDiscoveryMinAppVersionSchema } from "@aido/api";
+import { featureDiscoveryMinAppVersionSchema } from "@aido/api/contracts/app-config/v1";
 import { z } from "zod";
 
 /**

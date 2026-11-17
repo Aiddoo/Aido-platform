@@ -1,4 +1,7 @@
-import type { TodoRepeat as TodoRepeatDto, TodoRepeatEnd as TodoRepeatEndDto } from '@aido/api';
+import type {
+  TodoRepeat as TodoRepeatDto,
+  TodoRepeatEnd as TodoRepeatEndDto,
+} from '@aido/api/contracts/todo/v1';
 import { DAYS_OF_WEEK } from '@aido/api/vocabulary';
 import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { getDateKeyDayOfWeek } from '@src/shared/date/day-of-week';

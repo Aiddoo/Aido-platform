@@ -16,21 +16,24 @@ export const suggestionAnalysisStateSchema = z
   .catch("UNKNOWN");
 
 export const suggestionAnalysisSchema = z.object({
-  state: suggestionAnalysisStateSchema.describe("제안 화면 상태. 앱은 이 값 하나로 카드를 고른다"),
-  canRequestNow: z
-    .boolean()
-    .describe("지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true"),
-  nextAnalysisAt: datetimeSchema.describe(
-    "다음 자동 분석 순간. 저장 시간대의 다음 09:00 뒤 첫 매시 실행이고, 오늘 이미 분석을 요청했다면 내일 그 시각",
-  ),
+  state: suggestionAnalysisStateSchema.meta({
+    description: "제안 화면 상태. 앱은 이 값 하나로 카드를 고른다",
+  }),
+  canRequestNow: z.boolean().meta({
+    description: "지금 분석 받기를 보일지. WAITING_FOR_NEXT_RUN이고 기능이 켜졌을 때만 true",
+  }),
+  nextAnalysisAt: datetimeSchema.meta({
+    description:
+      "다음 자동 분석 순간. 저장 시간대의 다음 09:00 뒤 첫 매시 실행이고, 오늘 이미 분석을 요청했다면 내일 그 시각",
+  }),
 });
 
 export type SuggestionAnalysis = z.infer<typeof suggestionAnalysisSchema>;
 
 export const suggestionEvidenceSchema = z.object({
-  recordedCount: z.number().int().positive().describe("기간 안에 이 할 일을 적은 횟수"),
-  completedCount: z.number().int().nonnegative().describe("그중 끝낸 횟수(recordedCount 이하)"),
-  periodDays: z.number().int().positive().describe("근거를 센 기간(일). 지금은 14"),
+  recordedCount: z.int().positive().meta({ description: "기간 안에 이 할 일을 적은 횟수" }),
+  completedCount: z.int().nonnegative().meta({ description: "그중 끝낸 횟수(recordedCount 이하)" }),
+  periodDays: z.int().positive().meta({ description: "근거를 센 기간(일). 지금은 14" }),
 });
 
 export type SuggestionEvidence = z.infer<typeof suggestionEvidenceSchema>;
@@ -45,18 +48,20 @@ export const recurringSuggestionSchema = z.object({
   status: suggestionStatusSchema,
   expiresAt: datetimeSchema,
   createdAt: datetimeSchema,
-  suggestedCategoryId: z.number().int().positive().nullable(),
+  suggestedCategoryId: z.int().positive().nullable(),
   evidence: suggestionEvidenceSchema
     .nullable()
     .optional()
-    .describe("제안 근거. 1.16.0 전에 만든 제안은 null"),
+    .meta({ description: "제안 근거. 1.16.0 전에 만든 제안은 null" }),
 });
 
 export type RecurringSuggestion = z.infer<typeof recurringSuggestionSchema>;
 
 export const suggestionListResponseSchema = z.object({
   suggestions: z.array(recurringSuggestionSchema),
-  analysis: suggestionAnalysisSchema.optional().describe("분석 상태. 1.16.0 서버부터 항상 온다"),
+  analysis: suggestionAnalysisSchema
+    .optional()
+    .meta({ description: "분석 상태. 1.16.0 서버부터 항상 온다" }),
 });
 
 export type SuggestionListResponse = z.infer<typeof suggestionListResponseSchema>;
@@ -69,7 +74,7 @@ export type SuggestionAnalysisResponse = z.infer<typeof suggestionAnalysisRespon
 
 export const suggestionActionSchema = z.object({
   action: z.enum(SUGGESTION_ACTIONS),
-  categoryId: z.number().int().positive().optional(),
+  categoryId: z.int().positive().optional(),
   startDate: dateSchema.optional(),
   endDate: dateSchema.optional(),
 });
@@ -79,13 +84,17 @@ export type SuggestionAction = z.infer<typeof suggestionActionSchema>;
 export const suggestionActionResponseSchema = z.object({
   message: z.string(),
   suggestion: recurringSuggestionSchema,
-  createdTodosCount: z.number().int().nonnegative().optional(),
+  createdTodosCount: z.int().nonnegative().optional(),
 });
 
 export type SuggestionActionResponse = z.infer<typeof suggestionActionResponseSchema>;
 
 export const suggestionIdParamSchema = z.object({
-  id: z.coerce.number().int().positive().describe("AI 제안 고유 ID (양의 정수, 예: 1)"),
+  id: z.coerce
+    .number()
+    .int()
+    .positive()
+    .meta({ description: "AI 제안 고유 ID (양의 정수, 예: 1)" }),
 });
 
 export type SuggestionIdParam = z.infer<typeof suggestionIdParamSchema>;

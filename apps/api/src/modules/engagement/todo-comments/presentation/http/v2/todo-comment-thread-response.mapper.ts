@@ -1,7 +1,7 @@
 import type {
   TodoCommentRepliesResponse,
   TodoCommentThreadsResponse,
-} from "@aido/api/contracts/todo-comment";
+} from "@aido/api/contracts/todo-comment/v2";
 
 import type {
   TodoCommentRepliesPageReadModel,

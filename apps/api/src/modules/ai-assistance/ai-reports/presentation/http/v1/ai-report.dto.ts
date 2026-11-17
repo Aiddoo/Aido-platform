@@ -4,7 +4,7 @@ import {
   aiReportResponseSchema,
   getAiReportsQuerySchema,
   reportStatusResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import type { z } from "zod";
 
 export const AiReportResponseDto = aiReportResponseSchema.meta({ id: "AiReportResponseDto" });

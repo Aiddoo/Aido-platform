@@ -1,4 +1,4 @@
-import { ACCOUNT_DELETION } from "@aido/api";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { user as userTable } from "#api/platform/database/schema/index";

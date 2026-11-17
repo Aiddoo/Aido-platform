@@ -5,7 +5,7 @@ import type {
   LinkedAccountsResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/auth/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';

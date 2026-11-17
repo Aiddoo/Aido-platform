@@ -1,4 +1,5 @@
-import { emailSchema, userTagParamSchema } from "@aido/api";
+import { emailSchema } from "@aido/api/contracts/auth/v1";
+import { userTagParamSchema } from "@aido/api/contracts/follow/v1";
 
 import { DELETED_COMMENT_AUTHOR } from "./todo-comments.constants.js";
 

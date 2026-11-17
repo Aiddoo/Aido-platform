@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
+import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api/contracts/ai/v1";
 import {
   AI_REPORT_TYPES,
   AI_SUGGESTION_STATUSES,

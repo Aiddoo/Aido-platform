@@ -1,4 +1,4 @@
-import { type UpdateProfileInput, updateProfileSchema } from '@aido/api';
+import { type UpdateProfileInput, updateProfileSchema } from '@aido/api/contracts/auth/v1';
 
 /** profileImage null은 사진 지우기다 */
 export type ProfileChange = UpdateProfileInput;

@@ -1,4 +1,4 @@
-import { todoCommentContentSchema } from '@aido/api';
+import { todoCommentContentSchema } from '@aido/api/contracts/todo-comment/v1';
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 

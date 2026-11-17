@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import type { AccessTier } from '@aido/api';
+import type { AccessTier } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { PurchasesGatewayError, type PurchaseOffering } from '@src/core/ports/purchases-gateway';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';

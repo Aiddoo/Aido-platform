@@ -1,4 +1,4 @@
-import { appVersionResponseSchema } from '@aido/api';
+import { appVersionResponseSchema } from '@aido/api/contracts/app-config/v1';
 import { ok } from '@src/core/errors/result';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';

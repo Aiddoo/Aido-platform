@@ -20,25 +20,28 @@ export const inviteCodeFormatSchema = z
   .string()
   .length(INVITE_CODE.LENGTH, `초대 코드는 ${INVITE_CODE.LENGTH}자리예요`)
   .regex(new RegExp(INVITE_CODE_PATTERN), "초대 코드에 쓸 수 없는 글자가 있어요")
-  .describe(`초대 코드 (${INVITE_CODE.LENGTH}자, ${INVITE_CODE.ALPHABET} 중에서, 예: K7M2QX)`);
+  .meta({
+    description: `초대 코드 (${INVITE_CODE.LENGTH}자, ${INVITE_CODE.ALPHABET} 중에서, 예: K7M2QX)`,
+  });
 
 export const inviteCodeSchema = z
   .string()
   .transform(normalizeInviteCode)
   .pipe(inviteCodeFormatSchema)
-  .describe("초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)");
+  .meta({
+    description: "초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)",
+  });
 
 export type InviteCode = z.output<typeof inviteCodeSchema>;
 
 export const redemptionRejectionReasonSchema = z
   .enum(REDEMPTION_REJECTION_REASON)
-  .describe("보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음)");
+  .meta({ description: "보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음)" });
 
-export const redemptionStatusSchema = z
-  .enum(REDEMPTION_STATUS)
-  .describe(
+export const redemptionStatusSchema = z.enum(REDEMPTION_STATUS).meta({
+  description:
     "초대 수락 상태 (JOINED: 가입함, QUALIFIED: 사용 시작, REWARDED: 보상 지급 완료, REJECTED: 보상 제외)",
-  );
+});
 
 /**
  * 응답에서 읽는 수락 상태. 1.13.0 앱이 뒤에 추가된 상태를 받아도 목록 전체가 실패하지 않게
@@ -47,15 +50,16 @@ export const redemptionStatusSchema = z
 export const invitedFriendStatusSchema = z
   .union([redemptionStatusSchema, z.literal(REDEMPTION_STATUS_UNKNOWN)])
   .catch(REDEMPTION_STATUS_UNKNOWN)
-  .describe(
-    "초대 수락 상태 (JOINED·QUALIFIED·REWARDED·REJECTED, 앱이 모르는 새 상태는 UNKNOWN으로 읽는다)",
-  );
+  .meta({
+    description:
+      "초대 수락 상태 (JOINED·QUALIFIED·REWARDED·REJECTED, 앱이 모르는 새 상태는 UNKNOWN으로 읽는다)",
+  });
 
 /** 응답에서 읽는 보상 제외 사유. 모르는 새 사유는 null로 읽어 목록을 계속 보여 준다. */
 export const invitedFriendRejectionReasonSchema = redemptionRejectionReasonSchema
   .nullable()
   .catch(null)
-  .describe("보상 제외 사유 (EXPIRED, 앱이 모르는 새 사유는 null로 읽는다)");
+  .meta({ description: "보상 제외 사유 (EXPIRED, 앱이 모르는 새 사유는 null로 읽는다)" });
 
 /**
  * 응답에서 읽는 프리미엄 상한 상태. 필드가 없는 이전 서버와 앱이 모르는 새 상태는 AVAILABLE로 읽어
@@ -64,29 +68,32 @@ export const invitedFriendRejectionReasonSchema = redemptionRejectionReasonSchem
 export const premiumCapStateSchema = z
   .enum(PREMIUM_CAP_STATE)
   .catch(PREMIUM_CAP_STATE.AVAILABLE)
-  .describe(
-    "초대 보상 프리미엄 상한 (AVAILABLE: 더 받을 수 있음, WINDOW_REACHED: 최근 30일 상한에 닿음, TOTAL_REACHED: 누적 상한에 닿음. 앱이 모르는 값·필드 없음은 AVAILABLE로 읽는다)",
-  );
+  .meta({
+    description:
+      "초대 보상 프리미엄 상한 (AVAILABLE: 더 받을 수 있음, WINDOW_REACHED: 최근 30일 상한에 닿음, TOTAL_REACHED: 누적 상한에 닿음. 앱이 모르는 값·필드 없음은 AVAILABLE로 읽는다)",
+  });
 
 export const inviteFriendshipSchema = z
   .enum(INVITE_FRIENDSHIP)
-  .describe("초대 뒤 친구 상태 (FRIENDS: 친구가 됨, REQUESTED: 친구 요청만 보냄)");
+  .meta({ description: "초대 뒤 친구 상태 (FRIENDS: 친구가 됨, REQUESTED: 친구 요청만 보냄)" });
 
-const rewardQuantitySchema = z.number().int().positive();
+const rewardQuantitySchema = z.int().positive();
 
 export const inviteRewardSchema = z
   .discriminatedUnion("rewardType", [
     z.object({
       rewardType: z.literal(REWARD_TYPE.PREMIUM_DAYS),
-      quantity: rewardQuantitySchema.describe("프리미엄 일수 (양의 정수)"),
+      quantity: rewardQuantitySchema.meta({ description: "프리미엄 일수 (양의 정수)" }),
     }),
     z.object({
       rewardType: z.literal(REWARD_TYPE.FRIEND_SLOT),
-      quantity: rewardQuantitySchema.describe("늘어나는 친구 자리 수 (양의 정수)"),
+      quantity: rewardQuantitySchema.meta({ description: "늘어나는 친구 자리 수 (양의 정수)" }),
     }),
   ])
-  .describe("보상 (rewardType 판별 유니온)")
-  .meta({ example: { rewardType: "PREMIUM_DAYS", quantity: 7 } });
+  .meta({
+    description: "보상 (rewardType 판별 유니온)",
+    example: { rewardType: "PREMIUM_DAYS", quantity: 7 },
+  });
 
 export type InviteReward = z.infer<typeof inviteRewardSchema>;
 
@@ -94,19 +101,18 @@ export type RewardAmount = z.input<typeof inviteRewardSchema>;
 
 export const inviterRewardMilestoneSchema = z
   .object({
-    qualifiedCount: z.number().int().positive().describe("보상을 받는 사용 시작 인원"),
+    qualifiedCount: z.int().positive().meta({ description: "보상을 받는 사용 시작 인원" }),
     repeatEvery: z
-      .number()
       .int()
       .positive()
       .nullable()
-      .describe("이 단계 뒤로 몇 명마다 같은 보상을 반복할지 (null이면 한 번만 지급)"),
+      .meta({ description: "이 단계 뒤로 몇 명마다 같은 보상을 반복할지 (null이면 한 번만 지급)" }),
     rewards: z
       .array(inviteRewardSchema)
       .min(1)
       .readonly()
-      .describe("이 단계에서 지급하는 보상 목록"),
+      .meta({ description: "이 단계에서 지급하는 보상 목록" }),
   })
-  .describe("초대한 사람 보상 단계");
+  .meta({ description: "초대한 사람 보상 단계" });
 
 export type InviterRewardMilestone = z.input<typeof inviterRewardMilestoneSchema>;

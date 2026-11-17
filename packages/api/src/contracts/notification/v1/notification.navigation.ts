@@ -16,7 +16,7 @@ export const notificationActivityKindSchema = z.enum(NOTIFICATION_ACTIVITY_KIND)
 
 export type NotificationActivityKind = z.infer<typeof notificationActivityKindSchema>;
 
-const positiveIdSchema = z.number().int().positive();
+const positiveIdSchema = z.int().positive();
 const userIdSchema = z.string().min(1).max(64);
 
 /** 할 일이 대상인 목적지. 주인·날짜가 있으면 펼친 화면이 목록 pane을 그 사람의 그 날짜 피드로 연다. */
@@ -53,7 +53,9 @@ export const notificationNavigationSchema = z
       kind: z.literal(NOTIFICATION_NAVIGATION_KIND.TODO_COMMENT),
       ...todoTargetShape,
       commentId: todoCommentIdSchema,
-      threadCommentId: todoCommentIdSchema.describe("대화의 머리 댓글 ID (댓글은 두 단계)"),
+      threadCommentId: todoCommentIdSchema.meta({
+        description: "대화의 머리 댓글 ID (댓글은 두 단계)",
+      }),
       activityKind: notificationActivityKindSchema,
     }),
     z.strictObject({
@@ -79,7 +81,7 @@ export const notificationNavigationSchema = z
     screen(NOTIFICATION_NAVIGATION_KIND.NOTIFICATIONS),
     screen(NOTIFICATION_NAVIGATION_KIND.NOTIFICATION_SETTINGS),
   ])
-  .describe("알림을 눌렀을 때 열 화면 (1.14.1+ 푸시). kind로 판별한다");
+  .meta({ description: "알림을 눌렀을 때 열 화면 (1.14.1+ 푸시). kind로 판별한다" });
 
 export type NotificationNavigation = z.infer<typeof notificationNavigationSchema>;
 

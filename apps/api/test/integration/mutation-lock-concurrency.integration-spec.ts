@@ -1,4 +1,4 @@
-import type { FeatureQuota } from "@aido/api";
+import type { FeatureQuota } from "@aido/api/contracts/entitlement/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";

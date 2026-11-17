@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import { isSemanticVersionAtLeast } from "@aido/api";
 import {
+  isSemanticVersionAtLeast,
   DEVICE_TYPES,
   type DeviceType,
   IDEMPOTENCY_KEY_MAX_LENGTH,

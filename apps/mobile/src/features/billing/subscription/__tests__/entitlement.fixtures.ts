@@ -1,14 +1,16 @@
 import {
-  type AccessTier,
   type EntitlementSnapshot as EntitlementSnapshotDto,
   entitlementSnapshotSchema,
   type FeatureQuota as FeatureQuotaDto,
   featureQuotaSchema,
+} from '@aido/api/contracts/entitlement/v1';
+import type { ErrorCodeType } from '@aido/api/errors';
+import {
+  type AccessTier,
   PLAN_CATALOG,
   PLAN_FEATURE_KEYS,
   type PlanFeature,
-} from '@aido/api';
-import type { ErrorCodeType } from '@aido/api/errors';
+} from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
 import { match } from 'ts-pattern';
 

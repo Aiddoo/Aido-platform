@@ -1,4 +1,7 @@
-import type { BlockedUser as BlockedUserDto, BlockedUsersResponse } from '@aido/api';
+import type {
+  BlockedUser as BlockedUserDto,
+  BlockedUsersResponse,
+} from '@aido/api/contracts/user-block/v1';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 

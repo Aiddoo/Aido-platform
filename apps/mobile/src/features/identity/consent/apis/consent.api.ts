@@ -1,7 +1,7 @@
 import {
   type UpdateAiDataSharingConsentInput,
   updateAiDataSharingConsentResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/user-consent/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 

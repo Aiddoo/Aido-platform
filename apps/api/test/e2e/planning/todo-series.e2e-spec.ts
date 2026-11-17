@@ -3,7 +3,7 @@ import {
   deleteTodoResponseSchema,
   todoSeriesResponseSchema,
   updateTodoResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";

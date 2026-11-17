@@ -11,7 +11,7 @@ import {
   todoCategoryResponseSchema,
   updateTodoCategoryResponseSchema,
   updateTodoCategorySchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-category/v1";
 import { ApiProperty } from "@nestjs/swagger";
 import type { z } from "zod";
 

@@ -138,17 +138,17 @@ export function toNotificationTarget(
 
 계약은 `@aido/api`가, 앱 모델은 앱이 소유한다. 서버·앱 공유 값은 `@aido/api`에 추가만 한다.
 
-| 진입점                          | 내용                                                                     | import할 수 있는 곳                                      |
-| ------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `@aido/api/vocabulary`          | 용어 튜플·상수·한도(`NOTIFICATION_CATEGORY`, `MEMO_LIMITS`)              | 어디서나                                                 |
-| `@aido/api/common`              | 응답 봉투, 날짜·시각 스키마, 공용 값 스키마(`entityIdSchema`, 알림 종류) | 어디서나. 모델도 쓴다                                    |
-| `@aido/api/errors`              | `ErrorCode`·`Errors`, 코드별 `details` 스키마, `HttpStatus`              | 어디서나                                                 |
-| `@aido/api`(루트)·`contracts/*` | 요청·응답 스키마와 DTO 타입                                              | `apis/`, `schemas/`, `shared/infra/http`, 테스트 fixture |
+| 진입점                         | 내용                                                                     | import할 수 있는 곳                                      |
+| ------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `@aido/api/vocabulary`         | 용어 튜플·상수·한도(`NOTIFICATION_CATEGORY`, `MEMO_LIMITS`)              | 어디서나                                                 |
+| `@aido/api/common`             | 응답 봉투, 날짜·시각 스키마, 공용 값 스키마(`entityIdSchema`, 알림 종류) | 어디서나. 모델도 쓴다                                    |
+| `@aido/api/errors`             | `ErrorCode`·`Errors`, 코드별 `details` 스키마, `HttpStatus`              | 어디서나                                                 |
+| `@aido/api/contracts/<x>/v<n>` | 요청·응답 스키마와 DTO 타입                                              | `apis/`, `schemas/`, `shared/infra/http`, 테스트 fixture |
 
 - 한 모양은 한 번만 정의한다. 계약에서 `pick`·`omit`·`extend`로 유도하고 같은 필드를 다시 적지 않는다. 공백 정리는 `trimmed(contract.shape.title)` 하나로 한다.
 - 앱 안에서 여러 기능이 쓰는 같은 모양은 `shared/domains/`에 하나다(`user-summary.model.ts`, `cursor-page.model.ts`).
 - 값 목록은 vocabulary 튜플에서 유도한다(`z.enum(AI_REPORT_TYPES)`). 한도 숫자를 앱에서 다시 적지 않는다. 앱에만 있는 공유 값은 vocabulary나 common으로 올린다.
-- DTO 타입 별칭은 `{X}Dto`로 통일한다(`import type { Memo as MemoDto } from '@aido/api'`).
+- DTO 타입 별칭은 `{X}Dto`로 통일한다(`import type { Memo as MemoDto } from '@aido/api/contracts/memo/v1'`). 루트 `@aido/api`는 쓰지 않는다.
 - 기능 오류는 `domains/{feature}.error.ts` 하나에 둔다: 코드 표, `isXxxError`, `ErrorCode` → 폼 칸 매핑. `details`는 공유 스키마로 읽고 mapper를 거꾸로 import하지 않는다. 분류·표시 규칙은 [error-handling](../error-handling.md)이 원본이다.
 - mapper fixture는 계약 스키마로 검증해 만든다. 계약과 어긋난 fixture로 통과하는 테스트를 막는다([testing](../testing.md)).
 

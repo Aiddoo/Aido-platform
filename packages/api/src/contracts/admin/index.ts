@@ -1,4 +1,2 @@
-export * from "./v1/admin.request.js";
-export * from "./v1/admin.response.js";
-export * from "./v2/admin-broadcast.request.js";
-export * from "./v2/admin-broadcast.response.js";
+// identity·notification·insights가 버전 경로로 옮기면 지운다
+export * from "./v1/index.js";

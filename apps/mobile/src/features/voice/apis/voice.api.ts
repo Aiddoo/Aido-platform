@@ -1,4 +1,4 @@
-import { applyActionPlanResponseSchema } from '@aido/api';
+import { applyActionPlanResponseSchema } from '@aido/api/contracts/voice/v1';
 import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';

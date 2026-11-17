@@ -1,4 +1,4 @@
-import type { LocationResponse } from "@aido/api/contracts/weather";
+import type { LocationResponse } from "@aido/api/contracts/weather/v1";
 
 import type { RegisterUserLocationResult } from "../../../application/use-cases/register-user-location.use-case.js";
 

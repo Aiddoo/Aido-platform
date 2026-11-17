@@ -2,7 +2,7 @@ import {
   publishAppReleaseParamSchema,
   publishAppReleaseResponseSchema,
   publishAppReleaseSchema,
-} from "@aido/api/contracts/app-config";
+} from "@aido/api/contracts/app-config/v1";
 import type { z } from "zod";
 
 export const PublishAppReleaseParamDto = publishAppReleaseParamSchema.meta({

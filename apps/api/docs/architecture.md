@@ -59,7 +59,7 @@ apps/api/src/
 - slice 기준은 "Aggregate Root 하나 = slice 하나"이고 폴더는 그 Aggregate 이름의 kebab 복수형이다. 읽기만 하는 slice는 두지 않는다([도메인 모델](domain-modeling.md#원칙)).
 - 버전은 HTTP 경계(`presentation/http/v<n>/`, `@aido/api/contracts/<resource>/v<n>/`)에만 둔다. Application·Domain에는 버전이 없다.
 - AppModule은 `<context>.module.ts`(`<Context>Module`)만 import한다. slice Module을 AppModule에 직접 넣지 않는다.
-- presentation은 계약을 `@aido/api/contracts/<resource>` 하위 경로로 import한다.
+- presentation은 계약을 `@aido/api/contracts/<resource>/v<n>` 경로로 import한다. 루트 `@aido/api`는 쓰지 않는다.
 
 | Context       | slice                                                                                                                              |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |

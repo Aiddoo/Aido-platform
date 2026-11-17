@@ -1,8 +1,8 @@
+import { memoDetailResponseSchema } from "@aido/api/contracts/memo/v1";
 import {
   applyActionPlanResponseSchema,
-  memoDetailResponseSchema,
   quickPlanResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/voice/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";

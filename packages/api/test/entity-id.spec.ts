@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  broadcastCampaignIdParamSchema,
-  entityIdSchema,
-  revokeSessionSchema,
-  targetedNotificationSchema,
-} from "../src/index.js";
+import { entityIdSchema } from "../src/common/index.js";
+import { targetedNotificationSchema } from "../src/contracts/admin/v1/index.js";
+import { broadcastCampaignIdParamSchema } from "../src/contracts/admin/v2/index.js";
+import { revokeSessionSchema } from "../src/contracts/auth/v1/index.js";
 import { ENTITY_ID_PATTERN } from "../src/vocabulary/index.js";
 
 // 운영 DB에서 확인한 실제 ID 모양들

@@ -1,4 +1,4 @@
-import { errorEnvelopeSchema } from "@aido/api";
+import { errorEnvelopeSchema } from "@aido/api/common";
 import { ErrorCode, Errors } from "@aido/api/errors";
 import {
   BadRequestException,

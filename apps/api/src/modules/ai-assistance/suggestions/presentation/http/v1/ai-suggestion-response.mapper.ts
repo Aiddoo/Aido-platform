@@ -4,7 +4,7 @@ import type {
   SuggestionAnalysis,
   SuggestionAnalysisResponse,
   SuggestionListResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import { pick } from "es-toolkit";
 
 import { toIsoString } from "#api/shared/domain/time/instant";

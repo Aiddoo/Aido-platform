@@ -1,4 +1,4 @@
-import type { CreateUserReportInput } from '@aido/api';
+import type { CreateUserReportInput } from '@aido/api/contracts/user-report/v1';
 
 import type { UserReportTarget } from '../domains/user-report.model';
 import type { UserReportFormValues } from '../schemas/user-report-form.schema';

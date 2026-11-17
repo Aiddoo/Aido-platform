@@ -5,7 +5,7 @@ import type {
   SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/follow/v1';
 import {
   acceptFriendRequestResponseSchema,
   friendsListResponseSchema,
@@ -15,7 +15,7 @@ import {
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
   type AcceptFriendRequestResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/follow/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 

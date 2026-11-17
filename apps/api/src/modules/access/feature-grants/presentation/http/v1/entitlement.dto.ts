@@ -1,4 +1,4 @@
-import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement";
+import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement/v1";
 import type { z } from "zod";
 
 export const EntitlementSnapshotDto = entitlementSnapshotSchema.meta({

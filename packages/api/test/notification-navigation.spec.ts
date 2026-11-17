@@ -5,7 +5,7 @@ import {
   type NotificationNavigationOf,
   notificationNavigationSchema,
   pushNotificationDataSchema,
-} from "../src/index.js";
+} from "../src/contracts/notification/v1/index.js";
 
 const COMMENT_ID = "cmt92zn3n000b7voxx9quc2th";
 const FRIEND_ID = "cmfriend00000000000000001";

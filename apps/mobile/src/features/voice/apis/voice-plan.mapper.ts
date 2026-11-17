@@ -2,12 +2,12 @@ import {
   type ApplyAction as ApplyActionDto,
   type ApplyActionPlanRequest,
   type ApplyActionPlanResponse,
-  PLANNED_ACTION_TYPES,
   type PlannedAction as PlannedActionDto,
   plannedActionSchema,
   type QuickPlanRequest,
   type VoiceNoteDigestRequest,
-} from '@aido/api';
+} from '@aido/api/contracts/voice/v1';
+import { PLANNED_ACTION_TYPES } from '@aido/api/vocabulary';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { dateKeySchema } from '@src/shared/date/date-key';

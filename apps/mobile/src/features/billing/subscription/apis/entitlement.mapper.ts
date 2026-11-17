@@ -1,8 +1,8 @@
 import {
   type FeatureQuota as FeatureQuotaDto,
   type EntitlementSnapshot as EntitlementSnapshotDto,
-  PLAN_FEATURE_KEYS,
-} from '@aido/api';
+} from '@aido/api/contracts/entitlement/v1';
+import { PLAN_FEATURE_KEYS } from '@aido/api/vocabulary';
 import { toNullableInstant } from '@src/shared/date/instant';
 import { mapValues, pick } from 'es-toolkit';
 

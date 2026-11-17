@@ -5,7 +5,7 @@ import {
   type CreateNudgeResponse,
   type NudgeCooldownInfo,
   type NudgeLimitInfo,
-} from '@aido/api';
+} from '@aido/api/contracts/nudge/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 

@@ -6,17 +6,17 @@ import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 
 export const blockedUserSchema = z
   .object({
-    id: entityIdSchema.describe("차단한 사용자 ID"),
+    id: entityIdSchema.meta({ description: "차단한 사용자 ID" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
     profileImage: z
       .string()
       .nullable()
-      .describe("프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)"),
-    blockedAt: datetimeSchema.describe("차단한 시각 (ISO 8601 UTC)"),
+      .meta({ description: "프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)" }),
+    blockedAt: datetimeSchema.meta({ description: "차단한 시각 (ISO 8601 UTC)" }),
   })
   .meta({
     example: {
@@ -32,14 +32,15 @@ export type BlockedUser = z.infer<typeof blockedUserSchema>;
 
 export const blockedUsersResponseSchema = z
   .object({
-    items: z.array(blockedUserSchema).describe("차단한 사용자 목록 (최근에 차단한 순)"),
+    items: z
+      .array(blockedUserSchema)
+      .meta({ description: "차단한 사용자 목록 (최근에 차단한 순)" }),
     totalCount: z
-      .number()
       .int()
       .nonnegative()
-      .describe("차단한 전체 사용자 수 (탈퇴 중인 사용자 제외)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
-    nextCursor: entityIdSchema.nullable().describe("다음 페이지 커서 (없으면 null)"),
+      .meta({ description: "차단한 전체 사용자 수 (탈퇴 중인 사용자 제외)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
+    nextCursor: entityIdSchema.nullable().meta({ description: "다음 페이지 커서 (없으면 null)" }),
   })
   .meta({
     example: {
@@ -62,9 +63,11 @@ export type BlockedUsersResponse = z.infer<typeof blockedUsersResponseSchema>;
 
 export const blockUserResponseSchema = z
   .object({
-    message: z.string().describe("결과 메시지"),
-    blockedUserId: entityIdSchema.describe("차단한 사용자 ID"),
-    blockedAt: datetimeSchema.describe("차단한 시각 (이미 차단한 사용자면 처음 차단한 시각)"),
+    message: z.string().meta({ description: "결과 메시지" }),
+    blockedUserId: entityIdSchema.meta({ description: "차단한 사용자 ID" }),
+    blockedAt: datetimeSchema.meta({
+      description: "차단한 시각 (이미 차단한 사용자면 처음 차단한 시각)",
+    }),
   })
   .meta({
     example: {
@@ -78,7 +81,7 @@ export type BlockUserResponse = z.infer<typeof blockUserResponseSchema>;
 
 export const unblockUserResponseSchema = z
   .object({
-    message: z.string().describe("결과 메시지"),
+    message: z.string().meta({ description: "결과 메시지" }),
   })
   .meta({ example: { message: "차단을 해제했습니다." } });
 

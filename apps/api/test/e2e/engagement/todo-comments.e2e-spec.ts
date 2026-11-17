@@ -1,19 +1,21 @@
 import { randomUUID } from "node:crypto";
 
+import { notificationInboxResponseSchema } from "@aido/api/contracts/notification/v1";
 import {
-  createTodoResponseSchema,
-  notificationInboxResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentOverviewResponseSchema,
-  todoCommentRepliesResponseSchema,
-  todoCommentThreadsResponseSchema,
   todoConversationResponseSchema,
-  z,
   type TodoComment,
   type TodoCommentOverviewResponse,
   type TodoConversationResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment/v1";
+import {
+  todoCommentRepliesResponseSchema,
+  todoCommentThreadsResponseSchema,
+} from "@aido/api/contracts/todo-comment/v2";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
 import request from "supertest";
+import { z } from "zod";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 

@@ -1,10 +1,7 @@
-import {
-  currentUserSchema,
-  PLAN_CATALOG,
-  myInviteResponseSchema,
-  redeemInviteResponseSchema,
-} from "@aido/api";
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
+import { myInviteResponseSchema, redeemInviteResponseSchema } from "@aido/api/contracts/invite/v1";
 import { ErrorCode } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 

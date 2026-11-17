@@ -11,12 +11,16 @@ export type FollowStatus = z.infer<typeof followStatusSchema>;
 
 export const followSchema = z
   .object({
-    id: entityIdSchema.describe("팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)"),
-    followerId: entityIdSchema.describe("팔로워 사용자 ID"),
-    followingId: entityIdSchema.describe("팔로잉 대상 사용자 ID"),
-    status: followStatusSchema.describe("친구 요청 상태 (PENDING | ACCEPTED)"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)"),
-    updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)"),
+    id: entityIdSchema.meta({ description: "팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)" }),
+    followerId: entityIdSchema.meta({ description: "팔로워 사용자 ID" }),
+    followingId: entityIdSchema.meta({ description: "팔로잉 대상 사용자 ID" }),
+    status: followStatusSchema.meta({ description: "친구 요청 상태 (PENDING | ACCEPTED)" }),
+    createdAt: datetimeSchema.meta({
+      description: "생성 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
+    }),
+    updatedAt: datetimeSchema.meta({
+      description: "수정 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)",
+    }),
   })
   .meta({
     example: {
@@ -33,19 +37,19 @@ export type Follow = z.infer<typeof followSchema>;
 
 export const followUserSchema = z
   .object({
-    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.meta({ description: "사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
-    isFollowing: z.boolean().describe("내가 팔로우 중인지 여부"),
-    isFollower: z.boolean().describe("상대가 나를 팔로우 중인지 여부"),
-    isFriend: z.boolean().describe("서로 친구인지 여부 (양방향 팔로우)"),
-    followedAt: datetimeSchema.describe(
-      "팔로우 시작 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
-    ),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
+    isFollowing: z.boolean().meta({ description: "내가 팔로우 중인지 여부" }),
+    isFollower: z.boolean().meta({ description: "상대가 나를 팔로우 중인지 여부" }),
+    isFriend: z.boolean().meta({ description: "서로 친구인지 여부 (양방향 팔로우)" }),
+    followedAt: datetimeSchema.meta({
+      description: "팔로우 시작 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
+    }),
   })
   .meta({
     example: {
@@ -64,17 +68,19 @@ export type FollowUser = z.infer<typeof followUserSchema>;
 
 export const searchUserSchema = z
   .object({
-    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.meta({ description: "사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
-    isFollowing: z.boolean().describe("내가 이 사용자를 팔로우(친구 요청 수락됨) 중인지 여부"),
-    isFollower: z.boolean().describe("이 사용자가 나를 팔로우 중인지 여부"),
-    isFriend: z.boolean().describe("서로 친구인지 여부 (양방향 ACCEPTED)"),
-    requestPending: z.boolean().describe("내가 보낸 친구 요청이 대기 중인지 여부"),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
+    isFollowing: z
+      .boolean()
+      .meta({ description: "내가 이 사용자를 팔로우(친구 요청 수락됨) 중인지 여부" }),
+    isFollower: z.boolean().meta({ description: "이 사용자가 나를 팔로우 중인지 여부" }),
+    isFriend: z.boolean().meta({ description: "서로 친구인지 여부 (양방향 ACCEPTED)" }),
+    requestPending: z.boolean().meta({ description: "내가 보낸 친구 요청이 대기 중인지 여부" }),
   })
   .meta({
     example: {
@@ -93,10 +99,10 @@ export type SearchUser = z.infer<typeof searchUserSchema>;
 
 export const searchUsersResponseSchema = z
   .object({
-    items: z.array(searchUserSchema).describe("검색 결과 사용자 목록 (관련도 순)"),
-    totalCount: z.number().int().nonnegative().describe("전체 검색 결과 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
-    nextCursor: z.string().nullable().describe("다음 페이지 커서 (없으면 null)"),
+    items: z.array(searchUserSchema).meta({ description: "검색 결과 사용자 목록 (관련도 순)" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 검색 결과 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
+    nextCursor: z.string().nullable().meta({ description: "다음 페이지 커서 (없으면 null)" }),
   })
   .meta({
     example: {
@@ -122,17 +128,19 @@ export type SearchUsersResponse = z.infer<typeof searchUsersResponseSchema>;
 
 export const friendUserSchema = z
   .object({
-    followId: entityIdSchema.describe("팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)"),
-    id: entityIdSchema.describe("친구 사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    followId: entityIdSchema.meta({
+      description: "팔로우 관계 ID (예: clz7x5p8k0010qz0z8z8z8z8z)",
+    }),
+    id: entityIdSchema.meta({ description: "친구 사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
-    friendsSince: datetimeSchema.describe(
-      "친구 맺은 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)",
-    ),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
+    friendsSince: datetimeSchema.meta({
+      description: "친구 맺은 시각 (ISO 8601 UTC, 예: 2026-01-15T10:35:00.000Z)",
+    }),
   })
   .meta({
     example: {
@@ -149,16 +157,16 @@ export type FriendUser = z.infer<typeof friendUserSchema>;
 
 export const friendRequestUserSchema = z
   .object({
-    id: entityIdSchema.describe("사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)"),
+    id: entityIdSchema.meta({ description: "사용자 ID (예: clz7x5p8k0005qz0z8z8z8z8z)" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
-    requestedAt: datetimeSchema.describe(
-      "친구 요청 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
-    ),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
+    requestedAt: datetimeSchema.meta({
+      description: "친구 요청 시각 (ISO 8601 UTC, 예: 2026-01-15T10:30:00.000Z)",
+    }),
   })
   .meta({
     example: {
@@ -174,9 +182,11 @@ export type FriendRequestUser = z.infer<typeof friendRequestUserSchema>;
 
 export const followingListResponseSchema = z
   .object({
-    following: z.array(followUserSchema).describe("팔로잉 목록 (내가 팔로우하는 사용자들)"),
-    totalCount: z.number().int().nonnegative().describe("전체 팔로잉 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    following: z
+      .array(followUserSchema)
+      .meta({ description: "팔로잉 목록 (내가 팔로우하는 사용자들)" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 팔로잉 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -201,9 +211,11 @@ export type FollowingListResponse = z.infer<typeof followingListResponseSchema>;
 
 export const followerListResponseSchema = z
   .object({
-    followers: z.array(followUserSchema).describe("팔로워 목록 (나를 팔로우하는 사용자들)"),
-    totalCount: z.number().int().nonnegative().describe("전체 팔로워 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    followers: z
+      .array(followUserSchema)
+      .meta({ description: "팔로워 목록 (나를 팔로우하는 사용자들)" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 팔로워 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -228,9 +240,11 @@ export type FollowerListResponse = z.infer<typeof followerListResponseSchema>;
 
 export const friendsListResponseSchema = z
   .object({
-    friends: z.array(friendUserSchema).describe("친구 목록 (서로 팔로우하는 사용자들)"),
-    totalCount: z.number().int().nonnegative().describe("전체 친구 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    friends: z
+      .array(friendUserSchema)
+      .meta({ description: "친구 목록 (서로 팔로우하는 사용자들)" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 친구 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -253,9 +267,9 @@ export type FriendsListResponse = z.infer<typeof friendsListResponseSchema>;
 
 export const receivedRequestsResponseSchema = z
   .object({
-    requests: z.array(friendRequestUserSchema).describe("받은 친구 요청 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 받은 요청 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    requests: z.array(friendRequestUserSchema).meta({ description: "받은 친구 요청 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 받은 요청 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -277,9 +291,9 @@ export type ReceivedRequestsResponse = z.infer<typeof receivedRequestsResponseSc
 
 export const sentRequestsResponseSchema = z
   .object({
-    requests: z.array(friendRequestUserSchema).describe("보낸 친구 요청 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 보낸 요청 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    requests: z.array(friendRequestUserSchema).meta({ description: "보낸 친구 요청 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 보낸 요청 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -301,15 +315,17 @@ export type SentRequestsResponse = z.infer<typeof sentRequestsResponseSchema>;
 
 export const followCountResponseSchema = z
   .object({
-    followingCount: z.number().int().nonnegative().describe("팔로잉 수 (음이 아닌 정수)"),
-    followerCount: z.number().int().nonnegative().describe("팔로워 수 (음이 아닌 정수)"),
-    friendCount: z.number().int().nonnegative().describe("친구 수 (음이 아닌 정수)"),
+    followingCount: z.int().nonnegative().meta({ description: "팔로잉 수 (음이 아닌 정수)" }),
+    followerCount: z.int().nonnegative().meta({ description: "팔로워 수 (음이 아닌 정수)" }),
+    friendCount: z.int().nonnegative().meta({ description: "친구 수 (음이 아닌 정수)" }),
     pendingReceivedCount: z
-      .number()
       .int()
       .nonnegative()
-      .describe("받은 친구 요청 수 (음이 아닌 정수)"),
-    pendingSentCount: z.number().int().nonnegative().describe("보낸 친구 요청 수 (음이 아닌 정수)"),
+      .meta({ description: "받은 친구 요청 수 (음이 아닌 정수)" }),
+    pendingSentCount: z
+      .int()
+      .nonnegative()
+      .meta({ description: "보낸 친구 요청 수 (음이 아닌 정수)" }),
   })
   .meta({
     example: {
@@ -325,9 +341,11 @@ export type FollowCountResponse = z.infer<typeof followCountResponseSchema>;
 
 export const sendFriendRequestResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    follow: followSchema.describe("생성된 팔로우 관계 정보"),
-    autoAccepted: z.boolean().describe("자동 수락 여부 (상대방이 나를 먼저 팔로우했을 경우 true)"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    follow: followSchema.meta({ description: "생성된 팔로우 관계 정보" }),
+    autoAccepted: z
+      .boolean()
+      .meta({ description: "자동 수락 여부 (상대방이 나를 먼저 팔로우했을 경우 true)" }),
   })
   .meta({
     example: {
@@ -416,8 +434,8 @@ export type RemoveFollowerResponse = z.infer<typeof removeFollowerResponseSchema
 
 export const reorderFriendResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    friend: friendUserSchema.describe("순서가 변경된 친구 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    friend: friendUserSchema.meta({ description: "순서가 변경된 친구 정보" }),
   })
   .meta({
     example: {

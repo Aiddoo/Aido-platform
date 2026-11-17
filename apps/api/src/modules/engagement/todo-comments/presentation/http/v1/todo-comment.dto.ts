@@ -10,7 +10,7 @@ import {
   todoConversationResponseSchema,
   todoDetailsResponseSchema,
   updateTodoCommentSchema,
-} from "@aido/api/contracts/todo-comment";
+} from "@aido/api/contracts/todo-comment/v1";
 import type { z } from "zod";
 
 export const WriteTodoCommentChainDto = createTodoCommentChainSchema.meta({

@@ -1,4 +1,4 @@
-import { nudgeThanksPreviewResponseSchema } from '@aido/api';
+import { nudgeThanksPreviewResponseSchema } from '@aido/api/contracts/nudge/v1';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';

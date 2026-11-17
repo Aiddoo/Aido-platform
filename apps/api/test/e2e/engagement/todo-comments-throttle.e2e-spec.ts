@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { createTodoResponseSchema } from "@aido/api";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
 import request from "supertest";
 
 import { TodoCommentRateLimits } from "#api/modules/engagement/todo-comments/presentation/http/todo-comments.rate-limits";

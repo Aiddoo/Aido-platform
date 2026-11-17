@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/api";
+import type { RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 import { and, eq, sql } from "drizzle-orm";
 
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";

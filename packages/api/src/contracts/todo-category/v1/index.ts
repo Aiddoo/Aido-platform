@@ -1,4 +1,4 @@
-export { reorderPositionSchema } from "./v1/todo-category.common.js";
+export { reorderPositionSchema } from "./todo-category.common.js";
 export {
   type CreateTodoCategoryInput,
   createTodoCategorySchema,
@@ -10,7 +10,7 @@ export {
   todoCategoryIdParamSchema,
   type UpdateTodoCategoryInput,
   updateTodoCategorySchema,
-} from "./v1/todo-category.request.js";
+} from "./todo-category.request.js";
 export {
   type CategoryDeletionResult,
   categoryDeletionResultSchema,
@@ -34,4 +34,4 @@ export {
   todoCategoryWithCountSchema,
   type UpdateTodoCategoryResponse,
   updateTodoCategoryResponseSchema,
-} from "./v1/todo-category.response.js";
+} from "./todo-category.response.js";

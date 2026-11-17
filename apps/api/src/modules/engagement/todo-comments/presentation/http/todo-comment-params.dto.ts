@@ -1,4 +1,7 @@
-import { todoCommentIdParamSchema, todoDetailsParamSchema } from "@aido/api/contracts/todo-comment";
+import {
+  todoCommentIdParamSchema,
+  todoDetailsParamSchema,
+} from "@aido/api/contracts/todo-comment/v1";
 import type { z } from "zod";
 
 // v1·v2 경로가 같은 경로 변수를 받아 버전 밖에 둔다. component id는 출시 OpenAPI 계약이다

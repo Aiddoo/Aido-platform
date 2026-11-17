@@ -3,7 +3,7 @@ import {
   friendTodoListResponseSchema,
   todoListResponseSchema,
   updateTodoResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo/v1";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";

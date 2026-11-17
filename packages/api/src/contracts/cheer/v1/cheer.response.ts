@@ -6,14 +6,20 @@ import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
 
 export const cheerSchema = z
   .object({
-    id: z.number().int().positive().describe("응원 ID (양의 정수)"),
-    senderId: entityIdSchema.describe("보낸 사용자 ID"),
-    receiverId: entityIdSchema.describe("받은 사용자 ID"),
-    message: z.string().max(200).nullable().describe("응원 메시지 (최대 200자, 미설정 시 null)"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),
-    readAt: nullableDatetimeSchema.describe(
-      "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
-    ),
+    id: z.int().positive().meta({ description: "응원 ID (양의 정수)" }),
+    senderId: entityIdSchema.meta({ description: "보낸 사용자 ID" }),
+    receiverId: entityIdSchema.meta({ description: "받은 사용자 ID" }),
+    message: z
+      .string()
+      .max(200)
+      .nullable()
+      .meta({ description: "응원 메시지 (최대 200자, 미설정 시 null)" }),
+    createdAt: datetimeSchema.meta({
+      description: "생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)",
+    }),
+    readAt: nullableDatetimeSchema.meta({
+      description: "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
+    }),
   })
   .meta({
     example: {
@@ -30,13 +36,13 @@ export type Cheer = z.infer<typeof cheerSchema>;
 
 export const cheerSenderSchema = z
   .object({
-    id: entityIdSchema.describe("사용자 ID"),
+    id: entityIdSchema.meta({ description: "사용자 ID" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
   })
   .meta({
     example: {
@@ -74,10 +80,10 @@ export type CheerDetail = z.infer<typeof cheerDetailSchema>;
 
 export const receivedCheersResponseSchema = z
   .object({
-    cheers: z.array(cheerDetailSchema).describe("받은 응원 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 받은 응원 수 (음이 아닌 정수)"),
-    unreadCount: z.number().int().nonnegative().describe("읽지 않은 응원 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    cheers: z.array(cheerDetailSchema).meta({ description: "받은 응원 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 받은 응원 수 (음이 아닌 정수)" }),
+    unreadCount: z.int().nonnegative().meta({ description: "읽지 않은 응원 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -107,9 +113,9 @@ export type ReceivedCheersResponse = z.infer<typeof receivedCheersResponseSchema
 
 export const sentCheersResponseSchema = z
   .object({
-    cheers: z.array(cheerDetailSchema).describe("보낸 응원 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 보낸 응원 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    cheers: z.array(cheerDetailSchema).meta({ description: "보낸 응원 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 보낸 응원 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -138,8 +144,8 @@ export type SentCheersResponse = z.infer<typeof sentCheersResponseSchema>;
 
 export const createCheerResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    cheer: cheerSchema.describe("생성된 응원 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    cheer: cheerSchema.meta({ description: "생성된 응원 정보" }),
   })
   .meta({
     example: {
@@ -159,8 +165,8 @@ export type CreateCheerResponse = z.infer<typeof createCheerResponseSchema>;
 
 export const markCheerReadResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    readCount: z.number().int().nonnegative().describe("읽음 처리된 응원 수 (음이 아닌 정수)"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    readCount: z.int().nonnegative().meta({ description: "읽음 처리된 응원 수 (음이 아닌 정수)" }),
   })
   .meta({
     example: {
@@ -174,19 +180,17 @@ export type MarkCheerReadResponse = z.infer<typeof markCheerReadResponseSchema>;
 export const cheerLimitInfoSchema = z
   .object({
     dailyLimit: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("일일 응원 제한 (음이 아닌 정수, 무제한 시 null)"),
-    usedToday: z.number().int().nonnegative().describe("오늘 사용한 응원 수 (음이 아닌 정수)"),
+      .meta({ description: "일일 응원 제한 (음이 아닌 정수, 무제한 시 null)" }),
+    usedToday: z.int().nonnegative().meta({ description: "오늘 사용한 응원 수 (음이 아닌 정수)" }),
     remainingToday: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("오늘 남은 응원 수 (음이 아닌 정수, 무제한 시 null)"),
-    isUnlimited: z.boolean().describe("무제한 여부"),
+      .meta({ description: "오늘 남은 응원 수 (음이 아닌 정수, 무제한 시 null)" }),
+    isUnlimited: z.boolean().meta({ description: "무제한 여부" }),
   })
   .meta({
     example: {
@@ -201,17 +205,17 @@ export type CheerLimitInfo = z.infer<typeof cheerLimitInfoSchema>;
 
 export const cheerCooldownInfoSchema = z
   .object({
-    userId: entityIdSchema.describe("대상 사용자 ID"),
-    canCheer: z.boolean().describe("응원 가능 여부"),
-    cooldownEndsAt: nullableDatetimeSchema.describe(
-      "쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-18T10:00:00.000Z, 쿨다운 없으면 null)",
-    ),
+    userId: entityIdSchema.meta({ description: "대상 사용자 ID" }),
+    canCheer: z.boolean().meta({ description: "응원 가능 여부" }),
+    cooldownEndsAt: nullableDatetimeSchema.meta({
+      description:
+        "쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-18T10:00:00.000Z, 쿨다운 없으면 null)",
+    }),
     remainingSeconds: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("남은 쿨다운 시간 (초 단위, 음이 아닌 정수, 쿨다운 없으면 null)"),
+      .meta({ description: "남은 쿨다운 시간 (초 단위, 음이 아닌 정수, 쿨다운 없으면 null)" }),
   })
   .meta({
     example: {

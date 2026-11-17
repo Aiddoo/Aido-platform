@@ -2,7 +2,7 @@ import {
   recurringSuggestionSchema,
   suggestionAnalysisSchema,
   suggestionListResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/ai/v1';
 import { defineFixture } from '@src/testing/fixture';
 
 export const createSuggestionDto = defineFixture(recurringSuggestionSchema, {

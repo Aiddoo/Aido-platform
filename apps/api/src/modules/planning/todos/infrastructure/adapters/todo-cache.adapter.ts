@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { friendTodoSchema } from "@aido/api";
+import { friendTodoSchema } from "@aido/api/contracts/todo/v1";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 

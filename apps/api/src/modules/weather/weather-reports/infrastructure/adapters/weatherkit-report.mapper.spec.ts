@@ -1,4 +1,4 @@
-import { weatherReportSchema } from "@aido/api";
+import { weatherReportSchema } from "@aido/api/contracts/weather/v2";
 
 import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";

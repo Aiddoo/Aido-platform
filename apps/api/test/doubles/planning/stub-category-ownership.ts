@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 
 import { todoCategoryNotFound } from "#api/modules/planning/todo-categories/application/todo-categories.errors";
 import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";

@@ -1,4 +1,4 @@
-import { createMemoSchema } from '@aido/api';
+import { createMemoSchema } from '@aido/api/contracts/memo/v1';
 import { trimmed } from '@src/shared/schemas/trimmed.schema';
 import type { z } from 'zod';
 

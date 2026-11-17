@@ -7,13 +7,13 @@ import { todoSchema } from "../../todo/v1/todo.response.js";
 
 export const memoSchema = z
   .object({
-    id: z.number().int().positive().describe("메모 ID (양의 정수)"),
-    userId: entityIdSchema.describe("사용자 ID"),
-    content: z.string().describe("메모 내용"),
-    isPinned: z.boolean().describe("고정 여부"),
-    sortOrder: z.number().int().describe("정렬 순서"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC)"),
-    updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC)"),
+    id: z.int().positive().meta({ description: "메모 ID (양의 정수)" }),
+    userId: entityIdSchema.meta({ description: "사용자 ID" }),
+    content: z.string().meta({ description: "메모 내용" }),
+    isPinned: z.boolean().meta({ description: "고정 여부" }),
+    sortOrder: z.int().meta({ description: "정렬 순서" }),
+    createdAt: datetimeSchema.meta({ description: "생성 시각 (ISO 8601 UTC)" }),
+    updatedAt: datetimeSchema.meta({ description: "수정 시각 (ISO 8601 UTC)" }),
   })
   .meta({
     example: {
@@ -31,7 +31,7 @@ export type Memo = z.infer<typeof memoSchema>;
 
 export const memoDetailResponseSchema = z
   .object({
-    memo: memoSchema.describe("메모 정보"),
+    memo: memoSchema.meta({ description: "메모 정보" }),
   })
   .meta({
     example: {
@@ -49,7 +49,7 @@ export const memoDetailResponseSchema = z
 
 export type MemoDetailResponse = z.infer<typeof memoDetailResponseSchema>;
 
-export const memoListResponseSchema = cursorPageSchema(memoSchema, z.number().int(), {
+export const memoListResponseSchema = cursorPageSchema(memoSchema, z.int(), {
   items: "메모 목록",
   pagination: "페이지네이션 정보",
 }).meta({
@@ -77,8 +77,8 @@ export type MemoListResponse = z.infer<typeof memoListResponseSchema>;
 
 export const memoMutationResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    memo: memoSchema.describe("메모 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    memo: memoSchema.meta({ description: "메모 정보" }),
   })
   .meta({
     example: {
@@ -99,7 +99,7 @@ export type MemoMutationResponse = z.infer<typeof memoMutationResponseSchema>;
 
 export const memoDeleteResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
+    message: z.string().meta({ description: "응답 메시지" }),
   })
   .meta({
     example: {
@@ -111,8 +111,8 @@ export type MemoDeleteResponse = z.infer<typeof memoDeleteResponseSchema>;
 
 export const convertMemoToTodoResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    todo: todoSchema.describe("변환된 할 일 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    todo: todoSchema.meta({ description: "변환된 할 일 정보" }),
   })
   .meta({
     example: {
@@ -144,8 +144,8 @@ export type ConvertMemoToTodoResponse = z.infer<typeof convertMemoToTodoResponse
 
 export const convertMemoToTodosResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    todos: z.array(todoSchema).describe("변환된 할 일 목록"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    todos: z.array(todoSchema).meta({ description: "변환된 할 일 목록" }),
   })
   .meta({
     example: {
@@ -158,8 +158,8 @@ export type ConvertMemoToTodosResponse = z.infer<typeof convertMemoToTodosRespon
 
 export const memoResourceLimitResponseSchema = z
   .object({
-    currentCount: z.number().int().nonnegative().describe("현재 메모 개수"),
-    maxPerUser: z.number().int().positive().describe("사용자당 최대 메모 수"),
+    currentCount: z.int().nonnegative().meta({ description: "현재 메모 개수" }),
+    maxPerUser: z.int().positive().meta({ description: "사용자당 최대 메모 수" }),
   })
   .meta({
     example: {

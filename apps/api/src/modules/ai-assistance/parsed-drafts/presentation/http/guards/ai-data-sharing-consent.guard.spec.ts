@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

@@ -1,4 +1,4 @@
-import type { WeatherLocationResponse } from "@aido/api/contracts/weather";
+import type { WeatherLocationResponse } from "@aido/api/contracts/weather/v2";
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, HttpCode, HttpStatus, Put } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";

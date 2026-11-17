@@ -1,4 +1,4 @@
-import { userTagParamSchema } from '@aido/api';
+import { userTagParamSchema } from '@aido/api/contracts/follow/v1';
 
 import { createSearchedUser } from '../__tests__/friend.fixtures';
 import { FriendPolicy, getFriendLimit, isValidSearchQuery, isValidUserTag } from './friend.model';

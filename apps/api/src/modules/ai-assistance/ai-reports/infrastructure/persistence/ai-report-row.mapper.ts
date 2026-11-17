@@ -4,7 +4,7 @@ import {
   dayPatternItemSchema,
   reportStatsSchema,
   timePatternItemSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import { z } from "zod";
 
 import type { aiReport } from "#api/platform/database/schema/ai-assistance.schema";

@@ -1,4 +1,4 @@
-import type { CreateInquiryResponse } from '@aido/api';
+import type { CreateInquiryResponse } from '@aido/api/contracts/inquiry/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 

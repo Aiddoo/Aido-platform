@@ -1,5 +1,2 @@
-export * from "./v1/notification.content.js";
-export * from "./v1/notification.navigation.js";
-export * from "./v1/notification.payload.js";
-export * from "./v1/notification.request.js";
-export * from "./v1/notification.response.js";
+// identity·notification·insights가 버전 경로로 옮기면 지운다
+export * from "./v1/index.js";

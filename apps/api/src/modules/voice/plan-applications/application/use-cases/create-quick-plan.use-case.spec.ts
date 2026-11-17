@@ -1,4 +1,4 @@
-import { quickPlanResponseSchema } from "@aido/api";
+import { quickPlanResponseSchema } from "@aido/api/contracts/voice/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 

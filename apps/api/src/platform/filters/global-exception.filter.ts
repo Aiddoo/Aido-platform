@@ -1,4 +1,4 @@
-import type { RestErrorResponse } from "@aido/api";
+import type { RestErrorResponse } from "@aido/api/common";
 import { ErrorCode, type ErrorCodeType, Errors, toPublicErrorDetails } from "@aido/api/errors";
 import {
   type ArgumentsHost,

@@ -3,7 +3,7 @@ import {
   notificationInboxResponseSchema,
   notificationOpenedResponseSchema,
   unreadCountResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { withTimeout } from 'es-toolkit';

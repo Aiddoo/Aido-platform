@@ -1,4 +1,4 @@
-import { entitlementSnapshotSchema } from '@aido/api';
+import { entitlementSnapshotSchema } from '@aido/api/contracts/entitlement/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';

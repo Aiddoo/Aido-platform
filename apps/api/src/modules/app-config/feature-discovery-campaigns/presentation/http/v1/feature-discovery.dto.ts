@@ -1,7 +1,7 @@
 import {
   featureDiscoveryMinAppVersionPattern,
   featureDiscoveryUtcDateTimePattern,
-} from "@aido/api/contracts/app-config";
+} from "@aido/api/contracts/app-config/v1";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class FeatureDiscoveryDisabledResponseDto {

@@ -1,4 +1,8 @@
-import type { WeatherBriefing, WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
+import type {
+  WeatherBriefing,
+  WeatherHourlyForecast,
+  WeatherReportResponse,
+} from '@aido/api/contracts/weather/v2';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { toWeatherReport } from '../apis/weather.mapper';

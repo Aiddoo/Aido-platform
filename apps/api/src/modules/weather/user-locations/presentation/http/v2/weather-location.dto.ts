@@ -1,4 +1,4 @@
-import { updateWeatherLocationSchema, weatherLocationSchema } from "@aido/api/contracts/weather";
+import { updateWeatherLocationSchema, weatherLocationSchema } from "@aido/api/contracts/weather/v2";
 import type { z } from "zod";
 
 export const UpdateWeatherLocationDto = updateWeatherLocationSchema.meta({

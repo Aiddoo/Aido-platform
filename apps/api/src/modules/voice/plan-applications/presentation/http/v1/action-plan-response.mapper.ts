@@ -1,10 +1,10 @@
-import type { Memo as MemoResponse } from "@aido/api/contracts/memo";
+import type { Memo as MemoResponse } from "@aido/api/contracts/memo/v1";
 import type {
   ActionPlan,
   ApplyActionPlanResponse,
   PlannedAction,
   QuickPlanResponse,
-} from "@aido/api/contracts/voice";
+} from "@aido/api/contracts/voice/v1";
 import { pick } from "es-toolkit";
 import { match } from "ts-pattern";
 

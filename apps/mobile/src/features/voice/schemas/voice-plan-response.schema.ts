@@ -2,7 +2,7 @@ import {
   actionPlanSchema,
   quickPlanResponseSchema,
   voiceNoteDigestResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/voice/v1';
 import { z } from 'zod';
 
 // 새 서버의 모르는 행동 타입 하나로 계획 전체를 버리지 않게 느슨하게 받고 아는 타입만 toVoicePlan이 검증한다

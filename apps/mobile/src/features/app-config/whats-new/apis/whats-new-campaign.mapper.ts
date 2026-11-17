@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from '@aido/api';
+import type { FeatureDiscoveryResponse } from '@aido/api/contracts/app-config/v1';
 import { pick } from 'es-toolkit';
 
 import type { WhatsNewCampaignConfig } from '../domains/whats-new-campaign.model';

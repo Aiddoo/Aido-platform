@@ -3,7 +3,7 @@ import {
   invitedFriendsListResponseSchema,
   invitePreviewResponseSchema,
   myInviteResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/invite/v1";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 

@@ -1,12 +1,12 @@
+import { todoDetailsResponseSchema } from '@aido/api/contracts/todo-comment/v1';
 import {
   createTodoResponseSchema,
   reorderTodoResponseSchema,
-  todoDetailsResponseSchema,
   todoListResponseSchema,
   todoRepeatSchema,
   todoSchema,
   updateTodoResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import { z } from 'zod';
 
 /** 새 서버의 모르는 반복 빈도 하나로 응답을 버리지 않고 규칙 모르는 회차(`repeat: null`, 화면은 `↻ 반복`)로 읽는다 */

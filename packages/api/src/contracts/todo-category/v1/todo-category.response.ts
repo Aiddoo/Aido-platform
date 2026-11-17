@@ -6,13 +6,17 @@ import { CATEGORY_TODO_HANDLING_RESULTS } from "../../../vocabulary/todo-categor
 
 export const todoCategorySchema = z
   .object({
-    id: z.number().int().describe("카테고리 ID (양의 정수)"),
-    userId: entityIdSchema.describe("사용자 ID"),
-    name: z.string().describe("카테고리 이름 (최대 50자)"),
-    color: z.string().describe("카테고리 색상 (HEX 7자, 예: #FFB3B3)"),
-    sortOrder: z.number().int().describe("정렬 순서 (작을수록 위)"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)"),
-    updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)"),
+    id: z.int().meta({ description: "카테고리 ID (양의 정수)" }),
+    userId: entityIdSchema.meta({ description: "사용자 ID" }),
+    name: z.string().meta({ description: "카테고리 이름 (최대 50자)" }),
+    color: z.string().meta({ description: "카테고리 색상 (HEX 7자, 예: #FFB3B3)" }),
+    sortOrder: z.int().meta({ description: "정렬 순서 (작을수록 위)" }),
+    createdAt: datetimeSchema.meta({
+      description: "생성 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)",
+    }),
+    updatedAt: datetimeSchema.meta({
+      description: "수정 시각 (ISO 8601 UTC, 예: 2026-01-29T10:00:00.000Z)",
+    }),
   })
   .meta({
     example: {
@@ -29,23 +33,25 @@ export const todoCategorySchema = z
 export type TodoCategory = z.infer<typeof todoCategorySchema>;
 
 export const todoCategorySummarySchema = z.object({
-  id: z.number().int().describe("카테고리 ID (양의 정수)"),
-  name: z.string().describe("카테고리 이름"),
-  color: z.string().describe("카테고리 색상 (HEX 7자)"),
-  sortOrder: z.number().int().describe("카테고리 정렬 순서 (작을수록 위)"),
+  id: z.int().meta({ description: "카테고리 ID (양의 정수)" }),
+  name: z.string().meta({ description: "카테고리 이름" }),
+  color: z.string().meta({ description: "카테고리 색상 (HEX 7자)" }),
+  sortOrder: z.int().meta({ description: "카테고리 정렬 순서 (작을수록 위)" }),
 });
 
 export type TodoCategorySummary = z.infer<typeof todoCategorySummarySchema>;
 
 export const todoCategoryWithCountSchema = todoCategorySchema.extend({
-  todoCount: z.number().int().describe("카테고리 내 할 일 개수 (음이 아닌 정수)"),
+  todoCount: z.int().meta({ description: "카테고리 내 할 일 개수 (음이 아닌 정수)" }),
 });
 
 export type TodoCategoryWithCount = z.infer<typeof todoCategoryWithCountSchema>;
 
 export const todoCategoryListResponseSchema = z
   .object({
-    items: z.array(todoCategoryWithCountSchema).describe("카테고리 목록 (할 일 개수 포함)"),
+    items: z
+      .array(todoCategoryWithCountSchema)
+      .meta({ description: "카테고리 목록 (할 일 개수 포함)" }),
   })
   .meta({
     example: {
@@ -121,26 +127,22 @@ export const updateTodoCategoryResponseSchema = z
 export type UpdateTodoCategoryResponse = z.infer<typeof updateTodoCategoryResponseSchema>;
 
 export const categoryDeletionResultSchema = z.object({
-  todoHandling: z
-    .enum(CATEGORY_TODO_HANDLING_RESULTS)
-    .describe(
+  todoHandling: z.enum(CATEGORY_TODO_HANDLING_RESULTS).meta({
+    description:
       "실제로 한 처리 (move: 옮김, delete: 함께 삭제, none: 옮기거나 지울 할 일·진행 중 반복이 없었음)",
-    ),
+  }),
   todoCount: z
-    .number()
     .int()
     .min(0)
-    .describe("옮기거나 함께 삭제한 할 일 수 (완료 포함, 음이 아닌 정수)"),
+    .meta({ description: "옮기거나 함께 삭제한 할 일 수 (완료 포함, 음이 아닌 정수)" }),
   seriesCount: z
-    .number()
     .int()
     .min(0)
-    .describe("옮기거나 함께 삭제한 진행 중 반복 규칙 수 (음이 아닌 정수)"),
+    .meta({ description: "옮기거나 함께 삭제한 진행 중 반복 규칙 수 (음이 아닌 정수)" }),
   moveToCategoryId: z
-    .number()
     .int()
     .nullable()
-    .describe("할 일을 옮긴 카테고리 ID (옮기지 않았으면 null)"),
+    .meta({ description: "할 일을 옮긴 카테고리 ID (옮기지 않았으면 null)" }),
 });
 
 export type CategoryDeletionResult = z.infer<typeof categoryDeletionResultSchema>;
@@ -150,7 +152,7 @@ export const deleteTodoCategoryResponseSchema = z
     message: z.string(),
     result: categoryDeletionResultSchema
       .optional()
-      .describe("삭제 결과 (1.15.1 서버부터 채운다. 출시 앱은 읽지 않는다)"),
+      .meta({ description: "삭제 결과 (1.15.1 서버부터 채운다. 출시 앱은 읽지 않는다)" }),
   })
   .meta({
     example: {
@@ -163,27 +165,22 @@ export type DeleteTodoCategoryResponse = z.infer<typeof deleteTodoCategoryRespon
 
 export const todoCategoryDeletionPreviewSchema = z
   .object({
-    categoryId: z.number().int().describe("삭제하려는 카테고리 ID"),
+    categoryId: z.int().meta({ description: "삭제하려는 카테고리 ID" }),
     todoCount: z
-      .number()
       .int()
       .min(0)
-      .describe("카테고리 안의 할 일 수 (완료 포함, 목록의 todoCount와 같은 기준)"),
+      .meta({ description: "카테고리 안의 할 일 수 (완료 포함, 목록의 todoCount와 같은 기준)" }),
     completedTodoCount: z
-      .number()
       .int()
       .min(0)
-      .describe("그중 완료한 할 일 수. 함께 삭제하면 날짜별 완료 기록에서도 빠진다"),
-    activeSeriesCount: z
-      .number()
-      .int()
-      .min(0)
-      .describe(
+      .meta({ description: "그중 완료한 할 일 수. 함께 삭제하면 날짜별 완료 기록에서도 빠진다" }),
+    activeSeriesCount: z.int().min(0).meta({
+      description:
         "카테고리에 속한 진행 중 반복 규칙 수. 함께 삭제하면 앞으로의 회차도 만들지 않는다",
-      ),
+    }),
     isLastCategory: z
       .boolean()
-      .describe("마지막 남은 카테고리인지. true면 삭제할 수 없다(TODO_CATEGORY_0854)"),
+      .meta({ description: "마지막 남은 카테고리인지. true면 삭제할 수 없다(TODO_CATEGORY_0854)" }),
   })
   .meta({
     example: {

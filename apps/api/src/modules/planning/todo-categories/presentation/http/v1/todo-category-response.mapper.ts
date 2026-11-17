@@ -3,7 +3,7 @@ import type {
   TodoCategory as TodoCategoryDto,
   TodoCategoryDeletionPreview,
   TodoCategoryWithCount as TodoCategoryWithCountDto,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-category/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

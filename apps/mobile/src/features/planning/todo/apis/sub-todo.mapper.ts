@@ -1,4 +1,4 @@
-import type { TodoItemResponse } from '@aido/api';
+import type { TodoItemResponse } from '@aido/api/contracts/todo/v1';
 
 import type { SubTodo } from '../domains/sub-todo.model';
 

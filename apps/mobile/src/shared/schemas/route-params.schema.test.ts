@@ -1,4 +1,5 @@
-import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
+import { aiReportIdParamSchema } from '@aido/api/contracts/ai/v1';
+import { weeklyAchievementParamSchema } from '@aido/api/contracts/weekly-achievement';
 import { z } from 'zod';
 
 import { routeIdSchema, routeIntegerStringSchema } from './route-params.schema';

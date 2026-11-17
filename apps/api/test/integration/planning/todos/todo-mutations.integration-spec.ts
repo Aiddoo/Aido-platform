@@ -1,4 +1,4 @@
-import type { TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { EventEmitter2 } from "@nestjs/event-emitter";

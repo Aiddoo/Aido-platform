@@ -1,4 +1,4 @@
-import { currentUserSchema } from "@aido/api";
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
 import { Logger } from "@nestjs/common";
 import request from "supertest";
 import { z } from "zod";

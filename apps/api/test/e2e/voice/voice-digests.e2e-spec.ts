@@ -1,4 +1,4 @@
-import { voiceNoteDigestResponseSchema } from "@aido/api";
+import { voiceNoteDigestResponseSchema } from "@aido/api/contracts/voice/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";

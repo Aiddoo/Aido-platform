@@ -1,7 +1,7 @@
 import type {
   CreateUserReportResponse,
   ResolveUserReportResponse,
-} from "@aido/api/contracts/user-report";
+} from "@aido/api/contracts/user-report/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 
 import { describeTodoReadRepositoryContract } from "#test/contracts/planning/todo-read-repository.contract";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";

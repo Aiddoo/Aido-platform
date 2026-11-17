@@ -1,9 +1,9 @@
+import { featureDiscoveryMinAppVersionPattern } from "../src/contracts/app-config/v1/index.js";
 import {
   compareSemanticVersions,
-  featureDiscoveryMinAppVersionPattern,
   isSemanticVersionAtLeast,
   semanticVersionPattern,
-} from "../src/index.js";
+} from "../src/vocabulary/index.js";
 
 describe("semantic-version", () => {
   it("feature discovery 최소 버전 패턴은 공용 semver 패턴을 재사용한다", () => {

@@ -9,7 +9,7 @@ import type {
   LoginInput,
   ResendVerificationResponse,
   ResetPasswordResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/auth/v1';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 

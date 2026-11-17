@@ -1,4 +1,4 @@
-import { featureDiscoveryResponseSchema } from "@aido/api/contracts/app-config";
+import { featureDiscoveryResponseSchema } from "@aido/api/contracts/app-config/v1";
 
 describe("기능 발견 응답 계약", () => {
   it("활성 설정의 필수 정보 누락과 비활성 설정의 추가 정보 노출을 거부한다", () => {

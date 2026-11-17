@@ -1,4 +1,7 @@
-import { createRemindNudgeResponseSchema, createRemindNudgeSchema } from "@aido/api";
+import {
+  createRemindNudgeResponseSchema,
+  createRemindNudgeSchema,
+} from "@aido/api/contracts/nudge/v1";
 import type { z } from "zod";
 
 export const SendRemindNudgeDto = createRemindNudgeSchema.meta({ id: "SendRemindNudgeDto" });

@@ -1,15 +1,17 @@
 import {
-  createNudgeResponseSchema,
-  createTodoResponseSchema,
   notificationInboxResponseSchema,
   notificationListResponseSchema,
+} from "@aido/api/contracts/notification/v1";
+import {
+  createNudgeResponseSchema,
   nudgeInteractionResponseSchema,
   nudgeInteractionsResponseSchema,
   nudgeThanksPreviewResponseSchema,
   sendNudgeThanksResponseSchema,
-  type NudgeReplyKind,
-} from "@aido/api";
+} from "@aido/api/contracts/nudge/v1";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
+import { type NudgeReplyKind } from "@aido/api/vocabulary";
 import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
 

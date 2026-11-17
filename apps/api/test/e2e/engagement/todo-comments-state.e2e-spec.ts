@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import {
-  createTodoResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
   todoConversationResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment/v1";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
 import { and, eq } from "drizzle-orm";
 import request from "supertest";
 

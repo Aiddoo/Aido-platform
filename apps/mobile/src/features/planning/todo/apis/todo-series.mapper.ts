@@ -1,4 +1,4 @@
-import type { TodoSeriesResponse, UpdateTodoInput } from '@aido/api';
+import type { TodoSeriesResponse, UpdateTodoInput } from '@aido/api/contracts/todo/v1';
 import { dateKeySchema } from '@src/shared/date/date-key';
 
 import type { TodoSeries } from '../domains/todo-series.model';

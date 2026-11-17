@@ -1,10 +1,10 @@
+import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
 import {
-  dailyCompletionsRangeResponseSchema,
   type Todo as TodoDto,
   todoItemResponseSchema,
   todoListResponseSchema,
   todoSchema as todoDtoSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { createDateKey } from '@src/testing/date-key';

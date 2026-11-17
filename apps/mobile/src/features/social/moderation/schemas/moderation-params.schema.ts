@@ -1,4 +1,6 @@
-import { todoCommentIdSchema, userIdParamSchema, userReportTargetTypeSchema } from '@aido/api';
+import { userIdParamSchema } from '@aido/api/contracts/follow/v1';
+import { todoCommentIdSchema } from '@aido/api/contracts/todo-comment/v1';
+import { userReportTargetTypeSchema } from '@aido/api/contracts/user-report/v1';
 import { todoParamsSchema } from '@src/features/planning/todo/schemas/todo-params.schema';
 import { z } from 'zod';
 

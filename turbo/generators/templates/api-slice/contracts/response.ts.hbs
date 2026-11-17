@@ -6,14 +6,14 @@ import { cursorPageSchema } from "../../../common/pagination.js";
 
 export const {{camelCase aggregate}}Schema = z.object({
 {{#if isSerial}}
-  id: z.number().int().positive().describe("ID (양의 정수)"),
+  id: z.int().positive().meta({ description: "ID (양의 정수)" }),
 {{else}}
-  id: entityIdSchema.describe("ID"),
+  id: entityIdSchema.meta({ description: "ID" }),
 {{/if}}
-  userId: entityIdSchema.describe("사용자 ID"),
-  name: z.string().describe("이름"),
-  createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC)"),
-  updatedAt: datetimeSchema.describe("수정 시각 (ISO 8601 UTC)"),
+  userId: entityIdSchema.meta({ description: "사용자 ID" }),
+  name: z.string().meta({ description: "이름" }),
+  createdAt: datetimeSchema.meta({ description: "생성 시각 (ISO 8601 UTC)" }),
+  updatedAt: datetimeSchema.meta({ description: "수정 시각 (ISO 8601 UTC)" }),
 });
 
 export type {{pascalCase aggregate}} = z.infer<typeof {{camelCase aggregate}}Schema>;
@@ -27,7 +27,7 @@ export type {{pascalCase aggregate}}DetailResponse = z.infer<typeof {{camelCase 
 export const {{camelCase aggregate}}ListResponseSchema = cursorPageSchema(
   {{camelCase aggregate}}Schema,
 {{#if isSerial}}
-  z.number().int(),
+  z.int(),
 {{else}}
   entityIdSchema,
 {{/if}}

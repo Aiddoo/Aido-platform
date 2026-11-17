@@ -4,13 +4,14 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 ## 경계와 소유
 
-| 경계                   | 소유                                                                 |
-| ---------------------- | -------------------------------------------------------------------- |
-| `@aido/api`            | 요청·응답 Zod schema, inferred type, 성공 envelope, 공용 pagination  |
-| `@aido/api/errors`     | 안정된 오류 code·HTTP 오류 계약·공개 details                         |
-| `@aido/api/vocabulary` | Zod·HTTP·ORM 없는 순수 상수·튜플                                     |
-| presentation           | DTO 검증, DTO → Command 변환(문자열 → Temporal 포함), 응답 매핑·문구 |
-| Application·Domain     | 계약 타입을 모른다(lint로 막는다)                                    |
+| 경계                                  | 소유                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `@aido/api/contracts/<resource>/v<n>` | 요청·응답 Zod schema, inferred type                                  |
+| `@aido/api/common`                    | 성공 envelope, 공용 pagination·날짜·id schema                        |
+| `@aido/api/errors`                    | 안정된 오류 code·HTTP 오류 계약·공개 details                         |
+| `@aido/api/vocabulary`                | Zod·HTTP·ORM 없는 순수 상수·튜플                                     |
+| presentation                          | DTO 검증, DTO → Command 변환(문자열 → Temporal 포함), 응답 매핑·문구 |
+| Application·Domain                    | 계약 타입을 모른다(lint로 막는다)                                    |
 
 ## Controller
 

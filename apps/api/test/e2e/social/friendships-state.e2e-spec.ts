@@ -1,4 +1,4 @@
-import type { FriendUser } from "@aido/api";
+import type { FriendUser } from "@aido/api/contracts/follow/v1";
 import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 

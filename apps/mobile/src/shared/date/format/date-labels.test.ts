@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/api';
+import type { DayOfWeek } from '@aido/api/vocabulary';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { createDateKey } from '@src/testing/date-key';

@@ -1,4 +1,4 @@
-import { weatherConditionsSchema, weatherForecastSchema } from "@aido/api";
+import { weatherConditionsSchema, weatherForecastSchema } from "@aido/api/contracts/weather/v1";
 import request from "supertest";
 
 import { AirQualityProviderPort } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";

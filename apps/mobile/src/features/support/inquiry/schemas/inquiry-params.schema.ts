@@ -1,4 +1,4 @@
-import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api';
+import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
 export const inquiryParamsSchema = z.object({

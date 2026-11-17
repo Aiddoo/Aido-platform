@@ -3,7 +3,7 @@ import type {
   CreateRemindNudgeResponse,
   NudgeCooldownInfo as NudgeCooldownInfoDto,
   NudgeLimitInfo as NudgeLimitInfoDto,
-} from '@aido/api';
+} from '@aido/api/contracts/nudge/v1';
 import { toNullableInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 

@@ -1,4 +1,4 @@
-import type { PreferenceResponse } from '@aido/api';
+import type { PreferenceResponse } from '@aido/api/contracts/user-preference/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 

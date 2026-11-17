@@ -4,7 +4,7 @@ import {
   invitedFriendsListResponseSchema,
   redeemInviteRequestSchema,
   redeemInviteResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/invite/v1";
 import type { RedemptionRejectionReason, RedemptionStatus } from "@aido/api/vocabulary";
 import type { z } from "zod";
 

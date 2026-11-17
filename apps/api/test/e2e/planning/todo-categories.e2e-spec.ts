@@ -5,7 +5,7 @@
  * TodoCategory CRUD 전체 플로우 테스트
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
-import { friendTodoListResponseSchema } from "@aido/api";
+import { friendTodoListResponseSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";

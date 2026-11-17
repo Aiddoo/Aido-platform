@@ -2,7 +2,7 @@ import {
   getForecastQuerySchema,
   weatherConditionsSchema,
   weatherForecastSchema,
-} from "@aido/api/contracts/weather";
+} from "@aido/api/contracts/weather/v1";
 import type { z } from "zod";
 
 export const GetForecastQueryDto = getForecastQuerySchema.meta({

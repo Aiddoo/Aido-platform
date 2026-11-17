@@ -1,4 +1,4 @@
-import type { CreateInquiryResponse } from "@aido/api/contracts/inquiry";
+import type { CreateInquiryResponse } from "@aido/api/contracts/inquiry/v1";
 
 // 출시 앱 계약 필드라 문구를 그대로 둔다
 const INQUIRY_RESPONSE_MESSAGES = {

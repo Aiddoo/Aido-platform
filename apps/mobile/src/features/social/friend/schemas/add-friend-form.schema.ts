@@ -1,4 +1,4 @@
-import { userTagParamSchema } from '@aido/api';
+import { userTagParamSchema } from '@aido/api/contracts/follow/v1';
 import type { z } from 'zod';
 
 export const addFriendFormSchema = userTagParamSchema;

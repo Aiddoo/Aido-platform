@@ -18,7 +18,7 @@ import {
   resetPasswordResponseSchema,
   unlinkAccountResponseSchema,
   type VerifyEmailInput,
-} from '@aido/api';
+} from '@aido/api/contracts/auth/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';

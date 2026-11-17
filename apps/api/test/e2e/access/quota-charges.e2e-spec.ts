@@ -1,10 +1,6 @@
-import {
-  entitlementSnapshotSchema,
-  notChargedErrorDetailsSchema,
-  parseTodoResponseSchema,
-  quotaErrorDetailsSchema,
-} from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import { parseTodoResponseSchema } from "@aido/api/contracts/ai/v1";
+import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement/v1";
+import { notChargedErrorDetailsSchema, quotaErrorDetailsSchema, ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";

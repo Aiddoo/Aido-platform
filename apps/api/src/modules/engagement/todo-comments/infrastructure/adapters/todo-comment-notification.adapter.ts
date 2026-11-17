@@ -1,4 +1,4 @@
-import { todoCommentNotificationRoutingSchema } from "@aido/api/contracts/notification";
+import { todoCommentNotificationRoutingSchema } from "@aido/api/contracts/notification/v1";
 import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 

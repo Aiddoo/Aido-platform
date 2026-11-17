@@ -1,4 +1,4 @@
-import { createTodoCategorySchema } from '@aido/api';
+import { createTodoCategorySchema } from '@aido/api/contracts/todo-category/v1';
 import type { z } from 'zod';
 
 import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category.constants';

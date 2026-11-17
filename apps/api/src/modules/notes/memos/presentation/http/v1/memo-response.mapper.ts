@@ -6,7 +6,7 @@ import type {
   MemoListResponse,
   MemoMutationResponse,
   MemoResourceLimitResponse,
-} from "@aido/api/contracts/memo";
+} from "@aido/api/contracts/memo/v1";
 import { pick } from "es-toolkit";
 
 import {

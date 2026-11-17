@@ -1,4 +1,4 @@
-import { publishAppReleaseResponseSchema } from "@aido/api/contracts/app-config";
+import { publishAppReleaseResponseSchema } from "@aido/api/contracts/app-config/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";

@@ -1,4 +1,4 @@
-import type { AppVersionResponse } from "@aido/api/contracts/app-config";
+import type { AppVersionResponse } from "@aido/api/contracts/app-config/v1";
 
 import type { AppRelease } from "../../../domain/app-release.aggregate.js";
 

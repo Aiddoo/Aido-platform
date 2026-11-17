@@ -22,7 +22,8 @@ export function cursorPageSchema<TItem extends z.ZodType, TCursor extends z.ZodT
   });
 
   return z.object({
-    items: descriptions == null ? items : items.describe(descriptions.items),
-    pagination: descriptions == null ? pagination : pagination.describe(descriptions.pagination),
+    items: descriptions == null ? items : items.meta({ description: descriptions.items }),
+    pagination:
+      descriptions == null ? pagination : pagination.meta({ description: descriptions.pagination }),
   });
 }

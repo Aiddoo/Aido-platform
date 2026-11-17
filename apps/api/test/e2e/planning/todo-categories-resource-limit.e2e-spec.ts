@@ -1,4 +1,5 @@
-import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
+import { quotaErrorDetailsSchema } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**

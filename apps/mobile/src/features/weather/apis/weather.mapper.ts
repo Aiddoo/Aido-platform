@@ -1,4 +1,8 @@
-import type { WeatherBriefing, WeatherLocationResponse, WeatherReportResponse } from '@aido/api';
+import type {
+  WeatherBriefing,
+  WeatherLocationResponse,
+  WeatherReportResponse,
+} from '@aido/api/contracts/weather/v2';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { isPlainObject, uniq } from 'es-toolkit';

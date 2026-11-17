@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config";
+import type { FeatureDiscoveryResponse } from "@aido/api/contracts/app-config/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

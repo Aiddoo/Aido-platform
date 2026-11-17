@@ -1,15 +1,17 @@
 import {
-  type CreateTodoInput,
   type DailyCompletionSummary as DailyCompletionSummaryDto,
   type DailyCompletionsRangeResponse,
+} from '@aido/api/contracts/daily-completion/v1';
+import { type TodoDetailsResponse } from '@aido/api/contracts/todo-comment/v1';
+import {
+  type CreateTodoInput,
   type FriendTodoListResponse,
   type Todo as TodoDto,
-  type TodoDetailsResponse,
   type TodoListResponse,
   type TodoOverviewResponse,
   type TodoSummaryResponse,
   type UpdateTodoInput,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toNullableInstant } from '@src/shared/date/instant';
 

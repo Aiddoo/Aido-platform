@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/api";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 
 import { AiDataSharingConsentReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";

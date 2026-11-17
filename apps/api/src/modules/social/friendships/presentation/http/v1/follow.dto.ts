@@ -14,7 +14,7 @@ import {
   searchUsersQuerySchema,
   searchUsersResponseSchema,
   userTagParamSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/follow/v1";
 import { ApiProperty } from "@nestjs/swagger";
 import type { z } from "zod";
 

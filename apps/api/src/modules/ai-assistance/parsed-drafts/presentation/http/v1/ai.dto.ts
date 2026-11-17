@@ -4,7 +4,7 @@ import {
   parseMemoResponseSchema,
   parseTodoRequestSchema,
   parseTodoResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import type { z } from "zod";
 
 export const ParseTodoRequestDto = parseTodoRequestSchema.meta({ id: "ParseTodoRequestDto" });

@@ -5,7 +5,7 @@ import {
   inviteRewardSchema,
   myInviteResponseSchema,
   redeemInviteResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/invite/v1';
 import { REWARD_TYPE_UNKNOWN } from '@aido/api/vocabulary';
 import { z } from 'zod';
 

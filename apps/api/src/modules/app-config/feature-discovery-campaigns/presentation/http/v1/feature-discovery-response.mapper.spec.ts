@@ -1,4 +1,4 @@
-import { featureDiscoveryResponseSchema } from "@aido/api/contracts/app-config";
+import { featureDiscoveryResponseSchema } from "@aido/api/contracts/app-config/v1";
 
 import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
 

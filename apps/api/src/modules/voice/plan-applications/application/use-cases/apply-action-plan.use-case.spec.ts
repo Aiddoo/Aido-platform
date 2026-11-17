@@ -1,10 +1,12 @@
-import type { TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { PlanMemoReadModel } from "#api/modules/notes/memos/notes-memos.public";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
-import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
+import type {
+  StagedTodoCreatorPort,
+  TodoReadModel,
+} from "#api/modules/planning/todos/planning-todos.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";

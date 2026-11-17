@@ -9,7 +9,7 @@ import {
   nudgeInteractionsResponseSchema,
   nudgeLimitInfoSchema,
   sendNudgeThanksResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/nudge/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';

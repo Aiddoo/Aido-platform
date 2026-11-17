@@ -1,8 +1,5 @@
-import type {
-  TodoCommentCursorPagination,
-  TodoCommentV2,
-  TodoCommentV2Author,
-} from "@aido/api/contracts/todo-comment";
+import type { TodoCommentCursorPagination } from "@aido/api/contracts/todo-comment/v1";
+import type { TodoComment, TodoCommentAuthor } from "@aido/api/contracts/todo-comment/v2";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";
@@ -24,7 +21,7 @@ export function toVisibleTodoCommentResponse(
   comment: TodoCommentReadModel,
   viewer: TodoCommentViewerReadModel,
   appVersion?: string,
-): TodoCommentV2 {
+): TodoComment {
   const isAuthorBlocked = viewer.blockedAuthorIds.has(comment.authorId);
   const isHidden = comment.deletedAt != null || isAuthorBlocked;
   const isReplyTargetAuthorBlocked =
@@ -80,7 +77,7 @@ export function findVisiblePreviewReply(
 function toParticipantAuthorResponse(
   author: TodoCommentParticipantAuthorReadModel,
   appVersion?: string,
-): TodoCommentV2Author {
+): TodoCommentAuthor {
   return {
     id: author.id,
     name: author.name,
@@ -94,7 +91,7 @@ export function toVisibleParticipantAuthorResponses(
   item: TodoCommentThreadItemReadModel,
   viewer: TodoCommentViewerReadModel,
   appVersion?: string,
-): TodoCommentV2Author[] {
+): TodoCommentAuthor[] {
   return item.participantAuthors
     .filter((author) => !viewer.blockedAuthorIds.has(author.id))
     .map((author) => toParticipantAuthorResponse(author, appVersion));

@@ -1,4 +1,4 @@
-import { appVersionResponseSchema } from '@aido/api';
+import { appVersionResponseSchema } from '@aido/api/contracts/app-config/v1';
 
 import { appVersionConfigSchema } from '../domains/app-version.model';
 import { toAppVersionConfig } from './app-version.mapper';

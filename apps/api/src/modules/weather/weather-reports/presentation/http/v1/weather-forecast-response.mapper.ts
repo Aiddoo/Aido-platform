@@ -1,4 +1,4 @@
-import type { WeatherForecastResponse } from "@aido/api/contracts/weather";
+import type { WeatherForecastResponse } from "@aido/api/contracts/weather/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

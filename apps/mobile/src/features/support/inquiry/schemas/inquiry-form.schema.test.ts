@@ -1,4 +1,5 @@
-import { createInquirySchema, INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api';
+import { createInquirySchema } from '@aido/api/contracts/inquiry/v1';
+import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 
 import { inquiryFormSchema } from './inquiry-form.schema';
 

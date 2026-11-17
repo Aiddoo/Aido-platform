@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { todoRepeatSchema } from "@aido/api";
+import { todoRepeatSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { z } from "zod";
 

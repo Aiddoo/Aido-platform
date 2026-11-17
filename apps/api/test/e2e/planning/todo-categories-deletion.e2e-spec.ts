@@ -1,9 +1,9 @@
 import {
-  createTodoResponseSchema,
   deleteTodoCategoryResponseSchema,
   todoCategoryDeletionPreviewSchema,
   todoCategoryListResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-category/v1";
+import { createTodoResponseSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { eq } from "drizzle-orm";
 import request from "supertest";

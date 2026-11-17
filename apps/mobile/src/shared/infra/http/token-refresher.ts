@@ -1,4 +1,4 @@
-import { refreshTokensSchema } from '@aido/api/contracts/auth';
+import { refreshTokensSchema } from '@aido/api/contracts/auth/v1';
 import { HttpStatus } from '@aido/api/errors';
 import type { SessionExpiredDetails } from '@src/core/observability/telemetry-event';
 import type { AppLogger } from '@src/core/ports/app-logger';

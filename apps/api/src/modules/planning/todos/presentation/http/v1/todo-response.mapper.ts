@@ -1,4 +1,4 @@
-import type { FriendTodo, Todo } from "@aido/api";
+import type { FriendTodo, Todo } from "@aido/api/contracts/todo/v1";
 import { sumBy } from "es-toolkit";
 
 import { toTodoRepeat } from "#api/modules/planning/todo-series/planning-todo-series.public";

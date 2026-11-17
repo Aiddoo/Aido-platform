@@ -2,7 +2,7 @@ import {
   type RevenueCatWebhookPayload,
   revenueCatTransferWebhookPayloadSchema,
   revenueCatWebhookPayloadSchema,
-} from "@aido/api/contracts/subscription";
+} from "@aido/api/contracts/subscription/v1";
 import { match } from "ts-pattern";
 
 import { toStorePeriodType } from "../../../../shared/domain/store-period-type.domain-service.js";

@@ -1,6 +1,6 @@
 # 할 일 카테고리
 
-카테고리 삭제의 규칙·부수효과·잠금·성능을 바꿀 때 읽는다. 계약은 `@aido/api/contracts/todo-category`, 호환 범위는 [호환](../../../docs/conventions/compatibility.md)이다.
+카테고리 삭제의 규칙·부수효과·잠금·성능을 바꿀 때 읽는다. 계약은 `@aido/api/contracts/todo-category/v1`, 호환 범위는 [호환](../../../docs/conventions/compatibility.md)이다.
 
 ## 삭제 흐름
 

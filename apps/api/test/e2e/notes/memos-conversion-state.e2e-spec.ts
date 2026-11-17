@@ -1,4 +1,5 @@
-import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
+import { convertMemoToTodosResponseSchema } from "@aido/api/contracts/memo/v1";
+import { todoSchema } from "@aido/api/contracts/todo/v1";
 import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 

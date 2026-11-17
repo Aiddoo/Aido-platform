@@ -1,4 +1,7 @@
-import type { NudgeInteractionResponse, NudgeInteractionsResponse } from '@aido/api';
+import type {
+  NudgeInteractionResponse,
+  NudgeInteractionsResponse,
+} from '@aido/api/contracts/nudge/v1';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
 import type {

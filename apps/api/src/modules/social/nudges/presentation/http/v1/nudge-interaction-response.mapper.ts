@@ -2,7 +2,7 @@ import type {
   NudgeInteractionResponse,
   NudgeInteractionsResponse,
   NudgeThanksPreviewResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/nudge/v1";
 
 import type { CursorPage } from "#api/shared/application/cursor-page";
 

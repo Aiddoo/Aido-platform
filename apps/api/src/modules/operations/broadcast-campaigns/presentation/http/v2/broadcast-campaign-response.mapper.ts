@@ -1,7 +1,7 @@
 import type {
   BroadcastCampaign as BroadcastCampaignResponse,
   BroadcastCampaignAccepted,
-} from "@aido/api/contracts/admin";
+} from "@aido/api/contracts/admin/v2";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

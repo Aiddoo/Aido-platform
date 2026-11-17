@@ -14,18 +14,18 @@
 import { createHash, createHmac } from "node:crypto";
 import { parseArgs } from "node:util";
 
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
 import {
-  currentUserSchema,
   deleteTodoCommentResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
   todoCommentOverviewResponseSchema,
   todoConversationResponseSchema,
   todoDetailsResponseSchema,
-  z,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment/v1";
 import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/api/errors";
 import { and, count, eq, inArray, isNull, or } from "drizzle-orm";
+import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {

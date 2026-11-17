@@ -25,7 +25,7 @@ export const todoCommentNotificationRoutingSchema = z
     threadRootId: todoCommentIdSchema,
     activityKind: notificationActivityKindSchema,
   })
-  .describe("댓글 알림 라우팅");
+  .meta({ description: "댓글 알림 라우팅" });
 
 export type TodoCommentNotificationRouting = z.infer<typeof todoCommentNotificationRoutingSchema>;
 
@@ -46,16 +46,24 @@ export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.pa
     .max(64)
     .optional()
     .catch(undefined)
-    .describe("알림을 보낸 사용자 ID (응원 알림)"),
+    .meta({ description: "알림을 보낸 사용자 ID (응원 알림)" }),
   senderName: z
     .string()
     .min(1)
     .max(100)
     .optional()
     .catch(undefined)
-    .describe("알림을 보낸 사용자 표시 이름 (응원 알림)"),
-  todoOwnerId: z.string().min(1).optional().catch(undefined).describe("할 일 주인 사용자 ID"),
-  todoDate: dateSchema.optional().catch(undefined).describe("할 일 날짜 (YYYY-MM-DD, 시작일)"),
+    .meta({ description: "알림을 보낸 사용자 표시 이름 (응원 알림)" }),
+  todoOwnerId: z
+    .string()
+    .min(1)
+    .optional()
+    .catch(undefined)
+    .meta({ description: "할 일 주인 사용자 ID" }),
+  todoDate: dateSchema
+    .optional()
+    .catch(undefined)
+    .meta({ description: "할 일 날짜 (YYYY-MM-DD, 시작일)" }),
 });
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
@@ -64,22 +72,22 @@ export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 /** 푸시 알림 data. 구버전 앱은 모르는 키를 버리므로 필드는 추가만 한다. */
 export const pushNotificationDataSchema = z.object({
-  notificationId: z.number().int().nonnegative(),
-  type: notificationTypeSchema.describe(
-    "알림 타입. 1.14.0 이하 앱은 type·action·context·routing으로 목적지를 정하므로 navigation과 함께 계속 싣는다",
-  ),
+  notificationId: z.int().nonnegative(),
+  type: notificationTypeSchema.meta({
+    description:
+      "알림 타입. 1.14.0 이하 앱은 type·action·context·routing으로 목적지를 정하므로 navigation과 함께 계속 싣는다",
+  }),
   action: notificationActionSchema,
   context: notificationContextSchema
     .optional()
-    .describe("1.14.0 이하 앱 호환용 이동 재료. 새 앱은 navigation을 읽는다"),
-  routing: notificationRoutingSchema
-    .optional()
-    .describe(
+    .meta({ description: "1.14.0 이하 앱 호환용 이동 재료. 새 앱은 navigation을 읽는다" }),
+  routing: notificationRoutingSchema.optional().meta({
+    description:
       "1.14.0 이하 앱 호환용 이동 재료(댓글·할 일 주인·보낸 사람). 새 앱은 navigation을 읽는다",
-    ),
+  }),
   // 모양이 맞지 않으면 navigation만 버려 type·action으로 이동하던 기존 경로를 잃지 않는다
   navigation: notificationNavigationSchema.optional().catch(undefined),
-  dispatchId: z.number().int().positive().optional(),
+  dispatchId: z.int().positive().optional(),
   campaignKey: z.string().max(100).optional(),
   variantId: z.string().max(100).optional(),
   purpose: z.enum(NOTIFICATION_PURPOSES).optional(),

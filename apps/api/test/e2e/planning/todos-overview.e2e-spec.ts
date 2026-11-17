@@ -1,5 +1,5 @@
-import { createTodoResponseSchema, todoOverviewResponseSchema } from "@aido/api";
 import { successEnvelopeSchema } from "@aido/api/common";
+import { createTodoResponseSchema, todoOverviewResponseSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 

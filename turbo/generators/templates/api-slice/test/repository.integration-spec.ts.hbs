@@ -33,7 +33,7 @@ describe("Drizzle{{pascalCase aggregate}}Repository (실제 PostgreSQL)", () => 
   });
 
   describe{{pascalCase aggregate}}RepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new Drizzle{{pascalCase aggregate}}Repository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new Drizzle{{pascalCase aggregate}}Repository(transactionHost);
   });
 });

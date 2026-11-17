@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { INQUIRY_CATEGORY } from '@aido/api';
+import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';

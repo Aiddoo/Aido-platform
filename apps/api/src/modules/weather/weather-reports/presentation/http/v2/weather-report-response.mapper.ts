@@ -2,7 +2,7 @@ import type {
   WeatherBriefing as WeatherBriefingResponse,
   WeatherDayPartForecast,
   WeatherReportResponse,
-} from "@aido/api/contracts/weather";
+} from "@aido/api/contracts/weather/v2";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

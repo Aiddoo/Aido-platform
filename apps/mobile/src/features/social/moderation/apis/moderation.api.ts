@@ -1,10 +1,10 @@
-import type { CreateUserReportInput } from '@aido/api';
 import {
   blockedUsersResponseSchema,
   blockUserResponseSchema,
-  createUserReportResponseSchema,
   unblockUserResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/user-block/v1';
+import type { CreateUserReportInput } from '@aido/api/contracts/user-report/v1';
+import { createUserReportResponseSchema } from '@aido/api/contracts/user-report/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { noop } from 'es-toolkit';

@@ -1,4 +1,4 @@
-import { TODO_LIMITS } from "@aido/api";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 /**
  * Todo 리소스 제한 E2E 테스트

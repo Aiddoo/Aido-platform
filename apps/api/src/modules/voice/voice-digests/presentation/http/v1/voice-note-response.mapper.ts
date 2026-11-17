@@ -1,4 +1,4 @@
-import type { VoiceNoteDigestResponse } from "@aido/api/contracts/voice";
+import type { VoiceNoteDigestResponse } from "@aido/api/contracts/voice/v1";
 
 import { toActionPlanResponse } from "#api/modules/voice/plan-applications/voice-plan-applications.public";
 

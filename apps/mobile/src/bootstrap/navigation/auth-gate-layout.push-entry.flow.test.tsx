@@ -1,4 +1,7 @@
-import type { NotificationNavigation, NotificationNavigationKind } from '@aido/api';
+import type {
+  NotificationNavigation,
+  NotificationNavigationKind,
+} from '@aido/api/contracts/notification/v1';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { err, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';

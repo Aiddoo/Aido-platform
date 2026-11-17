@@ -4,7 +4,7 @@ import {
   parsedMemoDataSchema,
   type ParsedTodoData,
   parsedTodoDataSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/ai/v1";
 import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";

@@ -3,7 +3,7 @@ import type {
   NotificationListResponse,
   PushDeviceResponse,
   UnreadCountResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import {
   markReadResponseSchema,
   notificationInboxResponseSchema,
@@ -11,7 +11,7 @@ import {
   pushDeviceResponseSchema,
   unreadCountResponseSchema,
   type MarkReadResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';

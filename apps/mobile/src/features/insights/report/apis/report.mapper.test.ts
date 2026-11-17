@@ -1,4 +1,4 @@
-import { aiReportResponseSchema, reportStatusResponseSchema } from '@aido/api';
+import { aiReportResponseSchema, reportStatusResponseSchema } from '@aido/api/contracts/ai/v1';
 
 import { reportStatusSchema } from '../domains/report-status.model';
 import { aiReportSchema } from '../domains/report.model';

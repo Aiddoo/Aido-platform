@@ -1,4 +1,4 @@
-import { PUSH_PERMISSION_STATUS } from '@aido/api';
+import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { match } from 'ts-pattern';
 

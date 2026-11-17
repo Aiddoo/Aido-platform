@@ -2,7 +2,7 @@ import {
   broadcastNotificationSchema,
   broadcastResultSchema,
   targetedNotificationSchema,
-} from "@aido/api/contracts/admin";
+} from "@aido/api/contracts/admin/v1";
 import type { z } from "zod";
 
 export const BroadcastNotificationDto = broadcastNotificationSchema.meta({

@@ -12,8 +12,8 @@
  * 4. 읽음 처리
  */
 
-import { PLAN_CATALOG, quotaErrorDetailsSchema } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
+import { quotaErrorDetailsSchema, ErrorCode } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import request from "supertest";
 
 import { toIsoString } from "#api/shared/domain/time/instant";

@@ -16,7 +16,7 @@ export const getTodoCommentThreadsQuerySchema = z
     size: todoCommentPageSizeSchema(TODO_COMMENT_LIMITS.DEFAULT_PAGE_SIZE),
     anchorCommentId: todoCommentIdSchema
       .optional()
-      .describe("이 댓글(또는 답글)이 속한 묶음이 든 페이지를 받는다"),
+      .meta({ description: "이 댓글(또는 답글)이 속한 묶음이 든 페이지를 받는다" }),
   })
   .check(({ value, issues }) => {
     if (value.cursor != null && value.anchorCommentId != null) {
@@ -28,7 +28,7 @@ export const getTodoCommentThreadsQuerySchema = z
       });
     }
   })
-  .describe("할 일 댓글 묶음 목록 조회 쿼리");
+  .meta({ description: "할 일 댓글 묶음 목록 조회 쿼리" });
 
 export const getTodoCommentRepliesQuerySchema = z
   .object({
@@ -36,7 +36,7 @@ export const getTodoCommentRepliesQuerySchema = z
     size: todoCommentPageSizeSchema(TODO_COMMENT_LIMITS.REPLY_PAGE_DEFAULT_SIZE),
     aroundReplyId: todoCommentIdSchema
       .optional()
-      .describe("이 답글이 든 페이지를 받는다 (알림으로 연 답글 강조)"),
+      .meta({ description: "이 답글이 든 페이지를 받는다 (알림으로 연 답글 강조)" }),
   })
   .check(({ value, issues }) => {
     if (value.cursor != null && value.aroundReplyId != null) {
@@ -48,7 +48,7 @@ export const getTodoCommentRepliesQuerySchema = z
       });
     }
   })
-  .describe("댓글 묶음의 답글 목록 조회 쿼리");
+  .meta({ description: "댓글 묶음의 답글 목록 조회 쿼리" });
 
 export type GetTodoCommentThreadsQuery = z.infer<typeof getTodoCommentThreadsQuerySchema>;
 export type GetTodoCommentRepliesQuery = z.infer<typeof getTodoCommentRepliesQuerySchema>;

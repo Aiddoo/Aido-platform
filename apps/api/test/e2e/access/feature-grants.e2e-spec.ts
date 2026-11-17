@@ -1,4 +1,5 @@
-import { currentUserSchema, entitlementSnapshotSchema } from "@aido/api";
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
+import { entitlementSnapshotSchema } from "@aido/api/contracts/entitlement/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG, PLAN_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";

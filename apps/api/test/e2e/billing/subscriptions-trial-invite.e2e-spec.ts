@@ -1,4 +1,5 @@
-import { currentUserSchema, type RevenueCatWebhookPayload } from "@aido/api";
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
+import { type RevenueCatWebhookPayload } from "@aido/api/contracts/subscription/v1";
 import request from "supertest";
 
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";

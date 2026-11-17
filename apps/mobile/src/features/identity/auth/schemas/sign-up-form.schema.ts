@@ -1,4 +1,4 @@
-import { registerSchema } from '@aido/api';
+import { registerSchema } from '@aido/api/contracts/auth/v1';
 import { z } from 'zod';
 
 const { email, password, passwordConfirm, name } = registerSchema.shape;

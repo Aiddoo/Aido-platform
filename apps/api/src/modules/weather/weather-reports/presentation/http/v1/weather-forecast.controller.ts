@@ -1,7 +1,7 @@
 import type {
   WeatherConditions as WeatherConditionsResponse,
   WeatherForecastResponse,
-} from "@aido/api/contracts/weather";
+} from "@aido/api/contracts/weather/v1";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 

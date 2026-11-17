@@ -1,5 +1,5 @@
-import { PLAN_CATALOG } from "@aido/api";
 import { friendQuotaErrorDetailsSchema } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**

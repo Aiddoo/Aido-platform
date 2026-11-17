@@ -7,7 +7,7 @@ import type {
   resendVerificationSchema,
   resetPasswordSchema,
   verifyEmailSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/auth/v1';
 import type { z } from 'zod';
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

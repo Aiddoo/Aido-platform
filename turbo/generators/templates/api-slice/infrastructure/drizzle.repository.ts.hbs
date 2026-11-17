@@ -20,14 +20,14 @@ import { to{{pascalCase aggregate}}, to{{pascalCase aggregate}}Row } from "./{{a
 
 @Injectable()
 export class Drizzle{{pascalCase aggregate}}Repository implements {{pascalCase aggregate}}RepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   get #db() {
-    return this.#txHost.tx;
+    return this.#transactionHost.tx;
   }
 
 {{#if isSerial}}

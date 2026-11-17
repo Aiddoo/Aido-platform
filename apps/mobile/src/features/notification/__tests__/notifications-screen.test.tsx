@@ -1,4 +1,4 @@
-import type { NotificationInboxItem } from '@aido/api';
+import type { NotificationInboxItem } from '@aido/api/contracts/notification/v1';
 import { NOTIFICATION_CATEGORY } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createHttpClientStub, createTestDi } from '@src/testing/core';

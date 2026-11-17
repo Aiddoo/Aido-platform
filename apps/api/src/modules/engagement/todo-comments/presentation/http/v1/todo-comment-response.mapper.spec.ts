@@ -1,4 +1,4 @@
-import { todoConversationItemSchema } from "@aido/api/contracts/todo-comment";
+import { todoConversationItemSchema } from "@aido/api/contracts/todo-comment/v1";
 
 import {
   createTodoCommentReadModelFixture,

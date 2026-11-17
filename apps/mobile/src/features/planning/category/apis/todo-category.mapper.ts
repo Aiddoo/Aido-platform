@@ -3,7 +3,7 @@ import type {
   TodoCategory as TodoCategoryDto,
   TodoCategoryDeletionPreview as TodoCategoryDeletionPreviewDto,
   TodoCategoryWithCount as TodoCategoryWithCountDto,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-category/v1';
 import { pick } from 'es-toolkit';
 
 import type {

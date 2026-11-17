@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { and, asc, eq, sql } from "drizzle-orm";

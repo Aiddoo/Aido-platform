@@ -1,4 +1,4 @@
-import type { TodoRepeat } from "@aido/api";
+import type { TodoRepeat } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
