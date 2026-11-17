@@ -11,6 +11,7 @@ import {
   pushToken,
   user as userTable,
 } from "#api/platform/database/schema/index";
+import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { UserFixture } from "#test/fixtures/index";
@@ -22,6 +23,7 @@ const NOTIFICATION_CUTOFF = NOW.subtract({ hours: 24 * 180 });
 const DISPATCH_CUTOFF = NOW.subtract({ hours: 24 * 30 });
 const RESERVATION_CUTOFF = NOW.subtract({ hours: 48 });
 const JUST_BEFORE = { milliseconds: 1 } as const;
+const BROADCAST_CAMPAIGN_KEY = "admin-broadcast:campaign-1";
 
 describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () => {
   const database = new TestDatabase();
@@ -53,6 +55,7 @@ describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () =>
         clock,
         logger: new SilentLogger(),
       }),
+      notificationCache: new PassThroughNotificationCache(),
       clock,
       logger: new SilentLogger(),
     });
@@ -77,10 +80,11 @@ describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () =>
     notificationId: number,
     status: (typeof pushDispatch.$inferInsert)["status"],
     times: { readonly scheduledAt: Temporal.Instant; readonly updatedAt: Temporal.Instant },
+    campaignKey: string | null = null,
   ): Promise<number> {
     const [row] = await client
       .insert(pushDispatch)
-      .values({ notificationId, userId, purpose: "TRANSACTIONAL", status, ...times })
+      .values({ notificationId, userId, purpose: "TRANSACTIONAL", status, campaignKey, ...times })
       .returning({ id: pushDispatch.id });
     if (row == null) {
       throw new Error("발송을 넣지 못했다");
@@ -163,9 +167,13 @@ describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () =>
       { scheduledAt: old, updatedAt: NOW },
     );
     const broadcast = await insertDispatch(
-      await insertNotification("캠페인", NOW, { type: "ADMIN_BROADCAST" }),
+      await insertNotification("캠페인", NOW, {
+        type: "ADMIN_BROADCAST",
+        campaignKey: BROADCAST_CAMPAIGN_KEY,
+      }),
       "SENT",
       { scheduledAt: old, updatedAt: old },
+      BROADCAST_CAMPAIGN_KEY,
     );
     const [token] = await client
       .insert(pushToken)
@@ -206,6 +214,70 @@ describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () =>
       "최근에 바뀜",
       "캠페인",
     ]);
+  });
+
+  it("예약 시각이 같은 끝난 발송이 한 묶음(500개)보다 많아도 한 실행에서 이어 지운다", async () => {
+    // Given
+    const old = DISPATCH_CUTOFF.subtract({ hours: 24 });
+    const notifications = await client
+      .insert(notification)
+      .values(
+        Array.from({ length: 501 }, (_, index) => ({
+          userId,
+          type: "SYSTEM_NOTICE" as const,
+          title: `같은 예약 ${index}`,
+          body: "본문",
+          createdAt: NOW,
+        })),
+      )
+      .returning({ id: notification.id });
+    await client.insert(pushDispatch).values(
+      notifications.map(({ id }) => ({
+        notificationId: id,
+        userId,
+        purpose: "TRANSACTIONAL" as const,
+        status: "SENT" as const,
+        scheduledAt: old,
+        updatedAt: old,
+      })),
+    );
+
+    // When
+    await createPurge().execute();
+
+    // Then
+    expect(await remainingDispatchIds()).toEqual([]);
+  });
+
+  it("관리자 캠페인 발송은 30일이 지나도 남고 알림이 180일을 넘기면 알림과 함께 지워진다", async () => {
+    // Given
+    const expired = NOTIFICATION_CUTOFF.subtract(JUST_BEFORE);
+    const kept = DISPATCH_CUTOFF.subtract({ hours: 24 });
+    await insertDispatch(
+      await insertNotification("지난 캠페인", expired, {
+        type: "ADMIN_BROADCAST",
+        campaignKey: BROADCAST_CAMPAIGN_KEY,
+      }),
+      "SENT",
+      { scheduledAt: expired, updatedAt: expired },
+      BROADCAST_CAMPAIGN_KEY,
+    );
+    const recentCampaign = await insertDispatch(
+      await insertNotification("최근 캠페인", kept, {
+        type: "ADMIN_BROADCAST",
+        campaignKey: BROADCAST_CAMPAIGN_KEY,
+      }),
+      "SENT",
+      { scheduledAt: kept, updatedAt: kept },
+      BROADCAST_CAMPAIGN_KEY,
+    );
+
+    // When
+    await createPurge().execute();
+
+    // Then
+    expect(await remainingDispatchIds()).toEqual([recentCampaign]);
+    expect(await remainingTitles()).toEqual(["최근 캠페인"]);
   });
 
   it("한도 예약은 48시간 경계 직전만 지운다", async () => {

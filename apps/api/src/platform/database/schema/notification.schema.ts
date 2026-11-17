@@ -325,6 +325,10 @@ export const pushDispatch = pgTable(
       table.status.asc().nullsLast(),
       table.scheduledAt.asc().nullsLast(),
     ),
+    // 30일 발송 정리가 180일 남기는 관리자 캠페인 발송을 건너뛰고 지울 행만 읽는다(ADMIN_BROADCAST_CAMPAIGN_KEY_PREFIX)
+    index("PushDispatch_status_scheduledAt_outside_broadcast_idx")
+      .using("btree", table.status.asc().nullsLast(), table.scheduledAt.asc().nullsLast())
+      .where(sql`(("campaignKey" IS NULL) OR ("campaignKey" NOT LIKE 'admin-broadcast:%'))`),
     index("PushDispatch_userId_localDate_purpose_idx").using(
       "btree",
       table.userId.asc().nullsLast(),

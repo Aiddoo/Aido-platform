@@ -355,12 +355,40 @@ export function describeNotificationRepositoryContract(
       });
 
       // Then
-      expect(firstBatch).toEqual({ deletedCount: 1, lastCreatedAt: first.createdAt });
+      expect(firstBatch).toEqual({
+        deletedCount: 1,
+        lastCreatedAt: first.createdAt,
+        unreadOwnerIds: [UserId.reconstitute(USER_ID)],
+      });
       expect(rest.deletedCount).toBe(1);
-      expect(untouched).toEqual({ deletedCount: 0, lastCreatedAt: null });
+      expect(untouched).toEqual({ deletedCount: 0, lastCreatedAt: null, unreadOwnerIds: [] });
       expect(
         await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "STREAK_3"),
       ).toBe(true);
+    });
+
+    it("보관 기간 정리는 안 읽은 알림이 지워진 사람만 한 번씩 돌려준다", async () => {
+      // Given
+      const { repository } = await createSubject();
+      await create(repository, { title: "안 읽음 1" });
+      await create(repository, { title: "안 읽음 2" });
+      await create(repository, { userId: OTHER_USER_ID, title: "읽음" });
+      await repository.markAllAsRead(
+        UserId.reconstitute(OTHER_USER_ID),
+        undefined,
+        Temporal.Instant.from("2026-11-18T00:00:00Z"),
+      );
+
+      // When
+      const batch = await repository.deleteCreatedBefore({
+        createdBefore: Temporal.Instant.from("2999-01-01T00:00:00Z"),
+        createdFrom: null,
+        limit: 10,
+      });
+
+      // Then
+      expect(batch.deletedCount).toBe(3);
+      expect(batch.unreadOwnerIds).toEqual([UserId.reconstitute(USER_ID)]);
     });
 
     describe("알림함 조회", () => {

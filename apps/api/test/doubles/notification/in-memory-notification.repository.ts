@@ -12,14 +12,17 @@ import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
 } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
-import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import {
+  type DeletedNotificationHistory,
+  NotificationRepositoryPort,
+} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import type { NotificationMilestone } from "#api/modules/notification/shared/domain/notification-milestone.constants";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
@@ -189,7 +192,7 @@ export class InMemoryNotificationRepository
     readonly createdBefore: Temporal.Instant;
     readonly createdFrom: Temporal.Instant | null;
     readonly limit: number;
-  }): Promise<{ readonly deletedCount: number; readonly lastCreatedAt: Temporal.Instant | null }> {
+  }): Promise<DeletedNotificationHistory> {
     const { createdBefore, createdFrom } = query;
     const deleted = [...this.#rows.values()]
       .filter(
@@ -203,7 +206,13 @@ export class InMemoryNotificationRepository
     for (const row of deleted) {
       this.#rows.delete(row.id);
     }
-    return { deletedCount: deleted.length, lastCreatedAt: deleted.at(-1)?.createdAt ?? null };
+    return {
+      deletedCount: deleted.length,
+      lastCreatedAt: deleted.at(-1)?.createdAt ?? null,
+      unreadOwnerIds: uniq(deleted.filter((row) => !row.isRead).map((row) => row.userId)).map(
+        (userId) => UserId.reconstitute(userId),
+      ),
+    };
   }
 
   async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {

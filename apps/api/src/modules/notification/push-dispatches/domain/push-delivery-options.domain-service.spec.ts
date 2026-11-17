@@ -94,6 +94,30 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
     });
   });
 
+  describe("그날만 뜻이 있는 알림은 자정까지 1분 미만이면 보내지 않는다", () => {
+    it("서울 23:59:59.5 하루 완료는 ttl 0 대신 야간 건너뜀이다", () => {
+      // When
+      const expiry = expiryOf({
+        type: "DAILY_COMPLETE",
+        now: Temporal.Instant.from("2026-11-18T14:59:59.5Z"),
+      });
+
+      // Then
+      expect(expiry).toEqual({ status: "quiet-hours" });
+    });
+
+    it("서울 23:58:59 하루 완료는 자정까지 61초 보관한다", () => {
+      // When
+      const expiry = expiryOf({
+        type: "DAILY_COMPLETE",
+        now: Temporal.Instant.from("2026-11-18T14:58:59Z"),
+      });
+
+      // Then
+      expect(expiry).toEqual({ status: "deliverable", ttlSeconds: 61 });
+    });
+  });
+
   describe("야간 전에 사라져야 하는 알림은 받는 사람 21:00까지만 보관한다", () => {
     it("서울 20:15 스트릭 위기(3시간)는 21:00까지 45분이다", () => {
       // When

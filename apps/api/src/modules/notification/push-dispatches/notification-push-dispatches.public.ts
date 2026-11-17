@@ -12,6 +12,7 @@ export type { PersistedBatchNotificationResultReadModel } from "./application/re
 export { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
 export { PurgePushDeliveryHistoryUseCase } from "./application/use-cases/purge-push-delivery-history.use-case.js";
 export { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
+export { ADMIN_BROADCAST_CAMPAIGN_KEY_PREFIX } from "./domain/push-delivery-history-retention.constants.js";
 export type { PushDeliveryMode } from "./domain/push-delivery-status.constants.js";
 export { toNotificationNavigation } from "./infrastructure/adapters/notification-navigation.mapper.js";
 export { toNotificationRouting } from "./infrastructure/adapters/notification-routing.mapper.js";

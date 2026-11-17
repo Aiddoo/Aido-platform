@@ -1,0 +1,1 @@
+CREATE INDEX "PushDispatch_status_scheduledAt_outside_broadcast_idx" ON "PushDispatch" ("status","scheduledAt") WHERE (("campaignKey" IS NULL) OR ("campaignKey" NOT LIKE 'admin-broadcast:%'));

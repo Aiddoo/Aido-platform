@@ -9,13 +9,16 @@ import {
 } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification, pushDispatch } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import { duplicateNotification } from "../../application/notifications.errors.js";
-import { type NotificationRepositoryPort } from "../../application/ports/notification.repository.port.js";
+import type {
+  DeletedNotificationHistory,
+  NotificationRepositoryPort,
+} from "../../application/ports/notification.repository.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
 import { toNotification } from "./notification-row.mapper.js";
@@ -192,7 +195,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     readonly createdBefore: Temporal.Instant;
     readonly createdFrom: Temporal.Instant | null;
     readonly limit: number;
-  }): Promise<{ readonly deletedCount: number; readonly lastCreatedAt: Temporal.Instant | null }> {
+  }): Promise<DeletedNotificationHistory> {
     const candidates = this.#db
       .select({ id: notification.id })
       .from(notification)
@@ -209,11 +212,18 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     const deleted = await this.#db
       .delete(notification)
       .where(inArray(notification.id, candidates))
-      .returning({ createdAt: notification.createdAt });
+      .returning({
+        createdAt: notification.createdAt,
+        userId: notification.userId,
+        isRead: notification.isRead,
+      });
     const lastCreatedAt = deleted
       .map(({ createdAt }) => createdAt)
       .toSorted(Temporal.Instant.compare)
       .at(-1);
-    return { deletedCount: deleted.length, lastCreatedAt: lastCreatedAt ?? null };
+    const unreadOwnerIds = uniq(
+      deleted.filter(({ isRead }) => !isRead).map(({ userId }) => userId),
+    ).map((userId) => UserId.reconstitute(userId));
+    return { deletedCount: deleted.length, lastCreatedAt: lastCreatedAt ?? null, unreadOwnerIds };
   }
 }

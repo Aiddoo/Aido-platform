@@ -101,6 +101,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   provideUseCase(PurgeNotificationHistoryUseCase, {
     notificationRepository: NotificationRepositoryPort,
     purgePushDeliveryHistory: PurgePushDeliveryHistoryUseCase,
+    notificationCache: NotificationCachePort,
     clock: ClockPort,
     logger: loggerFor(PurgeNotificationHistoryUseCase),
   }),

@@ -5,6 +5,7 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
+import { ADMIN_BROADCAST_CAMPAIGN_KEY_PREFIX } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -133,7 +134,7 @@ export class BroadcastCampaign extends AggregateRoot<BroadcastCampaignId, Broadc
 
   /** 알림·발송 행을 캠페인에 묶는 키. 발송 결과 집계가 이 키로 찾는다. */
   get campaignKey(): string {
-    return `admin-broadcast:${this.id.value}`;
+    return `${ADMIN_BROADCAST_CAMPAIGN_KEY_PREFIX}${this.id.value}`;
   }
 
   get status(): BroadcastCampaignStatus {

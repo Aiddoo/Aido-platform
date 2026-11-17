@@ -77,6 +77,8 @@ const EXPIRY_CLASS_BY_TYPE = {
 
 // 끝이 코앞인 할 일 알림도 지금 켜져 있는 기기에는 닿도록 남기는 최소 보관 시간이다
 const TODO_REMINDER_MIN_TTL_MS = MINUTE_MS;
+// 그날만 뜻이 있는 알림도 이보다 짧게는 보관하지 않는다
+const TODAY_ONLY_MIN_TTL_MS = MINUTE_MS;
 // 야간까지 이보다 덜 남았으면 보내지 않는다. 대기열·공급자 지연으로 21시를 넘겨 뜰 수 있어서다
 const QUIET_HOURS_SEND_MARGIN_MS = 5 * MINUTE_MS;
 
@@ -110,7 +112,12 @@ export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
     );
   }
   if (expiryClass === "TODAY_ONLY") {
-    candidates.push(nextLocalMidnight(now, timeZone));
+    const midnight = nextLocalMidnight(now, timeZone);
+    // 현지 자정 1분 전부터는 야간(21~08시)이고 ttl이 0에 가까워 꺼진 기기에 닿지 못하므로 야간 건너뜀으로 본다
+    if (now.until(midnight).total("milliseconds") < TODAY_ONLY_MIN_TTL_MS) {
+      return { status: "quiet-hours" };
+    }
+    candidates.push(midnight);
   }
   if (input.expiresBeforeQuietHours) {
     if (isWithinQuietHours({ instant: now, timeZone, window: PUSH_QUIET_HOURS_WINDOW })) {

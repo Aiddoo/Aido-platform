@@ -8,6 +8,8 @@ export const NotificationLogEvent = {
   NOTIFICATION_HISTORY_PURGED: "notification.delivery.notification-history.purged",
   NOTIFICATION_HISTORY_PURGE_JOB_FAILED:
     "notification.delivery.notification-history-purge.job.failed",
+  NOTIFICATION_HISTORY_PURGE_UNREAD_CACHE_FAILED:
+    "notification.delivery.notification-history-purge.unread-cache.failed",
   NOTIFICATION_HISTORY_PURGE_SCHEDULER_REGISTERED:
     "notification.delivery.notification-history-purge.scheduler.registered",
   NOTIFICATION_ACCOUNT_CLEANUP_CACHE_SETTLE_FAILED:

@@ -6,6 +6,12 @@ import type { NotificationType } from "../../../shared/domain/notification-type.
 import type { Notification } from "../../domain/notification.aggregate.js";
 import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
 
+export interface DeletedNotificationHistory {
+  readonly deletedCount: number;
+  readonly lastCreatedAt: Temporal.Instant | null;
+  readonly unreadOwnerIds: readonly UserId[];
+}
+
 export abstract class NotificationRepositoryPort {
   abstract findById(notificationId: NotificationId): Promise<Notification | null>;
   // 아직 읽지 않은 행에만 읽음을 반영한다. 동시 요청이 먼저 바꿨으면 false다
@@ -30,10 +36,11 @@ export abstract class NotificationRepositoryPort {
     actorId: UserId,
   ): Promise<{ count: number; affectedUserIds: string[] }>;
   // 보관 기간이 지난 알림을 만든 순서로 limit개 지운다. 발송 기록은 FK cascade로 함께 지워진다.
-  // 한 번뿐인 마일스톤 알림은 다시 보내지 않는 근거라 남긴다. createdFrom부터 찾아 남긴 행을 다시 훑지 않는다
+  // 한 번뿐인 마일스톤 알림은 다시 보내지 않는 근거라 남긴다. createdFrom부터 찾아 남긴 행을 다시 훑지 않는다.
+  // unreadOwnerIds는 안 읽은 알림이 지워진 사람(중복 없음)이다
   abstract deleteCreatedBefore(query: {
     readonly createdBefore: Temporal.Instant;
     readonly createdFrom: Temporal.Instant | null;
     readonly limit: number;
-  }): Promise<{ readonly deletedCount: number; readonly lastCreatedAt: Temporal.Instant | null }>;
+  }): Promise<DeletedNotificationHistory>;
 }

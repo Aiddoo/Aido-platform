@@ -1,5 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { DAY_MS } from "#api/shared/domain/time/time-units";
 
 import { FINISHED_PUSH_DISPATCH_RETENTION_DAYS } from "../../domain/push-delivery-history-retention.constants.js";
 import type { PushDispatchStatus } from "../../domain/push-delivery-status.constants.js";
@@ -50,7 +51,9 @@ export class PurgePushDeliveryHistoryUseCase {
       command,
     );
     // UTC 일수라 일광 절약 없이 24시간 단위다
-    const finishedBefore = now.subtract({ hours: 24 * FINISHED_PUSH_DISPATCH_RETENTION_DAYS });
+    const finishedBefore = now.subtract({
+      milliseconds: FINISHED_PUSH_DISPATCH_RETENTION_DAYS * DAY_MS,
+    });
     let deletedDispatches = 0;
     let dispatchesCompleted = reservations.completed;
     for (const status of FINISHED_DISPATCH_STATUSES) {
