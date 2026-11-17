@@ -15,16 +15,19 @@ import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-re
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetWeeklyAchievementUseCase } from "../../../application/use-cases/get-weekly-achievement.use-case.js";
+import { ListWeeklyAchievementYearsUseCase } from "../../../application/use-cases/list-weekly-achievement-years.use-case.js";
 import { ListWeeklyAchievementsUseCase } from "../../../application/use-cases/list-weekly-achievements.use-case.js";
 import {
   toWeeklyAchievementListResponse,
   toWeeklyAchievementResponse,
+  toWeeklyAchievementYearsResponse,
 } from "./weekly-achievement-response.mapper.js";
 import {
   GetWeeklyAchievementsQueryDto,
   WeeklyAchievementDetailResponseDto,
   WeeklyAchievementListResponseDto,
   WeeklyAchievementParamDto,
+  WeeklyAchievementYearsResponseDto,
 } from "./weekly-achievement.dto.js";
 
 @ApiTags(SWAGGER_TAGS.WEEKLY_ACHIEVEMENTS)
@@ -32,13 +35,16 @@ import {
 @Controller({ path: "weekly-achievements", version: API_VERSION.V1 })
 export class WeeklyAchievementController {
   readonly #listWeeklyAchievements: ListWeeklyAchievementsUseCase;
+  readonly #listWeeklyAchievementYears: ListWeeklyAchievementYearsUseCase;
   readonly #getWeeklyAchievement: GetWeeklyAchievementUseCase;
 
   constructor(
     listWeeklyAchievements: ListWeeklyAchievementsUseCase,
+    listWeeklyAchievementYears: ListWeeklyAchievementYearsUseCase,
     getWeeklyAchievement: GetWeeklyAchievementUseCase,
   ) {
     this.#listWeeklyAchievements = listWeeklyAchievements;
+    this.#listWeeklyAchievementYears = listWeeklyAchievementYears;
     this.#getWeeklyAchievement = getWeeklyAchievement;
   }
 
@@ -72,8 +78,8 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
 | \`items[].weekLabel\` | string | 주차 라벨 (예: 3월 2주차, 올해가 아닌 주는 2025년 12월 1주차) |
 | \`items[].dateRange\` | object | 해당 주의 월~일 날짜 범위 |
 | \`items[].completionRate\` | number | 완료율 (0-100%) |
-| \`summary.currentStreak\` | number | 현재 연속 달성 주 |
-| \`summary.bestStreak\` | number | 최고 연속 달성 기록 |
+| \`summary.currentStreak\` | number | 그해 가장 최근 기록까지의 연속 달성 주 (앞 해에서 이어 온 주 포함) |
+| \`summary.bestStreak\` | number | 그해 안에서 끝난 연속 중 최고 기록 (앞 해에서 이어 온 주 포함) |
 | \`summary.averageRate\` | number | 평균 완료율 |
 		`,
   })
@@ -91,6 +97,33 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
       size: query.size,
     });
     return toWeeklyAchievementListResponse(list, locale ?? DEFAULT_LOCALE);
+  }
+
+  @Get("years")
+  @ApiDoc({
+    summary: "주간 달성 기록이 있는 연도 목록 조회",
+    operationId: "getWeeklyAchievementYears",
+    description: `
+## 주간 달성 기록이 있는 연도
+
+기록이 하나라도 있는 ISO 연도를 최근 해부터 돌려줍니다. 해가 바뀐 뒤에도 지난해 기록을 고를 수 있게 합니다.
+
+### 인증 필요
+\`Authorization: Bearer {accessToken}\`
+
+### 요청 예시
+\`\`\`
+GET /weekly-achievements/years
+\`\`\`
+		`,
+  })
+  @ApiSuccessResponse({ type: WeeklyAchievementYearsResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getWeeklyAchievementYears(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<WeeklyAchievementYearsResponseDto> {
+    const years = await this.#listWeeklyAchievementYears.execute({ userId: user.userId });
+    return toWeeklyAchievementYearsResponse(years);
   }
 
   @Get(":year/:week")

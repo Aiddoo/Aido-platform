@@ -93,3 +93,13 @@ export type WeeklyAchievementListResponse = z.infer<typeof weeklyAchievementList
 export const weeklyAchievementDetailResponseSchema = weeklyAchievementSchema;
 
 export type WeeklyAchievementDetailResponse = z.infer<typeof weeklyAchievementDetailResponseSchema>;
+
+export const weeklyAchievementYearsResponseSchema = z
+  .object({
+    years: z
+      .array(z.number().int())
+      .describe("주간 달성 기록이 하나라도 있는 ISO 연도 (내림차순, 기록이 없으면 빈 배열)"),
+  })
+  .meta({ example: { years: [2027, 2026] } });
+
+export type WeeklyAchievementYearsResponse = z.infer<typeof weeklyAchievementYearsResponseSchema>;

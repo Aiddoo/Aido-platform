@@ -2,12 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type { IsoWeek } from "../domain/iso-week.vo.js";
-
-export function weeklyAchievementNotFound(isoWeek: IsoWeek): ApplicationException {
+export function weeklyAchievementNotFound(week: {
+  readonly year: number;
+  readonly week: number;
+}): ApplicationException {
   return new ApplicationException(ErrorCode.ACHIEVEMENT_1801, {
-    year: isoWeek.year,
-    week: isoWeek.week,
+    year: week.year,
+    week: week.week,
   });
 }
 

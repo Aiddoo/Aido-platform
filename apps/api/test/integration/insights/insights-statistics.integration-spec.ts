@@ -6,6 +6,7 @@ import { DateRange } from "#api/modules/insights/daily-completions/domain/date-r
 import { PlanningCompletionGroupReaderAdapter } from "#api/modules/insights/daily-completions/infrastructure/adapters/planning-completion-group-reader.adapter";
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import { GetWeeklyAchievementUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/get-weekly-achievement.use-case";
+import { ListWeeklyAchievementYearsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievement-years.use-case";
 import { ListWeeklyAchievementsUseCase } from "#api/modules/insights/weekly-achievements/application/use-cases/list-weekly-achievements.use-case";
 import { IsoWeek } from "#api/modules/insights/weekly-achievements/domain/iso-week.vo";
 import {
@@ -184,6 +185,77 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     expect(visibleDays.reduce((total, day) => total + day.toPrimitives().totalTodos, 0)).toBe(8);
     expect(empty.count).toBe(1);
     expect(empty.result).toEqual([]);
+  });
+  it("연말·연초에 걸친 할 일은 2026년 53주(2026-12-28~2027-01-03)의 날마다 한 번씩 센다", async () => {
+    // Given
+    const [category] = await client
+      .insert(todoCategory)
+      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .returning();
+    if (category === undefined) {
+      throw new Error("category absent");
+    }
+    const spans = [
+      { startDate: "2026-12-28", endDate: "2027-01-03", completed: true },
+      // 앞 주 일요일과 다음 주 월요일은 이 주에 들지 않는다
+      { startDate: "2026-12-27", endDate: null, completed: false },
+      { startDate: "2027-01-04", endDate: null, completed: false },
+    ];
+    await client.insert(todo).values(
+      spans.map((span, index) =>
+        omit(
+          TodoFixture.create({
+            userId,
+            categoryId: category.id,
+            startDate: Temporal.PlainDate.from(span.startDate),
+            endDate: span.endDate == null ? null : Temporal.PlainDate.from(span.endDate),
+            completed: span.completed,
+            sortOrder: index,
+          }),
+          ["id"],
+        ),
+      ),
+    );
+    const week53 = {
+      userId: UserId.reconstitute(userId),
+      range: DateRange.create(IsoWeek.create(2026, 53).startDate, IsoWeek.create(2026, 53).endDate),
+    };
+
+    // When
+    const groups = await daily.listByDateRange(week53);
+
+    // Then
+    const days = tallyDailyCompletions({ ...week53, groups }).map((day) => day.toPrimitives());
+    expect(days.map((day) => [day.date.toString(), day.totalTodos, day.completedTodos])).toEqual([
+      ["2026-12-28", 1, 1],
+      ["2026-12-29", 1, 1],
+      ["2026-12-30", 1, 1],
+      ["2026-12-31", 1, 1],
+      ["2027-01-01", 1, 1],
+      ["2027-01-02", 1, 1],
+      ["2027-01-03", 1, 1],
+    ]);
+  });
+  it("새해 주간 목록은 실제 SQL로 지난해 53주까지 읽어 연속 주를 잇고 기록 있는 연도를 최근 해부터 준다", async () => {
+    // Given
+    await weekly.saveAll([
+      snapshot(52, { year: 2026 }),
+      snapshot(53, { year: 2026 }),
+      snapshot(1, { year: 2027 }),
+    ]);
+    const list = context.module.get(ListWeeklyAchievementsUseCase);
+    const listYears = context.module.get(ListWeeklyAchievementYearsUseCase);
+
+    // When
+    const newYear = await list.execute({ userId, year: 2027 });
+    const lastYear = await list.execute({ userId, year: 2026 });
+    const years = await listYears.execute({ userId });
+
+    // Then
+    expect(newYear.summary).toMatchObject({ totalWeeks: 1, currentStreak: 3, bestStreak: 3 });
+    expect(lastYear.page.items.map((row) => row.isoWeek.week)).toEqual([53, 52]);
+    expect(lastYear.summary).toMatchObject({ totalWeeks: 2, currentStreak: 2, bestStreak: 2 });
+    expect(years).toEqual([2027, 2026]);
   });
   it("주간 기록을 원자 저장하고 동일 키 갱신 시 달성 시각을 보존한다", async () => {
     // Given

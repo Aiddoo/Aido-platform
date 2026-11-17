@@ -29,6 +29,10 @@ export class GetWeeklyAchievementUseCase {
 
   async execute(query: GetWeeklyAchievementQuery): Promise<WeeklyAchievementDetailReadModel> {
     const userId = UserId.reconstitute(query.userId);
+    // 52주인 해의 53주처럼 그해에 없는 주는 기록도 없어 출시 응답처럼 ACHIEVEMENT_1801이다
+    if (!IsoWeek.exists(query.year, query.week)) {
+      throw weeklyAchievementNotFound(query);
+    }
     const isoWeek = IsoWeek.create(query.year, query.week);
     const achievement = await this.#dependencies.weeklyAchievementRepository.findByWeek({
       userId,

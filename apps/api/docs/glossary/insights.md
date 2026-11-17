@@ -27,14 +27,16 @@
 
 ## weekly-achievements
 
-| 용어      | 코드                                                                    | 뜻                                                                                                              |
-| --------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 주간 성취 | `WeeklyAchievement`(Aggregate), `WeeklyAchievementId`                   | 지난 한 주(월~일)의 할 일 수·끝낸 수. 사용자·주마다 하나다                                                      |
-| ISO 주    | `IsoWeek`(VO)                                                           | 월요일에 시작하는 연도·주 번호(1~53, 그 밖은 `SYS_0002`)                                                        |
-| 기록      | `RecordWeeklyAchievementsUseCase`, `WeeklyAchievementWriterPort.record` | notification 주간 리마인더가 센 값(`WeeklyAchievementTally`)을 남긴다. 같은 사용자·주는 처음 id를 두고 덮어쓴다 |
-| 달성 시각 | `achievedAt`                                                            | 그 주를 센 시각. 다시 기록하면 바뀐다                                                                           |
-| 완벽한 주 | `isPerfect()`, `perfectWeeks`                                           | 할 일이 하나 이상이고 모두 끝낸 주                                                                              |
-| 연속 주   | `computeWeeklyStreak`, `currentStreak`·`bestStreak`                     | 기록이 있는 주가 끊김 없이 이어진 수(마지막 주 → 다음 해 1주 포함). `currentStreak`는 가장 최근 기록부터 센다   |
-| 연도 요약 | `summarizeWeeklyAchievements`, `averageRate`                            | 페이지와 상관없이 그해 기록 전부로 센 주 수·완벽한 주·연속 주·주별 완료율의 반올림 평균                         |
-| 주차 라벨 | `weekLabel`, `localToday`, `AchievementOwnerTimezoneReaderPort`         | 응답 매퍼가 만드는 "3월 2주차". 사용자 저장 시간대의 오늘로 올해를 정하고 다른 해의 주는 연도를 붙인다          |
-| 없는 주   | `weeklyAchievementNotFound`                                             | 요청한 사용자의 그 주 기록이 없으면 `ACHIEVEMENT_1801`이다                                                      |
+| 용어         | 코드                                                                    | 뜻                                                                                                                                                                                   |
+| ------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 주간 성취    | `WeeklyAchievement`(Aggregate), `WeeklyAchievementId`                   | 지난 한 주(월~일)의 할 일 수·끝낸 수. 사용자·주마다 하나다                                                                                                                           |
+| ISO 주       | `IsoWeek`(VO)                                                           | 월요일에 시작하는 연도·주 번호. 주는 1부터 그해 주 수(52·53, Temporal `weekOfYear`)까지이고 그 밖은 `SYS_0002`다(2027년 53주는 없다). 상세 조회에서 없는 주는 `ACHIEVEMENT_1801`이다 |
+| 기록         | `RecordWeeklyAchievementsUseCase`, `WeeklyAchievementWriterPort.record` | notification 주간 리마인더가 센 값(`WeeklyAchievementTally`)을 남긴다. 같은 사용자·주는 처음 id를 두고 덮어쓴다                                                                      |
+| 달성 시각    | `achievedAt`                                                            | 그 주를 센 시각. 다시 기록하면 바뀐다                                                                                                                                                |
+| 완벽한 주    | `isPerfect()`, `perfectWeeks`                                           | 할 일이 하나 이상이고 모두 끝낸 주                                                                                                                                                   |
+| 연속 주      | `computeWeeklyStreak`, `currentStreak`                                  | 기록이 있는 주가 끊김 없이 이어진 수. 해가 바뀌어도 끊지 않고(52·53주 → 다음 해 1주) 앞 해에서 이어 온 주까지 센다. `currentStreak`는 그해 가장 최근 기록부터 센다                   |
+| 최고 연속    | `bestStreak`                                                            | 그해 안에서 끝난 연속 중 가장 긴 것(앞 해에서 이어 온 주 포함). 그래서 `currentStreak`보다 작지 않고 지난해 값은 새해 기록으로 바뀌지 않는다                                         |
+| 연도 요약    | `summarizeWeeklyAchievements`, `averageRate`, `listThroughYear`         | 페이지와 상관없이 그해 기록 전부로 센 주 수·완벽한 주·주별 완료율의 반올림 평균과 연속 주. 연속 주를 세려고 앞 해 기록까지 읽는다                                                    |
+| 기록 있는 해 | `ListWeeklyAchievementYearsUseCase`, `listRecordedYears`                | 기록이 하나라도 있는 ISO 연도(최근 해 먼저, `GET /v1/weekly-achievements/years`). 앱은 고르지 않으면 가장 최근 해를 보여 해가 바뀐 직후에도 지난해 53주를 본다                       |
+| 주차 라벨    | `weekLabel`, `localToday`, `AchievementOwnerTimezoneReaderPort`         | 응답 매퍼가 만드는 "3월 2주차". 사용자 저장 시간대의 오늘로 올해를 정하고 다른 해의 주는 연도를 붙인다                                                                               |
+| 없는 주      | `weeklyAchievementNotFound`                                             | 요청한 사용자의 그 주 기록이 없으면 `ACHIEVEMENT_1801`이다                                                                                                                           |

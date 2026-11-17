@@ -1,6 +1,7 @@
 import type {
   WeeklyAchievementDetailResponse,
   WeeklyAchievementListResponse,
+  WeeklyAchievementYearsResponse,
 } from "@aido/api/contracts/weekly-achievement";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
@@ -41,4 +42,10 @@ export function toWeeklyAchievementListResponse(
     pagination: list.page.pagination,
     summary: list.summary,
   };
+}
+
+export function toWeeklyAchievementYearsResponse(
+  years: readonly number[],
+): WeeklyAchievementYearsResponse {
+  return { years: [...years] };
 }

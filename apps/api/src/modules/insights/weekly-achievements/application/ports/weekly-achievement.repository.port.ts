@@ -13,11 +13,13 @@ export abstract class WeeklyAchievementRepositoryPort {
     readonly afterWeek: number | null;
     readonly limit: number;
   }): Promise<WeeklyAchievement[]>;
-  /** 한 해 기록 전부(주 오름차순) */
-  abstract listAllByYear(params: {
+  /** 그해와 앞 해들의 기록 전부(연도·주 오름차순). 연속 주가 해를 넘어 이어져 앞 해도 읽는다 */
+  abstract listThroughYear(params: {
     readonly userId: UserId;
     readonly year: number;
   }): Promise<WeeklyAchievement[]>;
+  /** 기록이 하나라도 있는 연도(내림차순, 중복 없음) */
+  abstract listRecordedYears(userId: UserId): Promise<number[]>;
   abstract findByWeek(params: {
     readonly userId: UserId;
     readonly isoWeek: IsoWeek;

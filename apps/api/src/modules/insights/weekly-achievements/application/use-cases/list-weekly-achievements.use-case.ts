@@ -18,7 +18,7 @@ export interface ListWeeklyAchievementsQuery {
 export interface ListWeeklyAchievementsDependencies {
   readonly weeklyAchievementRepository: Pick<
     WeeklyAchievementRepositoryPort,
-    "listByYear" | "listAllByYear"
+    "listByYear" | "listThroughYear"
   >;
   readonly ownerTimezoneReader: Pick<AchievementOwnerTimezoneReaderPort, "read">;
   readonly clock: ClockPort;
@@ -36,20 +36,23 @@ export class ListWeeklyAchievementsUseCase {
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
 
-    const [rows, yearAchievements, timezone] = await Promise.all([
+    const [rows, achievementsThroughYear, timezone] = await Promise.all([
       weeklyAchievementRepository.listByYear({
         userId,
         year: query.year,
         afterWeek: query.cursor ?? null,
         limit: size + 1,
       }),
-      weeklyAchievementRepository.listAllByYear({ userId, year: query.year }),
+      weeklyAchievementRepository.listThroughYear({ userId, year: query.year }),
       ownerTimezoneReader.read(userId),
     ]);
 
     return {
       page: toCursorPage({ rows, size, toCursor: (achievement) => achievement.isoWeek.week }),
-      summary: summarizeWeeklyAchievements(yearAchievements),
+      summary: summarizeWeeklyAchievements({
+        year: query.year,
+        achievements: achievementsThroughYear,
+      }),
       localToday: localDateIn(clock.now(), timezone),
     };
   }

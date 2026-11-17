@@ -57,7 +57,7 @@ describe("DrizzleWeeklyAchievementRepository (실제 PostgreSQL)", () => {
     // Then
     expect(databaseSqlState(failure)).toBe("23503");
     expect(
-      await repository.listAllByYear({
+      await repository.listThroughYear({
         userId: UserId.reconstitute(WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID),
         year: 2026,
       }),
