@@ -1,4 +1,4 @@
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from "#api/shared/domain/time/time-units";
 
 /** 이 시각 이전에 끝나는 기간을 지금 안내한다. 결제·보상 기간 안내의 하루는 UTC 24시간이다. */
 export function billingNoticeUntil(now: Temporal.Instant, days: number): Temporal.Instant {

@@ -5,6 +5,7 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import {
   PUSH_DELIVERY_JOB_EXPIRE_SECONDS,
@@ -72,8 +73,8 @@ const PUSH_DELIVERY_RETRY = {
   retryDelaySeconds: 1,
   retryBackoff: true,
   expireInSeconds: PUSH_DELIVERY_JOB_EXPIRE_SECONDS,
-  retentionSeconds: 7 * 24 * 60 * 60,
-  deleteAfterSeconds: 24 * 60 * 60,
+  retentionSeconds: 7 * DAY_SECONDS,
+  deleteAfterSeconds: DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
 const PUSH_DELIVERY_DEAD_LETTER_RETRY = {

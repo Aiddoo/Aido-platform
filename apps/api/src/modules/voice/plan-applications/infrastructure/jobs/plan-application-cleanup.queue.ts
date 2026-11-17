@@ -5,6 +5,7 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 const PLAN_APPLICATION_CLEANUP_JOB_NAME = "purge-plan-applications";
 
@@ -13,8 +14,8 @@ const PLAN_APPLICATION_CLEANUP_RETRY = {
   retryDelaySeconds: 5,
   retryBackoff: true,
   expireInSeconds: 10 * 60,
-  retentionSeconds: 7 * 24 * 60 * 60,
-  deleteAfterSeconds: 24 * 60 * 60,
+  retentionSeconds: 7 * DAY_SECONDS,
+  deleteAfterSeconds: DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
 // 옛 런타임이 남긴 { name, data } 모양을 그대로 받는다

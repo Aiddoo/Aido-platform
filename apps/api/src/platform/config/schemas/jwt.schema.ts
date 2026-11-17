@@ -1,7 +1,8 @@
 import ms from "ms";
 import { z } from "zod";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from "#api/shared/domain/time/time-units";
+
 // access를 짧게 둬야 refresh 회전·재사용 탐지가 뜻이 있어 하루를 넘기지 않는다
 const ACCESS_TOKEN_MAX_LIFETIME_MS = DAY_MS;
 // 만료 시각이 Temporal 범위를 넘으면 로그인마다 RangeError라 시작에서 1년으로 묶는다

@@ -20,7 +20,10 @@ import type { InboxNotificationReadModel } from "#api/modules/notification/notif
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
-import type { NotificationMilestone } from "#api/modules/notification/shared/domain/notification-milestone.constants";
+import {
+  MILESTONE_NOTIFICATION_TYPE,
+  type NotificationMilestone,
+} from "#api/modules/notification/shared/domain/notification-milestone.constants";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -42,6 +45,10 @@ function isOfTypes(
 
 function metadataField(row: InboxNotificationReadModel, key: string): unknown {
   return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
+}
+
+function isMilestoneNotification(row: InboxNotificationReadModel): boolean {
+  return row.type === MILESTONE_NOTIFICATION_TYPE && metadataField(row, "milestone") != null;
 }
 
 // Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
@@ -199,7 +206,7 @@ export class InMemoryNotificationRepository
         (row) =>
           Temporal.Instant.compare(row.createdAt, createdBefore) < 0 &&
           (createdFrom == null || Temporal.Instant.compare(createdFrom, row.createdAt) <= 0) &&
-          !(row.type === "WEEKLY_ACHIEVEMENT" && metadataField(row, "milestone") != null),
+          !isMilestoneNotification(row),
       )
       .toSorted((left, right) => Temporal.Instant.compare(left.createdAt, right.createdAt))
       .slice(0, query.limit);
@@ -322,7 +329,7 @@ export class InMemoryNotificationRepository
     return [...this.#rows.values()].some(
       (row) =>
         row.userId === userId.value &&
-        row.type === "WEEKLY_ACHIEVEMENT" &&
+        isMilestoneNotification(row) &&
         metadataField(row, "milestone") === milestone,
     );
   }

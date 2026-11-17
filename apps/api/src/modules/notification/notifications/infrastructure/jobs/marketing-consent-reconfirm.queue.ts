@@ -5,6 +5,7 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 const MARKETING_CONSENT_RECONFIRM_JOB_NAME = "reconfirm-marketing-consents";
 
@@ -13,8 +14,8 @@ const MARKETING_CONSENT_RECONFIRM_RETRY = {
   retryDelaySeconds: 60,
   retryBackoff: true,
   expireInSeconds: 30 * 60,
-  retentionSeconds: 7 * 24 * 60 * 60,
-  deleteAfterSeconds: 7 * 24 * 60 * 60,
+  retentionSeconds: 7 * DAY_SECONDS,
+  deleteAfterSeconds: 7 * DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
 const MarketingConsentReconfirmJobSchema = z.object({

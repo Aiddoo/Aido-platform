@@ -2,6 +2,7 @@ import { AI_REPORT_TYPES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import type { ReportType } from "../../domain/ai-reports.constants.js";
 
@@ -60,8 +61,8 @@ export const AI_REPORT_QUEUE = defineQueue({
     retryDelaySeconds: 30,
     retryBackoff: true,
     expireInSeconds: 10 * 60,
-    retentionSeconds: 7 * 24 * 60 * 60,
-    deleteAfterSeconds: 7 * 24 * 60 * 60,
+    retentionSeconds: 7 * DAY_SECONDS,
+    deleteAfterSeconds: 7 * DAY_SECONDS,
   },
   // 백그라운드 AI 호출 자리(ai:background 2)보다 많이 꺼내면 작업이 꺼낸 채 자리를 기다리다 만료된다
   worker: { localConcurrency: 2, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },

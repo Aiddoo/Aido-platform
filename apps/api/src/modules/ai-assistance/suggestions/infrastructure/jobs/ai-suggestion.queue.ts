@@ -5,6 +5,7 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import {
   SUGGESTION_ANALYSIS_TRIGGERS,
@@ -68,8 +69,8 @@ const AI_SUGGESTION_JOB_RETRY = {
   retryDelaySeconds: 5,
   retryBackoff: true,
   expireInSeconds: 10 * 60,
-  retentionSeconds: 24 * 60 * 60,
-  deleteAfterSeconds: 7 * 24 * 60 * 60,
+  retentionSeconds: DAY_SECONDS,
+  deleteAfterSeconds: 7 * DAY_SECONDS,
 } as const satisfies JobRetryPolicy;
 
 /**

@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, not, or, sql } from "drizzle-orm";
 import { uniq } from "es-toolkit";
 
 import {
@@ -21,6 +21,7 @@ import type {
 } from "../../application/ports/notification.repository.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
+import { milestoneNotificationCondition } from "./milestone-notification.query-fragment.js";
 import { toNotification } from "./notification-row.mapper.js";
 
 type NotificationInsert = typeof notification.$inferInsert;
@@ -203,8 +204,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
         and(
           lt(notification.createdAt, query.createdBefore),
           query.createdFrom == null ? undefined : gte(notification.createdAt, query.createdFrom),
-          // hasMilestoneNotification이 읽는 행이다
-          sql`NOT (${notification.type} = 'WEEKLY_ACHIEVEMENT' AND ${notification.metadata} ->> 'milestone' IS NOT NULL)`,
+          not(milestoneNotificationCondition(null)),
         ),
       )
       .orderBy(asc(notification.createdAt))

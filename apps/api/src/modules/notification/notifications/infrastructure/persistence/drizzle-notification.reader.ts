@@ -21,6 +21,7 @@ import type {
   NotificationInboxReaderPort,
 } from "../../application/ports/notification-inbox.reader.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
+import { milestoneNotificationCondition } from "./milestone-notification.query-fragment.js";
 
 @Injectable()
 export class DrizzleNotificationReader
@@ -191,15 +192,12 @@ export class DrizzleNotificationReader
     userId: UserId,
     milestone: NotificationMilestone,
   ): Promise<boolean> {
-    // 마일스톤은 처음부터 WEEKLY_ACHIEVEMENT로만 보냈다. 종류를 걸어 (userId, type) 인덱스로 좁힌다
-    const row = await this.#db.query.notification.findFirst({
-      columns: { id: true },
-      where: {
-        userId: userId.value,
-        type: "WEEKLY_ACHIEVEMENT",
-        RAW: (table) => sql`${table.metadata} ->> 'milestone' = ${milestone}`,
-      },
-    });
+    // 종류를 걸어 (userId, type) 인덱스로 좁힌다
+    const [row] = await this.#db
+      .select({ id: notification.id })
+      .from(notification)
+      .where(and(eq(notification.userId, userId.value), milestoneNotificationCondition(milestone)))
+      .limit(1);
     return row != null;
   }
 }

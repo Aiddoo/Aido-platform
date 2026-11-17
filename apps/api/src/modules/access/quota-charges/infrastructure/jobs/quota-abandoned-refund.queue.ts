@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 // 옛 스케줄이 넣은 작업이 빈 객체라 그대로 받는다
 const quotaAbandonedRefundPayloadSchema = z.object({});
@@ -15,8 +16,8 @@ export const QUOTA_ABANDONED_REFUND_QUEUE = defineQueue({
     retryDelaySeconds: 30,
     retryBackoff: true,
     expireInSeconds: 9 * 60,
-    retentionSeconds: 24 * 60 * 60,
-    deleteAfterSeconds: 24 * 60 * 60,
+    retentionSeconds: DAY_SECONDS,
+    deleteAfterSeconds: DAY_SECONDS,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
   schedules: [

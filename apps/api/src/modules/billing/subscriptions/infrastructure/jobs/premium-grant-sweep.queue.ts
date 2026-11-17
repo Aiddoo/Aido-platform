@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 const PREMIUM_GRANT_SWEEP_JOB_NAME = "sweep-premium-grants";
 
@@ -21,8 +22,8 @@ export const PREMIUM_GRANT_SWEEP_QUEUE = defineQueue({
     retryDelaySeconds: 30,
     retryBackoff: true,
     expireInSeconds: 9 * 60,
-    retentionSeconds: 24 * 60 * 60,
-    deleteAfterSeconds: 24 * 60 * 60,
+    retentionSeconds: DAY_SECONDS,
+    deleteAfterSeconds: DAY_SECONDS,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
   schedules: [

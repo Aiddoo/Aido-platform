@@ -9,16 +9,15 @@ import {
 } from "@aido/api/vocabulary";
 import { maxBy, sortBy, sumBy } from "es-toolkit";
 
+import { DAY_MS } from "#api/shared/domain/time/time-units";
+
 import { STORE_PERIOD_TYPE } from "./store-period-type.domain-service.js";
 import { storeEntitlementEndsAt, storePeriodEndsAt } from "./store-renewal-grace.domain-service.js";
 import { planTypeOfProduct } from "./subscription-plan.domain-service.js";
 
 type Instant = Temporal.Instant;
 
-/** 보상 기간 계산은 UTC 달력 기준이라 하루는 항상 24시간이다. */
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간 */
+/** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간. UTC 달력 기준이라 하루는 항상 24시간이다 */
 const RECENT_GRANT_ENDED_WINDOW_MS = PREMIUM_GRANT_ENDED_WINDOW_DAYS * DAY_MS;
 
 function isAfter(left: Instant, right: Instant): boolean {

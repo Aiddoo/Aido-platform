@@ -5,7 +5,10 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { createMilestoneNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
-import type { NotificationMilestone } from "../../../shared/domain/notification-milestone.constants.js";
+import {
+  MILESTONE_NOTIFICATION_TYPE,
+  type NotificationMilestone,
+} from "../../../shared/domain/notification-milestone.constants.js";
 import { NotificationLockKeys } from "../notifications.lock-keys.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import { type NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
@@ -64,7 +67,7 @@ export class SendMilestoneNotificationUseCase {
       });
       await this.#dependencies.notificationPublisher.execute({
         userId: input.userId,
-        type: "WEEKLY_ACHIEVEMENT",
+        type: MILESTONE_NOTIFICATION_TYPE,
         title: message.title,
         body: message.body,
         copyKey: message.copyKey,
