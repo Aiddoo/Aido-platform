@@ -1,7 +1,4 @@
-import type {
-  AdminNoticeUser,
-  SignupNotice,
-} from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNoticeUser, SignupNotice } from "../../domain/admin-notice.aggregate.js";
 import { type DiscordEmbed, field } from "./discord-notice-format.mapper.js";
 import { displayNameOf, renderUserBlock } from "./discord-user-block.mapper.js";
 

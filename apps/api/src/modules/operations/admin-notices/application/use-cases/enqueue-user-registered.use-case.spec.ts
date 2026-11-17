@@ -2,8 +2,8 @@ import { RecordingAdminNotificationQueue } from "#test/doubles/operations/record
 import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
+import type { AdminNoticeUser } from "../../domain/admin-notice.aggregate.js";
 import type { UserRegisteredNoticeInput } from "../ports/admin-event-notifier.port.js";
-import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 import { EnqueueUserRegisteredUseCase } from "./enqueue-user-registered.use-case.js";
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
@@ -53,6 +53,7 @@ describe("EnqueueUserRegisteredUseCase — 가입 알림 등록", () => {
           user: stored,
           signup: { devicePlatform: "IOS", deviceModel: "iPhone 15 Pro" },
         },
+        deduplicationKey: null,
       },
     ]);
   });

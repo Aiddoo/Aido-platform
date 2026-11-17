@@ -1,4 +1,8 @@
 import type {
+  AdminNoticePrimitives,
+  AdminNoticeUser,
+} from "../../domain/admin-notice.aggregate.js";
+import type {
   SignupEventProvider,
   SignupMethod,
   SubscriptionNoticeKind,
@@ -9,7 +13,6 @@ import type {
   SubscriptionNoticeInput,
   UserRegisteredNoticeInput,
 } from "../ports/admin-event-notifier.port.js";
-import type { AdminNotice, AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
 const KIND_EVENTS = {
   STARTED: "purchased",
@@ -78,7 +81,7 @@ export function registeredNoticeUserOf(payload: UserRegisteredNoticeInput): Admi
 export function buildSubscriptionNotice(
   payload: SubscriptionNoticeInput,
   user: AdminNoticeUser,
-): AdminNotice {
+): AdminNoticePrimitives {
   return {
     type: "subscription_event",
     user,
@@ -131,7 +134,7 @@ export function buildSubscriptionNotice(
 export function buildUserRegisteredNotice(
   payload: UserRegisteredNoticeInput,
   user: AdminNoticeUser,
-): AdminNotice {
+): AdminNoticePrimitives {
   return {
     type: "user_registered",
     user,

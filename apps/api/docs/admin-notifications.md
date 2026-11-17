@@ -1,6 +1,6 @@
 # 관리자 알림
 
-운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
+운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(생성만 하는 Aggregate `AdminNotice`)만 만든다. 결제 알림은 `payment`, 가입·일반 알림은 `admin` 채널로 간다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
 
 | `AdminNotice.type`   | 내용                                                     | 만드는 곳                                   |
 | -------------------- | -------------------------------------------------------- | ------------------------------------------- |
@@ -27,7 +27,7 @@
 | 이메일    | 전체 이메일. 가입·결제 알림이 같은 규칙이다(내부 운영 채널, 가리지 않음)    |
 | 사용자 ID | 내부 사용자 ID                                                              |
 
-사용자 블록은 `AdminNoticeUserReaderPort`(`DrizzleAdminNoticeUserReader`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
+사용자 블록은 `AdminNoticeUserReaderPort`(`IdentityAdminNoticeUserAdapter` → identity `UserSignupReaderPort`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
 
 ## 결제 알림
 

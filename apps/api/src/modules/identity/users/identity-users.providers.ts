@@ -5,6 +5,7 @@ import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notification-delivery.public";
+import { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
@@ -25,10 +26,13 @@ import {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "./application/ports/account-cleanup.port.js";
+import { GrowthMetricsReaderPort } from "./application/ports/growth-metrics.reader.port.js";
 import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
 import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.use-case.js";
+import { GetGrowthSummaryUseCase } from "./application/use-cases/get-growth-summary.use-case.js";
 import { PurgeDeletedAccountsUseCase } from "./application/use-cases/purge-deleted-accounts.use-case.js";
 import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case.js";
+import { DrizzleGrowthMetricsReader } from "./infrastructure/persistence/drizzle-growth-metrics.reader.js";
 
 export const accountNotificationCleanupProvider: FactoryProvider<AccountNotificationCleanupPort> = {
   provide: AccountNotificationCleanupPort,
@@ -103,4 +107,13 @@ export const IDENTITY_USERS_PROVIDERS = [
     logger: loggerFor(UpdateProfileUseCase),
   }),
   deleteAccountProvider,
+] satisfies Provider[];
+
+export const IDENTITY_USERS_ADMIN_PROVIDERS = [
+  { provide: GrowthMetricsReaderPort, useClass: DrizzleGrowthMetricsReader },
+  provideUseCase(GetGrowthSummaryUseCase, {
+    growthMetricsReader: GrowthMetricsReaderPort,
+    todoActivationReader: TodoActivationReaderPort,
+    clock: ClockPort,
+  }),
 ] satisfies Provider[];

@@ -131,6 +131,7 @@ Aggregate 안 이벤트는 `<aggregate>.<과거형>`이다. 같은 트랜잭션�
 | `TodoScheduleReaderPort`                                                             | 그날 시각 있는 미완료 할 일                                                | weather·notification      |
 | `RepeatingTodoTitleReaderPort`, `SingleTodoCountReaderPort`                          | 진행 중 반복 제목, 기간에 시작한 단일 할 일 수                             | ai-assistance             |
 | `TodoBriefReaderPort`                                                                | 콕 대상 할 일 요약(id 묶음·주인 행 잠금), 그날 할 일 수                    | social                    |
+| `TodoActivationReaderPort`                                                           | 사용자별 구간 안에 할 일을 만들고 완료한 사용자                            | identity                  |
 | `TodoCategoryProvisionerPort`, `TodoTimezoneRebaseQueueService`                      | 가입 때 기본 카테고리, 시간대 변경 뒤 재계산 작업                          | identity                  |
 | `TodoCategoryCountReaderPort`                                                        | 지금 가진 카테고리 수                                                      | access                    |
 | `isSeriesOwnerDormant`                                                               | 반복 회차 알림을 보낼지 정하는 휴면 판정                                   | notification              |

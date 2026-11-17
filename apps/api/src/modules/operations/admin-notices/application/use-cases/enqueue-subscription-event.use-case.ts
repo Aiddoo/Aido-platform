@@ -1,3 +1,4 @@
+import { AdminNotice } from "../../domain/admin-notice.aggregate.js";
 import {
   buildSubscriptionNotice,
   subscriptionNoticeUserOf,
@@ -25,10 +26,10 @@ export class EnqueueSubscriptionEventUseCase {
   async execute(payload: SubscriptionNoticeInput): Promise<void> {
     const { queue, resolveUser } = this.#dependencies;
     const user = await resolveUser.execute(subscriptionNoticeUserOf(payload));
-    await queue.enqueueSend(
-      "payment",
-      buildSubscriptionNotice(payload, user),
-      payload.eventId ? { jobId: `subscription-event_${payload.eventId}` } : undefined,
-    );
+    const notice = AdminNotice.create({
+      content: buildSubscriptionNotice(payload, user),
+      ...(payload.eventId ? { deduplicationKey: `subscription-event_${payload.eventId}` } : {}),
+    });
+    await queue.enqueueSend(notice);
   }
 }

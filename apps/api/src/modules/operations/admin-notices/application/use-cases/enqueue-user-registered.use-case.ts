@@ -1,3 +1,4 @@
+import { AdminNotice } from "../../domain/admin-notice.aggregate.js";
 import {
   buildUserRegisteredNotice,
   registeredNoticeUserOf,
@@ -22,6 +23,8 @@ export class EnqueueUserRegisteredUseCase {
   async execute(payload: UserRegisteredNoticeInput): Promise<void> {
     const { queue, resolveUser } = this.#dependencies;
     const user = await resolveUser.execute(registeredNoticeUserOf(payload));
-    await queue.enqueueSend("admin", buildUserRegisteredNotice(payload, user));
+    await queue.enqueueSend(
+      AdminNotice.create({ content: buildUserRegisteredNotice(payload, user) }),
+    );
   }
 }

@@ -75,7 +75,7 @@ apps/api/src/
 | weather       | `weather-reports`, `user-locations` (+ `shared/`)                                                                                  |
 | ai-assistance | `ai-generations`, `parsed-drafts`, `action-plan-drafts`, `ai-reports`, `suggestions` (+ `shared/`)                                 |
 | voice         | `voice-digests`, `plan-applications`                                                                                               |
-| operations    | `broadcasts`, `admin-notices`, `metrics`                                                                                           |
+| operations    | `broadcast-campaigns`, `admin-notices`                                                                                             |
 | app-config    | `app-versions`, `feature-discovery` (+ `shared/`)                                                                                  |
 | support       | `inquiries`                                                                                                                        |
 

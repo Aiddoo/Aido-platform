@@ -1,10 +1,10 @@
 import { match } from "ts-pattern";
 
-import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNoticePrimitives } from "../../domain/admin-notice.aggregate.js";
 import type {
   AdminNotification,
   AdminNotificationField,
-} from "../../application/read-models/admin-notification.read-model.js";
+} from "../../domain/admin-notice.aggregate.js";
 import type { AdminNotificationSeverity } from "../../domain/admin-notices.constants.js";
 import {
   type DiscordEmbed,
@@ -57,7 +57,7 @@ function renderMessageEmbed(notification: AdminNotification, at: string): Discor
 /**
  * 관리자 알림을 Discord embed 하나로 그린다. 제목·이모지·색·필드 배치·날짜 표시는 모두 이 어댑터가 정한다.
  */
-export function renderDiscordEmbed(notice: AdminNotice, at: string): DiscordEmbed {
+export function renderDiscordEmbed(notice: AdminNoticePrimitives, at: string): DiscordEmbed {
   return match(notice)
     .with({ type: "message" }, ({ message }) => renderMessageEmbed(message, at))
     .with({ type: "user_registered" }, ({ user, signup }) =>

@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
-import { DatabaseModule } from "#api/platform/database/database.module";
+import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 
 import { AdminEventNotifierPort } from "./application/ports/admin-event-notifier.port.js";
 import { operationsAdminNoticesConfig } from "./operations-admin-notices.config.js";
@@ -13,7 +13,7 @@ import {
 
 @Module({
   imports: [
-    DatabaseModule,
+    IdentityUserAccessModule,
     ConfigModule.forFeature(operationsAdminNoticesConfig),
     HttpClientModule.register({
       name: DISCORD_HTTP_CLIENT_NAME,

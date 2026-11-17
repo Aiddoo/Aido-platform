@@ -19,18 +19,18 @@ import { SendAdminNotificationUseCase } from "./application/use-cases/send-admin
 import { AdminEventNotifierAdapter } from "./infrastructure/adapters/admin-event-notifier.adapter.js";
 import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/admin-notification-queue.adapter.js";
 import { selectAdminNotifier } from "./infrastructure/adapters/admin-notifier-selection.adapter.js";
+import { IdentityAdminNoticeUserAdapter } from "./infrastructure/adapters/identity-admin-notice-user.adapter.js";
+import { IdentitySignupStatsAdapter } from "./infrastructure/adapters/identity-signup-stats.adapter.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/admin-notification.processor.js";
 import { DailySignupSummaryScheduler } from "./infrastructure/jobs/daily-signup-summary.scheduler.js";
-import { DrizzleAdminNoticeUserReader } from "./infrastructure/persistence/drizzle-admin-notice-user.reader.js";
-import { DrizzleSignupStatsReader } from "./infrastructure/persistence/drizzle-signup-stats.reader.js";
 import { operationsAdminNoticesConfig } from "./operations-admin-notices.config.js";
 
 export const DISCORD_HTTP_CLIENT_NAME = "discord";
 
 export const OPERATIONS_ADMIN_NOTICES_PROVIDERS = [
   { provide: AdminNotificationQueuePort, useClass: AdminNotificationQueueAdapter },
-  { provide: SignupStatsReaderPort, useClass: DrizzleSignupStatsReader },
-  { provide: AdminNoticeUserReaderPort, useClass: DrizzleAdminNoticeUserReader },
+  { provide: SignupStatsReaderPort, useClass: IdentitySignupStatsAdapter },
+  { provide: AdminNoticeUserReaderPort, useClass: IdentityAdminNoticeUserAdapter },
   // ADMIN_NOTIFIER_PROVIDER(비우면 배포 환경 기본값)로 어댑터를 고른다
   {
     provide: AdminNotifierPort,

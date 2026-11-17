@@ -1,6 +1,6 @@
 # 푸시 발송·기기·큐
 
-푸시 delivery/receipt 장애, 기기·토큰 등록, 푸시 큐와 작업 key, 관리자 브로드캐스트 캠페인을 확인할 때 읽는다. 발송 정책·일정·알림 종류는 [푸시 알림](push-notifications.md), 우선순위·지표 설계는 [알림 발송 설계](notifications.md)에 있다. 코드는 `src/modules/notification/push`와 `src/modules/operations/broadcasts`다.
+푸시 delivery/receipt 장애, 기기·토큰 등록, 푸시 큐와 작업 key, 관리자 브로드캐스트 캠페인을 확인할 때 읽는다. 발송 정책·일정·알림 종류는 [푸시 알림](push-notifications.md), 우선순위·지표 설계는 [알림 발송 설계](notifications.md)에 있다. 코드는 `src/modules/notification/push`와 `src/modules/operations/broadcast-campaigns`다.
 
 ## Delivery·receipt
 

@@ -1,8 +1,8 @@
 import type {
-  AdminNotice,
+  AdminNoticePrimitives,
   AdminNoticeUser,
   SubscriptionNotice,
-} from "../../application/read-models/admin-notice.read-model.js";
+} from "../../domain/admin-notice.aggregate.js";
 import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import type { DiscordEmbed } from "./discord-notice-format.mapper.js";
@@ -49,7 +49,7 @@ const subscription: SubscriptionNotice = {
 };
 
 function render(overrides: Partial<SubscriptionNotice> = {}, noticeUser = user): DiscordEmbed {
-  const notice: AdminNotice = {
+  const notice: AdminNoticePrimitives = {
     type: "subscription_event",
     user: noticeUser,
     subscription: { ...subscription, ...overrides },

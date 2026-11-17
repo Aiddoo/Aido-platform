@@ -1,10 +1,9 @@
 import { sumBy } from "es-toolkit";
 
-import { AdminNotificationMessage } from "../../domain/admin-notification-message.vo.js";
 import type {
   AdminNotification,
   AdminNotificationFieldValue,
-} from "../read-models/admin-notification.read-model.js";
+} from "../../domain/admin-notice.aggregate.js";
 import { accountProviderLabel } from "./provider-labels.messages.js";
 
 function text(value: string): AdminNotificationFieldValue {
@@ -27,7 +26,7 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
     })
     .join("\n");
 
-  return createAdminNotification({
+  return {
     title: `일일 가입 리포트 | ${summary.reportDateKey} (KST)`,
     body:
       previousDayTotal > 0
@@ -51,16 +50,5 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
         inline: false,
       },
     ],
-  });
-}
-
-function createAdminNotification(input: AdminNotification): AdminNotification {
-  const content = AdminNotificationMessage.create(input);
-  return {
-    title: content.title,
-    body: content.body,
-    fields: (input.fields ?? []).map((field) => ({ ...field })),
-    severity: input.severity,
-    ...(input.link ? { link: input.link } : {}),
   };
 }

@@ -8,13 +8,15 @@ import { UserBriefReaderPort } from "./application/ports/user-brief.reader.port.
 import { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 import { UserSearchReaderPort } from "./application/ports/user-search.reader.port.js";
+import { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
 import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
 import { DrizzleUserAiUsageCounterAdapter } from "./infrastructure/persistence/drizzle-user-ai-usage-counter.adapter.js";
 import { DrizzleUserBriefReader } from "./infrastructure/persistence/drizzle-user-brief.reader.js";
 import { DrizzleUserSearchReader } from "./infrastructure/persistence/drizzle-user-search.reader.js";
+import { DrizzleUserSignupReader } from "./infrastructure/persistence/drizzle-user-signup.reader.js";
 import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
 
-// access·billing·ai·notification·planning·social이 import하는 사용자 포트만 둔다. 이 모듈은 다른 Context
+// access·billing·ai·notification·planning·social·operations가 import하는 사용자 포트만 둔다. 이 모듈은 다른 Context
 // 모듈을 import하지 않아 IdentityUsersModule → IdentityAuthModule → Access·Billing → 여기로 순환하지 않는다.
 @Module({
   providers: [
@@ -27,6 +29,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     { provide: UserAiUsageCounterPort, useClass: DrizzleUserAiUsageCounterAdapter },
     { provide: UserBriefReaderPort, useClass: DrizzleUserBriefReader },
     { provide: UserSearchReaderPort, useClass: DrizzleUserSearchReader },
+    { provide: UserSignupReaderPort, useClass: DrizzleUserSignupReader },
   ],
   exports: [
     DrizzleUserRepository,
@@ -38,6 +41,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
     UserAiUsageCounterPort,
     UserBriefReaderPort,
     UserSearchReaderPort,
+    UserSignupReaderPort,
   ],
 })
 export class IdentityUserAccessModule {}

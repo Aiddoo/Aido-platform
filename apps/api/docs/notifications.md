@@ -4,7 +4,7 @@
 
 ## 지금 구조
 
-- notification Context는 slice 다섯이다: `inbox`(알림함), `push`(발송·기기·문구), `email`, `reminders`(시각 기반 알림), `retention`(온보딩·리텐션 실험). 관리자 캠페인은 operations `broadcasts`, 지표는 operations `metrics`가 소유한다.
+- notification Context는 slice 다섯이다: `inbox`(알림함), `push`(발송·기기·문구), `email`, `reminders`(시각 기반 알림), `retention`(온보딩·리텐션 실험). 관리자 캠페인은 operations `broadcast-campaigns`, 성장 지표는 identity `users`가 소유한다.
 - 대량 발송: 캠페인 커서 작업이 500명 단위로 같은 트랜잭션에 `Notification`·`PushDispatch`·`PushDispatchOutbox`를 쓴다 → 릴레이 → `push-delivery.v1` → Expo 청크 100 + 초당 500 토큰 버킷. 한 요청·한 트랜잭션이 커지지 않고 재시도는 페이지 단위다.
 - 기기 없음·권한 없음·권한 거부는 건너뜀 사유(`PUSH_DISPATCH_SKIP_REASON`)로 기록한다. 90일 지난 기기는 stale이다.
 - 푸시는 Expo 공식 `expo-server-sdk`(청크·receipt)다. FCM 직접 발송이 필요해지면 `PushProviderPort` 어댑터 하나를 더한다.
@@ -54,15 +54,15 @@ Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss
 
 ## 지표
 
-| 지표             | 정의                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| DAU·WAU·MAU      | `UserActivityDay.localDate`(요청 시간대의 달력 날짜, `LastActiveInterceptor`)가 있는 사용자 수 |
-| 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)    |
-| D1·D7·D30 리텐션 | 가입 cohort 기준(`drizzle-growth-metrics.reader.ts`, 한 SQL 집계)                              |
-| stickiness       | DAU/MAU(%, 소수 둘째 자리, MAU가 0이면 0. 관리자 API 추가 필드 `stickiness`)                   |
-| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`openedAt`)              |
+| 지표             | 정의                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| DAU·WAU·MAU      | `UserActivityDay.localDate`(요청 시간대의 달력 날짜, `LastActiveInterceptor`)가 있는 사용자 수                 |
+| 활성             | 로그인한 사용자의 앱 요청이 있는 사용자 현지 날짜(앱 시작·복귀·푸시 탭 때의 기기 보고 포함)                    |
+| D1·D7·D30 리텐션 | 가입 cohort 기준(identity `drizzle-growth-metrics.reader.ts`가 사람별 활동일, 대상 판단은 `tallyGrowthCohort`) |
+| stickiness       | DAU/MAU(%, 소수 둘째 자리, MAU가 0이면 0. 관리자 API 추가 필드 `stickiness`)                                   |
+| 푸시 퍼널        | 캠페인·종류별 생성 → 건너뜀(사유별) → 발송 요청 → receipt 성공 → 열람(`openedAt`)                              |
 
-- 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 operations `metrics` slice가 소유한다.
+- 정의는 문서와 타입(`GROWTH_METRIC_DEFINITIONS`, 관리자 Swagger 설명이 이 상수로 만들어진다) 두 곳에 고정한다. 관리자 지표는 identity `users` slice의 조회(`IdentityUsersAdminModule`)이고 24시간 활성화는 planning `TodoActivationReaderPort`로 센다.
 - 열람은 앱이 푸시를 누를 때 부르는 `POST /v1/notifications/{id}/opened`의 `openedAt`이다. 푸시 data의 `notificationId`·`navigation`으로 앱이 탭 즉시 부르고, 처음 열 때만 `Notification.openedAt`·읽음과 `PushDispatch.openedAt`을 남기며 `notification.push.opened`(userId·notificationId)를 한 번 로그한다.
 - 집계는 notification push의 public `PushFunnelReaderPort.summarize`(생성 구간·캠페인·종류로 좁힘)가 한 SQL 묶음으로 한다. 관리자 HTTP API로는 아직 내보내지 않는다.
 - 문구·발송 시각 실험은 retention slice의 `ExperimentAssignerPort`(결정적 해시)로 배정하고 결과는 퍼널과 리텐션으로 읽는다. 다른 slice가 쓰기 시작하면 Context `shared`로 올린다.

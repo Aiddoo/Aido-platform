@@ -1,6 +1,6 @@
 import type { BroadcastTargetFilter } from "@aido/api/vocabulary";
 
-import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcasts/application/ports/admin-user-directory.reader.port";
+import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcast-campaigns/application/ports/admin-user-directory.reader.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 대상 필터와 상관없이 가진 사용자를 ID 오름차순으로 돌려준다(필터 SQL은 Drizzle 통합 테스트가 본다)

@@ -16,8 +16,8 @@ import {
   RETENTION_QUEUE,
   RetentionJobName,
 } from "#api/modules/notification/retention/infrastructure/jobs/retention.queue";
-import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcasts/application/use-cases/create-broadcast-campaign.use-case";
-import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcasts/infrastructure/jobs/broadcast-fan-out.queue";
+import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcast-campaigns/application/use-cases/create-broadcast-campaign.use-case";
+import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TestDatabaseClient } from "#test/setup/test-database";

@@ -1,8 +1,8 @@
 import {
   type BroadcastDeliveryGroup,
   BroadcastJobEnqueuerPort,
-} from "#api/modules/operations/broadcasts/application/ports/broadcast-job-enqueuer.port";
-import type { BroadcastCampaignId } from "#api/modules/operations/broadcasts/domain/broadcast-campaign-id.vo";
+} from "#api/modules/operations/broadcast-campaigns/application/ports/broadcast-job-enqueuer.port";
+import type { BroadcastCampaignId } from "#api/modules/operations/broadcast-campaigns/domain/broadcast-campaign-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface RecordedFanOut {

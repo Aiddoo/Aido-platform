@@ -67,8 +67,8 @@ describe("AdminNotificationProcessor — 관리자 알림 작업 소비", () => 
     await jobQueue.drain(ADMIN_NOTIFICATION_QUEUE);
 
     // Then
-    expect(summaryQueue.sent.map(({ options }) => options)).toEqual([
-      { jobId: "signup-summary_2026-02-10" },
+    expect(summaryQueue.sent.map(({ deduplicationKey }) => deduplicationKey)).toEqual([
+      "signup-summary_2026-02-10",
     ]);
     expect(notifier.sent).toEqual([]);
   });

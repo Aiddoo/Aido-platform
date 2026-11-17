@@ -2,12 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import {
-  AdminNotificationQueuePort,
-  type EnqueueSendOptions,
-} from "../../application/ports/admin-notification-queue.port.js";
-import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
-import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
+import { AdminNotificationQueuePort } from "../../application/ports/admin-notification-queue.port.js";
+import type { AdminNotice } from "../../domain/admin-notice.aggregate.js";
 import {
   ADMIN_NOTIFICATION_QUEUE,
   AdminNotificationJobName,
@@ -23,15 +19,14 @@ export class AdminNotificationQueueAdapter extends AdminNotificationQueuePort {
     this.#jobQueue = jobQueue;
   }
 
-  async enqueueSend(
-    channel: AdminNotificationChannel,
-    notice: AdminNotice,
-    options?: EnqueueSendOptions,
-  ): Promise<void> {
+  async enqueueSend(notice: AdminNotice): Promise<void> {
     await this.#jobQueue.enqueue(
       ADMIN_NOTIFICATION_QUEUE,
-      { name: AdminNotificationJobName.SEND, data: { channel, notice } },
-      options?.jobId == null ? undefined : { idempotencyKey: options.jobId },
+      {
+        name: AdminNotificationJobName.SEND,
+        data: { channel: notice.channel, notice: notice.toPrimitives() },
+      },
+      notice.deduplicationKey == null ? undefined : { idempotencyKey: notice.deduplicationKey },
     );
   }
 }

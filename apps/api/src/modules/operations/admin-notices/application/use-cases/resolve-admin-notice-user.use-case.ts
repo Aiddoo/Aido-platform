@@ -2,9 +2,9 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { AdminNoticeUser } from "../../domain/admin-notice.aggregate.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import type { AdminNoticeUserReaderPort } from "../ports/admin-notice-user.reader.port.js";
-import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 
 export interface ResolveAdminNoticeUserDependencies {
   readonly userReader: Pick<AdminNoticeUserReaderPort, "findById">;

@@ -2,8 +2,8 @@ import { RecordingAdminNotificationQueue } from "#test/doubles/operations/record
 import { StubAdminNoticeUserReader } from "#test/doubles/operations/stub-admin-notice-user.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
+import type { AdminNoticeUser } from "../../domain/admin-notice.aggregate.js";
 import type { SubscriptionNoticeInput } from "../ports/admin-event-notifier.port.js";
-import type { AdminNoticeUser } from "../read-models/admin-notice.read-model.js";
 import { EnqueueSubscriptionEventUseCase } from "./enqueue-subscription-event.use-case.js";
 import { ResolveAdminNoticeUserUseCase } from "./resolve-admin-notice-user.use-case.js";
 
@@ -56,7 +56,7 @@ describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
     expect(queue.sent).toEqual([
       {
         channel: "payment",
-        options: { jobId: "subscription-event_evt-1" },
+        deduplicationKey: "subscription-event_evt-1",
         notice: {
           type: "subscription_event",
           user: storedUser,
@@ -119,6 +119,6 @@ describe("EnqueueSubscriptionEventUseCase — 결제 알림 등록", () => {
     await useCase.execute(withoutEventId);
 
     // Then
-    expect(queue.sent[0]?.options).toBeUndefined();
+    expect(queue.sent[0]?.deduplicationKey).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ export type {
 } from "./application/read-models/user-brief.read-model.js";
 export { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 export { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
+export { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
 export { IdentityUserAccessModule } from "./identity-user-access.module.js";
 export { LastActiveInterceptor } from "./presentation/http/interceptors/last-active.interceptor.js";
 // 사람 id 칸을 가진 다른 Context의 행을 페이지로 고르는 SQL이 사용자 테이블을 직접 읽지 않게 한다
@@ -21,3 +22,9 @@ export {
   undeletedUserCondition,
   userTagContainsCondition,
 } from "./infrastructure/persistence/user-conditions.query-fragment.js";
+// 사람을 id 순서로 고르는 다른 Context의 한 SQL이 사용자 테이블 규칙을 직접 쓰지 않게 한다
+export {
+  type UserAudience,
+  type UserAudienceFilter,
+  userAudience,
+} from "./infrastructure/persistence/user-audience.query-fragment.js";

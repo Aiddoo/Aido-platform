@@ -2,11 +2,11 @@ import { StubAdminNotifier } from "#test/doubles/operations/stub-admin-notifier"
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
+import type { AdminNoticePrimitives } from "../../domain/admin-notice.aggregate.js";
 import type { AdminNotifyOutcome } from "../ports/admin-notifier.port.js";
-import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
 import { SendAdminNotificationUseCase } from "./send-admin-notification.use-case.js";
 
-const notification: AdminNotice = {
+const notification: AdminNoticePrimitives = {
   type: "subscription_event",
   user: {
     userId: "user-1",

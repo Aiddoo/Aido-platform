@@ -48,7 +48,7 @@ describe("DispatchDailySignupSummaryUseCase — 일일 가입 요약", () => {
     expect(queue.sent).toEqual([
       {
         channel: "admin",
-        options: { jobId: "signup-summary_2026-02-10" },
+        deduplicationKey: "signup-summary_2026-02-10",
         notice: {
           type: "message",
           message: expect.objectContaining({

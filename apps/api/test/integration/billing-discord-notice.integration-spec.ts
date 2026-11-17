@@ -6,23 +6,21 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
 import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
-import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
 import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
 import { SendAdminNotificationUseCase } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
+import type { AdminNoticePrimitives } from "#api/modules/operations/admin-notices/domain/admin-notice.aggregate";
 import { renderDiscordEmbed } from "#api/modules/operations/admin-notices/infrastructure/adapters/discord-embed.mapper";
 import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
 import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.queue";
-import { DrizzleAdminNoticeUserReader } from "#api/modules/operations/admin-notices/infrastructure/persistence/drizzle-admin-notice-user.reader";
 import { account, user as userTable, userProfile } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import type { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
-import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
+import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import {
@@ -109,7 +107,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   }
 
   /** 커밋 뒤 기다리지 않고 넘긴 알림이 큐에 들어올 때까지 기다렸다가 작업자로 처리한다. */
-  async function deliverPaymentNotices(count: number): Promise<AdminNotice[]> {
+  async function deliverPaymentNotices(count: number): Promise<AdminNoticePrimitives[]> {
     await vi.waitFor(() => expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toHaveLength(count), {
       timeout: 5000,
     });
@@ -240,53 +238,5 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     });
     expect(embed.fields).toContainEqual({ name: "요금제", value: "월간", inline: true });
     expect(embed.fields).toContainEqual({ name: "프리미엄", value: "무료", inline: true });
-  });
-});
-
-describe("DrizzleAdminNoticeUserReader (실제 PostgreSQL)", () => {
-  let database: TestDatabase;
-  let client: TestDatabaseClient;
-  let reader: DrizzleAdminNoticeUserReader;
-
-  beforeAll(async () => {
-    database = new TestDatabase();
-    client = await database.start();
-    const { transactionHost } = createDatabaseTransactionFixture(client);
-    reader = new DrizzleAdminNoticeUserReader(transactionHost);
-  });
-  afterAll(async () => database?.stop());
-  beforeEach(async () => {
-    await database.cleanup();
-    UserFixture.reset();
-    AccountFixture.reset();
-  });
-
-  it("탈퇴한 사용자는 찾지 않는다", async () => {
-    // Given
-    const deleted = UserFixture.create({ deletedAt: instantFromDate(AT) });
-    await client.insert(userTable).values(deleted);
-
-    // When
-    const found = await reader.findById(UserId.reconstitute(deleted.id));
-
-    // Then
-    expect(found).toBeNull();
-  });
-
-  it("프로필·계정이 없는 사용자는 닉네임·가입 방식을 비운다", async () => {
-    // Given
-    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: instantFromDate(JOINED_AT) });
-    await client.insert(userTable).values(bare);
-
-    // When
-    const found = await reader.findById(UserId.reconstitute(bare.id));
-
-    // Then
-    expect(found).toEqual({
-      userId: bare.id,
-      email: bare.email,
-      userTag: "BARE0001",
-      joinedAt: JOINED_AT.toISOString(),
-    });
   });
 });
