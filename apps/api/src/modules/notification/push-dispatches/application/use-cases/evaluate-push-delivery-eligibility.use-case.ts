@@ -16,7 +16,7 @@ import {
   type UserNotificationSettingsPort,
 } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import { reminderOccurrenceStart } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { todoReminderPushEndsAt } from "../../../shared/domain/reminder-occurrence.domain-service.js";
 import { resolvePushExpiry } from "../../domain/push-delivery-options.domain-service.js";
 import {
   isAiPushDisabled,
@@ -320,10 +320,7 @@ export class EvaluatePushDeliveryEligibilityUseCase {
       now: this.#dependencies.clock.now(),
       timeZone,
       expiresBeforeQuietHours,
-      todoStartsAt:
-        data.type === "TODO_REMINDER" && data.reminderOccurrenceKey != null
-          ? reminderOccurrenceStart(data.reminderOccurrenceKey, timeZone)
-          : null,
+      reminderEndsAt: data.type === "TODO_REMINDER" ? todoReminderPushEndsAt(data, timeZone) : null,
     });
     if (expiry.status === "quiet-hours") {
       return this.#skipped(

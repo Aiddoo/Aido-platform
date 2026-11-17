@@ -25,16 +25,17 @@
 
 보관 시간·우선순위: 메시지마다 Expo `ttl`(초)과 `priority`를 싣는다. 기기가 꺼져 있으면 FCM·APNs가 `ttl`까지만 보관하고 버리므로 늦게 켠 태블릿에 지난 알림이 쌓이지 않는다. 메시지 단위 값이라 등록 토큰에는 영향이 없다. `ttl`은 발송 판단(`EvaluatePushDeliveryEligibilityUseCase`)이 받는 사람 저장 시간대로 `resolvePushExpiry`(`push-delivery-options.domain-service.ts`) 하나에서 정한다. 아래 종류 기본값에서 시작해 더 이른 끝으로 줄인다.
 
-| 묶음          | `ttl`  | 알림                                                                                                                                  | 이유                                                             |
-| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| REMINDER      | 1시간  | `TODO_REMINDER`                                                                                                                       | 할 일 시작까지(최소 60초)만. 10분 전 알림은 10분이다             |
-| BRIEFING      | 2시간  | `MORNING_REMINDER`, `EVENING_REMINDER`, `WEATHER_MORNING`, `WEATHER_EVENING`                                                          | 몇 시간 지나면 그날 계획에 쓸모없음                              |
-| TODAY_ONLY    | 3시간  | `LUNCH_NUDGE`, `STREAK_AT_RISK`, `SOCIAL_DIGEST`, `DAILY_COMPLETE`, `FRIEND_COMPLETED`                                                | 받는 사람 자정까지만. 자정이 없는 서머타임 날은 그날 첫 순간까지 |
-| SOCIAL        | 12시간 | `FOLLOW_NEW`, `FOLLOW_ACCEPTED`, `NUDGE_RECEIVED`, `NUDGE_REPLIED`, `NUDGE_THANKED`, `CHEER_RECEIVED`, `TODO_SHARED`, `INVITE_JOINED` | 반나절 늦어도 읽을 만함, 그 뒤는 알림함                          |
-| INFORMATIONAL | 24시간 | 그 밖(`WINBACK`, `AI_SUGGESTION`, `NUDGE_SUGGEST`, `INVITE_*`, 리포트, 공지·관리자 발송, `PREMIUM_*`)                                 | 하루 안에 닿으면 되고 그 뒤는 알림함                             |
+| 묶음          | `ttl`  | 알림                                                                                                                                  | 이유                                                                                 |
+| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| REMINDER      | 1시간  | `TODO_REMINDER`                                                                                                                       | 할 일 시작까지(최소 60초)만. 10분 전 알림은 10분, 다시 알림은 울릴 시각 + 15분까지다 |
+| BRIEFING      | 2시간  | `MORNING_REMINDER`, `EVENING_REMINDER`, `WEATHER_MORNING`, `WEATHER_EVENING`                                                          | 몇 시간 지나면 그날 계획에 쓸모없음                                                  |
+| TODAY_ONLY    | 3시간  | `LUNCH_NUDGE`, `STREAK_AT_RISK`, `SOCIAL_DIGEST`, `DAILY_COMPLETE`, `FRIEND_COMPLETED`                                                | 받는 사람 자정까지만. 자정이 없는 서머타임 날은 그날 첫 순간까지                     |
+| SOCIAL        | 12시간 | `FOLLOW_NEW`, `FOLLOW_ACCEPTED`, `NUDGE_RECEIVED`, `NUDGE_REPLIED`, `NUDGE_THANKED`, `CHEER_RECEIVED`, `TODO_SHARED`, `INVITE_JOINED` | 반나절 늦어도 읽을 만함, 그 뒤는 알림함                                              |
+| INFORMATIONAL | 24시간 | 그 밖(`WINBACK`, `AI_SUGGESTION`, `NUDGE_SUGGEST`, `INVITE_*`, 리포트, 공지·관리자 발송, `PREMIUM_*`)                                 | 하루 안에 닿으면 되고 그 뒤는 알림함                                                 |
 
 - 야간 전 만료: 광고성(`ENGAGEMENT` 목적·광고성 종류)과, `nightPushEnabled=false`인 사람에게 가는 야간 예외 아닌 알림은 받는 사람 다음 21:00까지만 보관한다. 20:15 스트릭 위기는 3시간이 아니라 45분이다. 21:00까지 5분 미만이면 대기열·공급자 지연으로 야간에 뜰 수 있어 보내지 않고 야간과 같은 사유(`MARKETING_QUIET_HOURS`·`NIGHT_PUSH_DISABLED`)로 건너뛴다.
-- 할 일 시작은 알림 행의 회차(`reminderOccurrenceKey`, 날짜 + 벽시계)와 받는 사람 시간대로 만든다. 회차가 없는 반복 멈춤 안내와 회차가 날짜·시각이 아닌 다시 알림(누른 알림 id)은 1시간이다.
+- 할 일 시작은 알림 행의 회차(`reminderOccurrenceKey`, 날짜 + 벽시계)와 받는 사람 시간대로 만든다. 회차가 없는 반복 멈춤 안내는 1시간이다.
+- 다시 알림(`metadata.stage = "snooze"`, `SNOOZED_TODO_REMINDER_STAGE`)은 할 일 시작 뒤에 울리는 것이 정상이고 회차 칸이 누른 알림 id라 회차로 읽지 않는다. 처리기가 보내 주는 늦음 한도와 같이 울릴 시각(`metadata.remindAt`) + 15분(`REMINDER_LATE_LIMIT_MINUTES`)까지, 최소 60초·최대 1시간 보관한다(`todoReminderPushEndsAt`).
 - 관리자 강제 발송은 수신 설정을 따르지 않아 야간 전 만료도 걸지 않는다.
 
 `priority`는 모두 `high`다. `normal`은 Android Doze에서 몇 시간 늦어져 광고성 알림이 야간에 닿을 수 있다. Android 채널은 출시 앱이 만든 `default` 하나뿐이라 모든 알림을 `default`로 보낸다.
@@ -101,7 +102,7 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 
 key builder는 slice마다 `*-job-keys.constants.ts`(`notification-job-keys`·`push-delivery-job-keys`·`reminder-job-keys`)와 각 큐 모듈의 순수 함수다. 다른 Context는 상태를 바꾼 트랜잭션 안에서 `NotificationQueueAdapter`(`notification-notifications-jobs.public.ts`)로 이벤트를 넘기고 기다린다. 작업 행이 그 변경과 함께 커밋되므로(트랜잭셔널 아웃박스) 커밋 직후 프로세스가 멈춰도 알림을 잃지 않고, 저장 실패는 호출자의 트랜잭션을 되돌린다. 사례: 팔로우·친구 성립·응원·넛지·첫 친구 마일스톤.
 
-다시 알림(`send-snoozed-reminder`)은 같은 `todo-reminder.v1`에 key `reminder-snooze_<todoId>_<누른 알림 id>`, `startAfter` 10분 뒤로 넣어 같은 알림을 두 번 눌러도 작업이 하나다. 알림 행은 단계 `snooze`와 회차 칸(`reminderOccurrenceKey`)의 누른 알림 id로 기존 유니크 인덱스(할 일 + 종류 + 단계 + 회차)가 한 번만 받아 마이그레이션이 없다. 회차 단계(60·10분)와 겹치지 않고, 다시 온 알림에서 또 누르면 새 알림 id라 다시 울린다. 같은 알림을 다시 누르면 새로 넣지 않고 그 작업 payload의 `remindAt`을 돌려준다(`JobQueuePort.findPayload`, pg-boss `getJobById`). 문구는 보내는 때가 할 일 시각 전이면 곧 시작(`TODO_REMINDER_SNOOZED_BEFORE_START`), 아니면 이제 시작(`TODO_REMINDER_SNOOZED`)이다.
+다시 알림(`send-snoozed-reminder`)은 같은 `todo-reminder.v1`에 key `reminder-snooze_<todoId>_<누른 알림 id>`, `startAfter` 10분 뒤로 넣어 같은 알림을 두 번 눌러도 작업이 하나다. 알림 행은 단계 `snooze`(`SNOOZED_TODO_REMINDER_STAGE`)·울릴 시각(`metadata.remindAt`)과 회차 칸(`reminderOccurrenceKey`)의 누른 알림 id로 기존 유니크 인덱스(할 일 + 종류 + 단계 + 회차)가 한 번만 받아 마이그레이션이 없다. 회차 단계(60·10분)와 겹치지 않고, 다시 온 알림에서 또 누르면 새 알림 id라 다시 울린다. 같은 알림을 다시 누르면 새로 넣지 않고 그 작업 payload의 `remindAt`을 돌려준다(`JobQueuePort.findPayload`, pg-boss `getJobById`). 문구는 보내는 때가 할 일 시각 전이면 곧 시작(`TODO_REMINDER_SNOOZED_BEFORE_START`), 아니면 이제 시작(`TODO_REMINDER_SNOOZED`)이다.
 
 DB 연결: 앱 풀(`DATABASE_POOL_MAX` 기본 10)과 pg-boss 풀(`max: 3`)은 따로다. 각 작업은 짧은 transaction(claim·finalize·outbox 쓰기) 동안만 연결을 잡고 Expo 호출과 commit 뒤 enqueue 중에는 잡지 않는다. fan-out 한 페이지는 알림·dispatch·outbox 500건씩을 한 transaction에 쓴다. worker 동시성을 늘릴 때는 풀 크기를 함께 본다.
 

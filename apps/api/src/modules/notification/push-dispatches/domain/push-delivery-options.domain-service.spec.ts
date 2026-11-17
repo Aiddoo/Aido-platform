@@ -12,7 +12,7 @@ function expiryOf(overrides: Partial<PushExpiryInput> & Pick<PushExpiryInput, "t
     now: SEOUL_MORNING,
     timeZone: TimeZone.reconstitute("Asia/Seoul"),
     expiresBeforeQuietHours: false,
-    todoStartsAt: null,
+    reminderEndsAt: null,
     ...overrides,
   });
 }
@@ -50,7 +50,7 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
       const now = startsAt.subtract({ seconds: minutesBefore * 60 });
 
       // When
-      const expiry = expiryOf({ type: "TODO_REMINDER", now, todoStartsAt: startsAt });
+      const expiry = expiryOf({ type: "TODO_REMINDER", now, reminderEndsAt: startsAt });
 
       // Then
       expect(expiry).toEqual({ status: "deliverable", ttlSeconds });
@@ -60,7 +60,7 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
       // When
       const expiry = expiryOf({
         type: "TODO_REMINDER",
-        todoStartsAt: SEOUL_MORNING.add({ minutes: 90 }),
+        reminderEndsAt: SEOUL_MORNING.add({ minutes: 90 }),
       });
 
       // Then

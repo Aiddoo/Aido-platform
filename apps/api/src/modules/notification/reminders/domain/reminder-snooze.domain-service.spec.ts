@@ -1,4 +1,4 @@
-import { REMINDER_LATE_LIMIT_MINUTES } from "./notification-schedule.domain-service.js";
+import { REMINDER_LATE_LIMIT_MINUTES } from "../../shared/domain/reminder-occurrence.domain-service.js";
 import {
   snoozedReminderLateSkipReason,
   snoozedReminderTiming,

@@ -4,6 +4,7 @@ import { vi } from "vitest";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoReminderReader } from "#test/doubles/notification/stub-todo-reminder.reader";
@@ -519,7 +520,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
               todoId: 1,
               title,
               body,
-              metadata: { stage: "snooze" },
+              metadata: { stage: "snooze", remindAt: toIsoString(NOW) },
               reminderOccurrenceKey: String(NOTIFICATION_ID),
             }),
           },
@@ -548,7 +549,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
               title,
               body,
               copyKey: "scheduler.TODO_REMINDER_SNOOZED_BEFORE_START.v1",
-              metadata: { stage: "snooze" },
+              metadata: { stage: "snooze", remindAt: toIsoString(NOW) },
             }),
           },
         ]);

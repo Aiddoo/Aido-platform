@@ -6,6 +6,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
+import { REMINDER_LATE_LIMIT_MINUTES } from "../../../shared/domain/reminder-occurrence.domain-service.js";
 import {
   groupTimezonesByLocalClock,
   isReminderTimeDue,
@@ -17,7 +18,6 @@ import {
   isWithinScheduleWindow,
   MONDAY,
   NOTIFICATION_SCHEDULE,
-  REMINDER_LATE_LIMIT_MINUTES,
   REMINDER_LATE_SKIP_REASON,
 } from "../../domain/notification-schedule.domain-service.js";
 import type { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";

@@ -27,7 +27,7 @@ type PushExpiryClass = (typeof PUSH_EXPIRY_CLASSES)[number];
 
 // 기기가 꺼져 있으면 공급자(FCM·APNs)가 이 시간까지만 보관했다가 버린다. 아래 받는 사람 기준이 더 짧게 줄인다
 const TTL_MS_BY_EXPIRY_CLASS = {
-  // 할 일 60·10분 전 알림이다. 할 일 시작 시각까지로 줄인다
+  // 할 일 60·10분 전 알림과 다시 알림이다. 쓸모를 잃는 순간(할 일 시작, 다시 알림은 늦음 한도 끝)까지로 줄인다
   REMINDER: HOUR_MS,
   // 아침·저녁 요약과 날씨는 몇 시간 지나면 그날 계획에 쓸모가 없다
   BRIEFING: 2 * HOUR_MS,
@@ -75,7 +75,7 @@ const EXPIRY_CLASS_BY_TYPE = {
   PREMIUM_RENEWAL_UPCOMING: "INFORMATIONAL",
 } as const satisfies Record<NotificationType, PushExpiryClass>;
 
-// 시작이 코앞인 할 일 알림도 지금 켜져 있는 기기에는 닿도록 남기는 최소 보관 시간이다
+// 끝이 코앞인 할 일 알림도 지금 켜져 있는 기기에는 닿도록 남기는 최소 보관 시간이다
 const TODO_REMINDER_MIN_TTL_MS = MINUTE_MS;
 // 야간까지 이보다 덜 남았으면 보내지 않는다. 대기열·공급자 지연으로 21시를 넘겨 뜰 수 있어서다
 const QUIET_HOURS_SEND_MARGIN_MS = 5 * MINUTE_MS;
@@ -87,8 +87,8 @@ export interface PushExpiryInput {
   readonly timeZone: TimeZone;
   // 광고성이거나, 야간 수신을 끈 사람에게 가는 야간 예외 아닌 알림이면 야간 전에 사라져야 한다
   readonly expiresBeforeQuietHours: boolean;
-  // TODO_REMINDER의 할 일 시작 순간. 모르면(반복 멈춤 안내·벽시계 없는 옛 행) 종류 기본값을 쓴다
-  readonly todoStartsAt: Temporal.Instant | null;
+  // TODO_REMINDER가 쓸모를 잃는 순간(todoReminderPushEndsAt). 모르면(반복 멈춤 안내·벽시계 없는 옛 행) 종류 기본값을 쓴다
+  readonly reminderEndsAt: Temporal.Instant | null;
 }
 
 export type PushExpiry =
@@ -97,16 +97,16 @@ export type PushExpiry =
 
 /**
  * 공급자 보관 시간(Expo ttl → FCM android.ttl·APNs apns-expiration)을 받는 사람 기준으로 정한다.
- * 종류 기본값에서 할 일 시작·받는 사람 자정·받는 사람 야간 시작 중 이른 것으로 줄인다.
+ * 종류 기본값에서 할 일 리마인더의 끝·받는 사람 자정·받는 사람 야간 시작 중 이른 것으로 줄인다.
  */
 export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
   const { now, timeZone } = input;
   const expiryClass = EXPIRY_CLASS_BY_TYPE[input.type];
   const candidates = [now.add({ milliseconds: TTL_MS_BY_EXPIRY_CLASS[expiryClass] })];
 
-  if (expiryClass === "REMINDER" && input.todoStartsAt != null) {
+  if (expiryClass === "REMINDER" && input.reminderEndsAt != null) {
     candidates.push(
-      latest(input.todoStartsAt, now.add({ milliseconds: TODO_REMINDER_MIN_TTL_MS })),
+      latest(input.reminderEndsAt, now.add({ milliseconds: TODO_REMINDER_MIN_TTL_MS })),
     );
   }
   if (expiryClass === "TODAY_ONLY") {

@@ -5,6 +5,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
+import { createSnoozedReminderMetadata } from "../../../shared/domain/reminder-occurrence.domain-service.js";
 import { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
 
 const DAYTIME = Temporal.Instant.from("2026-07-16T03:00:00.000Z");
@@ -482,28 +483,91 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       ).toEqual([45 * 60, 45 * 60, 12 * 3600]);
     });
 
-    it("10분 전 할 일 리마인더는 받는 사람 시간대의 회차 시작까지 10분만 보관한다", async () => {
-      // Given
-      const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
-        localInstant("Asia/Seoul", "09:50"),
-      );
-      const recipient = await useCase.loadSingleRecipient("user-1");
-      const reminder = {
-        ...transactional,
-        type: "TODO_REMINDER" as const,
-        reminderOccurrenceKey: "2026-07-16T10:00",
-      };
+    it.each([
+      { stage: "60min", localNow: "09:00", ttlSeconds: 3600 },
+      { stage: "10min", localNow: "09:50", ttlSeconds: 600 },
+    ])(
+      "$stage 할 일 리마인더는 받는 사람 시간대의 회차 시작까지 $ttlSeconds초 보관한다",
+      async ({ stage, localNow, ttlSeconds }) => {
+        // Given
+        const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
+          localInstant("Asia/Seoul", localNow),
+        );
+        const recipient = await useCase.loadSingleRecipient("user-1");
+        const reminder = {
+          ...transactional,
+          type: "TODO_REMINDER" as const,
+          metadata: { stage },
+          reminderOccurrenceKey: "2026-07-16T10:00",
+        };
 
-      // When
-      const decision = await useCase.evaluateSingle(
-        reminder,
-        recipient,
-        RATE_LIMIT_DISPATCH_ID,
-        true,
-      );
+        // When
+        const decision = await useCase.evaluateSingle(
+          reminder,
+          recipient,
+          RATE_LIMIT_DISPATCH_ID,
+          true,
+        );
 
-      // Then
-      expect(decision).toEqual({ status: "eligible", candidate: reminder, ttlSeconds: 600 });
+        // Then
+        expect(decision).toEqual({ status: "eligible", candidate: reminder, ttlSeconds });
+      },
+    );
+
+    describe("다시 알림은 할 일 시작 뒤에 울려도 처리기의 늦음 한도(울릴 시각 + 15분)까지 보관한다", () => {
+      const remindAt = localInstant("Asia/Seoul", "10:05");
+
+      it.each([
+        { name: "울릴 시각에 보내면", sentLateMinutes: 0, ttlSeconds: 15 * 60 },
+        { name: "2분 늦게 보내면", sentLateMinutes: 2, ttlSeconds: 13 * 60 },
+        { name: "한도 30초 전에 보내면", sentLateMinutes: 14.5, ttlSeconds: 60 },
+      ])("$name $ttlSeconds초다(최소 60초)", async ({ sentLateMinutes, ttlSeconds }) => {
+        // Given
+        const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
+          remindAt.add({ seconds: sentLateMinutes * 60 }),
+        );
+        const recipient = await useCase.loadSingleRecipient("user-1");
+        const snoozed = {
+          ...transactional,
+          type: "TODO_REMINDER" as const,
+          metadata: createSnoozedReminderMetadata(remindAt),
+          reminderOccurrenceKey: "1024",
+        };
+
+        // When
+        const decision = await useCase.evaluateSingle(
+          snoozed,
+          recipient,
+          RATE_LIMIT_DISPATCH_ID,
+          true,
+        );
+
+        // Then
+        expect(decision).toEqual({ status: "eligible", candidate: snoozed, ttlSeconds });
+      });
+
+      it("울릴 시각이 없는 다시 알림은 회차 칸을 할 일 시작으로 읽지 않고 종류 기본값 1시간이다", async () => {
+        // Given
+        const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(remindAt);
+        const recipient = await useCase.loadSingleRecipient("user-1");
+        const snoozed = {
+          ...transactional,
+          type: "TODO_REMINDER" as const,
+          metadata: { stage: "snooze" },
+          reminderOccurrenceKey: "2026-07-16T10:00",
+        };
+
+        // When
+        const decision = await useCase.evaluateSingle(
+          snoozed,
+          recipient,
+          RATE_LIMIT_DISPATCH_ID,
+          true,
+        );
+
+        // Then
+        expect(decision).toEqual({ status: "eligible", candidate: snoozed, ttlSeconds: 3600 });
+      });
     });
   });
 });
