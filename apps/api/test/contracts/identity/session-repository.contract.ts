@@ -2,16 +2,15 @@ import { REVOKE_REASON } from "@aido/api/vocabulary";
 
 import type { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
-import type {
+import {
   Session,
-  SessionPrimitives,
+  type SessionPrimitives,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_OTHER_USER_ID,
   AUTH_FIXTURE_USER_ID,
-  createSessionFixture,
 } from "#test/fixtures/identity/session.fixture";
 
 const LATER = AUTH_FIXTURE_NOW.add({ minutes: 5 });
@@ -22,11 +21,20 @@ async function saveSession(
   overrides: Partial<SessionPrimitives> = {},
 ): Promise<Session> {
   hashSequence += 1;
-  const session = createSessionFixture({
-    id: (await repository.nextId()).value,
-    refreshTokenHash: `hash-${hashSequence}`,
-    ...overrides,
+  const session = Session.create({
+    id: await repository.nextId(),
+    userId: overrides.userId ?? AUTH_FIXTURE_USER_ID,
+    refreshTokenHash: overrides.refreshTokenHash ?? `hash-${hashSequence}`,
+    tokenFamily: overrides.tokenFamily ?? "token-family",
+    deviceFingerprint: "Aido/1.15.0",
+    userAgent: "Aido/1.15.0",
+    ipAddress: "127.0.0.1",
+    expiresAt: overrides.expiresAt ?? AUTH_FIXTURE_NOW.add({ hours: 24 * 7 }),
+    now: overrides.lastUsedAt ?? AUTH_FIXTURE_NOW,
   });
+  if (overrides.revokedAt != null) {
+    session.revoke(REVOKE_REASON.USER_LOGOUT, overrides.revokedAt);
+  }
   await repository.save(session);
   return session;
 }

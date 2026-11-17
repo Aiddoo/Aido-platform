@@ -1,18 +1,25 @@
+import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
-import type { IssueVerificationCodeUseCase } from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
+import type {
+  IssueVerificationCodeUseCase,
+  IssuedVerificationCode,
+} from "../../../verifications/application/use-cases/issue-verification-code.use-case.js";
 import type { SendVerificationCodeUseCase } from "../../../verifications/application/use-cases/send-verification-code.use-case.js";
 import { verificationResendCooldown } from "../../../verifications/application/verifications.errors.js";
 import { resendCooldownRemainingSeconds } from "../../../verifications/domain/verification.domain-service.js";
 import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
 import type { PasswordResetCooldownPort } from "../ports/password-reset-cooldown.port.js";
+
+const RESET_REQUEST_MESSAGE = "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.";
 
 export interface RequestPasswordResetCommand {
   readonly email: string;
@@ -54,10 +61,13 @@ export class RequestPasswordResetUseCase {
     const user = await this.#dependencies.userRepository.findByEmail(email);
 
     if (user != null && user.deletedAt == null) {
-      const issued = await this.#dependencies.issueVerificationCode.execute({
-        userId: user.id.value,
-        type: "PASSWORD_RESET",
-      });
+      const issued = await this.#issueUnlessCoolingDown(user.id.value);
+      if (issued == null) {
+        this.#dependencies.logger.debug({
+          event: LinkedAccountsLogEvent.PASSWORD_RESET_REQUEST_SKIPPED,
+        });
+        return { message: RESET_REQUEST_MESSAGE };
+      }
       await this.#dependencies.sendVerificationCode.execute({
         userId: user.id.value,
         email,
@@ -84,8 +94,22 @@ export class RequestPasswordResetUseCase {
       });
     }
 
-    return {
-      message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.",
-    };
+    return { message: RESET_REQUEST_MESSAGE };
+  }
+
+  // 계정 대기(코드 발급 60초)는 없는 이메일에는 없어 VERIFY_0753을 그대로 주면 가입 여부가 드러난다.
+  // 이메일 대기가 캐시에서 사라졌거나 경계에 걸려도 같은 성공 응답을 주고 메일만 보내지 않는다
+  async #issueUnlessCoolingDown(userId: string): Promise<IssuedVerificationCode | null> {
+    try {
+      return await this.#dependencies.issueVerificationCode.execute({
+        userId,
+        type: "PASSWORD_RESET",
+      });
+    } catch (error) {
+      if (error instanceof ApplicationException && error.errorCode === ErrorCode.VERIFY_0753) {
+        return null;
+      }
+      throw error;
+    }
   }
 }

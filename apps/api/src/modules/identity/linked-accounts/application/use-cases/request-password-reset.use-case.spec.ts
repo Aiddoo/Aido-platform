@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { InMemoryPasswordResetCooldown } from "#test/doubles/identity/in-memory-password-reset-cooldown";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   AUTH_CREDENTIAL_NOW,
@@ -143,5 +144,47 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     expect(afterCooldown).toEqual({
       message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.",
     });
+  });
+
+  it("가입한 이메일이 정확히 60초 뒤 다시 요청해도 없는 이메일과 같은 성공 응답이고 메일은 보내지 않는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
+    const useCase = new RequestPasswordResetUseCase({ ...fixture, clock });
+    await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
+    await useCase.execute({ email: "nobody@example.com", emailLocale: "ko" });
+    clock.advanceBy({ seconds: 60 });
+
+    // When
+    const known = await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
+    const unknown = await useCase.execute({ email: "nobody@example.com", emailLocale: "ko" });
+
+    // Then
+    expect(known).toEqual(unknown);
+    expect(fixture.verificationRepository.all).toHaveLength(1);
+  });
+
+  it("이메일 대기가 캐시에서 사라져도 가입한 이메일은 없는 이메일과 같은 성공 응답이다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
+    await new RequestPasswordResetUseCase({ ...fixture, clock }).execute({
+      email: fixture.user.email,
+      emailLocale: "ko",
+    });
+    clock.advanceBy({ seconds: 10 });
+    const afterEviction = new RequestPasswordResetUseCase({
+      ...fixture,
+      clock,
+      resetCooldown: new InMemoryPasswordResetCooldown(),
+    });
+
+    // When
+    const known = await afterEviction.execute({ email: fixture.user.email, emailLocale: "ko" });
+    const unknown = await afterEviction.execute({ email: "nobody@example.com", emailLocale: "ko" });
+
+    // Then
+    expect(known).toEqual(unknown);
+    expect(fixture.verificationRepository.all).toHaveLength(1);
   });
 });

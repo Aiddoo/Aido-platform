@@ -26,7 +26,7 @@ describe("LoginController — 로그인 컨트롤러", () => {
   it("전체 로그아웃은 출시 앱이 받던 안내 문구만 응답한다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    await fixture.sessionRepository.save(createSessionFixture({ userId: fixture.user.id }));
+    fixture.sessionRepository.seed(createSessionFixture({ userId: fixture.user.id }));
     const user: CurrentUserPayload = {
       userId: fixture.user.id,
       email: fixture.user.email,

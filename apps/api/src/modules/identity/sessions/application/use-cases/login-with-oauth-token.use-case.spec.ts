@@ -309,7 +309,7 @@ describe("LoginWithOAuthToken — 공급자 인증과 사용자 생명주기", (
     fixture.identityProvider.profile.email = fixture.user.email;
     const existingSession = createSessionFixture({ userId: fixture.user.id });
     const sessionId = existingSession.id.value;
-    await fixture.sessionRepository.save(existingSession);
+    fixture.sessionRepository.seed(existingSession);
     fixture.cacheService.sessionIds.add(sessionId);
     const currentUser = new GetCurrentUserUseCase(fixture);
     const before = await currentUser.execute({

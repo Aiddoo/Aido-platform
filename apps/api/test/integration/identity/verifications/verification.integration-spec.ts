@@ -270,6 +270,22 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     },
   );
 
+  it("동시에 들어온 틀린 시도 여러 개도 시도 횟수는 한도에서 멈춘다", async () => {
+    // Given
+    const verification = await givenVerification({ attempts: 0 });
+
+    // When
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () =>
+        consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" }),
+      ),
+    );
+
+    // Then
+    expect(results.every((result) => result.status === "rejected")).toBe(true);
+    expect((await readVerification(verification.id))?.attempts).toBe(5);
+  });
+
   it("hash가 다른 사본은 소비 저장을 거부하고 같은 코드의 두 소비 중 하나만 저장한다", async () => {
     // Given
     const verification = await givenVerification({ attempts: 1 });

@@ -9,11 +9,18 @@ import type {
 import type { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-export class StubSessionCache implements Pick<SessionCachePort, "invalidateSession"> {
+export class StubSessionCache implements Pick<
+  SessionCachePort,
+  "invalidateSession" | "evictSession"
+> {
   readonly sessionIds: Set<string>;
 
   constructor(sessionIds: readonly string[] = []) {
     this.sessionIds = new Set(sessionIds);
+  }
+
+  async evictSession(sessionId: SessionId): Promise<void> {
+    await this.invalidateSession(sessionId);
   }
 
   async invalidateSession(sessionId: SessionId): Promise<void> {

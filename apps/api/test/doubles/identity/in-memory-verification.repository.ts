@@ -113,7 +113,11 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
   async saveFailedAttempt(entity: Verification): Promise<void> {
     const verificationId = entity.id;
     const verification = this.#verifications.get(verificationId.value);
-    if (verification == null) {
+    if (
+      verification == null ||
+      verification.usedAt != null ||
+      verification.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS
+    ) {
       return;
     }
     this.#verifications.set(verificationId.value, {

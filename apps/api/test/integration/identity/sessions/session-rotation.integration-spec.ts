@@ -1,5 +1,5 @@
 import { REVOKE_REASON } from "@aido/api/vocabulary";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
@@ -147,6 +147,21 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     expect(persisted?.tokenVersion).toBe(2);
     expect(persisted?.previousTokenHash).toBe("current-hash");
     expect(["first-hash", "second-hash"]).toContain(persisted?.refreshTokenHash);
+  });
+
+  it("읽은 뒤 사라진 세션은 다시 넣지 않고 저장이 false다", async () => {
+    // Given
+    const session = await givenSession({ refreshTokenHash: "vanishing-hash", tokenVersion: 1 });
+    const loaded = await repository.findById(SessionId.reconstitute(session.id));
+    await client.delete(sessionTable).where(eq(sessionTable.id, session.id));
+    loaded?.revoke(REVOKE_REASON.USER_LOGOUT, now);
+
+    // When
+    const saved = loaded == null ? true : await repository.save(loaded);
+
+    // Then
+    expect(saved).toBe(false);
+    expect(await readSession(session.id)).toBeUndefined();
   });
 
   it("폐기한 세션은 버전이 일치해도 회전하거나 새 해시를 저장할 수 없다", async () => {

@@ -47,7 +47,7 @@ interface RefreshTokensDependencies {
   >;
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
-  readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
+  readonly cacheService: Pick<SessionCachePort, "invalidateSession" | "evictSession">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -170,7 +170,7 @@ export class RefreshTokensUseCase {
       throw sessionExpired();
     }
 
-    await this.#dependencies.cacheService.invalidateSession(session.id);
+    await this.#dependencies.cacheService.evictSession(session.id);
     await this.#dependencies.securityLogRepository.create({
       userId: session.userId,
       event: SECURITY_EVENT.TOKEN_REFRESH,

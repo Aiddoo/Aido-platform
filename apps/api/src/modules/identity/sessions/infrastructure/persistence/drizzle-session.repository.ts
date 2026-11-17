@@ -51,8 +51,13 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
   async save(entity: Session): Promise<boolean> {
     const row = toSessionRow(entity);
     const persistedTokenVersion = entity.persistedTokenVersion;
+    if (persistedTokenVersion == null) {
+      await this.#db.insert(session).values(row);
+      return true;
+    }
     const rotated = entity.hasRotatedSinceLoad();
-    // 폐기만 했으면 폐기 칸만 쓴다. 그 사이 회전한 세션도 폐기하고, 처음 폐기 시각은 덮지 않는다
+    // 폐기만 했으면 폐기 칸만 쓴다. 그 사이 회전한 세션도 폐기하고, 처음 폐기 시각은 덮지 않는다.
+    // 읽은 뒤 행이 사라졌으면(탈퇴 영구 삭제) 다시 넣지 않고 false다
     const changes: Partial<typeof session.$inferInsert> = rotated
       ? {
           refreshTokenHash: row.refreshTokenHash,
@@ -66,18 +71,15 @@ export class DrizzleSessionRepository extends SessionRepositoryPort {
         }
       : { revokedAt: row.revokedAt, revokedReason: row.revokedReason, updatedAt: row.updatedAt };
     const saved = await this.#db
-      .insert(session)
-      .values(row)
-      .onConflictDoUpdate({
-        target: session.id,
-        set: changes,
-        setWhere: and(
+      .update(session)
+      .set(changes)
+      .where(
+        and(
+          eq(session.id, entity.id.value),
           isNull(session.revokedAt),
-          rotated && persistedTokenVersion != null
-            ? eq(session.tokenVersion, persistedTokenVersion)
-            : undefined,
+          rotated ? eq(session.tokenVersion, persistedTokenVersion) : undefined,
         ),
-      })
+      )
       .returning({ id: session.id });
     return saved.length > 0;
   }

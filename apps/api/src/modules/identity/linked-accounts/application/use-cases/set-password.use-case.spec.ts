@@ -61,7 +61,7 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     // Given
     const fixture = await given();
     const session = createSessionFixture({ userId: fixture.user.id });
-    await fixture.sessionRepository.save(session);
+    fixture.sessionRepository.seed(session);
     fixture.cacheService.sessionIds.add(session.id.value);
     const currentUser = new GetCurrentUserUseCase(fixture);
     const query = { userId: fixture.user.id, sessionId: session.id.value, timezone: "Asia/Seoul" };

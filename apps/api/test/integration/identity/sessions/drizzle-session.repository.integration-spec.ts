@@ -1,10 +1,10 @@
+import { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
 import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrastructure/persistence/drizzle-session.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describeSessionRepositoryContract } from "#test/contracts/identity/session-repository.contract";
 import {
   AUTH_FIXTURE_OTHER_USER_ID,
   AUTH_FIXTURE_USER_ID,
-  createSessionFixture,
 } from "#test/fixtures/identity/session.fixture";
 import { UserFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -50,12 +50,16 @@ describe("DrizzleSessionRepository (실제 PostgreSQL)", () => {
     // Given
     const repository = createRepository();
     const lastUsedAt = Temporal.Instant.from("2027-01-08T12:00:00.123Z");
-    const session = createSessionFixture({
-      id: (await repository.nextId()).value,
-      deviceFingerprint: "d".repeat(64),
-      lastUsedAt,
-      createdAt: lastUsedAt,
+    const session = Session.create({
+      id: await repository.nextId(),
+      userId: AUTH_FIXTURE_USER_ID,
+      refreshTokenHash: "hash-device-length",
+      tokenFamily: "family-device-length",
+      deviceFingerprint: "d".repeat(80),
+      userAgent: "Aido/1.15.0",
+      ipAddress: "127.0.0.1",
       expiresAt: lastUsedAt.add({ hours: 24 * 7 }),
+      now: lastUsedAt,
     });
 
     // When
@@ -64,5 +68,6 @@ describe("DrizzleSessionRepository (실제 PostgreSQL)", () => {
 
     // Then
     expect(found?.toPrimitives()).toEqual(session.toPrimitives());
+    expect(found?.toPrimitives().deviceFingerprint).toHaveLength(64);
   });
 });

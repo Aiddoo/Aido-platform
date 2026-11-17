@@ -45,7 +45,7 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
       userId: "other-user",
     });
     for (const session of [...sessions, otherUserSession]) {
-      await fixture.sessionRepository.save(session);
+      fixture.sessionRepository.seed(session);
       fixture.cacheService.sessionIds.add(session.id.value);
     }
 
@@ -123,7 +123,7 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
     // Given
     const fixture = await given();
     const session = createSessionFixture({ userId: fixture.user.id });
-    await fixture.sessionRepository.save(session);
+    fixture.sessionRepository.seed(session);
     fixture.cacheService.sessionIds.add(session.id.value);
 
     // When

@@ -27,5 +27,6 @@ export abstract class VerificationRepositoryPort {
     now: Temporal.Instant,
   ): Promise<number>;
   /** 호출자 트랜잭션이 롤백돼도 실패 횟수가 남아야 한다 */
+  /** 동시에 틀려도 시도는 한도에서 멈춘다. 호출자 트랜잭션이 롤백돼도 남는다 */
   abstract saveFailedAttempt(verification: Verification): Promise<void>;
 }

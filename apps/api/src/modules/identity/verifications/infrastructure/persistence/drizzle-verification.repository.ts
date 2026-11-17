@@ -115,6 +115,12 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
     await this.#baseDb
       .update(verification)
       .set({ attempts: sql`${verification.attempts} + 1` })
-      .where(eq(verification.id, verificationId.value));
+      .where(
+        and(
+          eq(verification.id, verificationId.value),
+          isNull(verification.usedAt),
+          lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
+        ),
+      );
   }
 }

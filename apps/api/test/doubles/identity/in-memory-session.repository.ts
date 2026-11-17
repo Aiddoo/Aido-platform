@@ -32,6 +32,11 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
     );
   }
 
+  // 테스트가 이미 저장된 세션을 놓는다. 포트의 save는 읽어 온 세션을 새로 넣지 않는다
+  seed(session: Session): void {
+    this.#sessions.set(session.id.value, session.toPrimitives());
+  }
+
   stored(sessionId: string): SessionPrimitives | undefined {
     return this.#sessions.get(sessionId);
   }
@@ -67,11 +72,11 @@ export class InMemorySessionRepository extends SessionRepositoryPort {
   async save(session: Session): Promise<boolean> {
     const saved = session.toPrimitives();
     const prior = this.#sessions.get(saved.id);
-    if (session.persistedTokenVersion == null || prior == null) {
+    if (session.persistedTokenVersion == null) {
       this.#sessions.set(saved.id, saved);
       return true;
     }
-    if (prior.revokedAt != null) {
+    if (prior == null || prior.revokedAt != null) {
       return false;
     }
     const revocation = {

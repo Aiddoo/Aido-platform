@@ -19,7 +19,7 @@ async function givenSessions(
   sessions: readonly { readonly id: string; readonly userId: string }[],
 ) {
   for (const session of sessions) {
-    await fixture.sessionRepository.save(createSessionFixture(session));
+    fixture.sessionRepository.seed(createSessionFixture(session));
     fixture.cacheService.sessionIds.add(session.id);
   }
 }
