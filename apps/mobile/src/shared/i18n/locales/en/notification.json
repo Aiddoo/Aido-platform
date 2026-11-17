@@ -4,7 +4,16 @@
     "description": "A {{time}} to-do stays at {{time}}"
   },
   "actions": {
-    "marketingOptOut": "Turn off promotional notifications"
+    "marketingOptOut": "Turn off promotional notifications",
+    "todoReminderComplete": "Done",
+    "todoReminderSnooze": "Remind in {{minutes}} min"
+  },
+  "reminderActions": {
+    "completed": "Marked “{{title}}” as done",
+    "alreadyCompleted": "This to-do is already done",
+    "snoozed": "We'll remind you again in {{minutes}} minutes",
+    "snoozedAt": "At {{time}}",
+    "snoozeFailed": "Couldn't schedule the reminder"
   },
   "marketingOptIn": {
     "title": "Get offers and news too?",

@@ -2,9 +2,11 @@ import {
   markReadResponseSchema,
   notificationInboxResponseSchema,
   notificationOpenedResponseSchema,
+  todoReminderSnoozeResponseSchema,
   unreadCountResponseSchema,
 } from '@aido/api/contracts/notification/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
+import { toInstant } from '@src/shared/date/instant';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 import { withTimeout } from 'es-toolkit';
 
@@ -80,6 +82,15 @@ export class NotificationApi {
       notificationOpenedResponseSchema,
       (dto) => dto.opened,
       '[NotificationApi] Invalid markOpened response',
+    );
+
+  // 누른 알림 id가 서버의 예약 key라 같은 알림을 두 번 보내도 다시 알림은 하나다
+  snoozeTodoReminder = async (todoId: number, notificationId: number) =>
+    parseApiResponse(
+      await this.#authHttpClient.post(`v1/todo-reminders/${todoId}/snoozes`, { notificationId }),
+      todoReminderSnoozeResponseSchema,
+      (dto) => toInstant(dto.remindAt),
+      '[NotificationApi] Invalid snoozeTodoReminder response',
     );
 
   optOutMarketingPush = async (token: string) =>

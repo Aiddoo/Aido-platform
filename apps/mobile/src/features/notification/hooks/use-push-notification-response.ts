@@ -1,3 +1,4 @@
+import { TODO_REMINDER_SNOOZE_MINUTES } from '@aido/api/vocabulary';
 import {
   useAppLifecycle,
   useLogger,
@@ -8,12 +9,28 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { PushNotificationResponse as OsPushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import {
+  ensurePreference,
+  getCachedPreference,
+} from '@src/features/identity/preference/queries/preference-cache';
+import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { findCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
+import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
+import type { DateKey } from '@src/shared/date/date-key';
+import { formatClockTime } from '@src/shared/date/format/date-format';
+import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTranslation } from '@src/shared/i18n';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
-import { useIsRestoring, useMutation } from '@tanstack/react-query';
+import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
+import { useAppToast } from '@src/shared/ui';
+import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import {
   useCallback,
   useEffect,
@@ -22,13 +39,17 @@ import {
   useRef,
   useSyncExternalStore,
 } from 'react';
+import { match } from 'ts-pattern';
 
 import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
+import { getTodoReminderActionFailure } from '../domains/notification.error';
 import {
   type PushNotificationResponse,
   PushNotificationResponsePolicy,
+  type TodoReminderActionOutcome,
+  type TodoReminderActionRequest,
 } from '../domains/push-notification-response.model';
 import {
   createUnreadablePushNotification,
@@ -37,6 +58,7 @@ import {
 import {
   useOptOutMarketingPushMutationOptions,
   useRecordPushOpenedMutationOptions,
+  useSnoozeTodoReminderMutationOptions,
 } from '../queries/notification.mutations';
 import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
 import {
@@ -268,6 +290,7 @@ function useOpenReadyEntry(
   const openDestination = useOpenNotificationDestination({ openRoute: openEntryHref });
   const { trackEvent } = useTrack();
   const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
+  const runTodoReminderAction = useRunTodoReminderAction();
   const openedByIndexIdRef = useRef<string | null>(null);
   const inFlightIdRef = useRef<string | null>(null);
 
@@ -301,6 +324,15 @@ function useOpenReadyEntry(
       if (PushNotificationPolicy.hasServerRecord(notification)) {
         recordOpened(notification.notificationId);
       }
+      const reminderAction = PushNotificationResponsePolicy.getTodoReminderAction(response);
+      if (reminderAction != null) {
+        // 할 일 화면에 내린 뒤 보내 결과 안내가 그 화면 위에 뜬다. 응답 슬롯은 기다리지 않고 비운다
+        runTodoReminderAction(reminderAction).catch((error: unknown) =>
+          logger.warn(NOTIFICATION_LOG_EVENT.REMINDER_ACTION_FAILED, {
+            error: getErrorMessage(error),
+          }),
+        );
+      }
     } catch (error) {
       // 외부 링크를 열지 못한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
@@ -332,4 +364,100 @@ function useOpenReadyEntry(
     const timer = setTimeout(() => abandon(entry), NOTIFICATION_ENTRY_HOLD_MAX_MS);
     return () => clearTimeout(timer);
   }, [entry, isEnteringApp]);
+}
+
+/** 성공 안내를 띄울 결과와, 안내 없이 분석에만 남기는 결과 */
+type TodoReminderActionResult =
+  | { outcome: 'succeeded'; message: string; description: string | null }
+  | { outcome: Exclude<TodoReminderActionOutcome, 'succeeded'> };
+
+/**
+ * 리마인드 알림 버튼(완료·10분 뒤 다시)으로 할 일을 바꾸고 결과를 알린다. 이미 끝낸 할 일은 부드럽게 알리고,
+ * 그 밖의 실패(지운 할 일·연결 끊김)는 각 변경의 전역 오류 피드백이 알린다
+ */
+function useRunTodoReminderAction() {
+  const { t } = useTranslation('notification');
+  const queryClient = useQueryClient();
+  const sessionEpoch = useSessionEpoch();
+  const logger = useLogger();
+  const toast = useAppToast();
+  const { trackEvent } = useTrack();
+  const todayKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const preferenceQueryOptions = useGetPreferenceQueryOptions();
+  const { mutateAsync: completeTodo } = useMutation(useToggleTodoMutationOptions());
+  const { mutateAsync: snoozeTodoReminder } = useMutation(useSnoozeTodoReminderMutationOptions());
+
+  const complete = async (
+    todoId: number,
+    dateKey: DateKey | null,
+  ): Promise<TodoReminderActionResult> => {
+    const date = dateKey ?? todayKey;
+    // 캐시가 이미 끝냈다고 알면 보내지 않는다. 모르고 보내도 서버는 같은 값이면 그대로 둔다
+    if (findCachedTodo(queryClient, { date, todoId })?.completed) {
+      return { outcome: 'already_completed' };
+    }
+    const saved = await completeTodo({ todoId, body: { completed: true }, date });
+    return {
+      outcome: 'succeeded',
+      message: t('reminderActions.completed', { title: saved.title }),
+      description: null,
+    };
+  };
+
+  // 서버가 정한 시각을 앱의 12·24시간 설정으로 보인다. 설정을 바로 읽지 못하면 시각 없이 알린다
+  const describeRemindAt = async (remindAt: Instant) => {
+    const preference = await readWithoutBlocking(
+      getCachedPreference(queryClient),
+      () => ensurePreference(queryClient, preferenceQueryOptions),
+      (error) =>
+        logger.warn(NOTIFICATION_LOG_EVENT.REMINDER_SNOOZE_TIME_SKIPPED, {
+          error: getErrorMessage(error),
+        }),
+    );
+    if (preference == null) {
+      return null;
+    }
+    return t('reminderActions.snoozedAt', {
+      time: formatClockTime(remindAt, preference.timeFormat, dateFormatContext),
+    });
+  };
+
+  const snooze = async (
+    todoId: number,
+    notificationId: number,
+  ): Promise<TodoReminderActionResult> => {
+    const remindAt = await snoozeTodoReminder({ todoId, notificationId });
+    return {
+      outcome: 'succeeded',
+      message: t('reminderActions.snoozed', { minutes: TODO_REMINDER_SNOOZE_MINUTES }),
+      description: await describeRemindAt(remindAt),
+    };
+  };
+
+  return async (request: TodoReminderActionRequest) => {
+    const epoch = sessionEpoch.current();
+    const result = await match(request)
+      .with({ type: 'complete' }, ({ todoId, dateKey }) => complete(todoId, dateKey))
+      .with({ type: 'snooze' }, ({ todoId, notificationId }) => snooze(todoId, notificationId))
+      .exhaustive()
+      .catch((error: unknown): TodoReminderActionResult => ({
+        outcome: getTodoReminderActionFailure(error),
+      }));
+    // 기다리는 사이 로그아웃했으면 다음 계정 화면에 안내와 기록을 남기지 않는다
+    if (sessionEpoch.current() !== epoch) {
+      return;
+    }
+    match(result)
+      .with({ outcome: 'succeeded' }, ({ message, description }) =>
+        toast.success(message, description == null ? undefined : { description }),
+      )
+      .with({ outcome: 'already_completed' }, () =>
+        toast.toast(t('reminderActions.alreadyCompleted')),
+      )
+      // 지운 할 일·연결 끊김은 변경의 전역 오류 피드백이 이미 알렸다
+      .with({ outcome: 'not_found' }, { outcome: 'failed' }, noop)
+      .exhaustive();
+    trackEvent('todo_reminder_action_tapped', { action: request.type, outcome: result.outcome });
+  };
 }

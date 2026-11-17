@@ -1,15 +1,28 @@
 import type { AppLifecycleState } from '@src/core/ports/app-lifecycle-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import type { DateKey } from '@src/shared/date/date-key';
 import { diffMs, type Instant } from '@src/shared/date/instant';
 import { takeRight, without } from 'es-toolkit';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import type { PushNotification } from './push-notification.model';
+import { type PushNotification, PushNotificationPolicy } from './push-notification.model';
 
 /** 마케팅 푸시의 수신 거부 버튼. 앱이 서버 categoryId(MARKETING)에 등록하고, 누르면 이 id로 돌아온다 */
 export const marketingOptOutActionSchema = z.literal('MARKETING_OPT_OUT');
+
+/** 리마인드 알림의 완료·다시 알림 버튼. 앱이 서버 categoryId(TODO_REMINDER)에 등록하고, 누르면 이 id로 돌아온다 */
+export const todoReminderActionSchema = z.enum(['complete', 'snooze']);
+export type TodoReminderAction = z.infer<typeof todoReminderActionSchema>;
+
+/** 리마인드 알림 버튼으로 할 일. 기본 탭과 같은 할 일 화면을 연 뒤에 한다 */
+export type TodoReminderActionRequest =
+  | { type: 'complete'; todoId: number; dateKey: DateKey | null }
+  | { type: 'snooze'; todoId: number; notificationId: number };
+
+/** 리마인드 알림 버튼을 누른 결과 */
+export type TodoReminderActionOutcome = 'succeeded' | 'already_completed' | 'not_found' | 'failed';
 
 /** 알림을 누를 때 앱 상태. `cold`는 꺼진 앱이 그 탭으로 켜졌다는 뜻이다 */
 export type PushOpenAppState = 'cold' | 'background' | 'foreground';
@@ -46,6 +59,30 @@ type PushNotificationResponseAction =
 /** 공개 수신 거부 버튼을 누른 응답. 인증과 상관없이 따로 처리하고 다음 탭에 밀리지 않게 둔다 */
 function isMarketingOptOut(response: PushNotificationResponse) {
   return marketingOptOutActionSchema.safeParse(response.actionIdentifier).success;
+}
+
+/**
+ * 리마인드 알림 버튼을 누른 응답이면 할 일. 할 일을 여는 리마인드 알림의 버튼만 받고,
+ * 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 알림만 받는다
+ */
+function getTodoReminderAction(
+  response: PushNotificationResponse,
+): TodoReminderActionRequest | null {
+  const action = todoReminderActionSchema.safeParse(response.actionIdentifier);
+  const { notification } = response;
+  const { target } = notification;
+  if (!action.success || notification.type !== 'TODO_REMINDER' || target.kind !== 'TODO') {
+    return null;
+  }
+  return match(action.data)
+    .returnType<TodoReminderActionRequest | null>()
+    .with('complete', () => ({ type: 'complete', todoId: target.todoId, dateKey: target.dateKey }))
+    .with('snooze', () =>
+      PushNotificationPolicy.hasServerRecord(notification)
+        ? { type: 'snooze', todoId: target.todoId, notificationId: notification.notificationId }
+        : null,
+    )
+    .exhaustive();
 }
 
 function isExpired(response: PushNotificationResponse, now: Instant) {
@@ -104,5 +141,6 @@ export function rememberHandledResponse(
 export const PushNotificationResponsePolicy = {
   isMarketingOptOut,
   getResponseAction,
+  getTodoReminderAction,
   getOpenAppState,
 } as const;

@@ -5,6 +5,10 @@ export const NOTIFICATION_LOG_EVENT = {
   PUSH_PAYLOAD_DROPPED: 'notification.push.parse-dropped',
   FOREGROUND_RECEIVED: 'notification.foreground.received',
   MARKETING_CATEGORY_REGISTRATION_FAILED: 'notification.marketing-category-registration.failed',
+  TODO_REMINDER_CATEGORY_REGISTRATION_FAILED:
+    'notification.todo-reminder-category-registration.failed',
+  REMINDER_ACTION_FAILED: 'notification.reminder-action.failed',
+  REMINDER_SNOOZE_TIME_SKIPPED: 'notification.reminder-snooze-time.skipped',
   BADGE_SYNC_FAILED: 'notification.badge-sync.failed',
   BADGE_CLEAR_FAILED: 'notification.badge-clear.failed',
   CENTER_NAVIGATION_FAILED: 'notification.center-navigation.failed',

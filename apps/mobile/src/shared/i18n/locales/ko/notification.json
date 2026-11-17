@@ -4,7 +4,16 @@
     "description": "{{time}} 할 일은 여기서도 {{time}}예요"
   },
   "actions": {
-    "marketingOptOut": "광고성 푸시 그만 받기"
+    "marketingOptOut": "광고성 푸시 그만 받기",
+    "todoReminderComplete": "완료",
+    "todoReminderSnooze": "{{minutes}}분 뒤 다시"
+  },
+  "reminderActions": {
+    "completed": "‘{{title}}’ 완료했어요",
+    "alreadyCompleted": "이미 완료한 할 일이에요",
+    "snoozed": "{{minutes}}분 뒤 다시 알려드릴게요",
+    "snoozedAt": "{{time}}에 알려드려요",
+    "snoozeFailed": "다시 알림을 예약하지 못했어요"
   },
   "marketingOptIn": {
     "title": "혜택·소식도 알림으로 받을까요?",

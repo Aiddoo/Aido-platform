@@ -1,7 +1,6 @@
 # 푸시 알림 클라이언트
 
-앱이 이 기기의 알림 권한·푸시 토큰을 서버에 맞추고, 사용자에게 권한을 묻는 방식이다.
-서버가 언제 누구에게 보내는지는 [apps/api/docs/push-notifications.md](../../api/docs/push-notifications.md)를 본다. 여기서 반복하지 않는다.
+앱이 이 기기의 알림 권한·푸시 토큰을 서버에 맞추고, 사용자에게 권한을 묻는 방식이다. 서버가 언제 누구에게 보내는지는 [apps/api/docs/push-notifications.md](../../api/docs/push-notifications.md)를 본다. 여기서 반복하지 않는다.
 
 ## 구성
 
@@ -142,6 +141,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 모르는 종류·분석 칸·수신 거부 토큰이 틀림 | 그 칸만 버리고(`null`) 종류·목적지는 그대로 연다(로그를 남긴다)                                                                                                                                                                                                                                                                              |
 | data를 읽지 못함                          | `parsePushNotification`의 `notification`이 `null`이면 로그를 남기고 버리지 않은 채 알림함으로 연다(`createUnreadablePushNotification`)                                                                                                                                                                                                       |
 | 수신 거부 버튼                            | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                                                                                                                                                                                            |
+| 리마인드 알림 버튼                        | 완료·10분 뒤 다시(`TODO_REMINDER`)도 같은 슬롯(인증 대기·10분 만료·처리 기억)과 소유 확인을 거쳐 기본 탭의 할 일 화면에 내린 뒤 한다(`getTodoReminderAction`). 완료는 할 일 완료 mutation, 다시 알림은 `POST v1/todo-reminders/{todoId}/snoozes`다. 이미 끝낸 할 일은 토스트로만 알린다                                                      |
 | 알림함 항목                               | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다(서버 1.15.1+, [배포 순서](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)). 알림함을 여는 항목은 같은 화면을 다시 열지 않는다. iOS 좁은 화면에서 읽은 알림이 할 일·콕 상세로 가면 길게 눌러 목적지를 미리본다([Link](./architecture/state-and-routing.md#link)) |
 
 ### 목적지 대조
@@ -162,13 +162,13 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 
 ### 기기별 동작 (코드 확인, expo-notifications 58.1.8)
 
-| 항목             | iOS                                                  | Android                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| data 위치        | `userInfo["body"]` (`NotificationRecords.swift:331`) | 앱이 꺼졌거나 뒤에 있으면 extras의 `body` JSON(`toResponseBundleFromExtras`)                                                                                 |
-| 응답 id          | 요청 identifier                                      | FCM `google.message_id`                                                                                                                                      |
-| 꺼진 앱에서 누름 | 마지막 응답으로 읽음                                 | 리스너가 없어 보류됐다가 모듈이 만들어질 때 마지막 응답으로 넘어온다(`NotificationManager.addListener`)                                                      |
-| `MARKETING` 버튼 | 카테고리로 표시                                      | `ExpoNotificationBuilder`가 그릴 때만 붙는다. 앱이 앞에 있을 때 표시와 로컬 알림이 해당하고, 뒤에 있을 때 FCM이 직접 그린 알림에는 없다(추정, 실기기 미확인) |
-| 수신 거부 누름   | `opensAppToForeground: true`로 앱이 열린다           | 같음. Android 12+는 전용 Activity PendingIntent                                                                                                              |
+| 항목                             | iOS                                                  | Android                                                                                                                                                      |
+| -------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| data 위치                        | `userInfo["body"]` (`NotificationRecords.swift:331`) | 앱이 꺼졌거나 뒤에 있으면 extras의 `body` JSON(`toResponseBundleFromExtras`)                                                                                 |
+| 응답 id                          | 요청 identifier                                      | FCM `google.message_id`                                                                                                                                      |
+| 꺼진 앱에서 누름                 | 마지막 응답으로 읽음                                 | 리스너가 없어 보류됐다가 모듈이 만들어질 때 마지막 응답으로 넘어온다(`NotificationManager.addListener`)                                                      |
+| `MARKETING`·`TODO_REMINDER` 버튼 | 카테고리로 표시                                      | `ExpoNotificationBuilder`가 그릴 때만 붙는다. 앱이 앞에 있을 때 표시와 로컬 알림이 해당하고, 뒤에 있을 때 FCM이 직접 그린 알림에는 없다(추정, 실기기 미확인) |
+| 버튼 누름                        | `opensAppToForeground: true`로 앱이 열린다           | 같음. Android 12+는 전용 Activity PendingIntent                                                                                                              |
 
 ### 시뮬레이터 재현
 
