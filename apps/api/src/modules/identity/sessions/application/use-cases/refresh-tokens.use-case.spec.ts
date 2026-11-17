@@ -1,11 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type {
   Session,
   SessionPrimitives,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";

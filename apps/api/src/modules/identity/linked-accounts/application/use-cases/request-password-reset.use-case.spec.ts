@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { InMemoryPasswordResetCooldown } from "#test/doubles/identity/in-memory-password-reset-cooldown";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {

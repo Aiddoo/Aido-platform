@@ -1,5 +1,4 @@
-import type { RevokeReason } from "@aido/api/vocabulary";
-
+import type { RevokeReason } from "#api/modules/identity/sessions/domain/sessions.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { SessionId } from "../../domain/session-id.vo.js";

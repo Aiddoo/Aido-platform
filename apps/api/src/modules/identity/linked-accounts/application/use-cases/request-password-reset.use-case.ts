@@ -1,8 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { SECURITY_EVENT, type SupportedLocale } from "@aido/api/vocabulary";
+import { type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";

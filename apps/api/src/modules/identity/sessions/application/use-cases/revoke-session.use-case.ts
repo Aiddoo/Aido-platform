@@ -1,5 +1,5 @@
-import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
-
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

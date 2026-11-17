@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
 import {
   AUTH_CREDENTIAL_NOW,

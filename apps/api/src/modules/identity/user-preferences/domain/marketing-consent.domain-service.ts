@@ -1,7 +1,7 @@
-import { MARKETING_CONSENT_RECONFIRM_YEARS } from "@aido/api/vocabulary";
 import { minBy } from "es-toolkit";
 
 import type { UserConsentPrimitives } from "./user-consent.entity.js";
+import { MARKETING_CONSENT_RECONFIRM_YEARS } from "./user-preference.constants.js";
 
 type MarketingConsentState = Pick<
   UserConsentPrimitives,

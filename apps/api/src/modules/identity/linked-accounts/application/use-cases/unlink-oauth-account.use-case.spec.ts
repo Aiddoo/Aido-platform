@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
 

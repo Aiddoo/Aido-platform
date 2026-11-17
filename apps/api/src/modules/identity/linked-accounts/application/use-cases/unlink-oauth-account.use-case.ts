@@ -1,7 +1,6 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
-
 import { type AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

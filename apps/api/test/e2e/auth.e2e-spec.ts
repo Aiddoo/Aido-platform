@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REFRESH_TOKEN_REUSE_GRACE_MS, REVOKE_REASON } from "@aido/api/vocabulary";
+import { REFRESH_TOKEN_REUSE_GRACE_MS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 /**
@@ -13,6 +13,7 @@ import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
 import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { SessionCacheKey } from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";

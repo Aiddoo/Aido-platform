@@ -1,9 +1,9 @@
-import { REVOKE_REASON } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import { vi } from "vitest";
 import { z } from "zod";
 
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrastructure/persistence/drizzle-session.repository";
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

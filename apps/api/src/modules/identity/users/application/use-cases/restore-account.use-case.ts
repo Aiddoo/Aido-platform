@@ -1,5 +1,4 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
-
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";

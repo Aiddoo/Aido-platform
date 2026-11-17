@@ -1,4 +1,4 @@
-import { type OAUTH_PROVIDERS, TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { type OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
@@ -17,6 +17,7 @@ import { emailAlreadyRegistered } from "#api/modules/identity/users/application/
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import { generateRandomName } from "#api/modules/identity/users/domain/random-name.domain-service";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { TERMS_VERSION, SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

@@ -1,7 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import {
   type InMemoryLinkedAccountRow,
   InMemoryLinkedAccountsRepository,

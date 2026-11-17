@@ -1,4 +1,3 @@
-import type { RevokeReason } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, inArray, isNull, lt, ne, not, or } from "drizzle-orm";
@@ -6,6 +5,7 @@ import { and, eq, inArray, isNull, lt, ne, not, or } from "drizzle-orm";
 import { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import type { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
+import type { RevokeReason } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { hasPushRegistrationForSessionCondition } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { session } from "#api/platform/database/schema/index";

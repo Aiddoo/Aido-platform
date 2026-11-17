@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
-import { REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
 
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,

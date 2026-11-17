@@ -1,11 +1,10 @@
-import type { RevokeReason } from "@aido/api/vocabulary";
-
 import { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import {
   Session,
   type SessionPrimitives,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
+import type { RevokeReason } from "#api/modules/identity/sessions/domain/sessions.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class InMemorySessionRepository extends SessionRepositoryPort {

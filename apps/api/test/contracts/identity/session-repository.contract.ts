@@ -1,11 +1,10 @@
-import { REVOKE_REASON } from "@aido/api/vocabulary";
-
 import type { SessionRepositoryPort } from "#api/modules/identity/sessions/application/ports/session.repository.port";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import {
   Session,
   type SessionPrimitives,
 } from "#api/modules/identity/sessions/domain/session.aggregate";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,

@@ -1,6 +1,5 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
-
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

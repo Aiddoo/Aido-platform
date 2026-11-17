@@ -1,12 +1,12 @@
-import { LOGIN_ATTEMPT, SECURITY_EVENT } from "@aido/api/vocabulary";
-
 import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { LoginReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import { LOGIN_FAILURE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { LOGIN_ATTEMPT } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { Email } from "#api/modules/identity/shared/domain/email.vo";
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

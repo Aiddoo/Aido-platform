@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import { type AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
 import { LOGIN_FAILURE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
@@ -7,6 +6,7 @@ import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/req
 import type { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { User } from "#api/modules/identity/users/domain/user.aggregate";
 import { type UserStatus } from "#api/modules/identity/users/domain/users.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";

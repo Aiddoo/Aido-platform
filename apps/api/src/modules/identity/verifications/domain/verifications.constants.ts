@@ -1,4 +1,8 @@
-import type { VERIFICATION_TYPE } from "@aido/api/vocabulary";
+export const VERIFICATION_TYPE = {
+  EMAIL_VERIFY: "EMAIL_VERIFY",
+  PASSWORD_RESET: "PASSWORD_RESET",
+  PASSWORD_SETUP: "PASSWORD_SETUP",
+} as const;
 
 export type VerificationType = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
 

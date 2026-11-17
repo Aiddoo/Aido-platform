@@ -1,8 +1,8 @@
-import { SECURITY_EVENT, REVOKE_REASON } from "@aido/api/vocabulary";
-
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { accountDeleted } from "#api/modules/identity/users/application/users.errors";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

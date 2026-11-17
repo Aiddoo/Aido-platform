@@ -1,7 +1,6 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
-
 import type { AccountTodoCommentCleanupResult } from "#api/modules/identity/users/application/ports/account-cleanup.port";
 import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";

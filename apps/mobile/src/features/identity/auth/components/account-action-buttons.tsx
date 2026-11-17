@@ -1,3 +1,4 @@
+import { ACCOUNT_DELETION } from '@aido/api/vocabulary';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useMyPageMenuNavigate } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
@@ -47,7 +48,7 @@ export function AccountActionButtons() {
 
     await confirmDialog.openAsync({
       title: t('withdraw.confirmTitle'),
-      description: t('withdraw.confirmDescription'),
+      description: t('withdraw.confirmDescription', { days: ACCOUNT_DELETION.GRACE_PERIOD_DAYS }),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('withdraw.confirmAction'),
       confirmColor: 'danger',

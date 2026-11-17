@@ -1,3 +1,4 @@
+import { ACCOUNT_DELETION } from '@aido/api/vocabulary';
 import { DeleteAccountForm } from '@src/features/identity/auth/components/delete-account-form';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
@@ -25,8 +26,12 @@ export default function DeleteAccountRoute() {
                 <Spacing size={16} />
                 <InlineAlert
                   status="warning"
-                  title={t('deleteAccount.restoreNotice')}
-                  description={t('deleteAccount.purgeNotice')}
+                  title={t('deleteAccount.restoreNotice', {
+                    days: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+                  })}
+                  description={t('deleteAccount.purgeNotice', {
+                    days: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
+                  })}
                 />
               </Animated.View>
             }

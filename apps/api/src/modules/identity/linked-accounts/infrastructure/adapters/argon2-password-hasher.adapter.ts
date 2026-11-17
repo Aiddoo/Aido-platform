@@ -1,18 +1,14 @@
-import { ARGON2_CONFIG } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import * as argon2 from "argon2";
 
-/**
- * Argon2id 기반 비밀번호 해싱 서비스
- *
- * OWASP 권장 설정 사용:
- * - memoryCost: 64MB (65536 KB)
- * - timeCost: 3 iterations
- * - parallelism: 4 threads
- * - hashLength: 32 bytes
- *
- * @see https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
- */
+// Argon2id 해싱 설정 (OWASP 권장: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+const ARGON2_CONFIG = {
+  MEMORY_COST: 65_536, // 64MB
+  TIME_COST: 3,
+  PARALLELISM: 4,
+  HASH_LENGTH: 32,
+} as const;
+
 @Injectable()
 export class Argon2PasswordHasherAdapter {
   readonly #hashOptions: argon2.HashOptions = {

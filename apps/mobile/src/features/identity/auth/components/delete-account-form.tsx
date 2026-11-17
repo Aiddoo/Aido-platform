@@ -1,3 +1,4 @@
+import { ACCOUNT_DELETION } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
@@ -34,7 +35,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
     Keyboard.dismiss();
     await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
-      description: t('deleteAccount.dialogMessage'),
+      description: t('deleteAccount.dialogMessage', { days: ACCOUNT_DELETION.GRACE_PERIOD_DAYS }),
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('deleteAccount.confirm'),
       confirmColor: 'danger',

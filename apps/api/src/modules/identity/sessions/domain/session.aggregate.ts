@@ -1,11 +1,13 @@
-import type { RevokeReason } from "@aido/api/vocabulary";
-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { SessionId } from "./session-id.vo.js";
 import { getSessionValidity, type SessionValidity } from "./session-validity.domain-service.js";
-import { SESSION_DEFAULTS, type DeviceFingerprint } from "./sessions.constants.js";
+import {
+  SESSION_DEFAULTS,
+  type DeviceFingerprint,
+  type RevokeReason,
+} from "./sessions.constants.js";
 import { expiredSessionNotRotatable, revokedSessionNotRotatable } from "./sessions.errors.js";
 
 export interface SessionPrimitives {

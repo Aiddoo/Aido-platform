@@ -1,7 +1,7 @@
 import type { UserRole } from "@aido/api/vocabulary";
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
 
 import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

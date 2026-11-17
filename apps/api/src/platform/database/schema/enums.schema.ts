@@ -15,7 +15,6 @@ import {
   REDEMPTION_REJECTION_REASON,
   REDEMPTION_STATUS,
   REWARD_TYPE,
-  SECURITY_EVENT,
   SUBSCRIPTION_ENVIRONMENTS,
   SUBSCRIPTION_STATUS,
   TIME_FORMATS,
@@ -26,12 +25,13 @@ import {
   USER_REPORT_TARGET_TYPES,
   USER_ROLE,
   USER_STATUS,
-  VERIFICATION_TYPE,
 } from "@aido/api/vocabulary";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
 import { ACCOUNT_PROVIDERS_IN_DB_ORDER } from "../../../modules/identity/linked-accounts/domain/linked-accounts.constants.js";
+import { SECURITY_EVENT } from "../../../modules/identity/users/domain/users.constants.js";
+import { VERIFICATION_TYPE } from "../../../modules/identity/verifications/domain/verifications.constants.js";
 import {
   PUSH_DELIVERY_ATTEMPT_STATUSES,
   PUSH_DELIVERY_MODES,

@@ -1,5 +1,4 @@
-import type { SecurityEvent } from "@aido/api/vocabulary";
-
+import type { SecurityEvent } from "#api/modules/identity/users/domain/users.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface NewSecurityLog {
