@@ -14,6 +14,8 @@ const SLICE_SHAPE_RULES = [
   "Context 루트에는 <context>.module.ts만 둔다",
   "<context>/shared에 Aggregate가 없다",
   "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
+  "-queries Module에는 controller가 없다",
+  "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
 ] as const;
 type SliceShapeRule = (typeof SLICE_SHAPE_RULES)[number];
 
@@ -24,12 +26,6 @@ interface SliceShapeViolation {
 
 // 이유를 적은 예외. 순환을 푸는 층에서 남길지 정하고, 이유가 사라지면 지운다
 const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: string })[] = [
-  {
-    rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
-    path: "identity/users/identity-users-queries.public.ts",
-    reason:
-      "access 권한 조건이 쓰는 사용자 조회 조각만 연다. identity-users.public을 쓰면 access와 파일 순환이다",
-  },
   {
     rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
     path: "notification/notifications/notification-notifications-jobs.public.ts",
@@ -56,14 +52,14 @@ const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: 
     reason: "todos와 todo-series가 함께 쓰는 아래층 포트 Module이다",
   },
   {
-    rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
-    path: "planning/todos/planning-todos-queries.public.ts",
-    reason: "todos는 기능 Module 공개 면과 조회 Module 공개 면을 따로 연다",
-  },
-  {
     rule: "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
     path: "planning/todos/planning-todos-queries.module.ts#TodoTimezoneRebaseQueueService",
     reason: "다른 Context가 시간대를 바꾼 뒤 할 일 시각 다시 맞추기를 enqueue한다",
+  },
+  {
+    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+    path: "planning/todos/planning-todos-queries.public.ts#./infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter.js",
+    reason: "-queries Module이 내보내는 시간대 재계산 enqueue 서비스를 같은 이유로 연다",
   },
 ];
 
@@ -73,6 +69,19 @@ const REMAINING_VIOLATIONS: readonly SliceShapeViolation[] = [
   {
     rule: "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
     path: "identity/sessions/identity-sessions-queries.module.ts#imports",
+  },
+  // 할 일 이벤트 schema·이름(insights·social 구독)과 오류(engagement·todo-series)다. planning이 둘 곳을 정한다
+  {
+    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+    path: "planning/todos/planning-todos-queries.public.ts#./application/todo-published-events.constants.js",
+  },
+  {
+    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+    path: "planning/todos/planning-todos-queries.public.ts#./application/todos.errors.js",
+  },
+  {
+    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+    path: "planning/todos/planning-todos-queries.public.ts#./domain/todo-changed.event.js",
   },
 ];
 
@@ -224,9 +233,14 @@ function checkSliceFolder(slice: Slice): string[] {
 function checkEntryFiles(slice: Slice): string[] {
   const prefix = `${slice.context}/${slice.name}/${slice.context}-${slice.name}`;
   const allowed = new Set(
-    [".module.ts", "-queries.module.ts", "-admin.module.ts", ".providers.ts", ".public.ts"].map(
-      (suffix) => `${prefix}${suffix}`,
-    ),
+    [
+      ".module.ts",
+      "-queries.module.ts",
+      "-admin.module.ts",
+      ".providers.ts",
+      ".public.ts",
+      "-queries.public.ts",
+    ].map((suffix) => `${prefix}${suffix}`),
   );
   const paths = new Set(slice.files.map((file) => file.path));
   const missing = [`${prefix}.module.ts`, `${prefix}.providers.ts`].filter(
@@ -253,6 +267,45 @@ function checkQueriesModule(slice: Slice): string[] {
   ];
 }
 
+function checkQueriesModuleControllers(slice: Slice): string[] {
+  const queriesModulePath = `${slice.context}/${slice.name}/${slice.context}-${slice.name}-queries.module.ts`;
+  const file = slice.files.find((candidate) => candidate.path === queriesModulePath);
+  const metadata = file == null ? null : findModuleMetadata(file);
+  if (file == null || metadata == null) {
+    return [];
+  }
+  return readMetadataList(metadata, "controllers", file.source).map(
+    (name) => `${file.path}#${name}`,
+  );
+}
+
+// 순환을 끊는 두 번째 공개 면이라 기능 Module·조립·구현을 끌고 오면 다시 순환한다. 포트가 id VO를 받으므로 id VO는 연다
+const QUERIES_PUBLIC_SOURCES = [
+  /^\.\/[a-z-]+-queries\.module\.js$/,
+  /^\.\/application\/ports\/[a-z.-]+\.port\.js$/,
+  /^\.\/application\/read-models\/[a-z-]+\.read-model\.js$/,
+  /^\.\/infrastructure\/persistence\/[a-z-]+\.query-fragment\.js$/,
+  /^\.\/domain\/[a-z-]+-id\.vo\.js$/,
+];
+
+function checkQueriesPublic(slice: Slice): string[] {
+  const queriesPublicPath = `${slice.context}/${slice.name}/${slice.context}-${slice.name}-queries.public.ts`;
+  const file = slice.files.find((candidate) => candidate.path === queriesPublicPath);
+  if (file == null) {
+    return [];
+  }
+  const sources = file.source.statements.flatMap((statement) =>
+    ts.isExportDeclaration(statement) &&
+    statement.moduleSpecifier != null &&
+    ts.isStringLiteral(statement.moduleSpecifier)
+      ? [statement.moduleSpecifier.text]
+      : [],
+  );
+  return [...new Set(sources)]
+    .filter((source) => !QUERIES_PUBLIC_SOURCES.some((pattern) => pattern.test(source)))
+    .map((source) => `${file.path}#${source}`);
+}
+
 function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolation[] {
   const sliceChecks: readonly [SliceShapeRule, (slice: Slice) => string[]][] = [
     ["slice마다 Aggregate Root가 하나다", checkAggregateRootCount],
@@ -262,6 +315,11 @@ function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolat
       checkEntryFiles,
     ],
     ["-queries Module은 아무것도 import하지 않고 포트만 내보낸다", checkQueriesModule],
+    ["-queries Module에는 controller가 없다", checkQueriesModuleControllers],
+    [
+      "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+      checkQueriesPublic,
+    ],
   ];
   const slices = contexts.flatMap((context) => context.slices);
   const sliceViolations = sliceChecks.flatMap(([rule, check]) =>

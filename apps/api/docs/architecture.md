@@ -39,6 +39,7 @@ apps/api/src/
       <context>-<slice>-admin.module.ts  # (관리자 HTTP가 있을 때만)
       <context>-<slice>.providers.ts   # 포트 바인딩 + UseCase 조립 (한 파일)
       <context>-<slice>.public.ts      # 다른 Context에 여는 문
+      <context>-<slice>-queries.public.ts # (기능 public으로 순환이 생길 때만) -queries 쪽만 여는 문
       <context>-<slice>.config.ts      # (있을 때) defineConfig 설정
       domain/          <noun>.aggregate.ts  <noun>.entity.ts  <noun>-id.vo.ts  <noun>.vo.ts
                        <noun>-<past-verb>.event.ts  <topic>.domain-service.ts  <slice>.constants.ts
@@ -101,7 +102,7 @@ presentation → application → domain        infrastructure → application(po
 | 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                                                                                                   | oxlint `aido/no-inline-coded-exception`                                                                                                                                                                                                                                                                                                      |
 | 안 쓰는 파일·export·의존성 0                                                                                                                                   | knip(`check:unused`)                                                                                                                                                                                                                                                                                                                         |
 | 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지                                                                                    | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`                                                                                                                                                                                                                                                                      |
-| slice마다 Aggregate Root 하나·폴더 이름·Module과 public 이름·Context 루트·`shared`·`-queries` 모양                                                             | 아키텍처 테스트 [slice-shape.spec.ts](../test/architecture/slice-shape.spec.ts)                                                                                                                                                                                                                                                              |
+| slice마다 Aggregate Root 하나·폴더 이름·Module과 public 이름·Context 루트·`shared`·`-queries` Module과 public 모양                                             | 아키텍처 테스트 [slice-shape.spec.ts](../test/architecture/slice-shape.spec.ts)                                                                                                                                                                                                                                                              |
 | Aggregate 모양·UseCase `execute` 하나·포트 id VO·`find*`의 `T \| null`·멤버 순서·인자 3개·함수 80줄·파일 400줄·오류 클래스 위치·Read Model 이름·요청 한도 위치 | oxlint `aido/aggregate-shape`·`aido/use-case-single-execute`·`aido/port-id-value-object`·`aido/port-return-shape`·`aido/member-order`·`aido/max-params`·`max-lines-per-function`·`max-lines`·`aido/error-class-location`·`aido/read-model-suffix`·`aido/rate-limit-location`. `.oxlintrc.json`에 꺼 둔 채 등록했고 남은 위반이 0이 되면 켠다 |
 | 타입 검사는 `src`만 읽는다. `#api/*`가 낡은 `dist`로 빠지지 않는다                                                                                             | `apps/api/package.json` `imports`의 `"types": ["./src/*.ts", null]`(TypeScript는 `null`에서 멈추고 Node는 `types`를 읽지 않는다)                                                                                                                                                                                                             |
 
@@ -109,6 +110,7 @@ presentation → application → domain        infrastructure → application(po
 - 아직 고치지 않은 위반은 도구의 기준선 한 곳에만 두고 줄이기만 한다. 아키텍처 테스트는 `REMAINING_VIOLATIONS`와 이유를 적은 `DOCUMENTED_EXCEPTIONS`가 실제 위반과 같아야 통과한다(새 위반도, 고친 뒤 남은 항목도 실패). dependency-cruiser는 `apps/api/.dependency-cruiser-known-violations.json`(`--ignore-known`)이다.
 - 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.
+- `-queries` Module은 import 없이 Port만 내보낸다. 같은 트랜잭션에서 써야 하는 좁은 쓰기 포트(access `FeatureGranterPort`)도 Port면 된다. UseCase·controller·서비스는 내보내지 않고 controller를 두지 않는다.
 - 포트가 abstract class라 런타임 import가 생긴다. ESM에서는 순환이 부팅 실패로 드러나므로 앱 부팅 E2E(Health)로 확인한다.
 
 ## 공개 면과 재수출
@@ -118,6 +120,7 @@ presentation → application → domain        infrastructure → application(po
 | 진입 파일                                                | 규칙                                                                                                                    |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | slice `<context>-<slice>.public.ts`                      | 다른 Context가 쓰는 Module·Port·이벤트 payload schema·SQL 조건만 이름을 적어 export. `export *` 금지                    |
+| slice `<context>-<slice>-queries.public.ts`              | 기능 public을 import하면 파일 순환이 될 때만. `-queries` Module·Port·Read Model·`*.query-fragment.ts`·id VO만 연다      |
 | `@aido/api` package exports 진입 파일                    | `packages/api/package.json` `exports`의 `/common`·`/errors`·`/vocabulary`·`/contracts/<x>/v<n>` index. 루트 진입은 없다 |
 | Drizzle schema 묶음(`platform/database/schema/index.ts`) | drizzle-kit과 RQB가 schema 객체 하나를 요구해 `tables.schema.ts`가 Context별 schema를 모은다                            |
 

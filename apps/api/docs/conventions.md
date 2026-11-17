@@ -38,8 +38,8 @@
 ## slice·Module·공개 면
 
 - slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
-- Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 읽는 포트만 담고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`, 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 읽기 포트를 `-queries`로 옮겨 없앤다.
-- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
+- Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 쓰는 Port만 내보내고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`(좁은 쓰기 포트 포함, UseCase·controller·서비스 없음), 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 포트를 `-queries`로 옮겨 없앤다.
+- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. 그 public을 import하면 파일 순환이 될 때만 `-queries` Module·Port·Read Model·조회 조각·id VO만 다시 내보내는 `<context>-<slice>-queries.public.ts`를 더 둔다(`planning-todos-queries.public.ts`). Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
 - presentation의 Controller·DTO·응답 매퍼 이름은 HTTP 자원(경로·DTO component id가 계약)을 따르고, domain·application은 Aggregate 이름을 따른다(voice `voice-digests` slice의 `VoiceNoteController`는 `/v1/voice-notes` 자원 이름이다).
 - HTTP 버전은 폴더(`http/v2/`)로만 나눈다. 클래스(`WeatherReportController`)·Swagger 태그·상수 이름에 버전을 넣지 않고, 버전 폴더끼리 import하지 않는다(공용은 버전 밖 `presentation/http/`).
 
@@ -113,7 +113,7 @@
 
 - UseCase는 "잠금 → 읽기 → 도메인 행동 → 저장 → 발행"이 위에서 아래로 읽히게 쓴다. SQL·SDK는 어댑터에 둔다.
 - 클래스 멤버는 static 팩토리 → 필드 → 생성자 → public getter → public 메서드 → `#` 비공개 getter·메서드 순서다(`aido/member-order`).
-- 인자는 3개 이하다. 넘으면 이름 붙은 객체 하나로 받는다. Nest가 채우는 것(데코레이터 클래스의 생성자, `@Param()`·`@Body()`처럼 데코레이터를 단 인자)은 세지 않는다(`aido/max-params`). 함수는 80줄, 파일은 400줄 이하이고 문구 카탈로그(`*.messages.ts`)·DB schema는 뺀다(`max-lines-per-function`·`max-lines`).
+- 인자는 3개 이하다. 넘으면 이름 붙은 객체 하나로 받는다. Nest가 채우는 것(데코레이터 클래스의 생성자, `@Param()`·`@Body()`처럼 데코레이터를 단 인자)은 세지 않는다(`aido/max-params`). 함수는 80줄, 파일은 400줄 이하다(`max-lines-per-function`·`max-lines`). 데이터 목록인 문구 카탈로그(`*.messages.ts`)와 DB schema(`platform/database/schema/`)만 뺀다. 라이브러리 인터페이스가 정한 인자는 `...[key, ttl]: Parameters<ThrottlerStorage["increment"]>`처럼 그 타입으로 받는다.
 - v1·v2 응답은 각 버전 매퍼에서 만든다. 버전·권한 분기를 한 함수에 섞지 않는다.
 - 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 파일에 응집한다. Context 사이 매퍼 중복은 허용한다.
 - 계층을 그대로 통과하는 인자(tx·userId 드릴링)는 CLS·Command 객체로 없앤다.
