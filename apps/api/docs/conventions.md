@@ -24,7 +24,7 @@
 | 주기 작업       | `timezone-reminder-sweep.scheduler.ts`                               | `TimezoneReminderSweepScheduler`                    |                                                                                           |
 | 이벤트 구독     | `invitee-activity.event-handler.ts`                                  | `InviteeActivityEventHandler`                       |                                                                                           |
 | HTTP            | `http/v1/memo.controller.ts`·`memo.dto.ts`·`memo-response.mapper.ts` | `MemoController`·`CreateMemoDto`·`toMemoResponse()` | DTO는 컨트롤러별 한 파일, 응답 문구는 매퍼                                                |
-| 요청 한도       | `http/memos.rate-limits.ts`                                          | `MemoRateLimits`                                    | `defineRateLimits({ write: { limitPerMinute } })`, 라우트는 `@RateLimit(…)`               |
+| 요청 한도       | `http/inquiries.rate-limits.ts`                                      | `InquiryRateLimits`                                 | `defineRateLimits({ submit: { limitPerMinute } })`, 라우트는 `@RateLimit(…)`              |
 | 로그·경보·오류  | `memos.log-events.ts`·`forecasts.alerts.ts`·`memos.errors.ts`        | `MemoLogEvent`·`ForecastAlerts`·`memoNotFound()`    | 로그 상수는 이벤트 이름 상수와 겹치지 않게                                                |
 
 - 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).

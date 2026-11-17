@@ -1,24 +1,5 @@
 import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
 import { IDEMPOTENCY_KEY_HEADER } from "@aido/api/vocabulary";
-/**
- * Memo E2E 테스트
- *
- * @description
- * 메모(Memo) 기능 전체 플로우 테스트.
- * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
- *
- * ### 테스트 범위 (MemoController 10개 라우트 전체)
- * - GET    /memos/resource-limit
- * - POST   /memos
- * - GET    /memos
- * - GET    /memos/:id
- * - PATCH  /memos/:id
- * - PATCH  /memos/:id/pin
- * - PATCH  /memos/:id/reorder
- * - DELETE /memos/:id
- * - POST   /memos/:id/convert-to-todo
- * - POST   /memos/:id/convert-to-todos
- */
 import request from "supertest";
 
 import { memo } from "#api/platform/database/schema/index";
@@ -28,7 +9,7 @@ import {
   destroyE2eApp,
   type E2eTestContext,
   type VerifiedUser,
-} from "./helpers/index.js";
+} from "../helpers/index.js";
 
 describe("메모 E2E", () => {
   let testContext: E2eTestContext;

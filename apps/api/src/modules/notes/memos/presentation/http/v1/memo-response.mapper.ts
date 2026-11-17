@@ -16,7 +16,7 @@ import {
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { MemoResourceLimit } from "../../../application/use-cases/get-memo-resource-limit.use-case.js";
+import type { MemoResourceLimitReadModel } from "../../../application/read-models/memo-resource-limit.read-model.js";
 import type { Memo } from "../../../domain/memo.aggregate.js";
 
 // 출시 앱은 변경 응답의 message를 표시하지 않지만 계약 필드라 문구를 그대로 둔다
@@ -51,7 +51,9 @@ export function toMemoListResponse(page: CursorPage<Memo, number>): MemoListResp
   return { items: page.items.map(toMemoResponse), pagination: page.pagination };
 }
 
-export function toMemoResourceLimitResponse(limit: MemoResourceLimit): MemoResourceLimitResponse {
+export function toMemoResourceLimitResponse(
+  limit: MemoResourceLimitReadModel,
+): MemoResourceLimitResponse {
   return { currentCount: limit.currentCount, maxPerUser: limit.maxPerUser };
 }
 

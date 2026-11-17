@@ -39,6 +39,10 @@ export function memoRequestMismatch(): ApplicationException {
 export class MemoIdempotencyKeyTakenError extends Error {
   constructor() {
     super("Memo idempotency key already taken");
-    this.name = "MemoIdempotencyKeyTakenError";
+    this.name = MemoIdempotencyKeyTakenError.name;
   }
+}
+
+export function memoIdempotencyKeyTaken(): MemoIdempotencyKeyTakenError {
+  return new MemoIdempotencyKeyTakenError();
 }

@@ -76,7 +76,7 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
     return this.props.content;
   }
 
-  get isPinned(): boolean {
+  isPinned(): boolean {
     return this.props.isPinned;
   }
 
