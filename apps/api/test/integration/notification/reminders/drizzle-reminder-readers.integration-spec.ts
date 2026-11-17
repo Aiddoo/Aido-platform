@@ -135,8 +135,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
         premiumMorning: (timezones: readonly string[]) =>
           reader.scheduledReminder.findPremiumMorningReminderUsers({
             timezones,
-            hour: 8,
-            minute: 0,
+            times: [{ hour: 8, minute: 0 }],
             today: TODAY,
             tomorrow: TOMORROW,
           }),
@@ -149,8 +148,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
         premiumEvening: (timezones: readonly string[]) =>
           reader.scheduledReminder.findPremiumEveningReminderUsers({
             timezones,
-            hour: 19,
-            minute: 0,
+            times: [{ hour: 19, minute: 0 }],
             today: TODAY,
             tomorrow: TOMORROW,
           }),
@@ -189,15 +187,13 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       // When
       const morning = await reader.scheduledReminder.findPremiumMorningReminderUsers({
         timezones: GROUP,
-        hour: 8,
-        minute: 0,
+        times: [{ hour: 8, minute: 0 }],
         today: TODAY,
         tomorrow: TOMORROW,
       });
       const evening = await reader.scheduledReminder.findPremiumEveningReminderUsers({
         timezones: GROUP,
-        hour: 19,
-        minute: 0,
+        times: [{ hour: 19, minute: 0 }],
         today: TODAY,
         tomorrow: TOMORROW,
       });

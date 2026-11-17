@@ -69,6 +69,21 @@ describe("SendOnboardingUseCase — 온보딩 전략", () => {
     ]);
   });
 
+  it("가입 다음 현지 날에 Day 1 안내를 보낸다(서울 19시 가입은 UTC로 같은 날이어도 다음 날이 1일)", async () => {
+    // Given
+    // 2024-01-15 19:00 KST 가입, 오늘은 서울 2024-01-16
+    reader.onboardingCandidates = [
+      { id: "user-1", createdAt: Temporal.Instant.from("2024-01-15T10:00:00Z") },
+    ];
+
+    // When
+    const result = await strategy.execute(timezoneContext);
+
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(sent()).toEqual([expect.objectContaining({ metadata: { onboardingDay: 1 } })]);
+  });
+
   it("Day 5에는 완료한 할 일 수를 담아 보낸다", async () => {
     // Given
     // 5일 전 가입, 완료한 할 일 3개

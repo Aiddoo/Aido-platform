@@ -20,6 +20,7 @@ const timezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneCont
   timezones: ["Asia/Seoul"],
   localHour: 20,
   localMinute: 0,
+  reminderTimes: [{ hour: 20, minute: 0 }],
   dayOfWeek: 1,
   today: Temporal.PlainDate.from("2026-11-02"),
   tomorrow: Temporal.PlainDate.from("2026-11-03"),

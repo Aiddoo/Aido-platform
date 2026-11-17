@@ -1,5 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { ReminderTime } from "../../domain/local-clock.domain-service.js";
 import type {
   EveningReminderUserReadModel,
   ReminderCountUserReadModel,
@@ -9,8 +10,8 @@ import type {
 export interface CustomTimeReminderParams {
   /** 이 분에 현지 날짜·시·분이 같은 시간대들 */
   readonly timezones: readonly string[];
-  readonly hour: number;
-  readonly minute: number;
+  /** 이 분에 울릴 시:분들(봄 DST 틈 뒤 첫 분이면 틈 안의 시각도 함께다) */
+  readonly times: readonly ReminderTime[];
   readonly today: Temporal.PlainDate;
   readonly tomorrow: Temporal.PlainDate;
   /** 리마인더 시간을 바꾼 직후 그 사용자만 볼 때 */

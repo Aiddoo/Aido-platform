@@ -234,6 +234,7 @@ describe.each<SupportedLocale>(["ko", "en"])("%s 주간 성취 문구의 기간"
       timezones: ["Asia/Seoul"],
       localHour: 7,
       localMinute: 0,
+      reminderTimes: [{ hour: 7, minute: 0 }],
       dayOfWeek: 1,
       today: Temporal.PlainDate.from("2026-07-27"),
       tomorrow: Temporal.PlainDate.from("2026-07-28"),

@@ -215,6 +215,12 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
           timezones: ["Asia/Seoul"],
           localHour: 8,
           localMinute: 0,
+          // 고정 캠페인과 같은 grace(3분) 안의 시:분이다
+          reminderTimes: [
+            { hour: 7, minute: 58 },
+            { hour: 7, minute: 59 },
+            { hour: 8, minute: 0 },
+          ],
           dayOfWeek: 3,
           today: Temporal.PlainDate.from("2024-01-17"),
           tomorrow: Temporal.PlainDate.from("2024-01-18"),

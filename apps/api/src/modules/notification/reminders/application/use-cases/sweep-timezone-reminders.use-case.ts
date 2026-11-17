@@ -8,6 +8,7 @@ import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor
 
 import {
   groupTimezonesByLocalClock,
+  isReminderTimeDue,
   type TimezoneContext,
   timezoneContextAt,
 } from "../../domain/local-clock.domain-service.js";
@@ -127,10 +128,9 @@ export class SweepTimezoneRemindersUseCase {
   /** 바꾼 리마인더 시각이 지금이면 그 사용자에게 바로 보낸다. */
   async handleReminderHourChanged(payload: ReminderHourChangedJobData): Promise<void> {
     try {
-      const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
       const timezoneContext = timezoneContextAt(
-        [payload.timezone],
-        local.toPlainDateTime(),
+        this.#dependencies.clock.now(),
+        payload.timezone,
         payload.userId,
       );
       const { localHour, localMinute } = timezoneContext;
@@ -138,8 +138,10 @@ export class SweepTimezoneRemindersUseCase {
       const morningMinute = payload.morningReminderMinute ?? 0;
       if (
         payload.morningReminderHour != null &&
-        payload.morningReminderHour === localHour &&
-        morningMinute === localMinute
+        isReminderTimeDue(timezoneContext, {
+          hour: payload.morningReminderHour,
+          minute: morningMinute,
+        })
       ) {
         this.#dependencies.logger.log({
           event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING,
@@ -153,8 +155,10 @@ export class SweepTimezoneRemindersUseCase {
       const eveningMinute = payload.eveningReminderMinute ?? 0;
       if (
         payload.eveningReminderHour != null &&
-        payload.eveningReminderHour === localHour &&
-        eveningMinute === localMinute
+        isReminderTimeDue(timezoneContext, {
+          hour: payload.eveningReminderHour,
+          minute: eveningMinute,
+        })
       ) {
         this.#dependencies.logger.log({
           event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_EVENING,
@@ -182,9 +186,8 @@ export class SweepTimezoneRemindersUseCase {
         });
         return;
       }
-      const local = this.#dependencies.clock.now().toZonedDateTimeISO(payload.timezone);
       const timezoneContext = {
-        ...timezoneContextAt([payload.timezone], local.toPlainDateTime()),
+        ...timezoneContextAt(this.#dependencies.clock.now(), payload.timezone),
         localHour: 0,
         localMinute: 0,
       };

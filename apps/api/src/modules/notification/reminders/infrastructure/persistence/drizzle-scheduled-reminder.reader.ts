@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, inArray, not, type SQL } from "drizzle-orm";
+import { and, eq, inArray, not, or, type SQL } from "drizzle-orm";
 
 import {
   freeAccessCondition,
@@ -55,7 +55,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
   async findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
-    const { hour, minute, userId } = params;
+    const { times, userId } = params;
     const recipients = userRecipients();
     return this.#morningReminderUsers(
       params,
@@ -64,7 +64,14 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
         premiumAccessCondition(recipients.table, this.#now()),
       ),
       (preference) =>
-        and(eq(preference.morningReminderHour, hour), eq(preference.morningReminderMinute, minute)),
+        or(
+          ...times.map(({ hour, minute }) =>
+            and(
+              eq(preference.morningReminderHour, hour),
+              eq(preference.morningReminderMinute, minute),
+            ),
+          ),
+        ),
     );
   }
 
@@ -81,7 +88,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
   async findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
-    const { hour, minute, userId } = params;
+    const { times, userId } = params;
     const recipients = userRecipients();
     return this.#eveningReminderUsers(
       params,
@@ -90,7 +97,14 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
         premiumAccessCondition(recipients.table, this.#now()),
       ),
       (preference) =>
-        and(eq(preference.eveningReminderHour, hour), eq(preference.eveningReminderMinute, minute)),
+        or(
+          ...times.map(({ hour, minute }) =>
+            and(
+              eq(preference.eveningReminderHour, hour),
+              eq(preference.eveningReminderMinute, minute),
+            ),
+          ),
+        ),
     );
   }
 

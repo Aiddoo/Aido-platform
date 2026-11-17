@@ -9,8 +9,11 @@ import type {
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
-import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
+import {
+  calendarTimezoneOf,
+  type TimezoneContext,
+} from "../../domain/local-clock.domain-service.js";
+import { localDaysSince, localStartOf } from "../../domain/reminder-day.domain-service.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
@@ -30,6 +33,9 @@ interface WinbackStrategyDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
+// 현지 달력으로 이만큼 활동하지 않은 사용자에게 보낸다
+const WINBACK_INACTIVE_DAYS = { MIN: 3, MAX: 30 } as const;
+
 export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
   readonly #dependencies: WinbackStrategyDependencies;
 
@@ -39,8 +45,19 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
     const { timezones, today } = timezoneContext;
-    const cutoffStart = utcStartOf(today.subtract({ days: 30 }));
-    const cutoffEnd = utcStartOf(today.subtract({ days: 3 }));
+    const calendarTimezone = calendarTimezoneOf(timezoneContext);
+    if (calendarTimezone == null) {
+      return { sent: 0 };
+    }
+    // 현지 달력으로 3~30일 전 날에 마지막으로 활동했다. 끝 경계 순간은 아래에서 날 수로 거른다
+    const cutoffStart = localStartOf(
+      today.subtract({ days: WINBACK_INACTIVE_DAYS.MAX }),
+      calendarTimezone,
+    );
+    const cutoffEnd = localStartOf(
+      today.subtract({ days: WINBACK_INACTIVE_DAYS.MIN - 1 }),
+      calendarTimezone,
+    );
 
     // 3~30일 미접속 유저
     const users = await this.#dependencies.reader.findWinbackUsers({
@@ -71,7 +88,10 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       if (lastActiveAt == null) {
         return [];
       }
-      const inactiveDays = elapsedDaysUntil(today, lastActiveAt);
+      const inactiveDays = localDaysSince(lastActiveAt, today, calendarTimezone);
+      if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
+        return [];
+      }
       return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays }];
     });
     // 단계별 중복 방지: 사용자마다 묻지 않고 한 번에 확인한다

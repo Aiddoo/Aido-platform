@@ -68,7 +68,10 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     expect(reader.queries).toEqual([
       {
         method: "findPremiumEveningReminderUsers",
-        params: expect.objectContaining({ timezones: ["Asia/Seoul"], hour: 20, minute: 30 }),
+        params: expect.objectContaining({
+          timezones: ["Asia/Seoul"],
+          times: [{ hour: 20, minute: 30 }],
+        }),
       },
     ]);
     expect(sent()).toEqual([

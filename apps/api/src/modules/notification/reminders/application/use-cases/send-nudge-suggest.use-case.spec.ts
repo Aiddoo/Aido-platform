@@ -74,8 +74,9 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
       method: "findNudgeSuggestFollows",
       params: {
         candidateIds: ["user-1"],
-        activeSince: Temporal.Instant.from("2024-01-09T00:00:00Z"),
-        activeUntil: Temporal.Instant.from("2024-01-14T00:00:00Z"),
+        // 서울 현지 2024-01-09 자정부터 2024-01-14 자정까지
+        activeSince: Temporal.Instant.from("2024-01-08T15:00:00Z"),
+        activeUntil: Temporal.Instant.from("2024-01-13T15:00:00Z"),
       },
     });
     const expected = createNudgeSuggestionNotificationMessage({

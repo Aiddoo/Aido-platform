@@ -11,7 +11,10 @@ import type {
 import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
-import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import {
+  isReminderTimeDue,
+  type TimezoneContext,
+} from "../../domain/local-clock.domain-service.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { EveningReminderUserReadModel } from "../read-models/scheduler.read-model.js";
@@ -43,22 +46,29 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     sent: number;
     recipients: EveningReminderRecipient[];
   }> {
-    const { timezones, localHour, localMinute, userId, today, tomorrow } = timezoneContext;
+    const { timezones, localHour, localMinute, reminderTimes, userId, today, tomorrow } =
+      timezoneContext;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
-    const premiumUsers = await this.#dependencies.reader.findPremiumEveningReminderUsers({
-      timezones,
-      hour: localHour,
-      minute: localMinute,
-      today,
-      tomorrow,
-      userId: userId == null ? undefined : UserId.reconstitute(userId),
-    });
+    // 가을 DST로 두 번째 오는 시각처럼 울릴 시각이 없는 분은 조회하지 않는다
+    const premiumUsers =
+      reminderTimes.length === 0
+        ? []
+        : await this.#dependencies.reader.findPremiumEveningReminderUsers({
+            timezones,
+            times: reminderTimes,
+            today,
+            tomorrow,
+            userId: userId == null ? undefined : UserId.reconstitute(userId),
+          });
 
     // 무료 사용자: 고정 시간(19:00)에만 발송
     const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
     const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
-    const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
+    const isFreeReminderTime = isReminderTimeDue(timezoneContext, {
+      hour: defaultHour,
+      minute: defaultMinute,
+    });
 
     let freeUsers: EveningReminderUserReadModel[] = [];
     if (!userId && isFreeReminderTime) {

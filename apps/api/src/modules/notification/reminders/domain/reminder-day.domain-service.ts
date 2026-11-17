@@ -1,17 +1,21 @@
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+
 import { nonIsoCalendarDate } from "./reminders.errors.js";
 
-const DAY_MS = 24 * 60 * 60_000;
+// 날짜 규칙(docs/conventions/dates.md): 배치는 사용자 저장 시간대의 달력 날짜로 센다
 
-// 리마인더 대상 구간은 사용자 현지 오늘을 UTC 자정 순간으로 둔 옛 기준을 그대로 쓴다
-export function utcStartOf(date: Temporal.PlainDate): Temporal.Instant {
-  return date.toZonedDateTime("UTC").toInstant();
+/** 그 순간이 현지 달력으로 오늘보다 며칠 전인지. 같은 날이면 0이다 */
+export function localDaysSince(
+  since: Temporal.Instant,
+  today: Temporal.PlainDate,
+  timezone: string,
+): number {
+  return localDateIn(since, timezone).until(today, { largestUnit: "days" }).days;
 }
 
-/** 그 순간부터 현지 오늘(UTC 자정 기준)까지 지난 24시간 단위 일수. 0 쪽으로 버린다 */
-export function elapsedDaysUntil(today: Temporal.PlainDate, since: Temporal.Instant): number {
-  const days = Math.trunc((utcStartOf(today).epochMilliseconds - since.epochMilliseconds) / DAY_MS);
-  // 오늘 자정 뒤의 순간은 -0이 되어 0과 다르게 비교되지 않게 맞춘다
-  return days === 0 ? 0 : days;
+/** 현지 날짜가 시작하는 순간. 자정이 DST 틈이면 틈 뒤 첫 순간이다 */
+export function localStartOf(date: Temporal.PlainDate, timezone: string): Temporal.Instant {
+  return date.toZonedDateTime(timezone).toInstant();
 }
 
 // 날짜 키로 만든 PlainDate는 ISO 달력이라 주차가 늘 있고 타입만 undefined를 허용한다

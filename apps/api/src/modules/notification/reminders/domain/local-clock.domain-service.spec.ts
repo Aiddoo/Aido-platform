@@ -1,4 +1,4 @@
-import { groupTimezonesByLocalClock } from "./local-clock.domain-service.js";
+import { groupTimezonesByLocalClock, reminderTimesDueAt } from "./local-clock.domain-service.js";
 
 const clockOf = (minute: string, timezones: readonly string[]) =>
   groupTimezonesByLocalClock(Temporal.Instant.from(minute), timezones).map(
@@ -60,6 +60,107 @@ describe("groupTimezonesByLocalClock", () => {
     expect(groups).toEqual([
       { timezones: ["Asia/Kolkata"], clock: "2024-01-16 9:0 2" },
       { timezones: ["Asia/Dhaka"], clock: "2024-01-16 9:30 2" },
+    ]);
+  });
+});
+
+// 그 날 현지 자정부터 몇 시간 동안 매분 sweep을 돌려 그 시:분이 울리는 분을 오프셋과 함께 모은다
+function sweepMinutesWhenDue(
+  timezone: string,
+  date: string,
+  time: { readonly hour: number; readonly minute: number },
+  hours = 5,
+): string[] {
+  const start = Temporal.PlainDate.from(date).toZonedDateTime(timezone).toInstant();
+  return Array.from({ length: hours * 60 }, (_, index) => start.add({ minutes: index }))
+    .filter((minute) =>
+      reminderTimesDueAt(minute, timezone).some(
+        ({ hour, minute: dueMinute }) => hour === time.hour && dueMinute === time.minute,
+      ),
+    )
+    .map((minute) => {
+      const local = minute.toZonedDateTimeISO(timezone);
+      return `${local.toPlainTime().toString({ smallestUnit: "minute" })}${local.offset}`;
+    });
+}
+
+describe("reminderTimesDueAt", () => {
+  it("평소에는 그 시:분부터 grace(3분) 동안 울린다", () => {
+    // When
+    const due = sweepMinutesWhenDue("Asia/Seoul", "2027-03-14", { hour: 2, minute: 30 });
+
+    // Then
+    expect(due).toEqual(["02:30+09:00", "02:31+09:00", "02:32+09:00"]);
+  });
+
+  it.each([
+    {
+      timezone: "America/New_York",
+      date: "2027-03-14",
+      expected: ["03:00-04:00", "03:01-04:00", "03:02-04:00"],
+      time: { hour: 2, minute: 30 },
+    },
+    {
+      timezone: "Europe/London",
+      date: "2027-03-28",
+      expected: ["02:00+01:00", "02:01+01:00", "02:02+01:00"],
+      time: { hour: 1, minute: 30 },
+    },
+  ])(
+    "$timezone 봄 DST 틈에 없는 시각은 틈 바로 뒤 첫 분부터 울린다($date)",
+    ({ timezone, date, time, expected }) => {
+      // When
+      const due = sweepMinutesWhenDue(timezone, date, time);
+
+      // Then
+      expect(due).toEqual(expected);
+    },
+  );
+
+  it.each([
+    {
+      timezone: "America/New_York",
+      date: "2027-11-07",
+      expected: ["01:30-04:00", "01:31-04:00", "01:32-04:00"],
+    },
+    {
+      timezone: "Europe/London",
+      date: "2027-10-31",
+      expected: ["01:30+01:00", "01:31+01:00", "01:32+01:00"],
+    },
+  ])(
+    "$timezone 가을 DST로 두 번 오는 시각은 앞의 것에만 울린다($date)",
+    ({ timezone, date, expected }) => {
+      // When
+      const due = sweepMinutesWhenDue(timezone, date, { hour: 1, minute: 30 });
+
+      // Then
+      expect(due).toEqual(expected);
+    },
+  );
+
+  it("틈 뒤 첫 분은 틈 안의 시각을 모두 함께 울리고 묶음도 따로 둔다", () => {
+    // Given
+    // 뉴욕은 07:00Z에 02:00이 03:00으로 넘어가고, 같은 03:00인 토론토도 같은 규칙이다
+    const minute = Temporal.Instant.from("2027-03-14T07:00:00Z");
+
+    // When
+    const due = reminderTimesDueAt(minute, "America/New_York");
+    const groups = groupTimezonesByLocalClock(minute, [
+      "America/New_York",
+      "America/Toronto",
+      "America/Puerto_Rico",
+    ]);
+
+    // Then
+    // grace 안의 01:58·01:59, 틈 안의 02:00~02:59, 지금인 03:00이다
+    expect(due).toHaveLength(63);
+    expect(due.at(0)).toEqual({ hour: 1, minute: 58 });
+    expect(due).toContainEqual({ hour: 2, minute: 30 });
+    expect(due.at(-1)).toEqual({ hour: 3, minute: 0 });
+    expect(groups.map(({ timezones }) => timezones)).toEqual([
+      ["America/New_York", "America/Toronto"],
+      ["America/Puerto_Rico"],
     ]);
   });
 });
