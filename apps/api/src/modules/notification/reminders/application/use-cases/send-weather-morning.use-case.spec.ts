@@ -13,6 +13,7 @@ import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weath
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
@@ -287,6 +288,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
             weatherReportCache: new WeatherReportCache(
               memory,
               new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+              new StubWeatherProviderBudget(),
             ),
             logger: new SilentLogger(),
           }),

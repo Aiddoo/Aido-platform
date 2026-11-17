@@ -17,6 +17,7 @@ import type {
   WeatherReportProviderPort,
   WeatherReportRequest,
 } from "../ports/weather-report-provider.port.js";
+import type { CellWeatherReportReadModel } from "../read-models/cell-weather-report.read-model.js";
 import { weatherServiceUnavailable } from "../weather-reports.errors.js";
 import { WeatherReportLogEvent } from "../weather-reports.log-events.js";
 
@@ -43,7 +44,7 @@ export class ReadWeatherReportUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: ReadWeatherReportQuery): Promise<WeatherReport> {
+  async execute(query: ReadWeatherReportQuery): Promise<CellWeatherReportReadModel> {
     const { cell, region, language } = query;
     const request = { timezone: region.timezone, countryCode: region.countryCode, language };
     const scope = await this.#cacheScope(cell, request);
@@ -70,7 +71,7 @@ export class ReadWeatherReportUseCase {
         fallback: true,
         fetchedAt: toIsoString(latest.fetchedAt),
       });
-      return latest;
+      return { report: latest, expiresAt: null };
     }
   }
 

@@ -636,5 +636,61 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
         },
       ]);
     });
+
+    it("무료 한도 90%(45만 회)에 닿은 호출이 예산 절약 경보를 한 번 올리고 상태를 saving으로 둔다", async () => {
+      // Given
+      const { provider, meter, alert, usage } = createProvider([
+        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(WeatherKitReportFixture.seoulRain()),
+      ]);
+      await meter.add([
+        { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 449_999 },
+      ]);
+      // When
+      await provider.getReport(cell, REQUEST);
+      // Then
+      expect(usage.currentState()).toBe("saving");
+      expect(alert.alerts).toEqual([
+        {
+          ...WeatherReportAlerts.WEATHERKIT_BUDGET_SAVING,
+          tags: { period: "2026-11" },
+          details: { total: 450_000, limit: 500_000 },
+        },
+      ]);
+    });
+
+    it("한도에 닿은 마지막 호출은 보내고 한도를 다 썼다는 경보를 올린다", async () => {
+      // Given
+      const { provider, meter, alert, usage } = createProvider([
+        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(WeatherKitReportFixture.seoulRain()),
+      ]);
+      await meter.add([
+        { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 499_998 },
+      ]);
+      // When
+      const report = await provider.getReport(cell, REQUEST);
+      // Then
+      expect(report.current.condition).toBe("RAIN");
+      expect(usage.currentState()).toBe("exhausted");
+      expect(alert.alerts.map(({ key }) => key)).toEqual([
+        WeatherReportAlerts.WEATHERKIT_BUDGET_EXHAUSTED.key,
+      ]);
+    });
+
+    it("한도를 다 쓰면 WeatherKit을 부르지 않고 칸별 차단 없이 폴백할 실패로 끝낸다", async () => {
+      // Given
+      const { provider, meter, requests } = createProvider([]);
+      const usageKey = { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" };
+      await meter.add([{ key: usageKey, amount: 500_000 }]);
+      // When
+      const outcome = provider.getReport(cell, REQUEST);
+      // Then
+      await expect(outcome).rejects.toMatchObject({ reason: "budget_exhausted" });
+      expect(requests).toEqual([]);
+      expect(await meter.read([usageKey])).toEqual([500_000]);
+      expect(await memory.has(WeatherReportCacheKey.providerFailure(cell.key))).toBe(false);
+      expect(await memory.has(WeatherReportCacheKey.availabilityFailure(cell.key))).toBe(false);
+    });
   });
 });

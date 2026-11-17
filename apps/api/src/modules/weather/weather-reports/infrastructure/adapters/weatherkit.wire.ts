@@ -100,8 +100,14 @@ const instantSchema = z.iso
   .datetime({ offset: true })
   .transform((value) => Temporal.Instant.from(value));
 
+/** readTime은 공급자가 읽은 순간, expireTime은 그 dataset을 새로 내기 전까지의 순간이다. */
+const metadataSchema = z
+  .looseObject({ readTime: instantSchema.nullish(), expireTime: instantSchema.nullish() })
+  .optional()
+  .catch(undefined);
+
 const currentWeatherSchema = z.looseObject({
-  metadata: z.looseObject({ readTime: instantSchema.nullish() }).optional().catch(undefined),
+  metadata: metadataSchema,
   asOf: instantSchema,
   cloudCover: z.number(),
   conditionCode: conditionCodeSchema,
@@ -121,6 +127,7 @@ const currentWeatherSchema = z.looseObject({
 });
 
 const nextHourSchema = z.looseObject({
+  metadata: metadataSchema,
   summary: z.array(
     z.looseObject({
       startTime: instantSchema,
@@ -200,11 +207,11 @@ export const weatherKitWeatherSchema = z.looseObject({
   currentWeather: currentWeatherSchema.optional(),
   forecastNextHour: nextHourSchema.optional().catch(undefined),
   forecastHourly: z
-    .object({ hours: z.array(hourSchema) })
+    .object({ metadata: metadataSchema, hours: z.array(hourSchema) })
     .optional()
     .catch(undefined),
   forecastDaily: z
-    .object({ days: z.array(daySchema) })
+    .object({ metadata: metadataSchema, days: z.array(daySchema) })
     .optional()
     .catch(undefined),
   weatherAlerts: z

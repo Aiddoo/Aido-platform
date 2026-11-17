@@ -51,7 +51,7 @@ export class ReadWeatherReportsUseCase {
         }
         const region = this.#dependencies.timezoneResolver.resolve(first.cell.center);
         try {
-          const report = await this.#dependencies.readWeatherReport.execute({
+          const { report } = await this.#dependencies.readWeatherReport.execute({
             cell: first.cell,
             region,
             language: first.request.language,

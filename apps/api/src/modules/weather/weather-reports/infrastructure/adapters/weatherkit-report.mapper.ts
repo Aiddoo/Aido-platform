@@ -5,7 +5,7 @@ import type {
   WeatherPrecipitationType,
   WeatherPressureTrend,
 } from "@aido/api/vocabulary";
-import { clamp, round, sortBy } from "es-toolkit";
+import { clamp, minBy, round, sortBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
@@ -317,6 +317,16 @@ function toAlert(alert: WeatherKitAlert): WeatherReportAlert {
   };
 }
 
+// 현재 관측은 5분마다 만료돼 따르면 리포트를 늘 가장 짧게 두므로 예보 dataset의 만료만 본다
+function earliestForecastExpiry(weather: WeatherKitWeather): Temporal.Instant | null {
+  const expiries = [
+    weather.forecastNextHour?.metadata?.expireTime,
+    weather.forecastHourly?.metadata?.expireTime,
+    weather.forecastDaily?.metadata?.expireTime,
+  ].filter((expiry) => expiry != null);
+  return minBy(expiries, (expiry) => expiry.epochMilliseconds) ?? null;
+}
+
 /** WeatherKit 응답(km/h·0~1 비율)을 공급자 중립 리포트(m/s·0~100)로 바꾼다. 창 자르기는 읽을 때 한다. */
 export function toWeatherReport(
   weather: WeatherKitWeather & { readonly currentWeather: WeatherKitCurrentWeather },
@@ -335,5 +345,6 @@ export function toWeatherReport(
     ]),
     // 공급자가 데이터를 읽은 시각이 있으면 그것을, 없으면 요청 시각을 쓴다.
     fetchedAt: weather.currentWeather.metadata?.readTime ?? requestedAt,
+    validUntil: earliestForecastExpiry(weather),
   });
 }

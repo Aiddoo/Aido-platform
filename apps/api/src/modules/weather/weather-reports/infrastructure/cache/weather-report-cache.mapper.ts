@@ -120,6 +120,10 @@ export const CACHED_REPORT_SCHEMA = z.object({
     }),
   ),
   fetchedAt: instantSchema,
+  // 이전 버전이 쓴 값에는 아래 두 칸이 없다
+  validUntil: instantSchema.nullable().default(null),
+  /** 서버가 이 칸 리포트를 공급자에서 다시 받기 시작하는 순간(캐시 만료) */
+  expiresAt: instantSchema.nullable().default(null),
 });
 
 type CachedWeatherReport = z.infer<typeof CACHED_REPORT_SCHEMA>;
@@ -136,7 +140,10 @@ function toInstantOrNull(text: string | null): Temporal.Instant | null {
   return text == null ? null : toInstant(text);
 }
 
-export function toCachedWeatherReport(report: WeatherReport): CachedWeatherReport {
+export function toCachedWeatherReport(
+  report: WeatherReport,
+  expiresAt: Temporal.Instant,
+): CachedWeatherReport {
   const value = omit(report.toPrimitives(), ["cellKey"]);
   return {
     current: { ...value.current, observedAt: toIsoString(value.current.observedAt) },
@@ -169,6 +176,8 @@ export function toCachedWeatherReport(report: WeatherReport): CachedWeatherRepor
       expiresAt: toIsoString(alert.expiresAt),
     })),
     fetchedAt: toIsoString(value.fetchedAt),
+    validUntil: toIsoStringOrNull(value.validUntil),
+    expiresAt: toIsoString(expiresAt),
   };
 }
 
@@ -206,5 +215,10 @@ export function toWeatherReport(cached: CachedWeatherReport, cell: GeoCell): Wea
       expiresAt: toInstant(alert.expiresAt),
     })),
     fetchedAt: toInstant(cached.fetchedAt),
+    validUntil: toInstantOrNull(cached.validUntil),
   });
+}
+
+export function expiresAtOf(cached: CachedWeatherReport): Temporal.Instant | null {
+  return toInstantOrNull(cached.expiresAt);
 }

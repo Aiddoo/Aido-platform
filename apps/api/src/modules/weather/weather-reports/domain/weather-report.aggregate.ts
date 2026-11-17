@@ -127,6 +127,8 @@ export interface WeatherReportPrimitives {
   readonly alerts: readonly WeatherReportAlert[];
   /** 공급자가 이 값을 읽은 순간. 폴백한 리포트면 지금보다 이르다 */
   readonly fetchedAt: Temporal.Instant;
+  /** 공급자가 예보를 새로 내기 전까지 유효하다고 알린 순간. 모르면 null */
+  readonly validUntil: Temporal.Instant | null;
 }
 
 interface WeatherReportProps {
@@ -136,6 +138,7 @@ interface WeatherReportProps {
   readonly daily: readonly WeatherReportDay[];
   readonly alerts: readonly WeatherReportAlert[];
   readonly fetchedAt: Temporal.Instant;
+  readonly validUntil: Temporal.Instant | null;
 }
 
 interface CreateWeatherReportParams extends WeatherReportProps {
@@ -202,6 +205,19 @@ export class WeatherReport extends AggregateRoot<WeatherReportId, WeatherReportP
     return this.props.fetchedAt;
   }
 
+  get validUntil(): Temporal.Instant | null {
+    return this.props.validUntil;
+  }
+
+  /** 분 단위 강수 예보(다음 1시간)를 주는 지역의 리포트인지. 한국은 주지 않는다 */
+  hasMinuteForecast(): boolean {
+    return this.props.nextHour != null;
+  }
+
+  isPrecipitatingNow(): boolean {
+    return this.props.current.precipitationIntensity > 0;
+  }
+
   /**
    * 캐시·폴백 리포트는 받은 시점의 창을 담고 있으므로 응답 시각 기준으로 지난 구간을 잘라낸다.
    * 시간별은 현재 시각이 속한 시간부터, 일별은 위치 시간대의 오늘부터 시작한다.
@@ -224,7 +240,7 @@ export class WeatherReport extends AggregateRoot<WeatherReportId, WeatherReportP
   /** 지금 강수 중이거나 2시간 안에 강수(다음 1시간 강수 구간·강수 확률 기준 이상인 시간)가 예보됐는지 */
   isPrecipitationSoon(now: Temporal.Instant): boolean {
     const horizon = now.add({ hours: PRECIPITATION_SOON_LOOKAHEAD_HOURS });
-    if (this.props.current.precipitationIntensity > 0) {
+    if (this.isPrecipitatingNow()) {
       return true;
     }
     const nextHourRain =

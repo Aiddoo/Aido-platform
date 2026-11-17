@@ -11,6 +11,7 @@ import { ScheduledTodoReaderPort } from "./application/ports/scheduled-todo.read
 import { SunTimeProviderPort } from "./application/ports/sun-time-provider.port.js";
 import { WeatherForecastCachePort } from "./application/ports/weather-forecast-cache.port.js";
 import { WeatherForecastProviderPort } from "./application/ports/weather-forecast-provider.port.js";
+import { WeatherProviderBudgetPort } from "./application/ports/weather-provider-budget.port.js";
 import { WeatherReportCachePort } from "./application/ports/weather-report-cache.port.js";
 import { WeatherReportProviderPort } from "./application/ports/weather-report-provider.port.js";
 import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
@@ -41,7 +42,7 @@ export const WEATHER_WEATHER_REPORTS_PROVIDERS = [
   { provide: WeatherForecastCachePort, useClass: WeatherForecastCache },
   WeatherKitTokenAdapter,
   WeatherKitAttributionAdapter,
-  WeatherKitUsageMeterAdapter,
+  { provide: WeatherProviderBudgetPort, useClass: WeatherKitUsageMeterAdapter },
   { provide: WeatherReportProviderPort, useClass: WeatherKitReportAdapter },
   { provide: WeatherReportCachePort, useClass: WeatherReportCache },
   { provide: ScheduledTodoReaderPort, useClass: PlanningScheduledTodoAdapter },

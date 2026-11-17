@@ -37,5 +37,8 @@ export const KMA_LIFESTYLE_POLICY = createVendorPolicy("kma-lifestyle", 5);
 export const AIRKOREA_POLICY = createVendorPolicy("airkorea", 5);
 export const KASI_POLICY = createVendorPolicy("kasi", 5);
 
-/** WeatherKit 무료 월 50만 호출의 60%·80%에서 경보를 올린다. */
+/** WeatherKit 무료 등급의 월 호출 한도. 넘으면 과금되므로 여기서 호출을 멈춘다. */
+export const WEATHERKIT_MONTHLY_CALL_LIMIT = 500_000;
+
+/** 무료 월 한도의 60%·80%에서 경보를 올린다(90%·100%는 예산 상태 경보). */
 export const WEATHERKIT_MONTHLY_CALL_ALERTS = [300_000, 400_000] as const;

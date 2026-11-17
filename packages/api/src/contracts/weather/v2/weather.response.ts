@@ -243,6 +243,11 @@ export const weatherReportSchema = z
     fetchedAt: datetimeSchema.describe(
       "공급자에서 데이터를 받은 시각. 공급자 장애 때는 마지막 성공 시각",
     ),
+    expiresAt: datetimeSchema
+      .optional()
+      .describe(
+        "서버가 이 리포트를 공급자에서 다시 받기 시작하는 시각(캐시 만료). 그 전에 다시 조회하면 같은 리포트다. 공급자 장애로 이전 데이터를 줄 때는 빠진다. 1.16.0 이하 앱은 읽지 않는다",
+      ),
     briefing: weatherBriefingSchema
       .optional()
       .describe(
@@ -362,6 +367,7 @@ export const weatherReportSchema = z
         },
       },
       fetchedAt: "2026-11-02T06:20:00.000Z",
+      expiresAt: "2026-11-02T06:30:00.000Z",
     },
   });
 

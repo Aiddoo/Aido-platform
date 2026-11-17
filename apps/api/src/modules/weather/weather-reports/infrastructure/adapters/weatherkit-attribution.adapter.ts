@@ -8,6 +8,7 @@ import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+import { WeatherProviderBudgetPort } from "../../application/ports/weather-provider-budget.port.js";
 import type {
   WeatherReportAttributionReadModel,
   WeatherReportAttributionLogo,
@@ -17,7 +18,6 @@ import {
   WeatherReportCacheKey,
 } from "../cache/weather-report.keyspace.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
-import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
 import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
@@ -45,12 +45,12 @@ const attributionLogoSchema = z.object({
   dark: z.object({ "1x": z.url(), "2x": z.url(), "3x": z.url() }),
 });
 
-/** attribution 응답이 2xx가 아닐 때. 응답 본문은 담지 않는다. */
+/** attribution 응답이 2xx가 아니거나(status) 월 예산을 다 써 보내지 않았을 때(null). 응답 본문은 담지 않는다. */
 class WeatherKitAttributionRequestError extends Error {
-  readonly status: number;
+  readonly status: number | null;
 
-  constructor(status: number) {
-    super(`WeatherKit attribution request failed: ${status}`);
+  constructor(status: number | null) {
+    super(`WeatherKit attribution request failed: ${status ?? "budget_exhausted"}`);
     this.name = "WeatherKitAttributionRequestError";
     this.status = status;
   }
@@ -68,18 +68,18 @@ export class WeatherKitAttributionAdapter {
   readonly #policy: OutboundPolicy;
   readonly #http: HttpClient;
   readonly #cache: Pick<CacheStorePort, "wrap" | "has" | "set">;
-  readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
+  readonly #budget: Pick<WeatherProviderBudgetPort, "reserveCall">;
 
   constructor(
     @InjectHttpClient("weather") http: HttpClient,
     @Inject(CacheStorePort)
     cache: Pick<CacheStorePort, "wrap" | "has" | "set">,
     policies: OutboundPolicyRegistry,
-    @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
+    @Inject(WeatherProviderBudgetPort) budget: Pick<WeatherProviderBudgetPort, "reserveCall">,
   ) {
     this.#http = http;
     this.#cache = cache;
-    this.#usage = usage;
+    this.#budget = budget;
     this.#policy = policies.get(WEATHERKIT_POLICY);
   }
 
@@ -103,7 +103,9 @@ export class WeatherKitAttributionAdapter {
         attributionLogoSchema,
         async () => {
           const outcome = await this.#policy.execute(async (signal) => {
-            await this.#usage.recordCall();
+            if (!(await this.#budget.reserveCall())) {
+              throw new WeatherKitAttributionRequestError(null);
+            }
             return requestVendorJson(
               this.#http,
               `${WEATHERKIT_ORIGIN}/attribution/${encodeURIComponent(language)}`,

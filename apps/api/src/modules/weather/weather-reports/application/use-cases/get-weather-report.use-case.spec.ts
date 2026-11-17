@@ -10,6 +10,7 @@ import { InMemoryScheduledTodoReader } from "#test/doubles/weather/in-memory-sch
 import { InMemoryUserLocationRepository } from "#test/doubles/weather/in-memory-user-location.repository";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
 import {
@@ -60,7 +61,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherReportCache(memory, new FakeTimerClock());
+    cache = new WeatherReportCache(memory, new FakeTimerClock(), new StubWeatherProviderBudget());
     repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
@@ -127,22 +128,18 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     expect(provider.calls).toHaveLength(2);
   });
 
-  it("2시간 안에 강수 확률 50% 이상이면 10분만 캐시를 쓴다", async () => {
+  it("새로 받은 리포트는 캐시 만료 시각을, 마지막 성공 리포트로 폴백하면 null을 준다", async () => {
     // Given
-    // 1시간 뒤 강수 확률 70%
-    const rainy = createWeatherReportFixture({ fetchedAt: now });
-    provider.report = createWeatherReportFixture({
-      fetchedAt: now,
-      hourly: rainy.hourly.map((hour, index) =>
-        index === 1 ? { ...hour, precipitationChance: 70, precipitationType: "RAIN" } : hour,
-      ),
-    });
-    await useCase.execute({ userId: "weather-user", language: "ko" });
+    const fresh = await useCase.execute({ userId: "weather-user", language: "ko" });
+    provider.failure = new Error("weatherkit 429");
+    moveClockTo("2026-11-02T06:50:01.000Z");
+
     // When
-    moveClockTo("2026-11-02T06:30:01.000Z");
-    await useCase.execute({ userId: "weather-user", language: "ko" });
+    const fallback = await useCase.execute({ userId: "weather-user", language: "ko" });
+
     // Then
-    expect(provider.calls).toHaveLength(2);
+    expect(fresh.expiresAt).toEqual(Temporal.Instant.from("2026-11-02T06:50:00.000Z"));
+    expect(fallback.expiresAt).toBeNull();
   });
 
   it("번역 문구가 없는 칸은 언어가 달라도 캐시를 함께 쓴다", async () => {

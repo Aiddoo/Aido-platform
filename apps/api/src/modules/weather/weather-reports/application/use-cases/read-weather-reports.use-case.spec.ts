@@ -3,6 +3,7 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
@@ -32,7 +33,11 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
     reader = new ReadWeatherReportsUseCase({
       readWeatherReport: new ReadWeatherReportUseCase({
         weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCache(memory, new FakeTimerClock()),
+        weatherReportCache: new WeatherReportCache(
+          memory,
+          new FakeTimerClock(),
+          new StubWeatherProviderBudget(),
+        ),
         logger,
       }),
       timezoneResolver,

@@ -34,7 +34,7 @@ function toBriefingResponse(briefing: WeatherBriefing): WeatherBriefingResponse 
 
 /** 시각은 UTC ISO 문자열로, 일별 date는 이미 위치 시간대 달력 날짜다. */
 export function toWeatherReportResponse(result: WeatherReportResult): WeatherReportResponse {
-  const { location, report, airQuality, attribution, briefing } = result;
+  const { location, report, expiresAt, airQuality, attribution, briefing } = result;
   return {
     location: { ...location },
     current: { ...report.current, observedAt: toIsoString(report.current.observedAt) },
@@ -84,6 +84,7 @@ export function toWeatherReportResponse(result: WeatherReportResult): WeatherRep
             },
     },
     fetchedAt: toIsoString(report.fetchedAt),
+    expiresAt: expiresAt == null ? undefined : toIsoString(expiresAt),
     briefing: briefing == null ? undefined : toBriefingResponse(briefing),
   };
 }

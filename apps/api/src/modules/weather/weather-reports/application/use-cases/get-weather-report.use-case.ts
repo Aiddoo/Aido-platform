@@ -40,6 +40,8 @@ export interface WeatherReportResult {
     readonly timezone: string;
   };
   readonly report: WeatherReport;
+  /** 서버가 이 리포트를 공급자에서 다시 받기 시작하는 순간. 폴백한 리포트면 null */
+  readonly expiresAt: Temporal.Instant | null;
   readonly airQuality: AirQuality | null;
   readonly attribution: WeatherReportAttributionReadModel;
   /** 오늘 할 일 조회가 실패하면 브리핑만 빠진다. */
@@ -111,7 +113,7 @@ export class GetWeatherReportUseCase {
       });
     }
 
-    const report = reportResult.value.windowAt(now, region.timezone);
+    const report = reportResult.value.report.windowAt(now, region.timezone);
     return {
       location: {
         latitude: location.latitude,
@@ -119,6 +121,7 @@ export class GetWeatherReportUseCase {
         timezone: region.timezone,
       },
       report,
+      expiresAt: reportResult.value.expiresAt,
       airQuality: airQualityResult.status === "fulfilled" ? airQualityResult.value : null,
       attribution: attributionResult.value,
       briefing:

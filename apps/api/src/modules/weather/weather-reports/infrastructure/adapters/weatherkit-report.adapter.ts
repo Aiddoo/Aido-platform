@@ -13,6 +13,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
+import { WeatherProviderBudgetPort } from "../../application/ports/weather-provider-budget.port.js";
 import type {
   WeatherReportProviderPort,
   WeatherReportRequest,
@@ -31,7 +32,6 @@ import {
   WeatherKitNotConfiguredError,
   WeatherKitTokenAdapter,
 } from "./weatherkit-token.adapter.js";
-import { WeatherKitUsageMeterAdapter } from "./weatherkit-usage-meter.adapter.js";
 import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
@@ -75,7 +75,8 @@ type WeatherKitFailureReason =
   | "missing_current"
   | "recent_failure"
   | "provider_outage"
-  | "provider_busy";
+  | "provider_busy"
+  | "budget_exhausted";
 
 /** 429·5xx·인증 거절·형식 오류 모두 호출자에게는 같은 공급자 실패이며 폴백 대상이다. */
 export class WeatherKitRequestError extends Error {
@@ -98,7 +99,7 @@ function failureTypeOf(error: unknown): string {
   return error instanceof WeatherKitRequestError ? error.reason : toErrorType(error);
 }
 
-/** 회로가 열렸거나 동시 호출이 가득 차 부르지 않은 실패. 칸 문제가 아니라 칸별 차단을 걸지 않는다. */
+/** 회로가 열렸거나 동시 호출이 가득 찼거나 월 예산을 다 써 부르지 않은 실패. 칸 문제가 아니라 칸별 차단을 걸지 않는다. */
 function toRejection(error: OutboundRejectedError): WeatherKitRequestError {
   return new WeatherKitRequestError(
     error.reason === "circuit-open" ? "provider_outage" : "provider_busy",
@@ -108,7 +109,9 @@ function toRejection(error: OutboundRejectedError): WeatherKitRequestError {
 function isRejection(error: unknown): boolean {
   return (
     error instanceof WeatherKitRequestError &&
-    (error.reason === "provider_outage" || error.reason === "provider_busy")
+    (error.reason === "provider_outage" ||
+      error.reason === "provider_busy" ||
+      error.reason === "budget_exhausted")
   );
 }
 
@@ -124,7 +127,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
   readonly #tokenResolver: Pick<WeatherKitTokenAdapter, "resolve" | "invalidate">;
   readonly #cache: Pick<CacheStorePort, "wrap" | "has" | "set">;
   readonly #attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">;
-  readonly #usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">;
+  readonly #budget: Pick<WeatherProviderBudgetPort, "reserveCall">;
   readonly #clock: ClockPort;
 
   constructor(
@@ -136,7 +139,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     @Inject(WeatherKitAttributionAdapter)
     attributionResolver: Pick<WeatherKitAttributionAdapter, "resolve">,
     policies: OutboundPolicyRegistry,
-    @Inject(WeatherKitUsageMeterAdapter) usage: Pick<WeatherKitUsageMeterAdapter, "recordCall">,
+    @Inject(WeatherProviderBudgetPort) budget: Pick<WeatherProviderBudgetPort, "reserveCall">,
     clock: ClockPort,
   ) {
     this.#clock = clock;
@@ -144,7 +147,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     this.#tokenResolver = tokenResolver;
     this.#cache = cache;
     this.#attributionResolver = attributionResolver;
-    this.#usage = usage;
+    this.#budget = budget;
     this.#policy = policies.get(WEATHERKIT_POLICY);
   }
 
@@ -312,7 +315,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
       if (error instanceof WeatherKitNotConfiguredError) {
         throw error;
       }
-      if (error instanceof OutboundRejectedError) {
+      if (error instanceof OutboundRejectedError || isRejection(error)) {
         return BASE_DATA_SETS;
       }
       this.#logger.warn({
@@ -326,10 +329,12 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     }
   }
 
-  /** 공용 회로·동시성 정책 안에서 한 번 부르고 실제로 보낸 호출을 월 사용량에 센다. */
+  /** 공용 회로·동시성 정책 안에서 월 예산을 하나 예약하고 부른다. 예산을 다 썼으면 보내지 않는다. */
   #call<T>(send: (signal: AbortSignal) => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
     return this.#policy.execute(async (inner) => {
-      await this.#usage.recordCall();
+      if (!(await this.#budget.reserveCall())) {
+        throw new WeatherKitRequestError("budget_exhausted");
+      }
       return send(inner);
     }, signal);
   }

@@ -172,10 +172,20 @@ describe("날씨 v2 E2E", () => {
       await registerLocation(user.accessToken, SEOUL).expect(200);
       reportProvider.report = createWeatherReportFixture({ fetchedAt: Temporal.Now.instant() });
       airQualityProvider.result = { pm10: 32, pm25: 18 };
+      const requestedAt = Temporal.Instant.fromEpochMilliseconds(Date.now());
       // When
       const response = await getReport(user.accessToken, "ko-KR,ko;q=0.9").expect(200);
       // Then
       const report = weatherReportSchema.parse(response.body.data);
+      const respondedAt = Temporal.Now.instant();
+      // 강수가 없고 공급자 만료를 모르는 리포트라 30분 캐시한다
+      const expiresAt = Temporal.Instant.from(report.expiresAt ?? "");
+      expect(
+        Temporal.Instant.compare(expiresAt, requestedAt.add({ minutes: 30 })),
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        Temporal.Instant.compare(expiresAt, respondedAt.add({ minutes: 30 })),
+      ).toBeLessThanOrEqual(0);
       expect(report.location).toEqual({ ...SEOUL, timezone: "Asia/Seoul" });
       expect(report.airQuality).toEqual({ pm10: 32, pm25: 18, source: "AIRKOREA" });
       expect(report.attribution.serviceName).toBe("Apple Weather");
@@ -328,6 +338,7 @@ describe("날씨 v2 E2E", () => {
       const response = await getReport(user.accessToken).expect(200);
       // Then
       expect(response.body.data.fetchedAt).toBe(toIsoString(fetchedAt));
+      expect(response.body.data).not.toHaveProperty("expiresAt");
       expect(reportProvider.calls).toHaveLength(2);
     });
 

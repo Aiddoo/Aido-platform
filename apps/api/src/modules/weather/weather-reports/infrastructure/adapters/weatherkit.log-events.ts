@@ -7,5 +7,6 @@ export const WeatherKitLogEvent = {
   ATTRIBUTION_FAILED: "weather.weatherkit.attribution.failed",
   TOKEN_SIGNED: "weather.weatherkit.token.signed",
   MONTHLY_CALLS_REACHED: "weather.weatherkit.monthly-calls.reached",
+  MONTHLY_BUDGET_CHANGED: "weather.weatherkit.monthly-budget.changed",
   USAGE_RECORD_FAILED: "weather.weatherkit.usage-record.failed",
 } as const;

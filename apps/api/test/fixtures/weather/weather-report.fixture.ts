@@ -78,6 +78,7 @@ export function createWeatherReportFixture(
     daily,
     alerts: [],
     fetchedAt,
+    validUntil: null,
     ...overrides,
   });
 }

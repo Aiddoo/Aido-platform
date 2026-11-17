@@ -20,6 +20,24 @@ function mapFixture(body: unknown, timezone: string) {
 }
 
 describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
+  it("예보 dataset의 만료를 validUntil로 쓰고 5분마다 만료되는 현재 관측 만료는 쓰지 않는다", () => {
+    // Given
+    const body = WeatherKitReportFixture.seoulObserved();
+    // When
+    const report = mapFixture(body, "Asia/Seoul");
+    // Then
+    expect(report.validUntil).toEqual(Temporal.Instant.from("2026-11-02T11:36:08Z"));
+  });
+
+  it("예보 dataset에 만료가 없으면 validUntil은 null이다", () => {
+    // Given
+    const body = WeatherKitReportFixture.seoulRain();
+    // When
+    const report = mapFixture(body, "Asia/Seoul");
+    // Then
+    expect(report.validUntil).toBeNull();
+  });
+
   it("서울 비 응답을 m/s·0~100 정수·hPa로 정규화한다", () => {
     // Given
     const body = WeatherKitReportFixture.seoulRain();
