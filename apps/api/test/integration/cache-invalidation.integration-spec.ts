@@ -130,7 +130,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
           revokedAt: null,
         };
 
-        // setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정
+        // wrapSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정
         await shortTtlCache.set(SessionCacheKey.session(sessionId), session, 50);
         expect(await shortTtlCache.get(SessionCacheKey.session(sessionId), z.unknown())).toEqual(
           session,

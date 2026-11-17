@@ -21,23 +21,28 @@ import {
   AuthenticateSessionUseCase,
 } from "./authenticate-session.use-case.js";
 
-class MemorySessionCache implements Pick<SessionCachePort, "getSession" | "setSession"> {
+class MemorySessionCache implements Pick<SessionCachePort, "wrapSession"> {
   readonly entries = new Map<string, CachedSession>();
   failRead = false;
   failWrite = false;
 
-  async getSession(sessionId: SessionId): Promise<CachedSession | null> {
+  async wrapSession(
+    sessionId: SessionId,
+    factory: () => Promise<CachedSession>,
+  ): Promise<CachedSession> {
     if (this.failRead) {
       throw new Error("redis down");
     }
-    return this.entries.get(sessionId.value) ?? null;
-  }
-
-  async setSession(sessionId: SessionId, session: CachedSession): Promise<void> {
+    const cached = this.entries.get(sessionId.value);
+    if (cached != null) {
+      return cached;
+    }
+    const loaded = await factory();
     if (this.failWrite) {
       throw new Error("redis down");
     }
-    this.entries.set(sessionId.value, session);
+    this.entries.set(sessionId.value, loaded);
+    return loaded;
   }
 }
 
@@ -197,11 +202,10 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.AUTH_0101 });
   });
 
-  it("캐시 읽기·쓰기가 실패해도 DB로 인증하고 실패는 로그로만 남긴다", async () => {
+  it("캐시 읽기가 실패해도 DB로 인증하고 실패는 로그로만 남긴다", async () => {
     // Given
     const cache = new MemorySessionCache();
     cache.failRead = true;
-    cache.failWrite = true;
     const logger = new SilentLogger();
     const { useCase, sessionReads } = createUseCase({ cache, logger });
 
@@ -213,14 +217,35 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
     expect(sessionReads).toEqual([AUTH_FIXTURE_SESSION_ID]);
     expect(logger.messages).toEqual([
       { event: SessionLogEvent.SESSION_CACHE_READ_FAILED, errorType: "Error" },
+    ]);
+  });
+
+  it("DB에서 읽은 뒤 캐시 저장이 실패해도 DB를 다시 읽지 않고 인증한다", async () => {
+    // Given
+    const cache = new MemorySessionCache();
+    cache.failWrite = true;
+    const logger = new SilentLogger();
+    const { useCase, sessionReads } = createUseCase({ cache, logger });
+
+    // When
+    const user = await useCase.execute(CLAIMS);
+
+    // Then
+    expect(user.userId).toBe(AUTH_FIXTURE_USER_ID);
+    expect(sessionReads).toEqual([AUTH_FIXTURE_SESSION_ID]);
+    expect(logger.messages).toEqual([
       { event: SessionLogEvent.SESSION_CACHE_WRITE_FAILED, errorType: "Error" },
     ]);
   });
 
-  it("캐시가 실패해도 폐기된 세션의 401은 삼키지 않는다", async () => {
+  it.each([
+    ["읽기", { failRead: true, failWrite: false }],
+    ["저장", { failRead: false, failWrite: true }],
+  ])("캐시 %s가 실패해도 폐기된 세션의 401은 삼키지 않는다", async (_case, failures) => {
     // Given
     const cache = new MemorySessionCache();
-    cache.failRead = true;
+    cache.failRead = failures.failRead;
+    cache.failWrite = failures.failWrite;
     const { useCase } = createUseCase({
       cache,
       session: createSessionFixture({ revokedAt: AUTH_FIXTURE_NOW }),
@@ -231,5 +256,29 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
 
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SESSION_0703 });
+  });
+
+  it("DB 읽기 오류는 캐시 장애로 삼키지 않고 그대로 던진다", async () => {
+    // Given
+    const failure = new Error("database down");
+    const logger = new SilentLogger();
+    const useCase = new AuthenticateSessionUseCase({
+      sessionRepository: {
+        findById: async () => {
+          throw failure;
+        },
+      },
+      userRepository: { findById: async () => createUserFixture() },
+      cache: new MemorySessionCache(),
+      clock: new FixedClock(AUTH_FIXTURE_NOW),
+      logger,
+    });
+
+    // When
+    const result = useCase.execute(CLAIMS);
+
+    // Then
+    await expect(result).rejects.toBe(failure);
+    expect(logger.messages).toEqual([]);
   });
 });

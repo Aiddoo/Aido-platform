@@ -8,10 +8,13 @@ import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
 import { assertStatusAllowsLogin } from "../../../users/domain/account-status.domain-service.js";
 import { SessionId } from "../../domain/session-id.vo.js";
-import { getSessionValidity } from "../../domain/session-validity.domain-service.js";
+import {
+  getSessionValidity,
+  type SessionValidity,
+} from "../../domain/session-validity.domain-service.js";
 import type { CachedSession, SessionCachePort } from "../ports/session-cache.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
-import { invalidAccessToken, sessionRejection } from "../sessions.errors.js";
+import { invalidAccessToken, sessionNotFound, sessionRejection } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 
 // 서명·만료를 검증한 access 토큰의 claim. 타입·세션 확인은 이 UseCase가 한다
@@ -34,7 +37,7 @@ export interface AuthenticateSessionDependencies {
   readonly sessionRepository: Pick<SessionRepositoryPort, "findById">;
   readonly userRepository: Pick<UserRepositoryPort, "findById">;
   readonly clock: ClockPort;
-  readonly cache: Pick<SessionCachePort, "getSession" | "setSession">;
+  readonly cache: Pick<SessionCachePort, "wrapSession">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
@@ -50,101 +53,100 @@ export class AuthenticateSessionUseCase {
   }
 
   async execute(claims: AccessTokenClaims): Promise<AuthenticatedUser> {
-    const { sessionRepository, userRepository } = this.#dependencies;
     if (claims.type !== "access") {
       throw invalidAccessToken("Not an access token");
     }
     if (!claims.sessionId) {
       throw invalidAccessToken("Missing sessionId");
     }
-    const authenticated: AuthenticatedUser = {
+
+    const sessionId = SessionId.reconstitute(claims.sessionId);
+    // 캐시 값은 저장한 뒤 만료됐을 수 있어 꺼낼 때마다 다시 판단한다
+    this.#assertUsable(await this.#readSession(sessionId), sessionId);
+    return {
       userId: claims.sub,
       email: claims.email,
       sessionId: claims.sessionId,
       role: claims.role,
     };
-
-    const sessionId = SessionId.reconstitute(claims.sessionId);
-    const cachedSession = await this.#readCachedSession(sessionId);
-    if (cachedSession != null) {
-      this.#assertUsable(
-        getSessionValidity({
-          expiresAt: toInstant(cachedSession.expiresAt),
-          revokedAt: cachedSession.revokedAt == null ? null : toInstant(cachedSession.revokedAt),
-          now: this.#dependencies.clock.now(),
-        }),
-        claims.sessionId,
-      );
-      if (cachedSession.userStatus) {
-        assertUserStatus(cachedSession.userStatus, cachedSession.userDeletedAt);
-      }
-      return authenticated;
-    }
-
-    const session = await sessionRepository.findById(sessionId);
-    this.#assertUsable(
-      session == null ? "missing" : session.validityAt(this.#dependencies.clock.now()),
-      claims.sessionId,
-    );
-    if (session == null) {
-      return authenticated;
-    }
-
-    const user = await userRepository.findById(session.userId);
-    const userStatus = user?.status;
-    const userDeletedAt = user?.deletedAt == null ? null : toIsoString(user.deletedAt);
-    if (userStatus) {
-      assertUserStatus(userStatus, userDeletedAt);
-    }
-
-    await this.#writeCachedSession(sessionId, {
-      userId: session.userId.value,
-      expiresAt: toIsoString(session.expiresAt),
-      revokedAt: session.revokedAt == null ? null : toIsoString(session.revokedAt),
-      userStatus,
-      userDeletedAt,
-    });
-    return authenticated;
   }
 
-  #assertUsable(validity: Parameters<typeof sessionRejection>[0], sessionId: string): void {
-    const rejection = sessionRejection(validity, sessionId);
-    if (rejection != null) {
-      throw rejection;
-    }
-  }
-
-  // 인증은 마지막 방어선이라 캐시 장애는 미스로 본다. try 안에는 캐시 I/O만 두어 의도한 401을 삼키지 않는다
-  async #readCachedSession(sessionId: SessionId): Promise<CachedSession | null> {
+  // 인증은 마지막 방어선이라 캐시 장애는 미스로 보고 DB에서 읽는다. factory의 거절·DB 오류는 그대로 던진다
+  async #readSession(sessionId: SessionId): Promise<CachedSession> {
+    const loading: { session: Promise<CachedSession> | null } = { session: null };
     try {
-      return await this.#dependencies.cache.getSession(sessionId);
-    } catch (error) {
-      this.#dependencies.logger.warn({
-        event: SessionLogEvent.SESSION_CACHE_READ_FAILED,
-        errorType: toErrorType(error),
+      return await this.#dependencies.cache.wrapSession(sessionId, () => {
+        loading.session = this.#loadUsableSession(sessionId);
+        return loading.session;
       });
-      return null;
-    }
-  }
-
-  // 저장 실패는 다음 요청이 DB를 다시 읽을 뿐이라 무시한다
-  async #writeCachedSession(sessionId: SessionId, session: CachedSession): Promise<void> {
-    try {
-      await this.#dependencies.cache.setSession(sessionId, session);
     } catch (error) {
+      if (loading.session == null) {
+        this.#dependencies.logger.warn({
+          event: SessionLogEvent.SESSION_CACHE_READ_FAILED,
+          errorType: toErrorType(error),
+        });
+        return this.#loadUsableSession(sessionId);
+      }
+      const loaded = await loading.session;
       this.#dependencies.logger.warn({
         event: SessionLogEvent.SESSION_CACHE_WRITE_FAILED,
         errorType: toErrorType(error),
       });
+      return loaded;
     }
+  }
+
+  // 쓸 수 없는 세션·사용자는 캐시에 두지 않도록 저장 전에 거절한다
+  async #loadUsableSession(sessionId: SessionId): Promise<CachedSession> {
+    const session = await this.#dependencies.sessionRepository.findById(sessionId);
+    if (session == null) {
+      throw sessionNotFound(sessionId.value);
+    }
+    this.#assertValid(session.validityAt(this.#dependencies.clock.now()), sessionId);
+
+    const user = await this.#dependencies.userRepository.findById(session.userId);
+    const loaded: CachedSession = {
+      userId: session.userId.value,
+      expiresAt: toIsoString(session.expiresAt),
+      revokedAt: session.revokedAt == null ? null : toIsoString(session.revokedAt),
+      userStatus: user?.status,
+      userDeletedAt: user?.deletedAt == null ? null : toIsoString(user.deletedAt),
+    };
+    assertUserAllowed(loaded);
+    return loaded;
+  }
+
+  #assertUsable(session: CachedSession, sessionId: SessionId): void {
+    this.#assertValid(
+      getSessionValidity({
+        expiresAt: toInstant(session.expiresAt),
+        revokedAt: session.revokedAt == null ? null : toInstant(session.revokedAt),
+        now: this.#dependencies.clock.now(),
+      }),
+      sessionId,
+    );
+    assertUserAllowed(session);
+  }
+
+  #assertValid(validity: SessionValidity, sessionId: SessionId): void {
+    const rejection = sessionRejection(validity, sessionId.value);
+    if (rejection != null) {
+      throw rejection;
+    }
+  }
+}
+
+function assertUserAllowed(session: CachedSession): void {
+  if (session.userStatus) {
+    assertStatusAllowsLogin(
+      session.userStatus,
+      "User",
+      session.userDeletedAt != null && session.userDeletedAt !== "",
+    );
   }
 }
 
 // 메모리 캐시는 Date, Redis 캐시는 ISO 문자열을 돌려준다
 function toInstant(value: Date | string): Temporal.Instant {
   return value instanceof Date ? instantFromDate(value) : Temporal.Instant.from(value);
-}
-
-function assertUserStatus(status: string, deletedAt: string | null | undefined): void {
-  assertStatusAllowsLogin(status, "User", deletedAt != null && deletedAt !== "");
 }

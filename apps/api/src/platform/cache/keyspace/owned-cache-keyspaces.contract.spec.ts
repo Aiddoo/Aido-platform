@@ -96,6 +96,17 @@ describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
           expect(key).toBe(expected);
         }
       });
+
+      it("세션 세대 키는 세션 값 키와 겹치지 않는다", () => {
+        // Given
+        const sessionId = "sess_123";
+
+        // When
+        const key = SessionCacheKey.sessionGeneration(sessionId);
+
+        // Then
+        expect(key).toBe("aido:v1:auth:session-generation:sess_123");
+      });
     });
 
     describe("userProfile", () => {

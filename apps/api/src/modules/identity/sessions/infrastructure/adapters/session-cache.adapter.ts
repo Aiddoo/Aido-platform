@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import {
+  GenerationGuardedCache,
+  type GenerationGuardedCacheKey,
+} from "#api/platform/cache/generation-guarded-cache";
 
 import type {
   CachedSession,
@@ -10,7 +14,7 @@ import type {
 import type { SessionId } from "../../domain/session-id.vo.js";
 import {
   SESSION_CACHE_TTL_MS,
-  SESSION_INVALIDATION_TTL_MS,
+  SESSION_GENERATION_TTL_MS,
   SessionCacheKey,
 } from "../cache/session-cache.keyspace.js";
 
@@ -25,51 +29,37 @@ const CACHED_SESSION_SCHEMA = z.looseObject({
   userDeletedAt: z.string().nullable().optional(),
 }) satisfies z.ZodType<CachedSession>;
 
+function sessionKey(sessionId: SessionId): GenerationGuardedCacheKey {
+  return {
+    valueKey: SessionCacheKey.session(sessionId.value),
+    generationKey: SessionCacheKey.sessionGeneration(sessionId.value),
+  };
+}
+
 @Injectable()
 export class SessionCacheAdapter implements SessionCachePort {
+  readonly #sessions: GenerationGuardedCache;
   readonly #cacheService: CacheStorePort;
 
   constructor(cacheService: CacheStorePort) {
+    this.#sessions = new GenerationGuardedCache(cacheService, SESSION_GENERATION_TTL_MS);
     this.#cacheService = cacheService;
   }
 
-  async getSession(sessionId: SessionId): Promise<CachedSession | null> {
-    if (await this.#isInvalidated(sessionId)) {
-      return null;
-    }
-    const cached = await this.#cacheService.get(
-      SessionCacheKey.session(sessionId.value),
+  wrapSession(sessionId: SessionId, factory: () => Promise<CachedSession>): Promise<CachedSession> {
+    return this.#sessions.wrap<CachedSession>(
+      sessionKey(sessionId),
       CACHED_SESSION_SCHEMA,
+      factory,
+      SESSION_CACHE_TTL_MS,
     );
-    return cached ?? null;
   }
 
-  // 확인 요청이 DB를 읽는 사이 폐기되면 그 뒤 쓰기를 버린다. 쓴 직후 폐기됐으면 지운다
-  async setSession(sessionId: SessionId, session: CachedSession): Promise<void> {
-    if (await this.#isInvalidated(sessionId)) {
-      return;
-    }
-    const key = SessionCacheKey.session(sessionId.value);
-    await this.#cacheService.set(key, session, SESSION_CACHE_TTL_MS);
-    if (await this.#isInvalidated(sessionId)) {
-      await this.#cacheService.del(key);
-    }
-  }
-
-  async invalidateSession(sessionId: SessionId): Promise<void> {
-    await this.#cacheService.set(
-      SessionCacheKey.invalidated(sessionId.value),
-      true,
-      SESSION_INVALIDATION_TTL_MS,
-    );
-    await this.#cacheService.del(SessionCacheKey.session(sessionId.value));
+  invalidateSession(sessionId: SessionId): Promise<void> {
+    return this.#sessions.invalidate(sessionKey(sessionId));
   }
 
   evictSession(sessionId: SessionId): Promise<void> {
     return this.#cacheService.del(SessionCacheKey.session(sessionId.value));
-  }
-
-  #isInvalidated(sessionId: SessionId): Promise<boolean> {
-    return this.#cacheService.has(SessionCacheKey.invalidated(sessionId.value));
   }
 }

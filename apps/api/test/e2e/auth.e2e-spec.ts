@@ -12,10 +12,9 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
-import { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
 import { TokenIssuerPort } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
-import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import { TOKEN_REUSE_GRACE_PERIOD_MS } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { SessionCacheKey } from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -898,7 +897,6 @@ describe("인증 E2E", () => {
         .expect(200);
       const originalRefreshToken: string = login.body.data.refreshToken;
       const tokenIssuer = testContext.module.get<TokenIssuerPort>(TokenIssuerPort);
-      const authCache = testContext.module.get<SessionCachePort>(SessionCachePort);
       const client = testContext.testDatabase.getClient();
       const session = requireRecord(
         await client.query.session.findFirst({
@@ -914,7 +912,7 @@ describe("인증 E2E", () => {
         .get("/v1/auth/me")
         .set("Authorization", `Bearer ${accessToken}`)
         .expect(200);
-      expect(await authCache.getSession(SessionId.reconstitute(session.id))).not.toBeNull();
+      expect(await cacheService.has(SessionCacheKey.session(session.id))).toBe(true);
       await client
         .update(sessionTable)
         .set({
@@ -936,7 +934,7 @@ describe("인증 E2E", () => {
 
       // Then
       expect(reused.body.error.code).toBe("SESSION_0704");
-      expect(await authCache.getSession(SessionId.reconstitute(session.id))).toBeNull();
+      expect(await cacheService.has(SessionCacheKey.session(session.id))).toBe(false);
       expect(denied.body.error.code).toBe("AUTH_0101");
       const revoked = requireRecord(
         await client.query.session.findFirst({ where: { id: session.id } }),
@@ -1870,10 +1868,10 @@ describe("인증 E2E", () => {
       expect(response1.body.success).toBe(true);
       expect(response1.body.data.email).toBe("cache-test@example.com");
 
-      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다. 프로필·권한은 저장 전후로 세대 키를 세 번씩 읽고
+      // 세션·프로필·권한(Access) 캐시를 한 번씩 채운다. 셋 다 저장 전후로 세대 키를 세 번씩 읽고
       // 무효화 전에는 세대 키가 없어 미스로 센다
       const statsAfterFirst = cacheService.getStats();
-      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3 + 2 * 3);
+      expect(statsAfterFirst.misses).toBe(statsBefore.misses + 3 + 3 * 3);
 
       // When
       const response2 = await request(testContext.app.getHttpServer())
@@ -1982,8 +1980,8 @@ describe("인증 E2E", () => {
 
       // Then
       const finalStats = cacheService.getStats();
-      // 첫 호출만 세션·프로필·권한 미스와 프로필·권한의 세대 키 읽기(각 3번)다
-      expect(finalStats.misses).toBe(initialStats.misses + 3 + 2 * 3);
+      // 첫 호출만 세션·프로필·권한 미스와 그 세대 키 읽기(각 3번)다
+      expect(finalStats.misses).toBe(initialStats.misses + 3 + 3 * 3);
       expect(finalStats.hits).toBe(initialStats.hits + 12);
     });
   });
@@ -2469,7 +2467,6 @@ describe("인증 E2E", () => {
         .set("Authorization", `Bearer ${user.accessToken}`)
         .send({ title: "복구 후에도 유지할 할 일", categoryId, startDate: "2024-01-15" })
         .expect(201);
-      const authCache = testContext.module.get<SessionCachePort>(SessionCachePort);
       const sessionIds: string[] = [];
       for (const accessToken of accessTokens) {
         const profile = await request(testContext.app.getHttpServer())
@@ -2477,9 +2474,9 @@ describe("인증 E2E", () => {
           .set("Authorization", `Bearer ${accessToken}`)
           .expect(200);
         sessionIds.push(profile.body.data.sessionId);
-        expect(
-          await authCache.getSession(SessionId.reconstitute(profile.body.data.sessionId)),
-        ).not.toBeNull();
+        expect(await cacheService.has(SessionCacheKey.session(profile.body.data.sessionId))).toBe(
+          true,
+        );
       }
       expect(new Set(sessionIds).size).toBe(3);
 
@@ -2493,7 +2490,7 @@ describe("인증 E2E", () => {
       // Then
       expect(deletion.body.data.gracePeriodDays).toBe(30);
       for (const sessionId of sessionIds) {
-        expect(await authCache.getSession(SessionId.reconstitute(sessionId))).toBeNull();
+        expect(await cacheService.has(SessionCacheKey.session(sessionId))).toBe(false);
       }
       for (const accessToken of accessTokens) {
         const denied = await request(testContext.app.getHttpServer())

@@ -81,7 +81,7 @@ function createAccessGuard(
   const authenticateSession = new AuthenticateSessionUseCase({
     sessionRepository: { findById: async () => sessionLookup() },
     userRepository: { findById: async () => createUserFixture() },
-    cache: { getSession: async () => null, setSession: async () => undefined },
+    cache: { wrapSession: async (_sessionId, factory) => factory() },
     clock: new FixedClock(Temporal.Now.instant()),
     logger: new SilentLogger(),
   });
