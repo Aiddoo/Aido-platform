@@ -57,10 +57,6 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findById(notificationId: NotificationId): Promise<Notification | null> {
     const row = await this.#db.query.notification.findFirst({
       where: { id: notificationId.value },
@@ -225,5 +221,9 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
       deleted.filter(({ isRead }) => !isRead).map(({ userId }) => userId),
     ).map((userId) => UserId.reconstitute(userId));
     return { deletedCount: deleted.length, lastCreatedAt: lastCreatedAt ?? null, unreadOwnerIds };
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

@@ -43,10 +43,6 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     this.#clock = clock;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   claimByDispatchIds(
     dispatchIds: readonly number[],
     lockedAt: Temporal.Instant,
@@ -112,26 +108,6 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
     return updated.length;
   }
 
-  /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
-  async #lockProcessingGenerations(
-    publications: readonly PushDeliveryPublicationReadModel[],
-  ): Promise<void> {
-    await this.#db
-      .select({ dispatchId: pushDispatchOutbox.dispatchId })
-      .from(pushDispatchOutbox)
-      .where(this.#processingGenerations(publications))
-      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
-      .for("update");
-  }
-
-  /** 발행 세대와 PROCESSING 상태를 UPDATE 술어에 남겨 다른 worker가 재claim한 행을 덮어쓰지 않는다. */
-  #processingGenerations(publications: readonly PushDeliveryPublicationReadModel[]) {
-    return and(
-      matchesPublicationGeneration(publications),
-      eq(pushDispatchOutbox.status, "PROCESSING"),
-    );
-  }
-
   async recoverStaleProcessing(lockedBefore: Temporal.Instant): Promise<number> {
     const now = this.#clock.now();
     const published = await this.#db
@@ -163,6 +139,30 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
       )
       .returning({ dispatchId: pushDispatchOutbox.dispatchId });
     return published.length + reopened.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  /** claim과 같은 (availableAt, dispatchId) 순서로 잠가 동시 정리 사이의 deadlock을 막는다. */
+  async #lockProcessingGenerations(
+    publications: readonly PushDeliveryPublicationReadModel[],
+  ): Promise<void> {
+    await this.#db
+      .select({ dispatchId: pushDispatchOutbox.dispatchId })
+      .from(pushDispatchOutbox)
+      .where(this.#processingGenerations(publications))
+      .orderBy(asc(pushDispatchOutbox.availableAt), asc(pushDispatchOutbox.dispatchId))
+      .for("update");
+  }
+
+  /** 발행 세대와 PROCESSING 상태를 UPDATE 술어에 남겨 다른 worker가 재claim한 행을 덮어쓰지 않는다. */
+  #processingGenerations(publications: readonly PushDeliveryPublicationReadModel[]) {
+    return and(
+      matchesPublicationGeneration(publications),
+      eq(pushDispatchOutbox.status, "PROCESSING"),
+    );
   }
 
   // 발행 표시 전에 멈춘 outbox lease. 실행 중인 delivery(dispatch PROCESSING)와 다른 worker가 잡은 행은 건너뛴다

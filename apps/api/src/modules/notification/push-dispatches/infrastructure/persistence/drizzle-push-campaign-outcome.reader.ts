@@ -19,10 +19,6 @@ export class DrizzlePushCampaignOutcomeReader implements PushCampaignOutcomeRead
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async summarize(campaignKey: string): Promise<PushCampaignOutcome> {
     const [dispatchRows, attemptRows, skipRows] = await Promise.all([
       this.#db
@@ -53,5 +49,9 @@ export class DrizzlePushCampaignOutcomeReader implements PushCampaignOutcomeRead
       attempts: new Map(attemptRows.map((row) => [row.status, row.total])),
       skippedByReason: toSkippedByReason(skipRows),
     };
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

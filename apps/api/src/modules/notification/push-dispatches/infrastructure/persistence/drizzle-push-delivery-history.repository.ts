@@ -23,10 +23,6 @@ export class DrizzlePushDeliveryHistoryRepository implements PushDeliveryHistory
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   // 관리자 캠페인 발송을 뺀 (status, scheduledAt) 부분 인덱스를 시간 순서로 읽어 보관 기간 경계에서 멈춘다.
   // 끝난 시각(updatedAt)은 예약 시각보다 늦으므로 예약 시각 조건은 인덱스 범위만 좁힌다
   async deleteFinishedDispatches(query: DeleteFinishedPushDispatchesQuery): Promise<{
@@ -80,5 +76,9 @@ export class DrizzlePushDeliveryHistoryRepository implements PushDeliveryHistory
       )
       .returning({ dispatchId: pushRateLimitReservation.dispatchId });
     return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

@@ -33,10 +33,6 @@ export class DrizzleNotificationReader
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findInboxNotification(
     notificationId: NotificationId,
   ): Promise<InboxNotificationReadModel | null> {
@@ -199,6 +195,10 @@ export class DrizzleNotificationReader
       .where(and(eq(notification.userId, userId.value), milestoneNotificationCondition(milestone)))
       .limit(1);
     return row != null;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }
 

@@ -190,67 +190,12 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
     return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
   }
 
-  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
-    const key = PushRateLimiterKeys.general(userId);
-    const reservationKey = PushRateLimiterKeys.generalReservation(userId, reservationId);
-    const now = Date.now();
-    const windowStart = now - GENERAL.WINDOW_MS;
-
-    try {
-      const result = await this.#redis.eval(
-        SLIDING_WINDOW_SCRIPT,
-        2,
-        key,
-        reservationKey,
-        now,
-        windowStart,
-        GENERAL.MAX,
-        GENERAL.WINDOW_MS,
-        reservationId,
-        RESERVATION_TTL_MS,
-      );
-
-      return result === 1;
-    } catch (error) {
-      this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
-      // fail-open: Redis 장애 시 발송 허용
-      return false;
-    }
-  }
-
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     return this.#reserveEngagement(
       request.userId,
       request.localDate,
       this.#reservationId(request.dispatchId),
     );
-  }
-
-  async #reserveEngagement(
-    userId: string,
-    localDate: string,
-    reservationId: string,
-  ): Promise<boolean> {
-    const key = PushRateLimiterKeys.engagement(userId, localDate);
-    const reservationKey = PushRateLimiterKeys.engagementReservation(userId, reservationId);
-    try {
-      const result = await this.#redis.eval(
-        ENGAGEMENT_LIMIT_SCRIPT,
-        2,
-        key,
-        reservationKey,
-        Date.now(),
-        ENGAGEMENT.MIN_INTERVAL_MS,
-        ENGAGEMENT.DAILY_MAX,
-        ENGAGEMENT_KEY_TTL_SECONDS,
-        reservationId,
-        RESERVATION_TTL_MS,
-      );
-      return result === 1;
-    } catch (error) {
-      this.#errorSampler.warn("PUSH_ENGAGEMENT_LIMIT", error);
-      return false;
-    }
   }
 
   async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
@@ -300,6 +245,61 @@ export class RedisPushRateLimiterAdapter implements PushRateLimiterPort {
     } catch (error) {
       this.#errorSampler.warn("PUSH_BATCH_RATE_LIMIT", error);
       return requests.map(() => false);
+    }
+  }
+
+  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
+    const key = PushRateLimiterKeys.general(userId);
+    const reservationKey = PushRateLimiterKeys.generalReservation(userId, reservationId);
+    const now = Date.now();
+    const windowStart = now - GENERAL.WINDOW_MS;
+
+    try {
+      const result = await this.#redis.eval(
+        SLIDING_WINDOW_SCRIPT,
+        2,
+        key,
+        reservationKey,
+        now,
+        windowStart,
+        GENERAL.MAX,
+        GENERAL.WINDOW_MS,
+        reservationId,
+        RESERVATION_TTL_MS,
+      );
+
+      return result === 1;
+    } catch (error) {
+      this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
+      // fail-open: Redis 장애 시 발송 허용
+      return false;
+    }
+  }
+
+  async #reserveEngagement(
+    userId: string,
+    localDate: string,
+    reservationId: string,
+  ): Promise<boolean> {
+    const key = PushRateLimiterKeys.engagement(userId, localDate);
+    const reservationKey = PushRateLimiterKeys.engagementReservation(userId, reservationId);
+    try {
+      const result = await this.#redis.eval(
+        ENGAGEMENT_LIMIT_SCRIPT,
+        2,
+        key,
+        reservationKey,
+        Date.now(),
+        ENGAGEMENT.MIN_INTERVAL_MS,
+        ENGAGEMENT.DAILY_MAX,
+        ENGAGEMENT_KEY_TTL_SECONDS,
+        reservationId,
+        RESERVATION_TTL_MS,
+      );
+      return result === 1;
+    } catch (error) {
+      this.#errorSampler.warn("PUSH_ENGAGEMENT_LIMIT", error);
+      return false;
     }
   }
 

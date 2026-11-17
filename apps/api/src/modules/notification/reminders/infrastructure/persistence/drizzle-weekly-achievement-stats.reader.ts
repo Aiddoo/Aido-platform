@@ -34,20 +34,6 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
     return this.#countTodoDaysByUser(params, true);
   }
 
-  #countTodoDaysByUser(
-    params: WeeklyStatsParams,
-    completedOnly: boolean,
-  ): Promise<UserTodoCountReadModel[]> {
-    const { timezones, periodStart, periodEnd } = params;
-    const days = todoDaysInPeriodByUser({
-      periodStart,
-      periodEnd,
-      completedOnly,
-      ownerCondition: (userId) => userInTimezones(userId, timezones),
-    });
-    return this.#db.select({ userId: days.userId, count: days.count }).from(days);
-  }
-
   async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
     if (userIds.length === 0) {
       return new Set();
@@ -63,6 +49,20 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
         ),
       );
     return new Set(rows.map((row) => row.id));
+  }
+
+  #countTodoDaysByUser(
+    params: WeeklyStatsParams,
+    completedOnly: boolean,
+  ): Promise<UserTodoCountReadModel[]> {
+    const { timezones, periodStart, periodEnd } = params;
+    const days = todoDaysInPeriodByUser({
+      periodStart,
+      periodEnd,
+      completedOnly,
+      ownerCondition: (userId) => userInTimezones(userId, timezones),
+    });
+    return this.#db.select({ userId: days.userId, count: days.count }).from(days);
   }
 
   get #db() {

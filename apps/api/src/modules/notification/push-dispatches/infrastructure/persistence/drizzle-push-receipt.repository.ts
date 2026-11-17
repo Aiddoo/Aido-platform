@@ -33,10 +33,6 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     this.#clock = clock;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findPendingTicketIds(window: PushReceiptCheckWindow, limit: number): Promise<string[]> {
     const rows = await this.#db
       .select({ ticketId: pushDeliveryAttempt.providerTicketId })
@@ -109,6 +105,10 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
       .where(inArray(pushDeliveryAttempt.id, unreceipted))
       .returning({ id: pushDeliveryAttempt.id });
     return expired.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   async #recordTerminalReceipts(

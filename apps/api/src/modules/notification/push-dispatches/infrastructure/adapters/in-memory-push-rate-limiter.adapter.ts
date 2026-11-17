@@ -42,65 +42,12 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
     return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
   }
 
-  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
-    const now = Date.now();
-    const windowStart = now - GENERAL.WINDOW_MS;
-    if (this.#hasReservation(this.#generalReservations, userId, reservationId, now)) {
-      return false;
-    }
-
-    const filtered = (this.#pushTimestamps.get(userId) ?? []).filter((t) => t > windowStart);
-    this.#pushTimestamps.set(userId, filtered);
-
-    if (filtered.length >= GENERAL.MAX) {
-      return true;
-    }
-
-    filtered.push(now);
-    this.#saveReservation(
-      this.#generalReservations,
-      userId,
-      reservationId,
-      now + ENGAGEMENT.RETENTION_MS,
-    );
-    return false;
-  }
-
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     return this.#reserveEngagement(
       request.userId,
       request.localDate,
       this.#reservationId(request.dispatchId),
     );
-  }
-
-  async #reserveEngagement(
-    userId: string,
-    localDate: string,
-    reservationId: string,
-  ): Promise<boolean> {
-    const key = `${userId}:${localDate}`;
-    const now = Date.now();
-    if (this.#hasReservation(this.#engagementReservations, userId, reservationId, now)) {
-      return false;
-    }
-    const timestamps = this.#engagementTimestamps.get(key) ?? [];
-    const last = timestamps.at(-1);
-    if (
-      timestamps.length >= ENGAGEMENT.DAILY_MAX ||
-      (last != null && now - last < ENGAGEMENT.MIN_INTERVAL_MS)
-    ) {
-      return true;
-    }
-    timestamps.push(now);
-    this.#engagementTimestamps.set(key, timestamps);
-    this.#saveReservation(
-      this.#engagementReservations,
-      userId,
-      reservationId,
-      now + ENGAGEMENT.RETENTION_MS,
-    );
-    return false;
   }
 
   async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
@@ -170,6 +117,59 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
       results.push(false);
     }
     return results;
+  }
+
+  async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
+    const now = Date.now();
+    const windowStart = now - GENERAL.WINDOW_MS;
+    if (this.#hasReservation(this.#generalReservations, userId, reservationId, now)) {
+      return false;
+    }
+
+    const filtered = (this.#pushTimestamps.get(userId) ?? []).filter((t) => t > windowStart);
+    this.#pushTimestamps.set(userId, filtered);
+
+    if (filtered.length >= GENERAL.MAX) {
+      return true;
+    }
+
+    filtered.push(now);
+    this.#saveReservation(
+      this.#generalReservations,
+      userId,
+      reservationId,
+      now + ENGAGEMENT.RETENTION_MS,
+    );
+    return false;
+  }
+
+  async #reserveEngagement(
+    userId: string,
+    localDate: string,
+    reservationId: string,
+  ): Promise<boolean> {
+    const key = `${userId}:${localDate}`;
+    const now = Date.now();
+    if (this.#hasReservation(this.#engagementReservations, userId, reservationId, now)) {
+      return false;
+    }
+    const timestamps = this.#engagementTimestamps.get(key) ?? [];
+    const last = timestamps.at(-1);
+    if (
+      timestamps.length >= ENGAGEMENT.DAILY_MAX ||
+      (last != null && now - last < ENGAGEMENT.MIN_INTERVAL_MS)
+    ) {
+      return true;
+    }
+    timestamps.push(now);
+    this.#engagementTimestamps.set(key, timestamps);
+    this.#saveReservation(
+      this.#engagementReservations,
+      userId,
+      reservationId,
+      now + ENGAGEMENT.RETENTION_MS,
+    );
+    return false;
   }
 
   #hasReservation(
