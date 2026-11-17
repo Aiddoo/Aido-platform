@@ -23,7 +23,7 @@
 
 공급자 처리량: Expo 프로젝트 한도는 초당 600건이다. 어댑터가 프로세스 안에서 초당 500건(`EXPO_PUSH_MESSAGES_PER_SECOND` 상수) 토큰 버킷으로 청크(100건) 전송을 직렬화하고, SDK가 HTTP 429를 backoff 재시도하며 동시 요청을 6개로 제한한다. 운영 API는 단일 프로세스라 이 한도가 곧 전체 한도다. 인스턴스를 늘리면 상수를 인스턴스 수로 나눠야 한다.
 
-보관 시간·우선순위: 메시지마다 Expo `ttl`(초)과 `priority`를 싣는다. 기기가 꺼져 있으면 FCM·APNs가 `ttl`까지만 보관하고 버리므로 늦게 켠 태블릿에 지난 알림이 쌓이지 않는다. 메시지 단위 값이라 등록 토큰에는 영향이 없다. `ttl`은 발송 판단(`EvaluatePushDeliveryEligibilityUseCase`)이 받는 사람 저장 시간대로 `resolvePushExpiry`(`push-delivery-options.domain-service.ts`) 하나에서 정한다. 아래 종류 기본값에서 시작해 더 이른 끝으로 줄인다.
+보관 시간·우선순위: 메시지마다 Expo `ttl`(초)과 `priority`를 싣는다. 기기가 꺼져 있으면 FCM·APNs가 `ttl`까지만 보관하고 버리므로 늦게 켠 태블릿에 지난 알림이 쌓이지 않는다. 메시지 단위 값이라 등록 토큰에는 영향이 없다. `ttl`은 발송 판단(단건 `EvaluatePushDeliveryEligibilityUseCase`·배치 `EvaluateBatchPushDeliverySettingsUseCase`가 함께 쓰는 `decidePushExpiry`)이 받는 사람 저장 시간대로 `resolvePushExpiry`(`push-delivery-options.domain-service.ts`) 하나에서 정한다. 아래 종류 기본값에서 시작해 더 이른 끝으로 줄인다.
 
 | 묶음          | `ttl`  | 알림                                                                                                                                  | 이유                                                                                                |
 | ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |

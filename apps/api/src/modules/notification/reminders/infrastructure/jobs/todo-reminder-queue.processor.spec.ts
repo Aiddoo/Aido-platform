@@ -2,6 +2,11 @@ import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import {
+  RecordReminderLateSkipUseCase,
+  REMINDER_LATE_SKIP_THRESHOLD,
+  REMINDER_LATE_SKIP_WINDOW_MS,
+} from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
@@ -18,11 +23,7 @@ import type { ActiveTodoReadModel } from "../../application/read-models/schedule
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
-import {
-  REMINDER_LATE_SKIP_THRESHOLD,
-  REMINDER_LATE_SKIP_WINDOW_MS,
-  TodoReminderQueueProcessor,
-} from "./todo-reminder-queue.processor.js";
+import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 import {
   type ReminderJobData,
   type TodoReminderRuntimeJob,
@@ -118,7 +119,10 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       localeReader,
       jobQueue,
       clock,
-      alert,
+      new RecordReminderLateSkipUseCase({
+        logger: new Logger(RecordReminderLateSkipUseCase.name),
+        alert: alert,
+      }),
     );
     reader.todos.set(1, activeTodo());
   });
@@ -395,7 +399,10 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         localeReader,
         jobQueue,
         clock,
-        alert,
+        new RecordReminderLateSkipUseCase({
+          logger: new Logger(RecordReminderLateSkipUseCase.name),
+          alert: alert,
+        }),
       ).process(makeJob());
       // Then
       expect(log).toHaveBeenCalledExactlyOnceWith({
@@ -454,7 +461,10 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         localeReader,
         jobQueue,
         clock,
-        alert,
+        new RecordReminderLateSkipUseCase({
+          logger: new Logger(RecordReminderLateSkipUseCase.name),
+          alert: alert,
+        }),
       );
       // When
       const failures = await batchProcessor.processBatch([

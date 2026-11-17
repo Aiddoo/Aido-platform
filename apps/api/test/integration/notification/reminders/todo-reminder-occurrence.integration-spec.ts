@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
+import { Logger } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
@@ -17,6 +18,7 @@ import { DrizzleNotificationRepository } from "#api/modules/notification/notific
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import type { SnoozedReminderBooking } from "#api/modules/notification/reminders/application/ports/todo-reminder-snooze-scheduler.port";
+import { RecordReminderLateSkipUseCase } from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TodoReminderSnoozeSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-snooze-scheduler.adapter";
@@ -211,7 +213,10 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       new StubNotificationRecipientLocaleReader(),
       jobQueue,
       new DateClock(),
-      { raise: () => undefined },
+      new RecordReminderLateSkipUseCase({
+        logger: new Logger(RecordReminderLateSkipUseCase.name),
+        alert: { raise: () => undefined },
+      }),
     );
   });
 

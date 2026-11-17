@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -18,6 +20,10 @@ import {
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
+import type {
+  ActiveUserReadModel,
+  NudgeSuggestFollowReadModel,
+} from "../read-models/scheduler.read-model.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface NudgeSuggestStrategyDependencies {
@@ -56,23 +62,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    // 이 타임존의 활성 유저 목록
-    const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezones(timezones);
-
-    if (activeUsers.length === 0) {
-      return { sent: 0 };
-    }
-
-    // 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
-    const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: activeUsers.map((u) => UserId.reconstitute(u.id)),
-        type: "NUDGE_SUGGEST",
-        notificationDate: today,
-      });
-
-    const candidates = activeUsers.filter((u) => !alreadyNotified.has(u.id));
-
+    const candidates = await this.#findCandidates(timezones, today);
     if (candidates.length === 0) {
       return { sent: 0 };
     }
@@ -87,25 +77,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       activeUntil: range.until,
     });
 
-    // per-user 친구 맵 생성
-    const friendMap = new Map<
-      string,
-      Array<{ id: string; name: string | null; lastActiveAt: Temporal.Instant | null }>
-    >();
-    for (const f of allFollows) {
-      const userIds = [f.followerId, f.followingId].filter((id) => candidateSet.has(id));
-      for (const uid of userIds) {
-        const friend = f.followerId === uid ? f.following : f.follower;
-        if (!friendMap.has(uid)) {
-          friendMap.set(uid, []);
-        }
-        friendMap.get(uid)?.push({
-          id: friend.id,
-          name: friend.profile?.name ?? null,
-          lastActiveAt: friend.lastActiveAt,
-        });
-      }
-    }
+    const friendMap = toInactiveFriendsByCandidate(allFollows, candidateSet);
 
     // 배치 2: 이번 ISO 주에 이미 제안한 (받는 사람, 친구) 쌍을 한 번에 읽는다
     const week = isoWeekRangeOf(today);
@@ -124,50 +96,16 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     const notifications: CreateNotificationData[] = [];
 
     for (const user of candidates) {
-      const alreadySuggested = suggestedFriends.get(user.id);
-      const eligibleFriends = (friendMap.get(user.id) ?? [])
-        .filter((friend) => alreadySuggested?.has(friend.id) !== true)
-        .flatMap((friend) => {
-          if (friend.lastActiveAt == null) {
-            return [];
-          }
-          const days = localDaysSince(friend.lastActiveAt, today, user.timezone);
-          return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
-            ? [{ ...friend, days }]
-            : [];
-        })
-        .sort((a, b) => b.days - a.days);
-
-      const target = eligibleFriends[0];
-
-      if (target == null || target.lastActiveAt == null) {
-        continue;
+      const notification = toNudgeSuggestNotification({
+        user,
+        friends: friendMap.get(user.id) ?? [],
+        alreadySuggested: suggestedFriends.get(user.id),
+        locale: localeOf(user.id),
+        today,
+      });
+      if (notification != null) {
+        notifications.push(notification);
       }
-
-      const locale = localeOf(user.id);
-      const message = createNudgeSuggestionNotificationMessage({
-        friendName: target.name ?? getNotificationFriendFallback(locale),
-        locale,
-        variantContext: {
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
-          recipientId: user.id,
-          occurrenceKey: today.toString(),
-        },
-      });
-
-      notifications.push({
-        userId: user.id,
-        type: "NUDGE_SUGGEST",
-        purpose: "ENGAGEMENT",
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        friendId: target.id,
-        notificationDate: today,
-      });
     }
 
     if (notifications.length > 0) {
@@ -181,4 +119,107 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     }
     return { sent: notifications.length };
   }
+
+  async #findCandidates(
+    timezones: readonly string[],
+    today: Temporal.PlainDate,
+  ): Promise<ActiveUserReadModel[]> {
+    // 이 타임존의 활성 유저 목록
+    const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezones(timezones);
+
+    if (activeUsers.length === 0) {
+      return [];
+    }
+
+    // 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
+    const alreadyNotified =
+      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+        userIds: activeUsers.map((u) => UserId.reconstitute(u.id)),
+        type: "NUDGE_SUGGEST",
+        notificationDate: today,
+      });
+
+    return activeUsers.filter((u) => !alreadyNotified.has(u.id));
+  }
+}
+
+type InactiveFriend = { id: string; name: string | null; lastActiveAt: Temporal.Instant | null };
+
+function toInactiveFriendsByCandidate(
+  follows: readonly NudgeSuggestFollowReadModel[],
+  candidateSet: ReadonlySet<string>,
+): Map<string, InactiveFriend[]> {
+  const friendMap = new Map<string, InactiveFriend[]>();
+  for (const f of follows) {
+    const userIds = [f.followerId, f.followingId].filter((id) => candidateSet.has(id));
+    for (const uid of userIds) {
+      const friend = f.followerId === uid ? f.following : f.follower;
+      if (!friendMap.has(uid)) {
+        friendMap.set(uid, []);
+      }
+      friendMap.get(uid)?.push({
+        id: friend.id,
+        name: friend.profile?.name ?? null,
+        lastActiveAt: friend.lastActiveAt,
+      });
+    }
+  }
+  return friendMap;
+}
+
+function toNudgeSuggestNotification({
+  user,
+  friends,
+  alreadySuggested,
+  locale,
+  today,
+}: {
+  readonly user: ActiveUserReadModel;
+  readonly friends: readonly InactiveFriend[];
+  readonly alreadySuggested: ReadonlySet<string> | undefined;
+  readonly locale: SupportedLocale;
+  readonly today: Temporal.PlainDate;
+}): CreateNotificationData | null {
+  const eligibleFriends = friends
+    .filter((friend) => alreadySuggested?.has(friend.id) !== true)
+    .flatMap((friend) => {
+      if (friend.lastActiveAt == null) {
+        return [];
+      }
+      const days = localDaysSince(friend.lastActiveAt, today, user.timezone);
+      return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
+        ? [{ ...friend, days }]
+        : [];
+    })
+    .sort((a, b) => b.days - a.days);
+
+  const target = eligibleFriends[0];
+
+  if (target == null || target.lastActiveAt == null) {
+    return null;
+  }
+
+  const message = createNudgeSuggestionNotificationMessage({
+    friendName: target.name ?? getNotificationFriendFallback(locale),
+    locale,
+    variantContext: {
+      campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+      recipientId: user.id,
+      occurrenceKey: today.toString(),
+    },
+  });
+
+  return {
+    userId: user.id,
+    type: "NUDGE_SUGGEST",
+    purpose: "ENGAGEMENT",
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    friendId: target.id,
+    notificationDate: today,
+  };
 }

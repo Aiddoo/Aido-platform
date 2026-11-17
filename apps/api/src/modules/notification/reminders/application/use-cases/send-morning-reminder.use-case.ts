@@ -93,35 +93,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
       return { sent: 0 };
     }
 
-    const notifications = filteredUsers.map((user) => {
-      const count = user._count.todos;
-      const locale = resolveRecipientLocale({
-        storedLocale: user.preference?.locale ?? null,
-        lastRequestLocale: null,
-      });
-      const variantContext = {
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
-        recipientId: user.id,
-        occurrenceKey: today.toString(),
-      };
-      const message =
-        count > 0
-          ? createMorningReminderNotificationMessage({ count, locale, variantContext })
-          : createMorningNoTodoNotificationMessage({ locale, variantContext });
-
-      return {
-        userId: user.id,
-        type: "MORNING_REMINDER" as const,
-        purpose: "SCHEDULED_SERVICE" as const,
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        notificationDate: today,
-      };
-    });
+    const notifications = filteredUsers.map((user) => toMorningReminderNotification(user, today));
 
     await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
@@ -133,4 +105,37 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     });
     return { sent: notifications.length };
   }
+}
+
+function toMorningReminderNotification(
+  user: ReminderCountUserReadModel,
+  today: Temporal.PlainDate,
+) {
+  const count = user._count.todos;
+  const locale = resolveRecipientLocale({
+    storedLocale: user.preference?.locale ?? null,
+    lastRequestLocale: null,
+  });
+  const variantContext = {
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
+    recipientId: user.id,
+    occurrenceKey: today.toString(),
+  };
+  const message =
+    count > 0
+      ? createMorningReminderNotificationMessage({ count, locale, variantContext })
+      : createMorningNoTodoNotificationMessage({ locale, variantContext });
+
+  return {
+    userId: user.id,
+    type: "MORNING_REMINDER" as const,
+    purpose: "SCHEDULED_SERVICE" as const,
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.MORNING_REMINDER,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    notificationDate: today,
+  };
 }

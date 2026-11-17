@@ -37,42 +37,10 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
   async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
     const { timezones, today } = timezoneContext;
 
-    // 월요일 실행 → 이전 주(월~일) 집계
-    const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);
-
-    // A. DB 집계 (모든 유저, pushEnabled 무관)
-    const [totalByUser, completedByUser] = await Promise.all([
-      this.#dependencies.reader.groupTotalTodosByUser({
-        timezones,
-        periodStart: start,
-        periodEnd: end,
-      }),
-      this.#dependencies.reader.groupCompletedTodosByUser({
-        timezones,
-        periodStart: start,
-        periodEnd: end,
-      }),
-    ]);
-
-    if (totalByUser.length === 0) {
+    const records = await this.#recordWeeklyAchievements(timezones, today);
+    if (records.length === 0) {
       return { sent: 0 };
     }
-
-    const completedMap = new Map(completedByUser.map((g) => [g.userId, g.count]));
-
-    const records = totalByUser.map((g) => ({
-      userId: g.userId,
-      year: isoYear,
-      week: isoWeek,
-      totalTodos: g.count,
-      completedTodos: completedMap.get(g.userId) ?? 0,
-      achievedAt: today,
-    }));
-
-    // B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관)
-    await this.#dependencies.weeklyAchievementWriter.execute({
-      records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
-    });
 
     // C. 알림 발송 (completed > 0 + dedup)
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
@@ -139,5 +107,45 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
       count: notifications.length,
     });
     return { sent: notifications.length };
+  }
+
+  async #recordWeeklyAchievements(timezones: readonly string[], today: Temporal.PlainDate) {
+    // 월요일 실행 → 이전 주(월~일) 집계
+    const { start, end, isoYear, isoWeek } = previousIsoWeekOf(today);
+
+    // A. DB 집계 (모든 유저, pushEnabled 무관)
+    const [totalByUser, completedByUser] = await Promise.all([
+      this.#dependencies.reader.groupTotalTodosByUser({
+        timezones,
+        periodStart: start,
+        periodEnd: end,
+      }),
+      this.#dependencies.reader.groupCompletedTodosByUser({
+        timezones,
+        periodStart: start,
+        periodEnd: end,
+      }),
+    ]);
+
+    if (totalByUser.length === 0) {
+      return [];
+    }
+
+    const completedMap = new Map(completedByUser.map((g) => [g.userId, g.count]));
+
+    const records = totalByUser.map((g) => ({
+      userId: g.userId,
+      year: isoYear,
+      week: isoWeek,
+      totalTodos: g.count,
+      completedTodos: completedMap.get(g.userId) ?? 0,
+      achievedAt: today,
+    }));
+
+    // B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관)
+    await this.#dependencies.weeklyAchievementWriter.execute({
+      records: records.map((record) => ({ ...record, userId: UserId.reconstitute(record.userId) })),
+    });
+    return records;
   }
 }

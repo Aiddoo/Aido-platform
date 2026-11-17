@@ -14,6 +14,7 @@ import { DrizzleNotificationReader } from "#api/modules/notification/notificatio
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
+import { RecordReminderLateSkipUseCase } from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
 import { SendMorningReminderUseCase } from "#api/modules/notification/reminders/application/use-cases/send-morning-reminder.use-case";
 import {
   SweepTimezoneRemindersUseCase,
@@ -304,7 +305,10 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
           new StubNotificationRecipientLocaleReader(),
           new InMemoryJobQueue(),
           new FixedClock(now),
-          { raise: () => undefined },
+          new RecordReminderLateSkipUseCase({
+            logger: new Logger(RecordReminderLateSkipUseCase.name),
+            alert: { raise: () => undefined },
+          }),
         );
       }
 

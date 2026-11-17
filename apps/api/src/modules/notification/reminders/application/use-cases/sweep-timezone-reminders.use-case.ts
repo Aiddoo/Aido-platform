@@ -135,10 +135,10 @@ export class SweepTimezoneRemindersUseCase {
   }
 
   async #sweepGroup(timezoneContext: TimezoneContext): Promise<void> {
-    const { localHour, localMinute, dayOfWeek, today } = timezoneContext;
+    const { dayOfWeek, today } = timezoneContext;
 
     await this.#dependencies.morningReminder.execute(timezoneContext);
-    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, localHour, localMinute)) {
+    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.ONBOARDING, timezoneContext)) {
       await this.#dependencies.onboarding.execute(timezoneContext);
     }
     const eveningResult = await this.#dependencies.eveningReminder.execute(timezoneContext);
@@ -155,12 +155,12 @@ export class SweepTimezoneRemindersUseCase {
     // 11:30 요약 슬롯: 매월 1일은 프리미엄 월간 리포트가 주간 리포트를 대체한다.
     const isMonthlyReportTime =
       today.day === FIRST_DAY_OF_MONTH &&
-      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, localHour, localMinute);
+      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.MONTHLY_REPORT, timezoneContext);
     if (isMonthlyReportTime) {
       await this.#dependencies.monthlyReport.execute(timezoneContext);
     } else if (
       dayOfWeek === MONDAY &&
-      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_REPORT, localHour, localMinute)
+      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_REPORT, timezoneContext)
     ) {
       await this.#dependencies.weeklyReport.execute(timezoneContext);
     }
@@ -168,21 +168,21 @@ export class SweepTimezoneRemindersUseCase {
     // 월요일 11:30: 무료 사용자 주간 달성 요약 (전략 내부에서 구독 대상 분리)
     if (
       dayOfWeek === MONDAY &&
-      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT, localHour, localMinute)
+      isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WEEKLY_ACHIEVEMENT, timezoneContext)
     ) {
       await this.#dependencies.weeklyAchievement.execute(timezoneContext);
     }
-    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WINBACK, localHour, localMinute)) {
+    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.WINBACK, timezoneContext)) {
       await this.#dependencies.winback.execute(timezoneContext);
     }
-    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.NUDGE_SUGGEST, localHour, localMinute)) {
+    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.NUDGE_SUGGEST, timezoneContext)) {
       await this.#dependencies.nudgeSuggest.execute(timezoneContext);
     }
-    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.LUNCH_NUDGE, localHour, localMinute)) {
+    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.LUNCH_NUDGE, timezoneContext)) {
       await this.#dependencies.lunchNudge.execute(timezoneContext);
     }
     // 야간 21:00 시작 전 마지막 넛지
-    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.STREAK_AT_RISK, localHour, localMinute)) {
+    if (isWithinScheduleWindow(NOTIFICATION_SCHEDULE.STREAK_AT_RISK, timezoneContext)) {
       await this.#dependencies.streakAtRisk.execute(timezoneContext);
     }
     // 날씨 알림은 사용자가 고른 시:분을 전략 안에서 맞춘다

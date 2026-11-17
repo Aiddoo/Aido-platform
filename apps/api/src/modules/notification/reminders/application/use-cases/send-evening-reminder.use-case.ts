@@ -99,48 +99,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       return { sent: 0, recipients: [] };
     }
 
-    const notifications = filteredUsers.map((user) => {
-      const total = user.todos.length;
-      const completed = user.todos.filter((t) => t.completed).length;
-
-      // 스트릭 정보 계산 (StreakService 순수 함수에 위임)
-      const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
-        currentStreak: user.preference?.currentStreak ?? 0,
-        lastCompletedDate: user.preference?.lastCompletedDate ?? null,
-        todosCompleted: completed,
-        todosTotal: total,
-        today,
-      });
-
-      const message = createEveningReminderNotificationMessage({
-        completed,
-        total,
-        streak,
-        isStreakAtRisk,
-        locale: resolveRecipientLocale({
-          storedLocale: user.preference?.locale ?? null,
-          lastRequestLocale: null,
-        }),
-        variantContext: {
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-          recipientId: user.id,
-          occurrenceKey: today.toString(),
-        },
-      });
-
-      return {
-        userId: user.id,
-        type: "EVENING_REMINDER" as const,
-        purpose: "SCHEDULED_SERVICE" as const,
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        notificationDate: today,
-      };
-    });
+    const notifications = filteredUsers.map((user) => toEveningReminderNotification(user, today));
 
     await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
@@ -158,3 +117,49 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 }
 
 // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+
+function toEveningReminderNotification(
+  user: EveningReminderUserReadModel,
+  today: Temporal.PlainDate,
+) {
+  const total = user.todos.length;
+  const completed = user.todos.filter((t) => t.completed).length;
+
+  // 스트릭 정보 계산 (StreakService 순수 함수에 위임)
+  const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
+    currentStreak: user.preference?.currentStreak ?? 0,
+    lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+    todosCompleted: completed,
+    todosTotal: total,
+    today,
+  });
+
+  const message = createEveningReminderNotificationMessage({
+    completed,
+    total,
+    streak,
+    isStreakAtRisk,
+    locale: resolveRecipientLocale({
+      storedLocale: user.preference?.locale ?? null,
+      lastRequestLocale: null,
+    }),
+    variantContext: {
+      campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+      recipientId: user.id,
+      occurrenceKey: today.toString(),
+    },
+  });
+
+  return {
+    userId: user.id,
+    type: "EVENING_REMINDER" as const,
+    purpose: "SCHEDULED_SERVICE" as const,
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    notificationDate: today,
+  };
+}

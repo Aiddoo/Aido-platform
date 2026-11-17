@@ -30,7 +30,7 @@ describe("notification-schedule", () => {
 
     it("정각(슬롯 시작)에는 발송 창 안이다", () => {
       // When
-      const result = isWithinScheduleWindow(schedule, 11, 30);
+      const result = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 30 });
 
       // Then
       expect(result).toBe(true);
@@ -38,7 +38,7 @@ describe("notification-schedule", () => {
 
     it("슬롯 직전 1분은 창 밖이다", () => {
       // When
-      const result = isWithinScheduleWindow(schedule, 11, 29);
+      const result = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 29 });
 
       // Then
       expect(result).toBe(false);
@@ -46,8 +46,8 @@ describe("notification-schedule", () => {
 
     it("기본 grace(3분) 안의 지연된 분들도 창 안이다", () => {
       // When
-      const oneMinuteLate = isWithinScheduleWindow(schedule, 11, 31);
-      const twoMinutesLate = isWithinScheduleWindow(schedule, 11, 32);
+      const oneMinuteLate = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 31 });
+      const twoMinutesLate = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 32 });
 
       // Then
       expect(oneMinuteLate).toBe(true);
@@ -57,7 +57,7 @@ describe("notification-schedule", () => {
     it("grace 경계(시작+grace)는 배타적이라 창 밖이다", () => {
       // When
       const graceMinutes = SCHEDULE_GRACE_MINUTES;
-      const result = isWithinScheduleWindow(schedule, 11, 33);
+      const result = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 33 });
 
       // Then
       // 기본 grace 3분: 11:33은 발송 안 함(11:30~11:32까지만)
@@ -67,8 +67,8 @@ describe("notification-schedule", () => {
 
     it("grace 파라미터를 좁히면 정각만 매칭한다", () => {
       // When
-      const exact = isWithinScheduleWindow(schedule, 11, 30, 1);
-      const oneMinuteLate = isWithinScheduleWindow(schedule, 11, 31, 1);
+      const exact = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 30 }, 1);
+      const oneMinuteLate = isWithinScheduleWindow(schedule, { localHour: 11, localMinute: 31 }, 1);
 
       // Then
       expect(exact).toBe(true);
@@ -80,10 +80,13 @@ describe("notification-schedule", () => {
       const nearHourEnd = { hour: 11, minute: 59 };
 
       // When
-      const atStart = isWithinScheduleWindow(nearHourEnd, 11, 59);
-      const oneMinuteLate = isWithinScheduleWindow(nearHourEnd, 12, 0); // +1분
-      const twoMinutesLate = isWithinScheduleWindow(nearHourEnd, 12, 1); // +2분
-      const threeMinutesLate = isWithinScheduleWindow(nearHourEnd, 12, 2); // +3분(배타)
+      const atStart = isWithinScheduleWindow(nearHourEnd, { localHour: 11, localMinute: 59 });
+      const oneMinuteLate = isWithinScheduleWindow(nearHourEnd, { localHour: 12, localMinute: 0 }); // +1분
+      const twoMinutesLate = isWithinScheduleWindow(nearHourEnd, { localHour: 12, localMinute: 1 }); // +2분
+      const threeMinutesLate = isWithinScheduleWindow(nearHourEnd, {
+        localHour: 12,
+        localMinute: 2,
+      }); // +3분(배타)
 
       // Then
       expect(atStart).toBe(true);

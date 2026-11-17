@@ -12,6 +12,7 @@ import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
+import type { UserWithTodosAndStreakReadModel } from "../read-models/scheduler.read-model.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 /**
@@ -52,33 +53,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     // StreakService로 isAtRisk 재검증 + streak >= 3 필터
     // effective streak 값을 보존하여 알림 메시지에 사용
     const atRiskUsers = users
-      .map((user) => {
-        const total = user.todos.length;
-        const completed = user.todos.filter((t) => t.completed).length;
-
-        if (completed === total) {
-          return null;
-        }
-
-        const { streak, isAtRisk } = computeEffectiveStreak({
-          currentStreak: user.preference?.currentStreak ?? 0,
-          lastCompletedDate: user.preference?.lastCompletedDate ?? null,
-          todosCompleted: completed,
-          todosTotal: total,
-          today,
-        });
-
-        return isAtRisk && streak >= 3
-          ? {
-              id: user.id,
-              effectiveStreak: streak,
-              locale: resolveRecipientLocale({
-                storedLocale: user.preference?.locale ?? null,
-                lastRequestLocale: null,
-              }),
-            }
-          : null;
-      })
+      .map((user) => toAtRiskUser(user, today))
       .filter((u): u is NonNullable<typeof u> => u != null);
 
     if (atRiskUsers.length === 0) {
@@ -134,3 +109,31 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 }
 
 // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+
+function toAtRiskUser(user: UserWithTodosAndStreakReadModel, today: Temporal.PlainDate) {
+  const total = user.todos.length;
+  const completed = user.todos.filter((t) => t.completed).length;
+
+  if (completed === total) {
+    return null;
+  }
+
+  const { streak, isAtRisk } = computeEffectiveStreak({
+    currentStreak: user.preference?.currentStreak ?? 0,
+    lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+    todosCompleted: completed,
+    todosTotal: total,
+    today,
+  });
+
+  return isAtRisk && streak >= 3
+    ? {
+        id: user.id,
+        effectiveStreak: streak,
+        locale: resolveRecipientLocale({
+          storedLocale: user.preference?.locale ?? null,
+          lastRequestLocale: null,
+        }),
+      }
+    : null;
+}

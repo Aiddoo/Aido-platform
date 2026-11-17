@@ -3,14 +3,12 @@ import { memoize, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
-import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   type JobBatchFailures,
   type JobEnvelope,
   JobQueuePort,
 } from "#api/shared/application/ports/job-queue.port";
-import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -19,40 +17,27 @@ import {
   PublishNotificationUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
-import {
-  createTodoReminderNotificationMessage,
-  createTodoReminderSnoozedNotificationMessage,
-  createTodoSeriesPausedNotificationMessage,
-} from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { RecipientLocaleOf } from "../../../shared/domain/recipient-locale.domain-service.js";
-import {
-  createReminderOccurrenceKey,
-  createSnoozedReminderMetadata,
-  REMINDER_LATE_LIMIT_MINUTES,
-} from "../../../shared/domain/reminder-occurrence.domain-service.js";
-import {
-  SNOOZED_TODO_REMINDER_STAGE,
-  TODO_SERIES_PAUSED_STAGE,
-} from "../../../shared/domain/todo-reminder-stage.constants.js";
+import { REMINDER_LATE_LIMIT_MINUTES } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { SNOOZED_TODO_REMINDER_STAGE } from "../../../shared/domain/todo-reminder-stage.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
-import { ReminderAlerts } from "../../application/reminders.alerts.js";
 import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import {
-  type ReminderLateSkipReason,
+  resolveReminderStage,
+  toSnoozedTodoReminderNotification,
+  toTodoReminderNotification,
+  toTodoSeriesPausedNotification,
+} from "../../application/todo-reminder-notification.mapper.js";
+import { RecordReminderLateSkipUseCase } from "../../application/use-cases/record-reminder-late-skip.use-case.js";
+import {
   reminderFireAt,
   reminderLateSkipReason,
 } from "../../domain/reminder-plan.domain-service.js";
-import {
-  createSnoozeOccurrenceKey,
-  snoozedReminderLateSkipReason,
-  snoozedReminderTiming,
-} from "../../domain/reminder-snooze.domain-service.js";
+import { snoozedReminderLateSkipReason } from "../../domain/reminder-snooze.domain-service.js";
 import { todoSeriesPausedJobKey } from "./reminder-job-keys.constants.js";
 import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
 import {
@@ -65,14 +50,6 @@ import {
   TODO_SERIES_PAUSED_QUEUE,
   type TodoReminderRuntimeJob,
 } from "./todo-reminder.queue.js";
-
-/**
- * 늦어서 버린 리마인더가 한 시간(REMINDER_LATE_SKIP_WINDOW_MS) 안에 이만큼 쌓이면 경보한다.
- * 배포로 worker가 잠깐 멈춘 뒤 몇 건은 늘 생기므로 그보다 크게 잡는다.
- */
-export const REMINDER_LATE_SKIP_THRESHOLD = 20;
-export const REMINDER_LATE_SKIP_WINDOW_MS = 60 * 60_000;
-const LATE_SKIP_COUNTER_KEY = "late-skip";
 
 // 묶음 작업이 함께 쓰는 조회 결과. 휴면은 반복 회차가 있을 때만 소유자마다 한 번 묻는다
 interface ReminderBatchContext {
@@ -89,20 +66,9 @@ interface ReminderDraft {
   readonly notification: CreateNotificationData;
 }
 
-interface LateSkip {
-  readonly todoId: number;
-  readonly userId: string;
-  readonly stage: string;
-  readonly reason: ReminderLateSkipReason;
-  /** 울려야 했던 시각 */
-  readonly fireAt: Temporal.Instant;
-  readonly now: Temporal.Instant;
-}
-
 @Injectable()
 export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoReminderQueueProcessor.name);
-  readonly #lateSkips = new WindowedCounter(REMINDER_LATE_SKIP_WINDOW_MS);
 
   readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodos">;
   readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
@@ -111,7 +77,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">;
   readonly #clock: Pick<ClockPort, "now">;
-  readonly #alert: Pick<OperationalAlertPort, "raise">;
+  readonly #lateSkips: Pick<RecordReminderLateSkipUseCase, "execute">;
 
   constructor(
     @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "findActiveTodos">,
@@ -125,7 +91,8 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">,
     @Inject(JobQueuePort) jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">,
     @Inject(ClockPort) clock: Pick<ClockPort, "now">,
-    @Inject(OperationalAlertPort) alert: Pick<OperationalAlertPort, "raise">,
+    @Inject(RecordReminderLateSkipUseCase)
+    lateSkips: Pick<RecordReminderLateSkipUseCase, "execute">,
   ) {
     this.#reader = reader;
     this.#seriesOwnerDormancy = seriesOwnerDormancy;
@@ -134,7 +101,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     this.#recipientLocaleReader = recipientLocaleReader;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
-    this.#alert = alert;
+    this.#lateSkips = lateSkips;
   }
 
   async onModuleInit(): Promise<void> {
@@ -253,35 +220,18 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return null;
     }
 
-    const message = createTodoReminderNotificationMessage({
-      todoTitle: todo.title,
-      stage,
-      locale: context.localeOf(userId),
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
-        recipientId: userId,
-        occurrenceKey: `${todoId}:${stageLabel}`,
-      },
-    });
     return {
       jobId,
       todoId,
       userId,
       stage,
-      notification: {
-        userId,
-        type: "TODO_REMINDER",
-        purpose: "SCHEDULED_SERVICE",
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
+      notification: toTodoReminderNotification({
+        todo,
         todoId,
-        metadata: { stage: stageLabel },
-        reminderOccurrenceKey: createReminderOccurrenceKey(todo.startDate, todo.scheduledLocalTime),
-      },
+        userId,
+        stageLabel,
+        locale: context.localeOf(userId),
+      }),
     };
   }
 
@@ -313,41 +263,24 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       limitMinutes: REMINDER_LATE_LIMIT_MINUTES,
     });
     if (lateReason != null) {
-      this.#recordLateSkip({ todoId, userId, stage, reason: lateReason, fireAt, now });
+      this.#lateSkips.execute({ todoId, userId, stage, reason: lateReason, fireAt, now });
       return null;
     }
 
-    const message = createTodoReminderSnoozedNotificationMessage({
-      todoTitle: todo.title,
-      timing: snoozedReminderTiming({ sentAt: now, scheduledAt: todo.scheduledAt }),
-      locale: context.localeOf(userId),
-      variantContext: {
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
-        recipientId: userId,
-        occurrenceKey: `${todoId}:${stage}:${notificationId}`,
-      },
-    });
     return {
       jobId,
       todoId,
       userId,
       stage,
-      notification: {
-        userId,
-        type: "TODO_REMINDER",
-        purpose: "SCHEDULED_SERVICE",
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
+      notification: toSnoozedTodoReminderNotification({
+        todo,
         todoId,
-        metadata: createSnoozedReminderMetadata(fireAt),
-        reminderOccurrenceKey: createSnoozeOccurrenceKey(
-          NotificationId.reconstitute(notificationId),
-        ),
-      },
+        userId,
+        notificationId,
+        fireAt,
+        now,
+        locale: context.localeOf(userId),
+      }),
     };
   }
 
@@ -416,7 +349,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     if (reason == null) {
       return false;
     }
-    this.#recordLateSkip({
+    this.#lateSkips.execute({
       todoId,
       userId,
       stage: resolveReminderStage(stageLabel),
@@ -427,70 +360,18 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     return true;
   }
 
-  #recordLateSkip({ todoId, userId, stage, reason, fireAt, now }: LateSkip): void {
-    this.#logger.warn({
-      event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
-      todoId,
-      userId,
-      stage,
-      reason,
-      lateMinutes: fireAt.until(now, { largestUnit: "minutes" }).minutes,
-    });
-    this.#countLateSkip(now);
-  }
-
-  #countLateSkip(now: Temporal.Instant): void {
-    // 창 안에서 기준에 닿는 순간 한 번만 올린다
-    if (
-      this.#lateSkips.add(LATE_SKIP_COUNTER_KEY, now.epochMilliseconds) ===
-      REMINDER_LATE_SKIP_THRESHOLD
-    ) {
-      this.#alert.raise({
-        ...ReminderAlerts.LATE_SKIPS_HIGH,
-        details: {
-          skippedCount: REMINDER_LATE_SKIP_THRESHOLD,
-          windowMinutes: REMINDER_LATE_SKIP_WINDOW_MS / 60_000,
-        },
-      });
-    }
-  }
-
   async #sendSeriesPausedNotice(
     job: { readonly todoId: number; readonly userId: string },
     context: ReminderBatchContext,
   ) {
     const { todoId, userId } = job;
-    const message = createTodoSeriesPausedNotificationMessage({
-      locale: context.localeOf(userId),
-      variantContext: {
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
-        recipientId: userId,
-        occurrenceKey: `${todoId}:${TODO_SERIES_PAUSED_STAGE}`,
-      },
-    });
-    // 리마인더와 같은 종류·목적으로 보내 기존 알림 동의를 그대로 따른다. 탭하면 그 할 일로 간다.
-    await this.#notificationPublisher.execute({
-      userId,
-      type: "TODO_REMINDER",
-      purpose: "SCHEDULED_SERVICE",
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
-      variantId: message.variantId,
-      title: message.title,
-      body: message.body,
-      copyKey: message.copyKey,
-      copyFacts: message.copyFacts,
-      todoId,
-      metadata: { stage: TODO_SERIES_PAUSED_STAGE },
-    });
+    await this.#notificationPublisher.execute(
+      toTodoSeriesPausedNotification({ todoId, userId, locale: context.localeOf(userId) }),
+    );
     this.#logger.log({
       event: ReminderJobLogEvent.TODO_SERIES_PAUSED_SENT,
       todoId,
       userId,
     });
   }
-}
-
-/** 알 수 없는 단계 문자열은 가장 이른 단계 문구로 보낸다. */
-function resolveReminderStage(stage: string): "60min" | "10min" {
-  return stage === "10min" ? stage : "60min";
 }

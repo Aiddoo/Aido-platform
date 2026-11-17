@@ -102,20 +102,25 @@ export function timezoneContextAt(
   timezone: string,
   userId?: string,
 ): TimezoneContext {
-  return contextOf(
-    [timezone],
-    minute.toZonedDateTimeISO(timezone).toPlainDateTime(),
-    reminderTimesDueAt(minute, timezone),
+  return contextOf({
+    timezones: [timezone],
+    local: minute.toZonedDateTimeISO(timezone).toPlainDateTime(),
+    reminderTimes: reminderTimesDueAt(minute, timezone),
     userId,
-  );
+  });
 }
 
-function contextOf(
-  timezones: readonly string[],
-  local: Temporal.PlainDateTime,
-  reminderTimes: readonly ReminderTime[],
-  userId?: string,
-): TimezoneContext {
+function contextOf({
+  timezones,
+  local,
+  reminderTimes,
+  userId,
+}: {
+  readonly timezones: readonly string[];
+  readonly local: Temporal.PlainDateTime;
+  readonly reminderTimes: readonly ReminderTime[];
+  readonly userId?: string;
+}): TimezoneContext {
   const today = local.toPlainDate();
   return {
     timezones,
@@ -154,11 +159,11 @@ export function groupTimezonesByLocalClock(
       return [];
     }
     return [
-      contextOf(
-        group.map(({ timezone }) => timezone),
-        first.local,
-        first.reminderTimes,
-      ),
+      contextOf({
+        timezones: group.map(({ timezone }) => timezone),
+        local: first.local,
+        reminderTimes: first.reminderTimes,
+      }),
     ];
   });
 }

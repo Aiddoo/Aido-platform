@@ -13,6 +13,7 @@ import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/n
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
+import { RecordReminderLateSkipUseCase } from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
 import { todoReminderJobKey } from "#api/modules/notification/reminders/infrastructure/jobs/reminder-job-keys.constants";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import {
@@ -117,7 +118,10 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       new StubNotificationRecipientLocaleReader(),
       jobQueue,
       new DateClock(),
-      { raise: () => undefined },
+      new RecordReminderLateSkipUseCase({
+        logger: new Logger(RecordReminderLateSkipUseCase.name),
+        alert: { raise: () => undefined },
+      }),
     );
 
     const user = UserFixture.create({

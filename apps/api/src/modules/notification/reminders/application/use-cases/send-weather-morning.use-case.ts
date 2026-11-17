@@ -99,18 +99,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
-    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
-      timezones: timezoneContext.timezones,
-      times: timezoneContext.reminderTimes,
-      userId:
-        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
-    });
-    const targets = await filterUnnotifiedWeatherUsers(
-      this.#dependencies.notificationHistoryReader,
-      withWeatherLocation(rows),
-      NOTIFICATION_TYPE,
-      today,
-    );
+    const targets = await this.#findTargets(timezoneContext, today);
     if (targets.length === 0) {
       return { sent: 0, unavailable: 0 };
     }
@@ -175,6 +164,20 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
 
     await this.#dependencies.notificationPublisher.execute(notifications);
     return { sent: notifications.length, unavailable };
+  }
+
+  async #findTargets(timezoneContext: TimezoneContext, today: Temporal.PlainDate) {
+    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
+      timezones: timezoneContext.timezones,
+      times: timezoneContext.reminderTimes,
+      userId:
+        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
+    });
+    return filterUnnotifiedWeatherUsers(this.#dependencies.notificationHistoryReader, {
+      users: withWeatherLocation(rows),
+      type: NOTIFICATION_TYPE,
+      today,
+    });
   }
 
   // 오늘·다음 자정은 시간대마다 정한다. 지금 현지 시각이 같아도 자정 전 서머타임 전환은 다를 수 있다

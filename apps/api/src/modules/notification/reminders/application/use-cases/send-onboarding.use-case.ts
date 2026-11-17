@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -11,6 +13,7 @@ import type { CreateNotificationData } from "../../../shared/domain/notification
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import {
   isOnboardingDay,
+  type OnboardingDay,
   ONBOARDING_MAX_DAY,
   requiresCompletedCount,
   resolveOnboardingDeepLinkPath,
@@ -84,8 +87,39 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    // Day 5, 7 유저는 completedCount 조회
-    const needsCountUserIds = filteredUsers
+    const completedCountMap = await this.#countCompletedTodos(filteredUsers);
+
+    // 알림 데이터 생성
+    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
+      filteredUsers.map(({ user }) => UserId.reconstitute(user.id)),
+    );
+    const notifications = filteredUsers.map(({ user, day }) =>
+      toOnboardingNotification({
+        userId: user.id,
+        day,
+        completedCount: completedCountMap.get(user.id) ?? 0,
+        locale: localeOf(user.id),
+        today,
+      }),
+    );
+
+    if (notifications.length > 0) {
+      await this.#dependencies.notificationPublisher.execute(notifications);
+      this.#dependencies.logger.log({
+        event: ReminderLogEvent.ONBOARDING_SENT,
+        timezones,
+        count: notifications.length,
+      });
+    }
+
+    return { sent: notifications.length };
+  }
+
+  // Day 5, 7 유저는 completedCount 조회
+  async #countCompletedTodos(
+    users: readonly { readonly user: { readonly id: string }; readonly day: OnboardingDay }[],
+  ): Promise<Map<string, number>> {
+    const needsCountUserIds = users
       .filter(({ day }) => requiresCompletedCount(day))
       .map(({ user }) => user.id);
 
@@ -99,52 +133,48 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
         completedCountMap.set(row.userId, row.count);
       }
     }
-
-    // 알림 데이터 생성
-    const localeOf = await this.#dependencies.preferenceReader.getUserLocales(
-      filteredUsers.map(({ user }) => UserId.reconstitute(user.id)),
-    );
-    const notifications: CreateNotificationData[] = [];
-    for (const { user, day } of filteredUsers) {
-      const completedCount = completedCountMap.get(user.id) ?? 0;
-      const notificationContext = {
-        locale: localeOf(user.id),
-        variantContext: {
-          campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
-          recipientId: user.id,
-          occurrenceKey: today.toString(),
-        },
-      };
-      const message = requiresCompletedCount(day)
-        ? createOnboardingNotificationMessage({ day, completedCount, ...notificationContext })
-        : createOnboardingNotificationMessage({ day, ...notificationContext });
-
-      notifications.push({
-        userId: user.id,
-        type: "SYSTEM_NOTICE",
-        // 사용법 안내라 서비스 알림이다. 광고성 동의·참여 유도 한도를 적용하지 않으니 문구에 프로모션을 넣지 않는다
-        purpose: "SCHEDULED_SERVICE",
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.ONBOARDING,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        action: { type: "DEEP_LINK", url: resolveOnboardingDeepLinkPath(day, completedCount) },
-        notificationDate: today,
-        metadata: { onboardingDay: day },
-      });
-    }
-
-    if (notifications.length > 0) {
-      await this.#dependencies.notificationPublisher.execute(notifications);
-      this.#dependencies.logger.log({
-        event: ReminderLogEvent.ONBOARDING_SENT,
-        timezones,
-        count: notifications.length,
-      });
-    }
-
-    return { sent: notifications.length };
+    return completedCountMap;
   }
+}
+
+function toOnboardingNotification({
+  userId,
+  day,
+  completedCount,
+  locale,
+  today,
+}: {
+  readonly userId: string;
+  readonly day: OnboardingDay;
+  readonly completedCount: number;
+  readonly locale: SupportedLocale;
+  readonly today: Temporal.PlainDate;
+}): CreateNotificationData {
+  const notificationContext = {
+    locale,
+    variantContext: {
+      campaignKey: `${SCHEDULER_CAMPAIGN_KEY.ONBOARDING}.day_${day}`,
+      recipientId: userId,
+      occurrenceKey: today.toString(),
+    },
+  };
+  const message = requiresCompletedCount(day)
+    ? createOnboardingNotificationMessage({ day, completedCount, ...notificationContext })
+    : createOnboardingNotificationMessage({ day, ...notificationContext });
+
+  return {
+    userId,
+    type: "SYSTEM_NOTICE",
+    // 사용법 안내라 서비스 알림이다. 광고성 동의·참여 유도 한도를 적용하지 않으니 문구에 프로모션을 넣지 않는다
+    purpose: "SCHEDULED_SERVICE",
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.ONBOARDING,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    action: { type: "DEEP_LINK", url: resolveOnboardingDeepLinkPath(day, completedCount) },
+    notificationDate: today,
+    metadata: { onboardingDay: day },
+  };
 }

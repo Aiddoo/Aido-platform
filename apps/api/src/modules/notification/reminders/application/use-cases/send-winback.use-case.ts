@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -10,10 +12,14 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-camp
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { localDayRangeAcross, localDaysSince } from "../../domain/reminder-day.domain-service.js";
-import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
+import {
+  resolveWinbackStage,
+  type WinbackStageName,
+} from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
+import type { WinbackUserReadModel } from "../read-models/scheduler.read-model.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WinbackStrategyDependencies {
@@ -74,16 +80,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    const checks = filteredUsers.flatMap(({ id, lastActiveAt, timezone }) => {
-      if (lastActiveAt == null) {
-        return [];
-      }
-      const inactiveDays = localDaysSince(lastActiveAt, today, timezone);
-      if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
-        return [];
-      }
-      return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays, lastActiveAt }];
-    });
+    const checks = toWinbackChecks(filteredUsers, today);
     // 단계는 쉬는 동안 한 번씩이다. 마지막 활동 뒤 받은 단계를 한 번에 읽는다
     const sentStages = await this.#dependencies.notificationHistoryReader.findWinbackStagesSince({
       recipients: checks.map(({ userId, lastActiveAt }) => ({
@@ -98,31 +95,9 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       activeChecks.map((check) => UserId.reconstitute(check.userId)),
     );
 
-    const notifications: CreateNotificationData[] = [];
-    for (const check of activeChecks) {
-      const message = createWinbackNotificationMessage({
-        inactiveDays: check.inactiveDays,
-        locale: localeOf(check.userId),
-        variantContext: {
-          campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
-          recipientId: check.userId,
-          occurrenceKey: today.toString(),
-        },
-      });
-      notifications.push({
-        userId: check.userId,
-        type: "WINBACK",
-        purpose: "ENGAGEMENT",
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        notificationDate: today,
-        metadata: { stage: check.stage },
-      });
-    }
+    const notifications = activeChecks.map((check) =>
+      toWinbackNotification(check, localeOf(check.userId), today),
+    );
 
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.execute(notifications);
@@ -135,4 +110,56 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     }
     return { sent: notifications.length };
   }
+}
+
+interface WinbackCheck {
+  readonly userId: string;
+  readonly stage: WinbackStageName;
+  readonly inactiveDays: number;
+  readonly lastActiveAt: Temporal.Instant;
+}
+
+function toWinbackChecks(
+  users: readonly WinbackUserReadModel[],
+  today: Temporal.PlainDate,
+): WinbackCheck[] {
+  return users.flatMap(({ id, lastActiveAt, timezone }) => {
+    if (lastActiveAt == null) {
+      return [];
+    }
+    const inactiveDays = localDaysSince(lastActiveAt, today, timezone);
+    if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
+      return [];
+    }
+    return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays, lastActiveAt }];
+  });
+}
+
+function toWinbackNotification(
+  check: WinbackCheck,
+  locale: SupportedLocale,
+  today: Temporal.PlainDate,
+): CreateNotificationData {
+  const message = createWinbackNotificationMessage({
+    inactiveDays: check.inactiveDays,
+    locale,
+    variantContext: {
+      campaignKey: `${SCHEDULER_CAMPAIGN_KEY.WINBACK}.${check.stage}`,
+      recipientId: check.userId,
+      occurrenceKey: today.toString(),
+    },
+  });
+  return {
+    userId: check.userId,
+    type: "WINBACK",
+    purpose: "ENGAGEMENT",
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.WINBACK,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    notificationDate: today,
+    metadata: { stage: check.stage },
+  };
 }

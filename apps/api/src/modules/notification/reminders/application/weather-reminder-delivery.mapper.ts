@@ -68,9 +68,15 @@ export function withWeatherLocation(
 /** 오늘 같은 종류의 날씨 알림을 이미 받은 사용자를 뺀다. */
 export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: string }>(
   historyReader: WeatherReminderDeliveryDependencies["notificationHistoryReader"],
-  users: readonly TUser[],
-  type: WeatherNotificationType,
-  today: Temporal.PlainDate,
+  {
+    users,
+    type,
+    today,
+  }: {
+    readonly users: readonly TUser[];
+    readonly type: WeatherNotificationType;
+    readonly today: Temporal.PlainDate;
+  },
 ): Promise<TUser[]> {
   if (users.length === 0) {
     return [];
@@ -120,12 +126,11 @@ export async function sendWeatherFallbackNotifications(
   },
 ): Promise<number> {
   const { users, type, today, createMessage } = input;
-  const targets = await filterUnnotifiedWeatherUsers(
-    dependencies.notificationHistoryReader,
+  const targets = await filterUnnotifiedWeatherUsers(dependencies.notificationHistoryReader, {
     users,
     type,
     today,
-  );
+  });
   if (targets.length === 0) {
     return 0;
   }

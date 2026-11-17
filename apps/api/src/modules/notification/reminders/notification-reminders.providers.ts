@@ -28,6 +28,7 @@ import { WeeklyAchievementStatsReaderPort } from "./application/ports/weekly-ach
 import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
 import { CatchUpChangedReminderHourUseCase } from "./application/use-cases/catch-up-changed-reminder-hour.use-case.js";
 import { DeliverQueuedSocialDigestUseCase } from "./application/use-cases/deliver-queued-social-digest.use-case.js";
+import { RecordReminderLateSkipUseCase } from "./application/use-cases/record-reminder-late-skip.use-case.js";
 import { SendEveningReminderUseCase } from "./application/use-cases/send-evening-reminder.use-case.js";
 import { SendLunchNudgeUseCase } from "./application/use-cases/send-lunch-nudge.use-case.js";
 import { SendMonthlyReportUseCase } from "./application/use-cases/send-monthly-report.use-case.js";
@@ -198,6 +199,10 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     logger: loggerFor(SnoozeTodoReminderUseCase),
   }),
   provideSweepTimezoneRemindersUseCase(),
+  provideUseCase(RecordReminderLateSkipUseCase, {
+    logger: loggerFor(RecordReminderLateSkipUseCase),
+    alert: OperationalAlertPort,
+  }),
   provideUseCase(CatchUpChangedReminderHourUseCase, {
     clock: ClockPort,
     morningReminder: SendMorningReminderUseCase,

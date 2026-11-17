@@ -48,11 +48,10 @@ export const SCHEDULE_GRACE_MINUTES = 3;
  */
 export function isWithinScheduleWindow(
   schedule: ScheduleTime,
-  localHour: number,
-  localMinute: number,
+  local: { readonly localHour: number; readonly localMinute: number },
   graceMinutes: number = SCHEDULE_GRACE_MINUTES,
 ): boolean {
-  const nowMinutes = localHour * 60 + localMinute;
+  const nowMinutes = local.localHour * 60 + local.localMinute;
   const startMinutes = schedule.hour * 60 + schedule.minute;
   return nowMinutes >= startMinutes && nowMinutes < startMinutes + graceMinutes;
 }

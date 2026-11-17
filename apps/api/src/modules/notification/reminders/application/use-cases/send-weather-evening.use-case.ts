@@ -91,9 +91,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     });
     const targets = await filterUnnotifiedWeatherUsers(
       this.#dependencies.notificationHistoryReader,
-      withWeatherLocation(rows),
-      NOTIFICATION_TYPE,
-      today,
+      { users: withWeatherLocation(rows), type: NOTIFICATION_TYPE, today },
     );
     if (targets.length === 0) {
       return { sent: 0, unavailable: 0 };
