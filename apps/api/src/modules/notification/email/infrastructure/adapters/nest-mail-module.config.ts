@@ -1,7 +1,4 @@
-import { resolve } from "node:path";
-
 import {
-  FileTemplateEngine,
   LogMailTransport,
   type MailModuleOptions,
   type MailTransport,
@@ -12,13 +9,6 @@ import type { EmailProviderId } from "#api/platform/config/schemas/email.schema"
 
 import type { NotificationEmailConfig } from "../../notification-email.config.js";
 import { EMAIL_SEND_TIMEOUT_MS } from "./email-outbound.policy.js";
-
-// 빌드는 nest-cli assets로 템플릿을 dist의 같은 상대 경로에 복사해 소스·dist에서 같은 경로가 된다
-const EMAIL_TEMPLATES_PATH = resolve(import.meta.dirname, "../templates");
-
-export function createEmailTemplateEngine(): FileTemplateEngine {
-  return new FileTemplateEngine({ dir: EMAIL_TEMPLATES_PATH, layout: "layout" });
-}
 
 // log와 키 없는 resend는 LogEmailSenderAdapter·not_configured가 먼저 끝내 Mailer는 렌더만 한다.
 // 그래도 전송이 불리면 본문 없이 로그만 남는 패키지 전송을 둔다

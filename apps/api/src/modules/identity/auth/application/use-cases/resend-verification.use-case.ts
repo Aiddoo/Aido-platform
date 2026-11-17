@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { assertStatusAllowsLogin } from "#api/modules/identity/users/domain/account-status.domain-service";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -10,6 +12,8 @@ import type { SendVerificationCodeUseCase } from "./send-verification-code.use-c
 
 export interface ResendVerificationCommand {
   readonly email: string;
+  /** 코드 메일을 쓸 언어. 요청 응답과 같은 언어다 */
+  readonly emailLocale: SupportedLocale;
 }
 
 interface ResendVerificationDependencies {
@@ -28,7 +32,7 @@ export class ResendVerificationUseCase {
   }
 
   async execute(input: ResendVerificationCommand): Promise<{ message: string }> {
-    const { email } = input;
+    const { email, emailLocale } = input;
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
       return {
@@ -56,6 +60,7 @@ export class ResendVerificationUseCase {
         email,
         code: verificationResult.code,
         type: "EMAIL_VERIFY",
+        emailLocale,
       });
     } catch (error) {
       this.#dependencies.logger.error({

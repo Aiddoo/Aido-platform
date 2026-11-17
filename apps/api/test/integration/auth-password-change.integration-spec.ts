@@ -68,6 +68,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,
+      emailLocale: "ko",
     });
 
     const verifyCode = getCode(email);

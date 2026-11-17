@@ -5,14 +5,11 @@
   "entryFile": "bootstrap",
   "compilerOptions": {
     "deleteOutDir": true,
-    "builder": "swc",
+    "builder": {
+      "type": "swc",
+      "options": { "extensions": [".js", ".ts", ".tsx"] }
+    },
     "typeCheck": true,
-    "assets": [
-      { "include": "i18n/**/*.json", "watchAssets": true },
-      {
-        "include": "modules/notification/email/infrastructure/templates/**/*.{html,txt}",
-        "watchAssets": true
-      }
-    ]
+    "assets": [{ "include": "i18n/**/*.json", "watchAssets": true }]
   }
 }

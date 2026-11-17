@@ -121,16 +121,17 @@
 
 ## email-messages
 
-| 용어        | 코드                                                           | 뜻                                                                                                                                   |
-| ----------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 이메일      | `EmailMessage`(Aggregate, `email-messages` slice)              | 렌더한 메일 한 통(받는 사람·제목·HTML·텍스트·태그). 만들기만 하고 저장하지 않으며 큐에 실어 보낸다. 받는 사람·제목이 비면 `SYS_0002` |
-| 메일 종류   | `EmailKind`(`EMAIL_KINDS`)                                     | `verification`·`password-reset`·`password-setup`(사용자가 기다리는 코드), `inquiry`·`user-report`(운영자에게 가는 문의·신고)         |
-| 중요도      | `EmailPriority`(`critical`·`standard`), `resolveEmailPriority` | 코드 메일은 `critical`, 문의·신고는 `standard`. `standard`는 한도보다 먼저 멈춰 `critical` 몫을 남긴다                               |
-| 발송 예산   | `EmailBudgetPort`, `EmailSendBudget`                           | 공급자 무료 한도를 넘지 않게 세는 일·월 건수. 담을 때 예약하고 못 보낸 채 끝나면 돌려준다. 계량이 실패하면 예약된 것으로 본다        |
-| 발송 요청   | `SendTransactionalEmailUseCase`, `EmailDispatch`               | 템플릿을 렌더해 `email-delivery.v1`에 담는다. 결과는 `queued` 또는 `rejected`(`budget_exhausted`·`queue_unavailable`)                |
-| 문의 메일   | `sendInquiry`, `EmailSendResult`                               | 문의는 DB에 남지 않아 큐 없이 요청 안에서 한 번 보내고, 실패를 돌려줘 사용자가 다시 보내게 한다                                      |
-| 전달        | `DeliverEmailUseCase`, `deliveryId`                            | 큐에서 꺼낸 한 통을 공급자로 보낸다. `deliveryId`가 공급자 멱등 키이고 재시도는 큐가 한다                                            |
-| 메일 공급자 | `EmailSenderPort`, `EmailTemplateRendererPort`                 | 공급자를 바꾸는 자리. 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다                                                            |
+| 용어        | 코드                                                           | 뜻                                                                                                                                     |
+| ----------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 이메일      | `EmailMessage`(Aggregate, `email-messages` slice)              | 렌더한 메일 한 통(받는 사람·제목·HTML·텍스트·태그). 만들기만 하고 저장하지 않으며 큐에 실어 보낸다. 받는 사람·제목이 비면 `SYS_0002`   |
+| 메일 종류   | `EmailKind`(`EMAIL_KINDS`)                                     | `verification`·`password-reset`·`password-setup`(사용자가 기다리는 코드), `inquiry`·`user-report`(운영자에게 가는 문의·신고)           |
+| 중요도      | `EmailPriority`(`critical`·`standard`), `resolveEmailPriority` | 코드 메일은 `critical`, 문의·신고는 `standard`. `standard`는 한도보다 먼저 멈춰 `critical` 몫을 남긴다                                 |
+| 발송 예산   | `EmailBudgetPort`, `EmailSendBudget`                           | 공급자 무료 한도를 넘지 않게 세는 일·월 건수. 담을 때 예약하고 못 보낸 채 끝나면 돌려준다. 계량이 실패하면 예약된 것으로 본다          |
+| 발송 요청   | `SendTransactionalEmailUseCase`, `EmailDispatch`               | 받는 사람 언어로 템플릿을 렌더해 `email-delivery.v1`에 담는다. 결과는 `queued` 또는 `rejected`(`budget_exhausted`·`queue_unavailable`) |
+| 문의 메일   | `sendInquiry`, `EmailSendResult`                               | 문의는 DB에 남지 않아 큐 없이 요청 안에서 한 번 보내고, 실패를 돌려줘 사용자가 다시 보내게 한다                                        |
+| 전달        | `DeliverEmailUseCase`, `deliveryId`                            | 큐에서 꺼낸 한 통을 공급자로 보낸다. `deliveryId`가 공급자 멱등 키이고 재시도는 큐가 한다                                              |
+| 메일 공급자 | `EmailSenderPort`, `EmailTemplateRendererPort`                 | 공급자를 바꾸는 자리. 한 번 시도하고 결과를 값으로 돌려주며 던지지 않는다                                                              |
+| 메일 템플릿 | `EmailTemplateMail`, `<이름>.email.tsx`                        | React Email로 만든 제목·HTML·텍스트. `@nestjs/mail` 메일 클래스로 렌더하고 문구는 `email.json`이다                                     |
 
 이메일은 저장하지 않아 상태 전이가 없다. 같은 `deliveryId`는 큐에 한 번만 담기고(`duplicate`면 예약을 돌려준다) 공급자에도 같은 멱등 키로 나간다.
 

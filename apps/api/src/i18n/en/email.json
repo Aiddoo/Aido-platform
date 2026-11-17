@@ -1,0 +1,74 @@
+{
+  "layout": {
+    "brandName": "Aido",
+    "logoAlt": "Aido",
+    "noReply": "This email was sent from a no-reply address.",
+    "contact": "Questions?",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy"
+  },
+  "code": {
+    "label": "Verification code",
+    "expiry": "This code expires in {duration}.",
+    "verification": {
+      "subject": "Your Aido verification code",
+      "preview": "Enter the code below in the app within {duration}.",
+      "title": "Verify your email",
+      "intro": "Enter this code in the Aido app to finish signing up.",
+      "ignore": "If you didn't sign up for Aido, you can safely ignore this email."
+    },
+    "password-reset": {
+      "subject": "Your Aido password reset code",
+      "preview": "Enter the code below in the app within {duration}.",
+      "title": "Reset your password",
+      "intro": "Enter this code in the Aido app to choose a new password.",
+      "ignore": "If you didn't ask for this, ignore this email. Your password won't change unless this code is entered."
+    },
+    "password-setup": {
+      "subject": "Your Aido password setup code",
+      "preview": "Enter the code below in the app within {duration}.",
+      "title": "Set up a password",
+      "intro": "Enter this code in the Aido app and choose a password so you can also sign in with your email.",
+      "ignore": "If you didn't ask for this, ignore this email. Nothing on your account will change."
+    }
+  },
+  "inquiry": {
+    "subject": "[Aido inquiry] [{categoryLabel}]",
+    "preview": "{categoryLabel} inquiry from {userEmail}",
+    "eyebrow": "New inquiry",
+    "title": "A new inquiry has come in",
+    "userEmail": "User email",
+    "category": "Category",
+    "submittedAt": "Received",
+    "content": "Message",
+    "checklistTitle": "Support checklist",
+    "checklist": {
+      "classify": "Classify the inquiry",
+      "reproduce": "Decide whether it needs to be reproduced or checked",
+      "reply": "Draft a reply to the user"
+    }
+  },
+  "user-report": {
+    "subject": "[Aido report] [{reasonLabel}] {targetTypeLabel} · {targetUserTag}",
+    "preview": "{reasonLabel} report on {targetUserTag}",
+    "eyebrow": "New user report",
+    "title": "A new report has come in",
+    "reportId": "Report ID",
+    "reason": "Reason",
+    "targetType": "Target type",
+    "targetId": "Content ID",
+    "targetUser": "Reported user",
+    "reporter": "Reported by",
+    "submittedAt": "Received",
+    "resolutionEndpoint": "Resolution API",
+    "detail": "Details",
+    "noDetail": "(No details)",
+    "checklistTitle": "Resolution checklist",
+    "checklist": {
+      "review": "Open the original content by its content ID",
+      "act": "If it breaks the terms, remove the content or restrict the account",
+      "resolve": "Record the action with the resolution API to mark it RESOLVED"
+    },
+    "openDocs": "Resolve in the admin docs"
+  }
+}

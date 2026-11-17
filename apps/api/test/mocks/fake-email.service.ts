@@ -1,6 +1,7 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import type { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
 import type { EmailKind } from "#api/modules/notification/email/domain/email-delivery.constants";
-import type { EmailTag } from "#api/modules/notification/email/domain/email-message.vo";
 import type {
   EmailDispatch,
   EmailSendResult,
@@ -10,9 +11,8 @@ import type {
 
 interface SentEmail extends VerificationEmailData {
   type: EmailKind;
+  locale: SupportedLocale;
   sentAt: Date;
-  idempotencyKey?: string;
-  tags?: EmailTag[];
 }
 
 interface SentInquiry {
@@ -33,32 +33,31 @@ export class FakeEmailService implements AuthEmailSenderPort {
   readonly #sentEmails = new Map<string, SentEmail>();
   #sentInquiries: SentInquiry[] = [];
   #sentUserReports: SentUserReport[] = [];
-  readonly #idempotencyKeys = new Set<string>();
   #failureCount = 0;
   #maximumFailures = 0;
 
   async sendVerificationCode(
     to: string,
     data: VerificationEmailData,
-    idempotencyKey?: string,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#recordCode(to, data, "verification", idempotencyKey);
+    return this.#recordCode(to, { ...data, type: "verification", locale });
   }
 
   async sendPasswordSetupCode(
     to: string,
     data: VerificationEmailData,
-    idempotencyKey?: string,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#recordCode(to, data, "password-setup", idempotencyKey);
+    return this.#recordCode(to, { ...data, type: "password-setup", locale });
   }
 
   async sendPasswordResetCode(
     to: string,
     data: VerificationEmailData,
-    idempotencyKey?: string,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#recordCode(to, data, "password-reset", idempotencyKey);
+    return this.#recordCode(to, { ...data, type: "password-reset", locale });
   }
 
   async sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
@@ -78,37 +77,12 @@ export class FakeEmailService implements AuthEmailSenderPort {
     return { status: "queued" };
   }
 
-  #recordCode(
-    to: string,
-    data: VerificationEmailData,
-    type: EmailKind,
-    idempotencyKey?: string,
-  ): EmailDispatch {
-    if (
-      idempotencyKey !== undefined &&
-      idempotencyKey.length > 0 &&
-      this.#idempotencyKeys.has(idempotencyKey)
-    ) {
-      return { status: "queued" };
-    }
+  #recordCode(to: string, email: Omit<SentEmail, "sentAt">): EmailDispatch {
     const failure = this.#failureResult();
     if (failure !== null) {
       return failure;
     }
-    if (idempotencyKey !== undefined && idempotencyKey.length > 0) {
-      this.#idempotencyKeys.add(idempotencyKey);
-    }
-    this.#sentEmails.set(to, {
-      code: data.code,
-      expiryMinutes: data.expiryMinutes,
-      type,
-      sentAt: new Date(),
-      idempotencyKey,
-      tags: [
-        { name: "type", value: type },
-        { name: "environment", value: "test" },
-      ],
-    });
+    this.#sentEmails.set(to, { ...email, sentAt: new Date() });
     return { status: "queued" };
   }
 
@@ -120,7 +94,6 @@ export class FakeEmailService implements AuthEmailSenderPort {
     this.#sentEmails.clear();
     this.#sentInquiries = [];
     this.#sentUserReports = [];
-    this.#idempotencyKeys.clear();
     this.resetFailureSimulation();
   }
 
@@ -130,14 +103,6 @@ export class FakeEmailService implements AuthEmailSenderPort {
 
   getSentEmail(email: string): SentEmail | undefined {
     return this.#sentEmails.get(email);
-  }
-
-  getIdempotencyKeys(): Set<string> {
-    return new Set(this.#idempotencyKeys);
-  }
-
-  hasIdempotencyKey(key: string): boolean {
-    return this.#idempotencyKeys.has(key);
   }
 
   getAllSentEmails(): Map<string, SentEmail> {

@@ -14,12 +14,16 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
     // Given
     const fixture = given({ pending: true });
     // When
-    const result = await fixture.useCase.execute({ email: fixture.user.email });
+    const result = await fixture.useCase.execute({
+      email: fixture.user.email,
+      emailLocale: "en",
+    });
     // Then
     expect(result.message).toBe("인증 코드가 발송되었습니다. 이메일을 확인해주세요.");
     expect(fixture.emailSender.getSentEmail(fixture.user.email)).toMatchObject({
       type: "verification",
       code: "123456",
+      locale: "en",
     });
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({
@@ -34,7 +38,7 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
     // Given
     const fixture = given({ empty: true });
     // When
-    const result = await fixture.useCase.execute({ email: fixture.user.email });
+    const result = await fixture.useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     // Then
     expect(result.message).toBe("인증 코드가 발송되었습니다. 이메일을 확인해주세요.");
     expect(fixture.emailSender.getSentCount()).toBe(0);
@@ -45,7 +49,7 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
     // Given
     const fixture = given();
     // When
-    const pending = fixture.useCase.execute({ email: fixture.user.email });
+    const pending = fixture.useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0604 });
     expect(fixture.emailSender.getSentCount()).toBe(0);
@@ -55,9 +59,9 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
   it("재발송 대기 중에는 이전 코드를 유지하고 중복 발송하지 않는다", async () => {
     // Given
     const fixture = given({ pending: true });
-    await fixture.useCase.execute({ email: fixture.user.email });
+    await fixture.useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     // When
-    const pending = fixture.useCase.execute({ email: fixture.user.email });
+    const pending = fixture.useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0753 });
     expect(fixture.verificationRepository.all).toHaveLength(1);
@@ -76,7 +80,7 @@ describe("ResendVerification — 이메일 인증 코드 재발송", () => {
       },
     });
     // When
-    const result = await useCase.execute({ email: fixture.user.email });
+    const result = await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     // Then
     expect(result.message).toContain("발송되었습니다");
     expect(fixture.verificationRepository.all).toHaveLength(1);

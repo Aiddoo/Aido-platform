@@ -149,7 +149,11 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
     vi.stubGlobal("fetch", http.fetch);
 
     // When
-    const dispatch = await sender.sendVerificationCode(recipient, { code, expiryMinutes: 15 });
+    const dispatch = await sender.sendVerificationCode(
+      recipient,
+      { code, expiryMinutes: 15 },
+      "ko",
+    );
 
     // Then
     expect(dispatch).toEqual({ status: "queued" });

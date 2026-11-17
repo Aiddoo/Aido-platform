@@ -37,6 +37,29 @@ module.exports = {
       from: { path: "^src/", pathNot: "^src/platform/http/" },
       to: { path: "node_modules/(?:@types/express|express|@nestjs/platform-express)/" },
     },
+    {
+      name: "react-only-in-email-templates",
+      comment:
+        "React(React Email)는 메일 템플릿 폴더에만 둔다. 다른 곳은 템플릿이 돌려준 문자열(제목·HTML·텍스트)만 쓴다.",
+      severity: "error",
+      from: { path: "^src/", pathNot: "^src/modules/notification/email/infrastructure/templates/" },
+      to: { path: "node_modules/(?:react|react-dom|react-email|@react-email/[^/]+)/" },
+    },
+    {
+      name: "email-templates-loaded-on-first-render",
+      comment:
+        "React Email은 부팅 때 불러오지 않는다. 템플릿 폴더 밖과 메일 클래스는 .tsx 템플릿을 import()로만 부른다.",
+      severity: "error",
+      from: {
+        path: "^src/",
+        pathNot:
+          "^src/modules/notification/email/infrastructure/templates/(?!email-template\\.mail\\.ts$)",
+      },
+      to: {
+        path: "^src/modules/notification/email/infrastructure/templates/[^/]+\\.tsx$",
+        dependencyTypesNot: ["dynamic-import", "type-only"],
+      },
+    },
   ],
   options: {
     tsConfig: { fileName: "tsconfig.json" },
@@ -46,7 +69,7 @@ module.exports = {
     enhancedResolveOptions: {
       exportsFields: ["exports"],
       conditionNames: ["types", "import", "require", "node", "default"],
-      extensions: [".ts", ".js", ".json"],
+      extensions: [".ts", ".tsx", ".js", ".json"],
     },
     reporterOptions: { text: { highlightFocused: true } },
   },

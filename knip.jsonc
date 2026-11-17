@@ -19,7 +19,7 @@
         "scripts/**/*.{ts,mjs,cjs}",
         "test/dev-fixtures/*.ts",
       ],
-      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.{ts,mjs,cjs}"],
+      "project": ["src/**/*.{ts,tsx}", "test/**/*.ts", "scripts/**/*.{ts,mjs,cjs}"],
       // pino transport가 이름 문자열로 불러 import가 없다(platform/logging/logger.options.ts)
       "ignoreDependencies": ["pino-pretty"],
     },

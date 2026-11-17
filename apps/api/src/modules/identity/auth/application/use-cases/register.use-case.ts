@@ -1,4 +1,4 @@
-import { TERMS_VERSION, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { TERMS_VERSION, SECURITY_EVENT, type SupportedLocale } from "@aido/api/vocabulary";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/auth/application/auth.errors";
 import type {
@@ -35,6 +35,8 @@ export interface RegisterCommand {
   readonly marketingAgreed?: boolean;
   readonly marketingPushAgreed?: boolean;
   readonly metadata?: RequestMetadata;
+  /** 코드 메일을 쓸 언어. 요청 응답과 같은 언어다 */
+  readonly emailLocale: SupportedLocale;
 }
 
 interface RegisterDependencies {
@@ -126,6 +128,7 @@ export class RegisterUseCase {
         email,
         code: result.verificationCode,
         type: "EMAIL_VERIFY",
+        emailLocale: input.emailLocale,
       });
     } catch (error) {
       this.#dependencies.logger.error({

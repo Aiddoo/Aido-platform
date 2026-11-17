@@ -17,6 +17,7 @@ import { selectEmailSender } from "./infrastructure/adapters/email-sender-factor
 import { MeteredEmailBudgetAdapter } from "./infrastructure/adapters/metered-email-budget.adapter.js";
 import { NestMailEmailSenderAdapter } from "./infrastructure/adapters/nest-mail-email-sender.adapter.js";
 import { EmailDeliveryQueueAdapter } from "./infrastructure/jobs/email-delivery-queue.adapter.js";
+import { EmailTemplateMail } from "./infrastructure/templates/email-template.mail.js";
 import {
   notificationEmailConfig,
   type NotificationEmailConfig,
@@ -26,8 +27,13 @@ const NOTIFICATION_EMAIL_QUEUE_PROVIDERS = [
   { provide: EmailDeliveryQueuePort, useClass: EmailDeliveryQueueAdapter },
 ] satisfies Provider[];
 
-// 렌더는 공급자와 상관없이 Mailer가 맡고, 전송 어댑터는 EMAIL_PROVIDER(비우면 배포 환경 기본값)로 고른다
+// 렌더는 공급자와 상관없이 Mailer가 메일 클래스로 맡고, 전송 어댑터는 EMAIL_PROVIDER(비우면 배포 환경 기본값)로 고른다
 const NOTIFICATION_EMAIL_EXTERNAL_PROVIDERS = [
+  {
+    provide: EmailTemplateMail,
+    inject: [notificationEmailConfig.KEY],
+    useFactory: (config: NotificationEmailConfig) => new EmailTemplateMail(config.supportEmail),
+  },
   {
     provide: NestMailEmailSenderAdapter,
     inject: [Mailer, OutboundPolicyRegistry, notificationEmailConfig.KEY],

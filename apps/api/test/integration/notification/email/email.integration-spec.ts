@@ -119,7 +119,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     givenResponses([]);
 
     // When
-    const result = await sender.sendVerificationCode(recipient, { code, expiryMinutes });
+    const result = await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
 
     // Then
     expect(result).toEqual({ status: "queued" });
@@ -130,10 +130,10 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
     expect(JSON.stringify(queued[0]?.payload)).not.toContain(recipient);
   });
 
-  it("worker가 설정·인증·템플릿 파일로 렌더한 본문을 실제 HTTP 요청에 전달한다", async () => {
+  it("worker가 설정·인증·메일 클래스로 렌더한 본문을 실제 HTTP 요청에 전달한다", async () => {
     // Given
     givenResponses([success]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes });
+    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
 
     // When
     await runQueuedJob();
@@ -155,7 +155,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   it("일시 장애는 큐 재시도를 위해 던지고 같은 멱등 키·본문으로 다시 보내 성공한다", async () => {
     // Given
     givenResponses([unavailable, success]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes });
+    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
 
     // When
     const firstAttempt = runQueuedJob(1);
@@ -174,7 +174,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   it("검증 거절은 재시도 없이 예산을 돌려주고 운영 경보를 올린다", async () => {
     // Given
     givenResponses([resendResponseFixture("send.validation-error.json", 422)]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes });
+    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
 
     // When
     await runQueuedJob();
@@ -191,7 +191,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   it("재시도를 다 쓴 마지막 시도는 던지지 않고 경보를 올려 잡이 끝난다", async () => {
     // Given
     givenResponses([unavailable]);
-    await sender.sendVerificationCode(recipient, { code, expiryMinutes });
+    await sender.sendVerificationCode(recipient, { code, expiryMinutes }, "ko");
 
     // When
     await runQueuedJob(5);
@@ -208,7 +208,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailModu
   ] as const)("%s 템플릿을 요청에 전달한다", async (_description, method, subject) => {
     // Given
     givenResponses([success]);
-    await sender[method](recipient, { code, expiryMinutes });
+    await sender[method](recipient, { code, expiryMinutes }, "ko");
 
     // When
     await runQueuedJob();

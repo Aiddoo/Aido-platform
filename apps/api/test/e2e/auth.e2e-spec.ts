@@ -68,7 +68,10 @@ describe("인증 E2E", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.email).toBe(testEmail);
       expect(response.body.data.message).toContain("인증 코드");
-      expect(testContext.fakeEmailService.hasSentTo(testEmail)).toBe(true);
+      expect(testContext.fakeEmailService.getSentEmail(testEmail)).toMatchObject({
+        type: "verification",
+        locale: "ko",
+      });
     });
 
     it("POST /auth/register - 중복 이메일 거부", async () => {
@@ -364,12 +367,16 @@ describe("인증 E2E", () => {
       // When
       const forgotResponse = await request(testContext.app.getHttpServer())
         .post("/v1/auth/forgot-password")
+        .set("Accept-Language", "en-US,en;q=0.9")
         .send({ email: resetEmail })
         .expect(200);
 
       // Then
       expect(forgotResponse.body.success).toBe(true);
-      expect(testContext.fakeEmailService.hasSentTo(resetEmail)).toBe(true);
+      expect(testContext.fakeEmailService.getSentEmail(resetEmail)).toMatchObject({
+        type: "password-reset",
+        locale: "en",
+      });
 
       // When
       const code = testContext.fakeEmailService.getLastCode(resetEmail);

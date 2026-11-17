@@ -34,6 +34,7 @@ describe("Register — 이메일 계정 등록", () => {
     privacyAgreed: true,
     marketingAgreed: false,
     marketingPushAgreed: false,
+    emailLocale: "en",
   } satisfies Parameters<RegisterUseCase["execute"]>[0];
 
   function given(options: Parameters<typeof createAuthCredentialFixture>[0] = {}) {
@@ -93,7 +94,11 @@ describe("Register — 이메일 계정 등록", () => {
     expect(fixture.retentionEnroller.enrollments).toEqual([
       { userId: result.userId, activated: false },
     ]);
-    expect(fixture.emailSender.getLastCode(input.email)).toBe("123456");
+    expect(fixture.emailSender.getSentEmail(input.email)).toMatchObject({
+      type: "verification",
+      code: "123456",
+      locale: "en",
+    });
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({
         userId: result.userId,

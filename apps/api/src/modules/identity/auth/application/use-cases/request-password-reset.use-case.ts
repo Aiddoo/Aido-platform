@@ -1,4 +1,4 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
+import { SECURITY_EVENT, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { RequestMetadata } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
 import { AUTH_DEFAULTS } from "#api/modules/identity/auth/domain/auth.constants";
@@ -13,6 +13,8 @@ import type { SendVerificationCodeUseCase } from "./send-verification-code.use-c
 export interface RequestPasswordResetCommand {
   readonly email: string;
   readonly metadata?: RequestMetadata;
+  /** 코드 메일을 쓸 언어. 요청 응답과 같은 언어다 */
+  readonly emailLocale: SupportedLocale;
 }
 
 interface RequestPasswordResetDependencies {
@@ -31,7 +33,7 @@ export class RequestPasswordResetUseCase {
   }
 
   async execute(input: RequestPasswordResetCommand): Promise<{ message: string }> {
-    const { email, metadata } = input;
+    const { email, metadata, emailLocale } = input;
     const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
     const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
 
@@ -47,6 +49,7 @@ export class RequestPasswordResetUseCase {
         email,
         code: issued.code,
         type: "PASSWORD_RESET",
+        emailLocale,
       });
 
       await this.#dependencies.securityLogRepository.create({

@@ -21,9 +21,9 @@ import type {
   RenderedEmail,
 } from "../../application/ports/email-template-renderer.port.js";
 import type { EmailMessage } from "../../domain/email-message.vo.js";
+import { EmailTemplateMail } from "../templates/email-template.mail.js";
 import { EMAIL_PROVIDER_POLICY } from "./email-outbound.policy.js";
 import { EmailLogEvent } from "./email-provider.log-events.js";
-import { toEmailTemplateView } from "./email-template.mapper.js";
 
 type FailedOutcome = Extract<EmailDeliveryOutcome, { status: "failed" }>;
 
@@ -64,7 +64,7 @@ interface NestMailEmailSenderDependencies {
 }
 
 /**
- * `@nestjs/mail`을 쓰는 유일한 어댑터. 템플릿 파일 렌더와 공급자 전송을 맡는다.
+ * `@nestjs/mail`을 쓰는 유일한 어댑터. 메일 클래스(React Email 템플릿) 렌더와 공급자 전송을 맡는다.
  * 재시도는 pg-boss `email-delivery.v1` 한 층에만 두어 Mailer 재시도는 끈다(retry: false).
  */
 export class NestMailEmailSenderAdapter
@@ -83,20 +83,9 @@ export class NestMailEmailSenderAdapter
     this.#isConfigured = dependencies.isConfigured;
   }
 
-  // 옛 TS 템플릿의 trim()과 같게 파일 끝 줄바꿈을 걷는다
   async render(template: EmailTemplate, locale: SupportedLocale): Promise<RenderedEmail> {
-    const view = toEmailTemplateView(template, locale);
-    const message = await this.#mailer.render({
-      subject: view.subject,
-      template: view.name,
-      context: view.context,
-      locale,
-    });
-    return {
-      subject: message.subject,
-      html: (message.html ?? "").trim(),
-      text: (message.text ?? "").trim(),
-    };
+    const message = await this.#mailer.render(EmailTemplateMail, { data: { template, locale } });
+    return { subject: message.subject, html: message.html ?? "", text: message.text ?? "" };
   }
 
   async send(message: EmailMessage): Promise<EmailDeliveryOutcome> {

@@ -81,19 +81,19 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     return delivery.message;
   }
 
-  it("인증 메시지를 기본 언어로 렌더해 큐에 담고 critical 예산을 예약한다", async () => {
+  it("인증 메시지를 받는 사람 언어로 렌더해 큐에 담고 critical 예산을 예약한다", async () => {
     // Given
     const data = { code: "123456", expiryMinutes: 10 };
 
     // When
-    const result = await emailSender.sendVerificationCode("user@test.com", data);
+    const result = await emailSender.sendVerificationCode("user@test.com", data, "en");
 
     // Then
     expect(result).toEqual({ status: "queued" });
     expect(queue.deliveries).toEqual([
       { deliveryId: expect.any(String), message: queuedMessage() },
     ]);
-    expect(renderer.requests).toEqual([{ template: { kind: "verification", data }, locale: "ko" }]);
+    expect(renderer.requests).toEqual([{ template: { kind: "verification", data }, locale: "en" }]);
     expect(queuedMessage().subject).toBe("[verification]");
     expect(queuedMessage().tags).toEqual([{ name: "type", value: "verification" }]);
     expect(budget.reserved).toEqual(["critical"]);
@@ -104,8 +104,8 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     const data = { code: "123456", expiryMinutes: 10 };
 
     // When
-    await emailSender.sendPasswordResetCode("user@test.com", data);
-    await emailSender.sendPasswordSetupCode("user@test.com", data);
+    await emailSender.sendPasswordResetCode("user@test.com", data, "ko");
+    await emailSender.sendPasswordSetupCode("user@test.com", data, "ko");
 
     // Then
     const [first, second] = queue.deliveries;
@@ -123,12 +123,13 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
       submittedAt: "2026-03-09 10:00",
     } as const;
 
-    it("standard 예산을 예약하고 큐 없이 바로 보내 sent로 답한다", async () => {
+    it("운영자 언어(ko)로 렌더하고 standard 예산을 예약해 큐 없이 바로 보내 sent로 답한다", async () => {
       // When
       const result = await emailSender.sendInquiry("support@test.com", data);
 
       // Then
       expect(result).toEqual({ status: "sent" });
+      expect(renderer.requests).toEqual([{ template: { kind: "inquiry", data }, locale: "ko" }]);
       expect(budget.reserved).toEqual(["standard"]);
       expect(queue.deliveries).toEqual([]);
       expect(sender.messages[0]?.tags).toEqual([
@@ -211,10 +212,11 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     budget.reservation = "exhausted";
 
     // When
-    const result = await emailSender.sendVerificationCode("user@test.com", {
-      code: "123456",
-      expiryMinutes: 10,
-    });
+    const result = await emailSender.sendVerificationCode(
+      "user@test.com",
+      { code: "123456", expiryMinutes: 10 },
+      "ko",
+    );
 
     // Then
     expect(result).toEqual({ status: "rejected", reason: "budget_exhausted" });
@@ -227,10 +229,11 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     queue.failure = new Error("queue down");
 
     // When
-    const result = await emailSender.sendVerificationCode("user@test.com", {
-      code: "123456",
-      expiryMinutes: 10,
-    });
+    const result = await emailSender.sendVerificationCode(
+      "user@test.com",
+      { code: "123456", expiryMinutes: 10 },
+      "ko",
+    );
 
     // Then
     expect(result).toEqual({ status: "rejected", reason: "queue_unavailable" });
@@ -242,10 +245,11 @@ describe("SendTransactionalEmailUseCase — 트랜잭션 이메일 발송 요청
     queue.result = "duplicate";
 
     // When
-    const result = await emailSender.sendVerificationCode("user@test.com", {
-      code: "123456",
-      expiryMinutes: 10,
-    });
+    const result = await emailSender.sendVerificationCode(
+      "user@test.com",
+      { code: "123456", expiryMinutes: 10 },
+      "ko",
+    );
 
     // Then
     expect(result).toEqual({ status: "queued" });

@@ -1,3 +1,5 @@
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { accountDeleted } from "#api/modules/identity/auth/application/auth.errors";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -9,6 +11,8 @@ import type { SendVerificationCodeUseCase } from "./send-verification-code.use-c
 
 export interface RequestPasswordSetupCodeCommand {
   readonly userId: string;
+  /** 코드 메일을 쓸 언어. 요청 응답과 같은 언어다 */
+  readonly emailLocale: SupportedLocale;
 }
 
 interface RequestPasswordSetupCodeDependencies {
@@ -52,6 +56,7 @@ export class RequestPasswordSetupCodeUseCase {
       email: user.email,
       code: issued.code,
       type: "PASSWORD_SETUP",
+      emailLocale: input.emailLocale,
     });
 
     return {

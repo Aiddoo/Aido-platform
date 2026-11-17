@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { DEFAULT_LOCALE } from "@aido/api/vocabulary";
+import { DEFAULT_LOCALE, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
@@ -42,6 +42,9 @@ interface SendTransactionalEmailDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
 }
 
+// 문의·신고는 운영자 받은편지함으로 가고 운영자는 한국어로 처리한다
+const OPERATOR_EMAIL_LOCALE = DEFAULT_LOCALE;
+
 /** 인증·문의·신고 템플릿을 이메일 발송 큐에 올리는 공개 capability. */
 export class SendTransactionalEmailUseCase {
   readonly #dependencies: SendTransactionalEmailDependencies;
@@ -53,22 +56,31 @@ export class SendTransactionalEmailUseCase {
   async sendVerificationCode(
     to: string,
     templateData: VerificationCodeTemplateData,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(await this.#compose(to, { kind: "verification", data: templateData }));
+    return this.#dispatch(
+      await this.#compose(to, { kind: "verification", data: templateData }, locale),
+    );
   }
 
   async sendPasswordResetCode(
     to: string,
     templateData: PasswordResetTemplateData,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(await this.#compose(to, { kind: "password-reset", data: templateData }));
+    return this.#dispatch(
+      await this.#compose(to, { kind: "password-reset", data: templateData }, locale),
+    );
   }
 
   async sendPasswordSetupCode(
     to: string,
     templateData: PasswordSetupTemplateData,
+    locale: SupportedLocale,
   ): Promise<EmailDispatch> {
-    return this.#dispatch(await this.#compose(to, { kind: "password-setup", data: templateData }));
+    return this.#dispatch(
+      await this.#compose(to, { kind: "password-setup", data: templateData }, locale),
+    );
   }
 
   /**
@@ -76,7 +88,11 @@ export class SendTransactionalEmailUseCase {
    * 사라지므로 요청 안에서 한 번만 보내고, 실패는 그대로 돌려줘 사용자가 다시 보내게 한다.
    */
   async sendInquiry(to: string, templateData: InquiryTemplateData): Promise<EmailSendResult> {
-    const message = await this.#compose(to, { kind: "inquiry", data: templateData });
+    const message = await this.#compose(
+      to,
+      { kind: "inquiry", data: templateData },
+      OPERATOR_EMAIL_LOCALE,
+    );
     const reservation = await this.#dependencies.budget.reserve(resolveEmailPriority(message.kind));
     if (reservation === "exhausted") {
       this.#dependencies.logger.warn({
@@ -105,12 +121,17 @@ export class SendTransactionalEmailUseCase {
   }
 
   async sendUserReport(to: string, templateData: UserReportTemplateData): Promise<EmailDispatch> {
-    return this.#dispatch(await this.#compose(to, { kind: "user-report", data: templateData }));
+    return this.#dispatch(
+      await this.#compose(to, { kind: "user-report", data: templateData }, OPERATOR_EMAIL_LOCALE),
+    );
   }
 
-  // 수신자 언어를 받기 전까지 출시 동작대로 모든 메일을 기본 언어(ko)로 렌더한다
-  async #compose(to: string, template: EmailTemplate): Promise<EmailMessage> {
-    const body = await this.#dependencies.renderer.render(template, DEFAULT_LOCALE);
+  async #compose(
+    to: string,
+    template: EmailTemplate,
+    locale: SupportedLocale,
+  ): Promise<EmailMessage> {
+    const body = await this.#dependencies.renderer.render(template, locale);
     return toEmailMessage(to, template, body);
   }
 

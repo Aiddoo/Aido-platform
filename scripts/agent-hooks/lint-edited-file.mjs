@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const TARGET = /^(?:(?:apps|packages)\/api\/src\/.+\.ts|apps\/mobile\/(?:src|app)\/.+\.tsx?)$/;
+const TARGET = /^(?:(?:apps|packages)\/api\/src\/.+\.tsx?|apps\/mobile\/(?:src|app)\/.+\.tsx?)$/;
 
 function readFilePath() {
   try {

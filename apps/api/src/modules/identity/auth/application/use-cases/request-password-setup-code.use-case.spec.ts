@@ -16,11 +16,14 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
     const useCase = new RequestPasswordSetupCodeUseCase(fixture);
 
     // When
-    const result = await useCase.execute({ userId: fixture.user.id });
+    const result = await useCase.execute({ userId: fixture.user.id, emailLocale: "en" });
 
     // Then
     expect(result.message).toBe("비밀번호 설정 코드가 이메일로 발송되었습니다.");
-    expect(fixture.emailSender.getSentEmail(fixture.user.email)?.type).toBe("password-setup");
+    expect(fixture.emailSender.getSentEmail(fixture.user.email)).toMatchObject({
+      type: "password-setup",
+      locale: "en",
+    });
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({ userId: fixture.user.id, type: "PASSWORD_SETUP", usedAt: null }),
     ]);
@@ -54,7 +57,7 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
             : ErrorCode.USER_0614;
 
       // When
-      const pending = useCase.execute({ userId: fixture.user.id });
+      const pending = useCase.execute({ userId: fixture.user.id, emailLocale: "ko" });
 
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode });
@@ -67,11 +70,11 @@ describe("RequestPasswordSetupCode — 소셜 계정의 비밀번호 설정 요�
     // Given
     const fixture = createAuthCredentialFixture({ socialOnly: true });
     const useCase = new RequestPasswordSetupCodeUseCase(fixture);
-    await useCase.execute({ userId: fixture.user.id });
+    await useCase.execute({ userId: fixture.user.id, emailLocale: "ko" });
     const originalCode = fixture.emailSender.getLastCode(fixture.user.email);
 
     // When
-    const pending = useCase.execute({ userId: fixture.user.id });
+    const pending = useCase.execute({ userId: fixture.user.id, emailLocale: "ko" });
 
     // Then
     await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0753 });

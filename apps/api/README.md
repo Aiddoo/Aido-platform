@@ -51,6 +51,7 @@ test/                    # fixtures · doubles · contracts · integration · e2
 | `db:check`         | 마이그레이션 정합성 검사                            |
 | `db:studio`        | Drizzle Studio                                      |
 | `ai:eval`          | 실제 모델 호출 AI 평가 (유료, 승인된 경우만)        |
+| `email:preview`    | 메일 종류×언어 미리보기 HTML·텍스트를 `tmp/`에 쓴다 |
 
 ## API 문서
 

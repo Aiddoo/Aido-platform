@@ -17,13 +17,18 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     const metadata = { ip: "192.0.2.10", userAgent: "재설정 요청 기기" };
 
     // When
-    const result = await useCase.execute({ email: fixture.user.email, metadata });
+    const result = await useCase.execute({
+      email: fixture.user.email,
+      metadata,
+      emailLocale: "en",
+    });
 
     // Then
     expect(result).toEqual({ message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." });
     expect(fixture.emailSender.getSentEmail(fixture.user.email)).toMatchObject({
       type: "password-reset",
       code: "123456",
+      locale: "en",
     });
     expect(fixture.verificationRepository.all).toEqual([
       expect.objectContaining({
@@ -57,7 +62,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
       const useCase = new RequestPasswordResetUseCase(fixture);
 
       // When
-      const result = await useCase.execute({ email: fixture.user.email });
+      const result = await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
 
       // Then
       expect(result).toEqual({
@@ -75,7 +80,7 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     const useCase = new RequestPasswordResetUseCase(fixture);
 
     // When
-    await useCase.execute({ email: fixture.user.email });
+    await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
 
     // Then
     expect(fixture.securityLogRepository.entries).toEqual([

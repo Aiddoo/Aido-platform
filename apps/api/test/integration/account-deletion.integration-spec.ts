@@ -294,6 +294,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,
+      emailLocale: "ko",
     });
 
     await client
@@ -472,7 +473,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       await deleteAccount.execute({ userId, password });
 
       // When
-      const result = await requestPasswordReset.execute({ email });
+      const result = await requestPasswordReset.execute({ email, emailLocale: "ko" });
 
       // Then
       expect(result.message).toBeDefined();

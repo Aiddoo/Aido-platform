@@ -1,4 +1,4 @@
-import { VERIFICATION_CODE } from "@aido/api/vocabulary";
+import { type SupportedLocale, VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
@@ -12,6 +12,7 @@ export interface SendVerificationCodeCommand {
   readonly email: string;
   readonly code: string;
   readonly type: VerificationType;
+  readonly emailLocale: SupportedLocale;
 }
 
 interface SendVerificationCodeDependencies {
@@ -29,11 +30,12 @@ export class SendVerificationCodeUseCase {
 
   async execute(command: SendVerificationCodeCommand): Promise<boolean> {
     const { emailSender, logger } = this.#dependencies;
+    const { email, emailLocale } = command;
     const message = { code: command.code, expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES };
     const dispatch = await match(command.type)
-      .with("EMAIL_VERIFY", () => emailSender.sendVerificationCode(command.email, message))
-      .with("PASSWORD_RESET", () => emailSender.sendPasswordResetCode(command.email, message))
-      .with("PASSWORD_SETUP", () => emailSender.sendPasswordSetupCode(command.email, message))
+      .with("EMAIL_VERIFY", () => emailSender.sendVerificationCode(email, message, emailLocale))
+      .with("PASSWORD_RESET", () => emailSender.sendPasswordResetCode(email, message, emailLocale))
+      .with("PASSWORD_SETUP", () => emailSender.sendPasswordSetupCode(email, message, emailLocale))
       .exhaustive();
 
     if (dispatch.status === "rejected") {

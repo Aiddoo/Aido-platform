@@ -1,5 +1,6 @@
 import type { CurrentUserPayload } from "@aido/api/contracts/auth";
 import { ErrorCode } from "@aido/api/errors";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 import {
   Header,
   Body,
@@ -35,6 +36,7 @@ import {
 import { JwtRefreshGuard } from "#api/modules/identity/auth/presentation/http/guards/jwt-refresh.guard";
 import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
 import { API_VERSION } from "#api/platform/http/api-versioning";
+import { ResponseLocale } from "#api/platform/http/decorators/locale.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -145,10 +147,12 @@ export class AuthController {
   async register(
     @Body({ schema: RegisterDto }) dto: RegisterDto,
     @CurrentRequestSource() source: RequestSource,
+    @ResponseLocale() emailLocale: SupportedLocale,
   ) {
     const result = await this.#registerUseCase.execute({
       ...dto,
       metadata: toRequestMetadata(source),
+      emailLocale,
     });
     return AuthMapper.toRegisterResponse(result);
   }
@@ -230,8 +234,11 @@ export class AuthController {
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
-  async resendVerification(@Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto) {
-    const result = await this.#resendVerificationUseCase.execute({ email: dto.email });
+  async resendVerification(
+    @Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto,
+    @ResponseLocale() emailLocale: SupportedLocale,
+  ) {
+    const result = await this.#resendVerificationUseCase.execute({ email: dto.email, emailLocale });
     return result;
   }
 
@@ -445,10 +452,12 @@ IP당 분당 20회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   async forgotPassword(
     @Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
     @CurrentRequestSource() source: RequestSource,
+    @ResponseLocale() emailLocale: SupportedLocale,
   ) {
     const result = await this.#requestPasswordResetUseCase.execute({
       email: dto.email,
       metadata: toRequestMetadata(source),
+      emailLocale,
     });
     return result;
   }
@@ -537,8 +546,11 @@ IP당 분당 5회까지 호출할 수 있고, 넘으면 429(SYS_0001)입니다.
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
-  async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-    return this.#requestPasswordSetupCodeUseCase.execute({ userId: user.userId });
+  async requestPasswordSetupCode(
+    @CurrentUser() user: CurrentUserPayload,
+    @ResponseLocale() emailLocale: SupportedLocale,
+  ) {
+    return this.#requestPasswordSetupCodeUseCase.execute({ userId: user.userId, emailLocale });
   }
 
   @Post("password")

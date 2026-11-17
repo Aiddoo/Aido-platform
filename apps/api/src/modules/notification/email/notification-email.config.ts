@@ -4,7 +4,7 @@ import { defineConfig } from "#api/platform/config/define-config";
 import { appSchema, resolveAppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { defaultEmailProvider, emailSchema } from "#api/platform/config/schemas/email.schema";
 
-/** 발송 어댑터·발신자. 빈 API 키는 없는 키로 본다(어댑터가 보내기 전에 not_configured로 끝낸다). */
+/** 발송 어댑터·발신자·메일 바닥글의 문의 주소. 빈 API 키는 없는 키로 본다(어댑터가 보내기 전에 not_configured로 끝낸다). */
 export const notificationEmailConfig = defineConfig(
   "notificationEmail",
   appSchema
@@ -15,6 +15,7 @@ export const notificationEmailConfig = defineConfig(
         RESEND_API_KEY: true,
         EMAIL_FROM: true,
         EMAIL_FROM_NAME: true,
+        SUPPORT_EMAIL: true,
       }).shape,
     )
     .transform((env) => {
@@ -25,6 +26,7 @@ export const notificationEmailConfig = defineConfig(
         apiKey,
         from: env.EMAIL_FROM,
         fromName: env.EMAIL_FROM_NAME,
+        supportEmail: env.SUPPORT_EMAIL,
       };
     }),
   (env) => ({
@@ -34,6 +36,7 @@ export const notificationEmailConfig = defineConfig(
     RESEND_API_KEY: env.RESEND_API_KEY,
     EMAIL_FROM: env.EMAIL_FROM,
     EMAIL_FROM_NAME: env.EMAIL_FROM_NAME,
+    SUPPORT_EMAIL: env.SUPPORT_EMAIL,
   }),
 );
 

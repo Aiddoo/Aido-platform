@@ -95,6 +95,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       termsAgreed: true,
       privacyAgreed: true,
       marketingAgreed: false,
+      emailLocale: "ko",
     });
 
     // 이메일 인증
@@ -113,7 +114,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await createCredentialUser(email, "Password123!");
 
       // When
-      const result = await requestPasswordReset.execute({ email });
+      const result = await requestPasswordReset.execute({ email, emailLocale: "ko" });
 
       // Then
       expect(result.message).toBeDefined();
@@ -126,7 +127,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "nonexistent@example.com";
 
       // When
-      const result = await requestPasswordReset.execute({ email });
+      const result = await requestPasswordReset.execute({ email, emailLocale: "ko" });
 
       // Then
       expect(result.message).toBeDefined();
@@ -142,7 +143,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const originalPassword = "Password123!";
       await createCredentialUser(email, originalPassword);
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -164,7 +165,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const newPassword = "NewPassword456!";
       await createCredentialUser(email, originalPassword);
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
       await resetPassword.execute({ email, code, newPassword });
 
@@ -186,7 +187,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const newPassword = "NewPassword456!";
       await createCredentialUser(email, originalPassword);
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
       await resetPassword.execute({ email, code, newPassword });
 
@@ -205,7 +206,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await loginWithPassword.execute({ email, password: originalPassword });
       await loginWithPassword.execute({ email, password: originalPassword });
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -230,7 +231,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "reset-seclog@example.com";
       await createCredentialUser(email, "Password123!");
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -266,7 +267,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await createSocialOnlyUser(email);
 
       // forgotPassword는 보안상 동일 응답 (에러 없음)
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -282,7 +283,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "reset-wrong-code@example.com";
       await createCredentialUser(email, "Password123!");
 
-      await requestPasswordReset.execute({ email });
+      await requestPasswordReset.execute({ email, emailLocale: "ko" });
 
       // When
       const result = resetPassword.execute({

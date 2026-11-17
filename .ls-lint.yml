@@ -16,6 +16,9 @@ ls:
     .*.*.ts: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
     .*.*.*.*.ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
     .d.ts: kebab-case
     .aggregate.ts: kebab-case
     .aggregate.spec.ts: kebab-case
@@ -134,6 +137,24 @@ ls:
     .config.ts: kebab-case
     .config.spec.ts: kebab-case
     .config.integration-spec.ts: kebab-case
+
+  # 서버에서 .tsx는 메일 템플릿(React Email) 폴더에만 둔다. 메일은 <이름>.email.tsx, 공용 부품은 접미사 없는 .tsx,
+  # @nestjs/mail 메일 클래스는 .mail.ts다
+  apps/api/src/modules/notification/email/infrastructure/templates:
+    .dir: kebab-case
+    .gitkeep: regex:[^\s\S]
+    .ts: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+    .tsx: kebab-case
+    .*.tsx: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .email.tsx: kebab-case
+    .mail.ts: kebab-case
+    .mail.spec.ts: kebab-case
+    .constants.ts: kebab-case
+    .messages.ts: kebab-case
 
   packages/api/src:
     .gitkeep: regex:[^\s\S]

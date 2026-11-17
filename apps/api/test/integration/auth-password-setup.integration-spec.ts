@@ -85,7 +85,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const userId = await createSocialOnlyUser(email);
 
       // When
-      const result = await requestPasswordSetupCode.execute({ userId });
+      const result = await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
 
       // Then
       expect(result.message).toBeDefined();
@@ -98,13 +98,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "already-has-pw@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When
-      const result = requestPasswordSetupCode.execute({ userId });
+      const result = requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
 
       // Then
       await expect(result).rejects.toThrow(ApplicationException);
@@ -117,7 +117,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "set-pw-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -138,7 +138,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "seclog-pw-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       // When
@@ -167,7 +167,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const password = "NewPassword1";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       await setPassword.execute({ userId, code, newPassword: password });
@@ -185,7 +185,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "wrong-code-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
 
       // When
       const result = setPassword.execute({ userId, code: "000000", newPassword: "NewPassword1" });
@@ -199,13 +199,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "duplicate-setup@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When
-      const result = requestPasswordSetupCode.execute({ userId });
+      const result = requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
 
       // Then
       await expect(result).rejects.toThrow(ApplicationException);
@@ -216,7 +216,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "keep-social@example.com";
       const userId = await createSocialOnlyUser(email, "KAKAO");
 
-      await requestPasswordSetupCode.execute({ userId });
+      await requestPasswordSetupCode.execute({ userId, emailLocale: "ko" });
       const code = getCode(email);
 
       // When

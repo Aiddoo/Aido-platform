@@ -49,13 +49,17 @@
   },
   "overrides": [
     {
-      "files": ["apps/api/**/*.ts"],
+      "files": ["apps/api/**/*.{ts,tsx}"],
       "rules": {
         "typescript/consistent-type-imports": "off"
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts", "apps/api/test/**/*.ts", "apps/api/scripts/**/*.ts"],
+      "files": ["apps/api/src/modules/notification/email/infrastructure/templates/**/*.tsx"],
+      "plugins": ["react"]
+    },
+    {
+      "files": ["apps/api/src/**/*.{ts,tsx}", "apps/api/test/**/*.ts", "apps/api/scripts/**/*.ts"],
       "rules": {
         "aido/no-member-accessibility": "error",
         "no-restricted-imports": [
@@ -86,7 +90,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts", "packages/*/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}", "packages/*/src/**/*.ts"],
       "rules": {
         "no-restricted-properties": [
           "error",
@@ -103,7 +107,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts", "packages/*/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}", "packages/*/src/**/*.ts"],
       "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
       "rules": {
         "aido/time-constant-unit": "error"
@@ -131,7 +135,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": ["apps/api/src/**/*.spec.ts"],
       "rules": {
         "aido/logger-event-constant": [
@@ -145,7 +149,7 @@
     },
     {
       "files": [
-        "apps/api/src/**/*.ts",
+        "apps/api/src/**/*.{ts,tsx}",
         "apps/api/test/**/*.ts",
         "apps/api/scripts/**/*.ts",
         "packages/api/src/**/*.ts",
@@ -169,7 +173,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": ["**/*.errors.ts", "**/*.spec.ts", "**/*.integration-spec.ts"],
       "rules": {
         "aido/no-inline-coded-exception": "error"
@@ -204,7 +208,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "apps/api/src/platform/config/env.ts",
         "apps/api/src/**/*.config.ts",
@@ -215,7 +219,7 @@
       }
     },
     {
-      "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
+      "files": ["apps/api/**/*.{ts,tsx}", "packages/api/**/*.ts"],
       "rules": {
         "unicorn/filename-case": [
           "error",
@@ -354,7 +358,7 @@
       }
     },
     {
-      "files": ["apps/api/**/*.ts"],
+      "files": ["apps/api/**/*.{ts,tsx}"],
       "rules": {
         "typescript/parameter-properties": [
           "error",
@@ -365,7 +369,7 @@
       }
     },
     {
-      "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
+      "files": ["apps/api/**/*.{ts,tsx}", "packages/api/**/*.ts"],
       "rules": {
         "unicorn/numeric-separators-style": [
           "error",
@@ -388,7 +392,7 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.ts"],
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "apps/api/src/**/*.public.ts",
         "apps/api/src/platform/database/schema/index.ts",

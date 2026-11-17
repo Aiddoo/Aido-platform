@@ -1,4 +1,9 @@
-import type { DeviceType, SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
+import type {
+  DeviceType,
+  SubscriptionStatus,
+  SupportedLocale,
+  UserRole,
+} from "@aido/api/vocabulary";
 import type { PremiumSource, SubscriptionPlanType } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -55,18 +60,22 @@ export type AuthEmailDispatch =
   | { readonly status: "queued" }
   | { readonly status: "rejected"; readonly reason: string };
 
+/** 코드 메일은 받는 사람의 언어(locale)로 쓴다. */
 export abstract class AuthEmailSenderPort {
   abstract sendVerificationCode(
     to: string,
     data: { code: string; expiryMinutes: number },
+    locale: SupportedLocale,
   ): Promise<AuthEmailDispatch>;
   abstract sendPasswordResetCode(
     to: string,
     data: { code: string; expiryMinutes: number },
+    locale: SupportedLocale,
   ): Promise<AuthEmailDispatch>;
   abstract sendPasswordSetupCode(
     to: string,
     data: { code: string; expiryMinutes: number },
+    locale: SupportedLocale,
   ): Promise<AuthEmailDispatch>;
 }
 
