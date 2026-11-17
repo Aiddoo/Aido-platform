@@ -1,23 +1,14 @@
 import { userRoleSchema } from "@aido/api/contracts/auth/v1";
-import {
-  type CanActivate,
-  type ExecutionContext,
-  HttpException,
-  Inject,
-  Injectable,
-} from "@nestjs/common";
-import type { ConfigType } from "@nestjs/config";
+import { type CanActivate, type ExecutionContext, HttpException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { JwtService } from "@nestjs/jwt";
 import { z } from "zod";
 
-import { jwtConfig } from "#api/platform/config/jwt.config";
 import type { HttpRequest } from "#api/platform/http/http-request";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
+import { TokenVerifierPort } from "../../../application/ports/token-verifier.port.js";
 import { invalidAccessToken } from "../../../application/sessions.errors.js";
 import { AuthenticateSessionUseCase } from "../../../application/use-cases/authenticate-session.use-case.js";
-import { JWT_VERIFY_OPTIONS } from "../../../infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { Public } from "../decorators/public.decorator.js";
 import { readBearerToken } from "../v1/request-metadata.mapper.js";
 
@@ -35,19 +26,16 @@ const accessTokenClaimsSchema = z.looseObject({
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   readonly #reflector: Reflector;
-  readonly #jwtService: JwtService;
-  readonly #jwt: ConfigType<typeof jwtConfig>;
+  readonly #tokenVerifier: TokenVerifierPort;
   readonly #authenticateSession: AuthenticateSessionUseCase;
 
   constructor(
     reflector: Reflector,
-    jwtService: JwtService,
-    @Inject(jwtConfig.KEY) jwt: ConfigType<typeof jwtConfig>,
+    tokenVerifier: TokenVerifierPort,
     authenticateSession: AuthenticateSessionUseCase,
   ) {
     this.#reflector = reflector;
-    this.#jwtService = jwtService;
-    this.#jwt = jwt;
+    this.#tokenVerifier = tokenVerifier;
     this.#authenticateSession = authenticateSession;
   }
 
@@ -79,20 +67,13 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
-  // 서명·알고리즘·발급자·대상·만료가 하나라도 틀리면 이유를 가리지 않고 null이다(Passport 시절의 fail과 같다)
   async #verify(token: string | null): Promise<z.infer<typeof accessTokenClaimsSchema> | null> {
     if (token == null) {
       return null;
     }
-    try {
-      const payload: unknown = await this.#jwtService.verifyAsync(token, {
-        ...JWT_VERIFY_OPTIONS,
-        secret: this.#jwt.secret,
-      });
-      const parsed = accessTokenClaimsSchema.safeParse(payload);
-      return parsed.success ? parsed.data : null;
-    } catch {
-      return null;
-    }
+    const parsed = accessTokenClaimsSchema.safeParse(
+      await this.#tokenVerifier.verifyAccessToken(token),
+    );
+    return parsed.success ? parsed.data : null;
   }
 }

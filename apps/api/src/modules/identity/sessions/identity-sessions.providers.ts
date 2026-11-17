@@ -23,6 +23,7 @@ import { SessionCachePort } from "./application/ports/session-cache.port.js";
 import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "./application/ports/session.repository.port.js";
 import { TokenIssuerPort } from "./application/ports/token-issuer.port.js";
+import { TokenVerifierPort } from "./application/ports/token-verifier.port.js";
 import { AuthenticateSessionUseCase } from "./application/use-cases/authenticate-session.use-case.js";
 import { CreateSessionUseCase } from "./application/use-cases/create-session.use-case.js";
 import { IssueLoginUseCase } from "./application/use-cases/issue-login.use-case.js";
@@ -36,6 +37,7 @@ import { RefreshTokensUseCase } from "./application/use-cases/refresh-tokens.use
 import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use-case.js";
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
+import { JwtTokenVerifierAdapter } from "./infrastructure/adapters/jwt-token-verifier.adapter.js";
 import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 
 export const createSessionProvider = provideUseCase(CreateSessionUseCase, {
@@ -155,6 +157,7 @@ const revokeSessionProvider = provideUseCase(RevokeSessionUseCase, {
 
 export const IDENTITY_SESSIONS_PROVIDERS = [
   { provide: TokenIssuerPort, useClass: JwtTokenIssuerAdapter },
+  { provide: TokenVerifierPort, useClass: JwtTokenVerifierAdapter },
   // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
   { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   createSessionProvider,

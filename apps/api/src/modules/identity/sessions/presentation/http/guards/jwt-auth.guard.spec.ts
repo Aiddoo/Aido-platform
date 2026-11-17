@@ -8,6 +8,7 @@ import { omit } from "es-toolkit";
 import { AuthenticateSessionUseCase } from "#api/modules/identity/sessions/application/use-cases/authenticate-session.use-case";
 import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/jwt-token-issuer.adapter";
+import { JwtTokenVerifierAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/jwt-token-verifier.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -41,6 +42,8 @@ const ACCESS_CLAIMS = {
   iss: "aido-api",
   aud: "aido-app",
 };
+const tokenVerifier = new JwtTokenVerifierAdapter(new JwtService(), JWT);
+
 const REFRESH_CLAIMS = {
   ...ACCESS_CLAIMS,
   type: "refresh",
@@ -85,7 +88,7 @@ function createAccessGuard(
     clock: new FixedClock(Temporal.Now.instant()),
     logger: new SilentLogger(),
   });
-  return new JwtAuthGuard(new Reflector(), new JwtService(), JWT, authenticateSession);
+  return new JwtAuthGuard(new Reflector(), tokenVerifier, authenticateSession);
 }
 
 async function activate(guard: JwtAuthGuard | JwtRefreshGuard, request: TestRequest) {
@@ -254,7 +257,7 @@ describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
     const access = await activate(validSessionGuard(), {
       headers: { authorization: `Bearer ${accessToken}` },
     });
-    const refresh = await activate(new JwtRefreshGuard(new JwtService(), JWT), {
+    const refresh = await activate(new JwtRefreshGuard(tokenVerifier), {
       headers: { authorization: `Bearer ${refreshToken}` },
     });
 
@@ -292,7 +295,7 @@ describe("JwtAuthGuard — access 토큰 검증(Passport 대체)", () => {
 });
 
 describe("JwtRefreshGuard — refresh 토큰 검증(Passport 대체)", () => {
-  const guard = new JwtRefreshGuard(new JwtService(), JWT);
+  const guard = new JwtRefreshGuard(tokenVerifier);
 
   it("발급자·대상이 맞는 refresh 토큰을 받아 원본 토큰과 함께 req.user에 둔다", async () => {
     // Given
