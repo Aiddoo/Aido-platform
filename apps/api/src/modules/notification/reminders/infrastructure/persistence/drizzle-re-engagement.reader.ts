@@ -1,12 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 
 import {
   userDeliveryPreference,
   userReminderPreference,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import {
+  userLastActivityOf,
   userProfileNameOf,
   userRecipients,
 } from "#api/modules/identity/users/identity-users.public";
@@ -15,6 +16,7 @@ import {
   hasTodoBetween,
   todoCompletionsBetween,
 } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { acceptedFriendshipsOf } from "#api/modules/social/friendships/social-friendships.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 
@@ -135,29 +137,49 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollowReadModel[]> {
     const { candidateIds, activeSince, activeUntil } = params;
-    const activeWindow = {
-      lastActiveAt: { gte: activeSince, lte: activeUntil },
-    };
-    const rows = await this.#db.query.friendship.findMany({
-      columns: { followerId: true, followingId: true },
-      where: {
-        OR: [
-          { followerId: { in: candidateIds }, status: "ACCEPTED", following: activeWindow },
-          { followingId: { in: candidateIds }, status: "ACCEPTED", follower: activeWindow },
-        ],
+    const pairs = acceptedFriendshipsOf(candidateIds);
+    const follower = userLastActivityOf(pairs.followerId, "follower_activity");
+    const following = userLastActivityOf(pairs.followingId, "following_activity");
+    const followerProfile = userProfileNameOf(pairs.followerId, "follower_profile");
+    const followingProfile = userProfileNameOf(pairs.followingId, "following_profile");
+    const activeWithin = (lastActiveAt: typeof follower.lastActiveAt) =>
+      and(gte(lastActiveAt, activeSince), lte(lastActiveAt, activeUntil));
+    const rows = await this.#db
+      .select({
+        followerId: pairs.followerId,
+        followingId: pairs.followingId,
+        followerLastActiveAt: follower.lastActiveAt,
+        followingLastActiveAt: following.lastActiveAt,
+        followerProfileUserId: followerProfile.userId,
+        followerName: followerProfile.name,
+        followingProfileUserId: followingProfile.userId,
+        followingName: followingProfile.name,
+      })
+      .from(pairs)
+      .innerJoinLateral(follower, sql`true`)
+      .innerJoinLateral(following, sql`true`)
+      .leftJoinLateral(followerProfile, sql`true`)
+      .leftJoinLateral(followingProfile, sql`true`)
+      .where(
+        or(
+          and(inArray(pairs.followerId, candidateIds), activeWithin(following.lastActiveAt)),
+          and(inArray(pairs.followingId, candidateIds), activeWithin(follower.lastActiveAt)),
+        ),
+      );
+    return rows.map((row) => ({
+      followerId: row.followerId,
+      followingId: row.followingId,
+      follower: {
+        id: row.followerId,
+        lastActiveAt: row.followerLastActiveAt,
+        profile: row.followerProfileUserId == null ? null : { name: row.followerName },
       },
-      with: {
-        follower: {
-          columns: { id: true, lastActiveAt: true },
-          with: { profile: { columns: { name: true } } },
-        },
-        following: {
-          columns: { id: true, lastActiveAt: true },
-          with: { profile: { columns: { name: true } } },
-        },
+      following: {
+        id: row.followingId,
+        lastActiveAt: row.followingLastActiveAt,
+        profile: row.followingProfileUserId == null ? null : { name: row.followingName },
       },
-    });
-    return rows;
+    }));
   }
 
   async findSocialDigestCandidates(
@@ -183,15 +205,10 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
   }
 
   findAcceptedFollows(candidateIds: string[]): Promise<FollowPairReadModel[]> {
-    return this.#db.query.friendship.findMany({
-      columns: { followerId: true, followingId: true },
-      where: {
-        OR: [
-          { followerId: { in: candidateIds }, status: "ACCEPTED" },
-          { followingId: { in: candidateIds }, status: "ACCEPTED" },
-        ],
-      },
-    });
+    const pairs = acceptedFriendshipsOf(candidateIds);
+    return this.#db
+      .select({ followerId: pairs.followerId, followingId: pairs.followingId })
+      .from(pairs);
   }
 
   async findFriendsWithTodayTodos(params: {

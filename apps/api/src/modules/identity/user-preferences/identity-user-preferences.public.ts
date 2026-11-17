@@ -35,5 +35,6 @@ export {
   userMarketingPushConsent,
 } from "./infrastructure/persistence/user-delivery-settings.query-fragment.js";
 export { userReminderPreference } from "./infrastructure/persistence/user-reminder-preference.query-fragment.js";
+export { userWeatherPreference } from "./infrastructure/persistence/user-weather-preference.query-fragment.js";
 export { TimezoneSelfHealInterceptor } from "./presentation/http/interceptors/timezone-self-heal.interceptor.js";
 export { IdentityUserPreferencesModule } from "./identity-user-preferences.module.js";

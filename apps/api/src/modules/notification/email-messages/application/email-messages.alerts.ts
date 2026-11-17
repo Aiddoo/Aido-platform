@@ -8,6 +8,13 @@ export const EmailMessageAlerts = defineAlerts("notification", {
     runbook:
       "최근 암호화 키 교체나 롤백이 있었는지 본다. 버린 인증·문의 메일은 사용자가 다시 요청해야 한다.",
   },
+  DELIVERY_MESSAGE_INVALID: {
+    key: "notification.email.delivery-message.invalid",
+    severity: "error",
+    summary: "발송 큐의 이메일을 풀었지만 메시지 규칙(종류·받는 사람·제목)을 어겨 버렸다",
+    runbook:
+      "키 문제가 아니다. 큐에 넣는 쪽 코드(EmailMessage 생성)나 메일 종류 목록이 최근 바뀌었는지 본다. 버린 메일은 사용자가 다시 요청해야 한다.",
+  },
   CIRCUIT_OPEN: {
     key: "notification.email.circuit.opened",
     severity: "error",

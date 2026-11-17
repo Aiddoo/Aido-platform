@@ -36,6 +36,7 @@ export {
 export { userLastActivity } from "./infrastructure/persistence/user-activity.query-fragment.js";
 export {
   type UserRecipients,
+  userLastActivityOf,
   userProfileNameOf,
   userRecipients,
 } from "./infrastructure/persistence/user-recipient.query-fragment.js";

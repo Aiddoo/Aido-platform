@@ -56,15 +56,31 @@ export class EmailDeliveryQueueProcessor implements OnModuleInit {
     });
   }
 
-  /** 암호화 키가 바뀌었거나 형식이 깨진 잡은 다시 시도해도 풀리지 않아 null로 버린다. */
+  /** 암호화 키가 바뀌었거나 형식이 깨진 잡, 메시지 규칙을 어긴 잡은 다시 시도해도 풀리지 않아 null로 버린다. */
   #unseal(job: EmailDeliveryJob): EmailMessage | null {
+    const sealed = this.#decrypt(job);
+    if (sealed == null) {
+      return null;
+    }
     try {
-      const sealed = SealedEmailSchema.parse(JSON.parse(this.#encryption.decrypt(job.sealed)));
       return EmailMessage.create({
         ...sealed,
         id: EmailMessageId.reconstitute(job.deliveryId),
         kind: job.kind,
       });
+    } catch (error) {
+      // 복호화는 됐으니 키 문제가 아니다. 키 교체 경보와 나눠 넣는 쪽 코드를 보게 한다
+      this.#alert.raise({
+        ...EmailMessageAlerts.DELIVERY_MESSAGE_INVALID,
+        details: { kind: job.kind, errorType: toErrorType(error) },
+      });
+      return null;
+    }
+  }
+
+  #decrypt(job: EmailDeliveryJob) {
+    try {
+      return SealedEmailSchema.parse(JSON.parse(this.#encryption.decrypt(job.sealed)));
     } catch (error) {
       // 인증·문의 메일이 말없이 사라지므로 사람이 보게 한다. 키 교체나 롤백이 원인일 때가 많다.
       this.#alert.raise({

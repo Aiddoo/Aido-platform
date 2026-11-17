@@ -93,6 +93,27 @@ describe("EmailDeliveryQueueProcessor", () => {
     ]);
   });
 
+  it("풀었지만 메시지 규칙을 어긴 잡은 키 교체 경보가 아니라 메시지 규칙 경보로 버린다", async () => {
+    // Given
+    const job = await sealedJob();
+    // 받는 사람이 빈 메일을 같은 키로 봉인했다(큐에 넣는 쪽 코드가 어긋난 경우)
+    const broken = encryption.encrypt(
+      JSON.stringify({ ...JSON.parse(encryption.decrypt(job.sealed)), to: " " }),
+    );
+
+    // When
+    await processor.process(1, { ...job, sealed: broken });
+
+    // Then
+    expect(deliverEmail.inputs).toEqual([]);
+    expect(alert.alerts).toEqual([
+      expect.objectContaining({
+        key: "notification.email.delivery-message.invalid",
+        details: expect.objectContaining({ kind: "verification" }),
+      }),
+    ]);
+  });
+
   it("시작하면 email-delivery.v1 worker를 등록해 담긴 잡을 처리한다", async () => {
     // Given
     await processor.onModuleInit();
