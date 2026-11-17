@@ -119,8 +119,28 @@ tester.run('port-id-value-object', rules['port-id-value-object'], {
       code: 'export class InMemoryMemoRepository { find(memoId: number) {} }',
       filename: PORT_FILENAME,
     },
+    {
+      code: `export interface PublishedDomainEvent { readonly eventId: string }
+export abstract class DomainEventPublisherPort { abstract publish(events: readonly PublishedDomainEvent[]): Promise<void>; }`,
+      filename: PORT_FILENAME,
+      options: [{ technicalIds: ['eventId'] }],
+    },
   ],
   invalid: [
+    {
+      code: `export interface PublishedDomainEvent { readonly eventId: string; readonly userId: string }
+export abstract class DomainEventPublisherPort { abstract publish(events: readonly PublishedDomainEvent[]): Promise<void>; }`,
+      filename: PORT_FILENAME,
+      options: [{ technicalIds: ['eventId'] }],
+      errors: [{ message: /userId: 포트의 식별자는 원시값\(string\)/ }],
+    },
+    {
+      code: 'export abstract class EmailSenderPort { abstract send(message: Email): Promise<{ readonly providerMessageId: string }>; }',
+      filename: PORT_FILENAME,
+      errors: [
+        { message: /providerMessageId: .*공급자가 준 id도 slice domain의 공급자 이름 없는 VO/ },
+      ],
+    },
     {
       code: 'export abstract class MemoRepositoryPort { abstract findById(memoId: number): Promise<Memo | null>; }',
       filename: PORT_FILENAME,

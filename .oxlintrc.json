@@ -212,6 +212,12 @@
       }
     },
     {
+      "files": ["apps/api/src/shared/application/ports/domain-event-publisher.port.ts"],
+      "rules": {
+        "aido/port-id-value-object": ["off", { "technicalIds": ["eventId"] }]
+      }
+    },
+    {
       "files": ["apps/api/src/**/*.use-case.ts"],
       "rules": {
         "aido/use-case-single-execute": "off"

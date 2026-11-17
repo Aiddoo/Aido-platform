@@ -312,10 +312,21 @@ function getParameterTarget(parameter) {
   return parameter;
 }
 
-// 포트는 Aggregate·UseCase와 같은 말(id VO)로 말한다. 원시 id는 다른 Aggregate의 id와 섞여도 컴파일러가 못 막는다
+// 포트는 Aggregate·UseCase와 같은 말(id VO)로 말한다. 원시 id는 다른 Aggregate의 id와 섞여도 컴파일러가 못 막는다.
+// 공급자가 준 id도 같다. technicalIds는 어느 Aggregate도 소유하지 않는 전달 봉투 id(이벤트 id)에만 파일 단위로 준다
 const portIdValueObject = {
-  meta: { type: 'suggestion' },
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: { technicalIds: { type: 'array', items: { type: 'string' } } },
+        additionalProperties: false,
+      },
+    ],
+  },
   create(context) {
+    const technicalIds = new Set(context.options[0]?.technicalIds ?? []);
     let localTypes = new Map();
     let reported = new Set();
 
@@ -326,11 +337,14 @@ const portIdValueObject = {
       reported.add(node);
       context.report({
         node,
-        message: `${name}: 포트의 식별자는 원시값(${raw})이 아니라 id VO(UserId·TodoId…)로 주고받는다. 원시값은 presentation 경계에서 VO로 바꾼다.`,
+        message: `${name}: 포트의 식별자는 원시값(${raw})이 아니라 id VO(UserId·TodoId…)로 주고받는다. 공급자가 준 id도 slice domain의 공급자 이름 없는 VO(PushTicketId·StoreCustomerId)로 감싼다. 원시값은 presentation·어댑터 경계에서 VO로 바꾼다.`,
       });
     }
 
     function visitField(node, name, type) {
+      if (technicalIds.has(name)) {
+        return;
+      }
       const raw = describeRawIdentifierField(name, type);
       if (raw != null) {
         report(node, name, raw);
