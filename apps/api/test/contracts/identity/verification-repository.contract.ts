@@ -99,7 +99,7 @@ export function describeVerificationRepositoryContract(
       expect(found?.id.value).toBe(latest.id.value);
     });
 
-    it("최근 발급 시각은 since와 같거나 뒤에 만든 같은 종류 코드 중 가장 늦은 것이다", async () => {
+    it("최근 발급 시각은 since 뒤에 만든 같은 종류 코드 중 가장 늦은 것이다(since와 같은 순간은 넣지 않는다)", async () => {
       // Given
       const repository = await createRepository();
       await saveVerification(repository, { createdAt: AUTH_FIXTURE_NOW.subtract({ seconds: 1 }) });
@@ -116,15 +116,15 @@ export function describeVerificationRepositoryContract(
         "PASSWORD_RESET",
         AUTH_FIXTURE_NOW,
       );
-      const noneSince = await repository.findLatestIssuedAtByUserIdAndType(
+      const issuedExactlyAtSince = await repository.findLatestIssuedAtByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
-        LATER.add({ seconds: 1 }),
+        LATER,
       );
 
       // Then
       expect(issuedAt).toEqual(LATER);
-      expect(noneSince).toBeNull();
+      expect(issuedExactlyAtSince).toBeNull();
     });
 
     it("무효화는 남은 같은 종류 코드의 만료를 지금으로 당기고 그 수를 준다", async () => {
@@ -223,7 +223,7 @@ export function describeVerificationRepositoryContract(
       const afterConsume = await repository.findLatestIssuedAtByUserIdAndType(
         UserId.reconstitute(AUTH_FIXTURE_USER_ID),
         "PASSWORD_RESET",
-        AUTH_FIXTURE_NOW,
+        AUTH_FIXTURE_NOW.subtract({ seconds: 1 }),
       );
 
       // Then

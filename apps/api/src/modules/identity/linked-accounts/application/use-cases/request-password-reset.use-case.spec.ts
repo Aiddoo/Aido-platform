@@ -146,14 +146,14 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     });
   });
 
-  it("가입한 이메일이 정확히 60초 뒤 다시 요청해도 없는 이메일과 같은 성공 응답이고 메일은 보내지 않는다", async () => {
+  it("가입한 이메일이 정확히 60초 뒤 다시 요청하면 새 코드를 보내고 응답은 없는 이메일과 같다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();
-    const clock = new FixedClock(AUTH_CREDENTIAL_NOW);
-    const useCase = new RequestPasswordResetUseCase({ ...fixture, clock });
+    const useCase = new RequestPasswordResetUseCase(fixture);
     await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
     await useCase.execute({ email: "nobody@example.com", emailLocale: "ko" });
-    clock.advanceBy({ seconds: 60 });
+    fixture.clock.advanceBy({ seconds: 60 });
+    fixture.emailSender.clear();
 
     // When
     const known = await useCase.execute({ email: fixture.user.email, emailLocale: "ko" });
@@ -161,7 +161,8 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
 
     // Then
     expect(known).toEqual(unknown);
-    expect(fixture.verificationRepository.all).toHaveLength(1);
+    expect(fixture.verificationRepository.all).toHaveLength(2);
+    expect(fixture.emailSender.hasSentTo(fixture.user.email)).toBe(true);
   });
 
   it("이메일 대기가 캐시에서 사라져도 가입한 이메일은 없는 이메일과 같은 성공 응답이다", async () => {

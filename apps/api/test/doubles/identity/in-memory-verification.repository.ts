@@ -64,7 +64,7 @@ export class InMemoryVerificationRepository extends VerificationRepositoryPort {
         (verification) =>
           verification.userId === userId.value &&
           verification.type === type &&
-          Temporal.Instant.compare(verification.createdAt, since) >= 0,
+          Temporal.Instant.compare(verification.createdAt, since) > 0,
       )
       .map((verification) => verification.createdAt)
       .toSorted((left, right) => Temporal.Instant.compare(right, left));

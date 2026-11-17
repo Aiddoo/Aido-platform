@@ -60,7 +60,7 @@ export class DrizzleVerificationRepository extends VerificationRepositoryPort {
   ): Promise<Temporal.Instant | null> {
     const row = await this.#db.query.verification.findFirst({
       columns: { createdAt: true },
-      where: { userId: userId.value, type, createdAt: { gte: since } },
+      where: { userId: userId.value, type, createdAt: { gt: since } },
       orderBy: { createdAt: "desc" },
     });
     return row?.createdAt ?? null;

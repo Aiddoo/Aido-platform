@@ -12,7 +12,7 @@ export abstract class VerificationRepositoryPort {
     type: VerificationType,
     now: Temporal.Instant,
   ): Promise<Verification | null>;
-  /** since와 같거나 뒤에 만든 같은 종류 코드 중 가장 최근 발급 시각. 없으면 null */
+  /** since 뒤에 만든 같은 종류 코드 중 가장 최근 발급 시각. 발급 60초 정각부터는 다시 보낼 수 있다(isExpiredAt과 같은 경계). 없으면 null */
   abstract findLatestIssuedAtByUserIdAndType(
     userId: UserId,
     type: VerificationType,

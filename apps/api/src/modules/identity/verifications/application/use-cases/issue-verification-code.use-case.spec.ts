@@ -37,7 +37,7 @@ describe("IssueVerificationCode — 재발송 대기와 이전 코드 만료", (
     { secondsAgo: 0, remainingSeconds: 60 },
     { secondsAgo: 20.5, remainingSeconds: 40 },
     { secondsAgo: 59, remainingSeconds: 1 },
-    { secondsAgo: 60, remainingSeconds: 1 },
+    { secondsAgo: 59.999, remainingSeconds: 1 },
   ])(
     "같은 종류 코드를 $secondsAgo초 전에 발급했으면 VERIFY_0753과 남은 $remainingSeconds초로 거부하고 이전 코드를 그대로 둔다",
     async ({ secondsAgo, remainingSeconds }) => {
@@ -83,26 +83,29 @@ describe("IssueVerificationCode — 재발송 대기와 이전 코드 만료", (
     });
   });
 
-  it("61초 전에 발급한 같은 종류 코드는 지금 만료시키고 새 코드를 발급한다", async () => {
-    // Given
-    const previous = issuedSecondsAgo(61);
-    const fixture = given([previous]);
+  it.each([60, 61])(
+    "%i초 전에 발급한 같은 종류 코드는 지금 만료시키고 새 코드를 발급한다",
+    async (secondsAgo) => {
+      // Given
+      const previous = issuedSecondsAgo(secondsAgo);
+      const fixture = given([previous]);
 
-    // When
-    const issued = await fixture.useCase.execute({
-      userId: AUTH_FIXTURE_USER_ID,
-      type: "EMAIL_VERIFY",
-    });
+      // When
+      const issued = await fixture.useCase.execute({
+        userId: AUTH_FIXTURE_USER_ID,
+        type: "EMAIL_VERIFY",
+      });
 
-    // Then
-    expect(fixture.verificationRepository.all).toEqual([
-      { ...previous.toPrimitives(), expiresAt: AUTH_FIXTURE_NOW },
-      expect.objectContaining({
-        id: 2,
-        tokenHash: fixture.verificationCodeSecurity.hash(issued.code),
-      }),
-    ]);
-  });
+      // Then
+      expect(fixture.verificationRepository.all).toEqual([
+        { ...previous.toPrimitives(), expiresAt: AUTH_FIXTURE_NOW },
+        expect.objectContaining({
+          id: 2,
+          tokenHash: fixture.verificationCodeSecurity.hash(issued.code),
+        }),
+      ]);
+    },
+  );
 
   it("다른 종류·다른 사용자의 코드는 방금 발급했어도 막거나 만료시키지 않는다", async () => {
     // Given
