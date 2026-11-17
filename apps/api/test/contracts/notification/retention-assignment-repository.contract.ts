@@ -1,10 +1,15 @@
 import type { RetentionAssignmentRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention-assignment.repository.port";
 import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
+import { RetentionD7Result } from "#api/modules/notification/retention-assignments/domain/retention-d7-result.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
+import {
+  activateRetentionAssignment,
+  enrollRetentionAssignment,
+  retentionAssignmentOf,
+} from "#test/fixtures/notification/retention-assignment.fixture";
 
-interface RetentionD7Result {
+interface StoredD7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
   readonly measuredAt: Temporal.Instant;
@@ -16,7 +21,7 @@ export interface RetentionRepositoryContractSubject {
     readonly timezone: string;
     readonly locale: SupportedLocale;
   }): Promise<string>;
-  d7ResultOf(assignmentId: string): Promise<RetentionD7Result | null>;
+  d7ResultOf(assignmentId: string): Promise<StoredD7Result | null>;
 }
 
 // 서울 09:00에 시작한 사용자. D0는 2시간 뒤, D1은 다음 날 10:30부터 결정할 때가 된다
@@ -61,18 +66,19 @@ export function describeRetentionAssignmentRepositoryContract(
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "en" });
 
       // When
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      const first = await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "TREATMENT",
         startedAt: STARTED_AT,
       });
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      const again = await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "CONTROL",
         startedAt: STARTED_AT,
       });
 
       // Then
+      expect([first, again]).toEqual([true, false]);
       const stages = await dueStagesOf(repository);
       expect(stageNamesOf(stages)).toEqual(["D0", "D1", "D3", "D7"]);
       expect(new Set(stages.map(({ assignmentId }) => assignmentId)).size).toBe(1);
@@ -92,17 +98,17 @@ export function describeRetentionAssignmentRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const unknownUserId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "CONTROL",
         startedAt: null,
       });
       const beforeActivation = await dueStagesOf(repository);
 
       // When
-      const first = await repository.activate(UserId.reconstitute(userId), STARTED_AT);
-      const second = await repository.activate(UserId.reconstitute(userId), ALL_DUE_AT);
-      const notEnrolled = await repository.activate(UserId.reconstitute(unknownUserId), STARTED_AT);
+      const first = await activateRetentionAssignment(repository, userId, STARTED_AT);
+      const second = await activateRetentionAssignment(repository, userId, ALL_DUE_AT);
+      const notEnrolled = await activateRetentionAssignment(repository, unknownUserId, STARTED_AT);
 
       // Then
       expect(beforeActivation).toEqual([]);
@@ -112,12 +118,35 @@ export function describeRetentionAssignmentRepositoryContract(
       expect(stages.every((stage) => stage.startedAt.equals(STARTED_AT))).toBe(true);
     });
 
+    it("시작 전으로 배정된 사용자를 시작 시각과 함께 다시 등록해도 시작하지 않는다", async () => {
+      // Given
+      const { repository, givenUser } = await createSubject();
+      const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
+        variant: "TREATMENT",
+        startedAt: null,
+      });
+
+      // When
+      const enrolledAgain = await enrollRetentionAssignment(repository, {
+        userId: userId,
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
+
+      // Then
+      expect(enrolledAgain).toBe(false);
+      expect(await dueStagesOf(repository)).toEqual([]);
+      expect((await repository.findByUserId(UserId.reconstitute(userId)))?.startedAt).toBeNull();
+    });
+
     it("결정할 때가 된 단계만 고른다", async () => {
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "TREATMENT",
         startedAt: STARTED_AT,
       });
@@ -138,14 +167,14 @@ export function describeRetentionAssignmentRepositoryContract(
       const { repository, givenUser } = await createSubject();
       const first = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
       const second = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({
-        userId: UserId.reconstitute(first),
+      await enrollRetentionAssignment(repository, {
+        userId: first,
         variant: "TREATMENT",
         startedAt: STARTED_AT,
       });
       await nextMillisecond();
-      await repository.enroll({
-        userId: UserId.reconstitute(second),
+      await enrollRetentionAssignment(repository, {
+        userId: second,
         variant: "CONTROL",
         startedAt: STARTED_AT,
       });
@@ -189,8 +218,8 @@ export function describeRetentionAssignmentRepositoryContract(
       // Given
       const { repository, givenUser } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "TREATMENT",
         startedAt: STARTED_AT,
       });
@@ -200,46 +229,57 @@ export function describeRetentionAssignmentRepositoryContract(
       if (d0 == null || d1 == null) {
         throw new Error("stage fixture 누락");
       }
+      const winner = await retentionAssignmentOf(repository, d0.assignmentId);
+      const stale = await retentionAssignmentOf(repository, d0.assignmentId);
 
       // When
-      const skipped = await repository.markStageSkipped(d0.stageId, "TEST_SKIP", PROCESSED_AT);
-      const skippedAgain = await repository.markStageSkipped(d0.stageId, "TEST_SKIP", PROCESSED_AT);
-      const outboxSkipped = await repository.markStageOutboxed(d0.stageId, PROCESSED_AT);
-      const outboxed = await repository.markStageOutboxed(d1.stageId, PROCESSED_AT);
-      const outboxedAgain = await repository.markStageOutboxed(d1.stageId, PROCESSED_AT);
+      winner.skipStage(d0.stageId, "TEST_SKIP", PROCESSED_AT);
+      const skipped = await repository.save(winner);
+      stale.outboxStage(d0.stageId, PROCESSED_AT);
+      const lostRace = await repository.save(stale);
+      const fresh = await retentionAssignmentOf(repository, d0.assignmentId);
+      fresh.outboxStage(d1.stageId, PROCESSED_AT);
+      const outboxed = await repository.save(fresh);
 
       // Then
-      expect([skipped, skippedAgain, outboxSkipped, outboxed, outboxedAgain]).toEqual([
-        true,
-        false,
-        false,
-        true,
-        false,
-      ]);
+      expect([skipped, lostRace, outboxed]).toEqual([true, false, true]);
       expect(stageNamesOf(await dueStagesOf(repository))).toEqual(["D3", "D7"]);
     });
 
-    it("없는 단계에 알림을 이으면 실패한다", async () => {
+    it("단계에 이은 알림 id를 남긴다", async () => {
       // Given
-      const { repository } = await createSubject();
+      const { repository, givenUser } = await createSubject();
+      const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
+        variant: "TREATMENT",
+        startedAt: STARTED_AT,
+      });
+      const [stage] = await dueStagesOf(repository);
+      if (stage == null) {
+        throw new Error("stage fixture 누락");
+      }
+      const assignment = await retentionAssignmentOf(repository, stage.assignmentId);
 
       // When
-      const linking = repository.linkStageNotification(
-        "missing-stage",
-        NotificationId.reconstitute(1),
-        PROCESSED_AT,
-      );
+      assignment.outboxStage(stage.stageId, PROCESSED_AT);
+      assignment.linkStageNotification(stage.stageId, 41, PROCESSED_AT);
+      const saved = await repository.save(assignment);
 
       // Then
-      await expect(linking).rejects.toThrow();
+      expect(saved).toBe(true);
+      const reloaded = await retentionAssignmentOf(repository, stage.assignmentId);
+      expect(
+        reloaded.stages.find((item) => item.id.value === stage.stageId)?.toPrimitives(),
+      ).toMatchObject({ status: "OUTBOXED", notificationId: 41, processedAt: PROCESSED_AT });
     });
 
     it("D7 결과는 배정마다 하나로 남고 다시 기록하면 덮어쓴다", async () => {
       // Given
       const { repository, givenUser, d7ResultOf } = await createSubject();
       const userId = await givenUser({ timezone: "Asia/Seoul", locale: "ko" });
-      await repository.enroll({
-        userId: UserId.reconstitute(userId),
+      await enrollRetentionAssignment(repository, {
+        userId: userId,
         variant: "TREATMENT",
         startedAt: STARTED_AT,
       });
@@ -249,19 +289,25 @@ export function describeRetentionAssignmentRepositoryContract(
       }
       const assignmentId = stage.assignmentId;
 
+      const assignment = await retentionAssignmentOf(repository, assignmentId);
+
       // When
-      await repository.recordD7Result({
-        assignmentId,
-        returnedWithinD7: false,
-        todoActionWithinD7: false,
-        measuredAt: Temporal.Instant.from("2026-07-22T01:30:00.000Z"),
-      });
-      await repository.recordD7Result({
-        assignmentId,
-        returnedWithinD7: true,
-        todoActionWithinD7: true,
-        measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
-      });
+      assignment.measureD7(
+        RetentionD7Result.create({
+          returnedWithinD7: false,
+          todoActionWithinD7: false,
+          measuredAt: Temporal.Instant.from("2026-07-22T01:30:00.000Z"),
+        }),
+      );
+      await repository.save(assignment);
+      assignment.measureD7(
+        RetentionD7Result.create({
+          returnedWithinD7: true,
+          todoActionWithinD7: true,
+          measuredAt: Temporal.Instant.from("2026-07-22T01:35:00.000Z"),
+        }),
+      );
+      await repository.save(assignment);
 
       // Then
       expect(await d7ResultOf(assignmentId)).toEqual({

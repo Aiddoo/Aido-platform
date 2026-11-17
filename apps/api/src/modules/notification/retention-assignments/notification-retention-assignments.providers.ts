@@ -34,6 +34,7 @@ export const NOTIFICATION_RETENTION_ASSIGNMENTS_USE_CASE_PROVIDERS: Provider[] =
     repository: RetentionAssignmentRepositoryPort,
     config: RetentionConfigPort,
     experimentAssigner: ExperimentAssignerPort,
+    unitOfWork: UnitOfWorkPort,
     clock: ClockPort,
   }),
   provideUseCase(ProcessRetentionStagesUseCase, {

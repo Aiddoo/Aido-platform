@@ -1,54 +1,33 @@
+import { match } from "ts-pattern";
+
 import { RetentionAssignmentRepositoryPort } from "#api/modules/notification/retention-assignments/application/ports/retention-assignment.repository.port";
 import type {
   RetentionStageCandidateReadModel,
   RetentionStageCursorReadModel,
 } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
+import type { RetentionAssignmentId } from "#api/modules/notification/retention-assignments/domain/retention-assignment-id.vo";
 import {
-  RETENTION_STAGE_NAMES,
-  type RetentionVariant,
-} from "#api/modules/notification/retention-assignments/domain/retention-assignments.constants";
+  RetentionAssignment,
+  type RetentionAssignmentPrimitives,
+} from "#api/modules/notification/retention-assignments/domain/retention-assignment.aggregate";
+import type { RetentionStageStatus } from "#api/modules/notification/retention-assignments/domain/retention-assignments.constants";
 import { isRetentionStageDue } from "#api/modules/notification/retention-assignments/domain/retention-stage.domain-service";
-import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
-import type { retentionExperimentStageStatus } from "#api/platform/database/schema/index";
+import type { RetentionStagePrimitives } from "#api/modules/notification/retention-assignments/domain/retention-stage.entity";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createRetentionStageCandidateFixture } from "#test/fixtures/notification/retention-stage-candidate.fixture";
 
-type StageStatus = (typeof retentionExperimentStageStatus.enumValues)[number];
-
 export interface StoredRetentionStage {
   readonly candidate: RetentionStageCandidateReadModel;
-  status: StageStatus;
-  skipReason: string | null;
-  processedAt: Temporal.Instant | null;
-  notificationId: number | null;
-}
-
-interface RetentionEnrollment {
-  readonly userId: string;
-  readonly variant: RetentionVariant;
-  startedAt: Temporal.Instant | null;
+  readonly status: RetentionStageStatus;
+  readonly skipReason: string | null;
+  readonly processedAt: Temporal.Instant | null;
+  readonly notificationId: number | null;
 }
 
 interface D7Result {
   readonly returnedWithinD7: boolean;
   readonly todoActionWithinD7: boolean;
   readonly measuredAt: Temporal.Instant;
-}
-
-function isAfter(
-  candidate: RetentionStageCandidateReadModel,
-  cursor: RetentionStageCursorReadModel,
-): boolean {
-  const order = Temporal.Instant.compare(candidate.stageCreatedAt, cursor.createdAt);
-  return order > 0 || (order === 0 && candidate.stageId > cursor.stageId);
-}
-
-function byCreation(left: StoredRetentionStage, right: StoredRetentionStage): number {
-  const diff = Temporal.Instant.compare(
-    left.candidate.stageCreatedAt,
-    right.candidate.stageCreatedAt,
-  );
-  return diff === 0 ? left.candidate.stageId.localeCompare(right.candidate.stageId) : diff;
 }
 
 export type RetentionUserProfile = Partial<
@@ -58,17 +37,64 @@ export type RetentionUserProfile = Partial<
   >
 >;
 
-// Drizzle처럼 SCHEDULED이고 결정할 때가 된 단계만 생성 순서로 돌려주고 상태 전이는 한 번만 성공한다.
-// 등록·활성화로 만든 단계의 사용자 정보(시간대·언어 등)는 givenUser로 넣은 값, 없으면 fixture 기본값이다
+function isAfter(
+  candidate: RetentionStageCandidateReadModel,
+  cursor: RetentionStageCursorReadModel,
+): boolean {
+  const order = Temporal.Instant.compare(candidate.stageCreatedAt, cursor.createdAt);
+  return order > 0 || (order === 0 && candidate.stageId > cursor.stageId);
+}
+
+function byCreation(
+  left: RetentionStageCandidateReadModel,
+  right: RetentionStageCandidateReadModel,
+): number {
+  const diff = Temporal.Instant.compare(left.stageCreatedAt, right.stageCreatedAt);
+  return diff === 0 ? left.stageId.localeCompare(right.stageId) : diff;
+}
+
+// 생성자로 넣은 후보는 그 배정·단계로 저장한 것처럼 둔다
+function assignmentsOf(
+  candidates: readonly RetentionStageCandidateReadModel[],
+): RetentionAssignmentPrimitives[] {
+  const byAssignment = Map.groupBy(candidates, (candidate) => candidate.assignmentId);
+  return [...byAssignment.entries()].flatMap(([id, stages]) => {
+    const [first] = stages;
+    if (first == null) {
+      return [];
+    }
+    return [
+      {
+        id,
+        userId: first.userId,
+        variant: first.variant,
+        startedAt: first.startedAt,
+        stages: stages.map((candidate) => ({
+          id: candidate.stageId,
+          stage: candidate.stage,
+          status: "SCHEDULED" as const,
+          skipReason: null,
+          processedAt: null,
+          notificationId: null,
+          updatedAt: candidate.startedAt,
+        })),
+      },
+    ];
+  });
+}
+
+// Drizzle처럼 save는 바뀐 것만 반영하고, 단계 닫기는 저장된 단계가 SCHEDULED일 때만, 시작은 아직 시작 전일 때만,
+// 등록은 같은 사용자 배정이 없을 때만 성공한다. 단계의 사용자 정보는 givenUser로 넣은 값, 없으면 fixture 기본값이다
 export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRepositoryPort {
-  readonly stages: StoredRetentionStage[];
-  readonly enrollments: RetentionEnrollment[] = [];
   readonly d7Results = new Map<string, D7Result>();
   readonly dueQueries: Temporal.Instant[] = [];
-  // 이 단계를 표시하려 하면 실패한다(발행 도중 오류를 흉내 낸다)
+  // 이 단계를 닫으려 하면 실패한다(발행 도중 오류를 흉내 낸다)
   failingStageIds = new Set<string>();
+  // 읽은 뒤 저장하기 전에 다른 실행이 먼저 닫은 단계다
+  stagesClosedByOtherRun = new Set<string>();
+  readonly #assignments = new Map<string, RetentionAssignmentPrimitives>();
+  readonly #candidates = new Map<string, RetentionStageCandidateReadModel>();
   readonly #profiles = new Map<string, RetentionUserProfile>();
-  readonly #assignmentIdByUser = new Map<string, string>();
   readonly #now: () => Temporal.Instant;
   #sequence = 0;
 
@@ -78,44 +104,71 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
   ) {
     super();
     this.#now = now;
-    this.stages = candidates.map((candidate) => ({
-      candidate,
-      status: "SCHEDULED",
-      skipReason: null,
-      processedAt: null,
-      notificationId: null,
-    }));
+    for (const candidate of candidates) {
+      this.#candidates.set(candidate.stageId, candidate);
+    }
+    for (const assignment of assignmentsOf(candidates)) {
+      this.#assignments.set(assignment.id, assignment);
+    }
   }
 
-  async enroll(params: {
-    readonly userId: UserId;
-    readonly variant: RetentionVariant;
+  get assignments(): readonly RetentionAssignmentPrimitives[] {
+    return [...this.#assignments.values()];
+  }
+
+  get enrollments(): ReadonlyArray<{
+    readonly userId: string;
+    readonly variant: RetentionAssignmentPrimitives["variant"];
     readonly startedAt: Temporal.Instant | null;
-  }): Promise<void> {
-    const input = { ...params, userId: params.userId.value };
-    if (this.enrollments.some((enrollment) => enrollment.userId === input.userId)) {
-      return;
-    }
-    this.enrollments.push(input);
-    this.#sequence += 1;
-    this.#assignmentIdByUser.set(input.userId, `retention-assignment-${this.#sequence}`);
-    if (input.startedAt != null) {
-      this.#createStages(input.userId, input.variant, input.startedAt);
-    }
+  }> {
+    return this.assignments.map(({ userId, variant, startedAt }) => ({
+      userId,
+      variant,
+      startedAt,
+    }));
   }
 
   givenUser(userId: string, profile: RetentionUserProfile = {}): void {
     this.#profiles.set(userId, profile);
   }
 
-  async activate(user: UserId, startedAt: Temporal.Instant): Promise<boolean> {
-    const userId = user.value;
-    const enrollment = this.enrollments.find((item) => item.userId === userId);
-    if (enrollment == null || enrollment.startedAt != null) {
-      return false;
+  async findByUserId(userId: UserId): Promise<RetentionAssignment | null> {
+    const stored = this.assignments.find((assignment) => assignment.userId === userId.value);
+    return stored == null ? null : RetentionAssignment.reconstitute(stored);
+  }
+
+  async findByIds(
+    ids: readonly RetentionAssignmentId[],
+  ): Promise<ReadonlyMap<string, RetentionAssignment>> {
+    return new Map(
+      ids.flatMap((id) => {
+        const stored = this.#assignments.get(id.value);
+        return stored == null ? [] : [[id.value, RetentionAssignment.reconstitute(stored)]];
+      }),
+    );
+  }
+
+  async save(assignment: RetentionAssignment): Promise<boolean> {
+    const next = assignment.toPrimitives();
+    for (const change of assignment.pullChanges()) {
+      const applied = match(change)
+        .with({ kind: "ENROLLED" }, () => this.#enroll(next))
+        .with({ kind: "ACTIVATED" }, () => this.#start(next))
+        .with({ kind: "STAGE_CLOSED" }, ({ stage }) =>
+          this.#closeStage(next.id, stage.toPrimitives()),
+        )
+        .with({ kind: "STAGE_LINKED" }, ({ stage }) =>
+          this.#updateStage(next.id, stage.toPrimitives()),
+        )
+        .with({ kind: "D7_MEASURED" }, ({ result }) => {
+          this.d7Results.set(next.id, { ...result.value });
+          return true;
+        })
+        .exhaustive();
+      if (!applied) {
+        return false;
+      }
     }
-    enrollment.startedAt = startedAt;
-    this.#createStages(userId, enrollment.variant, startedAt);
     return true;
   }
 
@@ -126,10 +179,15 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
   }): Promise<RetentionStageCandidateReadModel[]> {
     this.dueQueries.push(params.dueAt);
     const { after } = params;
-    return this.stages
+    return this.assignments
+      .flatMap((assignment) =>
+        assignment.stages.flatMap((stage) => {
+          const candidate = this.#candidates.get(stage.id);
+          return stage.status === "SCHEDULED" && candidate != null ? [candidate] : [];
+        }),
+      )
       .filter(
-        ({ candidate, status }) =>
-          status === "SCHEDULED" &&
+        (candidate) =>
           (after == null || isAfter(candidate, after)) &&
           isRetentionStageDue(candidate.stage, {
             startedAt: candidate.startedAt,
@@ -138,91 +196,93 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
           }),
       )
       .toSorted(byCreation)
-      .slice(0, params.limit)
-      .map(({ candidate }) => candidate);
-  }
-
-  async markStageSkipped(
-    stageId: string,
-    reason: string,
-    processedAt: Temporal.Instant,
-  ): Promise<boolean> {
-    return this.#transition(stageId, { status: "SKIPPED", skipReason: reason, processedAt });
-  }
-
-  async markStageOutboxed(stageId: string, processedAt: Temporal.Instant): Promise<boolean> {
-    return this.#transition(stageId, { status: "OUTBOXED", skipReason: null, processedAt });
-  }
-
-  async linkStageNotification(
-    stageId: string,
-    notification: NotificationId,
-    _linkedAt: Temporal.Instant,
-  ): Promise<void> {
-    const notificationId = notification.value;
-    const stage = this.#require(stageId);
-    stage.notificationId = notificationId;
-  }
-
-  async recordD7Result(input: {
-    readonly assignmentId: string;
-    readonly returnedWithinD7: boolean;
-    readonly todoActionWithinD7: boolean;
-    readonly measuredAt: Temporal.Instant;
-  }): Promise<void> {
-    const { assignmentId, ...result } = input;
-    this.d7Results.set(assignmentId, result);
+      .slice(0, params.limit);
   }
 
   stage(stageId: string): StoredRetentionStage {
-    return this.#require(stageId);
+    const candidate = this.#candidates.get(stageId);
+    const stage = this.assignments
+      .flatMap((assignment) => assignment.stages)
+      .find((item) => item.id === stageId);
+    if (candidate == null || stage == null) {
+      throw new Error(`unknown retention stage ${stageId}`);
+    }
+    return {
+      candidate,
+      status: stage.status,
+      skipReason: stage.skipReason,
+      processedAt: stage.processedAt,
+      notificationId: stage.notificationId,
+    };
   }
 
-  #transition(
-    stageId: string,
-    next: Pick<StoredRetentionStage, "status" | "skipReason" | "processedAt">,
-  ): boolean {
-    if (this.failingStageIds.has(stageId)) {
-      throw new Error(`stage ${stageId} failed`);
-    }
-    const stage = this.#require(stageId);
-    if (stage.status !== "SCHEDULED") {
+  #enroll(next: RetentionAssignmentPrimitives): boolean {
+    if (this.assignments.some((assignment) => assignment.userId === next.userId)) {
       return false;
     }
-    Object.assign(stage, next);
+    this.#assignments.set(next.id, next);
+    this.#describeStages(next);
+    return true;
+  }
+
+  #start(next: RetentionAssignmentPrimitives): boolean {
+    const stored = this.#assignments.get(next.id);
+    if (stored == null || stored.startedAt != null) {
+      return false;
+    }
+    this.#assignments.set(next.id, next);
+    this.#describeStages(next);
+    return true;
+  }
+
+  #closeStage(assignmentId: string, stage: RetentionStagePrimitives): boolean {
+    if (this.failingStageIds.has(stage.id)) {
+      throw new Error(`stage ${stage.id} failed`);
+    }
+    const stored = this.#assignments.get(assignmentId)?.stages.find((item) => item.id === stage.id);
+    if (stored?.status !== "SCHEDULED" || this.stagesClosedByOtherRun.has(stage.id)) {
+      return false;
+    }
+    return this.#updateStage(assignmentId, stage);
+  }
+
+  #updateStage(assignmentId: string, stage: RetentionStagePrimitives): boolean {
+    const stored = this.#assignments.get(assignmentId);
+    if (stored == null || !stored.stages.some((item) => item.id === stage.id)) {
+      throw new Error(`unknown retention stage ${stage.id}`);
+    }
+    this.#assignments.set(assignmentId, {
+      ...stored,
+      stages: stored.stages.map((item) => (item.id === stage.id ? stage : item)),
+    });
     return true;
   }
 
   // 한 번에 만든 네 단계는 생성 시각이 같고 ID 순서가 생성 순서다
-  #createStages(userId: string, variant: RetentionVariant, startedAt: Temporal.Instant): void {
-    const assignmentId = this.#assignmentIdByUser.get(userId) ?? userId;
+  #describeStages(assignment: RetentionAssignmentPrimitives): void {
+    const { startedAt } = assignment;
+    if (startedAt == null) {
+      return;
+    }
     const stageCreatedAt = this.#now();
-    for (const stage of RETENTION_STAGE_NAMES) {
+    const renamed = assignment.stages.map((stage) => {
       this.#sequence += 1;
-      this.stages.push({
-        candidate: createRetentionStageCandidateFixture({
-          ...this.#profiles.get(userId),
-          assignmentId,
-          stageId: `retention-stage-${String(this.#sequence).padStart(6, "0")}`,
+      const stageId = `retention-stage-${String(this.#sequence).padStart(6, "0")}`;
+      this.#candidates.set(
+        stageId,
+        createRetentionStageCandidateFixture({
+          ...this.#profiles.get(assignment.userId),
+          assignmentId: assignment.id,
+          stageId,
           stageCreatedAt,
-          userId,
-          variant,
-          stage,
+          userId: assignment.userId,
+          variant: assignment.variant,
+          stage: stage.stage,
           startedAt,
         }),
-        status: "SCHEDULED",
-        skipReason: null,
-        processedAt: null,
-        notificationId: null,
-      });
-    }
-  }
-
-  #require(stageId: string): StoredRetentionStage {
-    const stage = this.stages.find((item) => item.candidate.stageId === stageId);
-    if (stage == null) {
-      throw new Error(`unknown retention stage ${stageId}`);
-    }
-    return stage;
+      );
+      return { ...stage, id: stageId };
+    });
+    this.#assignments.set(assignment.id, { ...assignment, stages: renamed });
   }
 }

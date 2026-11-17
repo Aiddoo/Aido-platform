@@ -1,19 +1,21 @@
+import { uniqBy } from "es-toolkit";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-import {
-  NotificationId,
-  type PublishNotificationUseCase,
-} from "../../../notifications/notification-notifications.public.js";
+import type { PublishNotificationUseCase } from "../../../notifications/notification-notifications.public.js";
 import { type RetentionNotificationCopySelection } from "../../../shared/application/messages/notification-copy-catalog.messages.js";
 import { createRetentionNotificationMessage } from "../../../shared/application/messages/retention-notification.messages.js";
 import { retentionPushSkipReason } from "../../domain/push-eligibility.domain-service.js";
+import { RetentionAssignmentId } from "../../domain/retention-assignment-id.vo.js";
+import type { RetentionAssignment } from "../../domain/retention-assignment.aggregate.js";
 import {
   RETENTION_CAMPAIGN_KEY,
   RETENTION_EXPERIMENT_KEY,
 } from "../../domain/retention-assignments.constants.js";
+import { RetentionD7Result } from "../../domain/retention-d7-result.vo.js";
 import { decideRetentionStage } from "../../domain/retention-stage.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
@@ -33,11 +35,7 @@ export const RETENTION_STAGE_SWEEP = {
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
     RetentionAssignmentRepositoryPort,
-    | "findDueStages"
-    | "linkStageNotification"
-    | "markStageOutboxed"
-    | "markStageSkipped"
-    | "recordD7Result"
+    "findByIds" | "findDueStages" | "save"
   >;
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
@@ -65,8 +63,16 @@ export class ProcessRetentionStagesUseCase {
         ...(after != null && { after }),
         limit: RETENTION_STAGE_SWEEP.BATCH_SIZE,
       });
+      const assignments = await this.#dependencies.repository.findByIds(
+        uniqBy(candidates, (candidate) => candidate.assignmentId).map((candidate) =>
+          RetentionAssignmentId.reconstitute(candidate.assignmentId),
+        ),
+      );
       for (const candidate of candidates) {
-        await this.#processSafely(candidate);
+        const assignment = assignments.get(candidate.assignmentId);
+        if (assignment != null) {
+          await this.#processSafely(candidate, assignment);
+        }
       }
       const last = candidates.at(-1);
       if (candidates.length < RETENTION_STAGE_SWEEP.BATCH_SIZE || last == null) {
@@ -77,9 +83,12 @@ export class ProcessRetentionStagesUseCase {
     }
   }
 
-  async #processSafely(candidate: RetentionStageCandidateReadModel): Promise<void> {
+  async #processSafely(
+    candidate: RetentionStageCandidateReadModel,
+    assignment: RetentionAssignment,
+  ): Promise<void> {
     try {
-      await this.#processCandidate(candidate, this.#now());
+      await this.#processCandidate(candidate, assignment, this.#now());
     } catch {
       this.#dependencies.logger.error({
         event: RetentionAssignmentLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
@@ -95,8 +104,10 @@ export class ProcessRetentionStagesUseCase {
 
   async #processCandidate(
     candidate: RetentionStageCandidateReadModel,
+    assignment: RetentionAssignment,
     now: Temporal.Instant,
   ): Promise<void> {
+    const { repository } = this.#dependencies;
     const { lastActiveAt, startedAt, timezone } = candidate;
     const returnedWithinWindow =
       lastActiveAt != null &&
@@ -109,7 +120,8 @@ export class ProcessRetentionStagesUseCase {
       localDateIn(lastActiveAt, timezone).equals(localDateIn(now, timezone));
 
     if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
-      await this.#dependencies.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP", now);
+      assignment.skipStage(candidate.stageId, "CONTROL_GROUP", now);
+      await repository.save(assignment);
       return;
     }
 
@@ -130,28 +142,23 @@ export class ProcessRetentionStagesUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       if (candidate.stage === "D7") {
-        await this.#dependencies.repository.recordD7Result({
-          assignmentId: candidate.assignmentId,
-          returnedWithinD7: returnedWithinWindow,
-          todoActionWithinD7: candidate.todoActionWithinWindow,
-          measuredAt: now,
-        });
+        assignment.measureD7(
+          RetentionD7Result.create({
+            returnedWithinD7: returnedWithinWindow,
+            todoActionWithinD7: candidate.todoActionWithinWindow,
+            measuredAt: now,
+          }),
+        );
       }
 
       if (candidate.variant === "CONTROL") {
-        await this.#dependencies.repository.markStageSkipped(
-          candidate.stageId,
-          "CONTROL_MEASUREMENT_COMPLETE",
-          now,
-        );
+        assignment.skipStage(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE", now);
+        await repository.save(assignment);
         return;
       }
       if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
-        await this.#dependencies.repository.markStageSkipped(
-          candidate.stageId,
-          decision.reason,
-          now,
-        );
+        assignment.skipStage(candidate.stageId, decision.reason, now);
+        await repository.save(assignment);
         return;
       }
 
@@ -163,7 +170,8 @@ export class ProcessRetentionStagesUseCase {
         now,
       });
       if (skipReason) {
-        await this.#dependencies.repository.markStageSkipped(candidate.stageId, skipReason, now);
+        assignment.skipStage(candidate.stageId, skipReason, now);
+        await repository.save(assignment);
         return;
       }
 
@@ -175,7 +183,8 @@ export class ProcessRetentionStagesUseCase {
           occurrenceKey: localDateIn(now, candidate.timezone).toString(),
         },
       });
-      if (!(await this.#dependencies.repository.markStageOutboxed(candidate.stageId, now))) {
+      assignment.outboxStage(candidate.stageId, now);
+      if (!(await repository.save(assignment))) {
         return;
       }
       const notification = await this.#dependencies.notificationPublisher.execute({
@@ -193,11 +202,8 @@ export class ProcessRetentionStagesUseCase {
         metadata: { retentionExperiment: RETENTION_EXPERIMENT_KEY },
       });
       if (notification != null) {
-        await this.#dependencies.repository.linkStageNotification(
-          candidate.stageId,
-          NotificationId.reconstitute(notification.id),
-          now,
-        );
+        assignment.linkStageNotification(candidate.stageId, notification.id, now);
+        await repository.save(assignment);
       }
     });
 

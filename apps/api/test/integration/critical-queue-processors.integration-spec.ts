@@ -19,7 +19,7 @@ import {
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcast-campaigns/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { enrollRetentionAssignment } from "#test/fixtures/notification/retention-assignment.fixture";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -196,8 +196,8 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
       token: "fake-retention-token",
       timezone: harness.daytimeTimezone,
     });
-    await harness.retentionRepository.enroll({
-      userId: UserId.reconstitute(recipient.id),
+    await enrollRetentionAssignment(harness.retentionRepository, {
+      userId: recipient.id,
       variant: "TREATMENT",
       startedAt: Temporal.Instant.fromEpochMilliseconds(Date.now() - 3 * 60 * 60 * 1000),
     });

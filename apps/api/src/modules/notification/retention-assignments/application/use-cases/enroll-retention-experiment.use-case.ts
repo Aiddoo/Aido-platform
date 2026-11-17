@@ -1,15 +1,19 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import { RetentionAssignmentId } from "../../domain/retention-assignment-id.vo.js";
+import { RetentionAssignment } from "../../domain/retention-assignment.aggregate.js";
 import { RETENTION_EXPERIMENT_KEY } from "../../domain/retention-assignments.constants.js";
 import type { ExperimentAssignerPort } from "../ports/experiment-assigner.port.js";
 import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assignment.repository.port.js";
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 
 interface EnrollRetentionExperimentDependencies {
-  readonly repository: Pick<RetentionAssignmentRepositoryPort, "enroll">;
+  readonly repository: Pick<RetentionAssignmentRepositoryPort, "save">;
   readonly config: Pick<RetentionConfigPort, "enabled" | "treatmentPercent">;
   readonly experimentAssigner: ExperimentAssignerPort;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
 }
 
@@ -34,10 +38,13 @@ export class EnrollRetentionExperimentUseCase {
         { key: "CONTROL", weight: 100 - treatmentPercent },
       ],
     });
-    await this.#dependencies.repository.enroll({
+    const assignment = RetentionAssignment.create({
+      id: RetentionAssignmentId.generate(),
       userId: UserId.reconstitute(userId),
       variant,
       startedAt: activated ? this.#dependencies.clock.now() : null,
     });
+    // 이미 배정된 사용자면 저장이 false이고 시작하지 않은 배정도 그대로 둔다
+    await this.#dependencies.unitOfWork.run(() => this.#dependencies.repository.save(assignment));
   }
 }

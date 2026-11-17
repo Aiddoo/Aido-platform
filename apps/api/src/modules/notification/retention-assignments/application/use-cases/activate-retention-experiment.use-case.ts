@@ -6,7 +6,7 @@ import type { RetentionAssignmentRepositoryPort } from "../ports/retention-assig
 import type { RetentionConfigPort } from "../ports/retention-config.port.js";
 
 interface ActivateRetentionExperimentDependencies {
-  readonly repository: Pick<RetentionAssignmentRepositoryPort, "activate">;
+  readonly repository: Pick<RetentionAssignmentRepositoryPort, "findByUserId" | "save">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
@@ -24,8 +24,14 @@ export class ActivateRetentionExperimentUseCase {
       return;
     }
     const startedAt = this.#dependencies.clock.now();
-    await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.repository.activate(UserId.reconstitute(userId), startedAt),
-    );
+    await this.#dependencies.unitOfWork.run(async () => {
+      const assignment = await this.#dependencies.repository.findByUserId(
+        UserId.reconstitute(userId),
+      );
+      if (assignment == null || !assignment.activate(startedAt)) {
+        return;
+      }
+      await this.#dependencies.repository.save(assignment);
+    });
   }
 }

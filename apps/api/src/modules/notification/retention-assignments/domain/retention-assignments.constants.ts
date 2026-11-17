@@ -7,3 +7,4 @@ export const RETENTION_STAGE_STATUSES = ["SCHEDULED", "SKIPPED", "OUTBOXED", "EV
 
 export type RetentionStageName = (typeof RETENTION_STAGE_NAMES)[number];
 export type RetentionVariant = (typeof RETENTION_VARIANTS)[number];
+export type RetentionStageStatus = (typeof RETENTION_STAGE_STATUSES)[number];

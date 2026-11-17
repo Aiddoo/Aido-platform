@@ -67,7 +67,7 @@ describe("ProcessRetentionStagesUseCase — 신규 코호트 단계 처리", () 
     // Given
     // 후보로 읽은 뒤 표시하기 전에 다른 실행이 먼저 표시했다
     const { useCase, repository, publisher } = setup([candidate()]);
-    repository.markStageOutboxed = async () => false;
+    repository.stagesClosedByOtherRun = new Set(["stage-1"]);
 
     // When
     await useCase.execute();

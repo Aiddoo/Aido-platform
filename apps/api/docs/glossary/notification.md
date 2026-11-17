@@ -160,26 +160,27 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 
 ## retention-assignments
 
-| 용어             | 코드                                                                                                | 뜻                                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 리텐션 배정      | `RetentionAssignment`(Aggregate, `retention-assignments` slice)                                     | 신규 사용자 한 명의 리텐션 실험 참여. 실험 키(`RETENTION_EXPERIMENT_KEY`)·실험군·시작 시각을 갖는다            |
-| 실험군           | `RetentionVariant`(`CONTROL`·`TREATMENT`), `ExperimentAssignerPort`                                 | 같은 실험·사용자는 실행·재시도와 상관없이 늘 같은 실험군이다. 처리군이 앞 구간을 차지하는 순서를 바꾸지 않는다 |
-| 등록·시작        | `RetentionEnrollmentPort`, `EnrollRetentionExperimentUseCase`, `ActivateRetentionExperimentUseCase` | identity가 가입 때 등록하고 첫 인증 때 시작한다. 시작하면 네 단계를 만든다. 설정으로 끄면 아무것도 하지 않는다 |
-| 단계             | `RetentionStage`(엔티티), `RetentionStageName`(`D0`·`D1`·`D3`·`D7`)                                 | 시작 뒤 정해진 현지 날짜·시각에 한 번 결정하는 알림 자리                                                       |
-| 단계 결정        | `decideRetentionStage`, `RetentionStageDecision`                                                    | `WAIT`·`SKIP`(사유)·`SEND`(이동 경로·문구 변형)·`EVALUATE_ONLY`(측정만)                                        |
-| 단계 처리        | `ProcessRetentionStagesUseCase`                                                                     | 매분 결정할 때가 된 `SCHEDULED` 단계를 생성 순서로 처리한다. 대조군은 보내지 않고 D7에서 측정만 한다           |
-| 리텐션 발송 조건 | `retentionPushSkipReason`                                                                           | 푸시 켜짐·광고성 동의·활성 토큰·현지 낮. 통과하면 `ENGAGEMENT` 목적으로 알림을 발행한다                        |
-| D7 결과          | `RetentionExperimentResult`, `recordD7Result`                                                       | D7 단계에서 재방문·할 일 행동 여부를 실험군과 상관없이 기록한다                                                |
+| 용어             | 코드                                                                                                | 뜻                                                                                                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 리텐션 배정      | `RetentionAssignment`(Aggregate, `retention-assignments` slice)                                     | 신규 사용자 한 명의 리텐션 실험 참여. 실험 키(`RETENTION_EXPERIMENT_KEY`)·실험군·시작 시각을 갖는다                                                                                            |
+| 실험군           | `RetentionVariant`(`CONTROL`·`TREATMENT`), `ExperimentAssignerPort`                                 | 같은 실험·사용자는 실행·재시도와 상관없이 늘 같은 실험군이다. 처리군이 앞 구간을 차지하는 순서를 바꾸지 않는다                                                                                 |
+| 등록·시작        | `RetentionEnrollmentPort`, `EnrollRetentionExperimentUseCase`, `ActivateRetentionExperimentUseCase` | identity가 가입 때 등록하고 첫 인증 때 시작한다. 시작하면 네 단계를 만든다. 설정으로 끄면 아무것도 하지 않는다                                                                                 |
+| 단계             | `RetentionStage`(엔티티), `RetentionStageName`(`D0`·`D1`·`D3`·`D7`)                                 | 시작 뒤 정해진 현지 날짜·시각에 한 번 결정하는 알림 자리                                                                                                                                       |
+| 단계 결정        | `decideRetentionStage`, `RetentionStageDecision`                                                    | `WAIT`·`SKIP`(사유)·`SEND`(이동 경로·문구 변형)·`EVALUATE_ONLY`(측정만)                                                                                                                        |
+| 단계 처리        | `ProcessRetentionStagesUseCase`                                                                     | 매분 결정할 때가 된 `SCHEDULED` 단계를 생성 순서로 처리한다. 대조군은 보내지 않고 D7에서 측정만 한다                                                                                           |
+| 단계 저장        | `RetentionAssignment.pullChanges`, `RetentionAssignmentRepositoryPort.save`                         | 묶음 하나의 배정을 한 쿼리로 읽고 바뀐 행만 쓴다. 단계 닫기는 `SCHEDULED`였던 행에만, 시작은 시작 전 배정에만 반영돼 겹친 실행은 `false`다. 이미 배정된 사용자를 다시 등록해도 시작하지 않는다 |
+| 리텐션 발송 조건 | `retentionPushSkipReason`                                                                           | 푸시 켜짐·광고성 동의·활성 토큰·현지 낮. 통과하면 `ENGAGEMENT` 목적으로 알림을 발행한다                                                                                                        |
+| D7 결과          | `RetentionD7Result`, `measureD7`                                                                    | D7 단계에서 재방문·할 일 행동 여부를 실험군과 상관없이 기록한다                                                                                                                                |
 
 | 상태(배정) | 행동                  | 다음                                            | 다시·금지                   |
 | ---------- | --------------------- | ----------------------------------------------- | --------------------------- |
 | 없음       | `enroll`              | 시작 전. 가입 때 이미 인증했으면 시작 + 네 단계 | 이미 등록이면 바꾸지 않는다 |
 | 시작 전    | `activate(startedAt)` | 시작, 네 단계 `SCHEDULED`                       | 이미 시작이면 `false`       |
 
-| 상태(단계)  | 행동                       | 다음                                             | 다시·금지                                   |
-| ----------- | -------------------------- | ------------------------------------------------ | ------------------------------------------- |
-| `SCHEDULED` | 결정이 `WAIT`              | `SCHEDULED`                                      | —                                           |
-| `SCHEDULED` | `markStageSkipped(reason)` | `SKIPPED`                                        | 이미 처리했으면 `false`                     |
-| `SCHEDULED` | `markStageOutboxed`        | `OUTBOXED`, 알림 발행 뒤 `linkStageNotification` | 다른 실행이 먼저면 `false`(발행하지 않는다) |
+| 상태(단계)  | 행동                         | 다음                                                      | 다시·금지                                   |
+| ----------- | ---------------------------- | --------------------------------------------------------- | ------------------------------------------- |
+| `SCHEDULED` | 결정이 `WAIT`                | `SCHEDULED`                                               | —                                           |
+| `SCHEDULED` | `skipStage(reason)` → `save` | `SKIPPED`                                                 | 이미 처리했으면 `false`                     |
+| `SCHEDULED` | `outboxStage` → `save`       | `OUTBOXED`, 알림 발행 뒤 `linkStageNotification` → `save` | 다른 실행이 먼저면 `false`(발행하지 않는다) |
 
 `EVALUATED`는 DB 값만 있다. 측정만 하는 결정(`EVALUATE_ONLY`)과 대조군의 단계도 `SKIPPED`로 닫는다.

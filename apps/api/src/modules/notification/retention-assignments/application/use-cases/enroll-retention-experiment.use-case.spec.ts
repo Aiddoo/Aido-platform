@@ -1,5 +1,6 @@
 import { InMemoryRetentionAssignmentRepository } from "#test/doubles/notification/in-memory-retention-assignment.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import {
   ExperimentAssignerPort,
@@ -30,6 +31,7 @@ function setup(config: { readonly enabled: boolean; readonly treatmentPercent: n
     repository,
     config,
     experimentAssigner,
+    unitOfWork: new ImmediateUnitOfWork(),
     clock: new FixedClock(NOW),
   });
   return { useCase, repository, experimentAssigner };
@@ -94,6 +96,20 @@ describe("EnrollRetentionExperimentUseCase — 신규 사용자만 등록", () =
     // Then
     expect(repository.enrollments).toEqual([
       { userId: "new-user", variant: "CONTROL", startedAt: null },
+    ]);
+  });
+
+  it("시작 전으로 배정된 사용자는 활성화된 등록 요청이 다시 와도 시작하지 않는다", async () => {
+    // Given
+    const { useCase, repository } = setup({ enabled: true, treatmentPercent: 100 });
+    await useCase.execute("new-user", false);
+
+    // When
+    await useCase.execute("new-user", true);
+
+    // Then
+    expect(repository.enrollments).toEqual([
+      { userId: "new-user", variant: "TREATMENT", startedAt: null },
     ]);
   });
 });
