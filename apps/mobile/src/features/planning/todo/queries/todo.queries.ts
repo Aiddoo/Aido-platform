@@ -8,6 +8,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { queryOptions } from '@tanstack/react-query';
 import { keyBy, take } from 'es-toolkit';
 
+import type { TodoApi } from '../apis/todo.api';
 import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import type { CalendarDateRange, CompletionsByDate } from '../utils/calendar-grid.view-model';
@@ -89,15 +90,23 @@ export function useGetFriendTodosQueryOptions({
   });
 }
 
-export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
-  const todoApi = useTodoApi();
-
+function todoDetailsQueryOptions(todoApi: TodoApi, todoId: number) {
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.detail({ todoId }),
     queryFn: async ({ signal }) => unwrap(await todoApi.getTodoDetails(todoId, signal)),
     // 차단한 사람의 할 일을 보던 상세는 다시 받아 볼 수 없음 안내로 바뀐다
     meta: { refreshOnBlockChange: true },
   });
+}
+
+export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
+  return todoDetailsQueryOptions(useTodoApi(), todoId);
+}
+
+/** 할 일이 누를 때 정해지는 곳(알림 버튼)의 상세 조회 옵션. 화면의 상세 조회와 같은 옵션이다 */
+export function useGetTodoDetailsQueryOptionsFactory() {
+  const todoApi = useTodoApi();
+  return (todoId: number) => todoDetailsQueryOptions(todoApi, todoId);
 }
 
 /** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */

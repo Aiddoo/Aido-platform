@@ -7,6 +7,7 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
+import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
@@ -159,7 +160,10 @@ interface SnoozeTodoReminderVariables {
   notificationId: number;
 }
 
-/** 리마인드 알림의 [10분 뒤 다시]. 이미 끝낸 할 일은 오류가 아니라 부르는 쪽이 부드럽게 알린다 */
+/**
+ * 리마인드 알림의 [10분 뒤 다시]. 이미 끝낸 할 일은 오류가 아니라 부르는 쪽이 부드럽게 알리고,
+ * 지운 할 일은 방금 연 할 일 화면이 볼 수 없음 안내 하나로 보인다
+ */
 export function useSnoozeTodoReminderMutationOptions() {
   const notificationApi = useNotificationApi();
 
@@ -172,7 +176,8 @@ export function useSnoozeTodoReminderMutationOptions() {
       errorFeedback: {
         feature: 'notification',
         fallbackKey: 'notification:reminderActions.snoozeFailed',
-        isHandledByFeature: isTodoAlreadyCompletedError,
+        isHandledByFeature: (error) =>
+          isTodoAlreadyCompletedError(error) || isTodoUnavailableError(error),
       },
     },
   });

@@ -5,7 +5,12 @@ import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests_
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createMarkReadResponseDto } from '@src/features/notification/__tests__/notification.fixtures';
-import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import {
+  createTodoApiError,
+  createTodoDetails,
+  createTodoDto,
+} from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { ApiError, NetworkError } from '@src/shared/errors';
 import {
   createHttpClientStub,
@@ -31,6 +36,7 @@ jest.unmock('expo-router');
 const NOTIFICATION_ID = 7;
 const TODO_ID = 42;
 const COMPLETE_PATH = `v1/todos/${TODO_ID}/complete`;
+const DETAILS_PATH = `v1/todos/${TODO_ID}/details`;
 const SNOOZE_PATH = `v1/todo-reminders/${TODO_ID}/snoozes`;
 
 function createReminderResponse(actionIdentifier: 'complete' | 'snooze'): PushNotificationResponse {
@@ -49,8 +55,23 @@ function createReminderResponse(actionIdentifier: 'complete' | 'snooze'): PushNo
 type HttpResult = Promise<Result<unknown, ApiError>>;
 
 interface SetupOptions {
+  details?: () => HttpResult;
   complete?: () => HttpResult;
   snooze?: () => HttpResult;
+}
+
+/** 서버가 지금 주는 그 할 일의 상세 */
+function createDetailsDto({ completed }: { completed: boolean }) {
+  return {
+    todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed }),
+    owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '나', profileImage: null },
+    permissions: { canEdit: true, canComment: true, canNudge: false },
+    metrics: { viewCount: 0, commentCount: 0 },
+  };
+}
+
+function createTodoUnavailableError() {
+  return createTodoApiError({ code: ErrorCode.TODO_0801, message: '할 일을 찾을 수 없어요' });
 }
 
 function createStackLayout(unstableSettings: { anchor: string }) {
@@ -60,7 +81,11 @@ function createStackLayout(unstableSettings: { anchor: string }) {
   };
 }
 
-async function setup({ complete, snooze }: SetupOptions = {}) {
+async function setup({
+  details = async () => ok(createDetailsDto({ completed: false })),
+  complete,
+  snooze,
+}: SetupOptions = {}) {
   const gateway = createPushNotificationGatewayStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(async (url: string) => {
@@ -69,6 +94,9 @@ async function setup({ complete, snooze }: SetupOptions = {}) {
     }
     if (url === 'v1/auth/preference') {
       return ok(createPreferenceDto());
+    }
+    if (url === DETAILS_PATH) {
+      return details();
     }
     return ok({ unreadCount: 0 });
   });
@@ -109,7 +137,14 @@ async function setup({ complete, snooze }: SetupOptions = {}) {
   const route = await renderAppRoute(routes, { url: '/', di, withLocalDate: true });
   await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
-  return { route, gateway, httpClient, haptics: di.haptics, analytics: di.analytics };
+  return {
+    route,
+    gateway,
+    httpClient,
+    queryClient: route.queryClient,
+    haptics: di.haptics,
+    analytics: di.analytics,
+  };
 }
 
 describe('리마인드 알림 버튼', () => {
@@ -167,6 +202,91 @@ describe('리마인드 알림 버튼', () => {
       }),
     );
   });
+
+  it.each([
+    {
+      name: '캐시는 열린 할 일이어도 서버가 끝냈다고 하면 완료를 보내지 않고 끝냈다고만 알린다',
+      cachedCompleted: false,
+      serverCompleted: true,
+      message: '이미 완료한 할 일이에요',
+      outcome: 'already_completed',
+      patchCount: 0,
+    },
+    {
+      name: '캐시는 끝낸 할 일이어도 서버가 열려 있다고 하면 완료한다',
+      cachedCompleted: true,
+      serverCompleted: false,
+      message: '‘저녁 운동’ 완료했어요',
+      outcome: 'succeeded',
+      patchCount: 1,
+    },
+  ])('$name', async ({ cachedCompleted, serverCompleted, message, outcome, patchCount }) => {
+    // Given
+    const { gateway, httpClient, queryClient, analytics } = await setup({
+      details: async () => ok(createDetailsDto({ completed: serverCompleted })),
+      complete: async () =>
+        ok({
+          message: '할 일이 완료되었습니다.',
+          todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed: true }),
+        }),
+    });
+    const cached = createTodoDetails();
+    queryClient.setQueryData(
+      TODO_QUERY_KEYS.detail({ todoId: TODO_ID }),
+      createTodoDetails({ todo: { ...cached.todo, id: TODO_ID, completed: cachedCompleted } }),
+    );
+
+    // When
+    await act(async () => gateway.emitResponse(createReminderResponse('complete')));
+
+    // Then
+    expect(await screen.findAllByText(message)).not.toHaveLength(0);
+    expect(httpClient.patch.mock.calls.filter(([url]) => url === COMPLETE_PATH)).toHaveLength(
+      patchCount,
+    );
+    expect(analytics.trackEvent).toHaveBeenCalledWith('todo_reminder_action_tapped', {
+      action: 'complete',
+      outcome,
+    });
+  });
+
+  it.each([
+    {
+      name: '완료를 누른 할 일을 지웠으면',
+      action: 'complete' as const,
+      setupOptions: { details: async () => err(createTodoUnavailableError()) },
+    },
+    {
+      name: '완료를 보내는 사이 할 일을 지웠으면',
+      action: 'complete' as const,
+      setupOptions: { complete: async () => err(createTodoUnavailableError()) },
+    },
+    {
+      name: '10분 뒤 다시를 누른 할 일을 지웠으면',
+      action: 'snooze' as const,
+      setupOptions: { snooze: async () => err(createTodoUnavailableError()) },
+    },
+  ])(
+    '$name 할 일 화면의 안내에 맡기고 전역 오류를 더 띄우지 않는다',
+    async ({ action, setupOptions }) => {
+      // Given
+      const { route, gateway, haptics, analytics } = await setup(setupOptions);
+
+      // When
+      await act(async () => gateway.emitResponse(createReminderResponse(action)));
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe(`/todo/${TODO_ID}`));
+      await waitFor(() =>
+        expect(analytics.trackEvent).toHaveBeenCalledWith('todo_reminder_action_tapped', {
+          action,
+          outcome: 'not_found',
+        }),
+      );
+      expect(screen.queryByText('할 일을 찾을 수 없어요')).toBeNull();
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+    },
+  );
 
   it('10분 뒤 다시를 누르면 할 일 화면을 열고 누른 알림으로 다시 알림을 예약한다', async () => {
     // Given

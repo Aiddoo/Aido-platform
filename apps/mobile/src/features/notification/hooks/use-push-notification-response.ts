@@ -14,8 +14,10 @@ import {
   getCachedPreference,
 } from '@src/features/identity/preference/queries/preference-cache';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { findCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
+import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
+import { fetchFreshTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { useGetTodoDetailsQueryOptionsFactory } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -24,12 +26,16 @@ import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
 import { useAppToast } from '@src/shared/ui';
-import { useIsRestoring, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  mutationOptions,
+  useIsRestoring,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import {
   useCallback,
@@ -373,7 +379,7 @@ type TodoReminderActionResult =
 
 /**
  * 리마인드 알림 버튼(완료·10분 뒤 다시)으로 할 일을 바꾸고 결과를 알린다. 이미 끝낸 할 일은 부드럽게 알리고,
- * 그 밖의 실패(지운 할 일·연결 끊김)는 각 변경의 전역 오류 피드백이 알린다
+ * 지운 할 일은 할 일 화면의 볼 수 없음 안내가, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알린다
  */
 function useRunTodoReminderAction() {
   const { t } = useTranslation('notification');
@@ -382,22 +388,26 @@ function useRunTodoReminderAction() {
   const logger = useLogger();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
-  const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const preferenceQueryOptions = useGetPreferenceQueryOptions();
-  const { mutateAsync: completeTodo } = useMutation(useToggleTodoMutationOptions());
+  const getTodoDetailsQueryOptions = useGetTodoDetailsQueryOptionsFactory();
+  const { mutateAsync: completeTodo } = useMutation(useCompleteRemindedTodoMutationOptions());
   const { mutateAsync: snoozeTodoReminder } = useMutation(useSnoozeTodoReminderMutationOptions());
 
   const complete = async (
     todoId: number,
     dateKey: DateKey | null,
   ): Promise<TodoReminderActionResult> => {
-    const date = dateKey ?? todayKey;
-    // 캐시가 이미 끝냈다고 알면 보내지 않는다. 모르고 보내도 서버는 같은 값이면 그대로 둔다
-    if (findCachedTodo(queryClient, { date, todoId })?.completed) {
+    // 다른 기기에서 끝냈을 수 있어 캐시가 아닌 서버 값으로 정한다. 방금 연 할 일 화면과 같은 조회라 요청은 하나다
+    const { todo } = await fetchFreshTodoDetails(queryClient, getTodoDetailsQueryOptions(todoId));
+    if (todo.completed) {
       return { outcome: 'already_completed' };
     }
-    const saved = await completeTodo({ todoId, body: { completed: true }, date });
+    const saved = await completeTodo({
+      todoId,
+      body: { completed: true },
+      date: dateKey ?? todo.startDate,
+    });
     return {
       outcome: 'succeeded',
       message: t('reminderActions.completed', { title: saved.title }),
@@ -455,9 +465,33 @@ function useRunTodoReminderAction() {
       .with({ outcome: 'already_completed' }, () =>
         toast.toast(t('reminderActions.alreadyCompleted')),
       )
-      // 지운 할 일·연결 끊김은 변경의 전역 오류 피드백이 이미 알렸다
+      // 지운 할 일은 할 일 화면이, 연결 끊김은 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알렸다
       .with({ outcome: 'not_found' }, { outcome: 'failed' }, noop)
       .exhaustive();
     trackEvent('todo_reminder_action_tapped', { action: request.type, outcome: result.outcome });
   };
+}
+
+/**
+ * 리마인드 알림의 [완료]. 할 일 완료와 같은 변경이고, 지운 할 일은 방금 연 할 일 화면이
+ * 볼 수 없음 안내 하나로 보여 전역 토스트를 더하지 않는다
+ */
+function useCompleteRemindedTodoMutationOptions() {
+  const toggleTodoOptions = useToggleTodoMutationOptions();
+  const errorFeedback = toggleTodoOptions.meta?.errorFeedback;
+
+  return mutationOptions({
+    ...toggleTodoOptions,
+    meta: {
+      errorFeedback:
+        errorFeedback == null || errorFeedback === false
+          ? errorFeedback
+          : {
+              ...errorFeedback,
+              isHandledByFeature: (error) =>
+                isTodoUnavailableError(error) ||
+                (errorFeedback.isHandledByFeature?.(error) ?? false),
+            },
+    },
+  });
 }

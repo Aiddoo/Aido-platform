@@ -1,4 +1,5 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
 import { isApiError, isConnectivityError } from '@src/shared/errors';
 
 import type { TodoReminderActionOutcome } from './push-notification-response.model';
@@ -26,14 +27,14 @@ export function isTodoAlreadyCompletedError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.NOTIFICATION_1007);
 }
 
-/** 리마인드 알림 버튼이 실패한 까닭. 이미 끝낸 할 일과 지웠거나 남의 할 일(TODO_0801)을 나눠 센다 */
+/** 리마인드 알림 버튼이 실패한 까닭. 이미 끝낸 할 일과 지웠거나 남의 할 일을 나눠 센다 */
 export function getTodoReminderActionFailure(
   error: unknown,
 ): Exclude<TodoReminderActionOutcome, 'succeeded'> {
   if (isTodoAlreadyCompletedError(error)) {
     return 'already_completed';
   }
-  if (isApiError(error) && error.hasCode(ErrorCode.TODO_0801)) {
+  if (isTodoUnavailableError(error)) {
     return 'not_found';
   }
   return 'failed';
