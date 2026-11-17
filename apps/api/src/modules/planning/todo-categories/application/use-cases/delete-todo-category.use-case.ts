@@ -14,7 +14,10 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { planCategoryDeletion } from "../../domain/category-deletion.domain-service.js";
+import {
+  type CategoryDeletionPlan,
+  planCategoryDeletion,
+} from "../../domain/category-deletion.domain-service.js";
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import { type TodoCategoryCachePort } from "../ports/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../ports/todo-category.repository.port.js";
@@ -66,84 +69,11 @@ export class DeleteTodoCategoryUseCase {
   }
 
   async execute(input: DeleteTodoCategoryInput): Promise<TodoCategoryDeletionReadModel> {
-    const {
-      repository,
-      categoryTodos,
-      todoCache,
-      afterCommit,
-      mutationLock,
-      unitOfWork,
-      clock,
-      eventPublisher,
-    } = this.#dependencies;
+    const { unitOfWork, clock } = this.#dependencies;
     const startedAt = clock.now();
-    const userId = UserId.reconstitute(input.userId);
-    const categoryId = TodoCategoryId.reconstitute(input.categoryId);
-    const moveToCategoryId =
-      input.moveToCategoryId == null ? null : TodoCategoryId.reconstitute(input.moveToCategoryId);
+    const deletion = await unitOfWork.run(() => this.#delete(input));
 
-    const deletion = await unitOfWork.run(async () => {
-      await mutationLock.acquire([
-        TodoCategoryLockKeys.userCategories(input.userId),
-        TodoLockKeys.sortOrder(input.userId),
-      ]);
-
-      const category = await repository.findByIdAndUserId(categoryId, userId);
-      if (category == null) {
-        throw todoCategoryNotFound(categoryId);
-      }
-      const categoryCount = await repository.countByUserId(userId);
-      const todoCount = await repository.countTodos(userId, categoryId);
-      const activeSeriesCount = await repository.countActiveSeries(categoryId);
-
-      const plan = planCategoryDeletion({
-        categoryId,
-        categoryCount,
-        todoCount: todoCount.total,
-        activeSeriesCount,
-        todoHandling: input.todoHandling ?? null,
-        moveToCategoryId,
-      });
-      if (!plan.ok) {
-        throw categoryDeletionRejected({
-          reason: plan.reason,
-          categoryId,
-          moveToCategoryId,
-          todoCount: todoCount.total,
-        });
-      }
-
-      const result = await match(plan)
-        .with({ plan: "delete-empty" }, async () => ({
-          todoHandling: "none" as const,
-          moveToCategoryId: null,
-        }))
-        .with({ plan: "move" }, async ({ moveToCategoryId: targetId }) => {
-          const target = await repository.findByIdAndUserId(targetId, userId);
-          if (target == null) {
-            throw todoCategoryNotFound(targetId);
-          }
-          await repository.moveTodosToCategory(userId, categoryId, targetId);
-          afterCommit.register(() => todoCache.invalidateFriendTodos(userId));
-          return { todoHandling: "move" as const, moveToCategoryId: targetId.value };
-        })
-        .with({ plan: "delete-with-todos" }, async () => {
-          await categoryTodos.execute({ userId, categoryId });
-          return { todoHandling: "delete" as const, moveToCategoryId: null };
-        })
-        .exhaustive();
-
-      await repository.delete(categoryId);
-      category.markDeleted(clock.now());
-      await eventPublisher.publish(category.pullDomainEvents());
-      return {
-        ...result,
-        todoCount: todoCount.total,
-        seriesCount: activeSeriesCount,
-      };
-    });
-
-    await this.#dependencies.cache.invalidate(userId);
+    await this.#dependencies.cache.invalidate(UserId.reconstitute(input.userId));
     this.#dependencies.logger.log({
       event: TodoCategoryLogEvent.DELETED,
       userId: input.userId,
@@ -154,5 +84,75 @@ export class DeleteTodoCategoryUseCase {
       durationMs: startedAt.until(clock.now()).total("milliseconds"),
     });
     return deletion;
+  }
+
+  async #delete(input: DeleteTodoCategoryInput): Promise<TodoCategoryDeletionReadModel> {
+    const { repository, mutationLock, clock, eventPublisher } = this.#dependencies;
+    const userId = UserId.reconstitute(input.userId);
+    const categoryId = TodoCategoryId.reconstitute(input.categoryId);
+    const moveToCategoryId =
+      input.moveToCategoryId == null ? null : TodoCategoryId.reconstitute(input.moveToCategoryId);
+    await mutationLock.acquire([
+      TodoCategoryLockKeys.userCategories(input.userId),
+      TodoLockKeys.sortOrder(input.userId),
+    ]);
+
+    const category = await repository.findByIdAndUserId(categoryId, userId);
+    if (category == null) {
+      throw todoCategoryNotFound(categoryId);
+    }
+    const categoryCount = await repository.countByUserId(userId);
+    const todoCount = await repository.countTodos(userId, categoryId);
+    const activeSeriesCount = await repository.countActiveSeries(categoryId);
+
+    const plan = planCategoryDeletion({
+      categoryId,
+      categoryCount,
+      todoCount: todoCount.total,
+      activeSeriesCount,
+      todoHandling: input.todoHandling ?? null,
+      moveToCategoryId,
+    });
+    if (!plan.ok) {
+      throw categoryDeletionRejected({
+        reason: plan.reason,
+        categoryId,
+        moveToCategoryId,
+        todoCount: todoCount.total,
+      });
+    }
+
+    const result = await this.#handleTodos(plan, userId, categoryId);
+    await repository.delete(categoryId);
+    category.markDeleted(clock.now());
+    await eventPublisher.publish(category.pullDomainEvents());
+    return { ...result, todoCount: todoCount.total, seriesCount: activeSeriesCount };
+  }
+
+  #handleTodos(
+    plan: Extract<CategoryDeletionPlan, { ok: true }>,
+    userId: UserId,
+    categoryId: TodoCategoryId,
+  ): Promise<Pick<TodoCategoryDeletionReadModel, "todoHandling" | "moveToCategoryId">> {
+    const { repository, categoryTodos, todoCache, afterCommit } = this.#dependencies;
+    return match(plan)
+      .with({ plan: "delete-empty" }, async () => ({
+        todoHandling: "none" as const,
+        moveToCategoryId: null,
+      }))
+      .with({ plan: "move" }, async ({ moveToCategoryId: targetId }) => {
+        const target = await repository.findByIdAndUserId(targetId, userId);
+        if (target == null) {
+          throw todoCategoryNotFound(targetId);
+        }
+        await repository.moveTodosToCategory(userId, categoryId, targetId);
+        afterCommit.register(() => todoCache.invalidateFriendTodos(userId));
+        return { todoHandling: "move" as const, moveToCategoryId: targetId.value };
+      })
+      .with({ plan: "delete-with-todos" }, async () => {
+        await categoryTodos.execute({ userId, categoryId });
+        return { todoHandling: "delete" as const, moveToCategoryId: null };
+      })
+      .exhaustive();
   }
 }
