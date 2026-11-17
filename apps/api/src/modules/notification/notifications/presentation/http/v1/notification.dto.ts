@@ -6,7 +6,7 @@ import {
   notificationListResponseSchema,
   notificationOpenedResponseSchema,
   unreadCountResponseSchema,
-} from "@aido/api/contracts/notification";
+} from "@aido/api/contracts/notification/v1";
 import type { z } from "zod";
 
 export const GetNotificationsQueryDto = getNotificationsQuerySchema.meta({

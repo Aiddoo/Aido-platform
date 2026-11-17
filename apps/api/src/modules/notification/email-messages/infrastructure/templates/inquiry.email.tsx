@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import { SUPPORT_EMAIL_ADDRESS, type SupportedLocale } from "@aido/api/vocabulary";
 
 import type { InquiryTemplateData } from "../../application/ports/email-template-renderer.port.js";
 import {
@@ -49,7 +49,7 @@ export default function InquiryEmail({
 
 InquiryEmail.PreviewProps = {
   locale: "ko",
-  supportEmail: "support@aido.kr",
+  supportEmail: SUPPORT_EMAIL_ADDRESS,
   userEmail: "user@example.com",
   category: "BUG_REPORT",
   categoryLabel: "버그 신고",

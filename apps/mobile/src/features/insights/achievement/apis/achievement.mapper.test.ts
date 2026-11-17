@@ -1,7 +1,7 @@
 import {
   weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/weekly-achievement/v1';
 
 import { weeklyAchievementPageSchema, weeklyAchievementSchema } from '../domains/achievement.model';
 import { toWeeklyAchievement, toWeeklyAchievementPage } from './achievement.mapper';

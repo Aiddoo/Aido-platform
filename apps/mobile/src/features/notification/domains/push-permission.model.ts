@@ -1,4 +1,4 @@
-import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
+import { isDeliverablePushPermission, PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import {
   diffMs,
@@ -62,12 +62,8 @@ type PushAskContext =
       now: Instant;
     };
 
-/** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
 function isPushDeliverable(permission: PushPermission): boolean {
-  return (
-    permission.status === PUSH_PERMISSION_STATUS.GRANTED ||
-    permission.status === PUSH_PERMISSION_STATUS.PROVISIONAL
-  );
+  return isDeliverablePushPermission(permission.status);
 }
 
 function isUndecided(permission: PushPermission): boolean {

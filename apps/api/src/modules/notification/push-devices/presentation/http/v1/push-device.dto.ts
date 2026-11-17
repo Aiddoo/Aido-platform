@@ -7,7 +7,7 @@ import {
   unregisterPushDeviceByTokenResponseSchema,
   unregisterPushDeviceByTokenSchema,
   unregisterPushTokenQuerySchema,
-} from "@aido/api/contracts/notification";
+} from "@aido/api/contracts/notification/v1";
 import type { z } from "zod";
 
 export const PushDeviceParamDto = pushDeviceParamSchema.meta({

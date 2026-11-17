@@ -1,12 +1,12 @@
 import {
-  NOTIFICATION_LIMITS,
   notificationBodySchema,
   notificationContentSchema,
   notificationRoutingSchema,
   notificationTitleSchema,
   pushNotificationDataSchema,
   todoCommentNotificationRoutingSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/notification/v1";
+import { NOTIFICATION_LIMITS } from "@aido/api/vocabulary";
 
 const COMMENT_ID = "cmt92zn3n000b7voxx9quc2th";
 const THREAD_ROOT_ID = "cmt92zn3n000a7voxx9quc2tg";

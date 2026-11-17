@@ -4,7 +4,7 @@ import {
   weeklyAchievementListResponseSchema,
   weeklyAchievementParamSchema,
   weeklyAchievementYearsResponseSchema,
-} from "@aido/api/contracts/weekly-achievement";
+} from "@aido/api/contracts/weekly-achievement/v1";
 import type { z } from "zod";
 
 export const GetWeeklyAchievementsQueryDto = getWeeklyAchievementsQuerySchema.meta({

@@ -1,7 +1,7 @@
 import {
   marketingPushOptOutResponseSchema,
   marketingPushOptOutSchema,
-} from "@aido/api/contracts/notification";
+} from "@aido/api/contracts/notification/v1";
 import type { z } from "zod";
 
 export const MarketingPushOptOutDto = marketingPushOptOutSchema.meta({

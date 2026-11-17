@@ -6,7 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { dailyCompletionsRangeResponseSchema } from "@aido/api";
+import { dailyCompletionsRangeResponseSchema } from "@aido/api/contracts/daily-completion/v1";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

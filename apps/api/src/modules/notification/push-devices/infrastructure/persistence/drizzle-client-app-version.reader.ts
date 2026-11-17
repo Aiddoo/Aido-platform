@@ -1,4 +1,4 @@
-import { compareSemanticVersions, isSemanticVersionAtLeast } from "@aido/api";
+import { compareSemanticVersions, isSemanticVersionAtLeast } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 

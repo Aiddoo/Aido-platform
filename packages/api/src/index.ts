@@ -1,4 +1,4 @@
-// identity·notification·insights가 subpath로 옮기면 이 파일과 package.json "."을 지운다
+// identity가 subpath로 옮기면 이 파일과 package.json "."을 지운다
 export * from "./common/index.js";
 export * from "./contracts/admin/v1/index.js";
 export * from "./contracts/ai/v1/index.js";
@@ -22,5 +22,5 @@ export * from "./contracts/user-preference/v1/index.js";
 export * from "./contracts/user-report/v1/index.js";
 export * from "./contracts/voice/v1/index.js";
 export * from "./contracts/weather/v1/index.js";
-export * from "./contracts/weekly-achievement/index.js";
+export * from "./contracts/weekly-achievement/v1/index.js";
 export * from "./vocabulary/index.js";

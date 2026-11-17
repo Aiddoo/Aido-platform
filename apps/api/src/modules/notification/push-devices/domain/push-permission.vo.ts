@@ -1,8 +1,6 @@
-import type { PushPermissionStatus } from "@aido/api/vocabulary";
+import { isDeliverablePushPermission, type PushPermissionStatus } from "@aido/api/vocabulary";
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
-
-import { permissionAllowsDelivery } from "./push-device.domain-service.js";
 
 interface PushPermissionValue {
   readonly status: PushPermissionStatus;
@@ -28,6 +26,6 @@ export class PushPermission extends ValueObject<PushPermissionValue> {
   }
 
   get allowsDelivery(): boolean {
-    return permissionAllowsDelivery(this.value.status);
+    return isDeliverablePushPermission(this.value.status);
   }
 }

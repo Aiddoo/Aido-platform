@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import { SUPPORT_EMAIL_ADDRESS, type SupportedLocale } from "@aido/api/vocabulary";
 import type { CSSProperties } from "react";
 import { Heading, Hr, Section, Text } from "react-email";
 
@@ -96,5 +96,5 @@ VerificationCodeEmail.PreviewProps = {
   kind: "verification",
   code: "482916",
   expiryMinutes: 10,
-  supportEmail: "support@aido.kr",
+  supportEmail: SUPPORT_EMAIL_ADDRESS,
 } satisfies VerificationCodeEmailProps;

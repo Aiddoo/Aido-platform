@@ -1,4 +1,4 @@
-import { dailyCompletionsRangeResponseSchema } from "@aido/api";
+import { dailyCompletionsRangeResponseSchema } from "@aido/api/contracts/daily-completion/v1";
 import { Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import request from "supertest";

@@ -1,7 +1,7 @@
 import {
   type NotificationNavigation,
   notificationNavigationSchema,
-} from "@aido/api/contracts/notification";
+} from "@aido/api/contracts/notification/v1";
 
 import {
   type NotificationNavigationSource,

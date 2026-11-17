@@ -2,7 +2,7 @@ import {
   weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
   weeklyAchievementYearsResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/weekly-achievement/v1";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 

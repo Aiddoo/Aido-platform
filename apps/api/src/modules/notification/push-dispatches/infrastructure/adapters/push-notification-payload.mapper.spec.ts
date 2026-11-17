@@ -1,4 +1,4 @@
-import { pushNotificationDataSchema } from "@aido/api";
+import { pushNotificationDataSchema } from "@aido/api/contracts/notification/v1";
 
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 

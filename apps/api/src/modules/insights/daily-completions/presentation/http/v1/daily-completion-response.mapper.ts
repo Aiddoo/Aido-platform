@@ -1,7 +1,7 @@
 import type {
   DailyCompletionSummary,
   DailyCompletionsRangeResponse,
-} from "@aido/api/contracts/daily-completion";
+} from "@aido/api/contracts/daily-completion/v1";
 
 import type {
   DailyCompletionRangeReadModel,

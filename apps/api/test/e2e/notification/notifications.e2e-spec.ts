@@ -6,7 +6,7 @@ import {
   notificationListResponseSchema,
   pushDeviceResponseSchema,
   unregisterPushDeviceByTokenResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/notification/v1";
 import { ErrorCode } from "@aido/api/errors";
 /**
  * Notification E2E 테스트

@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { type NotificationNavigation } from "@aido/api/contracts/notification/v1";
 import {
   buildWeatherRescheduleDeepLink,
   NOTICE_DEEP_LINK_PATH,
   NOTIFICATION_NAVIGATION_KIND,
   NOTIFICATION_TYPE,
-  type NotificationNavigation,
-} from "@aido/api";
+} from "@aido/api/vocabulary";
 
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import { toNotificationNavigation } from "./notification-navigation.mapper.js";

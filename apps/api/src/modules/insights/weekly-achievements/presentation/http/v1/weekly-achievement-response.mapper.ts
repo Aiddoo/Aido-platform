@@ -2,7 +2,7 @@ import type {
   WeeklyAchievementDetailResponse,
   WeeklyAchievementListResponse,
   WeeklyAchievementYearsResponse,
-} from "@aido/api/contracts/weekly-achievement";
+} from "@aido/api/contracts/weekly-achievement/v1";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { toIsoString } from "#api/shared/domain/time/instant";

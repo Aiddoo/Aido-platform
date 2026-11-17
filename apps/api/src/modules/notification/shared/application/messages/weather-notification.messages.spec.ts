@@ -1,4 +1,4 @@
-import { pushNotificationDataSchema } from "@aido/api";
+import { pushNotificationDataSchema } from "@aido/api/contracts/notification/v1";
 
 import type { WeatherBriefingDay } from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 

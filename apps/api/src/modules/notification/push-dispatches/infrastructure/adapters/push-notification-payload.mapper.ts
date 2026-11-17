@@ -1,4 +1,4 @@
-import type { PushNotificationData } from "@aido/api/contracts/notification";
+import type { PushNotificationData } from "@aido/api/contracts/notification/v1";
 import { NOTIFICATION_ACTION_TYPE } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

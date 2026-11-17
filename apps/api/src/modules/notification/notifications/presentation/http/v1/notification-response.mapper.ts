@@ -4,7 +4,7 @@ import {
   type NotificationInboxResponse,
   type NotificationMetadata,
   notificationMetadataSchema,
-} from "@aido/api/contracts/notification";
+} from "@aido/api/contracts/notification/v1";
 
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { SupportedLocale } from "#api/shared/domain/locale";

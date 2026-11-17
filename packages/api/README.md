@@ -11,7 +11,7 @@
 | `@aido/api/errors`                   | `ErrorCode`, HTTP 상태, 오류 응답 정의, 공개 details schema(`toPublicErrorDetails`) |
 | `@aido/api/vocabulary`               | Zod 없이 쓰는 순수 상수 튜플·union type                                             |
 
-루트 `@aido/api`와 버전 없는 `contracts/<feature>` 진입 파일은 identity·notification·insights가 버전 경로로 옮길 때까지만 남긴다. 새 코드는 위 경로만 쓴다.
+루트 `@aido/api`와 버전 없는 `contracts/auth`·`contracts/admin` 진입 파일은 identity가 버전 경로로 옮길 때까지만 남긴다. 새 코드는 위 경로만 쓴다.
 
 ## 작성 규칙
 

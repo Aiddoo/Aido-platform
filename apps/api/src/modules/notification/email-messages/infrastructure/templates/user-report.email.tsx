@@ -1,4 +1,4 @@
-import type { SupportedLocale } from "@aido/api/vocabulary";
+import { SUPPORT_EMAIL_ADDRESS, type SupportedLocale } from "@aido/api/vocabulary";
 import type { CSSProperties } from "react";
 import { Button, Section } from "react-email";
 
@@ -78,7 +78,7 @@ export default function UserReportEmail(props: UserReportEmailProps) {
 
 UserReportEmail.PreviewProps = {
   locale: "ko",
-  supportEmail: "support@aido.kr",
+  supportEmail: SUPPORT_EMAIL_ADDRESS,
   reportId: "clz7x5p8k0123qz0z8z8z8z8z",
   reporterId: "clz7x5p8k0001qz0z8z8z8z8z",
   reporterTag: "MORNING7",

@@ -7,7 +7,7 @@ import {
   type WeeklyAchievementListResponse,
   weeklyAchievementListResponseSchema,
   weeklyAchievementYearsResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/weekly-achievement/v1';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {

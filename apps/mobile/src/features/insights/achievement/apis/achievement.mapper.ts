@@ -2,7 +2,7 @@ import type {
   WeeklyAchievementDto,
   WeeklyAchievementListResponse,
   WeeklyAchievementYearsResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/weekly-achievement/v1';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
