@@ -57,7 +57,7 @@ const CODE_MAIL_COPY: Readonly<
 > = {
   ko: {
     subject: "[아이두] 이메일 인증 코드",
-    preview: "아래 코드를 10분 안에 앱에 입력해 주세요.",
+    preview: "아래 코드를 10분 안에 앱에 입력해주세요.",
   },
   en: {
     subject: "Your Aido verification code",

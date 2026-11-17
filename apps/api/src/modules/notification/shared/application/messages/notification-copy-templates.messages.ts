@@ -406,6 +406,14 @@ export const SOCIAL_COPY = {
     "social.FOLLOW_ACCEPTED",
     (catalog) => catalog.social.FOLLOW_ACCEPTED,
   ),
+  FOLLOW_NEW_UNNAMED: staticCopy(
+    "social.FOLLOW_NEW_UNNAMED",
+    (catalog) => catalog.social.FOLLOW_NEW_UNNAMED,
+  ),
+  FOLLOW_ACCEPTED_UNNAMED: staticCopy(
+    "social.FOLLOW_ACCEPTED_UNNAMED",
+    (catalog) => catalog.social.FOLLOW_ACCEPTED_UNNAMED,
+  ),
   INVITE_PROGRESS: defineNotificationCopy({
     key: "social.INVITE_PROGRESS",
     variants: (catalog) => catalog.social.INVITE_PROGRESS,

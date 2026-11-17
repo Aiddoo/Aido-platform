@@ -261,6 +261,18 @@
       "v2": { "title": "{senderWith} 친구가 됐어요 🎉", "body": "첫 응원을 먼저 보내볼까요?" },
       "v3": { "title": "친구가 한 명 늘었어요", "body": "{sender}에게 콕으로 인사해봐요 🐾" }
     },
+    "FOLLOW_NEW_UNNAMED": {
+      "default": {
+        "title": "새 친구 요청이 왔어요",
+        "body": "수락하면 서로의 할 일을 보고 응원할 수 있어요"
+      }
+    },
+    "FOLLOW_ACCEPTED_UNNAMED": {
+      "default": {
+        "title": "친구 요청이 수락됐어요",
+        "body": "이제 서로의 할 일을 보고 응원할 수 있어요"
+      }
+    },
     "INVITE_PROGRESS": {
       "default": {
         "title": "{inviteeSubject} 첫날 할 일을 끝냈어요 🐾",

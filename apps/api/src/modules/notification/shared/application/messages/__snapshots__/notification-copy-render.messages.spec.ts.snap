@@ -4764,18 +4764,8 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 수락 · 대체 이름 1`] 
 [
   {
     "body": "Now you can cheer each other on",
-    "title": "A friend accepted your friend request",
-    "variantId": "copy_render_v1.follow.accepted.v1",
-  },
-  {
-    "body": "Why not send the first cheer?",
-    "title": "You and your friend are friends now 🎉",
-    "variantId": "copy_render_v1.follow.accepted.v2",
-  },
-  {
-    "body": "Say hi to your friend with a nudge 🐾",
-    "title": "You’ve got a new friend",
-    "variantId": "copy_render_v1.follow.accepted.v3",
+    "title": "Friend request accepted",
+    "variantId": "copy_render_v1.follow.accepted.default",
   },
 ]
 `;
@@ -5244,18 +5234,8 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 요청 · 대체 이름 1`] 
 [
   {
     "body": "Accept to cheer each other on",
-    "title": "A friend sent you a friend request",
-    "variantId": "copy_render_v1.follow.request.v1",
-  },
-  {
-    "body": "To-dos are easier with a buddy 🐾",
-    "title": "A friend wants to be friends",
-    "variantId": "copy_render_v1.follow.request.v2",
-  },
-  {
-    "body": "Connect with your friend and cheer each other on",
     "title": "New friend request",
-    "variantId": "copy_render_v1.follow.request.v3",
+    "variantId": "copy_render_v1.follow.request.default",
   },
 ]
 `;
@@ -11584,18 +11564,8 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 수락 · 대체 이름 1`] 
 [
   {
     "body": "이제 서로의 할 일을 보고 응원할 수 있어요",
-    "title": "친구가 친구 요청을 수락했어요",
-    "variantId": "copy_render_v1.follow.accepted.v1",
-  },
-  {
-    "body": "첫 응원을 먼저 보내볼까요?",
-    "title": "친구와 친구가 됐어요 🎉",
-    "variantId": "copy_render_v1.follow.accepted.v2",
-  },
-  {
-    "body": "친구에게 콕으로 인사해봐요 🐾",
-    "title": "친구가 한 명 늘었어요",
-    "variantId": "copy_render_v1.follow.accepted.v3",
+    "title": "친구 요청이 수락됐어요",
+    "variantId": "copy_render_v1.follow.accepted.default",
   },
 ]
 `;
@@ -12064,18 +12034,8 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 요청 · 대체 이름 1`] 
 [
   {
     "body": "수락하면 서로의 할 일을 보고 응원할 수 있어요",
-    "title": "친구가 친구 요청을 보냈어요",
-    "variantId": "copy_render_v1.follow.request.v1",
-  },
-  {
-    "body": "같이 하면 할 일이 더 잘 끝나요 🐾",
-    "title": "친구가 친구가 되고 싶대요",
-    "variantId": "copy_render_v1.follow.request.v2",
-  },
-  {
-    "body": "친구와 서로 응원해볼까요?",
     "title": "새 친구 요청이 왔어요",
-    "variantId": "copy_render_v1.follow.request.v3",
+    "variantId": "copy_render_v1.follow.request.default",
   },
 ]
 `;

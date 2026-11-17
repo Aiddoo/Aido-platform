@@ -291,6 +291,12 @@
       },
       "v3": { "title": "You’ve got a new friend", "body": "Say hi to {sender} with a nudge 🐾" }
     },
+    "FOLLOW_NEW_UNNAMED": {
+      "default": { "title": "New friend request", "body": "Accept to cheer each other on" }
+    },
+    "FOLLOW_ACCEPTED_UNNAMED": {
+      "default": { "title": "Friend request accepted", "body": "Now you can cheer each other on" }
+    },
     "INVITE_PROGRESS": {
       "default": {
         "title": "{inviteeSubject} finished day one 🐾",

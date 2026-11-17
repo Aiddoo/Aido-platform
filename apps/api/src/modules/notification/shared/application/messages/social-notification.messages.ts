@@ -110,12 +110,15 @@ export function createFollowRequestNotificationMessage({
   locale,
   variantContext,
 }: FollowRequestNotificationInput): NotificationMessage {
-  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
-    facts: { senderName: toNameFact(senderName, locale) },
-    locale,
-    variantContext,
-    templateKey: "follow.request",
-  });
+  const senderNameFact = toNameFact(senderName, locale);
+  const options = { locale, variantContext, templateKey: "follow.request" };
+  // 이름을 모르면 이름 자리에 "친구"가 들어가 "친구가 친구 요청을…"처럼 겹치므로 이름 없는 문구를 쓴다
+  return senderNameFact == null
+    ? renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW_UNNAMED, { ...options, facts: {} })
+    : renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
+        ...options,
+        facts: { senderName: senderNameFact },
+      });
 }
 
 export function createFollowAcceptedNotificationMessage({
@@ -123,12 +126,15 @@ export function createFollowAcceptedNotificationMessage({
   locale,
   variantContext,
 }: FollowAcceptedNotificationInput): NotificationMessage {
-  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
-    facts: { senderName: toNameFact(senderName, locale) },
-    locale,
-    variantContext,
-    templateKey: "follow.accepted",
-  });
+  const senderNameFact = toNameFact(senderName, locale);
+  const options = { locale, variantContext, templateKey: "follow.accepted" };
+  // 이름을 모르면 "친구가 친구 요청을 수락했어요"처럼 겹치므로 이름 없는 문구를 쓴다
+  return senderNameFact == null
+    ? renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED_UNNAMED, { ...options, facts: {} })
+    : renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
+        ...options,
+        facts: { senderName: senderNameFact },
+      });
 }
 
 export interface InviteJoinedNotificationInput extends LocalizedVariantInput {
