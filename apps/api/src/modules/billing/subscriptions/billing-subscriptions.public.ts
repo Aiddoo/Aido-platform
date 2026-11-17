@@ -8,6 +8,6 @@ export {
 // 여러 사용자를 한 SQL로 고르는 조회가 구독 테이블을 직접 읽지 않고 같은 엔타이틀먼트 규칙을 쓴다
 export {
   storeEntitlementExistsCondition,
-  storeEntitlementWindowsQuery,
+  storeEntitlementWindows,
   validStoreEntitlementCondition,
 } from "./infrastructure/persistence/store-entitlement-conditions.query-fragment.js";

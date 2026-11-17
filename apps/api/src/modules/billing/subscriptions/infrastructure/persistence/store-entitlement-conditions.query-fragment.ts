@@ -46,10 +46,20 @@ export function storeEntitlementExistsCondition(userId: AnyPgColumn, at: Date): 
 }
 
 /**
- * 사용자 조회에 붙이는 subscriptions 관계 조건. 엔타이틀먼트 끝 판단(storeEntitlementEndsAt)에 필요한 칸을
- * 지우지 않은 ACTIVE·CANCELLED 행에서만 읽는다.
+ * 사용자 id 칸 옆에 붙이는 엔타이틀먼트 구간 하위 질의. 엔타이틀먼트 끝 판단(storeEntitlementEndsAt)에 필요한 칸을
+ * 지우지 않은 ACTIVE·CANCELLED 행에서만 읽는다. 구독이 없으면 LEFT JOIN 칸이 모두 null이다.
  */
-export const storeEntitlementWindowsQuery = {
-  columns: { status: true, expiresAt: true, gracePeriodEndsAt: true },
-  where: { status: { in: ENTITLED_STORE_STATUSES }, deletedAt: { isNull: true } },
-} as const;
+export function storeEntitlementWindows() {
+  return new QueryBuilder()
+    .select({
+      userId: subscription.userId,
+      status: subscription.status,
+      expiresAt: subscription.expiresAt,
+      gracePeriodEndsAt: subscription.gracePeriodEndsAt,
+    })
+    .from(subscription)
+    .where(
+      and(inArray(subscription.status, ENTITLED_STORE_STATUSES), isNull(subscription.deletedAt)),
+    )
+    .as("store_entitlement_windows");
+}

@@ -1,8 +1,11 @@
 import { AI_REPORT_TYPES, resolveSupportedLocale } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { and, asc, eq, gt } from "drizzle-orm";
 
 import { premiumAccessCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { userAccessSubjects } from "#api/modules/identity/users/identity-users-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
@@ -89,23 +92,10 @@ export class ReportGenerationScheduler implements OnModuleInit {
 
     await forEachBatch({
       batchSize: ENQUEUE_BATCH_SIZE,
-      fetchPage: (cursor, take) =>
-        this.#db.query.user.findMany({
-          columns: { id: true },
-          with: { preference: { columns: { timezone: true, locale: true } } },
-          where: {
-            // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
-            ...(cursor != null && { id: { gt: cursor } }),
-            RAW: (target) => premiumAccessCondition(target, instantToDate(this.#clock.now())),
-            status: "ACTIVE",
-            deletedAt: { isNull: true },
-          },
-          orderBy: { id: "asc" },
-          limit: take,
-        }),
+      fetchPage: (cursor, take) => this.#findRecipientPage(cursor, take),
       onBatch: async (batch) => {
         const due = batch.flatMap((user) => {
-          const timezone = resolveTimezone(user.preference?.timezone ?? TimeZone.SEOUL.value);
+          const timezone = resolveTimezone(user.timezone ?? TimeZone.SEOUL.value);
           return isInReportDispatchWindow(type, dispatchedAt, timezone) ? [{ user, timezone }] : [];
         });
         if (due.length === 0) {
@@ -119,7 +109,7 @@ export class ReportGenerationScheduler implements OnModuleInit {
               data: {
                 userId: user.id,
                 timezone,
-                locale: resolveSupportedLocale(user.preference?.locale),
+                locale: resolveSupportedLocale(user.locale),
                 reportType: type,
               },
             },
@@ -160,5 +150,23 @@ export class ReportGenerationScheduler implements OnModuleInit {
         { idempotencyKey: AiReportJobKey.dispatch(reportType, hourId) },
       );
     }
+  }
+
+  // 활성 유료 사용자를 id 순서로 한 쪽씩 읽는다. 유료 판단은 쪽마다 지금 시각으로 한다
+  #findRecipientPage(cursor: string | undefined, take: number) {
+    const subject = userAccessSubjects({ activeOnly: true });
+    const preference = userDeliveryPreference();
+    return this.#db
+      .select({ id: subject.id, timezone: preference.timezone, locale: preference.locale })
+      .from(subject)
+      .leftJoin(preference, eq(preference.userId, subject.id))
+      .where(
+        and(
+          cursor == null ? undefined : gt(subject.id, cursor),
+          premiumAccessCondition(subject, instantToDate(this.#clock.now())),
+        ),
+      )
+      .orderBy(asc(subject.id))
+      .limit(take);
   }
 }

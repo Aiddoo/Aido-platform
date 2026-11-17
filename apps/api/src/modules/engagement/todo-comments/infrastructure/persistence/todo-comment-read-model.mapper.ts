@@ -1,9 +1,11 @@
 import type { TransactionHost } from "@nestjs-cls/transactional";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 
+import { userDisplayProfiles } from "#api/modules/identity/users/identity-users-queries.public";
+import { todoOwners } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
+import { todoComment } from "#api/platform/database/schema/index";
 
 import type {
   TodoCommentParticipantAuthorReadModel,
@@ -14,13 +16,11 @@ import { DELETED_COMMENT_AUTHOR } from "../../domain/todo-comments.constants.js"
 
 export type TodoCommentDatabase = TransactionHost<DrizzleTransactionalAdapter>["tx"];
 
-// 응답 칸을 붙이는 LEFT JOIN 여섯 개의 별칭. 모든 댓글 조회가 같은 이름으로 붙인다
-export const commentTodo = alias(todo, "comment_todo");
-export const authorProfile = alias(userProfile, "author_profile");
-export const authorUser = alias(user, "author_user");
+// 응답 칸을 붙이는 LEFT JOIN 네 개의 별칭. 모든 댓글 조회가 같은 이름으로 붙인다
+export const commentTodo = todoOwners("comment_todo");
+export const commentAuthor = userDisplayProfiles("comment_author");
 export const replyTarget = alias(todoComment, "reply_target");
-export const replyTargetProfile = alias(userProfile, "reply_target_profile");
-export const replyTargetUser = alias(user, "reply_target_user");
+export const replyTargetAuthor = userDisplayProfiles("reply_target_author");
 export const candidateComment = alias(todoComment, "candidate");
 export const anchorComment = alias(todoComment, "anchor_comment");
 
@@ -48,13 +48,13 @@ type CommentProjection<TSource extends CommentSource> = {
   readonly threadCommentId: TSource["parentId"];
   readonly replyToCommentId: TSource["replyToCommentId"];
   readonly authorId: TSource["authorId"];
-  readonly authorName: typeof authorProfile.name;
-  readonly authorUserTag: typeof authorUser.userTag;
-  readonly authorProfileImage: typeof authorProfile.profileImage;
+  readonly authorName: typeof commentAuthor.name;
+  readonly authorUserTag: typeof commentAuthor.userTag;
+  readonly authorProfileImage: typeof commentAuthor.profileImage;
   readonly replyToAuthorId: typeof replyTarget.authorId;
-  readonly replyToAuthorName: typeof replyTargetProfile.name;
-  readonly replyToAuthorUserTag: typeof replyTargetUser.userTag;
-  readonly todoOwnerId: typeof commentTodo.userId;
+  readonly replyToAuthorName: typeof replyTargetAuthor.name;
+  readonly replyToAuthorUserTag: typeof replyTargetAuthor.userTag;
+  readonly todoOwnerId: typeof commentTodo.ownerId;
   readonly content: TSource["content"];
   readonly likeCount: TSource["likeCount"];
   readonly replyCount: TSource["replyCount"];
@@ -112,7 +112,7 @@ export function columnsOf<TSource extends CommentSource>(
   };
 }
 
-/** 작성자·답글 대상·할 일 주인을 붙인 응답 칸. 쿼리마다 같은 LEFT JOIN 여섯 개로 붙인다 */
+/** 작성자·답글 대상·할 일 주인을 붙인 응답 칸. 쿼리마다 같은 LEFT JOIN 네 개로 붙인다 */
 export function projectionOf<TSource extends CommentSource>(
   source: TSource,
 ): CommentProjection<TSource> {
@@ -122,13 +122,13 @@ export function projectionOf<TSource extends CommentSource>(
     threadCommentId: source.parentId,
     replyToCommentId: source.replyToCommentId,
     authorId: source.authorId,
-    authorName: authorProfile.name,
-    authorUserTag: authorUser.userTag,
-    authorProfileImage: authorProfile.profileImage,
+    authorName: commentAuthor.name,
+    authorUserTag: commentAuthor.userTag,
+    authorProfileImage: commentAuthor.profileImage,
     replyToAuthorId: replyTarget.authorId,
-    replyToAuthorName: replyTargetProfile.name,
-    replyToAuthorUserTag: replyTargetUser.userTag,
-    todoOwnerId: commentTodo.userId,
+    replyToAuthorName: replyTargetAuthor.name,
+    replyToAuthorUserTag: replyTargetAuthor.userTag,
+    todoOwnerId: commentTodo.ownerId,
     content: source.content,
     likeCount: source.likeCount,
     replyCount: source.replyCount,

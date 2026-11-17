@@ -2,6 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 
+import { userDisplayProfiles } from "#api/modules/identity/users/identity-users-queries.public";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -11,14 +12,12 @@ import { TodoCommentReaderPort } from "../../application/ports/todo-comment.read
 import type { TodoCommentReadModel } from "../../application/read-models/todo-comment.read-model.js";
 import {
   anchorComment,
-  authorProfile,
-  authorUser,
+  commentAuthor,
   columnsOf,
   commentTodo,
   projectionOf,
   replyTarget,
-  replyTargetProfile,
-  replyTargetUser,
+  replyTargetAuthor,
   requireTodoCommentReadModel,
   toDisplayName,
 } from "./todo-comment-read-model.mapper.js";
@@ -51,12 +50,10 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
     const rows = await this.#db
       .select(projectionOf(source))
       .from(anchorComment)
-      .leftJoin(commentTodo, eq(commentTodo.id, source.todoId))
-      .leftJoin(authorProfile, eq(authorProfile.userId, source.authorId))
-      .leftJoin(authorUser, eq(authorUser.id, source.authorId))
+      .leftJoin(commentTodo, eq(commentTodo.todoId, source.todoId))
+      .leftJoin(commentAuthor, eq(commentAuthor.userId, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
-      .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
-      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
+      .leftJoin(replyTargetAuthor, eq(replyTargetAuthor.userId, replyTarget.authorId))
       .where(and(eq(anchorComment.todoId, todoId.value), inArray(anchorComment.id, ids)));
     const commentsById = new Map(
       rows.map((row) => [row.commentId, requireTodoCommentReadModel(row)]),
@@ -68,18 +65,13 @@ export class DrizzleTodoCommentReader implements TodoCommentReaderPort {
   }
 
   async findUserDisplayName(userId: UserId): Promise<string | null> {
-    const found = await this.#db.query.user.findFirst({
-      columns: { id: true, userTag: true },
-      with: { profile: { columns: { name: true } } },
-      where: { id: userId.value },
-    });
-    return found == null
-      ? null
-      : toDisplayName({
-          userId: found.id,
-          name: found.profile?.name ?? null,
-          userTag: found.userTag,
-        });
+    const display = userDisplayProfiles("display_name");
+    const [found] = await this.#db
+      .select({ userId: display.userId, name: display.name, userTag: display.userTag })
+      .from(display)
+      .where(eq(display.userId, userId.value))
+      .limit(1);
+    return found == null ? null : toDisplayName(found);
   }
 
   get #db() {

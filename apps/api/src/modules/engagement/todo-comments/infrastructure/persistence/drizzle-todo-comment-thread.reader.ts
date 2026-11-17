@@ -4,9 +4,11 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, min, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { userDisplayProfiles } from "#api/modules/identity/users/identity-users-queries.public";
+import { todoOwners } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { type KeysetOperand, tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
-import { todo, todoComment, user, userProfile } from "#api/platform/database/schema/index";
+import { todoComment } from "#api/platform/database/schema/index";
 
 import type {
   ListTodoCommentThreadsParams,
@@ -21,16 +23,14 @@ import type {
 } from "../../application/read-models/todo-comment.read-model.js";
 import {
   anchorComment,
-  authorProfile,
-  authorUser,
+  commentAuthor,
   candidateComment,
   type CommentSource,
   columnsOf,
   commentTodo,
   projectionOf,
   replyTarget,
-  replyTargetProfile,
-  replyTargetUser,
+  replyTargetAuthor,
   requireTodoCommentReadModel,
   type TodoCommentDatabase,
   toRootPosition,
@@ -42,9 +42,8 @@ import { toTodoCommentKeysetWindow } from "./todo-comment-window.mapper.js";
 const requestedComment = alias(todoComment, "requested");
 const previewComment = alias(todoComment, "preview");
 const participantComment = alias(todoComment, "participant");
-const ownerTodo = alias(todo, "owner_todo");
-const participantProfile = alias(userProfile, "participant_profile");
-const participantUser = alias(user, "participant_user");
+const ownerTodo = todoOwners("owner_todo");
+const participantProfile = userDisplayProfiles("participant_profile");
 
 interface ThreadSummary {
   readonly previewReply: TodoCommentReadModel | null;
@@ -146,7 +145,7 @@ function previewReplyOf(database: TodoCommentDatabase) {
     .from(previewComment)
     .where(and(eq(previewComment.parentId, requestedComment.id), isNull(previewComment.deletedAt)))
     .orderBy(
-      desc(eq(previewComment.authorId, ownerTodo.userId)),
+      desc(eq(previewComment.authorId, ownerTodo.ownerId)),
       asc(previewComment.createdAt),
       asc(previewComment.id),
     )
@@ -171,7 +170,7 @@ function participantAuthorsOf(database: TodoCommentDatabase) {
     )
     .groupBy(participantComment.authorId)
     .orderBy(
-      desc(eq(participantComment.authorId, ownerTodo.userId)),
+      desc(eq(participantComment.authorId, ownerTodo.ownerId)),
       asc(firstRepliedAt),
       asc(participantComment.authorId),
     )
@@ -229,12 +228,10 @@ export class DrizzleTodoCommentThreadReader implements TodoCommentThreadReaderPo
     )
       .select(projectionOf(source))
       .from(selected)
-      .leftJoin(commentTodo, eq(commentTodo.id, source.todoId))
-      .leftJoin(authorProfile, eq(authorProfile.userId, source.authorId))
-      .leftJoin(authorUser, eq(authorUser.id, source.authorId))
+      .leftJoin(commentTodo, eq(commentTodo.todoId, source.todoId))
+      .leftJoin(commentAuthor, eq(commentAuthor.userId, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
-      .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
-      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
+      .leftJoin(replyTargetAuthor, eq(replyTargetAuthor.userId, replyTarget.authorId))
       .orderBy(...rootSortColumns(selected, params.sort).map((column) => desc(column)));
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;
@@ -274,22 +271,19 @@ export class DrizzleTodoCommentThreadReader implements TodoCommentThreadReaderPo
         preview: projectionOf(previewSource),
         participantAuthorId: participant.authorId,
         participantAuthorName: participantProfile.name,
-        participantAuthorUserTag: participantUser.userTag,
+        participantAuthorUserTag: participantProfile.userTag,
         participantAuthorProfileImage: participantProfile.profileImage,
-        ownerId: ownerTodo.userId,
+        ownerId: ownerTodo.ownerId,
       })
       .from(requestedComment)
-      .innerJoin(ownerTodo, eq(ownerTodo.id, requestedComment.todoId))
+      .innerJoin(ownerTodo, eq(ownerTodo.todoId, requestedComment.todoId))
       .leftJoinLateral(preview, eq(preview.parentId, requestedComment.id))
-      .leftJoin(commentTodo, eq(commentTodo.id, previewSource.todoId))
-      .leftJoin(authorProfile, eq(authorProfile.userId, previewSource.authorId))
-      .leftJoin(authorUser, eq(authorUser.id, previewSource.authorId))
+      .leftJoin(commentTodo, eq(commentTodo.todoId, previewSource.todoId))
+      .leftJoin(commentAuthor, eq(commentAuthor.userId, previewSource.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, previewSource.replyToCommentId))
-      .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
-      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
+      .leftJoin(replyTargetAuthor, eq(replyTargetAuthor.userId, replyTarget.authorId))
       .leftJoinLateral(participant, isNotNull(participant.authorId))
       .leftJoin(participantProfile, eq(participantProfile.userId, participant.authorId))
-      .leftJoin(participantUser, eq(participantUser.id, participant.authorId))
       .where(
         and(
           eq(requestedComment.todoId, todoId),
@@ -298,7 +292,7 @@ export class DrizzleTodoCommentThreadReader implements TodoCommentThreadReaderPo
       )
       .orderBy(
         asc(requestedComment.id),
-        desc(eq(participant.authorId, ownerTodo.userId)),
+        desc(eq(participant.authorId, ownerTodo.ownerId)),
         asc(participant.firstRepliedAt),
         asc(participant.authorId),
       );

@@ -15,15 +15,13 @@ import type {
 } from "../../application/read-models/todo-comment.read-model.js";
 import {
   anchorComment,
-  authorProfile,
-  authorUser,
+  commentAuthor,
   candidateComment,
   columnsOf,
   commentTodo,
   projectionOf,
   replyTarget,
-  replyTargetProfile,
-  replyTargetUser,
+  replyTargetAuthor,
   requireTodoCommentReadModel,
   type TodoCommentDatabase,
 } from "./todo-comment-read-model.mapper.js";
@@ -119,12 +117,10 @@ export class DrizzleTodoCommentReplyReader implements TodoCommentReplyReaderPort
     )
       .select(projectionOf(source))
       .from(selected)
-      .leftJoin(commentTodo, eq(commentTodo.id, source.todoId))
-      .leftJoin(authorProfile, eq(authorProfile.userId, source.authorId))
-      .leftJoin(authorUser, eq(authorUser.id, source.authorId))
+      .leftJoin(commentTodo, eq(commentTodo.todoId, source.todoId))
+      .leftJoin(commentAuthor, eq(commentAuthor.userId, source.authorId))
       .leftJoin(replyTarget, eq(replyTarget.id, source.replyToCommentId))
-      .leftJoin(replyTargetProfile, eq(replyTargetProfile.userId, replyTarget.authorId))
-      .leftJoin(replyTargetUser, eq(replyTargetUser.id, replyTarget.authorId))
+      .leftJoin(replyTargetAuthor, eq(replyTargetAuthor.userId, replyTarget.authorId))
       .orderBy(asc(selected.createdAt), asc(selected.id));
     if (params.mode !== "INITIAL" && rows.length === 0) {
       return null;

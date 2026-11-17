@@ -1,8 +1,12 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { and, asc, eq, gt } from "drizzle-orm";
 
 import { premiumAccessCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { userDeliveryPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { userAccessSubjects } from "#api/modules/identity/users/identity-users-queries.public";
+import { hasNonRepeatingTodoFrom } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
@@ -78,27 +82,10 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
 
     await forEachBatch({
       batchSize: ENQUEUE_BATCH_SIZE,
-      fetchPage: (cursor, take) =>
-        this.#transactionHost.tx.query.user.findMany({
-          columns: { id: true },
-          with: { preference: { columns: { timezone: true } } },
-          where: {
-            // Drizzle 1.0 RC는 undefined 조건을 거절하므로 첫 페이지에서는 조건을 빼야 한다
-            ...(cursor != null && { id: { gt: cursor } }),
-            RAW: (target) => premiumAccessCondition(target, atDate),
-            status: "ACTIVE",
-            deletedAt: { isNull: true },
-            todos: {
-              startDate: { gte: recentFrom },
-              seriesId: { isNull: true },
-            },
-          },
-          orderBy: { id: "asc" },
-          limit: take,
-        }),
+      fetchPage: (cursor, take) => this.#findCandidatePage({ cursor, take, atDate, recentFrom }),
       onBatch: async (batch) => {
         const targets = batch.flatMap((user) => {
-          const timeZone = resolveSuggestionTimeZone(user.preference?.timezone);
+          const timeZone = resolveSuggestionTimeZone(user.timezone);
           return isInSuggestionDispatchWindow({ at, timeZone })
             ? [{ userId: UserId.reconstitute(user.id), timeZone }]
             : [];
@@ -112,5 +99,29 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
       queueName: AI_SUGGESTION_QUEUE.name,
       enqueuedCount: totalEnqueued,
     });
+  }
+
+  // 최근 반복 아닌 할 일이 있는 활성 유료 사용자를 id 순서로 한 쪽씩 읽는다
+  #findCandidatePage(page: {
+    readonly cursor: string | undefined;
+    readonly take: number;
+    readonly atDate: Date;
+    readonly recentFrom: Temporal.PlainDate;
+  }) {
+    const subject = userAccessSubjects({ activeOnly: true });
+    const preference = userDeliveryPreference();
+    return this.#transactionHost.tx
+      .select({ id: subject.id, timezone: preference.timezone })
+      .from(subject)
+      .leftJoin(preference, eq(preference.userId, subject.id))
+      .where(
+        and(
+          page.cursor == null ? undefined : gt(subject.id, page.cursor),
+          premiumAccessCondition(subject, page.atDate),
+          hasNonRepeatingTodoFrom(subject.id, page.recentFrom),
+        ),
+      )
+      .orderBy(asc(subject.id))
+      .limit(page.take);
   }
 }

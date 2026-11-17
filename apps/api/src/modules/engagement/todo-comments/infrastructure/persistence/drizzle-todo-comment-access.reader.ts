@@ -1,10 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { and, eq, or } from "drizzle-orm";
 
+import { userDisplayProfiles } from "#api/modules/identity/users/identity-users-queries.public";
 import {
   type TodoId,
   TodoDetailsReaderPort,
 } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { acceptedFriendshipsOf } from "#api/modules/social/friendships/social-friendships.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -56,20 +59,15 @@ export class DrizzleTodoCommentAccessReader implements TodoCommentAccessReaderPo
     if (!canAccess) {
       return null;
     }
-    const owner = requireRecord(
-      await this.#db.query.user.findFirst({
-        columns: { id: true },
-        where: { id: todo.userId },
-        with: { profile: { columns: { name: true, profileImage: true } } },
-      }),
-    );
+    const display = userDisplayProfiles("todo_owner");
+    const [owner] = await this.#db
+      .select({ id: display.userId, name: display.name, profileImage: display.profileImage })
+      .from(display)
+      .where(eq(display.userId, todo.userId))
+      .limit(1);
     return {
       todo,
-      owner: {
-        id: owner.id,
-        name: owner.profile?.name ?? null,
-        profileImage: owner.profile?.profileImage ?? null,
-      },
+      owner: requireRecord(owner),
       viewCount: details.viewCount,
       commentCount: todo.commentCount,
       isOwner,
@@ -77,16 +75,17 @@ export class DrizzleTodoCommentAccessReader implements TodoCommentAccessReaderPo
   }
 
   async #isAcceptedFriend(firstUserId: string, secondUserId: string): Promise<boolean> {
-    const friendship = await this.#db.query.friendship.findFirst({
-      columns: { id: true },
-      where: {
-        status: "ACCEPTED",
-        OR: [
-          { followerId: firstUserId, followingId: secondUserId },
-          { followerId: secondUserId, followingId: firstUserId },
-        ],
-      },
-    });
+    const friendships = acceptedFriendshipsOf([firstUserId]);
+    const [friendship] = await this.#db
+      .select({ followerId: friendships.followerId })
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.followerId, firstUserId), eq(friendships.followingId, secondUserId)),
+          and(eq(friendships.followerId, secondUserId), eq(friendships.followingId, firstUserId)),
+        ),
+      )
+      .limit(1);
     return friendship != null;
   }
 

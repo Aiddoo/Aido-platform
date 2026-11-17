@@ -26,6 +26,12 @@ interface SliceShapeViolation {
 const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: string })[] = [
   {
     rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
+    path: "identity/users/identity-users-queries.public.ts",
+    reason:
+      "access 권한 조건이 쓰는 사용자 조회 조각만 연다. identity-users.public을 쓰면 access와 파일 순환이다",
+  },
+  {
+    rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
     path: "notification/notifications/notification-notifications-jobs.public.ts",
     reason: "identity preferences ↔ notification 파일 순환 때문에 기능 Module 대신 큐만 연다",
   },

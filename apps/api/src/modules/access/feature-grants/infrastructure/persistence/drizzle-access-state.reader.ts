@@ -2,7 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, sum } from "drizzle-orm";
 
-import { storeEntitlementWindowsQuery } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { storeEntitlementWindows } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { userAccessSubjects } from "#api/modules/identity/users/identity-users-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { featureGrant } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -26,22 +27,11 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
   }
 
   async findActiveUserAccessState(userId: UserId): Promise<AccessState | null> {
-    // 스토어 유예(웹훅 대기·결제 유예)는 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 구독 행을 붙인다
-    const row = await this.#db.query.user.findFirst({
-      columns: { role: true, subscriptionStatus: true, subscriptionExpiresAt: true },
-      with: { subscriptions: storeEntitlementWindowsQuery },
-      where: { id: userId.value, status: "ACTIVE", deletedAt: { isNull: true } },
-    });
-    return row == null ? null : toAccessState(row);
+    return this.#findAccessState(userId, { activeOnly: true });
   }
 
   async findAccessState(userId: UserId): Promise<AccessState | null> {
-    const row = await this.#db.query.user.findFirst({
-      columns: { role: true, subscriptionStatus: true, subscriptionExpiresAt: true },
-      with: { subscriptions: storeEntitlementWindowsQuery },
-      where: { id: userId.value },
-    });
-    return row == null ? null : toAccessState(row);
+    return this.#findAccessState(userId, { activeOnly: false });
   }
 
   async sumFeatureGrants(userId: UserId): Promise<FeatureGrants> {
@@ -57,24 +47,55 @@ export class DrizzleAccessStateReader implements AccessStateReaderPort {
       ),
     );
   }
+
+  // 스토어 유예(웹훅 대기·결제 유예)는 행에서만 알 수 있어 같은 조회에 옮겨 가지 않은 구독 행을 붙인다
+  async #findAccessState(
+    userId: UserId,
+    filter: { readonly activeOnly: boolean },
+  ): Promise<AccessState | null> {
+    const subject = userAccessSubjects(filter);
+    const store = storeEntitlementWindows();
+    const rows = await this.#db
+      .select({
+        role: subject.role,
+        subscriptionStatus: subject.subscriptionStatus,
+        subscriptionExpiresAt: subject.subscriptionExpiresAt,
+        store: {
+          status: store.status,
+          expiresAt: store.expiresAt,
+          gracePeriodEndsAt: store.gracePeriodEndsAt,
+        },
+      })
+      .from(subject)
+      .leftJoin(store, eq(store.userId, subject.id))
+      .where(eq(subject.id, userId.value));
+    return toAccessState(rows);
+  }
 }
 
-function toAccessState(row: {
+interface AccessStateRow {
   readonly role: AccessState["role"];
   readonly subscriptionStatus: AccessState["subscriptionStatus"];
   readonly subscriptionExpiresAt: Temporal.Instant | null;
-  readonly subscriptions: ReadonlyArray<{
+  readonly store: {
     readonly status: string;
     readonly expiresAt: Temporal.Instant;
     readonly gracePeriodEndsAt: Temporal.Instant | null;
-  }>;
-}): AccessState {
+  } | null;
+}
+
+// 사용자 행마다 옮겨 가지 않은 구독 행이 하나씩 붙는다. 구독이 없으면 store가 null인 한 행이다
+function toAccessState(rows: readonly AccessStateRow[]): AccessState | null {
+  const [first] = rows;
+  if (first == null) {
+    return null;
+  }
   return {
-    role: row.role,
-    subscriptionStatus: row.subscriptionStatus,
+    role: first.role,
+    subscriptionStatus: first.subscriptionStatus,
     accessDeadline: resolvePaidAccessDeadline({
-      subscriptionExpiresAt: row.subscriptionExpiresAt,
-      storeEntitlements: row.subscriptions,
+      subscriptionExpiresAt: first.subscriptionExpiresAt,
+      storeEntitlements: rows.flatMap((row) => (row.store == null ? [] : [row.store])),
     }),
   };
 }
