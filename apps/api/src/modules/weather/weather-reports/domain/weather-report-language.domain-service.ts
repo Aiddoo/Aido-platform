@@ -7,9 +7,9 @@ export type WeatherReportLanguage = SupportedLocale;
  * Accept-Language를 보내지 않은 요청은 한국어 기본값 대신 영어로 받는다.
  */
 export function resolveWeatherReportLanguage(
-  locale: SupportedLocale | undefined,
+  requestedLocale: SupportedLocale | null,
 ): WeatherReportLanguage {
-  return locale ?? FALLBACK_LOCALE;
+  return requestedLocale ?? FALLBACK_LOCALE;
 }
 
 /** 번역 문구가 없는 지역의 리포트는 언어와 관계없이 한 캐시를 같이 쓴다. */

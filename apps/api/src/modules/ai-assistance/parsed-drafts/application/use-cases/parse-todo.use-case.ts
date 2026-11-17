@@ -30,13 +30,13 @@ export interface ParseTodoCommand {
   /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
   readonly timezone: string | undefined;
   readonly categoryId: number | undefined;
-  /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
-  readonly locale: SupportedLocale | undefined;
+  /** Accept-Language 헤더가 고른 언어. null이면 저장된 사용자 언어를 쓴다(resolveRequestLocale). */
+  readonly requestedLocale: SupportedLocale | null;
   /** 앱이 연결을 끊으면 AI 호출을 멈추고 환불한다. */
   readonly signal?: AbortSignal;
 }
 
-interface ResolvedParseTodoCommand extends ParseTodoCommand {
+interface ResolvedParseTodoCommand extends Omit<ParseTodoCommand, "requestedLocale"> {
   readonly timezone: string;
   readonly locale: SupportedLocale;
 }

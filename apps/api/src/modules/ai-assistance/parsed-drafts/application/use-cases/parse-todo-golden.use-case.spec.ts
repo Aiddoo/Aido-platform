@@ -26,7 +26,7 @@ describe("ParseTodoUseCase golden — fake model이 draft를 내면 공개 응�
       text: golden.input,
       timezone: golden.timezone,
       categoryId: undefined,
-      locale: golden.locale,
+      requestedLocale: golden.locale,
     });
     // Then
     // 출시 앱 필드가 그대로인지 본다. repeat는 resolve-todo-schedule.spec에서 따로 검증한다.

@@ -72,9 +72,12 @@ export function notificationFriendFallback(locale: SupportedLocale): string {
   return NOTIFICATION_COPY_CATALOG[locale].parts.name.unknownActor;
 }
 
-/** 호출자가 넘긴 대체 이름은 "이름 모름"으로 저장해 다른 언어에서 그 언어의 대체 이름으로 렌더링한다. */
+/** 빈 이름(공백뿐 포함)과 호출자가 넘긴 대체 이름은 "이름 모름"으로 저장해 다른 언어에서 그 언어의 대체 이름으로 렌더링한다. */
 export function toNameFact(name: string | null, locale: SupportedLocale): string | null {
-  return name == null || name === notificationFriendFallback(locale) ? null : name;
+  if (name == null || name.trim() === "" || name === notificationFriendFallback(locale)) {
+    return null;
+  }
+  return name;
 }
 
 /** 푸시를 만드는 순간에만 쓰는 표시 함수. 저장한 사실로 다시 렌더링할 때는 사실 값으로 직접 만든다. */

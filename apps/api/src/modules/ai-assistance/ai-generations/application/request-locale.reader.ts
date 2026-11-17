@@ -7,7 +7,8 @@ import type { UserLocalePreferenceReadModel } from "./read-models/user-locale-pr
 
 export interface RequestedLocale {
   readonly timezone: string | undefined;
-  readonly locale: SupportedLocale | undefined;
+  /** 요청이 고른 언어(Accept-Language). null이면 보내지 않은 요청이라 저장된 언어를 쓴다 */
+  readonly requestedLocale: SupportedLocale | null;
 }
 
 /**
@@ -19,10 +20,10 @@ export async function resolveRequestLocale(
   userId: UserId,
   requested: RequestedLocale,
 ): Promise<UserLocalePreferenceReadModel> {
-  const { timezone, locale } = requested;
-  if (timezone != null && locale != null) {
-    return { timezone, locale };
+  const { timezone, requestedLocale } = requested;
+  if (timezone != null && requestedLocale != null) {
+    return { timezone, locale: requestedLocale };
   }
   const stored = await reader.read(userId);
-  return { timezone: timezone ?? stored.timezone, locale: locale ?? stored.locale };
+  return { timezone: timezone ?? stored.timezone, locale: requestedLocale ?? stored.locale };
 }

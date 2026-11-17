@@ -82,7 +82,7 @@ export class VoiceNoteController {
     @Body({ schema: VoiceNoteDigestRequestDto }) dto: VoiceNoteDigestRequestDto,
     @IdempotencyKey() idempotencyKey: string,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<VoiceNoteDigestResponseDto> {
     const digested = await this.#digestVoiceNote.execute({
@@ -92,7 +92,7 @@ export class VoiceNoteController {
       segments: dto.segments,
       idempotencyKey,
       timezone,
-      locale,
+      requestedLocale,
       signal,
     });
     return toVoiceNoteDigestResponse(digested);

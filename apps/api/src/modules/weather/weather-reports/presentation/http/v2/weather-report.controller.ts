@@ -95,12 +95,12 @@ export class WeatherReportController {
   @ApiServiceUnavailableError(ErrorCode.WEATHER_1901)
   async getReport(
     @CurrentUser() user: CurrentUserPayload,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
   ): Promise<WeatherReportResponse> {
     const result = await this.#getWeatherReport.execute({
       userId: user.userId,
-      language: resolveWeatherReportLanguage(locale),
+      language: resolveWeatherReportLanguage(requestedLocale),
       timezone,
     });
     return toWeatherReportResponse(result);

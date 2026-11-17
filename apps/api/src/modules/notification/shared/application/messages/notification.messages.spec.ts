@@ -8,12 +8,15 @@ import {
   createWeeklyAchievementNotificationMessage,
 } from "./scheduler-notification.messages.js";
 import {
+  createFollowAcceptedNotificationMessage,
+  createFollowRequestNotificationMessage,
   createInviteJoinedNotificationMessage,
   createInviteProgressNotificationMessage,
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   createNudgeReceivedNotificationMessage,
   createTodoCommentNotificationMessage,
+  getNotificationFriendFallback,
 } from "./social-notification.messages.js";
 import {
   createBillingIssueNotificationMessage,
@@ -26,6 +29,11 @@ const VARIANT_CONTEXT = {
   recipientId: "user-1",
   occurrenceKey: "2026-08-28",
 };
+
+const FOLLOW_FACTORIES = [
+  ["친구 요청", createFollowRequestNotificationMessage, "follow.request"],
+  ["친구 수락", createFollowAcceptedNotificationMessage, "follow.accepted"],
+] as const;
 
 const COMMENT_ACTIVITY_CASES = [
   ["COMMENT", { activityKind: "COMMENT", commentCount: 1 }, "댓글"],
@@ -488,5 +496,44 @@ describe("알림 문구 생성", () => {
     // Then
     expect(allCompleted.title).toContain("100%");
     expect(mostCompleted.title).toContain("90%");
+  });
+
+  describe.each(FOLLOW_FACTORIES)("%s 이름 없는 문구", (_label, create, templateKey) => {
+    it.each(["", "   "])("빈 이름 %j는 이름 없는 문구를 따로 집계한다", (senderName) => {
+      // When
+      const message = create({ senderName, locale: "ko", variantContext: VARIANT_CONTEXT });
+
+      // Then
+      expect(message.copyKey).toMatch(/_UNNAMED\.default$/);
+      expect(message.variantId).toBe(`copy_test_v1.${templateKey}.unnamed.default`);
+    });
+
+    it.each(SUPPORTED_LOCALES)("%s 대체 이름과 같은 이름은 이름 없는 문구를 쓴다", (locale) => {
+      // Given
+      const senderName = getNotificationFriendFallback(locale);
+
+      // When
+      const message = create({ senderName, locale, variantContext: VARIANT_CONTEXT });
+
+      // Then
+      expect(message.copyKey).toMatch(/_UNNAMED\.default$/);
+      expect(message.variantId).toBe(`copy_test_v1.${templateKey}.unnamed.default`);
+    });
+
+    it("프로필 이름이 없어 Aido ID로 부르면 이름 있는 무작위 arm을 쓴다", () => {
+      // Given
+      const userTag = "AIDO1234";
+
+      // When
+      const message = create({
+        senderName: userTag,
+        locale: "ko",
+        variantContext: VARIANT_CONTEXT,
+      });
+
+      // Then
+      expect(message.copyFacts).toEqual({ senderName: userTag });
+      expect(message.variantId).toMatch(new RegExp(`^copy_test_v1\\.${templateKey}\\.v[1-3]$`));
+    });
   });
 });

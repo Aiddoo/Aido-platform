@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { resolveSupportedLocale, type SupportedLocale } from "@aido/api/vocabulary";
+import { DEFAULT_LOCALE, type SupportedLocale } from "@aido/api/vocabulary";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -88,7 +88,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   async getWeeklyAchievements(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
   ): Promise<WeeklyAchievementListResponseDto> {
     const list = await this.#listWeeklyAchievements.execute({
       userId: user.userId,
@@ -96,7 +96,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
       cursor: query.cursor,
       size: query.size,
     });
-    return toWeeklyAchievementListResponse(list, resolveSupportedLocale(locale));
+    return toWeeklyAchievementListResponse(list, requestedLocale ?? DEFAULT_LOCALE);
   }
 
   @Get("years")
@@ -155,13 +155,13 @@ GET /weekly-achievements/2026/10
   async getWeeklyAchievement(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
   ): Promise<WeeklyAchievementDetailResponseDto> {
     const { achievement, localToday } = await this.#getWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,
     });
-    return toWeeklyAchievementResponse(achievement, resolveSupportedLocale(locale), localToday);
+    return toWeeklyAchievementResponse(achievement, requestedLocale ?? DEFAULT_LOCALE, localToday);
   }
 }

@@ -12,7 +12,7 @@ describe("resolveRequestLocale", () => {
     // When
     const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: "America/Los_Angeles",
-      locale: "en",
+      requestedLocale: "en",
     });
     // Then
     expect(result).toEqual({ timezone: "America/Los_Angeles", locale: "en" });
@@ -26,7 +26,7 @@ describe("resolveRequestLocale", () => {
     // When
     const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: undefined,
-      locale: "en",
+      requestedLocale: "en",
     });
     // Then
     expect(result).toEqual({ timezone: "Asia/Seoul", locale: "en" });
@@ -39,7 +39,7 @@ describe("resolveRequestLocale", () => {
     // When
     const result = await resolveRequestLocale(reader, USER_ID, {
       timezone: "Asia/Seoul",
-      locale: undefined,
+      requestedLocale: null,
     });
     // Then
     expect(result).toEqual({ timezone: "Asia/Seoul", locale: "en" });

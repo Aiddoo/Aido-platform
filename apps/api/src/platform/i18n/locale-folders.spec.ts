@@ -7,8 +7,10 @@ import { I18N_CATALOG_PATH } from "./i18n-catalog-path.js";
 
 const SOURCE_ROOT = resolve(import.meta.dirname, "../..");
 
+// 운영체제가 만드는 숨김 파일(.DS_Store)은 언어 자원이 아니다
 function childNames(directory: string, kind: "directory" | "file"): string[] {
   return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => !entry.name.startsWith("."))
     .filter((entry) => (kind === "directory" ? entry.isDirectory() : entry.isFile()))
     .map((entry) => entry.name)
     .toSorted();

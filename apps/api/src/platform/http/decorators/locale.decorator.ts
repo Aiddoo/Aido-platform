@@ -6,11 +6,11 @@ import { resolveResponseLocale } from "../request-client/request-client.js";
 import { readRequestClient } from "../request-client/request-client.store.js";
 
 /**
- * 저장하는 앱 언어(RequestClient.locale). 보내지 않은 요청은 undefined라 저장된 locale을
- * 덮어쓰지 않는다. 지원하지 않는 언어는 1.4.0 전 앱만 "ko", 그 밖은 "en"이다.
+ * 요청이 고른 앱 언어(RequestClient.locale). 보내지 않은 요청은 null이라 저장된 locale을 덮어쓰지 않는다.
+ * 지원하지 않는 언어는 X-App-Version 없음·1.4.0 미만만 "ko", 그 밖은 "en"이다.
  */
-export const Locale = createParamDecorator<undefined, SupportedLocale | undefined>(
-  () => readRequestClient().locale ?? undefined,
+export const Locale = createParamDecorator<undefined, SupportedLocale | null>(
+  () => readRequestClient().locale,
 );
 
 /**

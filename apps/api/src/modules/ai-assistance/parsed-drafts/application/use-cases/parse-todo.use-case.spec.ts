@@ -24,7 +24,7 @@ function createFixture() {
     text: "내일 오후 3시 팀 미팅",
     timezone: "Asia/Seoul",
     categoryId: undefined,
-    locale: "ko",
+    requestedLocale: "ko",
   };
   return { ...fixture, useCase, input };
 }
@@ -104,7 +104,7 @@ describe("ParseTodoUseCase", () => {
       categoryId: 7,
     });
     // When
-    const result = await fixture.useCase.execute({ ...fixture.input, locale: "en" });
+    const result = await fixture.useCase.execute({ ...fixture.input, requestedLocale: "en" });
     // Then
     expect(result.draft.todos[0]).toMatchObject({
       title: "Needs review",
@@ -423,7 +423,7 @@ describe("ParseTodoUseCase", () => {
     const failure = new Error("preference unavailable");
     vi.spyOn(fixture.localePreferenceReader, "read").mockRejectedValueOnce(failure);
     // When
-    const execution = fixture.useCase.execute({ ...fixture.input, locale: undefined });
+    const execution = fixture.useCase.execute({ ...fixture.input, requestedLocale: null });
     // Then
     await expect(execution).rejects.toBe(failure);
     expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(

@@ -88,8 +88,8 @@ function primaryLanguageTag(header: unknown): string | null {
 const APP_LOCALE_HEADER_MIN_APP_VERSION = "1.4.0";
 
 /**
- * 1.4.0 전 앱은 Accept-Language를 직접 보내지 않았지만 iOS URLSession이 기기 언어(ja-JP 등)를 붙였다.
- * 그 앱은 한국어 화면뿐이라 지원하지 않는 언어를 ko로 둔다. 제거 조건은 docs/conventions/compatibility.md다.
+ * X-App-Version 없음·1.4.0 미만(1.10.0 이하 앱과 앱 밖 클라이언트)에서 지원하지 않는 언어만 ko로 둔다(1.4.0 전 앱은
+ * iOS가 기기 언어를 붙였고 한국어 화면뿐이다, 1.4.0~1.10.0은 ko·en만 보낸다). 제거 조건은 docs/conventions/compatibility.md다.
  */
 export function resolvePreI18nAppLocale(tag: string): SupportedLocale {
   return findSupportedLocale(tag) ?? DEFAULT_LOCALE;

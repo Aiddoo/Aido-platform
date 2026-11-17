@@ -27,7 +27,7 @@ describe("ParseMemoUseCase golden — fake model이 draft를 내면 공개 응�
       content: golden.input,
       timezone: golden.timezone,
       categoryId: GOLDEN_MEMO_CATEGORY_ID,
-      locale: golden.locale,
+      requestedLocale: golden.locale,
       idempotencyKey: null,
     });
     // Then

@@ -10,7 +10,7 @@ export const DEFAULT_LOCALE = "ko" satisfies SupportedLocale;
 // 지원하지 않는 언어는 앱과 같은 규칙으로 영어를 쓴다
 export const FALLBACK_LOCALE = "en" satisfies SupportedLocale;
 
-// 언어 코드만으로 고를 수 없는 태그(예: "zh-tw" → "zh-Hant")를 소문자 태그로 적는다
+// 언어 코드만으로 고를 수 없는 태그(예: "zh-tw" → "zh-Hant"). findSupportedLocale이 소문자 태그로 찾아 키를 소문자로 적는다
 export const LOCALE_FALLBACKS: Readonly<Record<string, SupportedLocale>> = {};
 
 // Hermes가 Intl.Locale을 다 지원하지 않아 language[-script][-region]을 직접 나눈다

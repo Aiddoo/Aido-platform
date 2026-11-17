@@ -114,7 +114,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
       source: "VOICE",
       idempotencyKey,
       timezone: "Asia/Seoul",
-      locale: "ko",
+      requestedLocale: "ko",
     });
   }
 
@@ -275,7 +275,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
         segments: [],
         idempotencyKey,
         timezone: "Asia/Seoul",
-        locale: "ko",
+        requestedLocale: "ko",
       });
     }
 

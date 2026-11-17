@@ -202,7 +202,7 @@ if (confirmed) {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<ParseTodoResponseDto> {
     const parsed = await this.#parseTodoUseCase.execute({
@@ -210,7 +210,7 @@ if (confirmed) {
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale,
+      requestedLocale,
       signal,
     });
     return toParseTodoResponse(parsed);
@@ -305,7 +305,7 @@ ${AI_PARSE_QUOTA_DOC}`,
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
     @Timezone({ preserveIfMissing: true }) tz: string | undefined,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
     @ClientAbortSignal() signal: AbortSignal,
     @CurrentRequestClient() client: RequestClient,
   ): Promise<ParseMemoResponseDto> {
@@ -314,7 +314,7 @@ ${AI_PARSE_QUOTA_DOC}`,
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale,
+      requestedLocale,
       idempotencyKey: client.idempotencyKey,
       signal,
     });

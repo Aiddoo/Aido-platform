@@ -33,7 +33,7 @@ function createFixture() {
     content: "메모 원문",
     timezone: "Asia/Seoul",
     categoryId: 1,
-    locale: "ko",
+    requestedLocale: "ko",
     idempotencyKey: null,
   };
   return { ...fixture, useCase, input };

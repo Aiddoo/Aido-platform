@@ -41,7 +41,7 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
       source: "VOICE",
       idempotencyKey: "key-1",
       timezone: "Asia/Seoul",
-      locale: "ko",
+      requestedLocale: "ko",
       ...overrides,
     });
   const used = async () =>

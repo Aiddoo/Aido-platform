@@ -4765,7 +4765,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 수락 · 대체 이름 1`] 
   {
     "body": "Now you can cheer each other on",
     "title": "Friend request accepted",
-    "variantId": "copy_render_v1.follow.accepted.default",
+    "variantId": "copy_render_v1.follow.accepted.unnamed.default",
   },
 ]
 `;
@@ -5235,7 +5235,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 친구 요청 · 대체 이름 1`] 
   {
     "body": "Accept to cheer each other on",
     "title": "New friend request",
-    "variantId": "copy_render_v1.follow.request.default",
+    "variantId": "copy_render_v1.follow.request.unnamed.default",
   },
 ]
 `;
@@ -11565,7 +11565,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 수락 · 대체 이름 1`] 
   {
     "body": "이제 서로의 할 일을 보고 응원할 수 있어요",
     "title": "친구 요청이 수락됐어요",
-    "variantId": "copy_render_v1.follow.accepted.default",
+    "variantId": "copy_render_v1.follow.accepted.unnamed.default",
   },
 ]
 `;
@@ -12035,7 +12035,7 @@ exports[`ko 푸시 문구 렌더 스냅샷 > 친구 요청 · 대체 이름 1`] 
   {
     "body": "수락하면 서로의 할 일을 보고 응원할 수 있어요",
     "title": "새 친구 요청이 왔어요",
-    "variantId": "copy_render_v1.follow.request.default",
+    "variantId": "copy_render_v1.follow.request.unnamed.default",
   },
 ]
 `;

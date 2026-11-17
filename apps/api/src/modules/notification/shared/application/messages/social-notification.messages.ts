@@ -111,14 +111,21 @@ export function createFollowRequestNotificationMessage({
   variantContext,
 }: FollowRequestNotificationInput): NotificationMessage {
   const senderNameFact = toNameFact(senderName, locale);
-  const options = { locale, variantContext, templateKey: "follow.request" };
-  // 이름을 모르면 이름 자리에 "친구"가 들어가 "친구가 친구 요청을…"처럼 겹치므로 이름 없는 문구를 쓴다
-  return senderNameFact == null
-    ? renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW_UNNAMED, { ...options, facts: {} })
-    : renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
-        ...options,
-        facts: { senderName: senderNameFact },
-      });
+  // 빈 이름·대체 이름(친구)은 "친구가 친구 요청을…"처럼 겹쳐 이름 없는 문구를 쓰고 무작위 arm과 나눠 집계한다
+  if (senderNameFact == null) {
+    return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW_UNNAMED, {
+      locale,
+      variantContext,
+      templateKey: "follow.request.unnamed",
+      facts: {},
+    });
+  }
+  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_NEW, {
+    locale,
+    variantContext,
+    templateKey: "follow.request",
+    facts: { senderName: senderNameFact },
+  });
 }
 
 export function createFollowAcceptedNotificationMessage({
@@ -127,14 +134,21 @@ export function createFollowAcceptedNotificationMessage({
   variantContext,
 }: FollowAcceptedNotificationInput): NotificationMessage {
   const senderNameFact = toNameFact(senderName, locale);
-  const options = { locale, variantContext, templateKey: "follow.accepted" };
-  // 이름을 모르면 "친구가 친구 요청을 수락했어요"처럼 겹치므로 이름 없는 문구를 쓴다
-  return senderNameFact == null
-    ? renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED_UNNAMED, { ...options, facts: {} })
-    : renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
-        ...options,
-        facts: { senderName: senderNameFact },
-      });
+  // 빈 이름·대체 이름(친구)은 "친구가 친구 요청을 수락했어요"처럼 겹쳐 이름 없는 문구를 쓰고 무작위 arm과 나눠 집계한다
+  if (senderNameFact == null) {
+    return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED_UNNAMED, {
+      locale,
+      variantContext,
+      templateKey: "follow.accepted.unnamed",
+      facts: {},
+    });
+  }
+  return renderNotificationTemplate(SOCIAL_COPY.FOLLOW_ACCEPTED, {
+    locale,
+    variantContext,
+    templateKey: "follow.accepted",
+    facts: { senderName: senderNameFact },
+  });
 }
 
 export interface InviteJoinedNotificationInput extends LocalizedVariantInput {
@@ -297,7 +311,7 @@ export function createTodoCommentNotificationMessage(
 ): NotificationMessage {
   const { locale } = input;
   const options = { locale, variantContext: input.variantContext };
-  const senderName = toNameFact(input.senderName?.trim() || null, locale);
+  const senderName = toNameFact(input.senderName?.trim() ?? null, locale);
 
   if (input.activityKind === "LIKE") {
     return renderNotificationTemplate(SOCIAL_COPY.TODO_COMMENT_LIKE, {

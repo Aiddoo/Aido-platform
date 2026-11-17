@@ -73,7 +73,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
     @Body({ schema: QuickPlanRequestDto }) dto: QuickPlanRequestDto,
     @IdempotencyKey() idempotencyKey: string,
     @Timezone({ preserveIfMissing: true }) timezone: string | undefined,
-    @Locale() locale: SupportedLocale | undefined,
+    @Locale() requestedLocale: SupportedLocale | null,
     @ClientAbortSignal() signal: AbortSignal,
   ): Promise<QuickPlanResponseDto> {
     const created = await this.#createQuickPlan.execute({
@@ -82,7 +82,7 @@ AI 할 일 만들기(글·말·메모 공통): 무료 월 ${PLAN_CATALOG.AI_PARS
       source: dto.source,
       idempotencyKey,
       timezone,
-      locale,
+      requestedLocale,
       signal,
     });
     return toQuickPlanResponse(created);
