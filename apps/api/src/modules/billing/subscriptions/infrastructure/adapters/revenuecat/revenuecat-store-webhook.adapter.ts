@@ -23,7 +23,6 @@ import { translateRevenueCatWebhook } from "./revenuecat-webhook-translator.adap
  */
 @Injectable()
 export class RevenueCatStoreWebhookAdapter implements StoreWebhookPort {
-  readonly provider = "REVENUECAT";
   readonly #logger = new Logger(RevenueCatStoreWebhookAdapter.name);
   readonly #alert: OperationalAlertPort;
   readonly #config: Pick<

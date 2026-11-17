@@ -1,5 +1,4 @@
 import type { StoreSubscriptionEvent } from "../../domain/store-subscription.event.js";
-import type { SubscriptionProvider } from "../../domain/subscriptions.constants.js";
 
 /** 웹훅 요청 헤더. 이름은 소문자다. */
 export type StoreWebhookHeaders = Readonly<Record<string, string | readonly string[] | undefined>>;
@@ -9,7 +8,6 @@ export type StoreWebhookHeaders = Readonly<Record<string, string | readonly stri
  * 공급자 중립 이벤트를 ApplyStoreSubscriptionEventUseCase에 넘긴다.
  */
 export abstract class StoreWebhookPort {
-  abstract readonly provider: SubscriptionProvider;
   /** 공급자가 보낸 요청이 아니면 false이고, 호출부가 SUBSCRIPTION_1601로 거절한다. */
   abstract authenticate(headers: StoreWebhookHeaders): boolean;
   /**
