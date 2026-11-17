@@ -32,6 +32,7 @@ export const WeatherReportCacheKey = {
     cacheKey("weather", "v2", "report-latest", cell, scope),
   airQuality: (cell: string) => cacheKey("weather", "v2", "air-quality", cell),
   airKoreaStation: (cell: string) => cacheKey("weather", "v2", "airkorea-station", cell),
+  airKoreaFailure: (cell: string) => cacheKey("weather", "v2", "airkorea-failure", cell),
   availability: (cell: string) => cacheKey("weather", "v2", "availability", cell),
   availabilityFailure: (cell: string) => cacheKey("weather", "v2", "availability-failure", cell),
   providerFailure: (cell: string) => cacheKey("weather", "v2", "provider-failure", cell),

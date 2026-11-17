@@ -34,7 +34,11 @@ const STATION_SCHEMA = z.string().min(1);
 
 type AirkoreaOperation = "nearby_station" | "air_quality";
 
-type AirkoreaFailureReason = "http_failure" | "invalid_structure" | "provider_result";
+type AirkoreaFailureReason =
+  | "http_failure"
+  | "invalid_structure"
+  | "provider_result"
+  | "recent_failure";
 
 /** 에어코리아가 답하지 못한 호출. 측정값 없음(null)과 달리 캐시하지 않고 다음 조회가 다시 부른다. */
 export class AirkoreaRequestError extends Error {
@@ -63,13 +67,13 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
   readonly #policy: OutboundPolicy;
   readonly #config: WeatherWeatherReportsConfig;
   readonly #http: HttpClient;
-  readonly #cache: Pick<CacheStorePort, "get" | "set" | "del">;
+  readonly #cache: Pick<CacheStorePort, "get" | "set" | "del" | "has">;
 
   constructor(
     @Inject(weatherWeatherReportsConfig.KEY) config: WeatherWeatherReportsConfig,
     @InjectHttpClient("weather") http: HttpClient,
     policies: OutboundPolicyRegistry,
-    @Inject(CacheStorePort) cache: Pick<CacheStorePort, "get" | "set" | "del">,
+    @Inject(CacheStorePort) cache: Pick<CacheStorePort, "get" | "set" | "del" | "has">,
   ) {
     this.#config = config;
     this.#http = http;
@@ -88,6 +92,20 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
       });
       return null;
     }
+    const failureKey = WeatherReportCacheKey.airKoreaFailure(cell.key);
+    // 한도 초과·키 오류 중에는 요청마다 같은 칸을 다시 부르지 않고 잠시 대기질 없이 응답한다
+    if (await this.#cache.has(failureKey)) {
+      throw new AirkoreaRequestError("air_quality", "recent_failure");
+    }
+    try {
+      return await this.#findCellAirQuality(apiKey, cell);
+    } catch (error) {
+      await this.#cache.set(failureKey, true, WEATHER_REPORT_CACHE_TTL_MS.PROVIDER_FAILURE);
+      throw error;
+    }
+  }
+
+  async #findCellAirQuality(apiKey: string, cell: GeoCell): Promise<AirQuality | null> {
     const stationKey = WeatherReportCacheKey.airKoreaStation(cell.key);
     const knownStation = await this.#cache.get(stationKey, STATION_SCHEMA);
     const station = knownStation ?? (await this.#findNearestStation(apiKey, cell));
@@ -99,8 +117,8 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
     }
 
     const airQuality = await this.#fetchAirQuality(apiKey, station);
-    if (airQuality == null) {
-      // 측정값을 주지 않는 측정소(폐쇄·이전)는 다음 조회가 가까운 측정소를 다시 찾게 한다
+    if (airQuality == null || (airQuality.pm10 == null && airQuality.pm25 == null)) {
+      // 측정값을 주지 않는 측정소(폐쇄·이전·장비 점검)는 다음 조회가 가까운 측정소를 다시 찾게 한다
       await this.#cache.del(stationKey);
     }
     return airQuality;

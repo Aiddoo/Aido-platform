@@ -1,7 +1,7 @@
 import { WEATHER_REPORT_CACHE_TTL_MS, WeatherReportCacheKey } from "./weather-report.keyspace.js";
 
 describe("날씨 v2 캐시 키와 TTL", () => {
-  it("칸·언어별 리포트와 최신 폴백, 칸별 대기질·측정소·언어별 출처 표기 키를 v1 날씨 키와 겹치지 않게 만든다", () => {
+  it("칸·언어별 리포트와 최신 폴백, 칸별 대기질·측정소·대기질 실패 차단·언어별 출처 표기 키를 v1 날씨 키와 겹치지 않게 만든다", () => {
     // Given
     const cell = "wydm9";
     // When
@@ -10,6 +10,7 @@ describe("날씨 v2 캐시 키와 TTL", () => {
       WeatherReportCacheKey.latestReport(cell, "en"),
       WeatherReportCacheKey.airQuality(cell),
       WeatherReportCacheKey.airKoreaStation(cell),
+      WeatherReportCacheKey.airKoreaFailure(cell),
       WeatherReportCacheKey.availability(cell),
       WeatherReportCacheKey.providerFailure(cell),
       WeatherReportCacheKey.availabilityFailure(cell),
@@ -22,6 +23,7 @@ describe("날씨 v2 캐시 키와 TTL", () => {
       "aido:v1:weather:v2:report-latest:wydm9:en",
       "aido:v1:weather:v2:air-quality:wydm9",
       "aido:v1:weather:v2:airkorea-station:wydm9",
+      "aido:v1:weather:v2:airkorea-failure:wydm9",
       "aido:v1:weather:v2:availability:wydm9",
       "aido:v1:weather:v2:provider-failure:wydm9",
       "aido:v1:weather:v2:availability-failure:wydm9",

@@ -38,6 +38,7 @@ export class WeatherKitUsageMeterAdapter implements WeatherProviderBudgetPort {
   readonly #alert: OperationalAlertPort;
   readonly #clock: ClockPort;
   #state: WeatherProviderBudgetState = "normal";
+  #statePeriod: string | null = null;
 
   constructor(
     @Inject(UsageMeterPort) meter: Pick<UsageMeterPort, "tryReserve">,
@@ -55,6 +56,10 @@ export class WeatherKitUsageMeterAdapter implements WeatherProviderBudgetPort {
 
   async reserveCall(): Promise<boolean> {
     const period = usagePeriod.month(instantToDate(this.#clock.now()));
+    // 한도에 닿은 달에는 거절될 예약으로 요청마다 DB를 부르지 않는다. 달이 바뀌면 다시 예약해 상태를 새로 읽는다
+    if (this.#state === "exhausted" && this.#statePeriod === period) {
+      return false;
+    }
     const key: UsageKey = {
       meter: WEATHERKIT_CALL_METER,
       periodKey: period,
@@ -70,6 +75,7 @@ export class WeatherKitUsageMeterAdapter implements WeatherProviderBudgetPort {
         usedCalls: total,
         monthlyCallLimit: WEATHERKIT_MONTHLY_CALL_LIMIT,
       });
+      this.#statePeriod = period;
       if (isAccepted) {
         this.#alertCrossings(period, total);
       }

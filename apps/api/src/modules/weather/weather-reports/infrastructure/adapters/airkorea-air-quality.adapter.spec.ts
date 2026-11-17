@@ -173,6 +173,30 @@ describe("AirkoreaAirQualityAdapter — 측정소 캐시와 측정값 없음·�
     expect(await memory.has(STATION_KEY)).toBe(true);
   });
 
+  it("공급자 오류 뒤 1분 동안 같은 칸은 부르지 않고 바로 실패로 알린다", async () => {
+    // Given
+    const { adapter, paths } = createAdapter([
+      json({ response: { header: { resultCode: "22" } } }),
+    ]);
+    await expect(adapter.findAirQuality(CELL)).rejects.toBeInstanceOf(AirkoreaRequestError);
+    // When
+    const retried = adapter.findAirQuality(CELL);
+    // Then
+    await expect(retried).rejects.toMatchObject({ reason: "recent_failure" });
+    expect(paths).toHaveLength(1);
+    expect(await memory.ttl(WeatherReportCacheKey.airKoreaFailure(CELL.key))).toBe(60_000);
+  });
+
+  it('측정값이 모두 "-"이면 기억한 측정소를 지워 다음에 가까운 측정소를 다시 찾는다', async () => {
+    // Given
+    const { adapter } = createAdapter([stationList("중구"), measurement("-", "-")]);
+    // When
+    const result = await adapter.findAirQuality(CELL);
+    // Then
+    expect(result).toEqual({ pm10: null, pm25: null });
+    expect(await memory.has(STATION_KEY)).toBe(false);
+  });
+
   it("API 키가 없으면 부르지 않고 null이다", async () => {
     // Given
     config.kmaApiKey = undefined;
