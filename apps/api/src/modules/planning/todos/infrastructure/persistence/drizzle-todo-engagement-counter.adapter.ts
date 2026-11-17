@@ -19,15 +19,12 @@ import type { TodoId } from "../../domain/todo-id.vo.js";
 @Injectable()
 export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounterPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+
   readonly #clock: ClockPort;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
   }
 
   async increaseCommentCount(todoId: TodoId, amount: number): Promise<void> {
@@ -104,5 +101,9 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
       .where(
         and(eq(todo.id, sql`desired."todoId"`), ne(todo.commentCount, sql`desired."commentCount"`)),
       );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

@@ -273,25 +273,6 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
     return true;
   }
 
-  #draftOn(date: string): TodoOccurrenceDraft {
-    const { userId, categoryId, title, scheduledLocalTime, timezone, visibility } = this.props;
-    return {
-      userId: userId.value,
-      categoryId,
-      title: title.value,
-      visibility,
-      startDate: Temporal.PlainDate.from(date),
-      endDate: null,
-      scheduledLocalTime,
-      // DST로 오프셋이 달라지므로 회차 날짜마다 규칙 시간대로 다시 해석한다.
-      scheduledTime: resolveScheduledInstant(date, scheduledLocalTime, timezone),
-      isAllDay: scheduledLocalTime == null,
-      occurrenceDate: date,
-      // 리텐션·성장 지표가 createdAt을 사용자 행동으로 쓰므로 규칙을 만든 시각을 물려받는다.
-      createdAt: this.props.createdAt,
-    };
-  }
-
   /**
    * date 뒤로 회차를 만들지 않는다. 더 끝낼 게 없으면 false다.
    * 규칙이 이미 date 안에서 끝나도 커서가 뒤처져 있으면 아직 만들 회차가 남은 것이라 커서를 닫는다.
@@ -308,12 +289,6 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
     }
     this.props.nextOccurrenceDate = null;
     return true;
-  }
-
-  #isEndedAfter(date: string): boolean {
-    const { rule, startDate } = this.props;
-    const next = addDaysToKey(date, 1);
-    return rule.firstOnOrAfter(startDate, next, rule.countBefore(startDate, next)) == null;
   }
 
   /** pivotDate부터 새 규칙으로 잇고 이 규칙은 그 전날로 끝낸다. 만든 뒤의 회차 수는 0이다. */
@@ -432,5 +407,30 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps> {
       createdAt: this.props.createdAt,
       updatedAt: this.props.updatedAt,
     };
+  }
+
+  #draftOn(date: string): TodoOccurrenceDraft {
+    const { userId, categoryId, title, scheduledLocalTime, timezone, visibility } = this.props;
+    return {
+      userId: userId.value,
+      categoryId,
+      title: title.value,
+      visibility,
+      startDate: Temporal.PlainDate.from(date),
+      endDate: null,
+      scheduledLocalTime,
+      // DST로 오프셋이 달라지므로 회차 날짜마다 규칙 시간대로 다시 해석한다.
+      scheduledTime: resolveScheduledInstant(date, scheduledLocalTime, timezone),
+      isAllDay: scheduledLocalTime == null,
+      occurrenceDate: date,
+      // 리텐션·성장 지표가 createdAt을 사용자 행동으로 쓰므로 규칙을 만든 시각을 물려받는다.
+      createdAt: this.props.createdAt,
+    };
+  }
+
+  #isEndedAfter(date: string): boolean {
+    const { rule, startDate } = this.props;
+    const next = addDaysToKey(date, 1);
+    return rule.firstOnOrAfter(startDate, next, rule.countBefore(startDate, next)) == null;
   }
 }

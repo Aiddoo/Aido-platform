@@ -62,6 +62,26 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     }
   }
 
+  get startDate(): Temporal.PlainDate {
+    return this.value.startDate;
+  }
+
+  get endDate(): Temporal.PlainDate | null {
+    return this.value.endDate;
+  }
+
+  get scheduledLocalTime(): string | null {
+    return this.value.scheduledLocalTime;
+  }
+
+  get scheduledTime(): Temporal.Instant | null {
+    return this.value.scheduledTime;
+  }
+
+  get isAllDay(): boolean {
+    return this.value.isAllDay;
+  }
+
   /** 날짜나 시각을 건드리면 벽시계에서 순간을 다시 만든다. 다른 값만 고치면 순간은 그대로다. */
   patch(partial: TodoSchedulePatch, timezone: string): TodoSchedule {
     // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 기존 값 유지, null은 지우기다
@@ -101,26 +121,6 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
       return null;
     }
     return scheduledLocalTime ?? localTimeIn(scheduledTime, timezone);
-  }
-
-  get startDate(): Temporal.PlainDate {
-    return this.value.startDate;
-  }
-
-  get endDate(): Temporal.PlainDate | null {
-    return this.value.endDate;
-  }
-
-  get scheduledLocalTime(): string | null {
-    return this.value.scheduledLocalTime;
-  }
-
-  get scheduledTime(): Temporal.Instant | null {
-    return this.value.scheduledTime;
-  }
-
-  get isAllDay(): boolean {
-    return this.value.isAllDay;
   }
 
   toPrimitives(): TodoScheduleProps {

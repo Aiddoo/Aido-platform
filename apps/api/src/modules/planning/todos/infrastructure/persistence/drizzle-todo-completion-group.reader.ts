@@ -21,10 +21,6 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   // 하루 조건을 구간 양끝으로 넓힌 것이다
   async listCompletionGroups({
     userId,
@@ -65,5 +61,9 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
       categoryColor: colors.get(group.categoryId) ?? null,
       todoCount: group.todoCount,
     }));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

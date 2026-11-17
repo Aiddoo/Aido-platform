@@ -46,29 +46,12 @@ import {
 @Injectable()
 export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+
   readonly #clock: ClockPort;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
-  #selectWithCount() {
-    return (
-      this.#db
-        .select({ ...getTableColumns(todoCategory), todos: count(todo.id) })
-        .from(todoCategory)
-        // categoryId만으로 이으면 Todo 전체를 훑는다. 소유자를 같이 걸어 (userId, categoryId) 인덱스를 탄다
-        .leftJoin(
-          todo,
-          and(eq(todo.userId, todoCategory.userId), eq(todo.categoryId, todoCategory.id)),
-        )
-        .groupBy(todoCategory.id)
-    );
   }
 
   async nextId(): Promise<TodoCategoryId> {
@@ -220,5 +203,23 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       .where(
         and(eq(todoSeries.userId, userId.value), eq(todoSeries.categoryId, fromCategoryId.value)),
       );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  #selectWithCount() {
+    return (
+      this.#db
+        .select({ ...getTableColumns(todoCategory), todos: count(todo.id) })
+        .from(todoCategory)
+        // categoryId만으로 이으면 Todo 전체를 훑는다. 소유자를 같이 걸어 (userId, categoryId) 인덱스를 탄다
+        .leftJoin(
+          todo,
+          and(eq(todo.userId, todoCategory.userId), eq(todo.categoryId, todoCategory.id)),
+        )
+        .groupBy(todoCategory.id)
+    );
   }
 }

@@ -20,15 +20,12 @@ import { toTodoSeries, toTodoSeriesRow } from "./todo-series-row.mapper.js";
 @Injectable()
 export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+
   readonly #clock: ClockPort;
 
   constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#transactionHost.tx;
   }
 
   async findByIdAndUserId(id: TodoSeriesId, userId: UserId): Promise<TodoSeries | null> {
@@ -162,5 +159,9 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
         ),
       );
     return rows.map((row) => row.id);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }
