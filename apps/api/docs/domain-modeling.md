@@ -24,7 +24,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 | `generate`     | 앱이 만드는 식별자(`TodoSeriesId.generate()`)                             |
 | `reconstitute` | 신뢰한 저장값 복원. 검증·이벤트가 없다. 한도가 줄어도 옛 데이터를 읽는다  |
 
-- `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다.
+- `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다. Aggregate의 static은 `create`·`reconstitute`뿐이고, 생성자를 열지 않고(베이스의 `protected constructor`), Props는 같은 파일의 `interface <Aggregate>Props`다(Oxlint `aido/aggregate-shape`).
 - DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 id 없는 저장 Aggregate가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
 - 복원 위치는 infrastructure의 출처별 매퍼 한 곳이다: DB 행 `*-row.mapper.ts`, env `*-env.mapper.ts`, 캐시 값 `*-cache.mapper.ts`. Application이 행·값을 받아 복원하지 않는다.
 
@@ -39,7 +39,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 상태 값은 튜플 한 곳에서 선언한다. 앱이 보는 상태는 `@aido/api/vocabulary`, 서버만 아는 상태는 `domain/<slice>.constants.ts`다. 타입은 튜플에서 유도하고 리터럴 유니온을 손으로 쓰지 않는다.
 - 상태는 Aggregate의 행동 메서드로만 바뀐다. 메서드 이름은 [용어집](glossary.md)의 업무 동사다(`accept`·`complete`·`reopen`·`block`·`expire`). `setStatus`·`update`·`changeStatus` 같은 범용 setter를 두지 않는다. 값 하나를 바꾸는 행동만 `change<Noun>`(`changePinned`)을 쓴다.
 - 허용되지 않은 전이(`ACCEPTED`인 요청을 다시 수락)는 두 가지 중 하나로 정하고 slice 안에서 섞지 않는다. 같은 상태로의 재요청은 `false`(멱등), 다른 상태에서의 금지된 전이는 `domain/<slice>.errors.ts`의 이름 있는 오류다.
-- 상태 질문은 `is<State>()`(`isPending()`), 행동 가능 여부는 `can<Action>()`, 파생 값은 명사 getter(`remainingSeconds`)다. 질문 메서드는 상태를 바꾸지 않는다.
+- 상태 질문은 `is<State>()`(`isPending()`)·`has<Noun>()`, 행동 가능 여부는 `can<Action>()` 메서드이고 getter로 두지 않는다. 파생 값은 명사 getter(`remainingSeconds`)다. 질문 메서드는 상태를 바꾸지 않는다(Oxlint `aido/aggregate-shape`).
 - 전이 표(상태 → 행동 → 다음 상태)는 용어집의 그 Context 절에 둔다. 코드와 표가 다르면 코드를 고치거나 표를 고치는 PR에서 함께 맞춘다.
 - UseCase 이름은 `<업무 동사><Aggregate>`(`AcceptFriendRequest`, `CompleteTodo`)이고 용어집의 행동과 같은 말을 쓴다. Aggregate 안 이벤트는 `<aggregate>.<과거형>`(`todo.created`), 다른 Context로 내보내는 이벤트(`PublishedDomainEvent`)는 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`)이다. durable 구독이 있는 이벤트 이름은 큐 payload 계약이라 바꾸지 않는다.
 
@@ -58,7 +58,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. 거부는 `application/<slice>.errors.ts`, 불변식은 `domain/<slice>.errors.ts`(Domain은 Application을 import하지 못한다)이고, 같은 Context의 slice가 함께 쓰는 불변식은 `<context>/shared/domain/<context>.errors.ts`(`planning.errors.ts`), 공용 식별자는 `shared/domain/exceptions/shared-domain.errors.ts`다. 이 파일 밖에서 `new ApplicationException`·`new DomainException`·`new ErrorCodedException`(별칭 import 포함)을 쓰지 않고 이 클래스들을 잇는 예외 클래스도 만들지 않는다(Oxlint `aido/no-inline-coded-exception`, spec 제외). port·use-case 파일 안에 오류 클래스를 선언하지 않는다.
 - 생성만 하는 Aggregate는 id를 저장·참조·전송할 때만 둔다(캐시 키인 날씨 보고의 칸 `WeatherReportId`). 아무도 읽지 않는 id VO를 만들지 않고 `AggregateRoot<null, Props>`로 `create`가 `null`을 넘긴다(`ParsedDraft`·`ActionPlanDraft`·`AiGeneration`·`VoiceDigest`·`Inquiry`·`DailyCompletion`). id가 없는 Aggregate는 자기 자신과만 같다(`equals`).
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Aggregate id(`TodoId`)는 소유 slice `domain/`에 두고 다른 slice·Context는 그 slice `*.public.ts`로 import한다. Props도 다른 Aggregate를 원시값이 아닌 id VO로 참조한다.
-- 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다. 조회 결과가 없으면 `undefined`가 아닌 `null`이다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
+- 포트 시그니처의 식별자(`*Id`·`*Ids` 인자와 같은 파일 타입의 필드)는 원시값(`number`·`string`)이 아니라 id VO다. `find*`는 `T | null`이고 늘 값이 있으면 다른 동사를 쓴다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다(Oxlint `aido/port-id-value-object`·`aido/port-return-shape`).
 - 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 기능 소개 캠페인, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
 
 ## 기준 구현: notes/memos

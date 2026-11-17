@@ -12,7 +12,7 @@
 | 값 VO           | `memo-content.vo.ts`                                                 | `MemoContent`                                         | `static create(raw)`(검증)·`static reconstitute(raw)`·`value`·`equals`                                                                                                        |
 | 도메인 이벤트   | `todo-changed.event.ts`                                              | `TodoChangedEvent`                                    | 안 이벤트 `<aggregate>.<과거형>`, 내보내는 이벤트 `<context>.<aggregate>.<과거형>`                                                                                            |
 | 도메인 서비스   | `memo-ordering.domain-service.ts`                                    | 순수 함수 `planMoveRelativeTo()`                      | 입력은 이름 붙은 객체 하나, 반환은 값 또는 판별 유니온, `now`는 인자                                                                                                          |
-| UseCase         | `create-memo.use-case.ts`                                            | `CreateMemoUseCase`                                   | `execute(command)` 하나. 입력 `CreateMemoCommand`·`ListMemosQuery`                                                                                                            |
+| UseCase         | `create-memo.use-case.ts`                                            | `CreateMemoUseCase`                                   | 공개 메서드는 `execute(command)` 하나(`aido/use-case-single-execute`). 입력 `CreateMemoCommand`·`ListMemosQuery`                                                              |
 | Port            | `memo.repository.port.ts`                                            | `abstract class MemoRepositoryPort`                   | 아래 Repository 규칙                                                                                                                                                          |
 | Read Port       | `todo-comment.reader.port.ts`                                        | `TodoCommentReaderPort`                               | Aggregate가 아닌 projection만                                                                                                                                                 |
 | Read Model      | `todo-comment.read-model.ts`                                         | `TodoCommentThreadReadModel`(type)                    | 불변 데이터                                                                                                                                                                   |
@@ -112,6 +112,8 @@
 ## 서버에서 지키는 코드 규칙
 
 - UseCase는 "잠금 → 읽기 → 도메인 행동 → 저장 → 발행"이 위에서 아래로 읽히게 쓴다. SQL·SDK는 어댑터에 둔다.
+- 클래스 멤버는 static 팩토리 → 필드 → 생성자 → public getter → public 메서드 → `#` 비공개 getter·메서드 순서다(`aido/member-order`).
+- 인자는 3개 이하다. 넘으면 이름 붙은 객체 하나로 받는다. Nest가 주입하는 데코레이터 클래스의 생성자는 세지 않는다(`aido/max-params`). 함수는 80줄, 파일은 400줄 이하이고 문구 카탈로그(`*.messages.ts`)·DB schema는 뺀다(`max-lines-per-function`·`max-lines`).
 - v1·v2 응답은 각 버전 매퍼에서 만든다. 버전·권한 분기를 한 함수에 섞지 않는다.
 - 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 파일에 응집한다. Context 사이 매퍼 중복은 허용한다.
 - 계층을 그대로 통과하는 인자(tx·userId 드릴링)는 CLS·Command 객체로 없앤다.

@@ -183,6 +183,41 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts"],
+      "rules": {
+        "aido/aggregate-shape": "off",
+        "aido/member-order": "off",
+        "aido/max-params": ["off", { "max": 3 }]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.{ts,tsx}"],
+      "excludeFiles": [
+        "**/*.spec.ts",
+        "**/*.integration-spec.ts",
+        "**/*.messages.ts",
+        "apps/api/src/platform/database/schema/**"
+      ],
+      "rules": {
+        "max-lines": ["off", { "max": 400 }],
+        "max-lines-per-function": ["off", { "max": 80 }]
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.port.ts"],
+      "rules": {
+        "aido/port-id-value-object": "off",
+        "aido/port-return-shape": "off"
+      }
+    },
+    {
+      "files": ["apps/api/src/**/*.use-case.ts"],
+      "rules": {
+        "aido/use-case-single-execute": "off"
+      }
+    },
+    {
       "files": ["apps/api/src/**/index.ts"],
       "excludeFiles": ["apps/api/src/platform/database/schema/index.ts"],
       "rules": {
