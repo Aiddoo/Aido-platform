@@ -7,7 +7,7 @@
 | Import                          | 내용                                                                                |
 | ------------------------------- | ----------------------------------------------------------------------------------- |
 | `@aido/api`                     | 요청·응답 Zod 스키마, inferred type, 공통 envelope                                  |
-| `@aido/api/common`              | envelope(`response.ts`)·pagination·query·datetime schema                            |
+| `@aido/api/common`              | envelope(`response.ts`)·pagination·datetime·entity-id schema                        |
 | `@aido/api/errors`              | `ErrorCode`, HTTP 상태, 오류 응답 정의, 공개 details schema(`toPublicErrorDetails`) |
 | `@aido/api/vocabulary`          | Zod 없이 쓰는 순수 상수 튜플·union type                                             |
 | `@aido/api/contracts/<feature>` | 기능별 요청·응답 스키마                                                             |

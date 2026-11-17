@@ -28,7 +28,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 
 ## 2. 도메인을 채운다
 
-- Aggregate는 `create`·`reconstitute`·`toPrimitives()`만 팩토리·꺼내기 이름으로 쓴다. 상태 전이 메서드는 바뀌면 `true`를 돌려준다([도메인 모델](domain-modeling.md)).
+- Aggregate는 `create`·`reconstitute`·`toPrimitives()`만 팩토리·꺼내기 이름으로 쓴다(저장하지 않는 Aggregate는 `create`·`toPrimitives()`만). 상태 전이 메서드는 바뀌면 `true`를 돌려주고 그때만 `raise`한다([도메인 모델](domain-modeling.md)).
 - 값 검증은 VO `create`, 여러 모델에 걸친 판단은 `*.domain-service.ts` 순수 함수(판별 유니온 반환, `now`는 인자)다.
 - 서버만 아는 값 목록은 `domain/<slice>.constants.ts` 튜플, 앱과 함께 아는 값은 `@aido/api/vocabulary` 튜플이다. 리터럴 유니온을 손으로 쓰지 않는다([이름 사전](conventions.md#공유-값은-한-곳에서-선언한다)).
 
@@ -47,6 +47,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 - 계약은 `packages/api`가 소유한다. 새 목록은 `cursorPageSchema`, 새 응답에 앱이 읽지 않는 값(`message` 등)을 넣지 않는다([HTTP 계약](http-contracts.md)).
 - 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 `schema.meta({ id })`로 모은다. Controller는 검증·Command 변환·응답 매핑만 하고 `@ApiDoc`으로 응답 schema를 선언한다(운영 밖에서는 선언과 실제 응답을 [대조](http-contracts.md#응답-계약-검사)한다).
 - 앱 헤더는 `RequestClient` 데코레이터로 읽는다. 시각은 계약에서 문자열, 변환은 presentation 경계에서 한다.
+- 요청 한도가 필요하면 `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits`에 행동별로 더하고 `@RateLimit(…)`을 붙인다([HTTP 계약](http-contracts.md#요청-헤더와-throttle)).
 
 **출시 앱 호환 체크리스트**([호환](../../../docs/conventions/compatibility.md))
 
@@ -57,7 +58,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 
 ## 5. 관측
 
-- 로그 이벤트는 `<slice>.log-events.ts`의 `<context>.<subject>.<outcome>`, 민감값은 남기지 않는다([관측](observability.md)).
+- 로그 이벤트는 `<slice>.log-events.ts`의 `<Aggregate>LogEvent.<SUBJECT_OUTCOME>` = `<context>.<subject>[.<detail>].<outcome>`, 민감값은 남기지 않는다([관측](observability.md)).
 - 사람이 봐야 하는 실패(재시도 소진, 돈·데이터가 걸린 거절)는 `<slice>.alerts.ts` 카탈로그에 key·severity·요약·대응을 더하고 `OperationalAlertPort.raise`로 올린다. 재시도로 회복되는 실패는 로그만이다.
 - 새 스케줄은 `defineQueue`에 `missed`와 함께 넣으면 스케줄 감시 대상이 된다.
 

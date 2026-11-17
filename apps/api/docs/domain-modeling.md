@@ -4,20 +4,24 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 원칙
 
-- 모든 slice는 Entity·Aggregate 클래스와 VO로 상태를 표현한다. 조회 전용 slice도 쓰기 상태가 있으면 Aggregate를 둔다.
-- slice가 쓰는 테이블의 행 타입마다 Entity 클래스가 하나 있다. Root는 `*.aggregate.ts`(`AggregateRoot` 상속), Root를 거쳐서만 바뀌는 하위는 `*.entity.ts`다. slice 하나는 Aggregate Root 하나이고, 수명주기가 따로인 Root가 둘이면 slice를 나눈다.
+- 모든 slice는 Entity·Aggregate 클래스와 VO로 상태를 표현한다. Aggregate는 두 종류다.
+  - 저장 Aggregate: `create`·`reconstitute`·`toPrimitives()`와 저장소 `save(aggregate)`.
+  - 생성만 하는 Aggregate: 저장하지 않고 계산·외부 결과(LLM 초안, 날씨 보고, 메일 메시지)를 검증해 만든다. `create`·`toPrimitives()`만 있고 저장소가 없다.
+- 읽기만 하는 slice는 두지 않는다. 조회는 데이터를 소유한 slice의 UseCase와 Read Model이다. 여러 Context를 모으는 조회는 각 Context `-queries` 포트를 조합한다.
+- slice가 쓰는 테이블의 행 타입마다 Entity 클래스가 하나 있다. Root는 `*.aggregate.ts`(`AggregateRoot` 상속), Root를 거쳐서만 바뀌는 하위는 `*.entity.ts`다. slice 하나는 Aggregate Root 하나이고, 수명주기가 따로인 Root가 둘이면 slice를 나눈다. slice 폴더는 Root 이름의 kebab 복수형이고, `<context>/shared/domain`에는 두 slice 이상이 쓰는 VO·도메인 서비스만 두고 Aggregate를 두지 않는다.
 - 작업 원장(push outbox·발송 기록·receipt, 알림 보존, 결제 안내 기록처럼 많은 행을 한 번에 넘기는 상태)도 행 Entity 클래스를 둔다. 수백 행을 한 문장으로 바꿔야 하는 경로만 저장소에 업무 이름의 묶음 메서드(`claimDue`·`markExpired`)를 허용하고, 한 행을 바꾸는 경로는 Entity 행동 → `save`다.
 - 베이스 클래스는 `shared/domain/model`의 `ValueObject<TValue>`, `EntityId<TValue>`, `Entity<TId, TProps>`, `AggregateRoot<TId, TProps, TEvent>`다. VO는 `ValueObject`를 상속하고 const 객체로 VO를 흉내 내지 않는다. 다른 베이스 클래스를 만들지 않는다.
 - `ValueObject.equals`는 생성자와 값을 비교한다. Temporal 값은 자체 `equals`로 비교한다(es-toolkit `isEqual`은 같은 시각의 다른 Temporal 객체를 다르다고 본다).
 - `AggregateRoot`는 `raise(event)`로 이벤트를 쌓고 `pullDomainEvents()`로 꺼낸다. 이벤트를 내지 않는 Aggregate도 상속한다(일관성 우선).
+- 이벤트는 바뀐 Aggregate가 전이 메서드 안에서 `raise`한다. UseCase가 이벤트 객체를 `new`로 만들지 않는다. 저장 뒤 UseCase가 `pullDomainEvents()`를 `DomainEventPublisherPort.publish`에 넘긴다.
 
 ## 팩토리는 세 이름뿐
 
-| 이름           | 뜻                                                                       |
-| -------------- | ------------------------------------------------------------------------ |
-| `create`       | 새 상태. 생성 규칙을 검증하고 이벤트를 낸다                              |
-| `generate`     | 앱이 만드는 식별자(`TodoSeriesId.generate()`)                            |
-| `reconstitute` | 신뢰한 저장값 복원. 검증·이벤트가 없다. 한도가 줄어도 옛 데이터를 읽는다 |
+| 이름           | 뜻                                                                        |
+| -------------- | ------------------------------------------------------------------------- |
+| `create`       | 새 상태. 생성 규칙을 검증하고 이벤트를 낸다. 생성만 하는 Aggregate도 이것 |
+| `generate`     | 앱이 만드는 식별자(`TodoSeriesId.generate()`)                             |
+| `reconstitute` | 신뢰한 저장값 복원. 검증·이벤트가 없다. 한도가 줄어도 옛 데이터를 읽는다  |
 
 - `planCreation`·`of`·`from` 같은 다른 이름을 쓰지 않는다.
 - DB 시퀀스 id(`serial`)는 Repository `nextId()`로 먼저 받는다(IDDD `nextIdentity()`). 그래서 `create`와 `reconstitute`가 같은 완전한 타입을 돌려주고 "id 없는 Aggregate"가 없다. 묶음은 `nextIds(count)` 한 쿼리다.
@@ -36,7 +40,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 허용되지 않은 전이(`ACCEPTED`인 요청을 다시 수락)는 두 가지 중 하나로 정하고 slice 안에서 섞지 않는다. 같은 상태로의 재요청은 `false`(멱등), 다른 상태에서의 금지된 전이는 `domain/<slice>.errors.ts`의 이름 있는 오류다.
 - 상태 질문은 `is<State>()`(`isPending()`), 행동 가능 여부는 `can<Action>()`, 파생 값은 명사 getter(`remainingSeconds`)다. 질문 메서드는 상태를 바꾸지 않는다.
 - 전이 표(상태 → 행동 → 다음 상태)는 용어집의 그 Context 절에 둔다. 코드와 표가 다르면 코드를 고치거나 표를 고치는 PR에서 함께 맞춘다.
-- UseCase 이름은 `<업무 동사><Aggregate>`(`AcceptFriendRequest`, `CompleteTodo`)이고 용어집의 행동과 같은 말을 쓴다. 이벤트는 `<context>.<aggregate>.<과거형>`이다.
+- UseCase 이름은 `<업무 동사><Aggregate>`(`AcceptFriendRequest`, `CompleteTodo`)이고 용어집의 행동과 같은 말을 쓴다. Aggregate 안 이벤트는 `<aggregate>.<과거형>`(`todo.created`), 다른 Context로 내보내는 이벤트(`PublishedDomainEvent`)는 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`)이다. durable 구독이 있는 이벤트 이름은 큐 payload 계약이라 바꾸지 않는다.
 
 ## 규칙을 둘 곳
 
@@ -51,8 +55,8 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 - 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. 세 번째 인자 `{ message?, cause? }`로 응답 문구를 정하거나 감싼 원본 오류를 남긴다. HTTP 변환은 [오류 규칙](../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. 거부는 `application/<slice>.errors.ts`, 불변식은 `domain/<slice>.errors.ts`(Domain은 Application을 import하지 못한다)이고, 같은 Context의 slice가 함께 쓰는 불변식은 `<context>/shared/domain/<context>.errors.ts`(`planning.errors.ts`), 공용 식별자는 `shared/domain/exceptions/shared-domain.errors.ts`다. 이 파일 밖에서 `new ApplicationException`·`new DomainException`·`new ErrorCodedException`(별칭 import 포함)을 쓰지 않고 이 클래스들을 잇는 예외 클래스도 만들지 않는다(Oxlint `aido/no-inline-coded-exception`, spec 제외). port·use-case 파일 안에 오류 클래스를 선언하지 않는다.
-- 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Context 고유 id(`TodoId`)는 그 Context의 `shared/domain`에 둔다.
-- 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
+- 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Aggregate id(`TodoId`)는 소유 slice `domain/`에 두고 다른 slice·Context는 그 slice `*.public.ts`로 import한다. Props도 다른 Aggregate를 원시값이 아닌 id VO로 참조한다.
+- 포트 시그니처의 식별자는 원시값(`number`·`string`)이 아니라 id VO다. 조회 결과가 없으면 `undefined`가 아닌 `null`이다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation 경계에서 VO로 바꾼다.
 - 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 앱 릴리스, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
 
 ## 기준 구현: notes/memos

@@ -32,9 +32,11 @@ HTTP → Guard/Interceptor → Controller → UseCase → Domain 행동 + Port
 apps/api/src/
   modules/<context>/
     <context>.module.ts                # slice Module 묶음만 import·export
-    shared/                            # 같은 Context의 slice 2개 이상이 공유할 때만 (예: TodoId)
-    <slice>/
+    shared/                            # 같은 Context의 slice 2개 이상이 쓰는 VO·도메인 서비스만 (Aggregate 없음)
+    <slice>/                           # Aggregate 이름의 kebab 복수형
       <context>-<slice>.module.ts
+      <context>-<slice>-queries.module.ts # (다른 Context가 읽을 때만) import 없는 조회 포트 Module
+      <context>-<slice>-admin.module.ts  # (관리자 HTTP가 있을 때만)
       <context>-<slice>.providers.ts   # 포트 바인딩 + UseCase 조립 (한 파일)
       <context>-<slice>.public.ts      # 다른 Context에 여는 문
       <context>-<slice>.config.ts      # (있을 때) defineConfig 설정
@@ -49,12 +51,12 @@ apps/api/src/
                        adapters/<vendor>-<capability>.adapter.ts  <vendor>.wire.ts  <vendor>-outbound.policy.ts
                        jobs/<job>.queue.ts  <job>.processor.ts  <job>.scheduler.ts
                        cache/<noun>.cache.ts  <noun>.keyspace.ts  event-handlers/<reaction>.event-handler.ts
-      presentation/    http/v1/<noun>.controller.ts  <noun>.dto.ts  <noun>-response.mapper.ts
+      presentation/    http/<slice>.rate-limits.ts  http/v1/<noun>.controller.ts  <noun>.dto.ts  <noun>-response.mapper.ts
                        http/v2/…  (출시 앱 호환 때문에 계약이 갈라질 때만)
   platform/  shared/{domain,application}/
 ```
 
-- slice 기준은 "Aggregate Root 하나 = slice 하나"다.
+- slice 기준은 "Aggregate Root 하나 = slice 하나"이고 폴더는 그 Aggregate 이름의 kebab 복수형이다. 읽기만 하는 slice는 두지 않는다([도메인 모델](domain-modeling.md#원칙)).
 - 버전은 HTTP 경계(`presentation/http/v<n>/`, `@aido/api/contracts/<resource>/v<n>/`)에만 둔다. Application·Domain에는 버전이 없다.
 - AppModule은 `<context>.module.ts`(`<Context>Module`)만 import한다. slice Module을 AppModule에 직접 넣지 않는다.
 - presentation은 계약을 `@aido/api/contracts/<resource>` 하위 경로로 import한다.
@@ -84,21 +86,21 @@ presentation → application → domain        infrastructure → application(po
 다른 Context → *.public.ts 만               shared/* → 어떤 module도 모름
 ```
 
-| 규칙                                                                             | 강제                                                       |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Domain은 Nest·ORM·SDK·platform을 모른다. `@aido/api`는 `/vocabulary`·`/errors`만 | oxlint `no-restricted-imports` overrides(`.oxlintrc.json`) |
-| Application은 infrastructure·presentation·SDK·platform·계약을 모른다             | 같음                                                       |
-| 다른 Context는 `*.public.ts`로만 import한다                                      | dependency-cruiser `cross-context-only-via-public`         |
-| 파일·Module 순환 금지, `forwardRef(` 0건                                         | `import/no-cycle` + dependency-cruiser + 관례 검사         |
-| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)               | ls-lint(`.ls-lint.yml`)                                    |
-| 비공개 멤버는 `#`, 파라미터 프로퍼티 금지                                        | oxlint `typescript/parameter-properties` + 관례 검사       |
-| 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                     | oxlint `aido/no-inline-coded-exception`                    |
-| 안 쓰는 파일·export·의존성 0                                                     | knip(`check:unused`)                                       |
-| 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지      | oxlint `oxc/no-barrel-file` + 관례 검사(`checkReExports`)  |
+| 규칙                                                                             | 강제                                                                           |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Domain은 Nest·ORM·SDK·platform을 모른다. `@aido/api`는 `/vocabulary`·`/errors`만 | oxlint `no-restricted-imports` overrides(`.oxlintrc.json`)                     |
+| Application은 infrastructure·presentation·SDK·platform·계약을 모른다             | 같음                                                                           |
+| 다른 Context는 `*.public.ts`로만 import한다                                      | dependency-cruiser `cross-context-only-via-public`                             |
+| 파일·Module 순환 금지, `forwardRef(` 0건                                         | `import/no-cycle` + dependency-cruiser + `no-restricted-imports`(`forwardRef`) |
+| 폴더·파일 접미사. 역할 접미사는 사전의 하나만(`.spec`은 그 뒤에만)               | ls-lint(`.ls-lint.yml`)                                                        |
+| 비공개 멤버는 `#`, 파라미터 프로퍼티 금지                                        | oxlint `typescript/parameter-properties` + `aido/no-member-accessibility`      |
+| 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                     | oxlint `aido/no-inline-coded-exception`                                        |
+| 안 쓰는 파일·export·의존성 0                                                     | knip(`check:unused`)                                                           |
+| 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지      | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`        |
 
 - 규칙은 모든 Context에 같은 세기로 걸린다. 예외 목록이나 "옮긴 Context만" 같은 단계 구분을 두지 않는다.
 - 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todo-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)).
-- 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 조회 포트만 묶은 Module(`PlanningTodoQueriesModule`)을 따로 두면 무거운 Module을 끌어오지 않는다.
+- 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.
 - 포트가 abstract class라 런타임 import가 생긴다. ESM에서는 순환이 부팅 실패로 드러나므로 앱 부팅 E2E(Health)로 확인한다.
 
 ## 공개 면과 재수출

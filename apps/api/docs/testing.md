@@ -28,11 +28,12 @@ test/
   contracts/platform/cache-store.contract.ts
   contracts/<context>/<noun>-repository.contract.ts
   integration/<context>/<slice>/*.integration-spec.ts
-  e2e/*.e2e-spec.ts, e2e/fixtures/released-*-openapi-contract.ts (불변)
+  e2e/<context>/<slice>.e2e-spec.ts, e2e/fixtures/released-*-openapi-contract.ts (불변)
   setup/                                      # global-setup, managed-test-database, test-database
 ```
 
-- 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다.
+- 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다. fixture는 `create<Aggregate>Fixture(overrides)`가 `<Aggregate>.reconstitute`로 만든다. 객체형 fixture(`UserFixture.create`)·fluent builder·barrel을 쓰지 않는다.
+- 본문은 `// Given`·`// When`·`// Then` 한 줄 주석으로 나눈다. 합본(`// When / Then`)·꼬리 설명(`// Given - …`)·콜론을 쓰지 않는다([테스트 파일](../../../docs/conventions/testing.md)).
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit, `*.repository.port.spec.ts`)와 Drizzle(integration)이 같이 통과한다. 사례: [memo 계약](../test/contracts/notes/memo-repository.contract.ts)을 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts)에서 돌린다.
 - UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts).
 - 테스트 더블은 손으로 쓴 InMemory·Fake·Stub·Recording이다. Nest가 주는 실제 객체(`ExecutionContextHost`, `TransactionHost`)가 있으면 그것을 쓴다. mock 라이브러리(`vitest-mock-extended`·`@suites/*`)와 깊은 mock을 쓰지 않는다. 실패를 주입하거나 호출 자체가 계약일 때도 작은 기록용 double(`RecordingOperationalAlert`·`RecordingMutationLock`)로 본다.
@@ -77,7 +78,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 
 ## 시간과 타이머
 
-- 시각은 `FixedClock`으로 고정한다. 옛 구조 코드의 Date 판단만 `vi.useFakeTimers({ toFake: ["Date"] })`로 Date만 바꾸고 `afterEach`에 복원한다.
+- 시각은 `FixedClock`으로 고정한다. `vi.useFakeTimers`는 `setTimeout`·`setInterval`을 직접 쓰는 platform·adapter 테스트에만 쓰고 `afterEach`에 복원한다. UseCase·Domain spec은 시계를 `ClockPort`로만 받는다.
 - PostgreSQL·socket·job의 native timer는 그대로 둔다. 완료는 [실행 자원과 flake](#실행-자원과-flake)대로 기다린다.
 - 같은 instant를 서울·LA × ko·en으로 돌려 결과가 언어에 따라 바뀌지 않는지 본다.
 
@@ -145,4 +146,4 @@ AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project perf
 
 ## 옛 테스트 도우미
 
-옛 spec 일부가 아직 `test/mocks`·`test/builders`를 쓴다. 기존 테스트를 일괄 교체하지 않고 그 spec을 고칠 때 위 구조로 옮긴다. 마지막에 `test/builders`를 fixtures로, `test/mocks`를 doubles로 합친다.
+`test/mocks`·`test/builders`·`test/fixtures/index.ts`(barrel)는 지울 대상이다. 새 spec은 쓰지 않고, 남은 사용처는 `create<Aggregate>Fixture`와 `test/doubles`로 옮긴 뒤 폴더를 지운다.

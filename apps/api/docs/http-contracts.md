@@ -15,7 +15,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 ## Controller
 
 - Controller는 guard·Swagger·DTO 검증, 원시값의 Command 변환, 결과의 HTTP 매핑만 한다. Repository·SDK·트랜잭션·업무 판단을 두지 않는다. UseCase를 직접 주입한다.
-- `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다. 사례: [MemoController](../src/modules/notes/memos/presentation/http/v1/memo.controller.ts).
+- `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다. 버전은 폴더로만 나누고 클래스·Swagger 태그·상수 이름에 넣지 않으며, 버전 폴더끼리 import하지 않는다. 사례: [MemoController](../src/modules/notes/memos/presentation/http/v1/memo.controller.ts).
 - 공용 데코레이터는 `platform/http/decorators`(`@Timezone`·`@Locale`·`@IdempotencyKey`·`@RawResponse`·`@ClientAbortSignal`)와 `platform/http/request-client`(`@AppVersion`·`@CurrentRequestClient`)에 있다. 인증(`@CurrentUser`·`@Public`·`@Admin`)은 identity auth가 `identity-auth-http.public.ts`로 연다.
 
 ## 요청 헤더와 throttle
@@ -31,7 +31,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 - `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다([관측](observability.md#http-로그와-요청-id)).
 - 헤더 Swagger 문서는 `platform/http/swagger/decorators/api-header.decorator.ts`의 `@ApiAppVersionHeader()`·`@ApiIdempotencyKeyHeader()`를 쓴다. query·path는 `@Query/@Param({ schema })`가 문서를 만든다. `@ApiQuery`·`@ApiParam`을 겹쳐 쓰면 그쪽이 이겨 문서가 검증과 달라지므로 새로 쓰지 않는다(남은 곳은 출시 지문을 갱신하며 옮긴다).
-- throttle은 전역 `UserAwareThrottlerGuard`다. 한도는 Controller 옆 이름 있는 상수(`AUTH_THROTTLE.LOGIN`처럼 `{ ttl, limit }`)이고, 인증 전은 IP, 사용자별은 `@ThrottleByUser()` + `@Throttle`이다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
+- throttle은 전역 `UserAwareThrottlerGuard`다. 인증한 요청은 사용자 id, 인증 전은 IP로 센다. 한도는 slice `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits({ <행동>: { limitPerMinute, limitPerDay? } })` 한 곳이고 라우트는 `@RateLimit(<Slice>RateLimits.<행동>)` 하나를 붙인다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
 
 ## Schema와 DTO
 

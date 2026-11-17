@@ -10,7 +10,7 @@
 | 하위 Entity     | `todo-item.entity.ts`                                                | `TodoItem`                                          | 같음                                                                                      |
 | 식별자 VO       | `memo-id.vo.ts`                                                      | `MemoId`                                            | `static generate()`(앱 생성) 또는 Repository `nextId()`(DB 시퀀스), `static reconstitute` |
 | 값 VO           | `memo-content.vo.ts`                                                 | `MemoContent`                                       | `static create(raw)`(검증)·`static reconstitute(raw)`·`value`·`equals`                    |
-| 도메인 이벤트   | `todo-changed.event.ts`                                              | `TodoChangedEvent`                                  | `eventName`은 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`), `toPayload()`  |
+| 도메인 이벤트   | `todo-changed.event.ts`                                              | `TodoChangedEvent`                                  | 안 이벤트 `<aggregate>.<과거형>`, 내보내는 이벤트 `<context>.<aggregate>.<과거형>`        |
 | 도메인 서비스   | `memo-ordering.domain-service.ts`                                    | 순수 함수 `planMoveRelativeTo()`                    | 입력은 이름 붙은 객체 하나, 반환은 값 또는 판별 유니온, `now`는 인자                      |
 | UseCase         | `create-memo.use-case.ts`                                            | `CreateMemoUseCase`                                 | `execute(command)` 하나. 입력 `CreateMemoCommand`·`ListMemosQuery`                        |
 | Port            | `memo.repository.port.ts`                                            | `abstract class MemoRepositoryPort`                 | 아래 Repository 규칙                                                                      |
@@ -24,6 +24,7 @@
 | 주기 작업       | `timezone-reminder-sweep.scheduler.ts`                               | `TimezoneReminderSweepScheduler`                    |                                                                                           |
 | 이벤트 구독     | `invitee-activity.event-handler.ts`                                  | `InviteeActivityEventHandler`                       |                                                                                           |
 | HTTP            | `http/v1/memo.controller.ts`·`memo.dto.ts`·`memo-response.mapper.ts` | `MemoController`·`CreateMemoDto`·`toMemoResponse()` | DTO는 컨트롤러별 한 파일, 응답 문구는 매퍼                                                |
+| 요청 한도       | `http/memos.rate-limits.ts`                                          | `MemoRateLimits`                                    | `defineRateLimits({ write: { limitPerMinute } })`, 라우트는 `@RateLimit(…)`               |
 | 로그·경보·오류  | `memos.log-events.ts`·`forecasts.alerts.ts`·`memos.errors.ts`        | `MemoLogEvent`·`ForecastAlerts`·`memoNotFound()`    | 로그 상수는 이벤트 이름 상수와 겹치지 않게                                                |
 
 - 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
@@ -32,17 +33,24 @@
 - `Manager`·전달 전용 Facade·`TodoService` 같은 만능 이름으로 역할을 감추지 않는다. 행동 하나가 UseCase 하나다.
 - 라이브러리와 겹치는 이름(`HttpService`·`CacheService`·`Logger`)을 새로 만들지 않는다(`CacheStorePort`, `requestVendorJson`).
 
+## slice·Module·공개 면
+
+- slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
+- Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 읽는 포트만 담고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`, 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 읽기 포트를 `-queries`로 옮겨 없앤다.
+- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. Context 루트에 public 파일을 두지 않는다.
+- HTTP 버전은 폴더(`http/v2/`)로만 나눈다. 클래스(`WeatherReportController`)·Swagger 태그·상수 이름에 버전을 넣지 않고, 버전 폴더끼리 import하지 않는다(공용은 버전 밖 `presentation/http/`).
+
 ## Repository 메서드
 
-| 접두사              | 반환        | 비고                            |
-| ------------------- | ----------- | ------------------------------- |
-| `find*`             | `T \| null` |                                 |
-| `list*`             | `T[]`       |                                 |
-| `count*`            | `number`    |                                 |
-| `exists*`           | `boolean`   |                                 |
-| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리 |
-| `save(aggregate)`   | `void`      | insert-or-update                |
-| `delete(aggregate)` | `void`      |                                 |
+| 접두사              | 반환        | 비고                                 |
+| ------------------- | ----------- | ------------------------------------ |
+| `find*`             | `T \| null` | 캐시 miss도 `null`(`undefined` 금지) |
+| `list*`             | `T[]`       |                                      |
+| `count*`            | `number`    |                                      |
+| `exists*`           | `boolean`   |                                      |
+| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리      |
+| `save(aggregate)`   | `void`      | insert-or-update                     |
+| `delete(aggregate)` | `void`      |                                      |
 
 집합 원자 연산은 업무 이름(`shiftSortOrders`)으로 짓는다. Aggregate 없이 작업 행을 옮기는 작업 원장 저장소도 같다([영속성](persistence.md#repository와-reader)). `-1` 같은 sentinel 대신 `null`을 쓴다. Repository는 로그·enqueue·캐시 정리를 하지 않는다(부수효과는 UseCase에 보이게).
 
@@ -72,7 +80,8 @@
 
 ## 변수·상수
 
-- 단위 접미사(`timeoutMs`, `ttlSeconds`), boolean은 `is/has/can/should`, 컬렉션은 복수형, id는 `memoId`. `data`·`info`·`item` 같은 뭉뚱그린 이름을 쓰지 않는다. 배포된 DTO·DB·payload 이름은 바꾸지 않는다(코드 `seriesId` ↔ DB `recurrenceGroupId`).
+- 단위 접미사(`timeoutMs`, `ttlSeconds`), boolean은 `is/has/can/should`, 컬렉션은 복수형, id는 `memoId`. `data`·`info`·`item` 같은 뭉뚱그린 이름을 쓰지 않는다.
+- 축약어를 쓰지 않는다: `ctx` → `timezoneContext`, `tx` → `transaction`, `req`·`res` → `request`·`response`, `err`·`e` → `error`, `val` → `value`, `args`·`opts` → `parameters`·`options`, `cb`·`fn` → 역할 이름, `repo`·`svc`·`msg`·`idx`·`tmp` → 풀어 쓴 이름. 반복 인덱스 `index`와 업계 고유명(`id`·`url`·`ip`·`jwt`)은 이름 그대로다. 배포된 DTO·DB·payload 이름은 바꾸지 않는다(코드 `seriesId` ↔ DB `recurrenceGroupId`).
 - 상수는 `UPPER_SNAKE`이고 단위를 이름에 넣는다. 매직 넘버를 쓰지 않는다.
 
 | 종류                                 | 위치                                                  |
@@ -108,15 +117,17 @@
 
 ## Nest 공식 패키지 판단
 
-| 패키지                                              | 판단      | 이유                                                                              |
-| --------------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
-| `@nestjs/http-client`                               | 사용      | named client, `retry: false`(재시도 층 하나), 응답은 `*.wire.ts`로 직접 검증      |
-| `@nestjs/i18n`                                      | 사용      | [다국어](i18n.md)                                                                 |
-| `@nestjs/mail`                                      | 사용      | 설정만으로 공급자 전환, 언어별 템플릿, `idempotencyKey`                           |
-| `@nestjs/config`                                    | 사용      | namespace 설정([설정](configuration.md))                                          |
-| `@nestjs/drizzle`                                   | 사용      | `DatabaseModule`이 Pool 수명주기를 맡긴다. 트랜잭션은 `@nestjs-cls/transactional` |
-| `@nestjs/event-emitter`                             | 사용      | 커밋 뒤 in-process 전달([작업과 이벤트](jobs-and-events.md))                      |
-| `@nestjs/outbox`·`@nestjs/cache-manager`            | 쓰지 않음 | pg-boss 트랜잭션 enqueue가 이미 아웃박스, Keyv에 패턴 삭제 없음(`lru-cache` 사용) |
-| `@nestjs/schedule`·`@nestjs/cqrs`·`@nestjs/observe` | 쓰지 않음 | 메모리 cron은 중복·유실, 버스가 호출 경로를 숨김, 별도 APM 필요                   |
+| 패키지                                              | 판단      | 이유                                                                                 |
+| --------------------------------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| `@nestjs/http-client`                               | 사용      | named client, `retry: false`(재시도 층 하나), 응답은 `*.wire.ts`로 직접 검증         |
+| `@nestjs/i18n`                                      | 사용      | [다국어](i18n.md)                                                                    |
+| `@nestjs/mail`                                      | 사용      | 설정만으로 공급자 전환, 언어별 템플릿, `idempotencyKey`                              |
+| `@nestjs/config`                                    | 사용      | namespace 설정([설정](configuration.md))                                             |
+| `@nestjs/drizzle`                                   | 사용      | `DatabaseModule`이 Pool 수명주기를 맡긴다. 트랜잭션은 `@nestjs-cls/transactional`    |
+| `@nestjs/event-emitter`                             | 사용      | 커밋 뒤 in-process 전달([작업과 이벤트](jobs-and-events.md))                         |
+| `@nestjs/outbox`·`@nestjs/cache-manager`            | 쓰지 않음 | pg-boss 트랜잭션 enqueue가 이미 아웃박스, Keyv에 패턴 삭제 없음(`lru-cache` 사용)    |
+| `@nestjs/schedule`·`@nestjs/cqrs`·`@nestjs/observe` | 쓰지 않음 | 메모리 cron은 중복·유실, 버스가 호출 경로를 숨김, 별도 APM 필요                      |
+| `@nestjs/throttler`                                 | 사용      | 전역 `UserAwareThrottlerGuard`, 한도는 slice `*.rate-limits.ts`                      |
+| `@nestjs/platform-node`                             | 도입 예정 | Nest 12.3+ 권장·13 기본 어댑터. Express 전용 API를 platform 한 곳으로 모은 뒤 바꾼다 |
 
 0.0.x 공식 패키지는 catalog에 정확히 고정하고 사용처를 어댑터 한 파일로 가둔다.

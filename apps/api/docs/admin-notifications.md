@@ -2,15 +2,15 @@
 
 운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
 
-| `AdminNotice.type`   | 내용                                                     | 만드는 곳                                     |
-| -------------------- | -------------------------------------------------------- | --------------------------------------------- |
-| `subscription_event` | 사용자 블록 + 결제 블록(`SubscriptionNotice`)            | `EnqueueSubscriptionEvent`(billing 커밋 뒤)   |
-| `user_registered`    | 사용자 블록 + 가입 요청의 기기·앱 정보(`SignupNotice`)   | `EnqueueUserRegistered`                       |
-| `message`            | 이미 조립한 일반 알림(`AdminNotification`, 일일 요약 등) | `DispatchDailySignupSummary`, 이전 형식 큐 잡 |
+| `AdminNotice.type`   | 내용                                                     | 만드는 곳                                   |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------- |
+| `subscription_event` | 사용자 블록 + 결제 블록(`SubscriptionNotice`)            | `EnqueueSubscriptionEvent`(billing 커밋 뒤) |
+| `user_registered`    | 사용자 블록 + 가입 요청의 기기·앱 정보(`SignupNotice`)   | `EnqueueUserRegistered`                     |
+| `message`            | 이미 조립한 일반 알림(`AdminNotification`, 일일 요약 등) | `DispatchDailySignupSummary`                |
 
 발송은 `admin-notification.v1` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다.
 
-큐 잡 데이터는 `{ channel, notice }`다. 배포 순간 큐에 남은 이전 잡(보관 24시간)은 그 모양 그대로 `message`로 보낸다. 조립 메시지(`{ channel, notification }`, `LegacySendDataSchema`)와 그 전 형식(`color`·`fields[].name`, `LegacyAdminNotificationSchema`, 색은 info로)이 해당하고 제거 조건은 [호환](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)에 있다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
+큐 잡 데이터는 `{ channel, notice }`다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
 
 일반 메시지(`message`)의 `severity`는 채널 색으로 바뀐다: info 파랑·success 초록·warning 노랑·critical 빨강. 시각 필드는 보는 사람의 시간대로 보여 준다.
 
