@@ -8,6 +8,7 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import type {
   LifestyleIndex,
   LifestyleIndexProviderPort,
+  LifestyleIndexQuery,
 } from "../../application/ports/lifestyle-index-provider.port.js";
 import {
   weatherWeatherReportsConfig,
@@ -39,14 +40,11 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     this.#policy = policies.get(KMA_LIFESTYLE_POLICY);
   }
 
-  async getIndex(
-    lat: number,
-    lon: number,
-    at: Temporal.Instant,
-    currentTemp: number,
-    windSpeed: number,
-  ): Promise<LifestyleIndex> {
-    const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(currentTemp, windSpeed);
+  async getIndex(query: LifestyleIndexQuery): Promise<LifestyleIndex> {
+    const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(
+      query.currentTemp,
+      query.windSpeed,
+    );
 
     const apiKey = this.#config.kmaApiKey;
     if (apiKey == null || apiKey === "") {
@@ -59,7 +57,7 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     }
 
     try {
-      const uvIndex = await this.#fetchUvIndex(apiKey, lat, lon, at);
+      const uvIndex = await this.#fetchUvIndex(apiKey, query);
       return { feelsLikeTemperature, uvIndex };
     } catch (error) {
       this.#logger.warn({
@@ -74,9 +72,7 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
 
   async #fetchUvIndex(
     apiKey: string,
-    lat: number,
-    lon: number,
-    at: Temporal.Instant,
+    { lat, lon, at }: Pick<LifestyleIndexQuery, "lat" | "lon" | "at">,
   ): Promise<number | null> {
     const local = at.toZonedDateTimeISO(KMA_TIMEZONE);
     const localDate = local.toPlainDate().toString().replaceAll("-", "");
@@ -106,39 +102,24 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
       });
       return null;
     }
+    return this.#readUvIndex(outcome.body);
+  }
 
-    const parsedResponse = kmaUvIndexSchema.safeParse(outcome.body);
+  #readUvIndex(body: unknown): number | null {
+    const parsedResponse = kmaUvIndexSchema.safeParse(body);
     if (!parsedResponse.success) {
-      this.#logger.warn({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: "kma_lifestyle",
-        operation: "uv_index",
-        errorType: "invalid_structure",
-      });
-      return null;
+      return this.#unavailable("invalid_structure");
     }
     const data = parsedResponse.data;
 
     const resultCode = data.response?.header?.resultCode;
     if (resultCode !== "00") {
-      this.#logger.warn({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: "kma_lifestyle",
-        operation: "uv_index",
-        errorType: "provider_result",
-      });
-      return null;
+      return this.#unavailable("provider_result");
     }
 
     const items = data.response?.body?.items?.item;
     if (!items || items.length === 0) {
-      this.#logger.warn({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: "kma_lifestyle",
-        operation: "uv_index",
-        errorType: "missing_item",
-      });
-      return null;
+      return this.#unavailable("missing_item");
     }
 
     const firstItem = items[0];
@@ -148,27 +129,25 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
 
     const h0Value = firstItem.h0;
     if (h0Value == null || h0Value === "") {
-      this.#logger.warn({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: "kma_lifestyle",
-        operation: "uv_index",
-        errorType: "missing_value",
-      });
-      return null;
+      return this.#unavailable("missing_value");
     }
 
     const parsed = Number(h0Value);
     if (Number.isNaN(parsed)) {
-      this.#logger.warn({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: "kma_lifestyle",
-        operation: "uv_index",
-        errorType: "invalid_value",
-      });
-      return null;
+      return this.#unavailable("invalid_value");
     }
 
     return parsed;
+  }
+
+  #unavailable(errorType: string): null {
+    this.#logger.warn({
+      event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+      provider: "kma_lifestyle",
+      operation: "uv_index",
+      errorType,
+    });
+    return null;
   }
 
   #calculateFeelsLikeTemperature(temp: number, windSpeedMs: number): number {

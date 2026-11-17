@@ -12,8 +12,8 @@ import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
 
 import { WeatherReportAlerts } from "../../application/weather-reports.alerts.js";
-import { WeatherKitReportAdapter, WeatherKitRequestError } from "./weatherkit-report.adapter.js";
-import { WeatherKitNotConfiguredError } from "./weatherkit-token.adapter.js";
+import { WeatherKitReportAdapter } from "./weatherkit-report.adapter.js";
+import { WeatherKitNotConfiguredError, WeatherKitRequestError } from "./weatherkit.errors.js";
 
 const USER_COORDINATE = Coordinate.create(37.5665, 126.978);
 const REQUEST = { timezone: "Asia/Seoul", countryCode: "KR", language: "ko" } as const;

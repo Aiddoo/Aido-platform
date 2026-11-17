@@ -3,10 +3,8 @@ import { decodeJwt, decodeProtectedHeader, exportPKCS8, generateKeyPair, jwtVeri
 
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 
-import {
-  WeatherKitNotConfiguredError,
-  WeatherKitTokenAdapter,
-} from "./weatherkit-token.adapter.js";
+import { WeatherKitTokenAdapter } from "./weatherkit-token.adapter.js";
+import { WeatherKitNotConfiguredError } from "./weatherkit.errors.js";
 
 const CREDENTIALS = {
   teamId: "TEAM123456",

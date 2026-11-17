@@ -1,6 +1,6 @@
 import type { PrecipitationType, SkyCondition } from "@aido/api/vocabulary";
 
-export interface HourlyForecast {
+export interface HourlyForecastReadModel {
   readonly hour: number;
   readonly temperature: number;
   readonly skyCondition: SkyCondition;
@@ -9,7 +9,7 @@ export interface HourlyForecast {
   readonly snowAmount: number;
 }
 
-export interface DailyForecast {
+export interface DailyForecastReadModel {
   readonly date: string; // "YYYY-MM-DD"
   readonly skyCondition: SkyCondition;
   readonly precipitationType: PrecipitationType;
@@ -28,8 +28,8 @@ export interface WeatherForecastReadModel {
   readonly temperatureMax: number;
   readonly humidity: number;
   readonly windSpeed: number;
-  readonly hourlyForecasts: readonly HourlyForecast[];
-  readonly dailyForecasts: readonly DailyForecast[];
+  readonly hourlyForecasts: readonly HourlyForecastReadModel[];
+  readonly dailyForecasts: readonly DailyForecastReadModel[];
 }
 
 export interface WeatherConditionsReadModel {

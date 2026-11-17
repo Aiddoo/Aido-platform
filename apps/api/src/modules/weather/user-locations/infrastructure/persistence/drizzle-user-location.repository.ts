@@ -17,10 +17,6 @@ export class DrizzleUserLocationRepository implements UserLocationRepositoryPort
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByUserId(userId: UserId): Promise<UserLocation | null> {
     const row = await this.#db.query.userLocation.findFirst({
       columns: {
@@ -43,5 +39,9 @@ export class DrizzleUserLocationRepository implements UserLocationRepositoryPort
       .insert(userLocation)
       .values({ userId, ...fields })
       .onConflictDoUpdate({ target: userLocation.userId, set: fields });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

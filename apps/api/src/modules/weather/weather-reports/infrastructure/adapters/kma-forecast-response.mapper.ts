@@ -3,8 +3,8 @@ import type { SkyCondition } from "@aido/api/vocabulary";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import type {
-  DailyForecast,
-  HourlyForecast,
+  DailyForecastReadModel,
+  HourlyForecastReadModel,
   WeatherForecastReadModel,
 } from "../../application/read-models/weather-forecast.read-model.js";
 import { KMA_CATEGORY, KMA_TIMEZONE, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
@@ -33,9 +33,9 @@ function mostFrequentCode(counts: Map<string, number>, fallback: string): string
 }
 
 /**
- * 특정 날짜의 아이템들로부터 DailyForecast를 생성
+ * 특정 날짜의 아이템들로부터 DailyForecastReadModel를 생성
  */
-function buildDailyForecast(dateKey: string, dateItems: KmaResponseItem[]): DailyForecast {
+function buildDailyForecast(dateKey: string, dateItems: KmaResponseItem[]): DailyForecastReadModel {
   let tempMin = Number.POSITIVE_INFINITY;
   let tempMax = Number.NEGATIVE_INFINITY;
   let maxPrecipProb = 0;
@@ -98,6 +98,162 @@ function buildDailyForecast(dateKey: string, dateItems: KmaResponseItem[]): Dail
   };
 }
 
+interface HourlyEntry {
+  temperature: number;
+  skyCondition: SkyCondition;
+  precipitationProbability: number;
+  precipitationAmount: number;
+  snowAmount: number;
+}
+
+/** 시간 칸 하나에 값을 넣는다. 값이 숫자가 아니면 칸을 만들지 않는다(하늘 상태는 늘 넣는다) */
+function applyHourlyValue(entry: HourlyEntry, item: KmaResponseItem): boolean {
+  const value = item.fcstValue;
+  switch (item.category) {
+    case KMA_CATEGORY.TMP: {
+      const temp = Number.parseFloat(value);
+      if (Number.isNaN(temp)) {
+        return false;
+      }
+      entry.temperature = temp;
+      return true;
+    }
+    case KMA_CATEGORY.POP: {
+      const prob = Number.parseInt(value, 10);
+      if (Number.isNaN(prob)) {
+        return false;
+      }
+      entry.precipitationProbability = prob;
+      return true;
+    }
+    case KMA_CATEGORY.SKY: {
+      entry.skyCondition = SKY_CODE_MAP[value] ?? "CLEAR";
+      return true;
+    }
+    case KMA_CATEGORY.PCP: {
+      const amount = Number.parseFloat(value);
+      if (Number.isNaN(amount)) {
+        return false;
+      }
+      entry.precipitationAmount = amount;
+      return true;
+    }
+    case KMA_CATEGORY.SNO: {
+      const amount = Number.parseFloat(value);
+      if (Number.isNaN(amount)) {
+        return false;
+      }
+      entry.snowAmount = amount;
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+/** 대상 날짜와 다음 날의 시간별 칸. 다음 날은 24+hour 키로 둔다 */
+function collectHourly(items: readonly KmaResponseItem[], nextDateKey: string) {
+  const hourlyMap = new Map<number, HourlyEntry>();
+  for (const item of items) {
+    const hour = Number.parseInt(item.fcstTime.substring(0, 2), 10);
+    const key = item.fcstDate === nextDateKey ? 24 + hour : hour;
+    const entry = hourlyMap.get(key) ?? {
+      temperature: 0,
+      skyCondition: "CLEAR",
+      precipitationProbability: 0,
+      precipitationAmount: 0,
+      snowAmount: 0,
+    };
+    if (applyHourlyValue(entry, item)) {
+      hourlyMap.set(key, entry);
+    }
+  }
+  return hourlyMap;
+}
+
+interface TargetDaySummary {
+  tempMin: number;
+  tempMax: number;
+  maxPrecipProb: number;
+  dominantSky: string;
+  readonly ptyCounts: Map<string, number>;
+  humiditySum: number;
+  humidityCount: number;
+  windSum: number;
+  windCount: number;
+}
+
+function addTargetDayValue(summary: TargetDaySummary, item: KmaResponseItem): void {
+  const value = item.fcstValue;
+  switch (item.category) {
+    case KMA_CATEGORY.POP: {
+      const prob = Number.parseInt(value, 10);
+      if (!Number.isNaN(prob)) {
+        summary.maxPrecipProb = Math.max(summary.maxPrecipProb, prob);
+      }
+      return;
+    }
+    case KMA_CATEGORY.SKY:
+      summary.dominantSky = value;
+      return;
+    case KMA_CATEGORY.TMN: {
+      const v = Number.parseFloat(value);
+      if (!Number.isNaN(v)) {
+        summary.tempMin = Math.min(summary.tempMin, v);
+      }
+      return;
+    }
+    case KMA_CATEGORY.TMX: {
+      const v = Number.parseFloat(value);
+      if (!Number.isNaN(v)) {
+        summary.tempMax = Math.max(summary.tempMax, v);
+      }
+      return;
+    }
+    case KMA_CATEGORY.PTY:
+      if (value !== "0") {
+        summary.ptyCounts.set(value, (summary.ptyCounts.get(value) ?? 0) + 1);
+      }
+      return;
+    case KMA_CATEGORY.REH: {
+      const v = Number.parseInt(value, 10);
+      if (!Number.isNaN(v)) {
+        summary.humiditySum += v;
+        summary.humidityCount++;
+      }
+      return;
+    }
+    case KMA_CATEGORY.WSD: {
+      const v = Number.parseFloat(value);
+      if (!Number.isNaN(v)) {
+        summary.windSum += v;
+        summary.windCount++;
+      }
+      return;
+    }
+    default:
+      return;
+  }
+}
+
+function summarizeTargetDay(items: readonly KmaResponseItem[]): TargetDaySummary {
+  const summary: TargetDaySummary = {
+    tempMin: Number.POSITIVE_INFINITY,
+    tempMax: Number.NEGATIVE_INFINITY,
+    maxPrecipProb: 0,
+    dominantSky: "1", // 기본: 맑음
+    ptyCounts: new Map<string, number>(),
+    humiditySum: 0,
+    humidityCount: 0,
+    windSum: 0,
+    windCount: 0,
+  };
+  for (const item of items) {
+    addTargetDayValue(summary, item);
+  }
+  return summary;
+}
+
 /**
  * 기상청 단기예보 응답을 WeatherForecastReadModel로 변환
  */
@@ -110,179 +266,50 @@ export function parseKmaResponse(
   const targetDateKey = localDate.toString().replaceAll("-", "");
   const nextDateKey = localDate.add({ days: 1 }).toString().replaceAll("-", "");
 
-  // 시간별 데이터 수집 (대상 날짜 + 다음 날)
-  const hourlyMap = new Map<
-    number,
-    {
-      temperature: number;
-      skyCondition: SkyCondition;
-      precipitationProbability: number;
-      precipitationAmount: number;
-      snowAmount: number;
-    }
-  >();
-
-  let tempMin = Number.POSITIVE_INFINITY;
-  let tempMax = Number.NEGATIVE_INFINITY;
-  let maxPrecipProb = 0;
-  let dominantSky = "1"; // 기본: 맑음
-  const ptyCounts = new Map<string, number>(); // non-zero PTY 빈도
-  let avgHumidity = 0;
-  let avgWindSpeed = 0;
-  let humidityCount = 0;
-  let windCount = 0;
-
   const relevantItems = allItems.filter(
     (item) => item.fcstDate === targetDateKey || item.fcstDate === nextDateKey,
   );
-
-  for (const item of relevantItems) {
-    const hour = Number.parseInt(item.fcstTime.substring(0, 2), 10);
-    const value = item.fcstValue;
-    const isNextDay = item.fcstDate === nextDateKey;
-    const key = isNextDay ? 24 + hour : hour;
-
-    const getOrCreate = () =>
-      hourlyMap.get(key) ?? {
-        temperature: 0,
-        skyCondition: "CLEAR",
-        precipitationProbability: 0,
-        precipitationAmount: 0,
-        snowAmount: 0,
-      };
-
-    switch (item.category) {
-      case KMA_CATEGORY.TMP: {
-        const temp = Number.parseFloat(value);
-        if (!Number.isNaN(temp)) {
-          const entry = getOrCreate();
-          entry.temperature = temp;
-          hourlyMap.set(key, entry);
-        }
-        break;
-      }
-      case KMA_CATEGORY.POP: {
-        const prob = Number.parseInt(value, 10);
-        if (!Number.isNaN(prob)) {
-          if (!isNextDay) {
-            maxPrecipProb = Math.max(maxPrecipProb, prob);
-          }
-          const entry = getOrCreate();
-          entry.precipitationProbability = prob;
-          hourlyMap.set(key, entry);
-        }
-        break;
-      }
-      case KMA_CATEGORY.SKY: {
-        if (!isNextDay) {
-          dominantSky = value;
-        }
-        const entry = getOrCreate();
-        entry.skyCondition = SKY_CODE_MAP[value] ?? "CLEAR";
-        hourlyMap.set(key, entry);
-        break;
-      }
-      case KMA_CATEGORY.PCP: {
-        const amount = Number.parseFloat(value);
-        if (!Number.isNaN(amount)) {
-          const entry = getOrCreate();
-          entry.precipitationAmount = amount;
-          hourlyMap.set(key, entry);
-        }
-        break;
-      }
-      case KMA_CATEGORY.SNO: {
-        const amount = Number.parseFloat(value);
-        if (!Number.isNaN(amount)) {
-          const entry = getOrCreate();
-          entry.snowAmount = amount;
-          hourlyMap.set(key, entry);
-        }
-        break;
-      }
-      case KMA_CATEGORY.TMN: {
-        if (!isNextDay) {
-          const v = Number.parseFloat(value);
-          if (!Number.isNaN(v)) {
-            tempMin = Math.min(tempMin, v);
-          }
-        }
-        break;
-      }
-      case KMA_CATEGORY.TMX: {
-        if (!isNextDay) {
-          const v = Number.parseFloat(value);
-          if (!Number.isNaN(v)) {
-            tempMax = Math.max(tempMax, v);
-          }
-        }
-        break;
-      }
-      case KMA_CATEGORY.PTY: {
-        if (!isNextDay && value !== "0") {
-          ptyCounts.set(value, (ptyCounts.get(value) ?? 0) + 1);
-        }
-        break;
-      }
-      case KMA_CATEGORY.REH: {
-        if (!isNextDay) {
-          const v = Number.parseInt(value, 10);
-          if (!Number.isNaN(v)) {
-            avgHumidity += v;
-            humidityCount++;
-          }
-        }
-        break;
-      }
-      case KMA_CATEGORY.WSD: {
-        if (!isNextDay) {
-          const v = Number.parseFloat(value);
-          if (!Number.isNaN(v)) {
-            avgWindSpeed += v;
-            windCount++;
-          }
-        }
-        break;
-      }
-    }
-  }
+  const hourlyMap = collectHourly(relevantItems, nextDateKey);
+  const summary = summarizeTargetDay(
+    relevantItems.filter((item) => item.fcstDate === targetDateKey),
+  );
 
   // TMN/TMX가 없으면 시간별 기온에서 추출
-  if (tempMin === Number.POSITIVE_INFINITY || tempMax === Number.NEGATIVE_INFINITY) {
+  if (
+    summary.tempMin === Number.POSITIVE_INFINITY ||
+    summary.tempMax === Number.NEGATIVE_INFINITY
+  ) {
     for (const entry of hourlyMap.values()) {
       if (entry.temperature !== 0) {
-        tempMin = Math.min(tempMin, entry.temperature);
-        tempMax = Math.max(tempMax, entry.temperature);
+        summary.tempMin = Math.min(summary.tempMin, entry.temperature);
+        summary.tempMax = Math.max(summary.tempMax, entry.temperature);
       }
     }
   }
 
   // 시간별 예보 배열 생성 (24+hour → hour % 24 변환)
-  const hourlyForecasts: HourlyForecast[] = [...hourlyMap.entries()]
+  const hourlyForecasts: HourlyForecastReadModel[] = [...hourlyMap.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([hour, data]) => ({
-      hour: hour % 24,
-      temperature: data.temperature,
-      skyCondition: data.skyCondition,
-      precipitationProbability: data.precipitationProbability,
-      precipitationAmount: data.precipitationAmount,
-      snowAmount: data.snowAmount,
-    }));
+    .map(([hour, entry]) => ({ hour: hour % 24, ...entry }));
 
   // 일별 예보 생성 (모든 날짜 대상)
-  const dailyForecasts: DailyForecast[] = [...Map.groupBy(allItems, (item) => item.fcstDate)]
+  const dailyForecasts: DailyForecastReadModel[] = [
+    ...Map.groupBy(allItems, (item) => item.fcstDate),
+  ]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([dateKey, items]) => buildDailyForecast(dateKey, items));
 
   return {
     date: target,
-    skyCondition: SKY_CODE_MAP[dominantSky] ?? "CLEAR",
-    precipitationType: PTY_CODE_MAP[mostFrequentCode(ptyCounts, "0")] ?? "NONE",
-    precipitationProbability: maxPrecipProb,
-    temperatureMin: tempMin === Number.POSITIVE_INFINITY ? 0 : tempMin,
-    temperatureMax: tempMax === Number.NEGATIVE_INFINITY ? 0 : tempMax,
-    humidity: humidityCount > 0 ? Math.round(avgHumidity / humidityCount) : 0,
-    windSpeed: windCount > 0 ? Math.round((avgWindSpeed / windCount) * 10) / 10 : 0,
+    skyCondition: SKY_CODE_MAP[summary.dominantSky] ?? "CLEAR",
+    precipitationType: PTY_CODE_MAP[mostFrequentCode(summary.ptyCounts, "0")] ?? "NONE",
+    precipitationProbability: summary.maxPrecipProb,
+    temperatureMin: summary.tempMin === Number.POSITIVE_INFINITY ? 0 : summary.tempMin,
+    temperatureMax: summary.tempMax === Number.NEGATIVE_INFINITY ? 0 : summary.tempMax,
+    humidity:
+      summary.humidityCount > 0 ? Math.round(summary.humiditySum / summary.humidityCount) : 0,
+    windSpeed:
+      summary.windCount > 0 ? Math.round((summary.windSum / summary.windCount) * 10) / 10 : 0,
     hourlyForecasts,
     dailyForecasts,
   };

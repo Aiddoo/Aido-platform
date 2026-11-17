@@ -11,13 +11,14 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { WeatherProviderBudgetPort } from "../../application/ports/weather-provider-budget.port.js";
 import type {
   WeatherReportAttributionReadModel,
-  WeatherReportAttributionLogo,
+  WeatherReportAttributionLogoReadModel,
 } from "../../application/read-models/weather-report-attribution.read-model.js";
 import {
   WEATHER_REPORT_CACHE_TTL_MS,
   WeatherReportCacheKey,
 } from "../cache/weather-report.keyspace.js";
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
+import { WeatherKitAttributionRequestError } from "./weatherkit.errors.js";
 import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const WEATHERKIT_ORIGIN = "https://weatherkit.apple.com";
@@ -44,17 +45,6 @@ const attributionLogoSchema = z.object({
   light: z.object({ "1x": z.url(), "2x": z.url(), "3x": z.url() }),
   dark: z.object({ "1x": z.url(), "2x": z.url(), "3x": z.url() }),
 });
-
-/** attribution 응답이 2xx가 아니거나(status) 월 예산을 다 써 보내지 않았을 때(null). 응답 본문은 담지 않는다. */
-class WeatherKitAttributionRequestError extends Error {
-  readonly status: number | null;
-
-  constructor(status: number | null) {
-    super(`WeatherKit attribution request failed: ${status ?? "budget_exhausted"}`);
-    this.name = "WeatherKitAttributionRequestError";
-    this.status = status;
-  }
-}
 
 /**
  * Apple 날씨 데이터를 보여 주는 화면은 공급자 로고와 출처 고지 링크를 함께 표시해야 한다.
@@ -92,7 +82,7 @@ export class WeatherKitAttributionAdapter {
     };
   }
 
-  async #logo(language: string): Promise<WeatherReportAttributionLogo | null> {
+  async #logo(language: string): Promise<WeatherReportAttributionLogoReadModel | null> {
     const failureKey = WeatherReportCacheKey.attributionFailure(language);
     if (await this.#cache.has(failureKey)) {
       return null;

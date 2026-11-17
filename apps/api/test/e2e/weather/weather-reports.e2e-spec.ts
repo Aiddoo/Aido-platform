@@ -7,7 +7,7 @@ import request from "supertest";
 import { AirQualityProviderPort } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
 import { WeatherReportProviderPort } from "#api/modules/weather/weather-reports/application/ports/weather-report-provider.port";
 import { SHARED_WEATHER_REPORT_SCOPE } from "#api/modules/weather/weather-reports/domain/weather-report-language.domain-service";
-import { WeatherKitRequestError } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit-report.adapter";
+import { WeatherKitRequestError } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit.errors";
 import { WeatherReportCacheKey } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { userLocation } from "#api/platform/database/schema/index";

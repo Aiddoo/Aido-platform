@@ -28,10 +28,8 @@ import {
 import { WEATHERKIT_POLICY } from "./weather-outbound.policy.js";
 import { WeatherKitAttributionAdapter } from "./weatherkit-attribution.adapter.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
-import {
-  WeatherKitNotConfiguredError,
-  WeatherKitTokenAdapter,
-} from "./weatherkit-token.adapter.js";
+import { WeatherKitTokenAdapter } from "./weatherkit-token.adapter.js";
+import { WeatherKitNotConfiguredError, WeatherKitRequestError } from "./weatherkit.errors.js";
 import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 import { type WeatherKitWeather, weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
@@ -67,29 +65,6 @@ const MS_PER_DAY = 24 * MS_PER_HOUR;
 const HOURLY_RANGE_MS = 30 * MS_PER_HOUR;
 const DAILY_RANGE_MS = 11 * MS_PER_DAY;
 const COORDINATE_DECIMALS = 4;
-
-type WeatherKitFailureReason =
-  | "http_failure"
-  | "auth_rejected"
-  | "invalid_structure"
-  | "missing_current"
-  | "recent_failure"
-  | "provider_outage"
-  | "provider_busy"
-  | "budget_exhausted";
-
-/** 429·5xx·인증 거절·형식 오류 모두 호출자에게는 같은 공급자 실패이며 폴백 대상이다. */
-export class WeatherKitRequestError extends Error {
-  readonly reason: WeatherKitFailureReason;
-  readonly status: number | null;
-
-  constructor(reason: WeatherKitFailureReason, status: number | null = null) {
-    super(`WeatherKit request failed: ${reason}`);
-    this.name = "WeatherKitRequestError";
-    this.reason = reason;
-    this.status = status;
-  }
-}
 
 function receivedDataSets(weather: WeatherKitWeather): WeatherKitDataSet[] {
   return DATA_SETS.filter((dataSet) => weather[dataSet] != null);
@@ -172,7 +147,7 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
     try {
       const requestedAt = this.#clock.now();
       const dataSets = await this.#availableDataSets(cell, request);
-      const weather = await this.#fetchWeather(cell, request, dataSets, requestedAt);
+      const weather = await this.#fetchWeather(cell, request, { dataSets, requestedAt });
       const received = receivedDataSets(weather);
       const dropped = dataSets.filter((dataSet) => !received.includes(dataSet));
       if (dropped.length > 0) {
@@ -194,7 +169,10 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
         latencyMs: Math.round(performance.now() - startedAtMs),
         dataSets: received,
       });
-      return toWeatherReport({ ...weather, currentWeather }, cell, request.timezone, requestedAt);
+      return toWeatherReport(
+        { ...weather, currentWeather },
+        { cell, timezone: request.timezone, requestedAt },
+      );
     } catch (cause) {
       const error = cause instanceof OutboundRejectedError ? toRejection(cause) : cause;
       this.#logger.warn({
@@ -225,8 +203,10 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
   async #fetchWeather(
     cell: GeoCell,
     request: WeatherReportRequest,
-    dataSets: readonly WeatherKitDataSet[],
-    requestedAt: Temporal.Instant,
+    {
+      dataSets,
+      requestedAt,
+    }: { readonly dataSets: readonly WeatherKitDataSet[]; readonly requestedAt: Temporal.Instant },
   ): Promise<WeatherKitWeather> {
     const hourlyStart = Temporal.Instant.fromEpochMilliseconds(
       Math.floor(requestedAt.epochMilliseconds / MS_PER_HOUR) * MS_PER_HOUR,

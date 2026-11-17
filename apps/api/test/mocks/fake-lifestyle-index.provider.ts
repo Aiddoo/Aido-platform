@@ -1,6 +1,7 @@
 import type {
   LifestyleIndex,
   LifestyleIndexProviderPort,
+  LifestyleIndexQuery,
 } from "#api/modules/weather/weather-reports/application/ports/lifestyle-index-provider.port";
 
 /**
@@ -17,14 +18,8 @@ export class FakeLifestyleIndexProvider implements LifestyleIndexProviderPort {
     windSpeed: number;
   }> = [];
 
-  async getIndex(
-    lat: number,
-    lon: number,
-    at: Temporal.Instant,
-    currentTemp: number,
-    windSpeed: number,
-  ): Promise<LifestyleIndex> {
-    this.#calls.push({ lat, lon, at, currentTemp, windSpeed });
+  async getIndex(query: LifestyleIndexQuery): Promise<LifestyleIndex> {
+    this.#calls.push({ ...query });
     return { feelsLikeTemperature: 12, uvIndex: 5 };
   }
 

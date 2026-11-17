@@ -85,7 +85,13 @@ function toWeatherForecastOrNull(
 function forecastKey(grid: GridCoordinate, timing: ForecastTiming): string {
   const { baseDate, baseTime } = toKmaBaseDateTime(timing.issuance);
   const targetDate = localDateIn(timing.target, KMA_TIMEZONE).toString();
-  return WeatherCacheKey.forecast(grid.gridX, grid.gridY, baseDate, baseTime, targetDate);
+  return WeatherCacheKey.forecast({
+    gridX: grid.gridX,
+    gridY: grid.gridY,
+    baseDate,
+    baseTime,
+    targetDate,
+  });
 }
 
 function latestForecastKey(grid: GridCoordinate): string {

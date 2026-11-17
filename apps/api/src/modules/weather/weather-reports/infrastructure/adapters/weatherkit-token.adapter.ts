@@ -7,19 +7,12 @@ import {
   weatherWeatherReportsConfig,
   type WeatherWeatherReportsConfig,
 } from "../../weather-weather-reports.config.js";
+import { WeatherKitNotConfiguredError } from "./weatherkit.errors.js";
 import { WeatherKitLogEvent } from "./weatherkit.log-events.js";
 
 const TOKEN_LIFETIME_SECONDS = 60 * 60;
 /** 만료 직전 토큰이 요청 도중 만료되지 않도록 5분 일찍 새로 서명한다. */
 const REFRESH_MARGIN_MS = 5 * 60_000;
-
-/** 자격이 설정되지 않은 환경. 호출자는 일반 공급자 실패처럼 폴백·WEATHER_1901로 처리한다. */
-export class WeatherKitNotConfiguredError extends Error {
-  constructor() {
-    super("WeatherKit credentials are not configured");
-    this.name = "WeatherKitNotConfiguredError";
-  }
-}
 
 interface SignedToken {
   readonly token: string;

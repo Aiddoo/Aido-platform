@@ -93,7 +93,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     expect((await cache.readPublicRange(USER, RANGE)).value?.totalCompleteDays).toBe(1);
     expect(
       await backend.ttl(
-        DailyCompletionCacheKey.range(USER.value, ownRead.generation, START_DATE, END_DATE),
+        DailyCompletionCacheKey.range(USER.value, ownRead.generation, {
+          start: START_DATE,
+          end: END_DATE,
+        }),
       ),
     ).toBe(DAILY_COMPLETION_CACHE_TTL_MS);
     expect(await backend.ttl(DailyCompletionCacheKey.generation(USER.value))).toBe(
@@ -119,7 +122,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     // When
     await cache.storeRangeIfCurrent(USER, read.generation, value);
     const stored = await backend.get(
-      DailyCompletionCacheKey.range(USER.value, read.generation, START_DATE, END_DATE),
+      DailyCompletionCacheKey.range(USER.value, read.generation, {
+        start: START_DATE,
+        end: END_DATE,
+      }),
       z.unknown(),
     );
 
@@ -145,7 +151,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     // Given
     const read = await cache.readRange(USER, RANGE);
     await backend.set(
-      DailyCompletionCacheKey.range(USER.value, read.generation, START_DATE, END_DATE),
+      DailyCompletionCacheKey.range(USER.value, read.generation, {
+        start: START_DATE,
+        end: END_DATE,
+      }),
       {
         completions: [],
         totalCompleteDays: 0,
@@ -178,7 +187,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     expect(currentRead.value).toBeNull();
     expect(
       await backend.has(
-        DailyCompletionCacheKey.range(USER.value, staleRead.generation, START_DATE, END_DATE),
+        DailyCompletionCacheKey.range(USER.value, staleRead.generation, {
+          start: START_DATE,
+          end: END_DATE,
+        }),
       ),
     ).toBe(false);
   });
@@ -188,7 +200,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     const initialRead = await cache.readRange(USER, RANGE);
     await cache.storeRangeIfCurrent(USER, initialRead.generation, VALUE);
     const held = backend.holdAt(
-      DailyCompletionCacheKey.range(USER.value, initialRead.generation, START_DATE, END_DATE),
+      DailyCompletionCacheKey.range(USER.value, initialRead.generation, {
+        start: START_DATE,
+        end: END_DATE,
+      }),
     );
     const reading = cache.readRange(USER, RANGE);
     await held.entered;
@@ -219,7 +234,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
     expect(currentRead.value).toBeNull();
     expect(
       await backend.has(
-        DailyCompletionCacheKey.range(USER.value, initialRead.generation, START_DATE, END_DATE),
+        DailyCompletionCacheKey.range(USER.value, initialRead.generation, {
+          start: START_DATE,
+          end: END_DATE,
+        }),
       ),
     ).toBe(true);
   });
@@ -227,12 +245,10 @@ describe("DailyCompletionCache — 완료 집계 세대 캐시", () => {
   it("저장 검사 직후 무효화되어도 이전 namespace의 값은 새 조회에 보이지 않는다", async () => {
     // Given
     const initialRead = await cache.readRange(USER, RANGE);
-    const valueKey = DailyCompletionCacheKey.range(
-      USER.value,
-      initialRead.generation,
-      START_DATE,
-      END_DATE,
-    );
+    const valueKey = DailyCompletionCacheKey.range(USER.value, initialRead.generation, {
+      start: START_DATE,
+      end: END_DATE,
+    });
     const held = backend.holdAt(valueKey);
     const storing = cache.storeRangeIfCurrent(USER, initialRead.generation, VALUE);
     await held.entered;

@@ -1,6 +1,7 @@
 import {
   type LifestyleIndex,
   LifestyleIndexProviderPort,
+  type LifestyleIndexQuery,
 } from "#api/modules/weather/weather-reports/application/ports/lifestyle-index-provider.port";
 
 export class StubLifestyleIndexProvider extends LifestyleIndexProviderPort {
@@ -14,19 +15,13 @@ export class StubLifestyleIndexProvider extends LifestyleIndexProviderPort {
   result: LifestyleIndex | null = null;
   failure: Error | null = null;
 
-  async getIndex(
-    lat: number,
-    lon: number,
-    at: Temporal.Instant,
-    currentTemp: number,
-    windSpeed: number,
-  ): Promise<LifestyleIndex> {
-    this.calls.push({ lat, lon, at, currentTemp, windSpeed });
+  async getIndex(query: LifestyleIndexQuery): Promise<LifestyleIndex> {
+    this.calls.push({ ...query });
     if (this.failure !== null) {
       throw this.failure;
     }
     return this.result === null
-      ? { feelsLikeTemperature: currentTemp, uvIndex: 0 }
+      ? { feelsLikeTemperature: query.currentTemp, uvIndex: 0 }
       : { ...this.result };
   }
 

@@ -6,7 +6,7 @@ interface WeatherReportAttributionLogoSet {
   readonly "3x": string;
 }
 
-export interface WeatherReportAttributionLogo {
+export interface WeatherReportAttributionLogoReadModel {
   readonly light: WeatherReportAttributionLogoSet;
   readonly dark: WeatherReportAttributionLogoSet;
 }
@@ -16,5 +16,5 @@ export interface WeatherReportAttributionReadModel {
   readonly provider: WeatherProvider;
   readonly serviceName: string;
   readonly legalPageUrl: string;
-  readonly logo: WeatherReportAttributionLogo | null;
+  readonly logo: WeatherReportAttributionLogoReadModel | null;
 }

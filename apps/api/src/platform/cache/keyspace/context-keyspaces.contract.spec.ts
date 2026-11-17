@@ -62,7 +62,13 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     const activeTimezonesKey = ReminderCacheKey.activeTimezones();
     const unreadCountKey = NotificationCacheKey.unreadCount("user-1");
     const legacyUnreadCountKey = NotificationCacheKey.unreadCount("user-1", "legacy");
-    const forecastKey = WeatherCacheKey.forecast(60, 127, "20260401", "0800", "2026-04-02");
+    const forecastKey = WeatherCacheKey.forecast({
+      gridX: 60,
+      gridY: 127,
+      baseDate: "20260401",
+      baseTime: "0800",
+      targetDate: "2026-04-02",
+    });
     const latestForecastKey = WeatherCacheKey.latestForecast(60, 127);
     const conditionsKey = WeatherCacheKey.conditions(60, 127, "2026-04-01");
     const friendTodosKey = TodoCacheKey.friendTodosFirstPageVersioned(
@@ -72,12 +78,10 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "-",
       20,
     );
-    const dailyCompletionRangeKey = DailyCompletionCacheKey.range(
-      "user-1",
-      "generation-1",
-      "2026-01-01",
-      "2026-01-31",
-    );
+    const dailyCompletionRangeKey = DailyCompletionCacheKey.range("user-1", "generation-1", {
+      start: "2026-01-01",
+      end: "2026-01-31",
+    });
     const pushTokensKey = PushTokenCacheKey.pushTokens("user-1");
     const dedupKey = notificationDeduplicationKey(
       "MORNING_REMINDER",

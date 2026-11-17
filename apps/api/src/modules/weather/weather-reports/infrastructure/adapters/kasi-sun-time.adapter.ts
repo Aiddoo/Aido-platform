@@ -80,67 +80,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
         return null;
       }
 
-      const parsed = kasiSunTimeSchema.safeParse(outcome.body);
-      if (!parsed.success) {
-        this.#logger.warn({
-          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-          provider: "kasi",
-          operation: "sun_time",
-          errorType: "invalid_structure",
-        });
-        return null;
-      }
-      const data = parsed.data;
-
-      const resultCode = data.response?.header?.resultCode;
-      if (resultCode !== "00") {
-        this.#logger.warn({
-          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-          provider: "kasi",
-          operation: "sun_time",
-          errorType: "provider_result",
-        });
-        return null;
-      }
-
-      const item = data.response?.body?.items?.item;
-      if (item == null) {
-        this.#logger.warn({
-          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-          provider: "kasi",
-          operation: "sun_time",
-          errorType: "missing_item",
-        });
-        return null;
-      }
-
-      const sunriseRaw = item.sunrise;
-      const sunsetRaw = item.sunset;
-
-      if (!sunriseRaw || !sunsetRaw) {
-        this.#logger.warn({
-          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-          provider: "kasi",
-          operation: "sun_time",
-          errorType: "missing_time",
-        });
-        return null;
-      }
-
-      const sunrise = this.#formatTime(sunriseRaw);
-      const sunset = this.#formatTime(sunsetRaw);
-
-      if (!sunrise || !sunset) {
-        this.#logger.warn({
-          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-          provider: "kasi",
-          operation: "sun_time",
-          errorType: "invalid_time",
-        });
-        return null;
-      }
-
-      return { sunrise, sunset };
+      return this.#readSunTime(outcome.body);
     } catch (error) {
       this.#logger.warn({
         event: WeatherProviderLogEvent.REQUEST_FAILED,
@@ -150,6 +90,50 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
       });
       return null;
     }
+  }
+
+  #readSunTime(body: unknown): SunTime | null {
+    const parsed = kasiSunTimeSchema.safeParse(body);
+    if (!parsed.success) {
+      return this.#unavailable("invalid_structure");
+    }
+    const data = parsed.data;
+
+    const resultCode = data.response?.header?.resultCode;
+    if (resultCode !== "00") {
+      return this.#unavailable("provider_result");
+    }
+
+    const item = data.response?.body?.items?.item;
+    if (item == null) {
+      return this.#unavailable("missing_item");
+    }
+
+    const sunriseRaw = item.sunrise;
+    const sunsetRaw = item.sunset;
+
+    if (!sunriseRaw || !sunsetRaw) {
+      return this.#unavailable("missing_time");
+    }
+
+    const sunrise = this.#formatTime(sunriseRaw);
+    const sunset = this.#formatTime(sunsetRaw);
+
+    if (!sunrise || !sunset) {
+      return this.#unavailable("invalid_time");
+    }
+
+    return { sunrise, sunset };
+  }
+
+  #unavailable(errorType: string): null {
+    this.#logger.warn({
+      event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+      provider: "kasi",
+      operation: "sun_time",
+      errorType,
+    });
+    return null;
   }
 
   #formatTime(raw: string): string | null {

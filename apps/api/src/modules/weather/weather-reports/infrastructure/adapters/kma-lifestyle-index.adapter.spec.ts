@@ -68,7 +68,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       );
 
       // When
-      const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
+      const result = await provider.getIndex({ lat, lon, at: date, currentTemp, windSpeed });
 
       // Then
       expect(result).not.toBeNull();
@@ -82,7 +82,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       config.kmaApiKey = undefined;
 
       // When
-      const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
+      const result = await provider.getIndex({ lat, lon, at: date, currentTemp, windSpeed });
 
       // Then
       expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -96,7 +96,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       fetchSpy.mockRejectedValue(new Error("Network error"));
 
       // When
-      const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
+      const result = await provider.getIndex({ lat, lon, at: date, currentTemp, windSpeed });
 
       // Then
       expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -109,7 +109,7 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       fetchSpy.mockRejectedValue(new DOMException("Aborted", "AbortError"));
 
       // When
-      const result = await provider.getIndex(lat, lon, date, currentTemp, windSpeed);
+      const result = await provider.getIndex({ lat, lon, at: date, currentTemp, windSpeed });
 
       // Then
       expect(result.feelsLikeTemperature).toBe(currentTemp);
@@ -138,7 +138,13 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       );
 
       // When
-      const result = await provider.getIndex(lat, lon, date, coldTemp, highWindMs);
+      const result = await provider.getIndex({
+        lat,
+        lon,
+        at: date,
+        currentTemp: coldTemp,
+        windSpeed: highWindMs,
+      });
 
       // Then
       expect(result).not.toBeNull();
@@ -163,13 +169,13 @@ describe("KmaLifestyleIndexAdapter — KMA 생활기상지수 프로바이더", 
       ),
     );
     // When
-    const result = await provider.getIndex(
-      37.5665,
-      126.978,
-      Temporal.Instant.from("2026-07-23T16:00:00Z"),
-      25,
-      3,
-    );
+    const result = await provider.getIndex({
+      lat: 37.5665,
+      lon: 126.978,
+      at: Temporal.Instant.from("2026-07-23T16:00:00Z"),
+      currentTemp: 25,
+      windSpeed: 3,
+    });
     // Then
     expect(result).toEqual({ feelsLikeTemperature: 25, uvIndex: 7 });
     const request = fetchSpy.mock.calls[0]?.[0];

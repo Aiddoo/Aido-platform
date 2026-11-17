@@ -16,7 +16,10 @@ function mapFixture(body: unknown, timezone: string) {
   if (currentWeather == null) {
     throw new Error("fixture에 currentWeather가 없습니다.");
   }
-  return toWeatherReport({ ...weather, currentWeather }, CELL, timezone, FETCHED_AT);
+  return toWeatherReport(
+    { ...weather, currentWeather },
+    { cell: CELL, timezone, requestedAt: FETCHED_AT },
+  );
 }
 
 describe("WeatherKit → 공급자 중립 리포트 매핑", () => {

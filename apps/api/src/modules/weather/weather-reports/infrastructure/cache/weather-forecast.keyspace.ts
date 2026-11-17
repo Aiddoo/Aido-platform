@@ -9,13 +9,19 @@ export const WEATHER_CACHE_TTL_MS = {
 
 export const WeatherCacheKey = {
   /** 같은 발표라도 대상 날짜마다 정리한 예보가 다르므로 대상 날짜까지 키에 넣는다. */
-  forecast: (
-    gridX: number,
-    gridY: number,
-    baseDate: string,
-    baseTime: string,
-    targetDate: string,
-  ) =>
+  forecast: ({
+    gridX,
+    gridY,
+    baseDate,
+    baseTime,
+    targetDate,
+  }: {
+    readonly gridX: number;
+    readonly gridY: number;
+    readonly baseDate: string;
+    readonly baseTime: string;
+    readonly targetDate: string;
+  }) =>
     cacheKey("weather", "forecast", String(gridX), String(gridY), baseDate, baseTime, targetDate),
   latestForecast: (gridX: number, gridY: number) =>
     cacheKey("weather", "forecast-latest", String(gridX), String(gridY)),

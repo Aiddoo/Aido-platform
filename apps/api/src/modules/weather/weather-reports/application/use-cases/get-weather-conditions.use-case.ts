@@ -59,13 +59,13 @@ export class GetWeatherConditionsUseCase {
     const [airResult, lifestyleResult, sunResult] = await Promise.allSettled([
       // 리포트와 같은 칸 중심으로 측정소를 골라 칸별 측정소 캐시를 함께 쓴다
       this.#dependencies.airQualityProvider.findAirQuality(GeoCell.create(location.coordinate)),
-      this.#dependencies.lifestyleIndexProvider.getIndex(
-        location.latitude,
-        location.longitude,
-        target,
+      this.#dependencies.lifestyleIndexProvider.getIndex({
+        lat: location.latitude,
+        lon: location.longitude,
+        at: target,
         currentTemp,
         windSpeed,
-      ),
+      }),
       this.#dependencies.sunTimeProvider.getSunTime(location.latitude, location.longitude, target),
     ]);
 

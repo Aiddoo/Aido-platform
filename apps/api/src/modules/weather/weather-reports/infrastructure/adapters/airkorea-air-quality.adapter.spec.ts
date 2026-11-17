@@ -8,7 +8,8 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { WeatherReportCacheKey } from "../cache/weather-report.keyspace.js";
-import { AirkoreaAirQualityAdapter, AirkoreaRequestError } from "./airkorea-air-quality.adapter.js";
+import { AirkoreaAirQualityAdapter } from "./airkorea-air-quality.adapter.js";
+import { AirkoreaRequestError } from "./airkorea.errors.js";
 
 const CELL = GeoCell.create(Coordinate.create(37.5665, 126.978));
 const STATION_KEY = WeatherReportCacheKey.airKoreaStation(CELL.key);

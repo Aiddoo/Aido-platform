@@ -3,12 +3,14 @@ export interface LifestyleIndex {
   readonly uvIndex: number | null;
 }
 
+export interface LifestyleIndexQuery {
+  readonly lat: number;
+  readonly lon: number;
+  readonly at: Temporal.Instant;
+  readonly currentTemp: number;
+  readonly windSpeed: number;
+}
+
 export abstract class LifestyleIndexProviderPort {
-  abstract getIndex(
-    lat: number,
-    lon: number,
-    at: Temporal.Instant,
-    currentTemp: number,
-    windSpeed: number,
-  ): Promise<LifestyleIndex>;
+  abstract getIndex(query: LifestyleIndexQuery): Promise<LifestyleIndex>;
 }

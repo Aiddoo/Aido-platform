@@ -31,10 +31,6 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextIds(count: number): Promise<WeeklyAchievementId[]> {
     const values = await nextSequenceValues(this.#db, weeklyAchievementTable.id, count);
     return values.map((value) => WeeklyAchievementId.reconstitute(value));
@@ -131,5 +127,9 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
           achievedAt: sql`excluded."achievedAt"`,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

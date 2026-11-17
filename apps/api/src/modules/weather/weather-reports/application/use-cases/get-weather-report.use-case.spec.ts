@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { WeatherKitNotConfiguredError } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit-token.adapter";
+import { WeatherKitNotConfiguredError } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit.errors";
 import { WeatherReportCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { toIsoString } from "#api/shared/domain/time/instant";
