@@ -19,6 +19,9 @@ export class DrizzlePushDispatchRepository implements PushDispatchRepositoryPort
   }
 
   async nextIds(count: number): Promise<PushDispatchId[]> {
+    if (count === 0) {
+      return [];
+    }
     const values = await nextSequenceValues(this.#db, pushDispatch.id, count);
     return values.map((value) => PushDispatchId.reconstitute(value));
   }

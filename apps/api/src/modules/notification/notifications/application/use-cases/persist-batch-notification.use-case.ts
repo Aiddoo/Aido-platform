@@ -67,6 +67,10 @@ export class PersistBatchNotificationUseCase {
       await this.#dependencies.notificationRepository.createManyNotificationsAndReturn(
         dataList.map(withNotificationCopyRevision),
       );
+    // 회차 dedup index에 모두 걸려 새 행이 없으면 발송도 없다(재처리·catch-up)
+    if (created.length === 0) {
+      return { count: 0, sourceData: dataList };
+    }
     const forceKey = (userId: string, type: string): string => `${userId}\u0000${type}`;
     const forcedKeys = new Set(
       dataList

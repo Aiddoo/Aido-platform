@@ -129,4 +129,31 @@ describe("PersistBatchNotificationUseCase — 배치 알림과 dispatch 원자 �
     expect(pushDispatchRepository.dispatches).toEqual([]);
     expect(afterCommitPublisher.registered).toEqual([]);
   });
+
+  it("모든 행이 회차 중복으로 막히면 dispatch id를 받지 않고 0건을 돌려준다", async () => {
+    // Given
+    const afterCommitPublisher = new RecordingAfterCommitPublisher();
+    const pushDispatchRepository = new InMemoryPushDispatchRepository(101);
+    const useCase = new PersistBatchNotificationUseCase({
+      notificationRepository: { createManyNotificationsAndReturn: async () => [] },
+      pushDispatchRepository: {
+        nextIds: async () => {
+          throw new Error("nextIds must not run without created rows");
+        },
+        saveAll: (dispatches) => pushDispatchRepository.saveAll(dispatches),
+      },
+      clock: new FixedClock(Temporal.Instant.from("2026-11-18T00:00:00Z")),
+      unitOfWork: new ImmediateUnitOfWork(),
+      afterCommitPublisher,
+    });
+    const dataList = [createNotificationDraftFixture({ userId: "u1", type: "TODO_REMINDER" })];
+
+    // When
+    const result = await useCase.execute(dataList);
+
+    // Then
+    expect(result).toEqual({ count: 0, sourceData: dataList });
+    expect(pushDispatchRepository.dispatches).toEqual([]);
+    expect(afterCommitPublisher.registered).toEqual([]);
+  });
 });

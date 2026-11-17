@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import {
@@ -37,6 +39,28 @@ describe("EmailDeliveryQueueAdapter", () => {
     expect(job?.options).toEqual({ idempotencyKey: "delivery-1" });
     expect(JSON.stringify(job?.payload)).not.toContain(EMAIL_MESSAGE_FIXTURE_CODE);
     expect(JSON.stringify(job?.payload)).not.toContain(EMAIL_MESSAGE_FIXTURE_RECIPIENT);
+  });
+
+  it("암호문 안 본문은 이전 배포 processor가 읽던 칸 순서 그대로이고 발송 건 id를 담지 않는다", async () => {
+    // Given
+    const jobQueue = new InMemoryJobQueue();
+    const adapter = new EmailDeliveryQueueAdapter(jobQueue, encryption);
+
+    // When
+    await adapter.enqueue({ deliveryId: "delivery-2", message: createEmailMessageFixture() });
+
+    // Then
+    const [job] = jobQueue.jobsIn(EMAIL_DELIVERY_QUEUE);
+    const sealed = z.object({ sealed: z.string() }).parse(job?.payload).sealed;
+    const content: unknown = JSON.parse(encryption.decrypt(sealed));
+    expect(Object.keys(z.record(z.string(), z.unknown()).parse(content))).toEqual([
+      "kind",
+      "to",
+      "subject",
+      "html",
+      "text",
+      "tags",
+    ]);
   });
 
   it("큐가 같은 deliveryId를 이미 가지고 있으면 duplicate로 알린다", async () => {
