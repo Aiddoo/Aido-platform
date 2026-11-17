@@ -16,6 +16,7 @@ import { toWeatherReport } from '../apis/weather.mapper';
 import {
   findTodayOrFirstForecast,
   getPrecipitationWindow,
+  getReportFreshForMs,
   getTodayKey,
   isNowcastExpired,
   isReportStale,
@@ -343,27 +344,69 @@ describe('getTodayKey', () => {
 });
 
 describe('isReportStale', () => {
-  it('공급자에서 받은 지 30분까지는 최신으로 본다', () => {
+  it('예산 절약으로 서버가 2시간 둔 리포트는 받은 지 1시간이 지나도 만료 전이라 안내하지 않는다', () => {
     // Given
-    const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+    const report = createWeatherReport({
+      fetchedAt: '2026-11-02T06:20:00.000Z',
+      expiresAt: '2026-11-02T08:20:00.000Z',
+    });
 
     // When
-    const stale = isReportStale(report, toInstant('2026-11-02T06:50:00.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T07:20:00.000Z'));
 
     // Then
     expect(stale).toBe(false);
   });
 
-  it('공급자에서 받은 지 30분이 지나면 오래된 정보로 본다', () => {
+  it.each([
+    { now: '2026-11-02T06:51:00.000Z', expected: false },
+    { now: '2026-11-02T06:52:00.000Z', expected: false },
+    { now: '2026-11-02T06:52:00.001Z', expected: true },
+  ])(
+    '06:50 만료 리포트는 다시 받는 동안(2분)은 두고 $now에 오래됨 $expected다',
+    ({ now, expected }) => {
+      // Given
+      const report = createWeatherReport({ expiresAt: '2026-11-02T06:50:00.000Z' });
+
+      // When
+      const stale = isReportStale(report, toInstant(now));
+
+      // Then
+      expect(stale).toBe(expected);
+    },
+  );
+
+  it('공급자 장애로 받은 마지막 리포트(만료 없음)는 받자마자 오래된 정보로 안내한다', () => {
     // Given
-    const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+    const report = createWeatherReport({ expiresAt: undefined });
 
     // When
-    const stale = isReportStale(report, toInstant('2026-11-02T06:50:01.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T06:21:00.000Z'));
 
     // Then
     expect(stale).toBe(true);
   });
+});
+
+describe('getReportFreshForMs', () => {
+  it.each([
+    { at: '2026-11-02T06:20:00.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 1_800_000 },
+    { at: '2026-11-02T06:49:30.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 30_000 },
+    { at: '2026-11-02T06:55:00.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 0 },
+    { at: '2026-11-02T06:20:00.000Z', expiresAt: undefined, expected: 0 },
+  ])(
+    '$at에 만료 $expiresAt 리포트는 $expected ms 동안 같은 리포트다',
+    ({ at, expiresAt, expected }) => {
+      // Given
+      const report = createWeatherReport({ expiresAt });
+
+      // When
+      const freshForMs = getReportFreshForMs(report, toInstant(at));
+
+      // Then
+      expect(freshForMs).toBe(expected);
+    },
+  );
 });
 
 describe('getActiveAlerts', () => {

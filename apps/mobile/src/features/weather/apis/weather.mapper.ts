@@ -89,6 +89,7 @@ export function toWeatherReport(dto: WeatherReportResponse): WeatherReport {
     airQuality: dto.airQuality,
     attribution: dto.attribution,
     fetchedAt: toInstant(dto.fetchedAt),
+    expiresAt: toNullableInstant(dto.expiresAt ?? null),
     briefing: dto.briefing == null ? null : toWeatherReportBriefing(dto.briefing),
     headline: dto.headline == null ? null : toWeatherHeadline(dto.headline),
   };

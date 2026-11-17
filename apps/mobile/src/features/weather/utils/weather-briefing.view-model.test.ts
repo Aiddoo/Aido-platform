@@ -40,6 +40,7 @@ const DEPS: BriefingViewPorts = {
   hourly: rainyReport.hourly,
   now: NOW,
   formatClock: (date) => `clock:${date}`,
+  formatTodoTime: (localTime) => `todo:${localTime}`,
   formatHour: (date) => `hour:${date}`,
   formatTemperature: (celsius) => `${celsius}°`,
   formatChance: (percent) => `${percent}%`,
@@ -67,6 +68,32 @@ describe('toBriefingView', () => {
       advice: { key: 'briefing.dryAt', values: { time: 'clock:2026-11-02T10:00:00.000Z' } },
     });
     expect(view.action).toMatchObject({ kind: 'reschedule', reason: 'rain', todoIds: [1] });
+  });
+
+  it('눈 소식 본문의 할 일 시각은 예보 칸을 찾은 순간이 아니라 할 일의 벽시계로 쓴다', () => {
+    // Given
+    // 서머타임 시작일처럼 없는 02:30이 전환 뒤 순간(16:30 칸)으로 밀린 할 일
+    const snowyReport = createWeatherReport({
+      hourly: HOURLY,
+      briefing: createBriefingDto({ reason: 'rain', affectedTodoIds: [1] }),
+      headline: {
+        kind: 'todoWet',
+        hazard: 'snow',
+        precipitationChance: 70,
+        window: { startsAt: '2026-11-02T07:00:00.000Z', endsAt: '2026-11-02T09:00:00.000Z' },
+      },
+    });
+    const shiftedTodo = createBriefingTodo({
+      localTime: '02:30',
+      scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
+    });
+
+    // When
+    const view = viewFor(snowyReport, [shiftedTodo]);
+
+    // Then
+    expect(view.body).toEqual({ key: 'briefing.snowy.body', values: { time: 'todo:02:30' } });
+    expect(view.rows[0]?.todo.localTime).toBe('02:30');
   });
 
   it('비와 겹친 할 일을 모두 끝냈으면 옮기기 버튼을 감춘다', () => {

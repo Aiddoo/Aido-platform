@@ -144,6 +144,8 @@ export function createWeatherReportDto(
     airQuality: { pm10: 32, pm25: 18, source: 'AIRKOREA' },
     attribution: createAttributionDto(),
     fetchedAt: '2026-11-02T06:20:00.000Z',
+    // 서버가 30분 둔다
+    expiresAt: '2026-11-02T06:50:00.000Z',
     briefing: createBriefingDto(),
     // 서버 머리글. 기본은 알릴 날씨가 없다
     headline: { kind: 'calm' },
@@ -261,6 +263,8 @@ export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): Forec
   return {
     todoId: 1,
     title: '산책',
+    // 기본 예보 첫 칸(서울 15시)이다
+    localTime: '15:00',
     scheduledAt: hour.startsAt,
     completed: false,
     subTodoProgress: null,
@@ -273,6 +277,7 @@ export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): Brief
   return {
     id: 1,
     title: '산책',
+    localTime: '16:30',
     scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
     completed: false,
     subTodoProgress: null,

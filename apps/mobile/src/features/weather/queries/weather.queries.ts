@@ -8,8 +8,9 @@ import { type AppLogger } from '@src/core/ports/app-logger';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
@@ -30,6 +31,7 @@ import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
 import {
   findTodayOrFirstForecast,
+  getReportFreshForMs,
   type HourlyForecastEntry,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
@@ -111,9 +113,29 @@ export function useWeatherLocationRevision(): number {
   return WeatherLocationPolicy.getReadingRevision(reading);
 }
 
-const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
-/** 화면을 켜 둔 동안에도 분 단위 강수 안내가 어긋나지 않게 주기적으로 다시 받는다. */
-const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
+/** 공급자 장애로 받은 마지막 리포트나 만료가 지난 리포트는 이만큼 뒤에 다시 묻는다. 서버도 공급자 실패를 1분 기억한다 */
+const REPORT_MIN_REFRESH_MS = MINUTE_MS;
+
+/** 서버가 리포트를 다시 받기 시작하는 순간(expiresAt)까지는 같은 리포트라 묻지 않는다. 받은 때부터 센다 */
+function getReportStaleTime(query: Query<WeatherReport, Error>): number {
+  const report = query.state.data;
+  if (report == null) {
+    return 0;
+  }
+  return Math.max(
+    REPORT_MIN_REFRESH_MS,
+    getReportFreshForMs(report, fromEpochMs(query.state.dataUpdatedAt)),
+  );
+}
+
+/** 화면을 켜 둔 동안에도 서버가 새 리포트를 받기 시작하는 순간에 다시 받아 분 단위 강수 안내가 어긋나지 않는다 */
+function getReportRefetchInterval(query: Query<WeatherReport, Error>): number | false {
+  const report = query.state.data;
+  if (report == null) {
+    return false;
+  }
+  return Math.max(REPORT_MIN_REFRESH_MS, getReportFreshForMs(report, getNowInstant()));
+}
 /** 공급자 장애(WEATHER_1901)는 오래 기다리기보다 다시 시도 화면을 빨리 보여 준다. */
 const REPORT_MAX_RETRIES = 2;
 
@@ -144,8 +166,8 @@ export function useGetWeatherReportQueryOptions() {
         }),
       );
     },
-    staleTime: REPORT_STALE_TIME_MS,
-    refetchInterval: REPORT_REFETCH_INTERVAL_MS,
+    staleTime: getReportStaleTime,
+    refetchInterval: getReportRefetchInterval,
     retry: shouldRetryReport,
     ...PERSISTED_QUERY_OPTIONS,
   });
@@ -162,7 +184,7 @@ export function useGetWeatherReportQueryOptions() {
         devOverride,
       ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
-    staleTime: REPORT_STALE_TIME_MS,
+    staleTime: getReportStaleTime,
     retry: shouldRetryReport,
   });
 }
@@ -177,7 +199,7 @@ export function useGetForecastCompletionsQueryOptions() {
 }
 
 function selectHero(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'daily', 'fetchedAt']);
+  return pick(report, ['location', 'current', 'daily', 'fetchedAt', 'expiresAt']);
 }
 
 function selectAlerts(report: WeatherReport) {

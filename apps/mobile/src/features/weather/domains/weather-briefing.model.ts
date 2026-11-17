@@ -1,6 +1,6 @@
 import type { WeatherCondition, WeatherDayPart } from '@aido/api/vocabulary';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -27,10 +27,13 @@ const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
 /** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
 type BriefingSubTodoProgress = { completed: number; total: number } | null;
 
-/** 할 일 피처의 모델에 기대지 않도록 브리핑에 필요한 값만 받는다. 시간이 없거나 종일이면 scheduledAt이 null이다. */
+/** 할 일 피처의 모델에 기대지 않도록 브리핑에 필요한 값만 받는다. 시간이 없거나 종일이면 시각이 둘 다 null이다. */
 export interface BriefingTodo {
   id: number;
   title: string;
+  /** 보이는 시각(벽시계 HH:mm). 어디서든 그 시각이다 */
+  localTime: string | null;
+  /** 예보 칸을 찾는 순간. 서머타임으로 없는 시각이면 전환 뒤로 밀려 localTime과 다를 수 있다 */
   scheduledAt: Instant | null;
   completed: boolean;
   subTodoProgress: BriefingSubTodoProgress;
@@ -41,13 +44,12 @@ function toBriefingTodo(
   todo: Todo,
   { date, timeZone }: { date: DateKey; timeZone: string },
 ): BriefingTodo {
+  const localTime = TodoPolicy.getLocalTime(todo, timeZone);
   return {
     id: todo.id,
     title: todo.title,
-    scheduledAt:
-      todo.isAllDay || todo.localTime == null
-        ? null
-        : toZonedInstant({ date, time: todo.localTime, timeZone }),
+    localTime,
+    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timeZone }),
     completed: todo.completed,
     subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
       ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
@@ -58,6 +60,7 @@ function toBriefingTodo(
 export interface ForecastTodo {
   todoId: number;
   title: string;
+  localTime: string;
   scheduledAt: Instant;
   /** 브리핑에서 체크해도 줄이 사라지지 않도록 완료한 할 일도 남긴다. 옮기기 대상에서는 뺀다. */
   completed: boolean;
@@ -110,10 +113,11 @@ function getForecastTodos(
   now: Instant,
 ): ForecastTodo[] {
   return todos.flatMap((todo) => {
-    if (todo.scheduledAt == null || toEpochMs(todo.scheduledAt) < toEpochMs(now)) {
+    const { localTime, scheduledAt } = todo;
+    if (localTime == null || scheduledAt == null || toEpochMs(scheduledAt) < toEpochMs(now)) {
       return [];
     }
-    const hour = hourly[getHourIndexAt(hourly, todo.scheduledAt)];
+    const hour = hourly[getHourIndexAt(hourly, scheduledAt)];
     if (hour == null) {
       return [];
     }
@@ -121,7 +125,8 @@ function getForecastTodos(
       {
         todoId: todo.id,
         title: todo.title,
-        scheduledAt: todo.scheduledAt,
+        localTime,
+        scheduledAt,
         completed: todo.completed,
         subTodoProgress: todo.subTodoProgress,
         hour,

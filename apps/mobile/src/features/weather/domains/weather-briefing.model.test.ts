@@ -339,6 +339,32 @@ describe('toBriefingTodo', () => {
     expect(todo.scheduledAt).toBe('2026-11-01T23:00:00.000Z');
   });
 
+  it('서머타임이 시작하는 날 뉴욕 02:30 할 일은 예보 칸을 전환 뒤 순간으로 찾고 보이는 시각은 02:30 그대로다', () => {
+    // Given
+    // 2027-03-14 뉴욕은 02:00 EST에서 03:00 EDT로 넘어가 02:30이 없다
+    const input = createParentTodo({ ...BASE, localTime: '02:30', isAllDay: false });
+    const { hourly } = createWeatherReport({
+      hourly: createHourlySeries('2027-03-14T07:00:00.000Z', [10, 10]),
+    });
+
+    // When
+    const todo = WeatherBriefingPolicy.toBriefingTodo(input, {
+      date: createDateKey('2027-03-14'),
+      timeZone: 'America/New_York',
+    });
+    const [forecastTodo] = WeatherBriefingPolicy.getForecastTodos(
+      hourly,
+      [todo],
+      toInstant('2027-03-14T05:00:00.000Z'),
+    );
+
+    // Then
+    // 순간은 03:30 EDT라 03시(07:00Z) 칸의 예보를 쓰지만 줄에는 "오전 2:30"이 보인다
+    expect(todo.scheduledAt).toBe('2027-03-14T07:30:00.000Z');
+    expect(forecastTodo?.hour.startsAt).toBe('2027-03-14T07:00:00.000Z');
+    expect(forecastTodo?.localTime).toBe('02:30');
+  });
+
   it('하위 할 일이 있으면 진행을, 없으면 null을 담는다', () => {
     // Given
     const base = { ...BASE, title: '이사 준비', localTime: null, isAllDay: true };
