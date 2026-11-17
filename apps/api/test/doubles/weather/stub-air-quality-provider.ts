@@ -1,15 +1,16 @@
+import type { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
 import {
   type AirQuality,
   AirQualityProviderPort,
 } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
 
 export class StubAirQualityProvider extends AirQualityProviderPort {
-  readonly calls: { lat: number; lon: number }[] = [];
+  readonly calls: { cellKey: string }[] = [];
   result: AirQuality | null = { pm10: 0, pm25: 0 };
   failure: Error | null = null;
 
-  async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
-    this.calls.push({ lat, lon });
+  async findAirQuality(cell: GeoCell): Promise<AirQuality | null> {
+    this.calls.push({ cellKey: cell.key });
     if (this.failure !== null) {
       throw this.failure;
     }

@@ -103,8 +103,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
       timezone: "Asia/Seoul",
     });
     expect(result.airQuality).toEqual({ pm10: 32, pm25: 18 });
-    expect(airQuality.calls).toHaveLength(1);
-    expect(airQuality.calls[0]?.lat).not.toBe(37.5665);
+    expect(airQuality.calls).toEqual([{ cellKey: "wydm9" }]);
   });
 
   it("같은 칸·언어의 동시 요청은 공급자를 한 번만 부른다", async () => {

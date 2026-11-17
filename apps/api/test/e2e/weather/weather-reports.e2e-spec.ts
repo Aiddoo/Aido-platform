@@ -200,7 +200,7 @@ describe("날씨 v2 E2E", () => {
           request: { timezone: "Asia/Seoul", countryCode: "KR", language: "ko" },
         },
       ]);
-      expect(airQualityProvider.calls[0]?.lat).not.toBe(SEOUL.latitude);
+      expect(airQualityProvider.calls).toEqual([{ cellKey: SEOUL_CELL }]);
     });
 
     describe("briefing", () => {

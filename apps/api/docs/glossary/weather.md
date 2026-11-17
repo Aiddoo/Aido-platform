@@ -28,6 +28,7 @@
 | 리포트 보관 시간 | `WeatherReportCache`, `validUntil`, 응답 `expiresAt`           | 공급자 예보 만료(`validUntil`)까지 10~30분, 모르면 30분이다. 곧 강수면 10분, 예산 절약 중이면 2시간이다. 만료 시각을 응답 `expiresAt`으로 준다             |
 | 공급자 호출 예산 | `assessWeatherProviderBudget`, `WeatherProviderBudgetPort`     | 월 무료 한도(WeatherKit 50만 회)의 90%부터 `saving`, 한도에 닿으면 `exhausted`다. `exhausted`면 공급자를 부르지 않고 마지막 성공 리포트(6시간)로 폴백한다  |
 | 리포트 조회      | `GetWeatherReportUseCase`                                      | 사용자 위치의 리포트·대기질(한국만)·공급자 표기·브리핑. 대기질·할 일 조회가 실패하면 그 값만 비운다                                                        |
+| 대기질 조회      | `AirQualityProviderPort.findAirQuality`                        | 칸 중심에서 가장 가까운 측정소(칸마다 30일 기억)의 실시간 값. 측정값이 없으면 null(리포트 캐시 30분), 호출 실패는 예외라 캐시하지 않는다                   |
 | 칸 리포트 읽기   | `ReadWeatherReportUseCase`                                     | 칸 캐시 → 공급자 → 마지막 성공 리포트(6시간) 순. 모두 없으면 `WEATHER_1901`이다                                                                            |
 | 묶음 리포트 읽기 | `ReadWeatherReportsUseCase`(`WeatherReportReaderPort`)         | 날씨 알림이 같은 칸·언어를 한 번씩만 읽는다. 읽지 못한 키는 결과에서 빠진다                                                                                |
 | 캐시 범위        | `WeatherReportCacheScope`, `SHARED_WEATHER_REPORT_SCOPE`       | 번역 문구(특보 제목)가 있는 칸만 언어별로, 그 밖은 `shared` 하나로 캐시한다                                                                                |

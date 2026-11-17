@@ -1,9 +1,18 @@
 import { z } from "zod";
 
+// 공공데이터포털 결과 코드. 00은 정상, 03(NODATA_ERROR)은 측정값 없음이고 그 밖(한도 초과·키 오류 등)은 호출 실패다
+export const AIRKOREA_ANSWERED_RESULT_CODES: readonly string[] = ["00", "03"];
+
+const headerSchema = z
+  .looseObject({ resultCode: z.string().optional() })
+  .optional()
+  .catch(undefined);
+
 /** 에어코리아 근접 측정소 목록. `items`가 깨져도 응답 전체를 버리지 않고 비어 있는 것으로 본다. */
 export const airkoreaNearbyStationSchema = z.looseObject({
   response: z
     .looseObject({
+      header: headerSchema,
       body: z
         .looseObject({
           items: z
@@ -20,6 +29,7 @@ export const airkoreaNearbyStationSchema = z.looseObject({
 export const airkoreaAirQualitySchema = z.looseObject({
   response: z
     .looseObject({
+      header: headerSchema,
       body: z
         .looseObject({
           items: z

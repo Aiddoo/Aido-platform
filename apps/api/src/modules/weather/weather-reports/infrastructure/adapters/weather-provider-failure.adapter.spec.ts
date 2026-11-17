@@ -2,10 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 import { HttpClient } from "@nestjs/http-client";
 
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
 import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
+import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { AirkoreaAirQualityAdapter } from "./airkorea-air-quality.adapter.js";
 import { KasiSunTimeAdapter } from "./kasi-sun-time.adapter.js";
@@ -54,15 +57,20 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
   });
 
   describe.each(FAILURES)("%s", (_name, respond) => {
-    it("에어코리아는 null 대기질로 degrade한다", async () => {
+    it("에어코리아는 측정값 없음(null)과 구분해 예외로 알린다", async () => {
       // Given
-      const adapter = new AirkoreaAirQualityAdapter(CONFIG, createHttp(respond), createPolicies());
+      const adapter = new AirkoreaAirQualityAdapter(
+        CONFIG,
+        createHttp(respond),
+        createPolicies(),
+        new NoCacheStore(),
+      );
 
       // When
-      const result = await adapter.getAirQuality(37.5665, 126.978);
+      const result = adapter.findAirQuality(GeoCell.create(Coordinate.create(37.5665, 126.978)));
 
       // Then
-      expect(result).toBeNull();
+      await expect(result).rejects.toThrow();
     });
 
     it("천문연구원은 null 일출입으로 degrade한다", async () => {

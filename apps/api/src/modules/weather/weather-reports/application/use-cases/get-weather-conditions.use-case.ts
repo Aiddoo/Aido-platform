@@ -2,6 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
+import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { UserLocationRepositoryPort } from "../../../user-locations/application/ports/user-location.repository.port.js";
 import { userLocationNotFound } from "../../../user-locations/application/user-locations.errors.js";
 import type { UserLocation } from "../../../user-locations/domain/user-location.aggregate.js";
@@ -22,7 +23,7 @@ export interface GetWeatherConditionsQuery {
 
 export interface GetWeatherConditionsDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
-  readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
+  readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
   readonly lifestyleIndexProvider: Pick<LifestyleIndexProviderPort, "getIndex">;
   readonly sunTimeProvider: Pick<SunTimeProviderPort, "getSunTime">;
   readonly readWeatherForecast: Pick<ReadWeatherForecastUseCase, "execute">;
@@ -56,7 +57,8 @@ export class GetWeatherConditionsUseCase {
     const { currentTemp, windSpeed } = await this.#currentTempAndWind(location, target);
 
     const [airResult, lifestyleResult, sunResult] = await Promise.allSettled([
-      this.#dependencies.airQualityProvider.getAirQuality(location.latitude, location.longitude),
+      // 리포트와 같은 칸 중심으로 측정소를 골라 칸별 측정소 캐시를 함께 쓴다
+      this.#dependencies.airQualityProvider.findAirQuality(GeoCell.create(location.coordinate)),
       this.#dependencies.lifestyleIndexProvider.getIndex(
         location.latitude,
         location.longitude,

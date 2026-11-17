@@ -81,10 +81,18 @@ export class WeatherReportCache implements WeatherReportCachePort {
     cell: GeoCell,
     load: () => Promise<AirQuality | null>,
   ): Promise<AirQuality | null> {
+    const key = WeatherReportCacheKey.airQuality(cell.key);
     return this.#cache.wrap(
-      WeatherReportCacheKey.airQuality(cell.key),
+      key,
       AIR_QUALITY_SCHEMA,
-      load,
+      async () => {
+        const airQuality = await load();
+        // wrap은 null을 저장하지 않으므로 측정 없음은 짧게 따로 저장한다. load 실패는 저장하지 않는다
+        if (airQuality == null) {
+          await this.#cache.set(key, null, WEATHER_REPORT_CACHE_TTL_MS.AIR_QUALITY_NO_DATA);
+        }
+        return airQuality;
+      },
       WEATHER_REPORT_CACHE_TTL_MS.AIR_QUALITY,
     );
   }

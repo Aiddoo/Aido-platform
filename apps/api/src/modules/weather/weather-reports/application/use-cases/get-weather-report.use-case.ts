@@ -54,7 +54,7 @@ export interface GetWeatherReportDependencies {
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
   readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
-  readonly airQualityProvider: Pick<AirQualityProviderPort, "getAirQuality">;
+  readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
   readonly scheduledTodoReader: Pick<ScheduledTodoReaderPort, "listPendingTimedTodos">;
   readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
   readonly clock: ClockPort;
@@ -155,9 +155,8 @@ export class GetWeatherReportUseCase {
   }
 
   #loadAirQuality(cell: GeoCell): Promise<AirQuality | null> {
-    const { latitude, longitude } = cell.center;
     return this.#dependencies.weatherReportCache.getOrLoadAirQuality(cell, () =>
-      this.#dependencies.airQualityProvider.getAirQuality(latitude, longitude),
+      this.#dependencies.airQualityProvider.findAirQuality(cell),
     );
   }
 }

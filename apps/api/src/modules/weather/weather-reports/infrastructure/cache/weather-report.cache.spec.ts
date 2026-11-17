@@ -159,3 +159,79 @@ describe("WeatherReportCache — 리포트 보관 시간과 만료 시각", () =
     expect(latest?.id.value).toBe(CELL.key);
   });
 });
+
+describe("WeatherReportCache — 대기질", () => {
+  let memory: InMemoryCacheStore;
+  let cache: WeatherReportCache;
+  let loads: number;
+
+  beforeEach(() => {
+    suppressLogger();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW.epochMilliseconds);
+    memory = new InMemoryCacheStore({ defaultTtlMs: MINUTE_MS, maxItems: 100 });
+    cache = new WeatherReportCache(memory, new FakeTimerClock(), new StubWeatherProviderBudget());
+    loads = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function counting<T>(load: () => Promise<T>): () => Promise<T> {
+    return () => {
+      loads++;
+      return load();
+    };
+  }
+
+  it("측정값은 1시간 저장해 그동안 다시 부르지 않는다", async () => {
+    // Given
+    const load = counting(async () => ({ pm10: 32, pm25: 18 }));
+    await cache.getOrLoadAirQuality(CELL, load);
+    vi.setSystemTime(NOW.add({ minutes: 59 }).epochMilliseconds);
+
+    // When
+    const cached = await cache.getOrLoadAirQuality(CELL, load);
+
+    // Then
+    expect(cached).toEqual({ pm10: 32, pm25: 18 });
+    expect(loads).toBe(1);
+  });
+
+  it("측정 없음(null)은 30분 저장하고 그 뒤 다시 부른다", async () => {
+    // Given
+    const load = counting(async () => null);
+    await cache.getOrLoadAirQuality(CELL, load);
+    vi.setSystemTime(NOW.add({ minutes: 29 }).epochMilliseconds);
+    const duringNoData = await cache.getOrLoadAirQuality(CELL, load);
+    const loadsDuringNoData = loads;
+    vi.setSystemTime(NOW.add({ minutes: 30, seconds: 1 }).epochMilliseconds);
+
+    // When
+    await cache.getOrLoadAirQuality(CELL, load);
+
+    // Then
+    expect(duringNoData).toBeNull();
+    expect(loadsDuringNoData).toBe(1);
+    expect(loads).toBe(2);
+  });
+
+  it("조회 실패는 저장하지 않아 다음 요청이 바로 다시 부른다", async () => {
+    // Given
+    const failing = counting(async () => {
+      throw new Error("airkorea 500");
+    });
+    await expect(cache.getOrLoadAirQuality(CELL, failing)).rejects.toThrow();
+
+    // When
+    const recovered = await cache.getOrLoadAirQuality(
+      CELL,
+      counting(async () => ({ pm10: 10, pm25: 5 })),
+    );
+
+    // Then
+    expect(recovered).toEqual({ pm10: 10, pm25: 5 });
+    expect(loads).toBe(2);
+  });
+});

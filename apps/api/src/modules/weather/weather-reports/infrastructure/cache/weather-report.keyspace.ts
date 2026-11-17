@@ -14,6 +14,10 @@ export const WEATHER_REPORT_CACHE_TTL_MS = {
   REPORT_BUDGET_SAVING: 2 * MS_PER_HOUR,
   LATEST_REPORT: 6 * MS_PER_HOUR,
   AIR_QUALITY: MS_PER_HOUR,
+  /** 측정소가 측정값을 주지 않은 칸. 조회 실패는 저장하지 않는다 */
+  AIR_QUALITY_NO_DATA: 30 * MS_PER_MINUTE,
+  /** 칸에서 가장 가까운 측정소는 거의 바뀌지 않아 대기질 조회마다 다시 찾지 않는다 */
+  AIRKOREA_STATION: 30 * MS_PER_DAY,
   AVAILABILITY: 7 * MS_PER_DAY,
   PROVIDER_FAILURE: MS_PER_MINUTE,
   /** 가용성·표기 조회가 실패한 뒤 요청마다 시간 초과(3초)를 다시 기다리지 않도록 잠시 호출을 멈춘다. */
@@ -27,6 +31,7 @@ export const WeatherReportCacheKey = {
   latestReport: (cell: string, scope: string) =>
     cacheKey("weather", "v2", "report-latest", cell, scope),
   airQuality: (cell: string) => cacheKey("weather", "v2", "air-quality", cell),
+  airKoreaStation: (cell: string) => cacheKey("weather", "v2", "airkorea-station", cell),
   availability: (cell: string) => cacheKey("weather", "v2", "availability", cell),
   availabilityFailure: (cell: string) => cacheKey("weather", "v2", "availability-failure", cell),
   providerFailure: (cell: string) => cacheKey("weather", "v2", "provider-failure", cell),

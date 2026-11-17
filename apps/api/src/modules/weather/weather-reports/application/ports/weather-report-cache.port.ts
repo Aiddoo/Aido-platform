@@ -21,7 +21,7 @@ export abstract class WeatherReportCachePort {
     scope: WeatherReportCacheScope,
   ): Promise<WeatherReport | null>;
 
-  /** 대기질은 null(측정 없음)을 저장하지 않아 다음 요청이 다시 조회한다. */
+  /** 측정값은 1시간, 측정 없음(null)은 30분 저장한다. load 실패는 저장하지 않아 다음 요청이 다시 조회한다. */
   abstract getOrLoadAirQuality(
     cell: GeoCell,
     load: () => Promise<AirQuality | null>,

@@ -3,28 +3,9 @@ import type {
   AirQualityProviderPort,
 } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
 
-/**
- * 테스트용 FakeAirQualityProvider
- *
- * 실제 에어코리아 API를 호출하지 않고, 고정된 미세먼지 데이터를 반환합니다.
- */
+/** 에어코리아를 부르지 않고 고정된 미세먼지 값을 준다. */
 export class FakeAirQualityProvider implements AirQualityProviderPort {
-  #calls: Array<{ lat: number; lon: number }> = [];
-
-  async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
-    this.#calls.push({ lat, lon });
+  async findAirQuality(): Promise<AirQuality | null> {
     return { pm10: 45, pm25: 22 };
-  }
-
-  getCalls(): Array<{ lat: number; lon: number }> {
-    return [...this.#calls];
-  }
-
-  getCallCount(): number {
-    return this.#calls.length;
-  }
-
-  clear(): void {
-    this.#calls = [];
   }
 }

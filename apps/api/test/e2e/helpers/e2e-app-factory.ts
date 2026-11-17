@@ -296,7 +296,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAiGenerator.clear(),
         () => fakeWeatherProvider.clear(),
         () => stubWeatherReportProvider.clear(),
-        () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
         () => inMemoryJobQueue.clear(),
