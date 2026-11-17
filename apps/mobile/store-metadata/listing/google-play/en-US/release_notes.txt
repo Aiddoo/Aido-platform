@@ -3,5 +3,5 @@ AI suggestions and reports are clearer, with reasons and charts.
 - AI suggestions show why, and you get an analysis right away without waiting for the morning.
 - To-dos that differ only in spacing or emoji group together.
 - AI reports show daily progress, hourly charts, and a coach note.
-- Free plan shows your record for this week.
-- Suggestion alerts arrive at 9 AM.
+- Free plan shows your record for this week and sample AI suggestions and reports.
+- Suggestion alerts arrive at 9 AM, and you can turn off AI alerts on their own in Settings.
