@@ -17,6 +17,7 @@ import {
   PushTokenRepositoryPort,
 } from "../push-devices/notification-push-devices.public.js";
 import { UserNotificationSettingsPort } from "../shared/application/ports/user-notification-settings.port.js";
+import { NoActiveTokenReasonReader } from "./application/no-active-token-reason.reader.js";
 import { MarketingPushOptOutTokenPort } from "./application/ports/marketing-push-opt-out-token.port.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
@@ -35,19 +36,30 @@ import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.r
 import { PushRateLimiterPort } from "./application/ports/push-rate-limiter.port.js";
 import { PushReceiptRepositoryPort } from "./application/ports/push-receipt.repository.port.js";
 import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
+import { DeliverPushBatchUseCase } from "./application/use-cases/deliver-push-batch.use-case.js";
 import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
+import { DeliverSinglePushUseCase } from "./application/use-cases/deliver-single-push.use-case.js";
 import { DispatchPushNotificationUseCase } from "./application/use-cases/dispatch-push-notification.use-case.js";
+import { EvaluateBatchPushDeliverySettingsUseCase } from "./application/use-cases/evaluate-batch-push-delivery-settings.use-case.js";
 import { EvaluatePushDeliveryEligibilityUseCase } from "./application/use-cases/evaluate-push-delivery-eligibility.use-case.js";
+import { FinalizeSkippedPushDeliveriesUseCase } from "./application/use-cases/finalize-skipped-push-deliveries.use-case.js";
+import { LoadPushDeliveryRecipientUseCase } from "./application/use-cases/load-push-delivery-recipient.use-case.js";
+import { LoadPushDeliveryRecipientsUseCase } from "./application/use-cases/load-push-delivery-recipients.use-case.js";
+import { MarkPushRateLimitReservedUseCase } from "./application/use-cases/mark-push-rate-limit-reserved.use-case.js";
 import { OptOutMarketingPushUseCase } from "./application/use-cases/opt-out-marketing-push.use-case.js";
+import { PreparePushBatchUseCase } from "./application/use-cases/prepare-push-batch.use-case.js";
 import { PublishPushDeliveryAfterCommitUseCase } from "./application/use-cases/publish-push-delivery-after-commit.use-case.js";
 import { PublishPushDeliveryOutboxUseCase } from "./application/use-cases/publish-push-delivery-outbox.use-case.js";
 import { PurgePushDeliveryHistoryUseCase } from "./application/use-cases/purge-push-delivery-history.use-case.js";
 import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-push-receipts.use-case.js";
 import { RecoverFailedPushDeliveriesUseCase } from "./application/use-cases/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
+import { ReserveBatchPushRateLimitsUseCase } from "./application/use-cases/reserve-batch-push-rate-limits.use-case.js";
+import { SendPushBatchUseCase } from "./application/use-cases/send-push-batch.use-case.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
 import { ExpoPushSenderAdapter } from "./infrastructure/adapters/expo-push-sender.adapter.js";
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/hmac-marketing-push-opt-out-token.adapter.js";
+import { PostgresPushRateLimiterAdapter } from "./infrastructure/adapters/postgres-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
 import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
@@ -62,23 +74,24 @@ import { DrizzlePushReceiptRepository } from "./infrastructure/persistence/drizz
 import { notificationPushDispatchesConfig } from "./notification-push-dispatches.config.js";
 
 // 운영은 PostgreSQL, 설정으로 Redis·메모리를 고른다
+const postgresPushRateLimiterProvider = {
+  provide: PostgresPushRateLimiterAdapter,
+  useFactory: (database: Database, clock: ClockPort) =>
+    new PostgresPushRateLimiterAdapter(database, clock),
+  inject: [DRIZZLE, ClockPort],
+} satisfies Provider;
+
 const pushRateLimiterProvider = {
   provide: PushRateLimiterPort,
   useFactory: (
     config: ConfigType<typeof notificationPushDispatchesConfig>,
-    database: Database,
-    clock: ClockPort,
+    postgres: PostgresPushRateLimiterAdapter,
     redis?: Redis,
   ): PushRateLimiterPort =>
-    selectPushRateLimiter(config.rateLimitBackend, {
-      database,
-      clock,
-      ...(redis && { redis }),
-    }),
+    selectPushRateLimiter(config.rateLimitBackend, { postgres, ...(redis && { redis }) }),
   inject: [
     notificationPushDispatchesConfig.KEY,
-    DRIZZLE,
-    ClockPort,
+    PostgresPushRateLimiterAdapter,
     { token: REDIS_COMMAND_CLIENT, optional: true },
   ],
 } satisfies Provider;
@@ -115,6 +128,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
 
 const NOTIFICATION_PUSH_DISPATCHES_EXTERNAL_PROVIDERS = [
   { provide: PushProviderPort, useClass: ExpoPushSenderAdapter },
+  postgresPushRateLimiterProvider,
   pushRateLimiterProvider,
   { provide: MarketingPushOptOutTokenPort, useClass: HmacMarketingPushOptOutTokenAdapter },
 ] satisfies Provider[];
@@ -128,29 +142,87 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
       new PushNotificationPayloadMapper({ marketingOptOutTokens }),
     inject: [MarketingPushOptOutTokenPort],
   },
-  provideUseCase(EvaluatePushDeliveryEligibilityUseCase, {
-    userSettings: UserNotificationSettingsPort,
-    rateLimiter: PushRateLimiterPort,
+  provideUseCase(NoActiveTokenReasonReader, {
+    pushDeviceRepository: PushDeviceRepositoryPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(LoadPushDeliveryRecipientUseCase, {
     recipientPreferenceReader: NotificationRecipientPreferenceReaderPort,
     clock: ClockPort,
   }),
+  provideUseCase(LoadPushDeliveryRecipientsUseCase, {
+    userSettings: UserNotificationSettingsPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(EvaluatePushDeliveryEligibilityUseCase, {
+    userSettings: UserNotificationSettingsPort,
+    rateLimiter: PushRateLimiterPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(EvaluateBatchPushDeliverySettingsUseCase, { clock: ClockPort }),
+  provideUseCase(ReserveBatchPushRateLimitsUseCase, {
+    rateLimiter: PushRateLimiterPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(MarkPushRateLimitReservedUseCase, {
+    claims: PushDeliveryClaimRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    clock: ClockPort,
+  }),
+  provideUseCase(FinalizeSkippedPushDeliveriesUseCase, {
+    finalization: PushDeliveryFinalizationRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    logger: loggerFor(FinalizeSkippedPushDeliveriesUseCase),
+  }),
   provideUseCase(DispatchPushNotificationUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,
-    pushDeviceRepository: PushDeviceRepositoryPort,
     pushProvider: PushProviderPort,
     activePushTokenReader: ActivePushTokenReaderPort,
     pushTokenCache: PushTokenCachePort,
+    noActiveTokenReasons: NoActiveTokenReasonReader,
     clock: ClockPort,
     logger: loggerFor(DispatchPushNotificationUseCase),
   }),
+  provideUseCase(PreparePushBatchUseCase, {
+    pushTokenRepository: PushTokenRepositoryPort,
+    activePushTokenReader: ActivePushTokenReaderPort,
+    noActiveTokenReasons: NoActiveTokenReasonReader,
+  }),
+  provideUseCase(SendPushBatchUseCase, {
+    pushTokenRepository: PushTokenRepositoryPort,
+    pushProvider: PushProviderPort,
+    pushTokenCache: PushTokenCachePort,
+    clock: ClockPort,
+    logger: loggerFor(SendPushBatchUseCase),
+  }),
+  provideUseCase(DeliverSinglePushUseCase, {
+    loadRecipient: LoadPushDeliveryRecipientUseCase,
+    evaluateEligibility: EvaluatePushDeliveryEligibilityUseCase,
+    markRateLimitReserved: MarkPushRateLimitReservedUseCase,
+    payloadFactory: PushNotificationPayloadPort,
+    dispatchPush: DispatchPushNotificationUseCase,
+    finalizeSkipped: FinalizeSkippedPushDeliveriesUseCase,
+    finalization: PushDeliveryFinalizationRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+  }),
+  provideUseCase(DeliverPushBatchUseCase, {
+    loadRecipients: LoadPushDeliveryRecipientsUseCase,
+    evaluateSettings: EvaluateBatchPushDeliverySettingsUseCase,
+    reserveRateLimits: ReserveBatchPushRateLimitsUseCase,
+    markRateLimitReserved: MarkPushRateLimitReservedUseCase,
+    payloadFactory: PushNotificationPayloadPort,
+    preparePushBatch: PreparePushBatchUseCase,
+    sendPushBatch: SendPushBatchUseCase,
+    finalizeSkipped: FinalizeSkippedPushDeliveriesUseCase,
+    finalization: PushDeliveryFinalizationRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+  }),
   provideUseCase(DeliverPushNotificationsUseCase, {
     claims: PushDeliveryClaimRepositoryPort,
-    finalization: PushDeliveryFinalizationRepositoryPort,
     lease: PushDeliveryLeaseRepositoryPort,
     unitOfWork: UnitOfWorkPort,
-    eligibility: EvaluatePushDeliveryEligibilityUseCase,
-    payloadFactory: PushNotificationPayloadPort,
-    delivery: DispatchPushNotificationUseCase,
+    deliverSingle: DeliverSinglePushUseCase,
+    deliverBatch: DeliverPushBatchUseCase,
     clock: ClockPort,
     logger: loggerFor(DeliverPushNotificationsUseCase),
   }),

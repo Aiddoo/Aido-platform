@@ -1,0 +1,159 @@
+import { isSemanticVersionAtLeast, type PushDispatchSkipReason } from "@aido/api/vocabulary";
+import { groupBy, uniq } from "es-toolkit";
+
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type {
+  ActivePushTokenReaderPort,
+  PushTokenRepositoryPort,
+} from "../../../push-devices/notification-push-devices.public.js";
+import { supportsFeatureDiscoveryMarketing } from "../../domain/feature-marketing-capability.domain-service.js";
+import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
+import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
+import type { PushPayload } from "../ports/push-provider.port.js";
+
+interface PreparedPushBatchBase {
+  readonly attemptedDispatchIds: ReadonlySet<number>;
+  readonly skippedDispatches: readonly {
+    readonly dispatchId: number;
+    readonly reason: PushDispatchSkipReason;
+  }[];
+  readonly recipientUserIds: readonly string[];
+}
+
+export type PreparedPushBatch =
+  | (PreparedPushBatchBase & { readonly status: "empty" })
+  | (PreparedPushBatchBase & {
+      readonly status: "ready";
+      readonly providerPayloads: readonly PushPayload[];
+      readonly dispatchIds: readonly number[];
+    });
+
+type CapabilityTokensByUser = Partial<
+  Record<string, Awaited<ReturnType<PushTokenRepositoryPort["findActivePushTokensByUsers"]>>>
+>;
+
+interface PreparePushBatchDependencies {
+  readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "findActivePushTokensByUsers">;
+  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserIds">;
+  readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReasons">;
+}
+
+// 배치 payload마다 받을 토큰을 골라 공급자 payload로 펼치고, 토큰이 없는 발송은 이유와 함께 뺀다
+export class PreparePushBatchUseCase {
+  readonly #dependencies: PreparePushBatchDependencies;
+
+  constructor(dependencies: PreparePushBatchDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(payloads: readonly BatchPushNotificationPayload[]): Promise<PreparedPushBatch> {
+    const userIds = uniq(payloads.map((payload) => payload.userId));
+    const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(
+      userIds.map((userId) => UserId.reconstitute(userId)),
+    );
+    const capabilityTokensByUser = await this.#findCapabilityTokens(payloads);
+
+    const providerPayloads: PushPayload[] = [];
+    const dispatchIds: number[] = [];
+    const attemptedDispatchIds = new Set<number>();
+    const skippedDispatches: Array<{ dispatchId: number; reason: PushDispatchSkipReason }> = [];
+    const noTokenUserIdByDispatch = new Map<number, string>();
+
+    for (const payload of payloads) {
+      const selection = selectTokens(
+        payload,
+        tokensByUser.get(payload.userId) ?? [],
+        capabilityTokensByUser,
+      );
+      if (selection.status === "skipped") {
+        if (selection.reason === "NO_ACTIVE_TOKEN") {
+          noTokenUserIdByDispatch.set(payload.dispatchId, payload.userId);
+        }
+        skippedDispatches.push({ dispatchId: payload.dispatchId, reason: selection.reason });
+        continue;
+      }
+      attemptedDispatchIds.add(payload.dispatchId);
+      for (const token of selection.tokens) {
+        providerPayloads.push(toProviderPayload(payload, token));
+        dispatchIds.push(payload.dispatchId);
+      }
+    }
+
+    const noTokenReasons = await this.#dependencies.noActiveTokenReasons.findReasons([
+      ...new Set(noTokenUserIdByDispatch.values()),
+    ]);
+    for (const skipped of skippedDispatches) {
+      const userId = noTokenUserIdByDispatch.get(skipped.dispatchId);
+      if (userId != null) {
+        skipped.reason = noTokenReasons.get(userId) ?? skipped.reason;
+      }
+    }
+
+    const base = { attemptedDispatchIds, skippedDispatches, recipientUserIds: userIds };
+    if (providerPayloads.length === 0) {
+      return { status: "empty", ...base };
+    }
+    return { status: "ready", providerPayloads, dispatchIds, ...base };
+  }
+
+  async #findCapabilityTokens(
+    payloads: readonly BatchPushNotificationPayload[],
+  ): Promise<CapabilityTokensByUser> {
+    const capabilityUserIds = uniq(
+      payloads.filter(requiresCapability).map((payload) => payload.userId),
+    );
+    if (capabilityUserIds.length === 0) {
+      return {};
+    }
+    const records = await this.#dependencies.pushTokenRepository.findActivePushTokensByUsers(
+      capabilityUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
+    return groupBy(records, (record) => record.userId);
+  }
+}
+
+function requiresCapability(payload: BatchPushNotificationPayload): boolean {
+  return payload.requiresFeatureCapability || payload.minAppVersion != null;
+}
+
+function selectTokens(
+  payload: BatchPushNotificationPayload,
+  activeTokens: readonly string[],
+  capabilityTokensByUser: CapabilityTokensByUser,
+):
+  | { readonly status: "selected"; readonly tokens: readonly string[] }
+  | { readonly status: "skipped"; readonly reason: PushDispatchSkipReason } {
+  const capabilityRecords = capabilityTokensByUser[payload.userId] ?? [];
+  const { minAppVersion } = payload;
+  const needsCapability = requiresCapability(payload);
+  const activeTokenCount = needsCapability ? capabilityRecords.length : activeTokens.length;
+  if (activeTokenCount === 0) {
+    return { status: "skipped", reason: "NO_ACTIVE_TOKEN" };
+  }
+
+  const tokens = needsCapability
+    ? capabilityRecords
+        .filter(
+          (record) =>
+            (!payload.requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
+            (minAppVersion == null || isSemanticVersionAtLeast(record.appVersion, minAppVersion)),
+        )
+        .map((record) => record.token)
+    : activeTokens;
+  return tokens.length === 0
+    ? { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" }
+    : { status: "selected", tokens };
+}
+
+function toProviderPayload(payload: BatchPushNotificationPayload, token: string): PushPayload {
+  return {
+    token,
+    title: payload.title,
+    body: payload.body,
+    data: payload.data,
+    categoryId: payload.categoryId,
+    priority: payload.priority,
+    ttlSeconds: payload.ttlSeconds,
+  };
+}

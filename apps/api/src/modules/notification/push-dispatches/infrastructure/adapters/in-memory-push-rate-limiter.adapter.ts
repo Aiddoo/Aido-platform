@@ -60,13 +60,16 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
         : null;
       const generalReserved = this.#hasReservation(
         this.#generalReservations,
-        request.userId,
-        reservationId,
+        `${request.userId}:${reservationId}`,
         now,
       );
       const engagementReserved =
         engagementKey == null ||
-        this.#hasReservation(this.#engagementReservations, request.userId, reservationId, now);
+        this.#hasReservation(
+          this.#engagementReservations,
+          `${request.userId}:${reservationId}`,
+          now,
+        );
 
       const generalTimestamps = (this.#pushTimestamps.get(request.userId) ?? []).filter(
         (timestamp) => timestamp > now - GENERAL.WINDOW_MS,
@@ -99,18 +102,14 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
         this.#engagementTimestamps.set(engagementKey, engagementTimestamps);
       }
       if (!generalReserved) {
-        this.#saveReservation(
-          this.#generalReservations,
-          request.userId,
-          reservationId,
+        this.#generalReservations.set(
+          `${request.userId}:${reservationId}`,
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
       if (engagementKey && !engagementReserved) {
-        this.#saveReservation(
-          this.#engagementReservations,
-          request.userId,
-          reservationId,
+        this.#engagementReservations.set(
+          `${request.userId}:${reservationId}`,
           now + ENGAGEMENT.RETENTION_MS,
         );
       }
@@ -122,7 +121,7 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
   async #reserveGeneral(userId: string, reservationId: string): Promise<boolean> {
     const now = Date.now();
     const windowStart = now - GENERAL.WINDOW_MS;
-    if (this.#hasReservation(this.#generalReservations, userId, reservationId, now)) {
+    if (this.#hasReservation(this.#generalReservations, `${userId}:${reservationId}`, now)) {
       return false;
     }
 
@@ -134,12 +133,7 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
     }
 
     filtered.push(now);
-    this.#saveReservation(
-      this.#generalReservations,
-      userId,
-      reservationId,
-      now + ENGAGEMENT.RETENTION_MS,
-    );
+    this.#generalReservations.set(`${userId}:${reservationId}`, now + ENGAGEMENT.RETENTION_MS);
     return false;
   }
 
@@ -150,7 +144,7 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
   ): Promise<boolean> {
     const key = `${userId}:${localDate}`;
     const now = Date.now();
-    if (this.#hasReservation(this.#engagementReservations, userId, reservationId, now)) {
+    if (this.#hasReservation(this.#engagementReservations, `${userId}:${reservationId}`, now)) {
       return false;
     }
     const timestamps = this.#engagementTimestamps.get(key) ?? [];
@@ -163,32 +157,13 @@ export class InMemoryPushRateLimiterAdapter implements PushRateLimiterPort {
     }
     timestamps.push(now);
     this.#engagementTimestamps.set(key, timestamps);
-    this.#saveReservation(
-      this.#engagementReservations,
-      userId,
-      reservationId,
-      now + ENGAGEMENT.RETENTION_MS,
-    );
+    this.#engagementReservations.set(`${userId}:${reservationId}`, now + ENGAGEMENT.RETENTION_MS);
     return false;
   }
 
-  #hasReservation(
-    reservations: LRUCache<string, number>,
-    userId: string,
-    reservationId: string,
-    now: number,
-  ): boolean {
-    const expiresAt = reservations.get(`${userId}:${reservationId}`);
+  #hasReservation(reservations: LRUCache<string, number>, key: string, now: number): boolean {
+    const expiresAt = reservations.get(key);
     return expiresAt != null && expiresAt > now;
-  }
-
-  #saveReservation(
-    reservations: LRUCache<string, number>,
-    userId: string,
-    reservationId: string,
-    expiresAt: number,
-  ): void {
-    reservations.set(`${userId}:${reservationId}`, expiresAt);
   }
 
   #reservationId(dispatchId: number): string {

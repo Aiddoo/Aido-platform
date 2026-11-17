@@ -6,7 +6,11 @@ import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/noti
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import { createSnoozedReminderMetadata } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { EvaluateBatchPushDeliverySettingsUseCase } from "./evaluate-batch-push-delivery-settings.use-case.js";
 import { EvaluatePushDeliveryEligibilityUseCase } from "./evaluate-push-delivery-eligibility.use-case.js";
+import { LoadPushDeliveryRecipientUseCase } from "./load-push-delivery-recipient.use-case.js";
+import { LoadPushDeliveryRecipientsUseCase } from "./load-push-delivery-recipients.use-case.js";
+import { ReserveBatchPushRateLimitsUseCase } from "./reserve-batch-push-rate-limits.use-case.js";
 
 const DAYTIME = Temporal.Instant.from("2026-07-16T03:00:00.000Z");
 const KST_NIGHT = Temporal.Instant.from("2026-07-16T14:00:00.000Z");
@@ -37,16 +41,22 @@ function createEvaluatePushDeliveryEligibilityUseCase(now: Temporal.Instant = DA
   const userSettings = new InMemoryUserNotificationSettings();
   const rateLimiter = new StubPushRateLimiter();
   const recipientPreferenceReader = new StubNotificationRecipientPreferenceReader();
-  const useCase = new EvaluatePushDeliveryEligibilityUseCase({
-    userSettings,
-    rateLimiter,
-    recipientPreferenceReader,
-    clock: new FixedClock(now),
-  });
+  const clock = new FixedClock(now);
+  const useCase = {
+    loadRecipient: new LoadPushDeliveryRecipientUseCase({ recipientPreferenceReader, clock }),
+    loadRecipients: new LoadPushDeliveryRecipientsUseCase({ userSettings, clock }),
+    evaluateEligibility: new EvaluatePushDeliveryEligibilityUseCase({
+      userSettings,
+      rateLimiter,
+      clock,
+    }),
+    evaluateSettings: new EvaluateBatchPushDeliverySettingsUseCase({ clock }),
+    reserveRateLimits: new ReserveBatchPushRateLimitsUseCase({ rateLimiter, clock }),
+  };
   return { useCase, userSettings, rateLimiter, recipientPreferenceReader };
 }
 
-describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정", () => {
+describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", () => {
   it("단건 수신자 컨텍스트는 미상 UTC를 배송용 KST와 현지 날짜로 보정한다", async () => {
     // Given
     const { useCase, recipientPreferenceReader } = createEvaluatePushDeliveryEligibilityUseCase();
@@ -56,7 +66,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     );
 
     // When
-    const recipient = useCase.loadSingleRecipient("user-1");
+    const recipient = useCase.loadRecipient.execute("user-1");
 
     // Then
     await expect(recipient).resolves.toMatchObject({
@@ -70,17 +80,17 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     // Given
     const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
     const recipient = {
-      ...(await useCase.loadSingleRecipient("user-1")),
+      ...(await useCase.loadRecipient.execute("user-1")),
       preference: createNotificationDeliveryPreferenceFixture({ pushEnabled: false }),
     };
 
     // When
-    const decision = useCase.evaluateSingle(
-      transactional,
-      recipient,
-      RATE_LIMIT_DISPATCH_ID,
-      false,
-    );
+    const decision = useCase.evaluateEligibility.execute({
+      data: transactional,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: false,
+    });
 
     // Then
     await expect(decision).resolves.toEqual({
@@ -95,10 +105,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     // Given
     const { useCase, rateLimiter, userSettings } = createEvaluatePushDeliveryEligibilityUseCase();
     rateLimiter.limitedGeneralUserIds.add("user-1");
-    const recipient = await useCase.loadSingleRecipient("user-1");
+    const recipient = await useCase.loadRecipient.execute("user-1");
 
     // When
-    const decision = useCase.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false);
+    const decision = useCase.evaluateEligibility.execute({
+      data: engagement,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: false,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({ status: "skipped", reason: "RATE_LIMITED" });
@@ -109,10 +124,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
   it("단건 마케팅은 야간 quiet-hours를 동의 조회보다 앞서 적용한다", async () => {
     // Given
     const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase(KST_NIGHT);
-    const recipient = await useCase.loadSingleRecipient("user-1");
+    const recipient = await useCase.loadRecipient.execute("user-1");
 
     // When
-    const decision = useCase.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false);
+    const decision = useCase.evaluateEligibility.execute({
+      data: engagement,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: false,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({
@@ -129,10 +149,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       marketingPushAgreedAt: Temporal.Instant.from("2026-07-01T00:00:00Z"),
     });
     rateLimiter.limitedEngagementUserIds.add("user-1");
-    const recipient = await useCase.loadSingleRecipient("user-1");
+    const recipient = await useCase.loadRecipient.execute("user-1");
 
     // When
-    const decision = useCase.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, false);
+    const decision = useCase.evaluateEligibility.execute({
+      data: engagement,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: false,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({
@@ -148,12 +173,17 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     // Given
     const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
     const recipient = {
-      ...(await useCase.loadSingleRecipient("user-1")),
+      ...(await useCase.loadRecipient.execute("user-1")),
       preference: createNotificationDeliveryPreferenceFixture({ pushEnabled: false }),
     };
 
     // When
-    const decision = useCase.evaluateSingle(transactional, recipient, RATE_LIMIT_DISPATCH_ID, true);
+    const decision = useCase.evaluateEligibility.execute({
+      data: transactional,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: true,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({ status: "skipped", reason: "PUSH_DISABLED" });
@@ -164,10 +194,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     // Given
     const { useCase, userSettings, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
     userSettings.consents.set("user-1", { marketingPushAgreedAt: null });
-    const recipient = await useCase.loadSingleRecipient("user-1");
+    const recipient = await useCase.loadRecipient.execute("user-1");
 
     // When
-    const decision = useCase.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, true);
+    const decision = useCase.evaluateEligibility.execute({
+      data: engagement,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: true,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({
@@ -180,10 +215,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
   it("재시도 시 quiet-hours로 전환되면 저장된 rate 예약과 무관하게 마케팅을 중단한다", async () => {
     // Given
     const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase(KST_NIGHT);
-    const recipient = await useCase.loadSingleRecipient("user-1");
+    const recipient = await useCase.loadRecipient.execute("user-1");
 
     // When
-    const decision = useCase.evaluateSingle(engagement, recipient, RATE_LIMIT_DISPATCH_ID, true);
+    const decision = useCase.evaluateEligibility.execute({
+      data: engagement,
+      recipient: recipient,
+      rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+      hasReservedRateLimit: true,
+    });
 
     // Then
     await expect(decision).resolves.toMatchObject({
@@ -199,7 +239,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     userSettings.preferences.set("user-1", createNotificationDeliveryPreferenceFixture());
 
     // When
-    const recipients = await useCase.loadBatchRecipients(["user-1", "user-2", "user-1"]);
+    const recipients = await useCase.loadRecipients.execute(["user-1", "user-2", "user-1"]);
 
     // Then
     expect(userSettings.preferenceBatchReads).toEqual([["user-1", "user-2"]]);
@@ -214,7 +254,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     // Given
     const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase();
     userSettings.preferences.set("marketing", createNotificationDeliveryPreferenceFixture());
-    const recipients = await useCase.loadBatchRecipients(["forced", "missing", "marketing"]);
+    const recipients = await useCase.loadRecipients.execute(["forced", "missing", "marketing"]);
     const forced = {
       data: { ...transactional, userId: "forced", type: "ADMIN_BROADCAST" as const, force: true },
       rateLimitDispatchId: 1,
@@ -223,7 +263,10 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
     const marketing = { data: { ...engagement, userId: "marketing" }, rateLimitDispatchId: 3 };
 
     // When
-    const decisions = useCase.evaluateBatchSettings([forced, missing, marketing], recipients);
+    const decisions = useCase.evaluateSettings.execute({
+      candidates: [forced, missing, marketing],
+      recipients: recipients,
+    });
 
     // Then
     expect(decisions).toEqual([
@@ -242,12 +285,15 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       createNotificationDeliveryPreferenceFixture({ timezone: "America/New_York" }),
     );
     rateLimiter.limitedBatchUserIds.add("user-2");
-    const recipients = await useCase.loadBatchRecipients(["user-1", "user-2"]);
+    const recipients = await useCase.loadRecipients.execute(["user-1", "user-2"]);
     const first = { data: engagement, rateLimitDispatchId: 1 };
     const second = { data: { ...engagement, userId: "user-2" }, rateLimitDispatchId: 2 };
 
     // When
-    const decisions = await useCase.reserveBatch([first, second], recipients);
+    const decisions = await useCase.reserveRateLimits.execute({
+      candidates: [first, second],
+      recipients: recipients,
+    });
 
     // Then
     expect(decisions).toEqual([
@@ -269,12 +315,17 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       // Given
       const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
       rateLimiter.limitedGeneralUserIds.add("user-1");
-      const recipient = await useCase.loadSingleRecipient("user-1");
+      const recipient = await useCase.loadRecipient.execute("user-1");
 
       // When
       const decisions = await Promise.all(
         [reminder, transactional].map((data, index) =>
-          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID + index, false),
+          useCase.evaluateEligibility.execute({
+            data: data,
+            recipient: recipient,
+            rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID + index,
+            hasReservedRateLimit: false,
+          }),
         ),
       );
 
@@ -294,7 +345,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       userSettings.preferences.set("user-1", createNotificationDeliveryPreferenceFixture());
       userSettings.preferences.set("user-2", createNotificationDeliveryPreferenceFixture());
       rateLimiter.limitedBatchUserIds.add("user-1");
-      const recipients = await useCase.loadBatchRecipients(["user-1", "user-2"]);
+      const recipients = await useCase.loadRecipients.execute(["user-1", "user-2"]);
       const limitedReminder = { data: reminder, rateLimitDispatchId: 1 };
       const limitedSocial = { data: transactional, rateLimitDispatchId: 2 };
       const allowedSocial = {
@@ -303,10 +354,10 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       };
 
       // When
-      const decisions = await useCase.reserveBatch(
-        [limitedReminder, limitedSocial, allowedSocial],
-        recipients,
-      );
+      const decisions = await useCase.reserveRateLimits.execute({
+        candidates: [limitedReminder, limitedSocial, allowedSocial],
+        recipients: recipients,
+      });
 
       // Then
       expect(decisions).toEqual([
@@ -331,14 +382,19 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       // Given
       const { useCase, rateLimiter } = createEvaluatePushDeliveryEligibilityUseCase();
       const recipient = {
-        ...(await useCase.loadSingleRecipient("user-1")),
+        ...(await useCase.loadRecipient.execute("user-1")),
         preference: createNotificationDeliveryPreferenceFixture({ aiPushEnabled: false }),
       };
 
       // When
       const decisions = await Promise.all(
         [suggestion, transactional].map((data, index) =>
-          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID + index, false),
+          useCase.evaluateEligibility.execute({
+            data: data,
+            recipient: recipient,
+            rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID + index,
+            hasReservedRateLimit: false,
+          }),
         ),
       );
 
@@ -360,13 +416,16 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         createNotificationDeliveryPreferenceFixture({ aiPushEnabled: false }),
       );
       userSettings.preferences.set("on", createNotificationDeliveryPreferenceFixture());
-      const recipients = await useCase.loadBatchRecipients(["off", "on"]);
+      const recipients = await useCase.loadRecipients.execute(["off", "on"]);
       const offReport = { data: { ...weeklyReport, userId: "off" }, rateLimitDispatchId: 1 };
       const offSocial = { data: { ...transactional, userId: "off" }, rateLimitDispatchId: 2 };
       const onReport = { data: { ...weeklyReport, userId: "on" }, rateLimitDispatchId: 3 };
 
       // When
-      const decisions = useCase.evaluateBatchSettings([offReport, offSocial, onReport], recipients);
+      const decisions = useCase.evaluateSettings.execute({
+        candidates: [offReport, offSocial, onReport],
+        recipients: recipients,
+      });
 
       // Then
       expect(decisions).toEqual([
@@ -403,13 +462,16 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         }),
       );
       userSettings.consents.set("user-1", { marketingPushAgreedAt: MARKETING_AGREED_AT });
-      const recipients = await useCase.loadBatchRecipients(["user-1"]);
+      const recipients = await useCase.loadRecipients.execute(["user-1"]);
       const candidates = (
         ["TODO_REMINDER", "EVENING_REMINDER", "WEATHER_MORNING", "FOLLOW_NEW", "WINBACK"] as const
       ).map((type, index) => ({ data: { ...transactional, type }, rateLimitDispatchId: index }));
 
       // When
-      const decisions = useCase.evaluateBatchSettings(candidates, recipients);
+      const decisions = useCase.evaluateSettings.execute({
+        candidates: candidates,
+        recipients: recipients,
+      });
 
       // Then
       expect(
@@ -429,7 +491,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         localInstant("Asia/Seoul", "22:00"),
       );
       const recipient = {
-        ...(await useCase.loadSingleRecipient("user-1")),
+        ...(await useCase.loadRecipient.execute("user-1")),
         preference: createNotificationDeliveryPreferenceFixture({ nightPushEnabled: false }),
       };
       const reminder = { ...transactional, type: "TODO_REMINDER" as const };
@@ -437,7 +499,12 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       // When
       const decisions = await Promise.all(
         [reminder, transactional].map((data) =>
-          useCase.evaluateSingle(data, recipient, RATE_LIMIT_DISPATCH_ID, true),
+          useCase.evaluateEligibility.execute({
+            data: data,
+            recipient: recipient,
+            rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+            hasReservedRateLimit: true,
+          }),
         ),
       );
 
@@ -467,7 +534,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         createNotificationDeliveryPreferenceFixture({ timezone: "America/Los_Angeles" }),
       );
       userSettings.consents.set("night-on", { marketingPushAgreedAt: MARKETING_AGREED_AT });
-      const recipients = await useCase.loadBatchRecipients(["night-off", "night-on"]);
+      const recipients = await useCase.loadRecipients.execute(["night-off", "night-on"]);
       const candidates = [
         { data: { ...transactional, userId: "night-off" }, rateLimitDispatchId: 1 },
         { data: { ...engagement, userId: "night-on" }, rateLimitDispatchId: 2 },
@@ -475,7 +542,10 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       ];
 
       // When
-      const decisions = useCase.evaluateBatchSettings(candidates, recipients);
+      const decisions = useCase.evaluateSettings.execute({
+        candidates: candidates,
+        recipients: recipients,
+      });
 
       // Then
       expect(
@@ -493,7 +563,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
           localInstant("Asia/Seoul", localNow),
         );
-        const recipient = await useCase.loadSingleRecipient("user-1");
+        const recipient = await useCase.loadRecipient.execute("user-1");
         const reminder = {
           ...transactional,
           type: "TODO_REMINDER" as const,
@@ -502,12 +572,12 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         };
 
         // When
-        const decision = await useCase.evaluateSingle(
-          reminder,
-          recipient,
-          RATE_LIMIT_DISPATCH_ID,
-          true,
-        );
+        const decision = await useCase.evaluateEligibility.execute({
+          data: reminder,
+          recipient: recipient,
+          rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+          hasReservedRateLimit: true,
+        });
 
         // Then
         expect(decision).toEqual({ status: "eligible", candidate: reminder, ttlSeconds });
@@ -526,7 +596,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(
           remindAt.add({ seconds: sentLateMinutes * 60 }),
         );
-        const recipient = await useCase.loadSingleRecipient("user-1");
+        const recipient = await useCase.loadRecipient.execute("user-1");
         const snoozed = {
           ...transactional,
           type: "TODO_REMINDER" as const,
@@ -535,12 +605,12 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         };
 
         // When
-        const decision = await useCase.evaluateSingle(
-          snoozed,
-          recipient,
-          RATE_LIMIT_DISPATCH_ID,
-          true,
-        );
+        const decision = await useCase.evaluateEligibility.execute({
+          data: snoozed,
+          recipient: recipient,
+          rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+          hasReservedRateLimit: true,
+        });
 
         // Then
         expect(decision).toEqual({ status: "eligible", candidate: snoozed, ttlSeconds });
@@ -549,7 +619,7 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
       it("울릴 시각이 없는 다시 알림은 회차 칸을 할 일 시작으로 읽지 않고 종류 기본값 1시간이다", async () => {
         // Given
         const { useCase } = createEvaluatePushDeliveryEligibilityUseCase(remindAt);
-        const recipient = await useCase.loadSingleRecipient("user-1");
+        const recipient = await useCase.loadRecipient.execute("user-1");
         const snoozed = {
           ...transactional,
           type: "TODO_REMINDER" as const,
@@ -558,12 +628,12 @@ describe("EvaluatePushDeliveryEligibilityUseCase — 푸시 발송 자격 판정
         };
 
         // When
-        const decision = await useCase.evaluateSingle(
-          snoozed,
-          recipient,
-          RATE_LIMIT_DISPATCH_ID,
-          true,
-        );
+        const decision = await useCase.evaluateEligibility.execute({
+          data: snoozed,
+          recipient: recipient,
+          rateLimitDispatchId: RATE_LIMIT_DISPATCH_ID,
+          hasReservedRateLimit: true,
+        });
 
         // Then
         expect(decision).toEqual({ status: "eligible", candidate: snoozed, ttlSeconds: 3600 });

@@ -11,12 +11,11 @@ import { RedisPushRateLimiterAdapter } from "./redis-push-rate-limiter.adapter.j
 
 describe("selectPushRateLimiter", () => {
   // 연결하지 않는 client다. 어떤 구현을 고르는지만 본다
-  const database = createDatabase(new Pool());
-  const clock = new DateClock();
+  const postgres = new PostgresPushRateLimiterAdapter(createDatabase(new Pool()), new DateClock());
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
     // When
-    const limiter = selectPushRateLimiter("postgres", { database, clock });
+    const limiter = selectPushRateLimiter("postgres", { postgres });
 
     // Then
     expect(limiter).toBeInstanceOf(PostgresPushRateLimiterAdapter);
@@ -27,7 +26,7 @@ describe("selectPushRateLimiter", () => {
     const redis = new Redis({ lazyConnect: true });
 
     // When
-    const limiter = selectPushRateLimiter("redis", { database, clock, redis });
+    const limiter = selectPushRateLimiter("redis", { postgres, redis });
 
     // Then
     expect(limiter).toBeInstanceOf(RedisPushRateLimiterAdapter);
@@ -36,7 +35,7 @@ describe("selectPushRateLimiter", () => {
 
   it("Redis를 선택하고 client가 없으면 메모리로 폴백하지 않는다", () => {
     // When
-    const create = () => selectPushRateLimiter("redis", { database, clock });
+    const create = () => selectPushRateLimiter("redis", { postgres });
 
     // Then
     expect(create).toThrow(
@@ -46,7 +45,7 @@ describe("selectPushRateLimiter", () => {
 
   it("memory는 명시적으로 선택한 개발·테스트 환경에서만 생성한다", () => {
     // When
-    const limiter = selectPushRateLimiter("memory", { database, clock });
+    const limiter = selectPushRateLimiter("memory", { postgres });
 
     // Then
     expect(limiter).toBeInstanceOf(InMemoryPushRateLimiterAdapter);

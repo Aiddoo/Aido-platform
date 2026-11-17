@@ -14,9 +14,12 @@ import { createPushTokenFixture } from "#test/fixtures/notification/push-token.f
 
 import type { PushTokenReadModel } from "../../../push-devices/application/read-models/push-token.read-model.js";
 import type { PushDevice } from "../../../push-devices/domain/push-device.aggregate.js";
+import { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
 import { RetryablePushProviderTransportError } from "../push-dispatches.errors.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
+import { PreparePushBatchUseCase } from "./prepare-push-batch.use-case.js";
+import { SendPushBatchUseCase } from "./send-push-batch.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
 let tokenSequence = 0;
@@ -80,15 +83,34 @@ function createDispatchUseCase(
   const activePushTokenReader = new StubActivePushTokenReader(options.activeTokens);
   const pushProvider = new FakePushProvider();
   const pushTokenCache = new RecordingPushTokenCache();
-  const service = new DispatchPushNotificationUseCase({
-    pushTokenRepository,
+  const clock = new FixedClock(NOW);
+  const noActiveTokenReasons = new NoActiveTokenReasonReader({
     pushDeviceRepository: new InMemoryPushDeviceRepository(options.devices),
-    pushProvider,
-    activePushTokenReader,
-    pushTokenCache,
-    clock: new FixedClock(NOW),
-    logger: new SilentLogger(),
+    clock,
   });
+  const service = {
+    dispatchPush: new DispatchPushNotificationUseCase({
+      pushTokenRepository,
+      pushProvider,
+      activePushTokenReader,
+      pushTokenCache,
+      noActiveTokenReasons,
+      clock,
+      logger: new SilentLogger(),
+    }),
+    preparePushBatch: new PreparePushBatchUseCase({
+      pushTokenRepository,
+      activePushTokenReader,
+      noActiveTokenReasons,
+    }),
+    sendPushBatch: new SendPushBatchUseCase({
+      pushTokenRepository,
+      pushProvider,
+      pushTokenCache,
+      clock,
+      logger: new SilentLogger(),
+    }),
+  };
   return { service, pushTokenRepository, activePushTokenReader, pushProvider, pushTokenCache };
 }
 
@@ -102,13 +124,13 @@ async function activeTokensOf(
   return records.map(({ token }) => token).toSorted();
 }
 
-describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달", () => {
+describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택과 공급자 전달", () => {
   it("일반 단건은 cache-aside reader의 활성 토큰이 없으면 provider를 호출하지 않는다", async () => {
     // Given
     const { service, activePushTokenReader, pushProvider } = createDispatchUseCase();
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
@@ -134,7 +156,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     });
 
     // When
-    const prepared = await service.prepareBatchDelivery([
+    const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
       batchPayload({ userId: "user-2", dispatchId: 2 }),
       batchPayload({ userId: "user-3", dispatchId: 3 }),
@@ -155,7 +177,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     });
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
@@ -178,7 +200,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     });
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({
         userId: "user-1",
         type: "SYSTEM_NOTICE",
@@ -222,7 +244,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       });
 
       // When
-      const result = await service.deliverSingle({
+      const result = await service.dispatchPush.execute({
         data: createNotificationDraftFixture({
           userId: "user-1",
           type,
@@ -267,7 +289,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     });
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", type, title: "초대", body: "본문" }),
       payload: { title: "초대", body: "본문", ...DELIVERY_OPTIONS },
     });
@@ -299,7 +321,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     });
 
     // When
-    const prepared = await service.prepareBatchDelivery([
+    const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "mixed", dispatchId: 1 }),
       batchPayload({ userId: "mixed", dispatchId: 2, minAppVersion: "1.11.0" }),
       batchPayload({ userId: "old-only", dispatchId: 3, minAppVersion: "1.11.0" }),
@@ -356,7 +378,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       );
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
     });
@@ -398,7 +420,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       }));
 
     // When
-    const result = await service.deliverSingle({
+    const result = await service.dispatchPush.execute({
       data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
       payload: { title: "title", body: "body", categoryId: "TEST", ...DELIVERY_OPTIONS },
     });
@@ -452,7 +474,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     ];
 
     // When
-    const prepared = await service.prepareBatchDelivery([
+    const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "generic", dispatchId: 1 }),
       batchPayload({ userId: "feature", dispatchId: 2, requiresFeatureCapability: true }),
       batchPayload({ userId: "missing", dispatchId: 3 }),
@@ -461,7 +483,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     if (prepared.status !== "ready") {
       throw new Error("Expected a prepared batch delivery");
     }
-    const result = await service.sendPreparedBatch(prepared);
+    const result = await service.sendPushBatch.execute(prepared);
 
     // Then
     expect(pushProvider.sentBatches).toEqual([
@@ -521,7 +543,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
       { token: "invalid-token", status: "rejected", failure: { kind: "DEVICE_UNREGISTERED" } },
       { token: "valid-token", status: "accepted", ticketId: "ticket-valid" },
     ];
-    const prepared = await service.prepareBatchDelivery([
+    const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
       batchPayload({ userId: "user-2", dispatchId: 2 }),
     ]);
@@ -530,7 +552,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     }
 
     // When
-    await service.sendPreparedBatch(prepared);
+    await service.sendPushBatch.execute(prepared);
 
     // Then
     expect(await activeTokensOf(pushTokenRepository, ["user-1", "user-2"])).toEqual([
@@ -552,7 +574,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
         }),
       ],
     });
-    const prepared = await service.prepareBatchDelivery([
+    const prepared = await service.preparePushBatch.execute([
       batchPayload({ userId: "user-1", dispatchId: 1 }),
     ]);
     if (prepared.status !== "ready") {
@@ -573,7 +595,7 @@ describe("DispatchPushNotificationUseCase — 토큰 선택과 공급자 전달"
     };
 
     // When
-    const result = service.sendPreparedBatch(prepared);
+    const result = service.sendPushBatch.execute(prepared);
 
     // Then
     await expect(result).rejects.toBe(transportError);

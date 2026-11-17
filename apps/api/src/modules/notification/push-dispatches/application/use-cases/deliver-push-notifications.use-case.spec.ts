@@ -13,6 +13,10 @@ import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/noti
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import type {
+  PushDeliveryEligibilityDecision,
+  PushDeliverySettingsDecision,
+} from "../../domain/push-delivery-decision.domain-service.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
@@ -26,21 +30,21 @@ import {
   PushDeliveryRateLimitReservationConflictError,
   RetryablePushProviderTransportError,
 } from "../push-dispatches.errors.js";
+import { DeliverPushBatchUseCase } from "./deliver-push-batch.use-case.js";
 import type { DeliverPushNotificationsCommand } from "./deliver-push-notifications.use-case.js";
 import { DeliverPushNotificationsUseCase } from "./deliver-push-notifications.use-case.js";
+import { DeliverSinglePushUseCase } from "./deliver-single-push.use-case.js";
 import type {
-  BatchPushNotificationDeliveryResult,
-  DispatchPushNotificationUseCase,
-  PreparedBatchPushDelivery,
+  DispatchPushNotificationCommand,
   SinglePushNotificationDeliveryResult,
 } from "./dispatch-push-notification.use-case.js";
-import type {
-  BatchPushDeliveryRecipient,
-  EvaluatePushDeliveryEligibilityUseCase,
-  PushDeliveryEligibilityDecision,
-  PushDeliverySettingsDecision,
-  SinglePushDeliveryRecipient,
-} from "./evaluate-push-delivery-eligibility.use-case.js";
+import type { EvaluatePushDeliveryEligibilityCommand } from "./evaluate-push-delivery-eligibility.use-case.js";
+import { FinalizeSkippedPushDeliveriesUseCase } from "./finalize-skipped-push-deliveries.use-case.js";
+import type { SinglePushDeliveryRecipient } from "./load-push-delivery-recipient.use-case.js";
+import type { BatchPushDeliveryRecipient } from "./load-push-delivery-recipients.use-case.js";
+import { MarkPushRateLimitReservedUseCase } from "./mark-push-rate-limit-reserved.use-case.js";
+import type { PreparedPushBatch } from "./prepare-push-batch.use-case.js";
+import type { PushBatchDeliveryResult } from "./send-push-batch.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-08-29T03:00:00.000Z");
 const PROCESSING_JOB_ID = "push-delivery-job-20260829";
@@ -51,13 +55,18 @@ const LOCAL_DATE_CONTEXT = {
   localDate: Temporal.PlainDate.from("2026-08-29"),
 };
 
-type SingleEvaluateInput = Parameters<EvaluatePushDeliveryEligibilityUseCase["evaluateSingle"]>;
+type SingleEvaluateInput = readonly [
+  EvaluatePushDeliveryEligibilityCommand["data"],
+  EvaluatePushDeliveryEligibilityCommand["recipient"],
+  EvaluatePushDeliveryEligibilityCommand["rateLimitDispatchId"],
+  EvaluatePushDeliveryEligibilityCommand["hasReservedRateLimit"],
+];
 type BatchCandidate = {
   readonly data: CreateNotificationData;
   readonly rateLimitDispatchId: number;
 };
 type CreateSingleInput = Parameters<PushNotificationPayloadPort["createSingle"]>[0];
-type DeliverSingleInput = Parameters<DispatchPushNotificationUseCase["deliverSingle"]>[0];
+type DeliverSingleInput = DispatchPushNotificationCommand;
 
 function createClaimedDelivery(input: {
   readonly dispatchId: number;
@@ -125,14 +134,7 @@ class DepthTrackingUnitOfWork extends UnitOfWorkPort {
 }
 
 // 사용자별로 정한 이유로만 건너뛰고 나머지는 발송 대상으로 둔다
-class StubDeliveryEligibility implements Pick<
-  EvaluatePushDeliveryEligibilityUseCase,
-  | "evaluateBatchSettings"
-  | "evaluateSingle"
-  | "loadBatchRecipients"
-  | "loadSingleRecipient"
-  | "reserveBatch"
-> {
+class StubDeliveryEligibility {
   readonly singleSkipReasons = new Map<string, PushDispatchSkipReason>();
   readonly batchSettingsSkipReasons = new Map<string, PushDispatchSkipReason>();
   readonly rateLimitedUserIds = new Set<string>();
@@ -257,10 +259,7 @@ class RecordingPayloadFactory implements Pick<
 }
 
 // 토큰을 고르는 대신 사용자별로 정한 결과를 준다. 받은 payload와 provider 배치 수를 남긴다
-class StubPushDelivery implements Pick<
-  DispatchPushNotificationUseCase,
-  "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"
-> {
+class StubPushDelivery {
   readonly singleSkipReasons = new Map<string, PushDispatchSkipReason>();
   readonly batchNoTokenUserIds = new Set<string>();
   sendError: unknown = null;
@@ -289,7 +288,7 @@ class StubPushDelivery implements Pick<
 
   async prepareBatchDelivery(
     payloads: readonly BatchPushNotificationPayload[],
-  ): Promise<PreparedBatchPushDelivery> {
+  ): Promise<PreparedPushBatch> {
     this.#callOrder.push("prepareBatchDelivery");
     this.preparedPayloads.push([...payloads]);
     const deliverable = payloads.filter(({ userId }) => !this.batchNoTokenUserIds.has(userId));
@@ -319,8 +318,8 @@ class StubPushDelivery implements Pick<
   }
 
   async sendPreparedBatch(
-    prepared: Extract<PreparedBatchPushDelivery, { readonly status: "ready" }>,
-  ): Promise<BatchPushNotificationDeliveryResult> {
+    prepared: Extract<PreparedPushBatch, { readonly status: "ready" }>,
+  ): Promise<PushBatchDeliveryResult> {
     this.#callOrder.push("sendPreparedBatch");
     this.sentBatchCount += 1;
     if (this.sendError != null) {
@@ -354,15 +353,56 @@ function createDeliverPushNotificationsUseCase() {
   const eligibility = new StubDeliveryEligibility(callOrder);
   const payloadFactory = new RecordingPayloadFactory(callOrder);
   const delivery = new StubPushDelivery(callOrder);
+  const clock = new FixedClock(NOW);
+  const markRateLimitReserved = new MarkPushRateLimitReservedUseCase({
+    claims: lifecycle,
+    unitOfWork,
+    clock,
+  });
+  const finalizeSkipped = new FinalizeSkippedPushDeliveriesUseCase({
+    finalization: lifecycle,
+    unitOfWork,
+    logger: new SilentLogger(),
+  });
   const useCase = new DeliverPushNotificationsUseCase({
     claims: lifecycle,
-    finalization: lifecycle,
     lease: lifecycle,
     unitOfWork,
-    eligibility,
-    payloadFactory,
-    delivery,
-    clock: new FixedClock(NOW),
+    deliverSingle: new DeliverSinglePushUseCase({
+      loadRecipient: { execute: (userId) => eligibility.loadSingleRecipient(userId) },
+      evaluateEligibility: {
+        execute: (command) =>
+          eligibility.evaluateSingle(
+            command.data,
+            command.recipient,
+            command.rateLimitDispatchId,
+            command.hasReservedRateLimit,
+          ),
+      },
+      markRateLimitReserved,
+      payloadFactory,
+      dispatchPush: { execute: (command) => delivery.deliverSingle(command) },
+      finalizeSkipped,
+      finalization: lifecycle,
+      unitOfWork,
+    }),
+    deliverBatch: new DeliverPushBatchUseCase({
+      loadRecipients: { execute: (userIds) => eligibility.loadBatchRecipients(userIds) },
+      evaluateSettings: {
+        execute: (command) => eligibility.evaluateBatchSettings(command.candidates),
+      },
+      reserveRateLimits: {
+        execute: (command) => eligibility.reserveBatch(command.candidates),
+      },
+      markRateLimitReserved,
+      payloadFactory,
+      preparePushBatch: { execute: (payloads) => delivery.prepareBatchDelivery(payloads) },
+      sendPushBatch: { execute: (prepared) => delivery.sendPreparedBatch(prepared) },
+      finalizeSkipped,
+      finalization: lifecycle,
+      unitOfWork,
+    }),
+    clock,
     logger: new SilentLogger(),
   });
 
