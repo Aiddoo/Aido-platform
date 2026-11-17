@@ -1,6 +1,6 @@
 import { omit } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import type {
   TodoEngagementCounterPort,

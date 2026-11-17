@@ -18,6 +18,8 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { toTodoSeriesResponse } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
@@ -39,9 +41,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryId } from "../../../../categories/domain/todo-category-id.vo.js";
 import { localDateAt } from "../../../../shared/domain/todo-calendar.domain-service.js";
-import { toTodoSeriesResponse } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
 import { createdTodoMissing, recurringTodoHasNoDates } from "../../../application/todos.errors.js";
 import { AddTodoItemUseCase } from "../../../application/use-cases/add-todo-item.use-case.js";
 import { ChangeTodoCategoryUseCase } from "../../../application/use-cases/change-todo-category.use-case.js";

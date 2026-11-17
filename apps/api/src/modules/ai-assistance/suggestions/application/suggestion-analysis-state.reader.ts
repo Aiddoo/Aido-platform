@@ -1,5 +1,5 @@
 import type { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
-import type { SingleTodoCountReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { SingleTodoCountReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

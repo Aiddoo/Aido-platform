@@ -2,15 +2,14 @@ import { Module } from "@nestjs/common";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationRemindersModule } from "#api/modules/notification/reminders/notification-reminders.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 
-import { PlanningCategoriesModule } from "../categories/planning-categories.module.js";
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
-import { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js";
@@ -23,14 +22,17 @@ import { ReminderSchedulerAdapter } from "./infrastructure/adapters/todo-reminde
 import { DrizzleTodoReadRepository } from "./infrastructure/persistence/drizzle-todo-read.repository.js";
 import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo.repository.js";
 
-// todos와 todo-series가 함께 쓰는 할 일 저장·캐시·리마인더 포트다. 두 slice Module이 서로를 import하지 않게 아래층으로 둔다
+// todos와 todo-series가 함께 쓰는 할 일 저장·캐시·리마인더 포트다. 할 일 기능 Module이 반복 Module을 import하므로
+// 반복 Module이 할 일 기능 Module을 import하면 순환이 된다. 그래서 두 Module 아래층에 둔다
 @Module({
-  imports: [PlanningCategoriesModule, NotificationRemindersModule, IdentitySettingsModule],
+  imports: [
+    PlanningTodoCategoriesQueriesModule,
+    NotificationRemindersModule,
+    IdentitySettingsModule,
+  ],
   providers: [
     { provide: TodoRepositoryPort, useClass: DrizzleTodoRepository },
-    DrizzleTodoReadRepository,
-    { provide: TodoReadRepositoryPort, useExisting: DrizzleTodoReadRepository },
-    { provide: TodoPlanReaderPort, useExisting: DrizzleTodoReadRepository },
+    { provide: TodoReadRepositoryPort, useClass: DrizzleTodoReadRepository },
     { provide: TodoCachePort, useClass: TodoCacheAdapter },
     { provide: TodoReminderSchedulerPort, useClass: ReminderSchedulerAdapter },
     { provide: CategoryOwnershipPort, useClass: CategoryOwnershipAdapter },
@@ -45,7 +47,6 @@ import { DrizzleTodoRepository } from "./infrastructure/persistence/drizzle-todo
   exports: [
     TodoRepositoryPort,
     TodoReadRepositoryPort,
-    TodoPlanReaderPort,
     TodoCachePort,
     TodoReminderSchedulerPort,
     CategoryOwnershipPort,

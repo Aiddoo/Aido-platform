@@ -4,7 +4,7 @@ import { friendTodoSchema } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
+import { TodoCategoryCacheKey } from "#api/modules/planning/todo-categories/infrastructure/cache/todo-category-cache.keyspace";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";

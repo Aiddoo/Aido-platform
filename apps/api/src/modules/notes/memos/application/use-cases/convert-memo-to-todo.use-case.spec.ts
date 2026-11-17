@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryMemoRepository } from "#test/doubles/notes/in-memory-memo.repository";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";

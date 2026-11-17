@@ -1,4 +1,4 @@
-import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-todos.public";
+import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 
 // 할 일 완료와 같은 트랜잭션에 남아 커밋 직후 프로세스가 내려가도 사용 시작 기록을 잃지 않는다.

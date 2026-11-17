@@ -1,9 +1,9 @@
 import { TODAY_SUMMARY_TOP_TODOS_MAX } from "@aido/api/vocabulary";
 
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import type { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { summarizeCompletion } from "../../domain/todo-completion.domain-service.js";
 import { resolveTodoSummaryDate } from "../../domain/todo-summary-date.domain-service.js";
 import { type StreakPort } from "../ports/streak.port.js";

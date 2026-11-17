@@ -6,7 +6,7 @@ import {
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notifications/notification-notifications.public";
 import { type NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";

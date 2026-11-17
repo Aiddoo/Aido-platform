@@ -1,4 +1,4 @@
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoViewCacheInvalidatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 

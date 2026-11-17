@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { memoize, uniq } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {

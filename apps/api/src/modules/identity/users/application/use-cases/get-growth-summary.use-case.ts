@@ -1,4 +1,4 @@
-import type { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import {

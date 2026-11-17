@@ -4,7 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { EngagementTodoCommentLikesModule } from "#api/modules/engagement/todo-comment-likes/engagement-todo-comment-likes.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 import { SocialUserBlocksQueriesModule } from "#api/modules/social/user-blocks/social-user-blocks.public";
 
@@ -20,7 +20,7 @@ import { TodoCommentThreadController } from "./presentation/http/v2/todo-comment
     NotificationNotificationsModule,
     NotificationPushDispatchesModule,
     PlanningTodosModule,
-    PlanningTodoQueriesModule,
+    PlanningTodosQueriesModule,
     SocialUserBlocksQueriesModule,
     ConfigModule.forFeature(engagementTodoCommentsConfig),
   ],

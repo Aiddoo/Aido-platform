@@ -3,7 +3,7 @@ import type { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/tod
 import type { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
 import type { TodoCommentPrimitives } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoCommentLikeFixture } from "#test/fixtures/engagement/todo-comment-like.fixture";
 import {

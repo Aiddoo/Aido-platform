@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import {
   databaseConstraint,
   isUniqueConstraintViolation,

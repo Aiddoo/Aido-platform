@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { InMemoryTodoCommentRepository } from "#test/doubles/engagement/in-memory-todo-comment.repository";
 import {
   nextClientRequestId,

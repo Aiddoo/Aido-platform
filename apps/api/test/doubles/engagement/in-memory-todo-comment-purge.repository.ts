@@ -7,7 +7,7 @@ import {
 } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoCommentCount } from "#api/modules/planning/todos/planning-todos.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

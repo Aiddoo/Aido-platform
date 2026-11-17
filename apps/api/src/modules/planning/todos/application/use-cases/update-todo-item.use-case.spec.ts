@@ -8,8 +8,8 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
+import { TodoItemId } from "../../domain/todo-item-id.vo.js";
 import { UpdateTodoItemUseCase } from "./update-todo-item.use-case.js";
 
 describe("하위 항목 수정", () => {

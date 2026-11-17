@@ -1,7 +1,8 @@
 import type { FriendTodo, Todo } from "@aido/api";
 import { sumBy } from "es-toolkit";
 
-import { toTodoRepeat } from "../../../../todo-series/presentation/http/v1/todo-series-response.mapper.js";
+import { toTodoRepeat } from "#api/modules/planning/todo-series/planning-todo-series.public";
+
 import type {
   FriendTodoReadModel,
   TodoReadModel,

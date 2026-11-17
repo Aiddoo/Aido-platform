@@ -1,18 +1,23 @@
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type {
+  TodoSeriesRepositoryPort,
+  MaterializeTodoOccurrencesUseCase,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
+import {
+  RepeatRule,
+  type RepeatSpec,
+  TodoSeriesId,
+  TodoSeries,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { TodoSchedule } from "../../../shared/domain/todo-schedule.vo.js";
 import { sortOrderAfterLast } from "../../../shared/domain/todo-sort-order.domain-service.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
-import { Todo, type TodoEvent } from "../../../shared/domain/todo.aggregate.js";
-import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
-import type { MaterializeTodoOccurrencesUseCase } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { RepeatRule, type RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
-import { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
-import { TodoSeries } from "../../../todo-series/domain/todo-series.aggregate.js";
+import { TodoSchedule } from "../../domain/todo-schedule.vo.js";
+import { Todo, type TodoEvent } from "../../domain/todo.aggregate.js";
 import type { CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import type { ResolvedCreateTodoData } from "../ports/staged-todo-creator.port.js";
 import type { CreatedOccurrence, TodoRepositoryPort } from "../ports/todo.repository.port.js";

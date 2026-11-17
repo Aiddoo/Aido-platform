@@ -1,7 +1,7 @@
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import type { TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
 import type { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
+import type { TodoPrimitives } from "#api/modules/planning/todos/domain/todo.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoFixture,

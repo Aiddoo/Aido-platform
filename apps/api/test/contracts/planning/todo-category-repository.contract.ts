@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { TodoCategoryRepositoryPort } from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
+import type { TodoCategoryRepositoryPort } from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
 import type {
   TodoCategory,
   TodoCategoryPrimitives,
-} from "#api/modules/planning/categories/domain/todo-category.aggregate";
+} from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import {

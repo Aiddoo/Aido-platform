@@ -2,6 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { type DayOfWeek, TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
@@ -11,7 +12,6 @@ import {
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { MAX_OCCURRENCES_PER_RUN } from "../../../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
 import { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
 import { StagedTodoCreatorAdapter } from "../../infrastructure/adapters/staged-todo-creator.adapter.js";

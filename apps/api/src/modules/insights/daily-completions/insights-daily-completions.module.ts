@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 import { provideEventSubscriptions } from "#api/platform/events/event-subscription.catalog";
 
@@ -9,7 +9,7 @@ import { INSIGHTS_DAILY_COMPLETIONS_PROVIDERS } from "./insights-daily-completio
 import { DailyCompletionController } from "./presentation/http/v1/daily-completion.controller.js";
 
 @Module({
-  imports: [SocialFriendshipsModule, PlanningTodoQueriesModule],
+  imports: [SocialFriendshipsModule, PlanningTodosQueriesModule],
   controllers: [DailyCompletionController],
   providers: [
     ...INSIGHTS_DAILY_COMPLETIONS_PROVIDERS,

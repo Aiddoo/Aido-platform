@@ -10,12 +10,14 @@ import {
 import {
   TodoCategoryId,
   TodoCategoryLockKeys,
-} from "#api/modules/planning/categories/planning-categories.public";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import {
+  TodoId,
+  type TodoPlanReaderPort,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,
-  type TodoPlanReaderPort,
   type TodoReadModel,
 } from "#api/modules/planning/todos/planning-todos.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";

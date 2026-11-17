@@ -11,7 +11,7 @@
 | `DELETE …/:id?todoHandling=move&moveToCategoryId=` | 옮긴 뒤 삭제                                                                         |
 | `DELETE …/:id?todoHandling=delete`                 | 할 일·반복 규칙과 함께 삭제                                                          |
 
-- 판단은 [planCategoryDeletion](../src/modules/planning/categories/domain/category-deletion.domain-service.ts) 한 곳이고, 거절 이유는 `categories.errors.ts`가 출시 앱이 받던 코드(`0854`·`0855`·`SYS_0002`)와 details로 바꾼다. 빈 카테고리는 옮길 곳을 보지 않고 지운다(1.15.0과 같다).
+- 판단은 [planCategoryDeletion](../src/modules/planning/todo-categories/domain/category-deletion.domain-service.ts) 한 곳이고, 거절 이유는 `todo-categories.errors.ts`가 출시 앱이 받던 코드(`0854`·`0855`·`SYS_0002`)와 details로 바꾼다. 빈 카테고리는 옮길 곳을 보지 않고 지운다(1.15.0과 같다).
 - 순서는 잠금 → 읽기 → 계획 → 실행 → 발행이다. 응답 `result`의 수는 잠금 아래에서 읽은 값이다.
 - 로그는 `planning.category.deleted`(`todoHandling`·`todoCount`·`seriesCount`·`durationMs`)다. 이름·제목은 남기지 않는다.
 
@@ -22,7 +22,7 @@
 
 ## 함께 지우기의 효과
 
-todos slice의 [RemoveCategoryTodosUseCase](../src/modules/planning/todos/application/use-cases/remove-category-todos.use-case.ts)가 단건 삭제와 같은 효과를 묶음으로 낸다. 카테고리 Module이 import하도록 `PlanningTodoRemovalModule`에 따로 둔다.
+todos slice의 [RemoveCategoryTodosUseCase](../src/modules/planning/todos/application/use-cases/remove-category-todos.use-case.ts)가 단건 삭제와 같은 효과를 묶음으로 낸다. 할 일 기능 Module이 내보내고 카테고리 기능 Module이 import한다.
 
 | 효과                              | 방식                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |

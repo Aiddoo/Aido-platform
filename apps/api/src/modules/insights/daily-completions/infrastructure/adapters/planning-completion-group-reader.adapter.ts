@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoCompletionGroupReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoCompletionGroupReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import {
   type CompletionGroupQuery,

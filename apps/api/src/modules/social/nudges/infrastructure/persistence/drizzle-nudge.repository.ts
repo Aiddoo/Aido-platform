@@ -6,7 +6,7 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   TodoBriefReaderPort,
   type TodoId,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { nudge as nudgeTable } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";

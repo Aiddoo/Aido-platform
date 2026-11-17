@@ -1,3 +1,5 @@
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -5,10 +7,8 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";

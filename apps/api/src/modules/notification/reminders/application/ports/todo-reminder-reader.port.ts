@@ -1,4 +1,4 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import type { ActiveTodoReadModel } from "../read-models/scheduler.read-model.js";
 

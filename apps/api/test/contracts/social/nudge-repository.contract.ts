@@ -1,4 +1,4 @@
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { NudgeReaderPort } from "#api/modules/social/nudges/application/ports/nudge.reader.port";
 import type { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import type { Nudge, NudgePrimitives } from "#api/modules/social/nudges/domain/nudge.aggregate";

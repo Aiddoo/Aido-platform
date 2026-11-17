@@ -4,12 +4,12 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
 import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
 import {
   isAllCompletedToday,
   MILESTONE_COMPLETION_COUNT_LIMIT,
   milestoneForCount,
 } from "../../domain/todo-completion.domain-service.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import type { FriendPort } from "../ports/friend.port.js";
 import type { StreakPort, TodayCompletionStats } from "../ports/streak.port.js";
 import type { TodoNotificationPort } from "../ports/todo-notification.port.js";

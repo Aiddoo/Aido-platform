@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
@@ -18,7 +18,7 @@ import { EntitlementController } from "./presentation/http/v1/entitlement.contro
     SocialCheersModule,
     SocialNudgesModule,
     SocialFriendshipsModule,
-    PlanningCategoriesModule,
+    PlanningTodoCategoriesQueriesModule,
   ],
   controllers: [EntitlementController],
   providers: [...ACCESS_FEATURE_GRANTS_PROVIDERS],

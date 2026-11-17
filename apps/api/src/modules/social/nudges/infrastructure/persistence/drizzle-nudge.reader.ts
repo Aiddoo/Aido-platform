@@ -22,7 +22,7 @@ import {
   TodoBriefReaderPort,
   type TodoBriefReadModel,
   TodoId,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import { hasNoBlockWith } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";

@@ -9,8 +9,8 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
+import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { SetTodoCompletedUseCase } from "./set-todo-completed.use-case.js";
 
 describe("할 일 완료 상태 전이", () => {

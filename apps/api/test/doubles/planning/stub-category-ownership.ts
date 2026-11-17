@@ -1,7 +1,7 @@
 import type { Todo as TodoResponse } from "@aido/api";
 
-import { todoCategoryNotFound } from "#api/modules/planning/categories/application/categories.errors";
-import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
+import { todoCategoryNotFound } from "#api/modules/planning/todo-categories/application/todo-categories.errors";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export function createStubCategoryOwnership(

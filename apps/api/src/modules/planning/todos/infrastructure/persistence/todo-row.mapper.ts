@@ -1,8 +1,8 @@
 import type { todo, todoCategory, todoItem } from "#api/platform/database/schema/index";
 
-import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
-import { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { RepeatRuleRow } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
+import type { TodoItem } from "../../domain/todo-item.entity.js";
+import { Todo } from "../../domain/todo.aggregate.js";
 
 type TodoCategoryRow = typeof todoCategory.$inferSelect;
 type TodoRow = typeof todo.$inferSelect;

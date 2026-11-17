@@ -1,7 +1,7 @@
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 
 export interface RemovedTodo {
   readonly id: TodoId;

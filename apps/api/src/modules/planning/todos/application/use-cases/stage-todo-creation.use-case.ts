@@ -1,5 +1,6 @@
-import { toTodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
-import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import { toTodoSeriesReadModel } from "#api/modules/planning/todo-series/planning-todo-series.public";
+import type { PublishTodoCreationUseCase } from "#api/modules/planning/todo-series/planning-todo-series.public";
+
 import type {
   CreateTodoData,
   ResolvedCreateTodoData,

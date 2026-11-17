@@ -1,8 +1,8 @@
 import { omit } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";

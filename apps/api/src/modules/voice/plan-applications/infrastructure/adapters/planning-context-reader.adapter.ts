@@ -4,8 +4,8 @@ import {
   PLANNING_CATEGORY_LIMIT,
   PLANNING_UPCOMING_TODO_LIMIT,
 } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
-import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
-import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoCategoryReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";

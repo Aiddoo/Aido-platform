@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import {
   DatabaseRecordNotFoundError,
   requireRecord,
@@ -16,13 +17,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
-import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
-import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
 import { TODO_SORT_ORDER_GAP } from "../../../shared/domain/todo-sort-order.domain-service.js";
-import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type {
   CreatedOccurrence,
@@ -37,6 +32,11 @@ import type {
   TodoRepositoryPort,
   TodoUpdatePatch,
 } from "../../application/ports/todo.repository.port.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
+import { TodoItemId } from "../../domain/todo-item-id.vo.js";
+import type { TodoItem } from "../../domain/todo-item.entity.js";
+import type { TodoScheduleProps } from "../../domain/todo-schedule.vo.js";
+import type { Todo } from "../../domain/todo.aggregate.js";
 import { toTodo, toTodoItemRow, toTodoRow } from "./todo-row.mapper.js";
 
 type TodoPatch = Partial<typeof todo.$inferInsert>;

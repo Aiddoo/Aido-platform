@@ -1,18 +1,18 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type {
   CreatedOccurrence,
   TodoRepositoryPort,
 } from "../../../todos/application/ports/todo.repository.port.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
+import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import { TodoSeries } from "../../domain/todo-series.aggregate.js";

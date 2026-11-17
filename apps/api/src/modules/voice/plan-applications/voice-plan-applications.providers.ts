@@ -7,10 +7,8 @@ import { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/action-plan-
 import { UserLocalePreferenceReaderPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { ChargedGenerationPort } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import { PlanMemoWriterPort } from "#api/modules/notes/memos/notes-memos.public";
-import {
-  StagedTodoCreatorPort,
-  TodoPlanReaderPort,
-} from "#api/modules/planning/todos/planning-todos.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

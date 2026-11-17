@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import { WeatherUserLocationsModule } from "../user-locations/weather-user-locations.module.js";
 import { WeatherReportReaderPort } from "./application/ports/weather-report.reader.port.js";
@@ -18,7 +18,7 @@ const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
   imports: [
     ConfigModule.forFeature(weatherWeatherReportsConfig),
     WeatherUserLocationsModule,
-    PlanningTodoQueriesModule,
+    PlanningTodosQueriesModule,
     HttpClientModule.register({
       name: "weather",
       retry: false,

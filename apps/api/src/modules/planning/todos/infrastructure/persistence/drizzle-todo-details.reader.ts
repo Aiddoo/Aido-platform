@@ -3,12 +3,12 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import {
   type TodoAccessView,
   TodoDetailsReaderPort,
   type TodoDetailsView,
 } from "../../application/ports/todo-details.reader.port.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import { toFriendTodoReadModel } from "./todo-details-row.mapper.js";
 
 @Injectable()

@@ -1,6 +1,6 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NudgeId } from "../../domain/nudge-id.vo.js";

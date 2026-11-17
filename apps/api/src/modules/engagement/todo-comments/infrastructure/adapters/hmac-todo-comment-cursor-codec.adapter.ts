@@ -2,7 +2,7 @@ import { TODO_COMMENT_SORT, type TodoCommentSort } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 import { isEntityId } from "#api/shared/domain/model/entity-id";

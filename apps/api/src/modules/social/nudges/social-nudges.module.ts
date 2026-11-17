@@ -5,7 +5,7 @@ import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-gr
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
 import { NudgeCountCachePort } from "./application/ports/nudge-count-cache.port.js";
@@ -19,7 +19,7 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
   imports: [
     AccessFeatureGrantsQueriesModule,
     IdentityUserAccessModule,
-    PlanningTodoQueriesModule,
+    PlanningTodosQueriesModule,
     SocialFriendshipsModule,
     NotificationNotificationsModule,
     NotificationPushDispatchesModule,

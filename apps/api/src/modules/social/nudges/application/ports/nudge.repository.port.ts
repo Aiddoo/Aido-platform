@@ -1,4 +1,4 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";

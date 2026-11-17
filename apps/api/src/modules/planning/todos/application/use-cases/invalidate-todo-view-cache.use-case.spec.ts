@@ -2,7 +2,7 @@ import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { InvalidateTodoViewCacheUseCase } from "./invalidate-todo-view-cache.use-case.js";
 
 function setUp() {

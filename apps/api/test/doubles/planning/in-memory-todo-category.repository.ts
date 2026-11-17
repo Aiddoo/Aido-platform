@@ -1,12 +1,12 @@
-import { duplicateCategoryName } from "#api/modules/planning/categories/application/categories.errors";
 import {
   type CategoryTodoCount,
   TodoCategoryRepositoryPort,
   type UpdateCategoryInput,
-} from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
-import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/categories/application/read-models/todo-category-with-count.read-model";
-import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoCategory } from "#api/modules/planning/categories/domain/todo-category.aggregate";
+} from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
+import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/todo-categories/application/read-models/todo-category-with-count.read-model";
+import { duplicateCategoryName } from "#api/modules/planning/todo-categories/application/todo-categories.errors";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
+import { TodoCategory } from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";

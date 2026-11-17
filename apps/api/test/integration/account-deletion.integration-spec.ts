@@ -48,7 +48,7 @@ import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/applica
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
-import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
+import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/todo-categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";

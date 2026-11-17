@@ -1,24 +1,25 @@
 import type { TodoUpdateScope } from "@aido/api/vocabulary";
 
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type {
+  StartSeriesFromTodoUseCase,
+  StopTodoSeriesUseCase,
+  UpdateFollowingTodosUseCase,
+  RepeatSpec,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import type { StartSeriesFromTodoUseCase } from "../../../todo-series/application/use-cases/start-series-from-todo.use-case.js";
-import type { StopTodoSeriesUseCase } from "../../../todo-series/application/use-cases/stop-todo-series.use-case.js";
-import type { UpdateFollowingTodosUseCase } from "../../../todo-series/application/use-cases/update-following-todos.use-case.js";
-import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
+import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { invalidRepeatRule, todoNotFound } from "../todos.errors.js";
 import { TodoLockKeys } from "../todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
-import type { UpdateTodoData } from "./update-todo.use-case.js";
-import type { UpdateTodoUseCase } from "./update-todo.use-case.js";
+import type { UpdateTodoData, UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 export interface EditTodoInput {
   readonly id: number;

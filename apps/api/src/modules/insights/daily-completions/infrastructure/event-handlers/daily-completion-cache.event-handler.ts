@@ -5,13 +5,15 @@ import type { z } from "zod";
 import {
   CATEGORY_CHANGE_EVENT_NAMES,
   categoryChangedPayloadSchema,
-} from "#api/modules/planning/categories/planning-categories.public";
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import {
+  TODO_SERIES_CHANGE_EVENT_NAMES,
+  todoSeriesChangedPayloadSchema,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import {
   TODO_CHANGE_EVENT_NAMES,
-  TODO_SERIES_CHANGE_EVENT_NAMES,
   todoChangedPayloadSchema,
-  todoSeriesChangedPayloadSchema,
-} from "#api/modules/planning/todos/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { defineEventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

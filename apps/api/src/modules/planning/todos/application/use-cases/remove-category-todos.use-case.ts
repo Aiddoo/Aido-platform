@@ -1,7 +1,7 @@
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoBulkRemoverPort } from "../ports/todo-bulk-remover.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";

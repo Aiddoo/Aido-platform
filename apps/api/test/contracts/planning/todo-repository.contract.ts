@@ -1,15 +1,15 @@
-import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
-import { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
-import type { Todo, TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import type {
   TodoOccurrencePlan,
   TodoRepositoryPort,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
+import { TodoItem } from "#api/modules/planning/todos/domain/todo-item.entity";
+import type { Todo, TodoPrimitives } from "#api/modules/planning/todos/domain/todo.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 import {

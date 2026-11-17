@@ -34,7 +34,7 @@ import {
 import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
-} from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
+} from "#api/modules/planning/todo-categories/infrastructure/cache/todo-category-cache.keyspace";
 import {
   TODO_CACHE_TTL_MS,
   TodoCacheKey,

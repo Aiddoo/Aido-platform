@@ -91,7 +91,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 3. 자신이 만든 DB·컨테이너만 정리한다. URI·비밀은 출력하지 않는다.
 
 - 실패 지점 뒤 실제 행, 다음 실행의 claim 가능성, 남아야 할 토큰·멱등 행·outbox를 본다. 경합은 barrier와 lock waiter로 같은 경계에서 기다렸는지 확인한다.
-- 사례: [transaction-propagation](../test/integration/transaction-propagation.integration-spec.ts)(CLS·Required·Nested·after-commit), [domain-event-fan-out](../test/integration/domain-event-fan-out.integration-spec.ts)(구독자별 작업), [todo-timezone-rebase](../test/integration/todo-timezone-rebase.integration-spec.ts)(실제 pg-boss 재계산), [push-receipt-consistency](../test/integration/notification/push-dispatches/push-receipt-consistency.integration-spec.ts)(token·receipt 한 UoW).
+- 사례: [transaction-propagation](../test/integration/transaction-propagation.integration-spec.ts)(CLS·Required·Nested·after-commit), [domain-event-fan-out](../test/integration/domain-event-fan-out.integration-spec.ts)(구독자별 작업), [todo-timezone-rebase](../test/integration/planning/todos/todo-timezone-rebase.integration-spec.ts)(실제 pg-boss 재계산), [push-receipt-consistency](../test/integration/notification/push-dispatches/push-receipt-consistency.integration-spec.ts)(token·receipt 한 UoW).
 
 ## E2E (실제 HTTP)
 

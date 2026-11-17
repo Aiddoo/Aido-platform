@@ -25,7 +25,7 @@ import { NotificationRepositoryPort } from "#api/modules/notification/notificati
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/delete-actor-notifications.use-case";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,

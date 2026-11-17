@@ -1,17 +1,20 @@
 import { TODO_LIMITS, TODO_SERIES_LIMITS, type TodoVisibility } from "@aido/api/vocabulary";
 import { isEqual, sortBy, uniq, uniqBy } from "es-toolkit";
 
+import {
+  TodoCategoryLockKeys,
+  TodoCategoryId,
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import {
+  addDaysToKey,
+  resolveScheduledInstant,
+} from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { CategoryOwnershipPort } from "../../../todos/application/ports/category-ownership.port.js";
 import type { TodoReadRepositoryPort } from "../../../todos/application/ports/todo-read.repository.port.js";
 import type {
@@ -27,6 +30,7 @@ import type {
 import type { TodoReadModel } from "../../../todos/application/read-models/todo.read-model.js";
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
+import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";

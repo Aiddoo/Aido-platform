@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";

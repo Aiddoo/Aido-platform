@@ -5,12 +5,12 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import type { Todo } from "../../../shared/domain/todo.aggregate.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import {
   planReorderRelativeTo,
   planReorderToEdge,
 } from "../../domain/todo-ordering.domain-service.js";
+import type { Todo } from "../../domain/todo.aggregate.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";

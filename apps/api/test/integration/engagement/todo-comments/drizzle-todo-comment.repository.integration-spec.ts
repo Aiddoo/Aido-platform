@@ -3,7 +3,7 @@ import { DrizzleTodoCommentLikeRepository } from "#api/modules/engagement/todo-c
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.repository";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import {
   describeTodoCommentLikeRepositoryContract,

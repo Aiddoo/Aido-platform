@@ -1,6 +1,6 @@
 import { match } from "ts-pattern";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

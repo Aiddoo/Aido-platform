@@ -6,8 +6,8 @@ import { PgBoss } from "pg-boss";
 
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
-import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
-import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/delete-todo-category.use-case";
+import { DrizzleTodoCategoryRepository } from "#api/modules/planning/todo-categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";

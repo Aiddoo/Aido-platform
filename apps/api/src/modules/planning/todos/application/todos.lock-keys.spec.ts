@@ -1,4 +1,5 @@
-import { TodoCategoryLockKeys } from "../../categories/application/categories.lock-keys.js";
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+
 import { TodoLockKeys } from "./todos.lock-keys.js";
 
 // 배포 중 옛 버전·voice·ai와 같은 잠금을 잡아야 해서 옮긴 문자열을 바이트 단위로 고정한다

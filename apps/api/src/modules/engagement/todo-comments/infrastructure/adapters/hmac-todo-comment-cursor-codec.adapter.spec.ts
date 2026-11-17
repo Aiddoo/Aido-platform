@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import { TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import type {

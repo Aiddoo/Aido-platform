@@ -6,9 +6,9 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todo } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoBriefReaderPort } from "../../application/ports/todo-brief.reader.port.js";
 import type { TodoBriefReadModel } from "../../application/read-models/todo-brief.read-model.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 
 const TODO_BRIEF_COLUMNS = {
   id: todo.id,

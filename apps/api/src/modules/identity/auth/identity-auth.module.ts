@@ -11,7 +11,7 @@ import {
   AdminEventNotifierPort,
   OperationsAdminNoticesModule,
 } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 
@@ -130,7 +130,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
     IdentityPreferencesModule,
     IdentityUserAccessModule,
-    PlanningCategoriesModule,
+    PlanningTodoCategoriesQueriesModule,
     NotificationRetentionAssignmentsModule,
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],

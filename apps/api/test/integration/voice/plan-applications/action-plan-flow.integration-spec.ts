@@ -4,7 +4,7 @@ import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
-import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ApplyActionPlanUseCase } from "#api/modules/voice/plan-applications/application/use-cases/apply-action-plan.use-case";
 import { CreateQuickPlanUseCase } from "#api/modules/voice/plan-applications/application/use-cases/create-quick-plan.use-case";
 import { DigestVoiceNoteUseCase } from "#api/modules/voice/voice-digests/application/use-cases/digest-voice-note.use-case";

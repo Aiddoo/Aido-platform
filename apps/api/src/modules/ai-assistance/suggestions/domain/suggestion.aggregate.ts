@@ -1,6 +1,6 @@
 import type { AI_SUGGESTION_STATUSES, DayOfWeek } from "@aido/api/vocabulary";
 
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 

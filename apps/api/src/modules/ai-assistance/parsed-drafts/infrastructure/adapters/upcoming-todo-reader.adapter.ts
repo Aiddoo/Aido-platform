@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
+import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

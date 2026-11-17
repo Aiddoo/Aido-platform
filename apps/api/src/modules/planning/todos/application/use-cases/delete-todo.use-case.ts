@@ -1,18 +1,22 @@
 import type { TodoEditScope } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type {
+  TodoSeriesRepositoryPort,
+  PublishTodoSeriesEditUseCase,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
+import {
+  TodoOccurrencesChangedEvent,
+  TodoSeriesId,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
-import type { PublishTodoSeriesEditUseCase } from "../../../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
-import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
-import { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";

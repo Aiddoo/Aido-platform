@@ -6,7 +6,8 @@ import { AiAssistanceAiGenerationsModule } from "#api/modules/ai-assistance/ai-g
 import { AiAssistanceParsedDraftsModule } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotesMemosModule } from "#api/modules/notes/memos/notes-memos.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { ChargedPlanRunnerPort } from "./application/ports/charged-plan-runner.port.js";
@@ -25,8 +26,9 @@ import { VOICE_PLAN_APPLICATIONS_PROVIDERS } from "./voice-plan-applications.pro
     AiAssistanceActionPlanDraftsModule,
     IdentitySettingsModule,
     NotesMemosModule,
-    PlanningCategoriesModule,
+    PlanningTodoCategoriesQueriesModule,
     PlanningTodosModule,
+    PlanningTodosQueriesModule,
   ],
   controllers: [QuickPlanController, ActionPlanController],
   providers: [...VOICE_PLAN_APPLICATIONS_PROVIDERS],

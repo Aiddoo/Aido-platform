@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 
 export interface TodoViewRecord {
   /** 이번 호출로 처음 본 사람이면 true다. 같은 사람은 한 번만 센다. */

@@ -16,7 +16,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoCommentCount } from "#api/modules/planning/todos/planning-todos.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {

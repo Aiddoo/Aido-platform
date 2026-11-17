@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { match } from "ts-pattern";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

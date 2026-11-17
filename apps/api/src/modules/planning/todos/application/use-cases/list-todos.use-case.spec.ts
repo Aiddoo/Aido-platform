@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
@@ -9,7 +10,6 @@ import {
 } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
 
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { ListTodosUseCase } from "./list-todos.use-case.js";
 
 describe("할 일 목록 조회", () => {

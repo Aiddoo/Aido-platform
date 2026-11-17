@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
-import { TodoTimezoneRebaseQueueModule } from "#api/modules/planning/todos/planning-todo-timezone-jobs.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-sharing-consent.reader.port.js";
 import { ReminderScheduleEnqueuerPort } from "./application/ports/reminder-schedule-enqueuer.port.js";
@@ -39,7 +39,7 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
     AccessFeatureGrantsQueriesModule,
     NotificationQueueModule,
     TimezoneReminderQueueModule,
-    TodoTimezoneRebaseQueueModule,
+    PlanningTodosQueriesModule,
   ],
   controllers: [SettingsController],
   providers: [

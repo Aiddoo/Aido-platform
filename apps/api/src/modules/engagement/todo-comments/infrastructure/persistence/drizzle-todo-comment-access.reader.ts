@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import {
   type TodoId,
   TodoDetailsReaderPort,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

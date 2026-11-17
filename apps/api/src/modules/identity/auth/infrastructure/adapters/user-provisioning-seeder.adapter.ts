@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UserSettingsProvisionerPort } from "#api/modules/identity/identity-settings.public";
-import { TodoCategoryProvisionerPort } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryProvisionerPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 

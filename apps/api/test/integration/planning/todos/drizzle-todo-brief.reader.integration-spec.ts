@@ -1,6 +1,6 @@
 import { omit } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";

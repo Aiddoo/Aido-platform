@@ -2,7 +2,7 @@ import type { TodoCommentKind } from "@aido/api/vocabulary";
 import { uniq } from "es-toolkit";
 
 import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-comment-likes/engagement-todo-comment-likes.public";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type {
   TodoEngagementCounterPort,
   TodoViewCacheInvalidatorPort,

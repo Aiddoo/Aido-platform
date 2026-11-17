@@ -1,10 +1,10 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoCachePort } from "../../../todos/application/ports/todo-cache.port.js";
 import type { CreatedOccurrence } from "../../../todos/application/ports/todo.repository.port.js";
 import { TodoLogEvent } from "../../../todos/application/todos.log-events.js";
+import type { Todo } from "../../../todos/domain/todo.aggregate.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
 

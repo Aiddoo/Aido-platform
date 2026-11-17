@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoBriefReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoBriefReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { ReminderTargetReaderPort } from "../../application/ports/reminder-target.reader.port.js";

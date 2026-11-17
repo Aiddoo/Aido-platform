@@ -1,22 +1,26 @@
 import type { Provider } from "@nestjs/common";
 
+import {
+  CatchUpTodoSeriesUseCase,
+  MaterializeTodoOccurrencesUseCase,
+  PublishTodoCreationUseCase,
+  PublishTodoSeriesEditUseCase,
+  StartSeriesFromTodoUseCase,
+  StopTodoSeriesUseCase,
+  TodoSeriesRepositoryPort,
+  UpdateFollowingTodosUseCase,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { TodoSeriesRepositoryPort } from "../todo-series/application/ports/todo-series.repository.port.js";
-import { CatchUpTodoSeriesUseCase } from "../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
-import { MaterializeTodoOccurrencesUseCase } from "../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { PublishTodoCreationUseCase } from "../todo-series/application/use-cases/publish-todo-creation.use-case.js";
-import { PublishTodoSeriesEditUseCase } from "../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
-import { StartSeriesFromTodoUseCase } from "../todo-series/application/use-cases/start-series-from-todo.use-case.js";
-import { StopTodoSeriesUseCase } from "../todo-series/application/use-cases/stop-todo-series.use-case.js";
-import { UpdateFollowingTodosUseCase } from "../todo-series/application/use-cases/update-following-todos.use-case.js";
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { FriendPort } from "./application/ports/friend.port.js";
 import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
 import { StreakPort } from "./application/ports/streak.port.js";
+import { TodoBulkRemoverPort } from "./application/ports/todo-bulk-remover.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoNotificationPort } from "./application/ports/todo-notification.port.js";
@@ -41,6 +45,7 @@ import { InvalidateTodoViewCacheUseCase } from "./application/use-cases/invalida
 import { ListFriendTodosUseCase } from "./application/use-cases/list-friend-todos.use-case.js";
 import { ListTodosUseCase } from "./application/use-cases/list-todos.use-case.js";
 import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
+import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
 import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-items.use-case.js";
 import { ReorderTodoUseCase } from "./application/use-cases/reorder-todo.use-case.js";
 import { ResolveTodoTimezoneUseCase } from "./application/use-cases/resolve-todo-timezone.use-case.js";
@@ -58,6 +63,7 @@ import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
+import { DrizzleTodoBulkRemoverAdapter } from "./infrastructure/persistence/drizzle-todo-bulk-remover.adapter.js";
 import { DrizzleTodoEngagementCounterAdapter } from "./infrastructure/persistence/drizzle-todo-engagement-counter.adapter.js";
 
 const MUTATION = {
@@ -70,6 +76,13 @@ export const PLANNING_TODOS_PROVIDERS = [
   { provide: StreakPort, useClass: StreakAdapter },
   { provide: TodoNotificationPort, useClass: TodoNotificationAdapter },
   { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },
+  { provide: TodoBulkRemoverPort, useClass: DrizzleTodoBulkRemoverAdapter },
+  provideUseCase(RemoveCategoryTodosUseCase, {
+    bulkRemover: TodoBulkRemoverPort,
+    reminderScheduler: TodoReminderSchedulerPort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
+  }),
   provideUseCase(WriteTodoCreationUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,

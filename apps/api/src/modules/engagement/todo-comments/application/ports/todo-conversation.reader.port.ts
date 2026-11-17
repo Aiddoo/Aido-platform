@@ -1,6 +1,6 @@
 import type { TodoCommentSort } from "@aido/api/vocabulary";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import type {

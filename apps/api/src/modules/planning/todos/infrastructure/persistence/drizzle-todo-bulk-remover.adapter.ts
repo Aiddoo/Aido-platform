@@ -2,16 +2,16 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo, todoSeries } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type {
   RemovedCategoryTodos,
   TodoBulkRemoverPort,
 } from "../../application/ports/todo-bulk-remover.port.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 
 @Injectable()
 export class DrizzleTodoBulkRemoverAdapter implements TodoBulkRemoverPort {

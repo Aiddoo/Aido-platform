@@ -1,4 +1,4 @@
-import type { TodoBriefReadModel } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoBriefReadModel } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { nudge as nudgeTable } from "#api/platform/database/schema/index";
 
 import type { NudgeInteractionTodoReadModel } from "../../application/read-models/nudge-interaction.read-model.js";

@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoBriefReadModel } from "../read-models/todo-brief.read-model.js";
 
 // 다른 Context(social 콕)가 할 일 테이블을 직접 읽지 않고 할 일 요약을 받는 조회 포트다. 활성 UoW 안에서는 같은 트랜잭션으로 읽는다

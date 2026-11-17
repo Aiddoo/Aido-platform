@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { ScheduledTodoReaderPort } from "../../application/ports/scheduled-todo.reader.port.js";

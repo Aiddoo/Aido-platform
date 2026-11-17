@@ -1,13 +1,13 @@
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { addDaysToKey } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoReminderSchedulerPort } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
 import type { TodoRepositoryPort } from "../../../todos/application/ports/todo.repository.port.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
+import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { TodoOccurrencesChangedEvent } from "../../domain/todo-occurrences-changed.event.js";
 import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeries } from "../../domain/todo-series.aggregate.js";

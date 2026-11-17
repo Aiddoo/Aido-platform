@@ -8,7 +8,7 @@ import type { UserMutationLockPort } from "#api/modules/identity/users/identity-
 import {
   TodoCategoryId,
   TodoCategoryLockKeys,
-} from "#api/modules/planning/categories/planning-categories.public";
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import {
   type StagedTodoCreatorPort,
   TodoLockKeys,

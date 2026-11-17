@@ -2,7 +2,7 @@ import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { PlanMemoReadModel } from "#api/modules/notes/memos/notes-memos.public";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { TodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

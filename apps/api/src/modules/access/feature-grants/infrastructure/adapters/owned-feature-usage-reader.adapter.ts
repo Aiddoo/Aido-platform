@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryCountReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import {
   CheerUsageReaderPort,
   type DailySendUsage,

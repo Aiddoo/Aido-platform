@@ -5,7 +5,7 @@ import { type NotificationRepositoryPort } from "#api/modules/notification/notif
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createNotificationDraftFixture,

@@ -4,23 +4,20 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
-import { TodoCategoryChangedEvent } from "../../../shared/domain/todo-category-changed.event.js";
-import {
-  TodoChangedEvent,
-  type TodoChangeEventName,
-} from "../../../shared/domain/todo-changed.event.js";
-import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
-import { TodoDeletedEvent } from "../../../shared/domain/todo-deleted.event.js";
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
+import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
+import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
 import {
   TodoSeriesChangedEvent,
   type TodoSeriesChangeEventName,
-} from "../../../shared/domain/todo-series-changed.event.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
-import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
-import { TodoVisibilityChangedEvent } from "../../../shared/domain/todo-visibility-changed.event.js";
-import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
-import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
+} from "../../../todo-series/domain/todo-series-changed.event.js";
+import { TodoCategoryChangedEvent } from "../../domain/todo-category-changed.event.js";
+import { TodoChangedEvent, type TodoChangeEventName } from "../../domain/todo-changed.event.js";
+import { TodoCreatedEvent } from "../../domain/todo-created.event.js";
+import { TodoDeletedEvent } from "../../domain/todo-deleted.event.js";
+import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
+import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";
+import { TodoVisibilityChangedEvent } from "../../domain/todo-visibility-changed.event.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
 
 type PublishedTodoEvent = TodoChangedEvent | TodoSeriesChangedEvent;

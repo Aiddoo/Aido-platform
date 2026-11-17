@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

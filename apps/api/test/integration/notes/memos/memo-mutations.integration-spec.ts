@@ -12,7 +12,7 @@ import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-case
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
 import { RewriteMemoUseCase } from "#api/modules/notes/memos/application/use-cases/rewrite-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,

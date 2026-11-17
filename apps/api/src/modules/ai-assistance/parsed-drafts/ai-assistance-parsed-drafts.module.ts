@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { PlanningCategoriesModule } from "#api/modules/planning/categories/planning-categories.public";
-import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
+import { PlanningTodoCategoriesQueriesModule } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import { AiAssistanceAiGenerationsModule } from "../ai-generations/ai-assistance-ai-generations.module.js";
 import { AI_ASSISTANCE_PARSED_DRAFTS_PROVIDERS } from "./ai-assistance-parsed-drafts.providers.js";
@@ -17,8 +17,8 @@ import { AiController } from "./presentation/http/v1/ai.controller.js";
     AccessQuotaChargesModule,
     AiAssistanceAiGenerationsModule,
     IdentitySettingsModule,
-    PlanningCategoriesModule,
-    PlanningTodosModule,
+    PlanningTodoCategoriesQueriesModule,
+    PlanningTodosQueriesModule,
   ],
   controllers: [AiController],
   providers: [...AI_ASSISTANCE_PARSED_DRAFTS_PROVIDERS],

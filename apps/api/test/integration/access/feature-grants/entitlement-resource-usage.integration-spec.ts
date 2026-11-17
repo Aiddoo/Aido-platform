@@ -3,8 +3,8 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
 import { GetEntitlementUsageUseCase } from "#api/modules/access/feature-grants/application/use-cases/get-entitlement-usage.use-case";
-import { CreateTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/create-todo-category.use-case";
-import { TodoCategoryCountReaderPort } from "#api/modules/planning/categories/planning-categories.public";
+import { CreateTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/create-todo-category.use-case";
+import { TodoCategoryCountReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { SendFriendRequestUseCase } from "#api/modules/social/friendships/application/use-cases/send-friend-request.use-case";
 import { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import {

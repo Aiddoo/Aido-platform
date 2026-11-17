@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { NudgeTargetTodo } from "#api/modules/social/nudges/domain/nudge-target-todo.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";

@@ -1,11 +1,11 @@
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type RemovedCategoryTodos, TodoBulkRemoverPort } from "../ports/todo-bulk-remover.port.js";
 import { RemoveCategoryTodosUseCase } from "./remove-category-todos.use-case.js";
 

@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { TodoCategoryReaderPort } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { CategoryOwnershipPort } from "../../application/ports/category-ownership.port.js";
 
 @Injectable()

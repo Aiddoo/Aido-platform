@@ -1,6 +1,6 @@
 import { chunk } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

@@ -1,5 +1,5 @@
-import { TodoCategoryCachePort } from "#api/modules/planning/categories/application/ports/todo-category-cache.port";
-import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/categories/application/read-models/todo-category-with-count.read-model";
+import { TodoCategoryCachePort } from "#api/modules/planning/todo-categories/application/ports/todo-category-cache.port";
+import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/todo-categories/application/read-models/todo-category-with-count.read-model";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 목록은 늘 새로 읽고, 무효화한 사용자만 남긴다

@@ -4,7 +4,7 @@ import { match } from "ts-pattern";
 
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";

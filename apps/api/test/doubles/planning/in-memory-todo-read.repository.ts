@@ -1,8 +1,7 @@
 import type { Todo as TodoResponse } from "@aido/api";
 import { uniq } from "es-toolkit";
 
-import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import type {
@@ -17,6 +16,7 @@ import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "#api/modules/planning/todos/application/read-models/todo.read-model";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {

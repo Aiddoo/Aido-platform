@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoScheduleReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import {

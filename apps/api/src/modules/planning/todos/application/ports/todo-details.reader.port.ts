@@ -1,4 +1,4 @@
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface TodoAccessView {

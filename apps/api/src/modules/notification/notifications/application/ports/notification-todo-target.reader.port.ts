@@ -1,4 +1,4 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 // 할 일이 대상인 알림을 앱이 그 할 일 주인의 그 날짜 피드로 열 수 있게 하는 재료
 export interface NotificationTodoTarget {

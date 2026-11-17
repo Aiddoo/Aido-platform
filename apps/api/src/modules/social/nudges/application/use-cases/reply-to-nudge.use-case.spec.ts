@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { NudgeInteractionNotification } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import type { NudgeInteractionTodoReadModel } from "#api/modules/social/nudges/application/read-models/nudge-interaction.read-model";
 import type { NudgeReadModel } from "#api/modules/social/nudges/application/read-models/nudge.read-model";

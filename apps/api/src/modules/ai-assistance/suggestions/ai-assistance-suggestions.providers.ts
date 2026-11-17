@@ -7,7 +7,7 @@ import { UserMutationLockPort } from "#api/modules/identity/users/identity-users
 import {
   RepeatingTodoTitleReaderPort,
   SingleTodoCountReaderPort,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";

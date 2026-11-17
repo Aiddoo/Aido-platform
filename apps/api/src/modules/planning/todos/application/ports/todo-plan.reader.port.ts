@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 /** 계획의 겹침 판정·고유명사 교정에 쓰는 다가오는 할 일. 반복 할 일은 다음 회차 하나다. */

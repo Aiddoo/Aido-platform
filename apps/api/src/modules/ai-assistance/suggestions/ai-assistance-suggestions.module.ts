@@ -5,7 +5,7 @@ import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/acce
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
 import { AiAssistanceAiGenerationsModule } from "../ai-generations/ai-assistance-ai-generations.module.js";
@@ -27,7 +27,7 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
     AiAssistanceAiGenerationsModule,
     AiAssistanceParsedDraftsModule,
     NotificationNotificationsModule,
-    PlanningTodoQueriesModule,
+    PlanningTodosQueriesModule,
     PlanningTodosModule,
   ],
   controllers: [AiSuggestionController],

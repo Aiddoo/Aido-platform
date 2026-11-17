@@ -8,12 +8,12 @@ import { todo, todoView } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type {
   TodoCommentCount,
   TodoEngagementCounterPort,
   TodoViewRecord,
 } from "../../application/ports/todo-engagement-counter.port.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 
 // 숫자 칸만 바꾸는 update도 지금처럼 Todo의 updatedAt을 ClockPort 값으로 함께 바꾼다
 @Injectable()

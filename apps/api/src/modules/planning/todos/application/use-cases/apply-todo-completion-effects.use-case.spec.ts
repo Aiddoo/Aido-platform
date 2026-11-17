@@ -1,8 +1,8 @@
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
-import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
+import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";
 import type { FriendPort } from "../ports/friend.port.js";
 import type { StreakPort, TodayCompletionStats } from "../ports/streak.port.js";
 import type {

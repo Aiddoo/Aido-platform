@@ -4,8 +4,8 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";

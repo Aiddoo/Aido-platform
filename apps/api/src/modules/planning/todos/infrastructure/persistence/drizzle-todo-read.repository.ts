@@ -16,14 +16,13 @@ import {
 } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type {
   TodoPlanReaderPort,
@@ -32,12 +31,13 @@ import type {
 import type {
   FindFriendTodosParams,
   FindTodosParams,
+  TodoReadRepositoryPort,
 } from "../../application/ports/todo-read.repository.port.js";
-import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port.js";
 import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "../../application/read-models/todo.read-model.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
 // 종료일 유무로 갈라야 두 갈래가 각각 `Todo_userId_startDate_endDate_idx` 범위 조회가 된다

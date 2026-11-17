@@ -1,7 +1,7 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import type { z } from "zod";
 
-import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-todos.public";
+import { todoChangedPayloadSchema } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { defineEventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

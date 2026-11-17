@@ -1,13 +1,8 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 import { isUndefined, omitBy } from "es-toolkit";
 
-import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
-import type { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
-import type { TodoScheduleProps } from "#api/modules/planning/shared/domain/todo-schedule.vo";
 import { TODO_SORT_ORDER_GAP } from "#api/modules/planning/shared/domain/todo-sort-order.domain-service";
-import { Todo } from "#api/modules/planning/shared/domain/todo.aggregate";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import {
@@ -23,6 +18,11 @@ import {
   TodoRepositoryPort,
   type TodoUpdatePatch,
 } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
+import type { TodoItem } from "#api/modules/planning/todos/domain/todo-item.entity";
+import type { TodoScheduleProps } from "#api/modules/planning/todos/domain/todo-schedule.vo";
+import { Todo } from "#api/modules/planning/todos/domain/todo.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TodoBuilder } from "#test/builders/index";
 import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";

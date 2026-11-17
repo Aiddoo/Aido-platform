@@ -1,7 +1,7 @@
 import type { TodoRepeat } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

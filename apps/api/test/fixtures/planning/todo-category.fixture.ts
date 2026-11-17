@@ -1,7 +1,7 @@
 import {
   TodoCategory,
   type TodoCategoryPrimitives,
-} from "#api/modules/planning/categories/domain/todo-category.aggregate";
+} from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
 export function createTodoCategoryFixture(

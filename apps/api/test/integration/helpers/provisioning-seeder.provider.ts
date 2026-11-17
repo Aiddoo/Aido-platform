@@ -15,7 +15,7 @@ import {
 } from "#api/modules/identity/auth/application/ports/user-provisioning-seeder.port";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
+import { DefaultTodoCategoryProvisionerAdapter } from "#api/modules/planning/todo-categories/infrastructure/adapters/default-todo-category-provisioner.adapter";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export const provisioningSeederTestProvider: Provider = {

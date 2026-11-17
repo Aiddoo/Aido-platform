@@ -22,7 +22,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";

@@ -24,7 +24,7 @@ import { DrizzleTodoCommentRepository } from "#api/modules/engagement/todo-comme
 import { DrizzleTodoConversationReader } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-conversation.reader";
 import { toTodoConversationResponse } from "#api/modules/engagement/todo-comments/presentation/http/v1/todo-comment-response.mapper";
 import { DrizzleTodoDetailsReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-details.reader";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { DrizzleUserBlockReader } from "#api/modules/social/user-blocks/infrastructure/persistence/drizzle-user-block.reader";
 import {
   todo,

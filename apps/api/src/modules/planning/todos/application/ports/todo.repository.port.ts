@@ -1,15 +1,15 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import type { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
-import type { TodoItem } from "../../../shared/domain/todo-item.entity.js";
-import type { TodoScheduleProps } from "../../../shared/domain/todo-schedule.vo.js";
-import type { Todo } from "../../../shared/domain/todo.aggregate.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type { TodoOccurrenceDraft } from "../../../todo-series/domain/todo-series.aggregate.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
+import type { TodoItemId } from "../../domain/todo-item-id.vo.js";
+import type { TodoItem } from "../../domain/todo-item.entity.js";
+import type { TodoScheduleProps } from "../../domain/todo-schedule.vo.js";
+import type { Todo } from "../../domain/todo.aggregate.js";
 
 /** nextIds로 받은 id와 사용자 최대값 뒤 순서를 붙인 회차 */
 export interface TodoOccurrencePlan extends TodoOccurrenceDraft {

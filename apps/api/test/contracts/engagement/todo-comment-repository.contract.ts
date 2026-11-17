@@ -5,7 +5,7 @@ import type {
   TodoComment,
   TodoCommentPrimitives,
 } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoCommentFixture,

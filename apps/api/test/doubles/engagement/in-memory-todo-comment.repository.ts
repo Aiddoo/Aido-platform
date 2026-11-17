@@ -2,7 +2,7 @@ import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-c
 import { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
 import { todoCommentIdempotencyRace } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
