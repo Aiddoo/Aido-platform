@@ -169,7 +169,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       { locale: "ko", title: "반복 할 일 알림을 잠시 멈췄어요", body: "앱을 열면 다시 시작돼요" },
       {
         locale: "en",
-        title: "Repeating to-do reminders paused",
+        title: "Repeating reminders paused",
         body: "Open the app to start them again",
       },
     ] as const)(

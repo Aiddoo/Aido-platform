@@ -150,8 +150,7 @@ const KO_TONE_EXCEPTIONS: readonly string[] = [
 ];
 const LENGTH_BUDGET_EXCEPTIONS: Readonly<Record<SupportedLocale, readonly string[]>> = {
   ko: [],
-  // 제목 32 grapheme(예산 30)
-  en: ["scheduler.TODO_SERIES_PAUSED.v1"],
+  en: [],
 };
 
 // 인용(‘…’·“…”)은 친구가 한 말·할 일 제목이라 문장 끝에서 뺀다

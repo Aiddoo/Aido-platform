@@ -12,7 +12,7 @@
     },
     "TODO_SERIES_PAUSED": {
       "v1": {
-        "title": "Repeating to-do reminders paused",
+        "title": "Repeating reminders paused",
         "body": "Open the app to start them again"
       }
     },

@@ -2024,7 +2024,7 @@ exports[`en 푸시 문구 렌더 스냅샷 > 반복 할 일 멈춤 1`] = `
 [
   {
     "body": "Open the app to start them again",
-    "title": "Repeating to-do reminders paused",
+    "title": "Repeating reminders paused",
     "variantId": "copy_render_v1.todo_series.paused.v1",
   },
 ]

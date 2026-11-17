@@ -166,7 +166,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 - 친구가 앱에서 고른 콕 답장(`replyKind`, 카탈로그 `nudgeReply`)처럼 사용자가 보낸 말은 앱 버튼 문구 그대로 인용한다.
 - 영어는 sentence case와 축약형을 쓰는 자연스러운 표현으로 쓰고 한국어를 직역하지 않는다. 문장 중간에서 이름을 모르는 친구는 `your friend`로 부른다.
 - 결제·계정·보안 알림은 농담 없이 명확하게 쓴다.
-- 카피를 바꾸면 `NOTIFICATION_COPY_REVISION`을 해당 릴리스 버전으로 올려 `metadata.copyRevision`으로 이전 문구와 성과를 나눈다.
+- 카피를 바꾸면 `NOTIFICATION_COPY_REVISION`을 바꾼 날짜(`YYYY-MM-DD`)로 올려 `metadata.copyRevision`으로 이전 문구와 성과를 나눈다. 서버는 버전 번호 없이 배포마다 나가므로([버전](../../../docs/conventions/git.md#버전)) 앱 릴리스 버전을 쓰지 않는다.
 - 제목은 60자, 본문은 120자 이하이며 한 줄의 이모지는 최대 1개다.
 - 반복 캠페인은 `campaignKey + templateKey + recipientId + occurrenceKey`로 variant를 결정한다. 같은 사용자·같은 발생 건은 재시도나 서버 재시작 뒤에도 문구가 바뀌지 않는다.
 - `templateKey`는 아침 할 일 유무, 저녁 진행 상태, 날씨 조건처럼 한 캠페인 안의 의미상 다른 카피 풀을 구분한다. `variantId`에도 포함되므로 서로 다른 문구가 같은 ID로 집계되지 않는다.
