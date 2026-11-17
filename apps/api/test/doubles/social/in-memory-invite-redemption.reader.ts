@@ -110,7 +110,7 @@ export class InMemoryInviteRedemptionReader extends InviteRedemptionReaderPort {
           redemption.status === "JOINED" &&
           redemption.qualifyReminderSentAt == null &&
           redemption.inviterId != null &&
-          redemption.inviterRewardEligible &&
+          redemption.isInviterRewardEligible() &&
           Temporal.Instant.compare(redemption.expiresAt, now) > 0 &&
           Temporal.Instant.compare(redemption.expiresAt, expiresBefore) <= 0,
       )

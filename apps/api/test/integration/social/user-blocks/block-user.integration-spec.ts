@@ -250,7 +250,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     }
     expect(await countFollowsBetween()).toBe(0);
     expect(
-      await blockReader.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+      await blockReader.getRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
     ).toEqual({
       isBlocking: false,
       isBlockedBy: true,
@@ -291,7 +291,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
     expect(await countFollowsBetween()).toBe(0);
     expect(
-      await blockReader.findRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
+      await blockReader.getRelation(UserId.reconstitute(meId), UserId.reconstitute(otherId)),
     ).toEqual({
       isBlocking: true,
       isBlockedBy: true,

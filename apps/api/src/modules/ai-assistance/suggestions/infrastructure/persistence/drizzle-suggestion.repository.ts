@@ -21,10 +21,6 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextIds(count: number): Promise<SuggestionId[]> {
     const ids = await nextSequenceValues(this.#db, suggestionTable.id, count);
     return ids.map((id) => SuggestionId.reconstitute(id));
@@ -83,5 +79,9 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
       .where(and(eq(suggestionTable.userId, userId.value), lt(suggestionTable.expiresAt, now)))
       .returning({ id: suggestionTable.id });
     return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

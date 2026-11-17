@@ -30,10 +30,6 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<MemoId> {
     return MemoId.reconstitute(await nextSequenceValue(this.#db, memoTable.id));
   }
@@ -150,5 +146,9 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
       .where(eq(memoTable.id, memo.id.value))
       .returning({ id: memoTable.id });
     requireRecord(deleted);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

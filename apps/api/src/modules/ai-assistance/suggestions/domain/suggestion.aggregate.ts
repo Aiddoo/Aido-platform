@@ -30,16 +30,16 @@ export interface SuggestionPrimitives {
   readonly evidence: SuggestionEvidencePrimitives | null;
 }
 
-type SuggestionProps = Omit<
+interface SuggestionProps extends Omit<
   SuggestionPrimitives,
   "id" | "userId" | "suggestedCategoryId" | "status" | "updatedAt" | "evidence"
-> & {
+> {
   readonly userId: UserId;
   readonly suggestedCategoryId: TodoCategoryId | null;
   status: SuggestionStatus;
   updatedAt: Temporal.Instant;
   readonly evidence: SuggestionEvidence | null;
-};
+}
 
 export interface CreateSuggestionParams {
   readonly id: SuggestionId;

@@ -14,7 +14,7 @@ export interface UserBlockRelation {
  * 활성 UoW 안에서 부르면 같은 transaction의 연결로 읽는다.
  */
 export abstract class UserBlockReaderPort {
-  abstract findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation>;
+  abstract getRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation>;
   /** candidateUserIds 중 viewerId와 어느 방향으로든 차단 관계인 사용자 ID. 한 번의 조회로 읽는다. */
   abstract findBlockedCounterpartIds(
     viewerId: UserId,

@@ -16,10 +16,6 @@ export class DrizzleAppReleaseRepository implements AppReleaseRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async listLatestReleases(): Promise<AppRelease[]> {
     const rows = await this.#db.select().from(appReleaseTable);
     return rows.map(toAppRelease);
@@ -34,5 +30,9 @@ export class DrizzleAppReleaseRepository implements AppReleaseRepositoryPort {
         target: appReleaseTable.platform,
         set: { latestVersion: row.latestVersion, updatedAt: row.updatedAt },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

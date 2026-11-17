@@ -21,14 +21,14 @@ interface ActionPlanTodo {
   readonly duplicateOfTodoId: number | null;
 }
 
-export interface ActionPlanDraftPrimitives {
+interface ActionPlanDraftProps {
   readonly todos: readonly ActionPlanTodo[];
   readonly memo: PlannedMemoDraft | null;
   /** 할 일 상한을 넘어 버린 할 일 수 */
   readonly omittedTodoCount: number;
 }
 
-type ActionPlanDraftProps = ActionPlanDraftPrimitives;
+export type ActionPlanDraftPrimitives = ActionPlanDraftProps;
 
 type CreateActionPlanDraftParams = ActionPlanDraftProps;
 

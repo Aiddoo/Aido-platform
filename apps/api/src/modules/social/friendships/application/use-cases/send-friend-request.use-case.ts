@@ -55,7 +55,7 @@ export interface SendFriendRequestDependencies {
     FriendLimitReaderPort,
     "readLimitInTransaction" | "readFeatureQuotaInTransaction"
   >;
-  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
+  readonly blockReader: Pick<UserBlockReaderPort, "getRelation">;
   readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FriendshipNotifierPort, "notifyFollowNew" | "notifyFollowMutual">;
   readonly notifyFirstFriendMilestone: Pick<NotifyFirstFriendMilestoneUseCase, "execute">;
@@ -115,7 +115,7 @@ export class SendFriendRequestUseCase {
       throw friendTargetNotFound(targetUserId);
     }
     // 차단과 같은 쌍 잠금 아래에서 읽어 차단 직후 요청이 친구 관계를 되살리지 못하게 한다
-    const blockRelation = await blockReader.findRelation(userId, targetUserId);
+    const blockRelation = await blockReader.getRelation(userId, targetUserId);
     if (blockRelation.isBlocking) {
       throw blockedTargetRequested(targetUserId);
     }

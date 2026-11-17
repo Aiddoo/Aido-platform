@@ -197,7 +197,7 @@ describe("RedeemInviteUseCase — 초대 수락", () => {
     expect(result).toMatchObject({ outcome: "REDEEMED", rewards: [], friendship: "FRIENDS" });
     const redemption =
       await redeemer.inviteRedemptionRepository.findByInviteeIdForUpdate(INVITEE_ID);
-    expect(redemption?.inviterRewardEligible).toBe(false);
+    expect(redemption?.isInviterRewardEligible()).toBe(false);
     expect(redeemer.rewardGrantRepository.size).toBe(0);
   });
 

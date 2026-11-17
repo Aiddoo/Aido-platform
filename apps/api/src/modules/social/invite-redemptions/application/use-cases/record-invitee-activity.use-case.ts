@@ -197,7 +197,7 @@ export class RecordInviteeActivityUseCase {
 
     // 상한에 닿아도 사용 시작은 인정하고 지급할 보상만 줄인다. 같은 기기·신원 재사용으로 초대받은
     // 사람 보상을 막은 수락은 초대한 사람 보상도 계획하지 않는다
-    const plans = redemption.inviterRewardEligible
+    const plans = redemption.isInviterRewardEligible()
       ? planInviterRewards({
           redemptionId: redemption.id,
           inviterId,

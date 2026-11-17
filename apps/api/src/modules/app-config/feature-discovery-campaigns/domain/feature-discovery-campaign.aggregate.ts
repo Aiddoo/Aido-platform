@@ -40,7 +40,7 @@ export class FeatureDiscoveryCampaign extends AggregateRoot<
     return this.props.launchedAt;
   }
 
-  get autoOpen(): boolean {
+  isAutoOpen(): boolean {
     return this.props.autoOpen;
   }
 

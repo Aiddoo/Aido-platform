@@ -36,7 +36,9 @@ export interface AiReportPrimitives {
   readonly dailyCompletions: readonly DailyCompletionItem[] | null;
 }
 
-type AiReportProps = Omit<AiReportPrimitives, "id" | "userId"> & { readonly userId: UserId };
+interface AiReportProps extends Omit<AiReportPrimitives, "id" | "userId"> {
+  readonly userId: UserId;
+}
 
 export type CreateAiReportParams = Omit<AiReportPrimitives, "id" | "userId" | "generatedAt"> & {
   readonly id: AiReportId;

@@ -110,9 +110,9 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
     const blockedId = UserId.reconstitute(USER_BLOCK_FIXTURE_BLOCKED_ID);
     const otherUserId = UserId.reconstitute(USER_BLOCK_FIXTURE_OTHER_USER_ID);
     const relations = [
-      await reader.findRelation(BLOCKER_ID, blockedId),
-      await reader.findRelation(BLOCKER_ID, otherUserId),
-      await reader.findRelation(blockedId, otherUserId),
+      await reader.getRelation(BLOCKER_ID, blockedId),
+      await reader.getRelation(BLOCKER_ID, otherUserId),
+      await reader.getRelation(blockedId, otherUserId),
     ];
     const counterparts = await reader.findBlockedCounterpartIds(BLOCKER_ID, [
       BLOCKER_ID,

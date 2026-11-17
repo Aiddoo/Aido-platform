@@ -9,7 +9,7 @@ export interface CheckInvitePairReachabilityQuery {
 
 export interface CheckInvitePairReachabilityDependencies {
   readonly mutualFriendReader: Pick<MutualFriendReaderPort, "isCurrentMutualFriend">;
-  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
+  readonly blockReader: Pick<UserBlockReaderPort, "getRelation">;
 }
 
 /**
@@ -27,7 +27,7 @@ export class CheckInvitePairReachabilityUseCase {
     const { inviteeId, inviterId } = query;
     const [areFriends, relation] = await Promise.all([
       this.#dependencies.mutualFriendReader.isCurrentMutualFriend(inviteeId, inviterId),
-      this.#dependencies.blockReader.findRelation(inviteeId, inviterId),
+      this.#dependencies.blockReader.getRelation(inviteeId, inviterId),
     ]);
     return areFriends && !relation.isBlocking && !relation.isBlockedBy;
   }

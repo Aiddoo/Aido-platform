@@ -15,6 +15,6 @@ export function toFeatureDiscoveryResponse(
     campaignId: campaign.id.value,
     minAppVersion: campaign.minAppVersion.value,
     launchedAt: toIsoString(campaign.launchedAt),
-    autoOpen: campaign.autoOpen,
+    autoOpen: campaign.isAutoOpen(),
   };
 }

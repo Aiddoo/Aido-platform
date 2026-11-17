@@ -140,10 +140,6 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
     return this.props.timeZone;
   }
 
-  get inviterRewardEligible(): boolean {
-    return this.props.inviterRewardEligible;
-  }
-
   get activeDays(): readonly Temporal.PlainDate[] {
     return [...this.props.activeDays];
   }
@@ -166,6 +162,10 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
 
   get qualifyReminderSentAt(): Temporal.Instant | null {
     return this.props.qualifyReminderSentAt;
+  }
+
+  isInviterRewardEligible(): boolean {
+    return this.props.inviterRewardEligible;
   }
 
   isExpiredAt(at: Temporal.Instant): boolean {

@@ -25,10 +25,6 @@ export class DrizzlePlanApplicationRepository implements PlanApplicationReposito
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByIdempotencyKey(
     userId: UserId,
     idempotencyKey: string,
@@ -63,5 +59,9 @@ export class DrizzlePlanApplicationRepository implements PlanApplicationReposito
       .where(lt(planApplicationTable.createdAt, cutoff))
       .returning({ id: planApplicationTable.id });
     return purged.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

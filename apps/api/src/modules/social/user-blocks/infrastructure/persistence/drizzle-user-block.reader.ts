@@ -19,7 +19,7 @@ export class DrizzleUserBlockReader implements UserBlockReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
+  async getRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
     const rows = await this.#db
       .select({ blockerId: userBlock.blockerId })
       .from(userBlock)

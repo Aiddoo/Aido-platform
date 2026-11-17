@@ -12,7 +12,7 @@ export class StubUserBlockReader extends UserBlockReaderPort {
     this.#blocks.add(`${blockerId}>${blockedId}`);
   }
 
-  async findRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
+  async getRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation> {
     return {
       isBlocking: this.#blocks.has(`${userId.value}>${otherUserId.value}`),
       isBlockedBy: this.#blocks.has(`${otherUserId.value}>${userId.value}`),

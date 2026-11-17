@@ -76,7 +76,7 @@ export interface RedeemInviteDependencies {
   readonly recordInviteRedemption: Pick<RecordInviteRedemptionUseCase, "execute">;
   readonly userReader: Pick<InviteUserReaderPort, "findInviteeIdentity">;
   readonly mutualFriendReader: Pick<MutualFriendReaderPort, "isCurrentMutualFriend">;
-  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
+  readonly blockReader: Pick<UserBlockReaderPort, "getRelation">;
   readonly friendshipEstablisher: Pick<FriendshipEstablisherPort, "establish">;
   readonly claimHasher: Pick<ClaimHasherPort, "hash">;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteJoined">;
@@ -201,7 +201,7 @@ export class RedeemInviteUseCase {
     // 친구 수가 많아도 두 사람 쌍만 확인한다
     const [areAlreadyFriends, blockRelation, previous, hasClaimedReward] = await Promise.all([
       this.#dependencies.mutualFriendReader.isCurrentMutualFriend(inviteeId, invite.inviterId),
-      this.#dependencies.blockReader.findRelation(inviteeId, invite.inviterId),
+      this.#dependencies.blockReader.getRelation(inviteeId, invite.inviterId),
       this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(inviteeId),
       this.#dependencies.rewardClaimRepository.existsAnyOf(claims),
     ]);

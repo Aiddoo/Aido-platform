@@ -30,10 +30,6 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findRecentTodos(
     userId: UserId,
     period: SuggestionAnalysisPeriod,
@@ -81,5 +77,9 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
       title: row.title,
       status: row.status === "ACCEPTED" ? "ACCEPTED" : "DISMISSED",
     }));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

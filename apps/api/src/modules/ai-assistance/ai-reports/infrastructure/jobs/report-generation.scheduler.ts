@@ -36,6 +36,9 @@ export class ReportGenerationScheduler implements OnModuleInit {
   readonly #processor: ReportGenerationProcessor;
   readonly #clock: ClockPort;
 
+  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+  schedulerRegistration: Promise<void> = Promise.resolve();
+
   constructor(
     transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     jobQueue: JobQueuePort,
@@ -47,14 +50,6 @@ export class ReportGenerationScheduler implements OnModuleInit {
     this.#processor = processor;
     this.#clock = clock;
   }
-
-  /** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
-  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
-  schedulerRegistration: Promise<void> = Promise.resolve();
 
   onModuleInit(): void {
     // Processor에 자신을 등록 (순환 참조 방지)
@@ -130,6 +125,11 @@ export class ReportGenerationScheduler implements OnModuleInit {
       reportType: type,
       enqueuedCount: totalEnqueued,
     });
+  }
+
+  /** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
+  get #db() {
+    return this.#transactionHost.tx;
   }
 
   /**

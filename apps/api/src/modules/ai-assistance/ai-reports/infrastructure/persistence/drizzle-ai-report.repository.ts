@@ -25,10 +25,6 @@ export class DrizzleAiReportRepository extends AiReportRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async nextId(): Promise<AiReportId> {
     return AiReportId.reconstitute(await nextSequenceValue(this.#db, aiReport.id));
   }
@@ -93,5 +89,9 @@ export class DrizzleAiReportRepository extends AiReportRepositoryPort {
       ),
     );
     return count > 0;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

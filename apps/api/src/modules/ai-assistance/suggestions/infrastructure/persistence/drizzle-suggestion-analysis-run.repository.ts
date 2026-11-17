@@ -22,10 +22,6 @@ export class DrizzleSuggestionAnalysisRunRepository extends SuggestionAnalysisRu
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
   async findByUserId(userId: UserId): Promise<SuggestionAnalysisRun | null> {
     const row = await this.#db.query.suggestionAnalysisRun.findFirst({
       where: { userId: userId.value },
@@ -78,5 +74,9 @@ export class DrizzleSuggestionAnalysisRunRepository extends SuggestionAnalysisRu
           finishedAt: sql`excluded."finishedAt"`,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

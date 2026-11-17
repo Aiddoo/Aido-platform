@@ -34,6 +34,9 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
   readonly #clock: ClockPort;
   readonly #dispatchAnalyses: Pick<DispatchSuggestionAnalysesUseCase, "execute">;
 
+  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+  schedulerRegistration: Promise<void> = Promise.resolve();
+
   constructor(
     transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     jobQueue: JobQueuePort,
@@ -46,9 +49,6 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
     this.#clock = clock;
     this.#dispatchAnalyses = dispatchAnalyses;
   }
-
-  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
-  schedulerRegistration: Promise<void> = Promise.resolve();
 
   onModuleInit(): void {
     // 작업 저장소 장애 중에도 부팅은 진행한다

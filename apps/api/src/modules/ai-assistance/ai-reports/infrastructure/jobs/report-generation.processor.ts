@@ -19,9 +19,6 @@ export class ReportGenerationProcessor implements OnModuleInit {
   readonly #logger = new Logger(ReportGenerationProcessor.name);
 
   #reportJob?: ReportDispatcher;
-  setReportJob(job: ReportDispatcher) {
-    this.#reportJob = job;
-  }
 
   readonly #generateReport: Pick<GenerateReportUseCase, "execute">;
   readonly #clock: ClockPort;
@@ -35,6 +32,10 @@ export class ReportGenerationProcessor implements OnModuleInit {
     this.#generateReport = generateReport;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
+  }
+
+  setReportJob(job: ReportDispatcher) {
+    this.#reportJob = job;
   }
 
   async onModuleInit(): Promise<void> {
