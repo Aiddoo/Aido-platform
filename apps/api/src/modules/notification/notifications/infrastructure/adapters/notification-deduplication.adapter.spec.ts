@@ -1,4 +1,4 @@
-import type { DedupEntry, DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
+import type { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NotificationDeduplicationAdapter } from "./notification-deduplication.adapter.js";
@@ -19,10 +19,6 @@ class RecordingDeduplicationProvider implements DedupProviderPort {
     return new Set(members.filter((member) => stored.has(member)));
   }
 
-  async filterEntries<TEntry extends DedupEntry>(entries: readonly TEntry[]): Promise<TEntry[]> {
-    return entries.filter(({ setKey, member }) => this.#sets.get(setKey)?.has(member) === true);
-  }
-
   async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
     this.added.push({ setKey, members, ttlMs });
     const stored = this.#sets.get(setKey) ?? new Set<string>();
@@ -30,12 +26,6 @@ class RecordingDeduplicationProvider implements DedupProviderPort {
       stored.add(member);
     }
     this.#sets.set(setKey, stored);
-  }
-
-  async addEntries(entries: readonly DedupEntry[], ttlMs: number): Promise<void> {
-    for (const { setKey, member } of entries) {
-      await this.addMembers(setKey, [member], ttlMs);
-    }
   }
 }
 

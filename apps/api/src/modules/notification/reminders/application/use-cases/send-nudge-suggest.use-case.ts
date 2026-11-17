@@ -11,14 +11,12 @@ import { getNotificationFriendFallback } from "../../../shared/application/messa
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
-import { NudgePairMark } from "../../domain/nudge-pair-mark.vo.js";
 import {
+  isoWeekRangeOf,
   localDayRangeAcross,
   localDaysSince,
-  isoWeekIdOf,
 } from "../../domain/reminder-day.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
-import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
@@ -30,10 +28,9 @@ interface NudgeSuggestStrategyDependencies {
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly schedulerDeduplication: Pick<
-    SchedulerDeduplicationPort,
-    "filterUnsentNudgePairs" | "recordNudgePairs"
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReader,
+    "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -111,26 +108,14 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       }
     }
 
-    // 배치 2: 전체 candidate × friend 쌍의 이번 주 발송 표시를 한 번에 확인한다
-    const weekId = isoWeekIdOf(today);
-    const pairMarks = new Map(
-      candidates.map((user) => [
-        user.id,
-        (friendMap.get(user.id) ?? []).map((friend) => ({
-          friend,
-          mark: NudgePairMark.create({
-            weekId,
-            recipientId: UserId.reconstitute(user.id),
-            friendId: UserId.reconstitute(friend.id),
-          }),
-        })),
-      ]),
-    );
-    const unsentMarks = new Set(
-      await this.#dependencies.schedulerDeduplication.filterUnsentNudgePairs(
-        [...pairMarks.values()].flat().map(({ mark }) => mark),
-      ),
-    );
+    // 배치 2: 이번 ISO 주에 이미 제안한 (받는 사람, 친구) 쌍을 한 번에 읽는다
+    const week = isoWeekRangeOf(today);
+    const suggestedFriends =
+      await this.#dependencies.notificationHistoryReader.findNudgeSuggestedFriends({
+        userIds: candidates.map((user) => UserId.reconstitute(user.id)),
+        start: week.start,
+        end: week.end,
+      });
 
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       candidates.map((u) => u.id),
@@ -138,18 +123,18 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
     // 인메모리 매칭
     const notifications: CreateNotificationData[] = [];
-    const chosenMarks: NudgePairMark[] = [];
 
     for (const user of candidates) {
-      const eligibleFriends = (pairMarks.get(user.id) ?? [])
-        .filter(({ mark }) => unsentMarks.has(mark))
-        .flatMap(({ friend, mark }) => {
+      const alreadySuggested = suggestedFriends.get(user.id);
+      const eligibleFriends = (friendMap.get(user.id) ?? [])
+        .filter((friend) => alreadySuggested?.has(friend.id) !== true)
+        .flatMap((friend) => {
           if (friend.lastActiveAt == null) {
             return [];
           }
           const days = localDaysSince(friend.lastActiveAt, today, user.timezone);
           return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
-            ? [{ ...friend, mark, days }]
+            ? [{ ...friend, days }]
             : [];
         })
         .sort((a, b) => b.days - a.days);
@@ -171,7 +156,6 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
         },
       });
 
-      chosenMarks.push(target.mark);
       notifications.push({
         userId: user.id,
         type: "NUDGE_SUGGEST",
@@ -187,11 +171,8 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       });
     }
 
-    // DB 성공 후 Redis 기록 (순서 보장)
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.execute(notifications);
-
-      void this.#dependencies.schedulerDeduplication.recordNudgePairs(chosenMarks);
 
       this.#dependencies.logger.log({
         event: ReminderLogEvent.NUDGE_SUGGEST_SENT,

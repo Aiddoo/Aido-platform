@@ -56,8 +56,11 @@ export function previousIsoWeekOf(today: Temporal.PlainDate): {
   return { start, end, isoYear: year, isoWeek: week };
 }
 
-/** 주 단위 발송 이력 key의 주 식별자(예: "2026-W10") */
-export function isoWeekIdOf(date: Temporal.PlainDate): string {
-  const { year, week } = isoWeekOf(date);
-  return `${year}-W${String(week).padStart(2, "0")}`;
+/** 그 날이 속한 ISO 주의 월요일부터 다음 주 월요일 전까지 */
+export function isoWeekRangeOf(date: Temporal.PlainDate): {
+  readonly start: Temporal.PlainDate;
+  readonly end: Temporal.PlainDate;
+} {
+  const start = date.subtract({ days: date.dayOfWeek - 1 });
+  return { start, end: start.add({ weeks: 1 }) };
 }

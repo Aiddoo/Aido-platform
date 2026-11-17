@@ -1,5 +1,5 @@
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemorySchedulerDeduplication } from "#test/doubles/notification/in-memory-scheduler-deduplication";
+import { InMemoryNotificationDeduplication } from "#test/doubles/notification/in-memory-notification-deduplication";
+import { InMemoryNotificationRepository } from "#test/doubles/notification/in-memory-notification.repository";
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -7,9 +7,9 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
+import { NotificationHistoryReader } from "../../../notifications/application/notification-history.reader.js";
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
-import { WinbackStageMark } from "../../domain/winback-stage-mark.vo.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
 
 describe("SendWinbackUseCase — 윈백 전략", () => {
@@ -17,7 +17,6 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
   let preferences: InMemorySchedulerPreferenceReader;
   let publisher: RecordingNotificationPublisher;
   let history: StubNotificationHistoryReader;
-  let dedup: InMemorySchedulerDeduplication;
   let strategy: SendWinbackUseCase;
 
   const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12 });
@@ -28,13 +27,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     preferences = new InMemorySchedulerPreferenceReader();
     publisher = new RecordingNotificationPublisher();
     history = new StubNotificationHistoryReader();
-    dedup = new InMemorySchedulerDeduplication();
     strategy = new SendWinbackUseCase({
       reader,
       preferenceReader: preferences,
       notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
-      schedulerDeduplication: dedup,
       logger: new SilentLogger(),
     });
   });
@@ -64,7 +61,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     { lastActive: "2023-12-26", inactiveDays: 21, stage: "day21" },
     { lastActive: "2023-12-17", inactiveDays: 30, stage: "day30" },
   ] as const)(
-    "$inactiveDays일 미접속 사용자에게 $stage 단계 Win-back을 보내고 그 단계를 기록한다",
+    "$inactiveDays일 미접속 사용자에게 $stage 단계 Win-back을 보낸다",
     async ({ lastActive, inactiveDays, stage }) => {
       // Given
       reader.winbackUsers = [
@@ -101,13 +98,6 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
           metadata: { stage },
         }),
       ]);
-      await vi.waitFor(async () => {
-        const recorded = WinbackStageMark.create({
-          recipientId: UserId.reconstitute("user-1"),
-          stage,
-        });
-        expect(await dedup.filterUnsentWinbackStages([recorded])).toEqual([]);
-      });
     },
   );
 
@@ -138,7 +128,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     expect(sent()[0]).toMatchObject({ title: expected.title, body: expected.body });
   });
 
-  it("여러 사용자의 단계 기록을 한 번에 보고 이미 같은 단계를 받은 사용자만 뺀다", async () => {
+  it("여러 사용자의 마지막 활동 뒤 단계 알림을 한 번에 보고 이미 같은 단계를 받은 사용자만 뺀다", async () => {
     // Given
     reader.winbackUsers = [
       {
@@ -157,16 +147,23 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         timezone: "Asia/Seoul",
       },
     ];
-    await dedup.recordWinbackStages([
-      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-1"), stage: "day7" }),
-      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-3"), stage: "day7" }),
-    ]);
+    history.winbackSent({
+      userId: "user-1",
+      stage: "day7",
+      createdAt: Temporal.Instant.from("2024-01-15T07:00:00Z"),
+    });
+    history.winbackSent({
+      userId: "user-3",
+      stage: "day7",
+      createdAt: Temporal.Instant.from("2024-01-09T07:00:00Z"),
+    });
 
     // When
     const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 2 });
+    expect(history.winbackStageQueries).toHaveLength(1);
     expect(sent().map(({ userId, metadata }) => [userId, metadata])).toEqual([
       ["user-2", { stage: "day7" }],
       ["user-3", { stage: "day14" }],
@@ -182,9 +179,11 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
         timezone: "Asia/Seoul",
       },
     ];
-    await dedup.recordWinbackStages([
-      WinbackStageMark.create({ recipientId: UserId.reconstitute("user-1"), stage: "day7" }),
-    ]);
+    history.winbackSent({
+      userId: "user-1",
+      stage: "day7",
+      createdAt: Temporal.Instant.from("2024-01-15T07:00:00Z"),
+    });
 
     // When
     const result = await strategy.execute(timezoneContext);
@@ -192,6 +191,70 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     // Then
     expect(result).toEqual({ sent: 0 });
     expect(publisher.published).toEqual([]);
+  });
+
+  it("마지막 활동 전에 받은 같은 단계는 세지 않아 다시 쉬기 시작하면 그 단계를 다시 보낸다", async () => {
+    // Given
+    reader.winbackUsers = [
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
+    ];
+    history.winbackSent({
+      userId: "user-1",
+      stage: "day7",
+      createdAt: Temporal.Instant.from("2024-01-02T07:00:00Z"),
+    });
+
+    // When
+    const result = await strategy.execute(timezoneContext);
+
+    // Then
+    expect(result).toEqual({ sent: 1 });
+    expect(sent()[0]?.metadata).toEqual({ stage: "day7" });
+  });
+
+  it("다시 시작해 메모리가 비어도 알림 행으로 이미 보낸 단계를 알아 다음 날 다시 보내지 않는다", async () => {
+    // Given
+    const notifications = new InMemoryNotificationRepository(
+      [],
+      () => new Date("2024-01-16T07:00:00Z"),
+    );
+    const startProcess = () =>
+      new SendWinbackUseCase({
+        reader,
+        preferenceReader: preferences,
+        notificationPublisher: {
+          execute: async (items) => ({
+            count: (await notifications.createManyNotificationsAndReturn(items)).length,
+          }),
+        },
+        notificationHistoryReader: new NotificationHistoryReader({
+          notificationDeduplication: new InMemoryNotificationDeduplication(),
+          notificationHistoryReader: notifications,
+          logger: new SilentLogger(),
+        }),
+        logger: new SilentLogger(),
+      });
+    reader.winbackUsers = [
+      {
+        id: "user-1",
+        lastActiveAt: Temporal.Instant.from("2024-01-09T00:00:00Z"),
+        timezone: "Asia/Seoul",
+      },
+    ];
+    await startProcess().execute(timezoneContext);
+
+    // When
+    const afterRestart = await startProcess().execute(
+      createTimezoneContextFixture({ date: "2024-01-17", localHour: 12 }),
+    );
+
+    // Then
+    expect(afterRestart).toEqual({ sent: 0 });
+    expect(notifications.rows().map((row) => row.metadata)).toEqual([{ stage: "day7" }]);
   });
 
   it("마지막 접속 기록이 없는 사용자는 단계를 정할 수 없어 보내지 않는다", async () => {

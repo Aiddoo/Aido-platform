@@ -4,6 +4,8 @@ import { duplicateNotification } from "#api/modules/notification/notifications/a
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
+  FindNudgeSuggestedFriendsQuery,
+  FindWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
 } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
@@ -236,6 +238,51 @@ export class InMemoryNotificationRepository
         )
         .map((row) => row.userId),
     );
+  }
+
+  async findWinbackStagesSince(
+    query: FindWinbackStagesSinceQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const stagesByUserId = new Map<string, Set<string>>();
+    for (const { userId, since } of query.recipients) {
+      const stages = [...this.#rows.values()]
+        .filter(
+          (row) =>
+            row.userId === userId.value &&
+            row.type === "WINBACK" &&
+            Temporal.Instant.compare(row.createdAt, since) >= 0,
+        )
+        .map((row) => metadataField(row, "stage"))
+        .filter((stage) => typeof stage === "string");
+      if (stages.length > 0) {
+        stagesByUserId.set(userId.value, new Set(stages));
+      }
+    }
+    return stagesByUserId;
+  }
+
+  async findNudgeSuggestedFriends(
+    query: FindNudgeSuggestedFriendsQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const friendsByUserId = new Map<string, Set<string>>();
+    for (const row of this.#rows.values()) {
+      const inWeek =
+        row.notificationDate != null &&
+        Temporal.PlainDate.compare(query.start, row.notificationDate) <= 0 &&
+        Temporal.PlainDate.compare(row.notificationDate, query.end) < 0;
+      if (
+        row.type !== "NUDGE_SUGGEST" ||
+        row.friendId == null ||
+        !inWeek ||
+        !query.userIds.some((userId) => userId.value === row.userId)
+      ) {
+        continue;
+      }
+      const friends = friendsByUserId.get(row.userId) ?? new Set<string>();
+      friends.add(row.friendId);
+      friendsByUserId.set(row.userId, friends);
+    }
+    return friendsByUserId;
   }
 
   async hasMilestoneNotification(

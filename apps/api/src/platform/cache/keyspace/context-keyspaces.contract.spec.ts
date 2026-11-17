@@ -24,10 +24,6 @@ import {
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
 import {
-  SCHEDULER_DEDUPLICATION_TTL_MS,
-  SchedulerDeduplicationKey,
-} from "#api/modules/notification/reminders/infrastructure/cache/scheduler-deduplication.keyspace";
-import {
   RETENTION_CACHE_TTL_MS,
   RetentionCacheKey,
 } from "#api/modules/notification/retention-assignments/infrastructure/cache/retention-cache.keyspace";
@@ -87,7 +83,6 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "MORNING_REMINDER",
       Temporal.PlainDate.from("2026-01-01"),
     );
-    const winbackStagesKey = SchedulerDeduplicationKey.winbackStages("user-1");
     const nudgeReceivedKey = NudgeCountCacheKey.received("user-1");
     const nudgeSentKey = NudgeCountCacheKey.sent("user-1");
     const cheerReceivedKey = CheerCountCacheKey.received("user-1");
@@ -112,7 +107,6 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     );
     expect(pushTokensKey).toBe("aido:v1:notification:push-tokens:user-1");
     expect(dedupKey).toBe("aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01");
-    expect(winbackStagesKey).toBe("aido:v1:scheduler:dedup-winback-stages:user-1");
     expect(nudgeReceivedKey).toBe("aido:v1:nudge:received-counts:user-1");
     expect(nudgeSentKey).toBe("aido:v1:nudge:sent-count:user-1");
     expect(cheerReceivedKey).toBe("aido:v1:cheer:received-counts:user-1");
@@ -137,7 +131,6 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       RETENTION_CACHE_TTL_MS,
       NUDGE_COUNT_CACHE_TTL_MS,
       CHEER_COUNT_CACHE_TTL_MS,
-      SCHEDULER_DEDUPLICATION_TTL_MS,
     };
 
     // Then
@@ -164,9 +157,5 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(values.RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES).toBe(86_400_000);
     expect(values.NUDGE_COUNT_CACHE_TTL_MS).toBe(60_000);
     expect(values.CHEER_COUNT_CACHE_TTL_MS).toBe(60_000);
-    expect(values.SCHEDULER_DEDUPLICATION_TTL_MS).toEqual({
-      WINBACK_STAGES: 7_776_000_000,
-      NUDGE_SUGGEST: 691_200_000,
-    });
   });
 });

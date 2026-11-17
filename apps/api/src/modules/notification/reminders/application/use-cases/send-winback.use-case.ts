@@ -11,10 +11,8 @@ import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-camp
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { localDayRangeAcross, localDaysSince } from "../../domain/reminder-day.domain-service.js";
-import { WinbackStageMark } from "../../domain/winback-stage-mark.vo.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
-import { type SchedulerDeduplicationPort } from "../ports/scheduler-deduplication.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
@@ -23,10 +21,9 @@ interface WinbackStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
-  readonly schedulerDeduplication: Pick<
-    SchedulerDeduplicationPort,
-    "filterUnsentWinbackStages" | "recordWinbackStages"
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReader,
+    "findAlreadyNotifiedUserIds" | "findWinbackStagesSince"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -86,17 +83,18 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       if (inactiveDays < WINBACK_INACTIVE_DAYS.MIN || inactiveDays > WINBACK_INACTIVE_DAYS.MAX) {
         return [];
       }
-      const stage = resolveWinbackStage(inactiveDays);
-      const mark = WinbackStageMark.create({ recipientId: UserId.reconstitute(id), stage });
-      return [{ userId: id, stage, inactiveDays, mark }];
+      return [{ userId: id, stage: resolveWinbackStage(inactiveDays), inactiveDays, lastActiveAt }];
     });
-    // 단계별 중복 방지: 사용자마다 묻지 않고 한 번에 확인한다
-    const unsentMarks = new Set(
-      await this.#dependencies.schedulerDeduplication.filterUnsentWinbackStages(
-        checks.map(({ mark }) => mark),
-      ),
+    // 단계는 쉬는 동안 한 번씩이다. 마지막 활동 뒤 받은 단계를 한 번에 읽는다
+    const sentStages = await this.#dependencies.notificationHistoryReader.findWinbackStagesSince({
+      recipients: checks.map(({ userId, lastActiveAt }) => ({
+        userId: UserId.reconstitute(userId),
+        since: lastActiveAt,
+      })),
+    });
+    const activeChecks = checks.filter(
+      ({ userId, stage }) => sentStages.get(userId)?.has(stage) !== true,
     );
-    const activeChecks = checks.filter(({ mark }) => unsentMarks.has(mark));
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       activeChecks.map((check) => check.userId),
     );
@@ -127,13 +125,8 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       });
     }
 
-    // DB 성공 후 Redis 기록 (순서 보장)
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.execute(notifications);
-
-      void this.#dependencies.schedulerDeduplication.recordWinbackStages(
-        activeChecks.map(({ mark }) => mark),
-      );
 
       this.#dependencies.logger.log({
         event: ReminderLogEvent.WINBACK_SENT,

@@ -489,6 +489,72 @@ export function describeNotificationRepositoryContract(
         expect(otherFriend.size).toBe(0);
       });
 
+      it("재방문 단계는 사용자마다 자기 기준 시각 뒤에 만든 WINBACK 행의 metadata.stage만이다", async () => {
+        // Given
+        const { repository, historyReader } = await createSubject();
+        await create(repository, { type: "WINBACK", metadata: { stage: "day3" } });
+        await create(repository, { type: "WINBACK", metadata: { stage: "day7" } });
+        await create(repository, { type: "LUNCH_NUDGE", metadata: { stage: "day14" } });
+        await create(repository, {
+          userId: OTHER_USER_ID,
+          type: "WINBACK",
+          metadata: { stage: "day3" },
+        });
+
+        // When
+        const stages = await historyReader.findWinbackStagesSince({
+          recipients: [
+            {
+              userId: UserId.reconstitute(USER_ID),
+              since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
+            },
+            {
+              userId: UserId.reconstitute(OTHER_USER_ID),
+              since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
+            },
+          ],
+        });
+        const none = await historyReader.findWinbackStagesSince({ recipients: [] });
+
+        // Then
+        expect(
+          [...stages.entries()].map(([userId, values]) => [userId, [...values].toSorted()]),
+        ).toEqual([[USER_ID, ["day3", "day7"]]]);
+        expect(none.size).toBe(0);
+      });
+
+      it("콕 제안 친구는 알림 날짜가 [start, end)인 그 사용자의 NUDGE_SUGGEST 행의 친구다", async () => {
+        // Given
+        const { repository, historyReader } = await createSubject();
+        await create(repository, {
+          type: "NUDGE_SUGGEST",
+          friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-02"),
+        });
+        await create(repository, {
+          type: "NUDGE_SUGGEST",
+          friendId: OTHER_USER_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-09"),
+        });
+        await create(repository, {
+          type: "FRIEND_COMPLETED",
+          friendId: OTHER_USER_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-03"),
+        });
+
+        // When
+        const friends = await historyReader.findNudgeSuggestedFriends({
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
+          start: Temporal.PlainDate.from("2026-03-02"),
+          end: Temporal.PlainDate.from("2026-03-09"),
+        });
+
+        // Then
+        expect([...friends.entries()].map(([userId, values]) => [userId, [...values]])).toEqual([
+          [USER_ID, [NOTIFICATION_FIXTURE_ACTOR_ID]],
+        ]);
+      });
+
       it("마일스톤 알림은 metadata.milestone이 같은 그 사용자의 마일스톤 종류 알림이 있을 때만 있다", async () => {
         // Given
         const { repository, historyReader } = await createSubject();

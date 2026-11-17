@@ -1,5 +1,5 @@
 import {
-  isoWeekIdOf,
+  isoWeekRangeOf,
   localDayRangeAcross,
   localDaysSince,
   localStartOf,
@@ -111,14 +111,14 @@ describe("리마인더 날짜 경계", () => {
   });
 
   it.each([
-    { date: "2026-03-04", expected: "2026-W10" },
-    { date: "2026-12-31", expected: "2026-W53" },
-    { date: "2027-01-03", expected: "2026-W53" },
-  ])("isoWeekIdOf($date) = $expected", ({ date, expected }) => {
+    { date: "2026-03-02", start: "2026-03-02", end: "2026-03-09" },
+    { date: "2026-03-08", start: "2026-03-02", end: "2026-03-09" },
+    { date: "2027-01-03", start: "2026-12-28", end: "2027-01-04" },
+  ])("isoWeekRangeOf($date)는 $start~$end 전", ({ date, start, end }) => {
     // When
-    const weekId = isoWeekIdOf(Temporal.PlainDate.from(date));
+    const week = isoWeekRangeOf(Temporal.PlainDate.from(date));
 
     // Then
-    expect(weekId).toBe(expected);
+    expect({ start: week.start.toString(), end: week.end.toString() }).toEqual({ start, end });
   });
 });

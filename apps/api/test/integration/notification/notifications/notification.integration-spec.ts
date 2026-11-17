@@ -286,8 +286,6 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           provide: DedupProviderPort,
           useValue: {
             filterMembers: vi.fn().mockResolvedValue(new Set()),
-            filterEntries: vi.fn().mockResolvedValue([]),
-            addEntries: vi.fn().mockResolvedValue(undefined),
             addMembers: vi.fn().mockResolvedValue(undefined),
           },
         },

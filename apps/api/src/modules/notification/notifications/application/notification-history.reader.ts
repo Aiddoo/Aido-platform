@@ -5,6 +5,8 @@ import { NotificationLogEvent } from "./notifications.log-events.js";
 import { type NotificationDeduplicationPort } from "./ports/notification-deduplication.port.js";
 import {
   type FindAlreadyNotifiedUserIdsQuery,
+  type FindNudgeSuggestedFriendsQuery,
+  type FindWinbackStagesSinceQuery,
   type NotificationHistoryReaderPort,
 } from "./ports/notification-history.reader.port.js";
 
@@ -23,7 +25,7 @@ interface NotificationHistoryReaderDependencies {
   >;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends" | "findWinbackStagesSince"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
@@ -63,5 +65,18 @@ export class NotificationHistoryReader {
       });
 
     return fromDb;
+  }
+
+  // 단계·주마다 한 번인 재방문 알림은 배포로 비는 메모리가 아니라 알림 행으로 판단한다
+  findWinbackStagesSince(
+    query: FindWinbackStagesSinceQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    return this.#dependencies.notificationHistoryReader.findWinbackStagesSince(query);
+  }
+
+  findNudgeSuggestedFriends(
+    query: FindNudgeSuggestedFriendsQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    return this.#dependencies.notificationHistoryReader.findNudgeSuggestedFriends(query);
   }
 }

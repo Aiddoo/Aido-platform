@@ -37,38 +37,15 @@ export function describeDedupProviderContract(context: {
       expect(await dedup.filterMembers("contract:empty", ["a"])).toEqual(new Set());
     });
 
-    it("filterEntries는 서로 다른 Set에 물은 항목 중 있는 것만 받은 그대로 돌려준다", async () => {
-      // Given
-      await dedup.addEntries(
-        [
-          { setKey: "contract:user-1", member: "day3" },
-          { setKey: "contract:user-2", member: "day7" },
-        ],
-        60_000,
-      );
-
-      // When
-      const existing = await dedup.filterEntries([
-        { setKey: "contract:user-1", member: "day3", userId: "user-1" },
-        { setKey: "contract:user-1", member: "day7", userId: "user-1" },
-        { setKey: "contract:user-2", member: "day7", userId: "user-2" },
-        { setKey: "contract:missing", member: "day3", userId: "user-3" },
-      ]);
-
-      // Then
-      expect(existing).toEqual([
-        { setKey: "contract:user-1", member: "day3", userId: "user-1" },
-        { setKey: "contract:user-2", member: "day7", userId: "user-2" },
-      ]);
-      expect(await dedup.filterEntries([])).toEqual([]);
-    });
-
     it("Set 키가 다르면 따로 저장한다", async () => {
       // Given
       await dedup.addMembers("contract:first", ["a"], 60_000);
 
-      // When / Then
-      expect(await dedup.filterEntries([{ setKey: "contract:second", member: "a" }])).toEqual([]);
+      // When
+      const existing = await dedup.filterMembers("contract:second", ["a"]);
+
+      // Then
+      expect(existing).toEqual(new Set());
     });
 
     it("멤버를 다시 더하면 Redis PEXPIRE처럼 Set 전체의 TTL을 그때부터 다시 잰다", async () => {

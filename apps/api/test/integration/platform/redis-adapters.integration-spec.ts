@@ -106,7 +106,6 @@ describe.each([
 
       // Then
       expect(await dedup.filterMembers("offline", ["a"])).toEqual(new Set());
-      expect(await dedup.filterEntries([{ setKey: "offline", member: "a" }])).toEqual([]);
       broken.disconnect();
     });
   });

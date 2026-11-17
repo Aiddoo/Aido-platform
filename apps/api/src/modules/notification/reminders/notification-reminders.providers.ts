@@ -14,7 +14,6 @@ import {
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";
 import { ReminderWeatherReportReaderPort } from "./application/ports/reminder-weather-report.reader.port.js";
 import { ScheduledReminderReaderPort } from "./application/ports/scheduled-reminder-reader.port.js";
-import { SchedulerDeduplicationPort } from "./application/ports/scheduler-deduplication.port.js";
 import { SchedulerPreferenceReaderPort } from "./application/ports/scheduler-preference-reader.port.js";
 import { SnoozeNotificationReaderPort } from "./application/ports/snooze-notification.reader.port.js";
 import { SnoozeTodoReaderPort } from "./application/ports/snooze-todo.reader.port.js";
@@ -45,7 +44,6 @@ import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-tim
 import { InboxSnoozeNotificationAdapter } from "./infrastructure/adapters/inbox-snooze-notification.adapter.js";
 import { PlanningSnoozeTodoAdapter } from "./infrastructure/adapters/planning-snooze-todo.adapter.js";
 import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/planning-weather-briefing-todo.adapter.js";
-import { SchedulerDeduplicationAdapter } from "./infrastructure/adapters/scheduler-deduplication.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
 import { TodoReminderSnoozeSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-snooze-scheduler.adapter.js";
@@ -65,7 +63,6 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
   { provide: WeeklyAchievementStatsReaderPort, useClass: DrizzleWeeklyAchievementStatsReader },
   { provide: TodoReminderReaderPort, useClass: DrizzleTodoReminderReader },
   { provide: SchedulerPreferenceReaderPort, useClass: DrizzleSchedulerPreferenceReader },
-  { provide: SchedulerDeduplicationPort, useClass: SchedulerDeduplicationAdapter },
   { provide: TodoSeriesOwnerDormancyPort, useClass: TodoSeriesOwnerDormancyAdapter },
   { provide: TodoReminderSchedulerPort, useClass: TodoReminderSchedulerAdapter },
   { provide: SnoozeTodoReaderPort, useClass: PlanningSnoozeTodoAdapter },
@@ -145,7 +142,6 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     preferenceReader: SchedulerPreferenceReaderPort,
     notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDeduplication: SchedulerDeduplicationPort,
     logger: loggerFor(SendWinbackUseCase),
   }),
   provideUseCase(SendNudgeSuggestUseCase, {
@@ -153,7 +149,6 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
     preferenceReader: SchedulerPreferenceReaderPort,
     notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDeduplication: SchedulerDeduplicationPort,
     logger: loggerFor(SendNudgeSuggestUseCase),
   }),
   provideUseCase(SendOnboardingUseCase, {

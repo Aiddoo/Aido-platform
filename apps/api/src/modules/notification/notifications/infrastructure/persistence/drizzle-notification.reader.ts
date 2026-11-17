@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { notification } from "#api/platform/database/schema/index";
@@ -12,6 +12,8 @@ import type { NotificationType } from "../../../shared/domain/notification-type.
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
+  FindNudgeSuggestedFriendsQuery,
+  FindWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
 import type {
@@ -123,6 +125,68 @@ export class DrizzleNotificationReader
     return new Set(rows.map((row) => row.userId));
   }
 
+  // 가장 이른 기준 시각 뒤의 행을 (userId, type) 인덱스로 한 번에 읽고 사용자마다 자기 기준 시각으로 거른다
+  async findWinbackStagesSince(
+    query: FindWinbackStagesSinceQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const sinceByUserId = new Map(
+      query.recipients.map(({ userId, since }) => [userId.value, since]),
+    );
+    const earliest = [...sinceByUserId.values()].toSorted(Temporal.Instant.compare).at(0);
+    if (earliest == null) {
+      return new Map();
+    }
+    const rows = await this.#db
+      .select({
+        userId: notification.userId,
+        stage: sql<string | null>`${notification.metadata} ->> 'stage'`,
+        createdAt: notification.createdAt,
+      })
+      .from(notification)
+      .where(
+        and(
+          inArray(notification.userId, [...sinceByUserId.keys()]),
+          eq(notification.type, "WINBACK"),
+          gte(notification.createdAt, earliest),
+        ),
+      );
+    return toValuesByUserId(
+      rows.flatMap(({ userId, stage, createdAt }) => {
+        const since = sinceByUserId.get(userId);
+        return since != null && stage != null && Temporal.Instant.compare(createdAt, since) >= 0
+          ? [{ userId, value: stage }]
+          : [];
+      }),
+    );
+  }
+
+  async findNudgeSuggestedFriends(
+    query: FindNudgeSuggestedFriendsQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    if (query.userIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.#db
+      .select({ userId: notification.userId, friendId: notification.friendId })
+      .from(notification)
+      .where(
+        and(
+          inArray(
+            notification.userId,
+            query.userIds.map((userId) => userId.value),
+          ),
+          eq(notification.type, "NUDGE_SUGGEST"),
+          gte(notification.notificationDate, query.start),
+          lt(notification.notificationDate, query.end),
+        ),
+      );
+    return toValuesByUserId(
+      rows.flatMap(({ userId, friendId }) =>
+        friendId == null ? [] : [{ userId, value: friendId }],
+      ),
+    );
+  }
+
   async hasMilestoneNotification(
     userId: UserId,
     milestone: NotificationMilestone,
@@ -138,4 +202,16 @@ export class DrizzleNotificationReader
     });
     return row != null;
   }
+}
+
+function toValuesByUserId(
+  rows: readonly { readonly userId: string; readonly value: string }[],
+): ReadonlyMap<string, ReadonlySet<string>> {
+  const valuesByUserId = new Map<string, Set<string>>();
+  for (const { userId, value } of rows) {
+    const values = valuesByUserId.get(userId) ?? new Set<string>();
+    values.add(value);
+    valuesByUserId.set(userId, values);
+  }
+  return valuesByUserId;
 }
