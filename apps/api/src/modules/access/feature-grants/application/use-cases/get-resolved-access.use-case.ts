@@ -10,10 +10,15 @@ import {
 } from "../../../shared/domain/entitlement.domain-service.js";
 import type { AccessStateReaderPort } from "../ports/access-state.reader.port.js";
 import type { CachedAccessState, EntitlementCachePort } from "../ports/entitlement-cache.port.js";
-import type {
-  AccessReadConsistency,
-  ResolvedAccessReadModel,
-} from "../read-models/resolved-access.read-model.js";
+import type { ResolvedAccessReadModel } from "../read-models/resolved-access.read-model.js";
+
+const ACCESS_READ_CONSISTENCIES = ["cached", "latest"] as const;
+
+/**
+ * cached는 권한 캐시(TTL 안에서도 끝나는 시각은 넘기지 않는다)를 읽고, latest는 활성 UoW에서 캐시 없이 다시
+ * 읽는다. 잠금을 잡은 쓰기 판단은 latest를 쓴다.
+ */
+export type AccessReadConsistency = (typeof ACCESS_READ_CONSISTENCIES)[number];
 
 export interface GetResolvedAccessQuery {
   readonly userId: UserId;

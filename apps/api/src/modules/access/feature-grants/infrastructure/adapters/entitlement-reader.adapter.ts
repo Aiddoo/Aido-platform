@@ -19,12 +19,12 @@ import {
   toFeatureQuotaReadModel,
   type FeatureQuotaReadModel,
 } from "../../application/read-models/feature-quota.read-model.js";
-import type {
-  AccessReadConsistency,
-  ResolvedAccessReadModel,
-} from "../../application/read-models/resolved-access.read-model.js";
+import type { ResolvedAccessReadModel } from "../../application/read-models/resolved-access.read-model.js";
 import type { UserEntitlementsReadModel } from "../../application/read-models/user-entitlements.read-model.js";
-import { GetResolvedAccessUseCase } from "../../application/use-cases/get-resolved-access.use-case.js";
+import {
+  type AccessReadConsistency,
+  GetResolvedAccessUseCase,
+} from "../../application/use-cases/get-resolved-access.use-case.js";
 
 // 다른 Context에 여는 문. 판단은 도메인 서비스가 하고 다른 Context가 아직 쓰는 Date는 이 경계에서 바꾼다
 @Injectable()

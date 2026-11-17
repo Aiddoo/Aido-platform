@@ -9,7 +9,7 @@
 | 질문                         | 쓰는 곳                                                                                                                                                                                                                       |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 이 기능을 쓸 수 있나·한도는  | `EntitlementReaderPort`의 `can`/`getFeatureLimit`(잠금 뒤 재확인은 `canInTransaction`/`getFeatureLimitInTransaction`), 전체는 `getEntitlements`(tier·plan·isPremium·features), 거부는 `assertEntitled`(기능별 기존 ErrorCode) |
-| 여러 사용자를 SQL로 고를 때  | `access-feature-grants.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                                 |
+| 여러 사용자를 SQL로 고를 때  | `access-feature-grants-queries.public`의 `premiumAccessCondition`/`freeAccessCondition`/`activeSubscriptionCondition`                                                                                                         |
 | 프리미엄 출처·기간 표시(/me) | `PremiumAccessReaderPort`(`billing-premium-grants.public`). 권한 판단에는 쓰지 않는다                                                                                                                                         |
 | 돈이 드는 횟수(AI·녹음 정리) | `QuotaLedgerPort`(`access-quota-charges.public`)의 `reserve`→`commit`/`refund`, 표시는 `read`가 주는 `featureQuota`. 남은 0을 미리 막을 때는 `@RequireQuota(meter)`                                                           |
 
@@ -57,4 +57,4 @@
 
 ## 포트와 진입점
 
-다른 Context는 `feature-grants/access-feature-grants.public`(`AccessFeatureGrantsQueriesModule`·`EntitlementReaderPort`·`EntitlementCacheInvalidatorPort`·`FeatureGranterPort`·SQL 조건)과 `quota-charges/access-quota-charges.public`(`AccessQuotaChargesModule`·`QuotaLedgerPort`)만 import하고 클래스 토큰으로 주입받는다. `GET /v1/entitlements`는 social·planning이 센 사용량을 읽어야 해서 `AccessFeatureGrantsModule`에 두고, 다른 Context는 import 없는 queries Module만 받아 순환하지 않는다. Symbol 토큰과 옛 진입점은 없다.
+다른 Context는 `feature-grants/access-feature-grants-queries.public`(`AccessFeatureGrantsQueriesModule`·`EntitlementReaderPort`·`EntitlementCacheInvalidatorPort`·`FeatureGranterPort`·SQL 조건)과 `quota-charges/access-quota-charges.public`(`AccessQuotaChargesModule`·`QuotaLedgerPort`)만 import하고 클래스 토큰으로 주입받는다. `GET /v1/entitlements`는 social·planning이 센 사용량을 읽어야 해서 `AccessFeatureGrantsModule`에 두고, 다른 Context는 import 없는 queries Module만 받아 순환하지 않는다. Symbol 토큰과 옛 진입점은 없다.

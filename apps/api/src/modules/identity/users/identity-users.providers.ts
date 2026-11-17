@@ -1,6 +1,6 @@
 import type { FactoryProvider, Provider } from "@nestjs/common";
 
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";

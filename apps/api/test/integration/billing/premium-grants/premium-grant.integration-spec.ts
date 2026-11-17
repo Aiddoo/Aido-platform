@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { PremiumGrantEndingNoticeRepositoryPort } from "#api/modules/billing/premium-grants/application/ports/premium-grant-ending-notice.repository.port";
 import { NotifyEndingPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/notify-ending-premium-grants.use-case";
 import { RevokePremiumGrantUseCase } from "#api/modules/billing/premium-grants/application/use-cases/revoke-premium-grant.use-case";

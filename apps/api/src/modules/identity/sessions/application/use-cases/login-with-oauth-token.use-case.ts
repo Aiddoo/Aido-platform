@@ -4,7 +4,7 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
 import {
   TRUSTED_EMAIL_PROVIDERS,

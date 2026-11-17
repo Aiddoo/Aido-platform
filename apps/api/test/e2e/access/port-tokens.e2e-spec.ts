@@ -2,7 +2,7 @@ import {
   EntitlementCacheInvalidatorPort,
   EntitlementReaderPort,
   FeatureGranterPort,
-} from "#api/modules/access/feature-grants/access-feature-grants.public";
+} from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { EntitlementCachePort } from "#api/modules/access/feature-grants/application/ports/entitlement-cache.port";
 import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 

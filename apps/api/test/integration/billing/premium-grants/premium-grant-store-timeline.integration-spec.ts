@@ -1,4 +1,4 @@
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
 import {
   PremiumAccessReaderPort,

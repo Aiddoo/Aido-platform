@@ -5,7 +5,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import type {
   AiGenerationRequest,

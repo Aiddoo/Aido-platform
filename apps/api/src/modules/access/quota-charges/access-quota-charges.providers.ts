@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { AccessStateReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { AccessStateReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

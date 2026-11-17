@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, not } from "drizzle-orm";
 
-import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user } from "#api/platform/database/schema/identity.schema";

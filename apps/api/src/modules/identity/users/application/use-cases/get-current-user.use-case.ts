@@ -1,7 +1,7 @@
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import type { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";

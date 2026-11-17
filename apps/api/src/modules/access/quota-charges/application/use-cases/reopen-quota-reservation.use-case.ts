@@ -2,7 +2,7 @@ import {
   accessUserNotFound,
   toFeatureQuotaReadModel,
   type AccessStateReaderPort,
-} from "#api/modules/access/feature-grants/access-feature-grants.public";
+} from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
