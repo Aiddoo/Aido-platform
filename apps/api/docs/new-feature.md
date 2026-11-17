@@ -6,7 +6,7 @@
 
 - 데이터와 판단을 누가 소유하는지 먼저 정한다. 이름만 보고 새 Context를 만들지 않는다. 기존 Context의 Aggregate가 바뀌면 그 slice에 UseCase를 더하고, 새 Aggregate Root면 새 slice다([구조](architecture.md#폴더-구조)).
 - 다른 Context의 데이터가 필요하면 그 Context가 public으로 연 포트를 쓴다. 테이블을 직접 읽지 않는다. 없으면 소유 Context에 좁은 조회 포트를 먼저 연다.
-- 판단은 서버, 표시는 앱이다. 앱이 같은 판단을 다시 하지 않도록 결과를 응답에 싣는다([서버가 계산할 것](architecture.md#서버가-계산할-것)).
+- 판단은 서버, 표시는 앱이다. 앱이 같은 판단을 다시 하지 않도록 결과를 응답에 싣는다([서버·앱 책임](../../../docs/conventions/ownership.md)).
 
 ## 1. 뼈대를 만든다
 
