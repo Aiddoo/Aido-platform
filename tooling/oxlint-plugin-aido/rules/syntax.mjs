@@ -203,8 +203,10 @@ const noRoleComparison = {
   },
 };
 
-const LANGUAGE_TAG = /^[a-z]{2,3}(?:[-_][A-Za-z]{2,4})*$/;
-const LOCALE_NAME = /(?:locale|language|lang)$/i;
+// BCP 47 language[-Script][-REGION] 꼴(`ko`·`zh-Hant`·`ko-KR`)만 언어 태그로 본다
+const LANGUAGE_TAG = /^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2})?$/;
+// 이름이 언어 값인 것만: locale·language·lang 그대로이거나 …Locale·…Language로 끝난다
+const LOCALE_NAME = /^(?:locale|language|lang)$|(?:Locale|Language)$/;
 
 function isLanguageTagLiteral(node) {
   return node.type === 'Literal' && typeof node.value === 'string' && LANGUAGE_TAG.test(node.value);
