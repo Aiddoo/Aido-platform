@@ -1,4 +1,4 @@
-import { and, count, eq, exists, gte, inArray, lt, sql, type SQL } from "drizzle-orm";
+import { and, count, eq, exists, gte, inArray, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { QueryBuilder, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 import { todo } from "#api/platform/database/schema/index";
@@ -47,6 +47,16 @@ export function hasTodoBetween(
           completed == null ? undefined : eq(todo.completed, completed),
         ),
       ),
+  );
+}
+
+// 시작일이 from 이후인 반복 아닌 할 일이 있다
+export function hasNonRepeatingTodoFrom(userIdColumn: AnyPgColumn, from: Temporal.PlainDate): SQL {
+  return exists(
+    new QueryBuilder()
+      .select({ one: sql`1` })
+      .from(todo)
+      .where(and(eq(todo.userId, userIdColumn), gte(todo.startDate, from), isNull(todo.seriesId))),
   );
 }
 

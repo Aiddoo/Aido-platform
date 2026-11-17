@@ -1,9 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, count, eq, isNotNull } from "drizzle-orm";
 
+import { todoCategoriesOf } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { todosStartingBetween } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { todo, todoCategory } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
 
@@ -13,51 +15,52 @@ import type { AggregateParams, AggregationInputs } from "../../domain/ai-reports
 import { toAggregationInputs } from "./report-aggregation.mapper.js";
 
 interface ReportPeriod {
-  userId: string;
+  userId: UserId;
   start: Temporal.PlainDate;
   end: Temporal.PlainDate;
 }
 
 function inPeriod({ userId, start, end }: ReportPeriod) {
-  return and(eq(todo.userId, userId), gte(todo.startDate, start), lt(todo.startDate, end));
+  return todosStartingBetween(userId, start, end);
 }
 
 function selectDailyCounts(db: Database, period: ReportPeriod) {
+  const todos = inPeriod(period);
   return db
-    .select({ startDate: todo.startDate, completed: todo.completed, count: count() })
-    .from(todo)
-    .where(inPeriod(period))
-    .groupBy(todo.startDate, todo.completed);
+    .select({ startDate: todos.startDate, completed: todos.completed, count: count() })
+    .from(todos)
+    .groupBy(todos.startDate, todos.completed);
 }
 
 function selectPreviousCounts(db: Database, period: ReportPeriod) {
+  const todos = inPeriod(period);
   return db
-    .select({ completed: todo.completed, count: count() })
-    .from(todo)
-    .where(inPeriod(period))
-    .groupBy(todo.completed);
+    .select({ completed: todos.completed, count: count() })
+    .from(todos)
+    .groupBy(todos.completed);
 }
 
 function selectCategoryCounts(db: Database, period: ReportPeriod) {
+  const todos = inPeriod(period);
   return db
-    .select({ categoryId: todo.categoryId, completed: todo.completed, count: count() })
-    .from(todo)
-    .where(inPeriod(period))
-    .groupBy(todo.categoryId, todo.completed);
+    .select({ categoryId: todos.categoryId, completed: todos.completed, count: count() })
+    .from(todos)
+    .groupBy(todos.categoryId, todos.completed);
 }
 
-function selectCategories(db: Database, userId: string) {
+function selectCategories(db: Database, userId: UserId) {
+  const categories = todoCategoriesOf(userId);
   return db
-    .select({ id: todoCategory.id, name: todoCategory.name, color: todoCategory.color })
-    .from(todoCategory)
-    .where(eq(todoCategory.userId, userId));
+    .select({ id: categories.id, name: categories.name, color: categories.color })
+    .from(categories);
 }
 
 function selectCompletedTodos(db: Database, period: ReportPeriod) {
+  const todos = inPeriod(period);
   return db
-    .select({ startDate: todo.startDate, completedAt: todo.completedAt })
-    .from(todo)
-    .where(and(inPeriod(period), eq(todo.completed, true), isNotNull(todo.completedAt)));
+    .select({ startDate: todos.startDate, completedAt: todos.completedAt })
+    .from(todos)
+    .where(and(eq(todos.completed, true), isNotNull(todos.completedAt)));
 }
 
 /** 고정된 5개 집계 쿼리를 활성 CLS transaction에서 실행한다. */
@@ -71,7 +74,8 @@ export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
   }
 
   async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
-    const { userId, startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
+    const { startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
+    const userId = UserId.reconstitute(params.userId);
     const db = this.#transactionHost.tx;
     const day = (value: Date) => localDateAt(value, timezone);
     const current = { userId, start: day(startDate), end: day(endDate) };

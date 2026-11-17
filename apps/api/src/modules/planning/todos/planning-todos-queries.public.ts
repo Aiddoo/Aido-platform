@@ -23,6 +23,7 @@ export { TodoId } from "./domain/todo-id.vo.js";
 // 사람 id 칸 옆에 그 사람의 할 일을 붙이는 다른 Context의 한 SQL이 할 일 테이블을 직접 읽지 않게 한다
 export {
   completedTodoCountsByUser,
+  hasNonRepeatingTodoFrom,
   hasTodoBetween,
   todoActivityRowsOf,
   todoCompletionsBetween,
@@ -30,7 +31,13 @@ export {
   todoDaysInPeriodByUser,
 } from "./infrastructure/persistence/todo-range.query-fragment.js";
 export {
+  nonRepeatingTodosStartingWithin,
+  todosOnDay,
+  todosStartingBetween,
+} from "./infrastructure/persistence/todo-period.query-fragment.js";
+export {
   openReminderTodos,
   todoOwnerDates,
+  todoOwners,
 } from "./infrastructure/persistence/todo-target.query-fragment.js";
 export { PlanningTodosQueriesModule } from "./planning-todos-queries.module.js";

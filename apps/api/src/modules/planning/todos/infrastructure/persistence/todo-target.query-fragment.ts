@@ -13,6 +13,11 @@ export function todoOwnerDates(todoIds: readonly number[]) {
     .as("todo_owner_dates");
 }
 
+// 할 일 id 칸 옆에 그 할 일의 주인을 붙이는 하위 질의다. 한 SQL에 여러 번 붙일 때는 별칭을 다르게 준다
+export function todoOwners(alias: string) {
+  return new QueryBuilder().select({ todoId: todo.id, ownerId: todo.userId }).from(todo).as(alias);
+}
+
 // 리마인더를 울릴 수 있는(끝내지 않은) 할 일이다
 export function openReminderTodos(todoIds: readonly number[]) {
   return new QueryBuilder()

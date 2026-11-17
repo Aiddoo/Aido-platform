@@ -1,7 +1,9 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { desc } from "drizzle-orm";
 
+import { nonRepeatingTodosStartingWithin } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -18,7 +20,7 @@ function toWallClock(local: Temporal.ZonedDateTime): string {
   return local.toPlainTime().toString({ smallestUnit: "minute" });
 }
 
-/** 제안 분석용 활동 projection. planning·제안 테이블을 읽는다(공개 조회 포트로 옮기는 것은 후속). */
+/** 제안 분석용 활동 projection. 할 일은 planning이 연 하위 질의로 읽는다. */
 @Injectable()
 export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPort {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
@@ -37,25 +39,16 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     period: SuggestionAnalysisPeriod,
     timezone: string,
   ): Promise<TodoSummaryForAnalysis[]> {
-    const todos = await this.#db.query.todo.findMany({
-      columns: {
-        title: true,
-        startDate: true,
-        scheduledLocalTime: true,
-        scheduledTime: true,
-        categoryId: true,
-        completed: true,
-      },
-      with: { category: { columns: { name: true } } },
-      where: {
-        userId: userId.value,
-        seriesId: { isNull: true },
-        startDate: { gte: period.from, lte: period.to },
-      },
-      // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
-      orderBy: { startDate: "desc" },
-      limit: AI_SUGGESTION_LIMITS.MAX_ANALYSIS_TODOS,
+    const recent = nonRepeatingTodosStartingWithin(userId, {
+      from: period.from,
+      through: period.to,
     });
+    // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
+    const todos = await this.#db
+      .select()
+      .from(recent)
+      .orderBy(desc(recent.startDate))
+      .limit(AI_SUGGESTION_LIMITS.MAX_ANALYSIS_TODOS);
 
     return todos.toReversed().map((t) => ({
       title: t.title,
@@ -66,7 +59,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
           : (t.scheduledLocalTime ?? toWallClock(localDateTimeAt(t.scheduledTime, timezone))),
       categoryId: t.categoryId,
       completed: t.completed,
-      categoryName: requireRecord(t.category).name,
+      categoryName: requireRecord(t.categoryName),
     }));
   }
 
