@@ -1,3 +1,5 @@
+import { weeklyAchievementBadge } from "@aido/api/vocabulary";
+
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import type {
@@ -182,10 +184,9 @@ export function createWeeklyAchievementNotificationMessage({
   locale = DEFAULT_LOCALE,
   variantContext,
 }: WeeklyAchievementNotificationInput): NotificationMessage {
-  // 반올림 100%는 전체 완료의 근거가 아니다. 실제 완료 개수로 perfect를 판단한다.
-  const isComplete = totalCount > 0 && completedCount === totalCount;
+  const badge = weeklyAchievementBadge(completedCount, totalCount);
   const rate = Math.min(99, Math.round((completedCount / totalCount) * 100));
-  if (isComplete) {
+  if (badge === "perfect") {
     return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_PERFECT, {
       facts: {},
       locale,
@@ -193,7 +194,7 @@ export function createWeeklyAchievementNotificationMessage({
       templateKey: "weekly_achievement.perfect",
     });
   }
-  if (rate >= 90) {
+  if (badge === "almost") {
     return renderNotificationTemplate(SYSTEM_COPY.WEEKLY_ACHIEVEMENT_ALMOST, {
       facts: { rate },
       locale,

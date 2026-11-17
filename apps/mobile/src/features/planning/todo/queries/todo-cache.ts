@@ -441,7 +441,7 @@ export function settleTodoWrite(
     }
   }
   if (isCompletionAffected) {
-    // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다
+    // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다(daily-completion-cases.json이 두 계산을 고정한다)
     const list = queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: target.date }));
     const isSingleDay = target.span.startDate === target.span.endDate;
     if (needsReconcile || !isSingleDay || list == null || list.hasNext) {

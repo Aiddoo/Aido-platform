@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+
+import { z } from "zod";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   calendarDate,
@@ -9,6 +13,45 @@ import {
 import { countCompleteDays, tallyDailyCompletions } from "./daily-completion.domain-service.js";
 
 const USER = UserId.reconstitute(DAILY_COMPLETION_FIXTURE_USER_ID);
+
+/** 앱 withTodoDailyCompletion도 같은 표를 읽는다. 앱은 하루를 고친 뒤 이 값으로 달력을 고치고 다시 받지 않는다 */
+const SHARED_DAY_TALLY_CASES = z
+  .object({
+    dayTally: z.array(
+      z.object({
+        name: z.string(),
+        date: z.iso.date(),
+        todos: z.array(
+          z.object({
+            startDate: z.iso.date(),
+            endDate: z.iso.date().nullable(),
+            completed: z.boolean(),
+            categoryColor: z.string(),
+          }),
+        ),
+        expected: z
+          .object({
+            totalTodos: z.int(),
+            completedTodos: z.int(),
+            isComplete: z.boolean(),
+            completionRate: z.number(),
+            categoryColors: z.array(z.string()),
+          })
+          .nullable(),
+      }),
+    ),
+  })
+  .parse(
+    JSON.parse(
+      readFileSync(
+        new URL(
+          "../../../../../../../packages/api/test/fixtures/daily-completion-cases.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ),
+  ).dayTally;
 
 describe("일일 완료 집계", () => {
   it("구간 안 하루짜리 할 일을 날짜마다 할 일 수·완료 수·색(중복 없이)으로 더하고 날짜 오름차순으로 준다", () => {
@@ -171,5 +214,36 @@ describe("일일 완료 집계", () => {
 
     // Then
     expect(completeDays).toBe(2);
+  });
+
+  it.each(SHARED_DAY_TALLY_CASES)("앱과 같은 하루 집계 표: $name", ({ date, todos, expected }) => {
+    // Given
+    const groups = todos.map((todo) => ({
+      startDate: calendarDate(todo.startDate),
+      endDate: todo.endDate == null ? null : calendarDate(todo.endDate),
+      completed: todo.completed,
+      categoryColor: todo.categoryColor,
+      todoCount: 1,
+    }));
+
+    // When
+    const completions = tallyDailyCompletions({
+      userId: USER,
+      range: createDateRangeFixture(date, date),
+      groups,
+    }).map((completion) => {
+      const primitives = completion.toPrimitives();
+      return {
+        date: primitives.date.toString(),
+        totalTodos: primitives.totalTodos,
+        completedTodos: primitives.completedTodos,
+        isComplete: completion.isComplete(),
+        completionRate: completion.completionRate,
+        categoryColors: primitives.categoryColors,
+      };
+    });
+
+    // Then
+    expect(completions).toEqual(expected == null ? [] : [{ date, ...expected }]);
   });
 });

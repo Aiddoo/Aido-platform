@@ -1,3 +1,4 @@
+import { WEEKLY_ACHIEVEMENT_BADGES, weeklyAchievementBadge } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
@@ -31,21 +32,15 @@ export const weeklyAchievementPageSchema = cursorPageSchema(
 });
 export type WeeklyAchievementPage = z.infer<typeof weeklyAchievementPageSchema>;
 
-const badgeTypeSchema = z.enum(['perfect', 'almost', 'completed']);
+const badgeTypeSchema = z.enum(WEEKLY_ACHIEVEMENT_BADGES);
 export type BadgeType = z.infer<typeof badgeTypeSchema>;
 
-const PERFECT_COMPLETION_RATE = 100;
-const ALMOST_COMPLETION_RATE = 90;
-
-// 완료율 100%는 빈틈없는 한 주, 90% 이상은 아깝다 한 끗, 나머지는 꾸준한 한 걸음
+/**
+ * 빈틈없는 한 주·아깝다 한 끗·꾸준한 한 걸음. 주간 푸시와 같은 판정이라 반올림 완료율이 아니라 할 일 수로 정한다
+ * (199/200은 응답 완료율이 100이어도 아깝다 한 끗이다)
+ */
 export function getBadgeType(achievement: WeeklyAchievement): BadgeType {
-  if (achievement.completionRate >= PERFECT_COMPLETION_RATE) {
-    return 'perfect';
-  }
-  if (achievement.completionRate >= ALMOST_COMPLETION_RATE) {
-    return 'almost';
-  }
-  return 'completed';
+  return weeklyAchievementBadge(achievement.completedTodos, achievement.totalTodos);
 }
 
 export const AchievementPolicy = {

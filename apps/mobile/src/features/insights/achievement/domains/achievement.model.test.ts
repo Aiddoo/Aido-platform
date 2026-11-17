@@ -21,39 +21,25 @@ function createWeeklyAchievement(overrides: Partial<WeeklyAchievement> = {}) {
 }
 
 describe('getBadgeType', () => {
-  it('완료율 100%는 빈틈없는 한 주 배지다', () => {
-    // Given
-    const achievement = createWeeklyAchievement({ completionRate: 100 });
+  it.each([
+    { name: '모두 끝낸 주', completedTodos: 10, totalTodos: 10, expected: 'perfect' },
+    // 응답 완료율은 반올림해 100이지만 주간 푸시는 아깝다 한 끗이라고 보냈다
+    { name: '하나 남은 199/200 주', completedTodos: 199, totalTodos: 200, expected: 'almost' },
+  ] as const)(
+    '응답 완료율 100인 $name은 $expected 배지다',
+    ({ completedTodos, totalTodos, expected }) => {
+      // Given
+      const achievement = createWeeklyAchievement({
+        completedTodos,
+        totalTodos,
+        completionRate: 100,
+      });
 
-    // When
-    const badgeType = AchievementPolicy.getBadgeType(achievement);
+      // When
+      const badgeType = AchievementPolicy.getBadgeType(achievement);
 
-    // Then
-    expect(badgeType).toBe('perfect');
-  });
-
-  it('완료율 90% 이상 100% 미만은 아깝다 한 끗 배지다', () => {
-    // Given
-    const lowerBound = createWeeklyAchievement({ completionRate: 90 });
-    const upperBound = createWeeklyAchievement({ completionRate: 99.9 });
-
-    // When
-    const lowerBadge = AchievementPolicy.getBadgeType(lowerBound);
-    const upperBadge = AchievementPolicy.getBadgeType(upperBound);
-
-    // Then
-    expect(lowerBadge).toBe('almost');
-    expect(upperBadge).toBe('almost');
-  });
-
-  it('완료율 90% 미만은 꾸준한 한 걸음 배지다', () => {
-    // Given
-    const achievement = createWeeklyAchievement({ completionRate: 89.9 });
-
-    // When
-    const badgeType = AchievementPolicy.getBadgeType(achievement);
-
-    // Then
-    expect(badgeType).toBe('completed');
-  });
+      // Then
+      expect(badgeType).toBe(expected);
+    },
+  );
 });

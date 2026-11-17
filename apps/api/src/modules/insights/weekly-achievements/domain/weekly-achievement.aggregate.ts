@@ -1,3 +1,5 @@
+import { weeklyAchievementBadge } from "@aido/api/vocabulary";
+
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -78,9 +80,9 @@ export class WeeklyAchievement extends AggregateRoot<WeeklyAchievementId, Weekly
     return this.props.todoCount.rate;
   }
 
-  /** 할 일이 하나 이상이고 모두 끝낸 주 */
+  /** 할 일이 하나 이상이고 모두 끝낸 주. 앱 배지·주간 푸시와 같은 판정이다 */
   isPerfect(): boolean {
-    return this.props.todoCount.isAllCompleted();
+    return weeklyAchievementBadge(this.completedTodos, this.totalTodos) === "perfect";
   }
 
   toPrimitives(): WeeklyAchievementPrimitives {
