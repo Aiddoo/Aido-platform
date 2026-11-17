@@ -1,12 +1,12 @@
 import type { PremiumFeature } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/generation/application/ports/client-app-version.reader.port";
-import { TodoStatsReaderPort } from "#api/modules/ai-assistance/reports/application/ports/todo-stats.reader.port";
+import { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/ai-generations/application/ports/client-app-version.reader.port";
+import { TodoStatsReaderPort } from "#api/modules/ai-assistance/ai-reports/application/ports/todo-stats.reader.port";
 import type {
   AggregateParams,
   AggregationInputs,
-} from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+} from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";

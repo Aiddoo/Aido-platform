@@ -3,7 +3,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import {
   CurrentUser,
   type CurrentUserPayload,

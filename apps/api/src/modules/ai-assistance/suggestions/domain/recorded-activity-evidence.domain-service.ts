@@ -2,7 +2,7 @@ import { DAY_OF_WEEK_ORDER, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/ap
 import { countBy, groupBy, maxBy, orderBy } from "es-toolkit";
 
 import { sundayBasedDayIndex } from "../../shared/domain/user-calendar.domain-service.js";
-import type { RecordedActivityEvidence, TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { RecordedActivityEvidence, TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 const IGNORED_TITLE_CHARACTERS =
   /[\p{P}\p{S}\p{Extended_Pictographic}\p{Cf}\p{Me}\p{Variation_Selector}\s]/gu;

@@ -5,7 +5,7 @@ import type {
 import type {
   ChargedGenerationPort,
   ChargedGenerationResult,
-} from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 
 import {
   type ChargedPlanRequest,

@@ -9,8 +9,8 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
-import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
+import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-generations.log-events.js";
+import { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
 import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import {
@@ -80,7 +80,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     const queueName = AI_SUGGESTION_QUEUE.name;
     const { userId, timezone } = data;
     const startedAt = this.#clock.now();
-    this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName, userId });
+    this.#logger.debug({ event: AiGenerationLogEvent.JOB_STARTED, queueName, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
     const { locale } = await this.#localePreferenceReader.read(UserId.reconstitute(userId));
@@ -97,7 +97,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       isFinalAttempt: isFinalSuggestionAttempt(attempt),
     });
     if (result == null) {
-      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName, userId });
+      this.#logger.debug({ event: AiGenerationLogEvent.JOB_SKIPPED, queueName, userId });
       return;
     }
 
@@ -107,7 +107,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     }
 
     this.#logger.log({
-      event: AiJobLogEvent.COMPLETED,
+      event: AiGenerationLogEvent.JOB_COMPLETED,
       queueName,
       userId,
       trigger: result.trigger,

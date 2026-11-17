@@ -3,8 +3,8 @@ import type { FactoryProvider, Provider } from "@nestjs/common";
 import { z } from "zod";
 
 import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
-import { UserLocalePreferenceReaderPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
+import { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
+import { UserLocalePreferenceReaderPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import {
   ChargedPlanRunnerPort,
   PlanningContextReaderPort,

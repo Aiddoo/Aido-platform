@@ -115,7 +115,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       expect(f.generator.getLastRequest()).toMatchObject({
         task: "suggestion",
         taskClass: "background",
-        userId: f.userId,
+        userId: UserId.reconstitute(f.userId),
         promptVersion: "suggestion@4",
       });
     }));

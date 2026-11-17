@@ -11,7 +11,7 @@
  */
 import { countBy, maxBy } from "es-toolkit";
 
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 /**
  * 제안 제목 + 매칭 투두 기반으로 추천 카테고리 ID 를 결정.

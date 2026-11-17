@@ -1,6 +1,6 @@
-import { buildLanguagePolicy } from "../../../generation/application/messages/language-policy.messages.js";
-import { composeSystem } from "../../../generation/application/messages/prompt-definition.messages.js";
-import { buildSecurityRules } from "../../../generation/application/messages/security-rules.messages.js";
+import { buildLanguagePolicy } from "../../../ai-generations/application/messages/language-policy.messages.js";
+import { composeSystem } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { buildSecurityRules } from "../../../ai-generations/application/messages/security-rules.messages.js";
 import { SUGGESTION_EXAMPLES_EN } from "./suggestion-examples-en.messages.js";
 
 export const SUGGESTION_SYSTEM_EN = composeSystem({

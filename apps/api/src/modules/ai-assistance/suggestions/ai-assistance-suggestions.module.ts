@@ -8,8 +8,8 @@ import { NotificationPushModule } from "#api/modules/notification/notification-d
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
-import { AiAssistanceGenerationModule } from "../generation/ai-assistance-generation.module.js";
-import { AiAssistanceParsingModule } from "../parsing/ai-assistance-parsing.module.js";
+import { AiAssistanceAiGenerationsModule } from "../ai-generations/ai-assistance-ai-generations.module.js";
+import { AiAssistanceParsedDraftsModule } from "../parsed-drafts/ai-assistance-parsed-drafts.module.js";
 import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { AI_ASSISTANCE_SUGGESTIONS_PROVIDERS } from "./ai-assistance-suggestions.providers.js";
 import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.controller.js";
@@ -24,8 +24,8 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
     AccessQuotaChargesModule,
     IdentitySettingsModule,
     IdentityUserAccessModule,
-    AiAssistanceGenerationModule,
-    AiAssistanceParsingModule,
+    AiAssistanceAiGenerationsModule,
+    AiAssistanceParsedDraftsModule,
     NotificationPushModule,
     PlanningTodoQueriesModule,
     PlanningTodosModule,

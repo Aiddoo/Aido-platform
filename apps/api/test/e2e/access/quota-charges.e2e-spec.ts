@@ -10,11 +10,13 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import type {
   AiGenerationRequest,
-  AiGenerationResult,
-} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+  AiTaskId,
+  AiTaskOutputs,
+} from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
+import type { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -43,7 +45,9 @@ class DeferredAiGenerator extends FakeAiGenerator {
     return { entered: entered.promise, release: () => continued.resolve() };
   }
 
-  override async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+  override async generate<TTask extends AiTaskId>(
+    request: AiGenerationRequest<TTask>,
+  ): Promise<AiGeneration<AiTaskOutputs[TTask]>> {
     const deferred = this.#pending.shift();
     const result = await super.generate(request);
     if (deferred === undefined) {

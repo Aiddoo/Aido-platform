@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
-import { AiAssistanceGenerationModule } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
-import { AiAssistancePlanningModule } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
+import { AiAssistanceActionPlanDraftsModule } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
+import { AiAssistanceAiGenerationsModule } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
+import { AiAssistanceParsedDraftsModule } from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { VoicePlanApplicationsModule } from "#api/modules/voice/plan-applications/voice-plan-applications.public";
 
@@ -14,9 +14,9 @@ import { VOICE_VOICE_DIGESTS_PROVIDERS } from "./voice-voice-digests.providers.j
 @Module({
   imports: [
     AccessQuotaChargesModule,
-    AiAssistanceGenerationModule,
-    AiAssistanceParsingModule,
-    AiAssistancePlanningModule,
+    AiAssistanceAiGenerationsModule,
+    AiAssistanceParsedDraftsModule,
+    AiAssistanceActionPlanDraftsModule,
     IdentitySettingsModule,
     VoicePlanApplicationsModule,
   ],

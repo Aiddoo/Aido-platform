@@ -1,6 +1,6 @@
 import type { ActionPlanSource } from "@aido/api/vocabulary";
 
-import { fingerprintRequest } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { fingerprintRequest } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import {
   MemoId,
   MemoLockKeys,

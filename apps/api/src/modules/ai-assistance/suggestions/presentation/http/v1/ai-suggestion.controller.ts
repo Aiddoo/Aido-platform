@@ -31,7 +31,7 @@ import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-re
 import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
 
-import { AiDataSharingConsentGuard } from "../../../../parsing/ai-assistance-parsing.public.js";
+import { AiDataSharingConsentGuard } from "../../../../parsed-drafts/ai-assistance-parsed-drafts.public.js";
 import { HandleSuggestionActionUseCase } from "../../../application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "../../../application/use-cases/list-pending-suggestions.use-case.js";
 import { RequestSuggestionAnalysisUseCase } from "../../../application/use-cases/request-suggestion-analysis.use-case.js";

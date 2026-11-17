@@ -9,8 +9,8 @@ import {
   type SuggestionMode,
   suggestionModeOf,
 } from "../../domain/suggestion-candidates.domain-service.js";
-import type { SuggestionHistoryItem } from "../../domain/suggestion.constants.js";
-import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
+import type { SuggestionHistoryItem } from "../../domain/suggestions.constants.js";
+import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
 
 /** 프롬프트에 넣는 제목 길이. 저장되는 제목은 원본이다. */
 const PROMPT_TITLE_MAX_LENGTH = 80;
@@ -23,7 +23,7 @@ export interface SuggestionData {
   readonly history: readonly SuggestionHistoryItem[];
 }
 
-export function buildSuggestionData(context: SuggestionContext): SuggestionData {
+export function buildSuggestionData(context: SuggestionContextReadModel): SuggestionData {
   const shorten = (title: string) => truncateGraphemes(title, PROMPT_TITLE_MAX_LENGTH);
   const mode = suggestionModeOf(context.todos.length);
   return {

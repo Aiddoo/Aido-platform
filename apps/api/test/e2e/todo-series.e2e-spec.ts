@@ -9,7 +9,7 @@ import { TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
 import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";

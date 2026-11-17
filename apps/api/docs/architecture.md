@@ -73,7 +73,7 @@ apps/api/src/
 | notification  | `inbox`, `push`, `email`, `reminders`, `retention`                                                                                 |
 | insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                                           |
 | weather       | `weather-reports`, `user-locations` (+ `shared/`)                                                                                  |
-| ai-assistance | `generation`, `parsing`, `planning`, `reports`, `suggestions` (+ `shared/`)                                                        |
+| ai-assistance | `ai-generations`, `parsed-drafts`, `action-plan-drafts`, `ai-reports`, `suggestions` (+ `shared/`)                                 |
 | voice         | `voice-digests`, `plan-applications`                                                                                               |
 | operations    | `broadcasts`, `admin-notices`, `metrics`                                                                                           |
 | app-config    | `app-versions`, `feature-discovery` (+ `shared/`)                                                                                  |
@@ -152,7 +152,7 @@ UoW: 잠금 → 최신 자격·상태 확인 → 도메인 행동 → 저장 →
 commit → 캐시 정리
 ```
 
-사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
+사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
 
 ## 교체 가능한 포트
 

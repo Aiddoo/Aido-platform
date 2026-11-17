@@ -4,7 +4,7 @@ import type { SuggestionAnalysisPeriod } from "../../domain/suggestion-dispatch-
 import type {
   SuggestionHistoryItem,
   TodoSummaryForAnalysis,
-} from "../../domain/suggestion.constants.js";
+} from "../../domain/suggestions.constants.js";
 
 /** 제안 분석에 넣는 사용자 활동 projection. 기간은 사용자 시간대의 현지 날짜다. */
 export abstract class SuggestionActivityReaderPort {

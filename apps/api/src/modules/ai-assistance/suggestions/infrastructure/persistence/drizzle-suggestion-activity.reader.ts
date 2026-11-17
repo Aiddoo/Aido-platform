@@ -12,7 +12,7 @@ import type { SuggestionAnalysisPeriod } from "../../domain/suggestion-dispatch-
 import type {
   SuggestionHistoryItem,
   TodoSummaryForAnalysis,
-} from "../../domain/suggestion.constants.js";
+} from "../../domain/suggestions.constants.js";
 
 function toWallClock(local: Temporal.ZonedDateTime): string {
   return local.toPlainTime().toString({ smallestUnit: "minute" });
@@ -74,7 +74,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     userId: UserId,
     since: Temporal.Instant,
   ): Promise<SuggestionHistoryItem[]> {
-    const rows = await this.#db.query.recurringSuggestion.findMany({
+    const rows = await this.#db.query.suggestion.findMany({
       columns: { title: true, status: true },
       where: {
         userId: userId.value,

@@ -135,9 +135,6 @@ export const relations = defineRelations(schema, (r) => ({
     user: r.one.user({ from: r.pushToken.userId, to: r.user.id, optional: false }),
     deliveryAttempts: r.many.pushDeliveryAttempt(),
   },
-  recurringSuggestion: {
-    user: r.one.user({ from: r.recurringSuggestion.userId, to: r.user.id, optional: false }),
-  },
   reminderNudge: {
     receiver: r.one.user({
       from: r.reminderNudge.receiverId,
@@ -186,6 +183,9 @@ export const relations = defineRelations(schema, (r) => ({
   },
   session: {
     user: r.one.user({ from: r.session.userId, to: r.user.id, optional: false }),
+  },
+  suggestion: {
+    user: r.one.user({ from: r.suggestion.userId, to: r.user.id, optional: false }),
   },
   subscription: {
     user: r.one.user({ from: r.subscription.userId, to: r.user.id, optional: false }),
@@ -248,11 +248,11 @@ export const relations = defineRelations(schema, (r) => ({
     pushDispatches: r.many.pushDispatch(),
     pushDevices: r.many.pushDevice(),
     pushTokens: r.many.pushToken(),
-    recurringSuggestions: r.many.recurringSuggestion(),
     retentionAssignments: r.many.retentionExperimentAssignment(),
     securityLogs: r.many.securityLog(),
     sessions: r.many.session(),
     subscriptions: r.many.subscription(),
+    suggestions: r.many.suggestion(),
     todos: r.many.todo(),
     todoCategories: r.many.todoCategory(),
     authoredTodoComments: r.many.todoComment(),

@@ -2,11 +2,13 @@ import { vi } from "vitest";
 
 import type {
   AiGenerationRequest,
-  AiGenerationResult,
+  AiTaskId,
+  AiTaskOutputs,
   AiGeneratorPort,
-} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
-import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/generation/application/scheduled-ai-consent.reader";
-import { GenerateReportUseCase } from "#api/modules/ai-assistance/reports/application/use-cases/generate-report.use-case";
+} from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
+import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/ai-generations/application/scheduled-ai-consent.reader";
+import type { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
+import { GenerateReportUseCase } from "#api/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case";
 import { SuggestionAnalysisStateReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-analysis-state.reader";
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import {
@@ -17,7 +19,7 @@ import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/su
 import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
-import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
+import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestions.constants";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
@@ -60,7 +62,9 @@ export function createAnalysisTodo(
 
 class GatedFakeAiGenerator extends FakeAiGenerator implements AiGeneratorPort {
   beforeResult: (() => Promise<void>) | undefined;
-  override async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+  override async generate<TTask extends AiTaskId>(
+    request: AiGenerationRequest<TTask>,
+  ): Promise<AiGeneration<AiTaskOutputs[TTask]>> {
     const result = await super.generate(request);
     await this.beforeResult?.();
     return result;

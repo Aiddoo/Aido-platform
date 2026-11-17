@@ -1,12 +1,12 @@
 import type { QuickPlanSource } from "@aido/api/vocabulary";
 
 import type { MeteredFeatureQuotaReadModel } from "#api/modules/access/quota-charges/access-quota-charges.public";
+import type { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
   type UserLocalePreferenceReaderPort,
-} from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import type { ActionPlanGeneratorPort } from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
+} from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";

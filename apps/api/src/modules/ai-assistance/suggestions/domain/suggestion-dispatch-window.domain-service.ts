@@ -3,7 +3,7 @@ import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { SuggestionAnalysisRun } from "./suggestion-analysis-run.entity.js";
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "./suggestion.constants.js";
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "./suggestions.constants.js";
 
 // 야간(21:00~08:00) 수신을 끈 사용자에게도 닿게 아침에 보낸다. 08시대는 기본 아침 알림과 겹쳐 09시대로 둔다
 const SUGGESTION_DISPATCH_LOCAL_HOUR = 9;

@@ -10,13 +10,13 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import { AiJobLogEvent } from "../../../reports/infrastructure/jobs/ai-job.log-events.js";
+import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { DispatchSuggestionAnalysesUseCase } from "../../application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import {
   isInSuggestionDispatchWindow,
   resolveSuggestionTimeZone,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestion.constants.js";
+import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from "../../domain/suggestions.constants.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 
 const ENQUEUE_BATCH_SIZE = 50;
@@ -53,14 +53,17 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
       "Suggestion analysis scheduler registration",
       async () => {
         await this.#jobQueue.registerSchedules(AI_SUGGESTION_QUEUE);
-        this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_SUGGESTION_QUEUE.name });
+        this.#logger.log({
+          event: AiGenerationLogEvent.JOB_SCHEDULED,
+          queueName: AI_SUGGESTION_QUEUE.name,
+        });
       },
     );
   }
 
   async dispatchAnalysis(): Promise<void> {
     this.#logger.log({
-      event: AiJobLogEvent.DISPATCH_STARTED,
+      event: AiGenerationLogEvent.JOB_DISPATCH_STARTED,
       queueName: AI_SUGGESTION_QUEUE.name,
     });
 
@@ -105,7 +108,7 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
     });
 
     this.#logger.log({
-      event: AiJobLogEvent.DISPATCH_COMPLETED,
+      event: AiGenerationLogEvent.JOB_DISPATCH_COMPLETED,
       queueName: AI_SUGGESTION_QUEUE.name,
       enqueuedCount: totalEnqueued,
     });

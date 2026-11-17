@@ -1,4 +1,4 @@
-import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsing/infrastructure/adapters/quota-charged-generation.adapter";
+import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsed-drafts/infrastructure/adapters/quota-charged-generation.adapter";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";

@@ -4,7 +4,7 @@ import {
   resolveSuggestionPicks,
   suggestionConfidence,
 } from "./suggestion-candidates.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 function todo(
   title: string,

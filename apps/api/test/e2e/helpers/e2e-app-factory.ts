@@ -17,9 +17,9 @@ import { vi } from "vitest";
 
 import { setupApiDocs } from "#api/api-docs";
 import { AppModule } from "#api/app.module";
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
-import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.processor";
+import { ReportGenerationScheduler } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.scheduler";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
 import {

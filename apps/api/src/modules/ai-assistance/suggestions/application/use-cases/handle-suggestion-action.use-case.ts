@@ -20,12 +20,11 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserLocalePreferenceReaderPort } from "../../../generation/application/ports/user-locale-preference.reader.port.js";
+import type { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
 import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionId } from "../../domain/suggestion-id.vo.js";
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
-import type { SuggestionAction } from "../../domain/suggestion.constants.js";
-import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
+import type { SuggestionAction } from "../../domain/suggestions.constants.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import {
   invalidSuggestionDaysOfWeek,
@@ -33,6 +32,7 @@ import {
   suggestionNotFound,
   suggestionPremiumRequired,
 } from "../suggestions.errors.js";
+import { SuggestionLogEvent } from "../suggestions.log-events.js";
 
 export interface HandleSuggestionActionCommand {
   readonly userId: string;
@@ -102,7 +102,7 @@ export class HandleSuggestionActionUseCase {
     });
     if (result.createdTodosCount != null) {
       this.#dependencies.logger.log({
-        event: AiSuggestionLogEvent.ACCEPTED,
+        event: SuggestionLogEvent.ACCEPTED,
         suggestionId: command.suggestionId,
         userId: command.userId,
         createdTodosCount: result.createdTodosCount,
@@ -164,7 +164,7 @@ export class HandleSuggestionActionUseCase {
         "AI_SUGGESTION",
       ))
     ) {
-      this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
+      this.#dependencies.logger.warn({ event: SuggestionLogEvent.PREMIUM_DENIED, userId });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }
   }

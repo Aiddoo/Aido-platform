@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { recurringSuggestion } from "#api/platform/database/schema/ai-assistance.schema";
+import { suggestion as suggestionTable } from "#api/platform/database/schema/ai-assistance.schema";
 import { nextSequenceValues } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -26,7 +26,7 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
   }
 
   async nextIds(count: number): Promise<SuggestionId[]> {
-    const ids = await nextSequenceValues(this.#db, recurringSuggestion.id, count);
+    const ids = await nextSequenceValues(this.#db, suggestionTable.id, count);
     return ids.map((id) => SuggestionId.reconstitute(id));
   }
 
@@ -35,10 +35,10 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
       return;
     }
     await this.#db
-      .insert(recurringSuggestion)
+      .insert(suggestionTable)
       .values(suggestions.map(toSuggestionRow))
       .onConflictDoUpdate({
-        target: recurringSuggestion.id,
+        target: suggestionTable.id,
         set: {
           status: sql`excluded."status"`,
           updatedAt: sql`excluded."updatedAt"`,
@@ -49,20 +49,20 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
   async save(suggestion: Suggestion): Promise<void> {
     const row = toSuggestionRow(suggestion);
     await this.#db
-      .insert(recurringSuggestion)
+      .insert(suggestionTable)
       .values(row)
-      .onConflictDoUpdate({ target: recurringSuggestion.id, set: row });
+      .onConflictDoUpdate({ target: suggestionTable.id, set: row });
   }
 
   async findByIdAndUserId(suggestionId: SuggestionId, userId: UserId): Promise<Suggestion | null> {
-    const row = await this.#db.query.recurringSuggestion.findFirst({
+    const row = await this.#db.query.suggestion.findFirst({
       where: { id: suggestionId.value, userId: userId.value },
     });
     return row == null ? null : toSuggestion(row);
   }
 
   async listPendingByUserId(userId: UserId, now: Temporal.Instant): Promise<Suggestion[]> {
-    const rows = await this.#db.query.recurringSuggestion.findMany({
+    const rows = await this.#db.query.suggestion.findMany({
       where: { userId: userId.value, status: "PENDING", expiresAt: { gt: now } },
       orderBy: { createdAt: "desc", id: "desc" },
     });
@@ -71,24 +71,17 @@ export class DrizzleSuggestionRepository extends SuggestionRepositoryPort {
 
   async deletePendingByUserId(userId: UserId): Promise<number> {
     const deleted = await this.#db
-      .delete(recurringSuggestion)
-      .where(
-        and(
-          eq(recurringSuggestion.userId, userId.value),
-          eq(recurringSuggestion.status, "PENDING"),
-        ),
-      )
-      .returning({ id: recurringSuggestion.id });
+      .delete(suggestionTable)
+      .where(and(eq(suggestionTable.userId, userId.value), eq(suggestionTable.status, "PENDING")))
+      .returning({ id: suggestionTable.id });
     return deleted.length;
   }
 
   async deleteExpiredByUserId(userId: UserId, now: Temporal.Instant): Promise<number> {
     const deleted = await this.#db
-      .delete(recurringSuggestion)
-      .where(
-        and(eq(recurringSuggestion.userId, userId.value), lt(recurringSuggestion.expiresAt, now)),
-      )
-      .returning({ id: recurringSuggestion.id });
+      .delete(suggestionTable)
+      .where(and(eq(suggestionTable.userId, userId.value), lt(suggestionTable.expiresAt, now)))
+      .returning({ id: suggestionTable.id });
     return deleted.length;
   }
 }

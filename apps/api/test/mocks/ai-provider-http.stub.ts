@@ -4,15 +4,15 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import {
-  type AiAssistanceGenerationConfig,
-  aiAssistanceGenerationConfig,
-} from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
+  type AiAssistanceAiGenerationsConfig,
+  aiAssistanceAiGenerationsConfig,
+} from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.config";
 import {
   type AiProviderAdapter,
   AiProviderCatalog,
-} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
-import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
-import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
+} from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-provider.adapter";
+import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-spend-budget.adapter";
 import type { UsageMeterPort } from "#api/platform/metering/usage-meter.port";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { DateClock } from "#test/doubles/platform/date-clock";
@@ -39,8 +39,10 @@ const AI_FIXTURE_KEYS = {
 } as const;
 
 /** 업체 키와 AI 운영 env만 바꾼 설정. 외부 호출은 테스트가 fetch를 stub해 막는다. */
-export function createAiTestConfig(env: Record<string, string> = {}): AiAssistanceGenerationConfig {
-  return aiAssistanceGenerationConfig.parse({ ...AI_FIXTURE_KEYS, ...env });
+export function createAiTestConfig(
+  env: Record<string, string> = {},
+): AiAssistanceAiGenerationsConfig {
+  return aiAssistanceAiGenerationsConfig.parse({ ...AI_FIXTURE_KEYS, ...env });
 }
 
 /** 실제 업체 SDK로 한 번 호출해(재시도 없음) 던진 오류를 돌려준다. fetch는 테스트가 stub한다. */
@@ -67,7 +69,7 @@ export async function captureProviderError(
  * 회로 레지스트리를 새로 만들므로 생성기마다 회로 상태가 따로다.
  */
 export function createAiSdkGenerator(
-  config: AiAssistanceGenerationConfig,
+  config: AiAssistanceAiGenerationsConfig,
   adapters: readonly AiProviderAdapter[],
   options: {
     readonly alert?: RecordingOperationalAlert;

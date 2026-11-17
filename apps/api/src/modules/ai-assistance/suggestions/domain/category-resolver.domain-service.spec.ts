@@ -2,7 +2,7 @@ import { resolveSuggestedCategoryId } from "./category-resolver.domain-service.j
 /**
  * category-resolver.util — 순수 함수 유닛 테스트
  */
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 const makeTodo = (overrides: Partial<TodoSummaryForAnalysis> = {}): TodoSummaryForAnalysis => ({
   title: "기본 할일",

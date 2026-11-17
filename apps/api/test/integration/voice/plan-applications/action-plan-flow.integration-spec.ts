@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS, PLAN_CATALOG, TODO_LIMITS } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import { ApplyActionPlanUseCase } from "#api/modules/voice/plan-applications/application/use-cases/apply-action-plan.use-case";
 import { CreateQuickPlanUseCase } from "#api/modules/voice/plan-applications/application/use-cases/create-quick-plan.use-case";

@@ -9,20 +9,20 @@ import {
 } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { memoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-draft.wire";
-import { todoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-todo-draft.wire";
-import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/parsing/application/messages/schedule-expression.wire";
-import { quickPlanDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-draft.wire";
-import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-draft.wire";
-import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
-import { reportDraftSchema } from "#api/modules/ai-assistance/reports/application/messages/report-content.wire";
+import type { NormalizedActionPlan } from "#api/modules/ai-assistance/action-plan-drafts/domain/action-plan-drafts.constants";
+import { memoDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/parse-memo-draft.wire";
+import { todoDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/parse-todo-draft.wire";
+import { quickPlanDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/quick-plan-draft.wire";
+import { reportDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/report-draft.wire";
+import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/schedule-expression.wire";
+import { suggestionDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/suggestion-draft.wire";
+import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/voice-note-digest-draft.wire";
+import type { ScheduleClock } from "#api/modules/ai-assistance/shared/domain/schedule-time.domain-service";
 import {
   resolvePlanSchedule,
   resolveTodoSchedule,
-  type ScheduleClock,
 } from "#api/modules/ai-assistance/shared/domain/todo-schedule.domain-service";
-import { suggestionDraftSchema } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
-import type { SuggestionContext } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
+import type { SuggestionContextReadModel } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
 import { SUGGESTION_MODES } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
 
@@ -165,7 +165,7 @@ export const suggestionGoldenCaseSchema = z.object({
 export type SuggestionGoldenCase = z.infer<typeof suggestionGoldenCaseSchema>;
 
 /** 카테고리 id는 이름 순서로 붙인다. 제안 카테고리는 같은 이름의 기록에서 고른다. */
-export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionContext {
+export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionContextReadModel {
   const categoryNames = [...new Set(golden.todos.map(({ categoryName }) => categoryName))];
   return {
     todos: golden.todos.map((todo) => ({

@@ -4,7 +4,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { VoiceDigestRateLimits } from "#api/modules/voice/voice-digests/presentation/http/voice-digests.rate-limits";
 import { user } from "#api/platform/database/schema/index";
 import { digestDraft } from "#test/fixtures/voice-plan.fixture";

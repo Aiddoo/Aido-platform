@@ -1,5 +1,6 @@
 import type { AI_SUGGESTION_STATUSES, DayOfWeek } from "@aido/api/vocabulary";
 
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -31,9 +32,10 @@ export interface SuggestionPrimitives {
 
 type SuggestionProps = Omit<
   SuggestionPrimitives,
-  "id" | "userId" | "status" | "updatedAt" | "evidence"
+  "id" | "userId" | "suggestedCategoryId" | "status" | "updatedAt" | "evidence"
 > & {
   readonly userId: UserId;
+  readonly suggestedCategoryId: TodoCategoryId | null;
   status: SuggestionStatus;
   updatedAt: Temporal.Instant;
   readonly evidence: SuggestionEvidence | null;
@@ -48,7 +50,7 @@ export interface CreateSuggestionParams {
   readonly confidence: number;
   readonly reason: string;
   readonly matchedTodos: readonly string[];
-  readonly suggestedCategoryId: number | null;
+  readonly suggestedCategoryId: TodoCategoryId | null;
   readonly expiresAt: Temporal.Instant;
   readonly evidence: SuggestionEvidence | null;
   readonly now: Temporal.Instant;
@@ -72,10 +74,12 @@ export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
   }
 
   static reconstitute(primitives: SuggestionPrimitives): Suggestion {
-    const { id, userId, ...rest } = primitives;
+    const { id, userId, suggestedCategoryId, ...rest } = primitives;
     return new Suggestion(SuggestionId.reconstitute(id), {
       ...rest,
       userId: UserId.reconstitute(userId),
+      suggestedCategoryId:
+        suggestedCategoryId == null ? null : TodoCategoryId.reconstitute(suggestedCategoryId),
       daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
       matchedTodos: [...rest.matchedTodos],
       evidence: rest.evidence == null ? null : SuggestionEvidence.reconstitute(rest.evidence),
@@ -122,11 +126,12 @@ export class Suggestion extends AggregateRoot<SuggestionId, SuggestionProps> {
   }
 
   toPrimitives(): SuggestionPrimitives {
-    const { userId, evidence, ...rest } = this.props;
+    const { userId, suggestedCategoryId, evidence, ...rest } = this.props;
     return {
       ...rest,
       id: this.id.value,
       userId: userId.value,
+      suggestedCategoryId: suggestedCategoryId?.value ?? null,
       daysOfWeek: rest.daysOfWeek == null ? null : [...rest.daysOfWeek],
       matchedTodos: [...rest.matchedTodos],
       evidence: evidence?.toPrimitives() ?? null,

@@ -1,12 +1,16 @@
 import {
-  AiGenerationError,
   type AiFailureKind,
-} from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
+  type AiGenerationError,
+  aiGenerationFailed,
+} from "#api/modules/ai-assistance/ai-generations/application/ai-generations.errors";
 import type {
   AiGenerationRequest,
-  AiGenerationResult,
   AiGeneratorPort,
-} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+  AiTaskId,
+  AiTaskOutputs,
+} from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
+import { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
+import { AI_TASK_OUTPUT_SCHEMAS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-task-output.wire";
 import type { TodoDraft } from "#api/modules/ai-assistance/shared/domain/todo-draft.constants";
 import { createTodoDraftResponse, type TodoDraftInput } from "#test/fixtures/ai-response.fixture";
 
@@ -19,7 +23,7 @@ export interface FakeAiGeneratorOptions {
 export interface CallRecord {
   system?: string;
   prompt: string;
-  request: AiGenerationRequest<unknown>;
+  request: AiGenerationRequest<AiTaskId>;
   timestamp: Date;
 }
 
@@ -33,7 +37,7 @@ const DEFAULT_TOKEN_USAGE: FakeTokenUsage = { input: 150, output: 50, reasoning:
 
 /** 생성기가 끝내 실패했을 때 던지는 오류(업체 체인 정보 없이 종류만). */
 export function createAiGenerationError(kind: AiFailureKind): AiGenerationError {
-  return new AiGenerationError(kind, {
+  return aiGenerationFailed(kind, {
     provider: kind === "UNAVAILABLE" || kind === "CIRCUIT_OPEN" ? null : "google",
     attempts: kind === "UNAVAILABLE" || kind === "CIRCUIT_OPEN" ? 0 : 1,
     fallbackFrom: null,
@@ -42,7 +46,7 @@ export function createAiGenerationError(kind: AiFailureKind): AiGenerationError 
   });
 }
 
-/** 업체 체인 없이 정해 둔 응답을 스키마로 검증해 돌려주는 생성기. */
+/** 업체 체인 없이 정해 둔 응답을 작업의 출력 schema로 검증해 돌려주는 생성기. */
 export class FakeAiGenerator implements AiGeneratorPort {
   #responses: unknown[] = [];
   #defaultResponse: TodoDraft = createTodoDraftResponse();
@@ -73,7 +77,9 @@ export class FakeAiGenerator implements AiGeneratorPort {
     this.#initialDelayMs = this.#delayMs;
   }
 
-  async generate<T>(request: AiGenerationRequest<T>): Promise<AiGenerationResult<T>> {
+  async generate<TTask extends AiTaskId>(
+    request: AiGenerationRequest<TTask>,
+  ): Promise<AiGeneration<AiTaskOutputs[TTask]>> {
     this.#callHistory.push({
       system: request.system,
       prompt: request.prompt,
@@ -90,12 +96,12 @@ export class FakeAiGenerator implements AiGeneratorPort {
       throw this.#failureError ?? new Error("AI parsing failed");
     }
     const response = this.#responses.shift() ?? structuredClone(this.#defaultResponse);
-    return {
-      output: request.schema.parse(response),
+    return AiGeneration.create({
+      output: AI_TASK_OUTPUT_SCHEMAS[request.task].parse(response),
+      route: ["google"],
       provider: "google",
       model: "fake:test-model",
       attempts: 1,
-      fallbackFrom: null,
       latencyMs: 0,
       inputTokens: this.#tokenUsage.input,
       cachedInputTokens: 0,
@@ -104,7 +110,7 @@ export class FakeAiGenerator implements AiGeneratorPort {
       reasoningTokens: this.#tokenUsage.reasoning,
       estimatedCostMicroUsd: 0,
       finishReason: "stop",
-    };
+    });
   }
 
   /** 다음 parse-todo 응답(일정 표현). 다른 작업의 출력은 setRawResponse로 넣는다. */
@@ -159,7 +165,7 @@ export class FakeAiGenerator implements AiGeneratorPort {
     return this.#callHistory.at(-1)?.system;
   }
 
-  getLastRequest(): AiGenerationRequest<unknown> | undefined {
+  getLastRequest(): AiGenerationRequest<AiTaskId> | undefined {
     return this.#callHistory.at(-1)?.request;
   }
 
@@ -171,7 +177,7 @@ export class FakeAiGenerator implements AiGeneratorPort {
     return this.#callHistory[index];
   }
 
-  setRawResponse(response: Record<string, unknown>): this {
+  setRawResponse(response: object): this {
     this.#responses.push(structuredClone(response));
     return this;
   }

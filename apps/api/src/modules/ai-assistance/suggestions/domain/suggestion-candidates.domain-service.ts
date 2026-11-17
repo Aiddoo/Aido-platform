@@ -5,7 +5,7 @@ import {
   selectRecordedDays,
   toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 /** 프롬프트에 넣는 후보 수 상한 */
 export const MAX_SUGGESTION_CANDIDATES = 30;

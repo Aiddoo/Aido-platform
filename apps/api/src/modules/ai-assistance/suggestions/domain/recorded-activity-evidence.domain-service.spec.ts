@@ -6,7 +6,7 @@ import {
   selectRecordedDays,
   toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 const todo = (startDate: string, completed = true): TodoSummaryForAnalysis => ({
   title: "책 읽기 10분",

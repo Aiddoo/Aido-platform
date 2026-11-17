@@ -11,17 +11,17 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SuggestionAnalysisRun } from "../../domain/suggestion-analysis-run.entity.js";
 import { hasEnoughRecentTodos } from "../../domain/suggestion-analysis-state.domain-service.js";
 import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-window.domain-service.js";
-import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import type { OnDemandSuggestionAnalysisConfigPort } from "../ports/on-demand-suggestion-analysis-config.port.js";
 import type { SuggestionAnalysisEnqueuerPort } from "../ports/suggestion-analysis-enqueuer.port.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
-import type { SuggestionAnalysisReadModel } from "../read-models/suggestion-analysis.read-model.js";
 import type {
-  RecentTodoCount,
-  SuggestionAnalysisStateReader,
-} from "../suggestion-analysis-state.reader.js";
+  RecentTodoCountReadModel,
+  SuggestionAnalysisReadModel,
+} from "../read-models/suggestion-analysis.read-model.js";
+import type { SuggestionAnalysisStateReader } from "../suggestion-analysis-state.reader.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
+import { SuggestionLogEvent } from "../suggestions.log-events.js";
 
 export interface RequestSuggestionAnalysisCommand {
   readonly userId: string;
@@ -51,14 +51,14 @@ export class RequestSuggestionAnalysisUseCase {
     const userId = UserId.reconstitute(command.userId);
     if (!(await this.#dependencies.entitlementReader.can(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.warn({
-        event: AiSuggestionLogEvent.PREMIUM_DENIED,
+        event: SuggestionLogEvent.PREMIUM_DENIED,
         userId: userId.value,
       });
       throw premiumFeatureDenied("AI_SUGGESTION");
     }
     if (!this.#dependencies.onDemandConfig.isEnabled) {
       this.#dependencies.logger.log({
-        event: AiSuggestionLogEvent.ANALYSIS_DISABLED,
+        event: SuggestionLogEvent.ANALYSIS_DISABLED,
         userId: userId.value,
       });
       return this.#readState(userId);
@@ -87,8 +87,8 @@ export class RequestSuggestionAnalysisUseCase {
     });
     this.#dependencies.logger.log({
       event: requested
-        ? AiSuggestionLogEvent.ANALYSIS_REQUESTED
-        : AiSuggestionLogEvent.ANALYSIS_DEDUPLICATED,
+        ? SuggestionLogEvent.ANALYSIS_REQUESTED
+        : SuggestionLogEvent.ANALYSIS_DEDUPLICATED,
       userId: userId.value,
       trigger: job.trigger,
     });
@@ -97,7 +97,7 @@ export class RequestSuggestionAnalysisUseCase {
 
   async #readState(
     userId: UserId,
-    recentTodos?: RecentTodoCount,
+    recentTodos?: RecentTodoCountReadModel,
   ): Promise<SuggestionAnalysisReadModel> {
     const pending = await this.#dependencies.suggestions.listPendingByUserId(
       userId,

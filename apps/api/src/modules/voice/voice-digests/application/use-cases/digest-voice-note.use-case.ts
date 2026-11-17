@@ -4,19 +4,19 @@ import type {
   MeteredFeatureQuotaReadModel,
   QuotaLedgerPort,
 } from "#api/modules/access/quota-charges/access-quota-charges.public";
+import type {
+  ActionPlanGeneratorPort,
+  VoiceNoteDigestGeneration,
+} from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
 import {
   fingerprintRequest,
   resolveRequestLocale,
   type UserLocalePreferenceReaderPort,
-} from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+} from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import type {
   ChargedGeneration,
   ChargeOutcome,
-} from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
-import type {
-  ActionPlanGeneratorPort,
-  VoiceNoteDigestGeneration,
-} from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
+} from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import {
   type ChargedPlanRunnerPort,
   countPlannedActions,

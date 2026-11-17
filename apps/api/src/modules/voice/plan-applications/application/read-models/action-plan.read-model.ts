@@ -1,12 +1,12 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
 import {
+  type ActionPlanDraftPrimitives,
   type ExistingTodo,
   findDuplicateTodoId,
-  type GeneratedActionPlan,
-} from "#api/modules/ai-assistance/planning/ai-assistance-planning.public";
+} from "#api/modules/ai-assistance/action-plan-drafts/ai-assistance-action-plan-drafts.public";
 
-type GeneratedTodo = GeneratedActionPlan["todos"][number];
+type GeneratedTodo = ActionPlanDraftPrimitives["todos"][number];
 
 interface PlannedTodoReadModel {
   readonly type: "CREATE_TODO";
@@ -40,7 +40,7 @@ export interface ActionPlanReadModel {
 
 /** 행동 key는 응답마다 앱이 선택·편집 상태를 묶는 값이라 순서로 만든다. */
 export function toActionPlanReadModel(
-  plan: GeneratedActionPlan,
+  plan: ActionPlanDraftPrimitives,
   existingTodos: readonly ExistingTodo[],
 ): ActionPlanReadModel {
   const todos = plan.todos.map((todo, index): PlannedTodoReadModel => ({

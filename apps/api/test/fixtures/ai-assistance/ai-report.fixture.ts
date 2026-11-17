@@ -1,7 +1,7 @@
 import {
   AiReport,
   type AiReportPrimitives,
-} from "#api/modules/ai-assistance/reports/domain/ai-report.aggregate";
+} from "#api/modules/ai-assistance/ai-reports/domain/ai-report.aggregate";
 
 export const AI_REPORT_FIXTURE_NOW = Temporal.Instant.from("2026-03-09T07:00:00Z");
 export const AI_REPORT_FIXTURE_USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";

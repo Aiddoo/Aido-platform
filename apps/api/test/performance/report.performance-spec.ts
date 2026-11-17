@@ -4,9 +4,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
-import type { AggregateParams } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import { assembleAggregatedData } from "#api/modules/ai-assistance/reports/domain/report-aggregation.domain-service";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
+import type { AggregateParams } from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/ai-reports/domain/report-aggregation.domain-service";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/ai-reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
@@ -217,10 +217,8 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       const current = await reader.fetchAggregationInputs(params);
 
       // Then
-      expect(
-        assembleAggregatedData(current, params.startDate, params.endDate, params.timezone, "기타"),
-      ).toEqual(
-        assembleAggregatedData(legacy, params.startDate, params.endDate, params.timezone, "기타"),
+      expect(assembleAggregatedData(current, params, "기타")).toEqual(
+        assembleAggregatedData(legacy, params, "기타"),
       );
 
       // When

@@ -4,13 +4,14 @@ import type { AiProviderId } from "@aido/api/vocabulary";
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 
-import type { AiFailureKind } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
+import type { AiFailureKind } from "#api/modules/ai-assistance/ai-generations/application/ai-generations.errors";
 import {
   AiProviderAdapter,
   type AiProviderDataHandling,
   type AiProviderModel,
-} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
-import { classifyAiSdkError } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-failure.mapper";
+} from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-provider.adapter";
+import { classifyAiSdkError } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-sdk-failure.mapper";
+import { createTodoDraftResponse } from "#test/fixtures/ai-response.fixture";
 
 /** 한 번의 모델 호출 결과. status는 그 HTTP 상태의 업체 오류다. */
 export type StubModelStep =
@@ -120,7 +121,24 @@ export class StubProviderAdapter extends AiProviderAdapter {
   }
 }
 
-export const ok = (text = '{"title":"독서"}'): StubModelStep => ({ type: "ok", text });
+/**
+ * 모든 작업이 받는 모델 응답. 작업마다 출력 schema가 모르는 칸은 버리므로 할 일·메모·리포트·제안·계획·녹음
+ * 정리 칸을 함께 담는다. 할 일 제목은 "독서"다.
+ */
+const EVERY_TASK_OUTPUT = JSON.stringify({
+  ...createTodoDraftResponse({ title: "독서" }),
+  todos: [],
+  memo: null,
+  totalTaskCount: null,
+  insightKey: null,
+  insight: "독서",
+  tips: [],
+  picks: [],
+  summary: "",
+  keyPoints: [],
+});
+
+export const ok = (text = EVERY_TASK_OUTPUT): StubModelStep => ({ type: "ok", text });
 export const status = (code: number, retryable = false): StubModelStep => ({
   type: "status",
   status: code,

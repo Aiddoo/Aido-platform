@@ -1,9 +1,9 @@
-import type { AiReportRepositoryPort } from "#api/modules/ai-assistance/reports/application/ports/ai-report.repository.port";
-import { DuplicateAiReportError } from "#api/modules/ai-assistance/reports/application/reports.errors";
+import { DuplicateAiReportError } from "#api/modules/ai-assistance/ai-reports/application/ai-reports.errors";
+import type { AiReportRepositoryPort } from "#api/modules/ai-assistance/ai-reports/application/ports/ai-report.repository.port";
 import type {
   AiReport,
   AiReportPrimitives,
-} from "#api/modules/ai-assistance/reports/domain/ai-report.aggregate";
+} from "#api/modules/ai-assistance/ai-reports/domain/ai-report.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AI_REPORT_FIXTURE_NOW,

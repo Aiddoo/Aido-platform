@@ -4,6 +4,7 @@ import { match } from "ts-pattern";
 
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -16,18 +17,18 @@ import {
   AiGenerationError,
   isTransientAiFailure,
   isWithheldAiFailure,
-} from "../../../generation/application/ai-generation.errors.js";
+} from "../../../ai-generations/application/ai-generations.errors.js";
 import {
   buildGenerationCompletedLog,
   buildGenerationFailedLog,
   toGenerationFailure,
-} from "../../../generation/application/ai-generation.log-events.js";
-import { generateWithPrompt } from "../../../generation/application/messages/prompt-definition.messages.js";
-import type { AiGeneratorPort } from "../../../generation/application/ports/ai-generator.port.js";
+} from "../../../ai-generations/application/ai-generations.log-events.js";
+import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
+import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
 import type {
-  ScheduledAiConsent,
+  ScheduledAiConsentReadModel,
   ScheduledAiConsentReader,
-} from "../../../generation/application/scheduled-ai-consent.reader.js";
+} from "../../../ai-generations/application/scheduled-ai-consent.reader.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
 import {
   type SuggestionAnalysisResult,
@@ -47,14 +48,14 @@ import { Suggestion } from "../../domain/suggestion.aggregate.js";
 import {
   type DetectedPattern,
   SUGGESTION_ANALYSIS_PERIOD_DAYS,
-} from "../../domain/suggestion.constants.js";
-import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
+} from "../../domain/suggestions.constants.js";
 import { suggestionPromptFor } from "../messages/suggestion-prompt.messages.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
-import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
+import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
 import type { SuggestionContextReader } from "../suggestion-context.reader.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
+import { SuggestionLogEvent } from "../suggestions.log-events.js";
 
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
@@ -110,7 +111,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     const result = await this.#analyze(owner, command).catch(async (error: unknown) => {
       // 일시 오류는 job이 다시 시도하므로 마지막 시도만 실패로 남긴다
       if (command.isFinalAttempt) {
-        this.#logFinished(command, await this.#skip(owner, command, "FAILED", null), queueWait);
+        this.#logFinished(command, await this.#skip(command, "FAILED", null), queueWait);
       }
       throw error;
     });
@@ -146,16 +147,16 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     command: AnalyzeAndCreateSuggestionsCommand,
   ): Promise<SuggestionAnalysisResult> {
     if (!(await this.#dependencies.entitlementReader.canInTransaction(owner, "AI_SUGGESTION"))) {
-      return this.#skip(owner, command, "NOT_PREMIUM", null);
+      return this.#skip(command, "NOT_PREMIUM", null);
     }
-    const consent = await this.#dependencies.scheduledAiConsent.find(command.userId);
+    const consent = await this.#dependencies.scheduledAiConsent.find(owner);
     if (!consent.allowed) {
-      return this.#skip(owner, command, "CONSENT_MISSING", null);
+      return this.#skip(command, "CONSENT_MISSING", null);
     }
-    const context = await this.#dependencies.contextBuilder.build(command.userId, command.timezone);
+    const context = await this.#dependencies.contextBuilder.build(owner, command.timezone);
     const recentTodoCount = context.todos.length;
     if (!hasEnoughRecentTodos(recentTodoCount)) {
-      return this.#skip(owner, command, "NO_RECENT_TODOS", recentTodoCount);
+      return this.#skip(command, "NO_RECENT_TODOS", recentTodoCount);
     }
     const candidates = buildSuggestionCandidates(
       context.todos,
@@ -163,22 +164,22 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       context.repeatingTitles,
     );
     if (candidates.length === 0) {
-      return this.#skip(owner, command, "NO_PATTERN_FOUND", recentTodoCount);
+      return this.#skip(command, "NO_PATTERN_FOUND", recentTodoCount);
     }
     const generation = await this.#generate(command, context, consent);
     if ("outcome" in generation) {
-      return this.#skip(owner, command, generation.outcome, recentTodoCount);
+      return this.#skip(command, generation.outcome, recentTodoCount);
     }
     if (generation.patterns.length === 0) {
-      return this.#skip(owner, command, "NO_PATTERN_FOUND", recentTodoCount);
+      return this.#skip(command, "NO_PATTERN_FOUND", recentTodoCount);
     }
-    return this.#save(owner, command, context, generation.patterns);
+    return this.#save(command, context, generation.patterns);
   }
 
   async #generate(
     command: AnalyzeAndCreateSuggestionsCommand,
-    context: SuggestionContext,
-    consent: ScheduledAiConsent,
+    context: SuggestionContextReadModel,
+    consent: ScheduledAiConsentReadModel,
   ): Promise<GenerationOutcome> {
     const { userId, locale = "ko" } = command;
     const definition = suggestionPromptFor(command.trigger);
@@ -189,13 +190,12 @@ export class AnalyzeAndCreateSuggestionsUseCase {
       quotaCharged: false,
     } as const;
     const startedAt = this.#dependencies.clock.now().epochMilliseconds;
-    return generateWithPrompt(
-      this.#dependencies.generator,
-      definition,
-      definition.build(context, locale),
-      { context, locale },
-      { agreedConsentVersion: consent.agreedVersion, userId },
-    ).then(
+    return generateWithPrompt(this.#dependencies.generator, definition, {
+      built: definition.build(context, locale),
+      context: { context, locale },
+      agreedConsentVersion: consent.agreedVersion,
+      userId: UserId.reconstitute(userId),
+    }).then(
       (generation) => {
         this.#dependencies.logger.log(
           buildGenerationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
@@ -226,11 +226,11 @@ export class AnalyzeAndCreateSuggestionsUseCase {
   }
 
   async #save(
-    owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
-    context: SuggestionContext,
+    context: SuggestionContextReadModel,
     patterns: readonly DetectedPattern[],
   ): Promise<SuggestionAnalysisResult> {
+    const owner = UserId.reconstitute(command.userId);
     const now = this.#dependencies.clock.now();
     const expiresAt = now.add({ hours: AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS * 24 });
     const recentTodoCount = context.todos.length;
@@ -270,10 +270,8 @@ export class AnalyzeAndCreateSuggestionsUseCase {
                 reason: pattern.reason,
                 matchedTodos: pattern.matchedTitles,
                 expiresAt,
-                suggestedCategoryId: resolveSuggestedCategoryId(
-                  pattern.title,
-                  pattern.matchedTitles,
-                  context.todos,
+                suggestedCategoryId: toTodoCategoryId(
+                  resolveSuggestedCategoryId(pattern.title, pattern.matchedTitles, context.todos),
                 ),
                 evidence: SuggestionEvidence.create({
                   recordedCount: pattern.recordedCount,
@@ -294,11 +292,11 @@ export class AnalyzeAndCreateSuggestionsUseCase {
   }
 
   #skip(
-    owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
     outcome: SuggestionAnalysisOutcome,
     recentTodoCount: number | null,
   ): Promise<SuggestionAnalysisResult> {
+    const owner = UserId.reconstitute(command.userId);
     return this.#dependencies.unitOfWork.run(() =>
       this.#finish(owner, command, { outcome, recentTodoCount, createdSuggestionCount: 0 }),
     );
@@ -325,7 +323,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     queueWait: Temporal.Duration | null,
   ): void {
     const entry = {
-      event: AiSuggestionLogEvent.ANALYSIS_FINISHED,
+      event: SuggestionLogEvent.ANALYSIS_FINISHED,
       userId: command.userId,
       trigger: command.trigger,
       outcome: result.outcome,
@@ -339,6 +337,10 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     }
     this.#dependencies.logger.log(entry);
   }
+}
+
+function toTodoCategoryId(categoryId: number | null): TodoCategoryId | null {
+  return categoryId == null ? null : TodoCategoryId.reconstitute(categoryId);
 }
 
 function toAnalysisOutcome(kind: AiFailureKind): SuggestionAnalysisOutcome {

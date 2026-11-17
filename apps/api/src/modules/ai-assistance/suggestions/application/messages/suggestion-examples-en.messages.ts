@@ -1,6 +1,6 @@
-import { renderExample } from "../../../generation/application/messages/prompt-definition.messages.js";
+import { renderExample } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
+import type { SuggestionDraft } from "../../domain/suggestions.constants.js";
 import type { SuggestionData } from "./suggestion-data.messages.js";
-import type { SuggestionDraft } from "./suggestion-draft.wire.js";
 
 interface SuggestionExample {
   readonly input: SuggestionData;

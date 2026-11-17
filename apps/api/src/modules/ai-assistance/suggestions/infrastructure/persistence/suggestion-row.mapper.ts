@@ -1,13 +1,13 @@
 import { DAYS_OF_WEEK } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import type { recurringSuggestion } from "#api/platform/database/schema/ai-assistance.schema";
+import type { suggestion as suggestionTable } from "#api/platform/database/schema/ai-assistance.schema";
 
 import type { SuggestionEvidencePrimitives } from "../../domain/suggestion-evidence.vo.js";
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
 
-type SuggestionRow = typeof recurringSuggestion.$inferSelect;
-type SuggestionInsertRow = typeof recurringSuggestion.$inferInsert;
+type SuggestionRow = typeof suggestionTable.$inferSelect;
+type SuggestionInsertRow = typeof suggestionTable.$inferInsert;
 
 const daysOfWeekSchema = z.array(z.enum(DAYS_OF_WEEK));
 const matchedTodosSchema = z.array(z.string());

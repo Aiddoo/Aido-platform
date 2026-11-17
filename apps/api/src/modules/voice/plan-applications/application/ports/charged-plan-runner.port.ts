@@ -1,10 +1,10 @@
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
-import type { AiTaskId } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
+import type { AiTaskId } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import type {
   ChargedGeneration,
   ChargedGenerationResult,
-} from "#api/modules/ai-assistance/parsing/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/parsed-drafts/ai-assistance-parsed-drafts.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PlanResultReplay } from "./plan-result-replay.port.js";

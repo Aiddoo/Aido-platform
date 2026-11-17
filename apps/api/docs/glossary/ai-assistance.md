@@ -1,6 +1,21 @@
 # ai-assistance 용어집
 
-AI 제안과 제안 분석 실행을 설계·리뷰할 때 읽는다. 쓰는 법은 [용어집](../glossary.md)이다.
+AI 생성·파싱·계획 초안·리포트·제안과 제안 분석 실행을 설계·리뷰할 때 읽는다. 쓰는 법은 [용어집](../glossary.md)이다.
+
+## slice와 Aggregate
+
+| slice                | Aggregate                 | 뜻                                                                                                                                                  |
+| -------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai-generations`     | `AiGeneration`(생성만)    | 업체가 작업의 출력 모양으로 답한 생성 한 건. 응답 업체는 시도 경로(`route`) 안에 있고, 경로의 첫 업체가 아니면 그 업체에서 넘어왔다(`fallbackFrom`) |
+| `parsed-drafts`      | `ParsedDraft`(생성만)     | 글·메모를 할 일로 바꾼 초안. 할 일 1개 이상 메모 상한 이하, 실행할 할 일이 없으면(`hasAction() = false`) 차감하지 않고 만들지 않은 할 일도 없다     |
+| `action-plan-drafts` | `ActionPlanDraft`(생성만) | 말·글에서 만든 실행 계획. 할 일은 계획 상한 이하이고 반복 할 일은 기간(`endDate`)을 쓰지 않는다. 사용량·저장은 voice가 소유한다                     |
+| `ai-reports`         | `AiReport`(저장)          | 주기 하나의 분석 결과. 만든 뒤 바뀌지 않는다                                                                                                        |
+| `suggestions`        | `Suggestion`(저장)        | 반복 할 일로 만들 만한 활동 하나(아래 표)                                                                                                           |
+
+- 모델 출력은 업체 중립 타입(`AiTaskOutputs`: `TodoDraft`·`MemoDraft`·`QuickPlanDraft`·`VoiceNoteDigestDraft`·`ReportDraft`·`SuggestionDraft`)이고 LLM schema(`*.wire.ts`)는 그것을 파싱하는 `ai-generations` 어댑터 옆에 둔다.
+- 체인 제한 시간을 나누는 업체별 몫은 설정 `providerTimeWeights`(`ai-assistance-ai-generations.config.ts`)이고 도메인 서비스 `resolveAttemptTime`은 그 몫을 입력으로 받는다.
+
+## 제안
 
 suggestions slice가 사용자의 최근 할 일 기록에서 반복할 만한 활동을 찾아 제안하고, 사용자가 수락하면 planning이 반복 할 일을 만든다. 분석은 사용자당 현지 날짜마다 한 번이다.
 

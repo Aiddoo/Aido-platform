@@ -15,9 +15,9 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { AiGeneratorPort } from "../generation/application/ports/ai-generator.port.js";
-import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
-import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
+import { AiGeneratorPort } from "../ai-generations/application/ports/ai-generator.port.js";
+import { UserLocalePreferenceReaderPort } from "../ai-generations/application/ports/user-locale-preference.reader.port.js";
+import { ScheduledAiConsentReader } from "../ai-generations/application/scheduled-ai-consent.reader.js";
 import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { OnDemandSuggestionAnalysisConfigPort } from "./application/ports/on-demand-suggestion-analysis-config.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
