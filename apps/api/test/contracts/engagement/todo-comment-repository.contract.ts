@@ -1,6 +1,7 @@
 import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import type { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
 import { TodoCommentIdempotencyRaceError } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
+import { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import type {
   TodoComment,
   TodoCommentPrimitives,
@@ -94,8 +95,8 @@ export function describeTodoCommentRepositoryContract(
 
       // When
       const found = await repository.listByAuthorIdAndClientRequestIds(VIEWER, [
-        mine.clientRequestId,
-        other.clientRequestId,
+        TodoCommentRequestId.reconstitute(mine.clientRequestId),
+        TodoCommentRequestId.reconstitute(other.clientRequestId),
       ]);
       const none = await repository.listByAuthorIdAndClientRequestIds(VIEWER, []);
 

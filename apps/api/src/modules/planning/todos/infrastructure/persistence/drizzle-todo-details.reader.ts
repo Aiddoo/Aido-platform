@@ -3,11 +3,11 @@ import { Injectable } from "@nestjs/common";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 
-import {
-  type TodoAccessView,
-  TodoDetailsReaderPort,
-  type TodoDetailsView,
-} from "../../application/ports/todo-details.reader.port.js";
+import { TodoDetailsReaderPort } from "../../application/ports/todo-details.reader.port.js";
+import type {
+  TodoAccessReadModel,
+  TodoDetailsReadModel,
+} from "../../application/read-models/todo-details.read-model.js";
 import type { TodoId } from "../../domain/todo-id.vo.js";
 import { toFriendTodoReadModel } from "./todo-details-row.mapper.js";
 
@@ -19,7 +19,7 @@ export class DrizzleTodoDetailsReader implements TodoDetailsReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async findAccess(todoId: TodoId): Promise<TodoAccessView | null> {
+  async findAccess(todoId: TodoId): Promise<TodoAccessReadModel | null> {
     const row = await this.#transactionHost.tx.query.todo.findFirst({
       columns: { userId: true, visibility: true },
       where: { id: todoId.value },
@@ -27,7 +27,7 @@ export class DrizzleTodoDetailsReader implements TodoDetailsReaderPort {
     return row == null ? null : { ownerId: row.userId, visibility: row.visibility };
   }
 
-  async findDetails(todoId: TodoId): Promise<TodoDetailsView | null> {
+  async findDetails(todoId: TodoId): Promise<TodoDetailsReadModel | null> {
     const row = await this.#transactionHost.tx.query.todo.findFirst({
       where: { id: todoId.value },
       with: {

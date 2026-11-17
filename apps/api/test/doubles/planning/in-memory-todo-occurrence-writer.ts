@@ -66,7 +66,7 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
           updatedAt: plan.createdAt,
         })),
       });
-      created.push({ todoId: id, scheduledTime: plan.scheduledTime });
+      created.push({ todoId: plan.id, scheduledTime: plan.scheduledTime });
     }
     return created;
   }

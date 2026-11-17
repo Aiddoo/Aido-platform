@@ -346,11 +346,11 @@ export function describeTodoRepositoryContract(
         }),
       ]);
       expect(rows.map((row) => [row.todoId, row.occurrenceDate])).toEqual([
-        [existing?.todoId, "2026-11-10"],
-        [created[0]?.todoId, "2026-11-11"],
+        [existing?.todoId.value, "2026-11-10"],
+        [created[0]?.todoId.value, "2026-11-11"],
       ]);
       const titles = await Promise.all(
-        [existing?.todoId, created[0]?.todoId].map(async (todoId) =>
+        [existing?.todoId.value, created[0]?.todoId.value].map(async (todoId) =>
           (
             await context.todoRepository.findByIdAndUserId(
               TodoId.reconstitute(todoId ?? 0),
@@ -373,7 +373,7 @@ export function describeTodoRepositoryContract(
         seriesId,
         [],
       );
-      const completedId = created[2]?.todoId ?? 0;
+      const completedId = created[2]?.todoId.value ?? 0;
       const completed = await context.todoRepository.findByIdAndUserId(
         TodoId.reconstitute(completedId),
         OWNER_ID,
@@ -397,9 +397,9 @@ export function describeTodoRepositoryContract(
       });
 
       // Then
-      expect(following).toEqual([created[1]?.todoId]);
+      expect(following).toEqual([created[1]?.todoId.value]);
       expect(rest.toSorted((left, right) => left - right)).toEqual([
-        created[0]?.todoId,
+        created[0]?.todoId.value,
         completedId,
       ]);
     });

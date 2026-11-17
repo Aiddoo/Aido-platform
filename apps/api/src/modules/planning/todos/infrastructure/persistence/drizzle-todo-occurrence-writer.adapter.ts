@@ -79,7 +79,10 @@ export class DrizzleTodoOccurrenceWriterAdapter implements TodoOccurrenceWriterP
         ),
       );
     }
-    return rows.map((row) => ({ todoId: row.id, scheduledTime: row.scheduledTime }));
+    return rows.map((row) => ({
+      todoId: TodoId.reconstitute(row.id),
+      scheduledTime: row.scheduledTime,
+    }));
   }
 
   async findOccurrencesFrom(

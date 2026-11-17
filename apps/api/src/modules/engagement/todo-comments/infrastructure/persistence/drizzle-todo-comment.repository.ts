@@ -14,6 +14,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import { TodoCommentRepositoryPort } from "../../application/ports/todo-comment.repository.port.js";
 import { todoCommentIdempotencyRace } from "../../application/todo-comments.errors.js";
+import type { TodoCommentRequestId } from "../../domain/todo-comment-request-id.vo.js";
 import type { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import { toTodoComment, toTodoCommentRow } from "./todo-comment-row.mapper.js";
 
@@ -36,7 +37,7 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
 
   async listByAuthorIdAndClientRequestIds(
     authorId: UserId,
-    clientRequestIds: readonly string[],
+    clientRequestIds: readonly TodoCommentRequestId[],
   ): Promise<TodoComment[]> {
     if (clientRequestIds.length === 0) {
       return [];
@@ -47,7 +48,10 @@ export class DrizzleTodoCommentRepository implements TodoCommentRepositoryPort {
       .where(
         and(
           eq(todoCommentTable.authorId, authorId.value),
-          inArray(todoCommentTable.clientRequestId, [...clientRequestIds]),
+          inArray(
+            todoCommentTable.clientRequestId,
+            clientRequestIds.map((requestId) => requestId.value),
+          ),
         ),
       );
     return rows.map(toTodoComment);

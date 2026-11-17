@@ -33,7 +33,7 @@ export interface TodoOccurrenceMove {
 }
 
 export interface CreatedOccurrence {
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly scheduledTime: Temporal.Instant | null;
 }
 

@@ -1,3 +1,4 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
@@ -123,9 +124,9 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     // Then
     expect(friendCompleted).toEqual([
       {
-        friendId: "user-1",
+        friendId: UserId.reconstitute("user-1"),
         friendName: "홍길동",
-        notifyUserIds: ["friend-1"],
+        notifyUserIds: [UserId.reconstitute("friend-1")],
         timezone: "Asia/Seoul",
       },
     ]);
@@ -144,7 +145,7 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
     ]);
 
     // Then
-    expect(milestones).toEqual([{ userId: "user-1", milestone: "COUNT_10" }]);
+    expect(milestones).toEqual([{ userId: UserId.reconstitute("user-1"), milestone: "COUNT_10" }]);
   });
 
   it("스트릭과 친구 완료 알림은 오늘 현황을 한 번만 세서 함께 쓴다", async () => {
@@ -194,7 +195,10 @@ describe("ApplyTodoCompletionEffectsUseCase — 완료 토글이 다른 Context�
 
   it.each([
     { completedCount: 99, expected: [] },
-    { completedCount: 100, expected: [{ userId: "user-1", milestone: "COUNT_100" }] },
+    {
+      completedCount: 100,
+      expected: [{ userId: UserId.reconstitute("user-1"), milestone: "COUNT_100" }],
+    },
     { completedCount: 101, expected: [] },
     { completedCount: 5000, expected: [] },
   ])(

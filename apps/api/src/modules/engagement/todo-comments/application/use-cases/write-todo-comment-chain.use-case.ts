@@ -21,6 +21,7 @@ import {
   type TodoCommentChainRequest,
 } from "../../domain/todo-comment-chain.domain-service.js";
 import { TodoCommentContent } from "../../domain/todo-comment-content.vo.js";
+import { TodoCommentRequestId } from "../../domain/todo-comment-request-id.vo.js";
 import { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
@@ -278,7 +279,7 @@ export class WriteTodoCommentChainUseCase {
   async #findReplay(request: TodoCommentChainRequest): Promise<readonly TodoCommentId[] | null> {
     const stored = await this.#dependencies.repository.listByAuthorIdAndClientRequestIds(
       request.authorId,
-      request.items.map((item) => item.clientRequestId),
+      request.items.map((item) => TodoCommentRequestId.reconstitute(item.clientRequestId)),
     );
     const replay = matchTodoCommentChainReplay({ request, stored });
     if (!replay.ok) {

@@ -3,6 +3,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type { TodoId } from "../../domain/todo-id.vo.js";
+import type { TodaySummaryTodoReadModel } from "../read-models/today-summary-todo.read-model.js";
 import type { FriendTodoReadModel, TodoReadModel } from "../read-models/todo.read-model.js";
 
 export interface FindTodosParams {
@@ -29,14 +30,6 @@ export interface FindFriendTodosParams {
  * 쿼리 핸들러와 "쓰기 후 응답 조회"가 사용합니다. 애그리게잇을 거치지 않고
  * 응답 계약(`@aido/api`의 Todo) read model을 직접 반환합니다(성능·계층 분리).
  */
-/** 홈 위젯 요약용 경량 read model (미완료 우선 정렬) */
-export interface TodaySummaryTodoRow {
-  id: number;
-  title: string;
-  completed: boolean;
-  categoryColor: string;
-}
-
 export abstract class TodoReadRepositoryPort {
   abstract findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null>;
 
@@ -73,5 +66,5 @@ export abstract class TodoReadRepositoryPort {
     userId: UserId,
     today: Temporal.PlainDate,
     limit: number,
-  ): Promise<TodaySummaryTodoRow[]>;
+  ): Promise<TodaySummaryTodoReadModel[]>;
 }

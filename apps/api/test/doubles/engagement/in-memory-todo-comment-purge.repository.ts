@@ -110,7 +110,7 @@ export class InMemoryTodoCommentPurgeRepository extends TodoCommentPurgeReposito
     }
     const remaining = this.#comments.list();
     return affectedTodoIds.map((todoId) => ({
-      todoId,
+      todoId: TodoId.reconstitute(todoId),
       commentCount: remaining.filter(
         (comment) => comment.todoId.value === todoId && !comment.isDeleted(),
       ).length,

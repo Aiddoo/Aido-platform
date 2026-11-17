@@ -11,7 +11,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type {
   TodoCommentCount,
   TodoEngagementCounterPort,
-  TodoViewRecord,
+  TodoViewRecording,
 } from "../../application/ports/todo-engagement-counter.port.js";
 import type { TodoId } from "../../domain/todo-id.vo.js";
 
@@ -45,7 +45,7 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
     return changed.length === 1;
   }
 
-  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecord> {
+  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecording> {
     const inserted = await this.#db
       .insert(todoView)
       .values({ todoId: todoId.value, viewerId: viewerId.value })
@@ -90,7 +90,9 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
       return;
     }
     const rows = sql.join(
-      counts.map(({ todoId, commentCount }) => sql`(${todoId}::integer, ${commentCount}::integer)`),
+      counts.map(
+        ({ todoId, commentCount }) => sql`(${todoId.value}::integer, ${commentCount}::integer)`,
+      ),
       sql`, `,
     );
     const desired = sql`(values ${rows}) as desired("todoId", "commentCount")`;

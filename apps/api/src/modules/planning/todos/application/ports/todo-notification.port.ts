@@ -1,3 +1,5 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { TodoCompletionMilestone } from "../../domain/todo-completion.domain-service.js";
 
 /**
@@ -5,11 +7,11 @@ import type { TodoCompletionMilestone } from "../../domain/todo-completion.domai
  */
 export interface FriendCompletedPayload {
   /** 완료한 친구 ID */
-  friendId: string;
+  friendId: UserId;
   /** 친구 이름 */
   friendName: string;
   /** 알림 대상 사용자 ID 목록 */
-  notifyUserIds: string[];
+  notifyUserIds: readonly UserId[];
   /** 타임존 (IANA) */
   timezone: string;
 }
@@ -21,7 +23,7 @@ export interface FriendCompletedPayload {
  */
 export interface MilestoneReachedPayload {
   /** 사용자 ID */
-  userId: string;
+  userId: UserId;
   /** 달성한 마일스톤 유형 */
   milestone: TodoCompletionMilestone;
 }

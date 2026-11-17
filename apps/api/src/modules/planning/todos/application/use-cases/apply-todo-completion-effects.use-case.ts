@@ -85,9 +85,9 @@ export class ApplyTodoCompletionEffectsUseCase {
       return;
     }
     await this.#dependencies.todoNotification.enqueueFriendCompleted({
-      friendId: ownerId.value,
+      friendId: ownerId,
       friendName: await this.#dependencies.friendPort.getUserDisplayName(ownerId),
-      notifyUserIds: friendIds,
+      notifyUserIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
       timezone,
     });
     this.#dependencies.logger.log({
@@ -106,7 +106,7 @@ export class ApplyTodoCompletionEffectsUseCase {
     );
     if (milestone != null) {
       await this.#dependencies.todoNotification.enqueueMilestoneReached({
-        userId: ownerId.value,
+        userId: ownerId,
         milestone,
       });
     }

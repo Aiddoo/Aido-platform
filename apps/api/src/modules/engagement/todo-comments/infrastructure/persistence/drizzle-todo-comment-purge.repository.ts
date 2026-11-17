@@ -218,7 +218,10 @@ export class DrizzleTodoCommentPurgeRepository implements TodoCommentPurgeReposi
       )
       .groupBy(todoCommentTable.todoId);
     const counts = new Map(rows.map((row) => [row.todoId, row.commentCount]));
-    return todoIds.map((todoId) => ({ todoId, commentCount: counts.get(todoId) ?? 0 }));
+    return todoIds.map((todoId) => ({
+      todoId: TodoId.reconstitute(todoId),
+      commentCount: counts.get(todoId) ?? 0,
+    }));
   }
 
   /** 잠금 순서를 계획과 정리에서 같게 두려고 글 id 오름차순으로 고정한다 */

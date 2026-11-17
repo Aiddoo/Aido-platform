@@ -13,6 +13,7 @@ import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/todo-comm
 import { CommentPlacement } from "#api/modules/engagement/todo-comments/domain/comment-placement.vo";
 import { matchTodoCommentChainReplay } from "#api/modules/engagement/todo-comments/domain/todo-comment-chain.domain-service";
 import { TodoCommentContent } from "#api/modules/engagement/todo-comments/domain/todo-comment-content.vo";
+import { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { engagementTodoCommentsConfig } from "#api/modules/engagement/todo-comments/engagement-todo-comments.config";
@@ -918,7 +919,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       request: input,
       stored: await repository.listByAuthorIdAndClientRequestIds(
         input.authorId,
-        input.items.map((item) => item.clientRequestId),
+        input.items.map((item) => TodoCommentRequestId.reconstitute(item.clientRequestId)),
       ),
     });
 

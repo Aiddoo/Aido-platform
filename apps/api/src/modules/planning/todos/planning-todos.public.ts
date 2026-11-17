@@ -7,7 +7,7 @@ export { TodoCachePort } from "./application/ports/todo-cache.port.js";
 export {
   type TodoCommentCount,
   TodoEngagementCounterPort,
-  type TodoViewRecord,
+  type TodoViewRecording,
 } from "./application/ports/todo-engagement-counter.port.js";
 export { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 export type {

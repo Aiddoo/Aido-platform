@@ -115,8 +115,8 @@ export function describeTodoCommentPurgeRepositoryContract(
         );
       const purgedReply = (await find(IDS.purgedReply))?.toPrimitives();
       expect(counts).toEqual([
-        { todoId: TODO_ID, commentCount: 2 },
-        { todoId: OTHER_TODO_ID, commentCount: 1 },
+        { todoId: TodoId.reconstitute(TODO_ID), commentCount: 2 },
+        { todoId: TodoId.reconstitute(OTHER_TODO_ID), commentCount: 1 },
       ]);
       expect(purgedReply).toMatchObject({
         authorId: DELETED_COMMENT_AUTHOR.id,

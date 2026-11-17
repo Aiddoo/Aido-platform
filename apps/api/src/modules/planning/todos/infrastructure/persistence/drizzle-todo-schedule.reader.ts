@@ -12,9 +12,9 @@ import {
 } from "../../../shared/domain/todo-calendar.domain-service.js";
 import {
   type TimedTodoQuery,
-  type TimedTodoView,
   TodoScheduleReaderPort,
 } from "../../application/ports/todo-schedule.reader.port.js";
+import type { TimedTodoReadModel } from "../../application/read-models/timed-todo.read-model.js";
 
 @Injectable()
 export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
@@ -24,7 +24,7 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoView[]> {
+  async listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoReadModel[]> {
     const { userIds, date, timezone, from, until } = query;
     if (userIds.length === 0) {
       return [];

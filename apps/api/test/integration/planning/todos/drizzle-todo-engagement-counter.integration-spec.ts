@@ -4,7 +4,7 @@ import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import type {
   TodoEngagementCounterPort,
-  TodoViewRecord,
+  TodoViewRecording,
 } from "#api/modules/planning/todos/planning-todos.public";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
@@ -97,7 +97,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     );
 
     // Then
-    const expected: TodoViewRecord[] = [
+    const expected: TodoViewRecording[] = [
       { recorded: true, viewCount: 1 },
       { recorded: false, viewCount: 1 },
     ];
@@ -110,7 +110,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
     // When
     await counter.lockCounters([TodoId.reconstitute(todoId)]);
-    await counter.replaceCommentCounts([{ todoId, commentCount: 1 }]);
+    await counter.replaceCommentCounts([{ todoId: TodoId.reconstitute(todoId), commentCount: 1 }]);
     await counter.replaceCommentCounts([]);
 
     // Then
