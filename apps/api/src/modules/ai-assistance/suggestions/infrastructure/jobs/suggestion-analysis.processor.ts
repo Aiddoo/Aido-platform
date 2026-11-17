@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import {
   createAiSuggestionNotificationMessage,
   PublishNotificationUseCase,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/notifications/notification-notifications.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

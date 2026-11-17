@@ -3,7 +3,8 @@ import { ConfigModule } from "@nestjs/config";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
@@ -20,7 +21,8 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
     IdentityUserAccessModule,
     PlanningTodoQueriesModule,
     SocialFriendshipsModule,
-    NotificationPushModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
     ConfigModule.forFeature(socialNudgesConfig),
   ],
   controllers: [NudgeController, NudgeInteractionController],

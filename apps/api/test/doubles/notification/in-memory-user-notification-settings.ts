@@ -2,7 +2,7 @@ import {
   type NotificationDeliveryPreference,
   type NotificationMarketingConsent,
   UserNotificationSettingsPort,
-} from "#api/modules/notification/push/application/ports/user-notification-settings.port";
+} from "#api/modules/notification/shared/application/ports/user-notification-settings.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 

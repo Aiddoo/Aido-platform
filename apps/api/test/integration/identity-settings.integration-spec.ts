@@ -12,7 +12,7 @@ import { UpdatePreferenceUseCase } from "#api/modules/identity/preferences/appli
 import { UpsertPushTimezoneUseCase } from "#api/modules/identity/preferences/application/use-cases/upsert-push-timezone.use-case";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
   todo,

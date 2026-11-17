@@ -15,7 +15,7 @@ import {
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import type { UserLocaleMap } from "../read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 import { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
 import {
   SweepTimezoneRemindersUseCase,
@@ -514,7 +514,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         expect(caughtUp[0]).toBe("Asia/Seoul 7:46");
         expect(caughtUp.at(-1)).toBe("Asia/Seoul 8:0");
         expect(logger.messages).toContainEqual({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
           reason: "late-over-15m",
           skippedMinutes: 25,
         });
@@ -625,7 +625,7 @@ describe("SweepTimezoneRemindersUseCase — 타임존 리마인더 오케스트�
         // Then
         await expect(result).resolves.toBeUndefined();
         expect(logger.messages).toContainEqual({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
           errorType: "sweep-execution",
         });
       });

@@ -4,9 +4,9 @@ import {
   PushTokenRegistrationConflictError,
   PushTokenRepositoryPort,
   type RegisterPushTokenData,
-} from "#api/modules/notification/push/application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
-import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+} from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
+import type { PushTokenRecord } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import type { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 interface StoredPushToken extends PushTokenRecord {

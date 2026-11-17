@@ -2,7 +2,7 @@ import {
   PushDispatchStagingRepositoryPort,
   type StagedPushDispatch,
   type StagePushDispatchInput,
-} from "#api/modules/notification/push/application/ports/push-dispatch-staging.repository.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-dispatch-staging.repository.port";
 
 export interface InMemoryStagedPushDispatch extends StagePushDispatchInput {
   readonly dispatchId: number;

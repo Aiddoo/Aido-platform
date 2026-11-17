@@ -3,16 +3,16 @@ import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { vi } from "vitest";
 
-import { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
-import { DrizzleNotificationReader } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.reader";
-import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
-import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
-import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
-import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
-import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
-import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
-import { NotificationRemindersLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
+import { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
+import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
+import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
+import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
+import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
+import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
+import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
 import { SendMorningReminderUseCase } from "#api/modules/notification/reminders/application/use-cases/send-morning-reminder.use-case";
 import {
   SweepTimezoneRemindersUseCase,
@@ -270,7 +270,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         Array.from({ length: 15 }, (_, index) => `8:${String(6 + index).padStart(2, "0")}`),
       );
       expect(worker.logger.messages).toContainEqual({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
         reason: "late-over-15m",
         skippedMinutes: 25,
       });
@@ -334,7 +334,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         expect(await todoReminders(todoId)).toEqual([]);
         expect(warn).toHaveBeenCalledWith(
           expect.objectContaining({
-            event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+            event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
             reason: "late-over-15m",
             lateMinutes: 16,
           }),

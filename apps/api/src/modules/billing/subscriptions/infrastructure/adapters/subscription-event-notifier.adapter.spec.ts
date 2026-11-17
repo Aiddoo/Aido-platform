@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
-import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
+import { notificationEventJobKey } from "#api/modules/notification/notifications/infrastructure/jobs/notification-job-keys.constants";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+} from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";

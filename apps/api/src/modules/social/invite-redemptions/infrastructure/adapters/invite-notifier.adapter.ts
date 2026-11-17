@@ -6,10 +6,12 @@ import {
   createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   PublishNotificationUseCase,
+  TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import {
   NotificationRecipientLocaleReaderPort,
   PushQuietHoursReaderPort,
-  TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {

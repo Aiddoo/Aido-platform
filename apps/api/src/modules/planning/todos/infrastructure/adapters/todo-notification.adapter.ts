@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 
 import type {
   FriendCompletedPayload,

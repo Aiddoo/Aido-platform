@@ -4,7 +4,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 

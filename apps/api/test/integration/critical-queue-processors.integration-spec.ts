@@ -2,20 +2,20 @@ import { eq } from "drizzle-orm";
 import { chunk } from "es-toolkit";
 import { assert, vi } from "vitest";
 
-import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
+import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
-import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
+} from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
+import { PushDeliveryQueueProcessor } from "#api/modules/notification/push-dispatches/infrastructure/jobs/push-delivery-queue.processor";
 import {
   PUSH_DELIVERY_QUEUE,
   PushDeliveryRuntimeJobSchema,
-} from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
+} from "#api/modules/notification/push-dispatches/infrastructure/jobs/push-delivery.queue";
 import {
   RETENTION_QUEUE,
   RetentionJobName,
-} from "#api/modules/notification/retention/infrastructure/jobs/retention.queue";
+} from "#api/modules/notification/retention-assignments/infrastructure/jobs/retention.queue";
 import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcast-campaigns/application/use-cases/create-broadcast-campaign.use-case";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";

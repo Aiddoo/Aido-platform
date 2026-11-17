@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TodoReminderSchedulerPort as NotificationReminderSchedulerPort } from "#api/modules/notification/notification-reminders.public";
+import { TodoReminderSchedulerPort as NotificationReminderSchedulerPort } from "#api/modules/notification/reminders/notification-reminders.public";
 
 import type {
   TodoReminderSchedulerPort,

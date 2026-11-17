@@ -1,6 +1,6 @@
-import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push/application/ports/push-delivery-job-enqueuer.port";
-import type { PushDeliveryPublication } from "#api/modules/notification/push/application/read-models/push-delivery.read-model";
-import type { PushDeliveryLane } from "#api/modules/notification/push/domain/push-delivery-lane.domain-service";
+import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-job-enqueuer.port";
+import type { PushDeliveryPublication } from "#api/modules/notification/push-dispatches/application/read-models/push-delivery.read-model";
+import type { PushDeliveryLane } from "#api/modules/notification/push-dispatches/domain/push-delivery-lane.domain-service";
 
 export interface RecordedPushDeliveryJob {
   readonly publications: readonly PushDeliveryPublication[];

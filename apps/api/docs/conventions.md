@@ -30,7 +30,7 @@
 
 - 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
 - 허용하는 역할 접미사는 루트 [`.ls-lint.yml`](../../../.ls-lint.yml)의 `apps/api/src/modules/*` 목록 하나다. 목록에 없는 다중 점 접미사(`memo.record.ts`)와 접미사 없는 `.ts`는 ls-lint가 막는다. `.policy`는 `<vendor>-outbound.policy.ts`에만 쓴다.
-- `.tsx`와 React는 메일 템플릿 폴더(`notification/email/infrastructure/templates`)에만 둔다. 메일은 `<이름>.email.tsx`, 공용 부품은 접미사 없는 `.tsx`, `@nestjs/mail` 메일 클래스는 `.mail.ts`다(ls-lint, dependency-cruiser `react-only-in-email-templates`).
+- `.tsx`와 React는 메일 템플릿 폴더(`notification/email-messages/infrastructure/templates`)에만 둔다. 메일은 `<이름>.email.tsx`, 공용 부품은 접미사 없는 `.tsx`, `@nestjs/mail` 메일 클래스는 `.mail.ts`다(ls-lint, dependency-cruiser `react-only-in-email-templates`).
 - 구현은 기술 접두사(`DrizzleMemoRepository`, `InMemoryMemoRepository`)로 짓고 `Impl`을 쓰지 않는다.
 - `Manager`·전달 전용 Facade·`TodoService` 같은 만능 이름으로 역할을 감추지 않는다. 행동 하나가 UseCase 하나다.
 - 라이브러리와 겹치는 이름(`HttpService`·`CacheService`·`Logger`)을 새로 만들지 않는다(`CacheStorePort`, `requestVendorJson`).

@@ -6,8 +6,8 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createNudgeSuggestionNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { NudgeSuggestFollow } from "../read-models/scheduler.read-model.js";
 import { SendNudgeSuggestUseCase } from "./send-nudge-suggest.use-case.js";
 

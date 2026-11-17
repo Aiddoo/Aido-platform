@@ -1,5 +1,5 @@
-import type { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
-import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+import type { PushDeviceRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-device.repository.port";
+import { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPushDeviceFixture,

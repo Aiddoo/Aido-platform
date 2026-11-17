@@ -7,7 +7,7 @@ import {
   type ReopenPushDeliveriesAfterClaimFailureInput,
   type PushDeliveryFence,
   PushDeliveryLifecycleRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-delivery-lifecycle.repository.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-lifecycle.repository.port";
 
 const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
   "claim",

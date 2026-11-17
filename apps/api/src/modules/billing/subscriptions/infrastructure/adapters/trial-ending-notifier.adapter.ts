@@ -4,10 +4,12 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   createPremiumTrialEndingNotificationMessage,
   PublishNotificationUseCase,
+  SCHEDULER_CAMPAIGN_KEY,
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
-  SCHEDULER_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";

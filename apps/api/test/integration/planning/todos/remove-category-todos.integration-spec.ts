@@ -2,8 +2,8 @@ import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
 import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
 import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";

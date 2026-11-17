@@ -1,7 +1,7 @@
 import { Mailer, MailModule, type MailTransport } from "@nestjs/mail";
 import { Test } from "@nestjs/testing";
 
-import { EmailTemplateMail } from "#api/modules/notification/email/infrastructure/templates/email-template.mail";
+import { EmailTemplateMail } from "#api/modules/notification/email-messages/infrastructure/templates/email-template.mail";
 
 export interface TestMailer {
   readonly mailer: Mailer;

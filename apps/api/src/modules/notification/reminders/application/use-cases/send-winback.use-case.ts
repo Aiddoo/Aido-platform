@@ -1,11 +1,13 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { createWinbackNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { elapsedDaysUntil, utcStartOf } from "../../domain/reminder-day.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { resolveWinbackStage } from "../../domain/winback-stage.constants.js";
@@ -13,7 +15,7 @@ import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WinbackStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
@@ -113,7 +115,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
       );
 
       this.#dependencies.logger.log({
-        event: NotificationRemindersLogEvent.WINBACK_SENT,
+        event: ReminderLogEvent.WINBACK_SENT,
         timezones,
         count: notifications.length,
       });

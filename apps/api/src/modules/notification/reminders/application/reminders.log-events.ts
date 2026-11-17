@@ -1,4 +1,4 @@
-export const NotificationRemindersLogEvent = {
+export const ReminderLogEvent = {
   TIMEZONE_AWARE_REMINDER_SWEEP_STARTED:
     "notification.reminders.timezone-aware-reminder.sweep.started",
   TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED:

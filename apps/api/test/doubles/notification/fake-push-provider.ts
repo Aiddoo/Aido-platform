@@ -3,8 +3,8 @@ import {
   PushProviderPort,
   type PushReceiptResult,
   type PushResult,
-} from "#api/modules/notification/push/application/ports/push-provider.port";
-import { EXPO_PUSH_TIMING } from "#api/modules/notification/push/infrastructure/adapters/expo-push-sender.adapter";
+} from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import { EXPO_PUSH_TIMING } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-sender.adapter";
 
 // 실제 Expo를 부르지 않고 보낸 payload를 메모리에 남긴다. 결과를 바꿔야 하는 spec은 nextResults로 덮어쓴다
 export class FakePushProvider extends PushProviderPort {
@@ -16,10 +16,6 @@ export class FakePushProvider extends PushProviderPort {
   receipts: ((ticketIds: readonly string[]) => Promise<PushReceiptResult[]>) | null = null;
   // ticket id는 DB 유니크 컬럼에 남아 앱을 새로 띄우거나 clear해도 겹치지 않게 만든다
   #ticketSequence = 0;
-
-  validateToken(token: string): boolean {
-    return token.startsWith("ExponentPushToken[") || token.startsWith("fake-");
-  }
 
   async sendBatch(payloads: readonly PushPayload[]): Promise<PushResult[]> {
     this.sentBatches.push([...payloads]);

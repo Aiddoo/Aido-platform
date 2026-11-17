@@ -1,13 +1,13 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type { AuthEmailSenderPort } from "#api/modules/identity/auth/application/ports/auth-collaboration.port";
-import type { EmailKind } from "#api/modules/notification/email/domain/email-delivery.constants";
+import type { EmailKind } from "#api/modules/notification/email-messages/domain/email-delivery.constants";
 import type {
   EmailDispatch,
   EmailSendResult,
   InquiryTemplateData,
   UserReportTemplateData,
-} from "#api/modules/notification/notification-email.public";
+} from "#api/modules/notification/email-messages/notification-email-messages.public";
 
 interface SentEmail extends VerificationEmailData {
   type: EmailKind;

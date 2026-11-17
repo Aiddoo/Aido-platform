@@ -26,7 +26,7 @@ import type {
   TimezoneReminderEnqueuerPort,
 } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 import type { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
 import type { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
@@ -79,7 +79,7 @@ export class SweepTimezoneRemindersUseCase {
 
   async handleMinuteSweep(): Promise<void> {
     const { logger, sweepCursor } = this.#dependencies;
-    logger.log({ event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED });
+    logger.log({ event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED });
 
     try {
       const lastCompletedAt = await sweepCursor.findLastCompletedAt(
@@ -94,7 +94,7 @@ export class SweepTimezoneRemindersUseCase {
       // worker가 REMINDER_LATE_LIMIT_MINUTES(15분)보다 오래 멈춰 그보다 앞선 분의 정시 알림을 버렸다
       if (skippedMinutes > 0) {
         logger.warn({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
           reason: REMINDER_LATE_SKIP_REASON,
           skippedMinutes,
         });
@@ -112,13 +112,13 @@ export class SweepTimezoneRemindersUseCase {
       }
 
       logger.log({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
         timezoneCount: timezones.length,
         minuteCount: minutes.length,
       });
     } catch {
       logger.error({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
         errorType: "sweep-execution",
       });
     }
@@ -142,7 +142,7 @@ export class SweepTimezoneRemindersUseCase {
         morningMinute === localMinute
       ) {
         this.#dependencies.logger.log({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING,
           userId: payload.userId,
           localHour,
           localMinute,
@@ -157,7 +157,7 @@ export class SweepTimezoneRemindersUseCase {
         eveningMinute === localMinute
       ) {
         this.#dependencies.logger.log({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_EVENING,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_EVENING,
           userId: payload.userId,
           localHour,
           localMinute,
@@ -166,7 +166,7 @@ export class SweepTimezoneRemindersUseCase {
       }
     } catch {
       this.#dependencies.logger.error({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_FAILED,
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_FAILED,
         userId: payload.userId,
         errorType: "catch-up-execution",
       });
@@ -177,7 +177,7 @@ export class SweepTimezoneRemindersUseCase {
     try {
       if (!payload.recipientUserIds?.length) {
         this.#dependencies.logger.warn({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED,
           timezone: payload.timezone,
         });
         return;
@@ -191,7 +191,7 @@ export class SweepTimezoneRemindersUseCase {
       await this.#dependencies.socialDigest.execute(timezoneContext, payload.recipientUserIds);
     } catch {
       this.#dependencies.logger.error({
-        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_DIGEST_FAILED,
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_DIGEST_FAILED,
         timezone: payload.timezone,
         errorType: "digest-execution",
       });
@@ -206,7 +206,7 @@ export class SweepTimezoneRemindersUseCase {
     results.forEach((result, index) => {
       if (result.status === "rejected") {
         this.#dependencies.logger.error({
-          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
           timezones: groups[index]?.timezones ?? [],
           errorType: "strategy-execution",
         });

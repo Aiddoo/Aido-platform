@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
-import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
+import { NotificationRemindersModule } from "#api/modules/notification/reminders/notification-reminders.public";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";

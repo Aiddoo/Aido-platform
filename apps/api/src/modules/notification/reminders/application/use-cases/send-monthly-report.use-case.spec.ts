@@ -5,8 +5,8 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createMonthlyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createMonthlyReportNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendMonthlyReportUseCase } from "./send-monthly-report.use-case.js";
 
 describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {

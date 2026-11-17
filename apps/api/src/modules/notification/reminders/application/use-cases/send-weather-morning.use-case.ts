@@ -10,16 +10,18 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
-import { formatWeatherNotificationTime } from "../../../push/application/messages/notification-copy-format.messages.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
 import {
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherMorningUnavailableNotificationMessage,
   createWeatherRescheduleAction,
-} from "../../../push/application/messages/weather-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
+} from "../../../shared/application/messages/weather-notification.messages.js";
+import type { NotificationAction } from "../../../shared/application/ports/notification-draft.port.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
@@ -29,7 +31,7 @@ import type {
   WeatherReminderTodo,
   WeatherReminderUser,
 } from "../read-models/scheduler.read-model.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 import {
   buildWeatherNotification,
   filterUnnotifiedWeatherUsers,
@@ -77,7 +79,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     const total = weather.sent + fallbackSent;
     if (total > 0) {
       this.#dependencies.logger.log({
-        event: NotificationRemindersLogEvent.WEATHER_MORNING_SENT,
+        event: ReminderLogEvent.WEATHER_MORNING_SENT,
         timezones,
         localHour,
         localMinute,

@@ -1,12 +1,12 @@
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import type { NotificationHistoryReaderPort } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
-import type { NotificationInboxReaderPort } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
+import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
+import type { NotificationInboxReaderPort } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import {
   DuplicateNotificationError,
   type NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
-import { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
+} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
+import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createNotificationDraftFixture,

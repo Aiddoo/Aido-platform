@@ -9,11 +9,11 @@ import { join } from "node:path";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@aido/api/vocabulary";
 import { createElement, type ReactElement } from "react";
 
-import type { EmailKind } from "../src/modules/notification/email/domain/email-delivery.constants.js";
-import { renderEmailElement } from "../src/modules/notification/email/infrastructure/templates/email-renderer.js";
-import InquiryEmail from "../src/modules/notification/email/infrastructure/templates/inquiry.email.js";
-import UserReportEmail from "../src/modules/notification/email/infrastructure/templates/user-report.email.js";
-import VerificationCodeEmail from "../src/modules/notification/email/infrastructure/templates/verification-code.email.js";
+import type { EmailKind } from "../src/modules/notification/email-messages/domain/email-delivery.constants.js";
+import { renderEmailElement } from "../src/modules/notification/email-messages/infrastructure/templates/email-renderer.js";
+import InquiryEmail from "../src/modules/notification/email-messages/infrastructure/templates/inquiry.email.js";
+import UserReportEmail from "../src/modules/notification/email-messages/infrastructure/templates/user-report.email.js";
+import VerificationCodeEmail from "../src/modules/notification/email-messages/infrastructure/templates/verification-code.email.js";
 
 const OUTPUT_DIRECTORY = join(import.meta.dirname, "../tmp/email-previews");
 

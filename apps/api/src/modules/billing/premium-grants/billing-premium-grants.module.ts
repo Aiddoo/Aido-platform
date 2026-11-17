@@ -2,7 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
 import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
@@ -14,7 +15,12 @@ import { SweepPremiumGrantsUseCase } from "./application/use-cases/sweep-premium
 import { BILLING_PREMIUM_GRANTS_PROVIDERS } from "./billing-premium-grants.providers.js";
 
 @Module({
-  imports: [IdentityUserAccessModule, AccessFeatureGrantsQueriesModule, NotificationPushModule],
+  imports: [
+    IdentityUserAccessModule,
+    AccessFeatureGrantsQueriesModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
+  ],
   providers: [...BILLING_PREMIUM_GRANTS_PROVIDERS],
   exports: [
     PremiumGranterPort,

@@ -8,8 +8,9 @@ import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-
 import { DatabaseModule } from "#api/platform/database/database.module";
 
 import { WeatherWeatherReportsModule } from "../../weather/weather-reports/weather-weather-reports.public.js";
-import { NotificationPushModule } from "../push/notification-push.module.js";
-import { notificationRetentionConfig } from "../retention/notification-retention.config.js";
+import { NotificationNotificationsModule } from "../notifications/notification-notifications.public.js";
+import { NotificationPushDispatchesModule } from "../push-dispatches/notification-push-dispatches.public.js";
+import { notificationRetentionAssignmentsConfig } from "../retention-assignments/notification-retention-assignments.public.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
 import { TimezoneReminderQueueModule } from "./infrastructure/jobs/timezone-reminder-queue.module.js";
 import { TimezoneReminderQueueProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
@@ -24,13 +25,14 @@ import {
   imports: [
     TimezoneReminderQueueModule,
     DatabaseModule,
-    NotificationPushModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
     WeatherWeatherReportsModule,
     InsightsWeeklyAchievementsModule,
     AccessFeatureGrantsQueriesModule,
     IdentityUserAccessModule,
     PlanningTodoQueriesModule,
-    ConfigModule.forFeature(notificationRetentionConfig),
+    ConfigModule.forFeature(notificationRetentionAssignmentsConfig),
   ],
   providers: [
     ...NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,

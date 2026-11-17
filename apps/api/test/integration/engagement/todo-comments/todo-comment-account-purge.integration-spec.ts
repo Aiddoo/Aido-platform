@@ -20,10 +20,10 @@ import { AuthUserRepositoryPort } from "#api/modules/identity/auth/application/p
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/auth/infrastructure/persistence/drizzle-security-log.repository";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { NotificationCachePort } from "#api/modules/notification/inbox/application/ports/notification-cache.port";
-import { NotificationRepositoryPort } from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import { DeleteActorNotificationsUseCase } from "#api/modules/notification/inbox/application/use-cases/delete-actor-notifications.use-case";
-import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
+import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
+import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/delete-actor-notifications.use-case";
+import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import {
@@ -227,8 +227,6 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     notificationCache = {
       wrapUnreadCount: vi.fn(),
       invalidateUnreadCount: vi.fn(),
-      invalidatePushTokens: vi.fn(),
-      invalidateUserPreference: vi.fn(),
     };
     todoViewCache = new RecordingTodoViewCacheInvalidator();
     const databaseModule = AccountPurgeDatabaseTestModule.register(client);

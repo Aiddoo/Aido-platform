@@ -13,7 +13,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count, eq, isNotNull, type SQL } from "drizzle-orm";
 import request from "supertest";
 
-import { NOTIFICATION_COPY_REVISION } from "#api/modules/notification/push/application/messages/notification-copy-revision.messages";
+import { NOTIFICATION_COPY_REVISION } from "#api/modules/notification/notifications/application/messages/notification-copy-revision.messages";
 import { NudgeInteractionConfigPort } from "#api/modules/social/nudges/application/ports/nudge-interaction-config.port";
 import { NudgeNotifierPort } from "#api/modules/social/nudges/application/ports/nudge-notifier.port";
 import {

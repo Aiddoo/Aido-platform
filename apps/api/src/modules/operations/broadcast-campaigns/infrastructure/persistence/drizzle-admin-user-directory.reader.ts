@@ -10,7 +10,7 @@ import {
   type UserAudience,
   type UserAudienceFilter,
 } from "#api/modules/identity/users/identity-users.public";
-import { hasPushTokenCondition } from "#api/modules/notification/push/notification-push.public";
+import { hasPushTokenCondition } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

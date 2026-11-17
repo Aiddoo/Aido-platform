@@ -113,7 +113,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 5. 안 쓰는 칼럼·테이블은 두 릴리스에 걸쳐 지운다. Drizzle은 선언한 칼럼을 `select`·`insert`·`returning`에 모두 적어, 배포 중이거나 롤백한 이전 이미지가 그 테이블을 쿼리하기만 해도 칼럼 이름이 나간다.
    - 1단계: 스키마·코드에서 빼고 `db:generate`가 만든 `DROP` 줄은 지우고 이유 주석만 남긴다. snapshot에서 빠져 다음 generate가 확인 없는 `DROP`을 만들지 않는다. 남긴 DB 칸은 nullable이거나 기본값이 있어야 새 코드의 insert가 통과한다. 코드와 [호환](../../../docs/conventions/compatibility.md)에 제거 표시를 남긴다. 사례: `retire_unused_columns`.
    - 2단계(다음 릴리스): `db:generate --custom`으로 `DROP`을 손으로 쓴다. 롤백 대상 이미지가 SQL에 적지 않는 것만 지운다. 어느 이미지도 쿼리하지 않는 테이블은 1단계 없이 지울 수 있다(relations 선언은 SQL을 보내지 않는다).
-   - 지우는 마이그레이션은 `DROP` 앞에 `DO $$ … RAISE EXCEPTION … $$`로 "비었다(또는 다른 칸에 똑같이 있다)"를 다시 확인한다. 운영이 다르면 migrate가 실패해 모두 되돌아가고 API는 바뀌지 않는다. 운영 읽기 전용 확인 쿼리와 되돌리기 SQL(모양만 돌아오고 데이터는 돌아오지 않는다)은 릴리스 문서에 둔다. 사례: `drop_push_daily_budget`과 그 [통합 테스트](../test/integration/push-daily-budget-drop.integration-spec.ts).
+   - 지우는 마이그레이션은 `DROP` 앞에 `DO $$ … RAISE EXCEPTION … $$`로 "비었다(또는 다른 칸에 똑같이 있다)"를 다시 확인한다. 운영이 다르면 migrate가 실패해 모두 되돌아가고 API는 바뀌지 않는다. 운영 읽기 전용 확인 쿼리와 되돌리기 SQL(모양만 돌아오고 데이터는 돌아오지 않는다)은 릴리스 문서에 둔다. 사례: `drop_push_daily_budget`과 그 [통합 테스트](../test/integration/notification/push-dispatches/push-daily-budget-drop.integration-spec.ts).
 6. 큰 테이블 잠금은 배포 전 운영 건수를 읽기 전용으로 확인하고, 수만 행을 넘으면 칼럼 추가·나눠 채우기로 나눈다. `db:migrate`는 미적용 마이그레이션을 한 트랜잭션에서 돌려 `CREATE INDEX CONCURRENTLY`를 쓸 수 없다.
 7. 앞 마이그레이션의 잠금은 트랜잭션 끝까지 남는다. 그래서 다른 테이블(FK가 가리키는 테이블 포함)을 AccessExclusive로 잠그는 마이그레이션은 첫 문장에 `SET LOCAL lock_timeout = '500ms'`를 둔다. 기다리는 동안 앱 요청이 앱 `lock_timeout`(5초)을 넘겨 503이 되거나 교착에서 앱 트랜잭션이 끊기지 않도록, `deadlock_timeout`(1초)보다 먼저 migrate가 물러난다. 실패는 다시 실행하면 된다.
 

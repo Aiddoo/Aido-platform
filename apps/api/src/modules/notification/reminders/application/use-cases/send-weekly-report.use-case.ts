@@ -1,15 +1,17 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createWeeklyReportNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WeeklyReportStrategyDependencies {
   readonly reader: Pick<ScheduledReminderReaderPort, "findWeeklyReportRecipients">;
@@ -82,7 +84,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.WEEKLY_REPORT_SENT,
+      event: ReminderLogEvent.WEEKLY_REPORT_SENT,
       timezones,
       count: notifications.length,
     });

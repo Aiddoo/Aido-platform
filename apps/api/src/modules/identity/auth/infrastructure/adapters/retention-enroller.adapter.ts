@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { RetentionEnrollmentPort } from "#api/modules/notification/notification-retention.public";
+import { RetentionEnrollmentPort } from "#api/modules/notification/retention-assignments/notification-retention-assignments.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { RetentionEnrollerPort } from "../../application/ports/retention-enroller.port.js";

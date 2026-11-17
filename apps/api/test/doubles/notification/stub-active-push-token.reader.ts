@@ -1,4 +1,4 @@
-import { ActivePushTokenReaderPort } from "#api/modules/notification/push/application/ports/active-push-token.reader.port";
+import { ActivePushTokenReaderPort } from "#api/modules/notification/push-devices/application/ports/active-push-token.reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // cache-aside 활성 토큰 조회 대역. 어떤 사용자를 조회했는지 남겨 capability 경로가 캐시를 거치지 않는지 본다

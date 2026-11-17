@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { PublishNotificationUseCase } from "#api/modules/notification/notification-delivery.public";
+import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
 
 import { AdminBroadcastNotifierPort } from "../../application/ports/admin-broadcast-notifier.port.js";
 import type { BroadcastMessageReadModel } from "../../application/read-models/broadcast-message.read-model.js";

@@ -14,27 +14,28 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
+import { PublishNotificationUseCase } from "../../../notifications/notification-notifications.public.js";
+import { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import {
   createTodoReminderNotificationMessage,
   createTodoSeriesPausedNotificationMessage,
-} from "../../../push/application/messages/scheduler-notification.messages.js";
-import { NotificationRecipientLocaleReaderPort } from "../../../push/application/ports/notification-recipient-locale.reader.port.js";
-import { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import { todoSeriesPausedJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
+} from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
+import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
 import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import { REMINDER_LATE_LIMIT_MINUTES } from "../../domain/notification-schedule.domain-service.js";
 import {
   createReminderOccurrenceKey,
   reminderFireAt,
   reminderLateSkipReason,
 } from "../../domain/reminder-plan.domain-service.js";
+import { todoSeriesPausedJobKey } from "./reminder-job-keys.constants.js";
+import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
 import {
   type ReminderJobData,
   TODO_REMINDER_JOB_NAME,
@@ -168,12 +169,12 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     context: ReminderBatchContext,
   ): Promise<CreateNotificationData | null> {
     const stage = resolveReminderStage(stageLabel);
-    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, todoId, userId, stage });
+    this.#logger.debug({ event: NotificationJobLogEvent.JOB_STARTED, todoId, userId, stage });
 
     const todo = context.todos.get(todoId);
     if (!todo) {
       this.#logger.debug({
-        event: NotificationProviderLogEvent.JOB_SKIPPED,
+        event: NotificationJobLogEvent.JOB_SKIPPED,
         todoId,
         userId,
         reason: "TODO_INACTIVE",
@@ -193,7 +194,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     if (dormantSince != null) {
       // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
       this.#logger.log({
-        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        event: ReminderJobLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId,
         userId,
         stage,
@@ -247,14 +248,14 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
         { deliveryMode: "SINGLE" },
       );
       this.#logger.log({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
         attempted: drafts.length,
         published: count,
       });
     } catch (error) {
       // 묶음은 한 트랜잭션이라 모두 되돌아갔다. 한 건이 막았을 수 있으니 한 건씩 보내 그 작업만 실패시킨다
       this.#logger.warn({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISH_FAILED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISH_FAILED,
         attempted: drafts.length,
         errorType: toErrorType(error),
       });
@@ -273,7 +274,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const published = await this.#notificationPublisher.publish(notification);
     if (published == null) {
       this.#logger.debug({
-        event: NotificationProviderLogEvent.JOB_SKIPPED,
+        event: NotificationJobLogEvent.JOB_SKIPPED,
         todoId,
         userId,
         reason: "ALREADY_NOTIFIED",
@@ -281,7 +282,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return;
     }
     this.#logger.log({
-      event: NotificationProviderLogEvent.JOB_COMPLETED,
+      event: NotificationJobLogEvent.JOB_COMPLETED,
       todoId,
       userId,
       stage: resolveReminderStage(stageLabel),
@@ -304,7 +305,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return false;
     }
     this.#logger.warn({
-      event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+      event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
       todoId,
       userId,
       stage: resolveReminderStage(stageLabel),
@@ -360,7 +361,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       metadata: { stage: "series-paused" },
     });
     this.#logger.log({
-      event: NotificationProviderLogEvent.TODO_SERIES_PAUSED_SENT,
+      event: ReminderJobLogEvent.TODO_SERIES_PAUSED_SENT,
       todoId,
       userId,
     });

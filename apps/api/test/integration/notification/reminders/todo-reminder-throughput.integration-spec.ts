@@ -4,15 +4,15 @@ import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
-import { DrizzleNotificationRepository } from "#api/modules/notification/inbox/infrastructure/persistence/drizzle-notification.repository";
-import { PersistBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
-import { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
-import { SendBatchNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-batch-notification.use-case";
-import { SendNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-notification.use-case";
-import { todoReminderJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
-import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/push/infrastructure/persistence/drizzle-notification-todo-target.reader";
-import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
-import { NotificationRemindersLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
+import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
+import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
+import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
+import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
+import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
+import { DrizzlePushDispatchStagingRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch-staging.repository";
+import { ReminderLogEvent } from "#api/modules/notification/reminders/application/reminders.log-events";
+import { todoReminderJobKey } from "#api/modules/notification/reminders/infrastructure/jobs/reminder-job-keys.constants";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import {
   TODO_REMINDER_JOB_NAME,
@@ -215,7 +215,7 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
     expect(elapsedMs).toBeLessThan(DRAIN_BOUND_MS);
     expect(await sentReminderCount()).toBe(REMINDER_COUNT);
     expect(warn).not.toHaveBeenCalledWith(
-      expect.objectContaining({ event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED }),
+      expect.objectContaining({ event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED }),
     );
   }, 60_000);
 });

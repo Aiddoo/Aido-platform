@@ -13,7 +13,6 @@ import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,
 } from "#api/modules/notification/reminders/infrastructure/cache/reminder-cache.keyspace";
-import { notificationRetentionConfig } from "#api/modules/notification/retention/notification-retention.config";
 import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -22,7 +21,8 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
+import { notificationRetentionAssignmentsConfig } from "../../../retention-assignments/notification-retention-assignments.public.js";
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type {
   InactiveWindowParams,
   ReEngagementReaderPort,
@@ -69,7 +69,10 @@ import type {
  * 스케줄러의 모든 읽기 포트를 단일 영속성 어댑터로 구현한다.
  * (조회 계약은 포트별로 분리되어 있고, 어댑터는 DB 접근을 응집한다)
  */
-type RetentionSettings = Pick<ConfigType<typeof notificationRetentionConfig>, "onboardingV2">;
+type RetentionSettings = Pick<
+  ConfigType<typeof notificationRetentionAssignmentsConfig>,
+  "onboardingV2"
+>;
 
 @Injectable()
 export class DrizzleSchedulerReader
@@ -89,7 +92,7 @@ export class DrizzleSchedulerReader
   constructor(
     transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     cacheService: CacheStorePort,
-    @Inject(notificationRetentionConfig.KEY) retention: RetentionSettings,
+    @Inject(notificationRetentionAssignmentsConfig.KEY) retention: RetentionSettings,
     clock: ClockPort,
   ) {
     this.#transactionHost = transactionHost;

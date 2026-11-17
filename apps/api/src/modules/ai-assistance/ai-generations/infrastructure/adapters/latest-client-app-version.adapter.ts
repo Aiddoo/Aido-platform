@@ -2,7 +2,7 @@ import { compareSemanticVersions } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import { UserAppVersionReaderPort } from "#api/modules/identity/users/identity-users.public";
-import { ClientAppVersionReaderPort } from "#api/modules/notification/notification-delivery.public";
+import { ClientAppVersionReaderPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AiClientAppVersionReaderPort } from "../../application/ports/client-app-version.reader.port.js";

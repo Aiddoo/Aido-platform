@@ -1,6 +1,6 @@
-import type { NotificationHistoryReader } from "#api/modules/notification/inbox/application/notification-history.reader";
-import type { FindAlreadyNotifiedUserIdsQuery } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
-import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
+import type { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
+import type { FindAlreadyNotifiedUserIdsQuery } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
+import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 
 function keyOf(type: NotificationType, notificationDate: Temporal.PlainDate): string {
   return `${type}:${notificationDate.toString()}`;

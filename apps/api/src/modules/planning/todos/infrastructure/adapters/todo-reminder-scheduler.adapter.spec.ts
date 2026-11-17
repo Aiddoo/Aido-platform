@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { TodoReminderSchedulerPort } from "#api/modules/notification/notification-reminders.public";
+import type { TodoReminderSchedulerPort } from "#api/modules/notification/reminders/notification-reminders.public";
 
 import { ReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.js";
 

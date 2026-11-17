@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
 import { CheerCountCachePort } from "./application/ports/cheer-count-cache.port.js";
@@ -15,7 +15,7 @@ import { SOCIAL_CHEERS_PROVIDERS } from "./social-cheers.providers.js";
     AccessFeatureGrantsQueriesModule,
     IdentityUserAccessModule,
     SocialFriendshipsModule,
-    NotificationPushModule,
+    NotificationQueueModule,
   ],
   controllers: [CheerController],
   providers: [...SOCIAL_CHEERS_PROVIDERS],

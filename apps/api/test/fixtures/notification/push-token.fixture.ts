@@ -1,6 +1,6 @@
-import type { RegisterPushTokenData } from "#api/modules/notification/push/application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
-import { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
+import type { RegisterPushTokenData } from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
+import type { PushTokenRecord } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export const PUSH_TOKEN_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T03:00:00Z");

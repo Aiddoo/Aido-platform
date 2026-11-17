@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { StreakMilestoneNotifierPort } from "../../application/ports/streak-milestone-notifier.port.js";

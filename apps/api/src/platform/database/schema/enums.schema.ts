@@ -32,19 +32,19 @@ import { pgEnum } from "drizzle-orm/pg-core";
 
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
 import { ACCOUNT_PROVIDERS_IN_DB_ORDER } from "../../../modules/identity/auth/domain/auth.constants.js";
-import { NOTIFICATION_TYPES } from "../../../modules/notification/inbox/domain/notification-type.constants.js";
 import {
   PUSH_DELIVERY_ATTEMPT_STATUSES,
   PUSH_DELIVERY_MODES,
   PUSH_DISPATCH_OUTBOX_STATUSES,
   PUSH_DISPATCH_STATUSES,
   PUSH_RATE_LIMIT_PHASES,
-} from "../../../modules/notification/push/domain/push-delivery-status.constants.js";
+} from "../../../modules/notification/push-dispatches/domain/push-delivery-status.constants.js";
 import {
   RETENTION_STAGE_NAMES,
   RETENTION_STAGE_STATUSES,
   RETENTION_VARIANTS,
-} from "../../../modules/notification/retention/domain/retention.constants.js";
+} from "../../../modules/notification/retention-assignments/domain/retention-assignments.constants.js";
+import { NOTIFICATION_TYPES } from "../../../modules/notification/shared/domain/notification-type.constants.js";
 import {
   REWARD_CLAIM_KINDS,
   REWARD_GRANT_STATUSES,

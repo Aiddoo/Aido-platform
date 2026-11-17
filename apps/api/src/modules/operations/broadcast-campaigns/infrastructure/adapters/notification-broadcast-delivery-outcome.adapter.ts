@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   type PushCampaignOutcome,
   PushCampaignOutcomeReaderPort,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
 import { BroadcastDeliveryOutcomeReaderPort } from "../../application/ports/broadcast-delivery-outcome.reader.port.js";
 

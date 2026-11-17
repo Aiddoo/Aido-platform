@@ -5,9 +5,9 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   createTodoCommentNotificationMessage,
   PublishNotificationUseCase,
-  NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
 import {
   type TodoCommentActivityNotificationInput,

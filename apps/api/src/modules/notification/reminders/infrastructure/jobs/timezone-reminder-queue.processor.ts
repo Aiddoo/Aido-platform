@@ -3,7 +3,7 @@ import { match } from "ts-pattern";
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
 import { SweepTimezoneRemindersUseCase } from "../../application/use-cases/sweep-timezone-reminders.use-case.js";
 import {
   TIMEZONE_REMINDER_QUEUE,
@@ -42,7 +42,7 @@ export class TimezoneReminderQueueProcessor implements OnModuleInit {
   }
 
   async process(job: TimezoneReminderRuntimeJob): Promise<void> {
-    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: job.name });
+    this.#logger.debug({ event: NotificationJobLogEvent.JOB_STARTED, jobName: job.name });
     await match(job)
       .with({ name: TimezoneReminderJobName.SWEEP_REMINDERS }, () =>
         this.#sweep.handleMinuteSweep(),

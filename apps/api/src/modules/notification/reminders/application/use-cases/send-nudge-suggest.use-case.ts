@@ -1,12 +1,14 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
-import { createNudgeSuggestionNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { getNotificationFriendFallback } from "../../../push/application/messages/social-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { getNotificationFriendFallback } from "../../../shared/application/messages/social-notification.messages.js";
+import type { CreateNotificationData } from "../../../shared/application/ports/notification-draft.port.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import {
   elapsedDaysUntil,
   isoWeekIdOf,
@@ -17,7 +19,7 @@ import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.
 import { type SchedulerDedupPort } from "../ports/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface NudgeSuggestStrategyDependencies {
   readonly reader: Pick<
@@ -169,7 +171,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
       void this.#dependencies.schedulerDedup.recordNudgePairs(weekId, members);
 
       this.#dependencies.logger.log({
-        event: NotificationRemindersLogEvent.NUDGE_SUGGEST_SENT,
+        event: ReminderLogEvent.NUDGE_SUGGEST_SENT,
         timezones,
         count: notifications.length,
       });

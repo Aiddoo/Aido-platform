@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
 import { TIMEZONE_REMINDER_QUEUE, TimezoneReminderJobName } from "./timezone-reminder.queue.js";
 
 @Injectable()
@@ -25,7 +25,7 @@ export class TimezoneReminderSweepScheduler implements OnModuleInit {
       async () => {
         await this.#jobQueue.registerSchedules(TIMEZONE_REMINDER_QUEUE);
         this.#logger.log({
-          event: NotificationProviderLogEvent.SCHEDULE_REGISTERED,
+          event: NotificationJobLogEvent.SCHEDULE_REGISTERED,
           jobName: TimezoneReminderJobName.SWEEP_REMINDERS,
         });
       },

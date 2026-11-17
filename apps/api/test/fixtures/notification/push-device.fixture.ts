@@ -1,8 +1,8 @@
-import type { ReportPushDeviceCommand } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
+import type { ReportPushDeviceCommand } from "#api/modules/notification/push-devices/application/use-cases/report-push-device.use-case";
 import {
   PushDevice,
   type PushDevicePrimitives,
-} from "#api/modules/notification/push/domain/push-device.aggregate";
+} from "#api/modules/notification/push-devices/domain/push-device.aggregate";
 
 export const PUSH_DEVICE_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T03:00:00Z");
 export const PUSH_DEVICE_FIXTURE_USER_ID = "clz7x5p8k0021qz0z8z8z8z8z";

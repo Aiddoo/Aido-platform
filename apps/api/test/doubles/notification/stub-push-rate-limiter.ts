@@ -3,7 +3,7 @@ import {
   type GeneralPushRateLimitRequest,
   type PushRateLimitRequest,
   PushRateLimiterPort,
-} from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
 
 // 정한 사용자만 제한에 걸린 것으로 답하고 받은 예약 요청을 남긴다
 export class StubPushRateLimiter extends PushRateLimiterPort {

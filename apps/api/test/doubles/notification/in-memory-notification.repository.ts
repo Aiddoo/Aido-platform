@@ -1,24 +1,24 @@
 import { isPlainObject, uniq } from "es-toolkit";
 
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
   NotificationHistoryReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
+} from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
+} from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import {
   DuplicateNotificationError,
   NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
-import type { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
-import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
-import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
-import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
+} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
+import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
+import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
+import type { NotificationMilestone } from "#api/modules/notification/shared/domain/notification-milestone.constants";
+import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 

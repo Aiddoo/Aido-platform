@@ -2,12 +2,12 @@ import {
   type ClaimPushDeliveryOutboxInput,
   type DeferPushDeliveryPublicationsInput,
   PushDeliveryOutboxRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-delivery-outbox.repository.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-outbox.repository.port";
 import type {
   ClaimedPushDeliveryPublication,
   PushDeliveryPublication,
-} from "#api/modules/notification/push/application/read-models/push-delivery.read-model";
-import type { PushDeliveryLane } from "#api/modules/notification/push/domain/push-delivery-lane.domain-service";
+} from "#api/modules/notification/push-dispatches/application/read-models/push-delivery.read-model";
+import type { PushDeliveryLane } from "#api/modules/notification/push-dispatches/domain/push-delivery-lane.domain-service";
 
 const PUSH_DELIVERY_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "PUBLISHED"] as const;
 type PushDeliveryOutboxStatus = (typeof PUSH_DELIVERY_OUTBOX_STATUSES)[number];

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
-import { SessionPushDeviceReleasePort } from "#api/modules/notification/notification-delivery.public";
+import { SessionPushDeviceReleasePort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { AuthLogEvent } from "../../application/auth.log-events.js";

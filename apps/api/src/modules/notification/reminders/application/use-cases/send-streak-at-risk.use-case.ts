@@ -1,15 +1,17 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createStreakAtRiskNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 /**
  * 스트릭 위기 Strategy (20:15)
@@ -122,7 +124,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.STREAK_AT_RISK_SENT,
+      event: ReminderLogEvent.STREAK_AT_RISK_SENT,
       timezones,
       count: notifications.length,
     });

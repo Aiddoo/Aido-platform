@@ -1,15 +1,15 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import {
+  type CreateNotificationData,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
   PublishNotificationUseCase,
-  type CreateNotificationData,
-  NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
 
 import {

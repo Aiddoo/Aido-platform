@@ -1,7 +1,7 @@
 import {
   EmailMessage,
   type EmailMessageProps,
-} from "#api/modules/notification/email/domain/email-message.vo";
+} from "#api/modules/notification/email-messages/domain/email-message.vo";
 
 export const EMAIL_MESSAGE_FIXTURE_RECIPIENT = "private@example.com";
 export const EMAIL_MESSAGE_FIXTURE_CODE = "987654";

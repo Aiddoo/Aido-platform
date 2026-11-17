@@ -3,9 +3,9 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 import {
   createTodoCommentNotificationMessage,
   PublishNotificationUseCase,
-  type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import { type NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

@@ -1,4 +1,4 @@
-import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
+import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push-dispatches/application/ports/marketing-push-opt-out-token.port";
 
 // 서명하지 않고 "opt-out:<userId>"를 토큰으로 준다. verify는 등록한 토큰만 사용자로 푼다
 export class StubMarketingPushOptOutToken extends MarketingPushOptOutTokenPort {

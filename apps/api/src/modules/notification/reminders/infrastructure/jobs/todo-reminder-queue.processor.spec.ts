@@ -1,8 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
+import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
@@ -12,11 +12,11 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { ReminderLogEvent } from "../../application/reminders.log-events.js";
+import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
 import {
   REMINDER_LATE_SKIP_THRESHOLD,
   REMINDER_LATE_SKIP_WINDOW_MS,
@@ -136,7 +136,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       expect(seriesOwnerDormancy.askedUserIds).toEqual([USER_ID]);
       expect(publisher.published).toEqual([]);
       expect(log).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        event: ReminderJobLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "10min",
@@ -279,7 +279,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([]);
       expect(warn).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "60min",
@@ -330,7 +330,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([]);
       expect(warn).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "10min",
@@ -393,7 +393,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       ).process(makeJob());
       // Then
       expect(log).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
         attempted: 1,
         published: 0,
       });

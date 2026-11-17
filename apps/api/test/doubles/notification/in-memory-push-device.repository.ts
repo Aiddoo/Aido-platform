@@ -1,8 +1,8 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
-import { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
-import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
-import { PushDevice } from "#api/modules/notification/push/domain/push-device.aggregate";
+import { PushDeviceRepositoryPort } from "#api/modules/notification/push-devices/application/ports/push-device.repository.port";
+import type { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
+import { PushDevice } from "#api/modules/notification/push-devices/domain/push-device.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 type DeviceKey = `${string}:${string}`;

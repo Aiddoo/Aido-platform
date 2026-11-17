@@ -4,12 +4,12 @@ import { HttpClientModule } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 
 import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
 import {
-  NotificationEmailModule,
-  TransactionalEmailSender,
-} from "#api/modules/notification/notification-email.public";
-import { NotificationRetentionModule } from "#api/modules/notification/notification-retention.public";
+  NotificationEmailMessagesModule,
+  SendTransactionalEmailUseCase,
+} from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { NotificationPushDevicesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
+import { NotificationRetentionAssignmentsModule } from "#api/modules/notification/retention-assignments/notification-retention-assignments.public";
 import {
   AdminEventNotifierPort,
   OperationsAdminNoticesModule,
@@ -127,13 +127,13 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     }),
     AccessFeatureGrantsQueriesModule,
     OperationsAdminNoticesModule,
-    NotificationPushModule,
-    NotificationEmailModule,
+    NotificationPushDevicesModule,
+    NotificationEmailMessagesModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
     IdentityPreferencesModule,
     IdentityUserAccessModule,
     PlanningCategoriesModule,
-    NotificationRetentionModule,
+    NotificationRetentionAssignmentsModule,
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [
@@ -182,7 +182,7 @@ import { SessionController } from "./presentation/http/v1/session.controller.js"
     { provide: AuthPasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
     { provide: AuthTokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
     { provide: AuthCachePort, useExisting: AuthCacheAdapter },
-    { provide: AuthEmailSenderPort, useExisting: TransactionalEmailSender },
+    { provide: AuthEmailSenderPort, useExisting: SendTransactionalEmailUseCase },
     {
       provide: AuthRegistrationNotifierPort,
       useExisting: AdminEventNotifierPort,

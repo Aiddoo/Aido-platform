@@ -20,7 +20,7 @@ import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
   NotificationRuntimeJobSchema,
-} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+} from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 

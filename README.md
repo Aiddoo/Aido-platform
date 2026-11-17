@@ -178,7 +178,7 @@ sequenceDiagram
 | identity · access · billing       | `auth`·`users`·`preferences` · `feature-grants`·`quota-charges` · `subscriptions`·`premium-grants`                                                          |
 | planning · notes · engagement     | `todos`·`todo-series`·`categories` · `memos` · `todo-comments`·`todo-comment-likes`                                                                         |
 | social                            | `friendships`·`user-blocks`·`cheers`·`nudges`·`reminder-nudges`·`invites`·`invite-redemptions`·`user-reports`                                               |
-| notification · insights           | `inbox`·`push`·`email`·`reminders`·`retention` · `daily-completions`·`weekly-achievements`                                                                  |
+| notification · insights           | `notifications`·`push-devices`·`push-dispatches`·`email-messages`·`reminders`·`retention-assignments` · `daily-completions`·`weekly-achievements`           |
 | ai-assistance · voice · weather   | `ai-generations`·`parsed-drafts`·`action-plan-drafts`·`ai-reports`·`suggestions` · `voice-digests`·`plan-applications` · `weather-reports`·`user-locations` |
 | operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-versions`·`feature-discovery` · `inquiries`                                                                    |
 

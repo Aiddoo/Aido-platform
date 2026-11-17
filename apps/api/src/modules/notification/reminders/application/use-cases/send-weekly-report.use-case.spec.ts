@@ -5,8 +5,8 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createWeeklyReportNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendWeeklyReportUseCase } from "./send-weekly-report.use-case.js";
 
 describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {

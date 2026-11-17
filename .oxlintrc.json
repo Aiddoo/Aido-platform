@@ -55,7 +55,9 @@
       }
     },
     {
-      "files": ["apps/api/src/modules/notification/email/infrastructure/templates/**/*.tsx"],
+      "files": [
+        "apps/api/src/modules/notification/email-messages/infrastructure/templates/**/*.tsx"
+      ],
       "plugins": ["react"]
     },
     {

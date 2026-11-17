@@ -14,7 +14,7 @@ import {
   updatePreferenceProvider,
   upsertPushTimezoneProvider,
 } from "#api/modules/identity/preferences/identity-preferences.providers";
-import { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";

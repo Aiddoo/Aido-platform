@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
 
 import {
   type InquiryDeliveryResult,

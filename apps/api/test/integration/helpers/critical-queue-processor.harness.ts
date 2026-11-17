@@ -5,53 +5,55 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
-import type {
-  UserConsentRecord,
-  UserConsentRecordWithId,
-  UserPreferenceRecord,
-  UserPreferenceRecordWithId,
-} from "#api/modules/identity/identity-settings.public";
 import {
+  type UserConsentRecord,
+  type UserConsentRecordWithId,
   UserPreferenceReaderPort,
+  type UserPreferenceRecord,
+  type UserPreferenceRecordWithId,
   UserSettingsCachePort,
 } from "#api/modules/identity/identity-settings.public";
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/preferences/application/use-cases/read-user-preferences.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { NOTIFICATION_INBOX_PROVIDERS } from "#api/modules/notification/inbox/notification-inbox.providers";
-import { MarketingConsentReconfirmPort } from "#api/modules/notification/push/application/ports/marketing-consent-reconfirm.port";
-import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push/application/ports/marketing-push-opt-out-token.port";
-import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
-import { PushRateLimiterPort } from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
-import { UserNotificationSettingsPort } from "#api/modules/notification/push/application/ports/user-notification-settings.port";
-import { OptOutMarketingPushUseCase } from "#api/modules/notification/push/application/use-cases/opt-out-marketing-push.use-case";
-import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case";
-import { ReportPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/report-push-device.use-case";
-import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-billing-issue-notification.use-case";
-import { SendCheerNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-cheer-notification.use-case";
-import { SendFollowAcceptedNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-follow-accepted-notification.use-case";
-import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-follow-request-notification.use-case";
-import { SendMilestoneNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-milestone-notification.use-case";
-import { SendNotificationWithDedupUseCase } from "#api/modules/notification/push/application/use-cases/send-notification-with-dedup.use-case";
-import { SendNudgeNotificationUseCase } from "#api/modules/notification/push/application/use-cases/send-nudge-notification.use-case";
-import { UnregisterPushDeviceUseCase } from "#api/modules/notification/push/application/use-cases/unregister-push-device.use-case";
-import { InMemoryPushRateLimiterAdapter } from "#api/modules/notification/push/infrastructure/adapters/in-memory-push-rate-limiter.adapter";
-import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
-import { PushDeliveryQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/push-delivery-queue.processor";
-import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
+import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
+import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-billing-issue-notification.use-case";
+import { SendCheerNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-cheer-notification.use-case";
+import { SendFollowAcceptedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-follow-accepted-notification.use-case";
+import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-follow-request-notification.use-case";
+import { SendMilestoneNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-milestone-notification.use-case";
+import { SendNotificationWithDedupUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-dedup.use-case";
+import { SendNudgeNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-nudge-notification.use-case";
+import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
+import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
+import { ReportPushDeviceUseCase } from "#api/modules/notification/push-devices/application/use-cases/report-push-device.use-case";
+import { UnregisterPushDeviceUseCase } from "#api/modules/notification/push-devices/application/use-cases/unregister-push-device.use-case";
 import {
-  NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
-  NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
-} from "#api/modules/notification/push/notification-push.providers";
-import { ExperimentAssignerPort } from "#api/modules/notification/retention/application/ports/experiment-assigner.port";
-import { RetentionConfigPort } from "#api/modules/notification/retention/application/ports/retention-config.port";
-import { DeterministicHashExperimentAssignerAdapter } from "#api/modules/notification/retention/infrastructure/adapters/deterministic-hash-experiment-assigner.adapter";
-import { RetentionQueueProcessor } from "#api/modules/notification/retention/infrastructure/jobs/retention-queue.processor";
-import { DrizzleRetentionRepository } from "#api/modules/notification/retention/infrastructure/persistence/drizzle-retention.repository";
+  NOTIFICATION_PUSH_DEVICES_PERSISTENCE_PROVIDERS,
+  NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
+} from "#api/modules/notification/push-devices/notification-push-devices.providers";
+import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push-dispatches/application/ports/marketing-push-opt-out-token.port";
+import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import { PushRateLimiterPort } from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
+import { OptOutMarketingPushUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/opt-out-marketing-push.use-case";
+import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
+import { InMemoryPushRateLimiterAdapter } from "#api/modules/notification/push-dispatches/infrastructure/adapters/in-memory-push-rate-limiter.adapter";
+import { PushDeliveryQueueProcessor } from "#api/modules/notification/push-dispatches/infrastructure/jobs/push-delivery-queue.processor";
+import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push-dispatches/infrastructure/jobs/push-delivery.queue";
 import {
-  NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
-  NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
-} from "#api/modules/notification/retention/notification-retention.providers";
+  NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
+  NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.providers";
+import { ExperimentAssignerPort } from "#api/modules/notification/retention-assignments/application/ports/experiment-assigner.port";
+import { RetentionConfigPort } from "#api/modules/notification/retention-assignments/application/ports/retention-config.port";
+import { DeterministicHashExperimentAssignerAdapter } from "#api/modules/notification/retention-assignments/infrastructure/adapters/deterministic-hash-experiment-assigner.adapter";
+import { RetentionQueueProcessor } from "#api/modules/notification/retention-assignments/infrastructure/jobs/retention-queue.processor";
+import { DrizzleRetentionRepository } from "#api/modules/notification/retention-assignments/infrastructure/persistence/drizzle-retention.repository";
+import {
+  NOTIFICATION_RETENTION_ASSIGNMENTS_PERSISTENCE_PROVIDERS,
+  NOTIFICATION_RETENTION_ASSIGNMENTS_USE_CASE_PROVIDERS,
+} from "#api/modules/notification/retention-assignments/notification-retention-assignments.providers";
+import { UserNotificationSettingsPort } from "#api/modules/notification/shared/application/ports/user-notification-settings.port";
 import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcast-campaigns/application/ports/admin-broadcast-notifier.port";
 import { AdminUserDirectoryReaderPort } from "#api/modules/operations/broadcast-campaigns/application/ports/admin-user-directory.reader.port";
 import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcast-campaigns/application/ports/broadcast-campaign.repository.port";
@@ -92,8 +94,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
-import type { TestDatabaseClient } from "#test/setup/test-database";
-import { TestDatabase } from "#test/setup/test-database";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 import { FastJobQueue } from "./fast-job-timing.js";
 
@@ -223,9 +224,11 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
 
 function notificationProviders(pushProvider: FakePushProvider): Provider[] {
   return [
-    ...NOTIFICATION_INBOX_PROVIDERS,
-    ...NOTIFICATION_PUSH_PERSISTENCE_PROVIDERS,
-    ...NOTIFICATION_PUSH_USE_CASE_PROVIDERS,
+    ...NOTIFICATION_NOTIFICATIONS_PROVIDERS,
+    ...NOTIFICATION_PUSH_DEVICES_PERSISTENCE_PROVIDERS,
+    ...NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
+    ...NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
+    ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
     NotificationQueueProcessor,
     PushDeliveryQueueProcessor,
     // 큐 처리기가 부르지 않을 UseCase는 실수로 불리면 바로 드러나게 바꿔 둔다
@@ -295,8 +298,8 @@ function retentionProviders(): Provider[] {
   };
   return [
     RetentionQueueProcessor,
-    ...NOTIFICATION_RETENTION_PERSISTENCE_PROVIDERS,
-    ...NOTIFICATION_RETENTION_USE_CASE_PROVIDERS,
+    ...NOTIFICATION_RETENTION_ASSIGNMENTS_PERSISTENCE_PROVIDERS,
+    ...NOTIFICATION_RETENTION_ASSIGNMENTS_USE_CASE_PROVIDERS,
     { provide: RetentionConfigPort, useValue: config },
     { provide: ExperimentAssignerPort, useClass: DeterministicHashExperimentAssignerAdapter },
   ];

@@ -4,7 +4,7 @@
 
 ## 지금 구조
 
-- notification Context는 slice 다섯이다: `inbox`(알림함), `push`(발송·기기·문구), `email`, `reminders`(시각 기반 알림), `retention`(온보딩·리텐션 실험). 관리자 캠페인은 operations `broadcast-campaigns`, 성장 지표는 identity `users`가 소유한다.
+- notification Context는 slice 여섯이다: `notifications`(알림함·알림 발행), `push-devices`(기기·토큰), `push-dispatches`(푸시 발송·receipt), `email-messages`, `reminders`(시각 기반 알림), `retention-assignments`(온보딩·리텐션 실험). 여러 slice가 함께 쓰는 알림 종류·문구 카탈로그는 `shared/`다. 관리자 캠페인은 operations `broadcast-campaigns`, 성장 지표는 identity `users`가 소유한다.
 - 대량 발송: 캠페인 커서 작업이 500명 단위로 같은 트랜잭션에 `Notification`·`PushDispatch`·`PushDispatchOutbox`를 쓴다 → 릴레이 → `push-delivery.v1` → Expo 청크 100 + 초당 500 토큰 버킷. 한 요청·한 트랜잭션이 커지지 않고 재시도는 페이지 단위다.
 - 기기 없음·권한 없음·권한 거부는 건너뜀 사유(`PUSH_DISPATCH_SKIP_REASON`)로 기록한다. 90일 지난 기기는 stale이다.
 - 푸시는 Expo 공식 `expo-server-sdk`(청크·receipt)다. FCM 직접 발송이 필요해지면 `PushProviderPort` 어댑터 하나를 더한다.

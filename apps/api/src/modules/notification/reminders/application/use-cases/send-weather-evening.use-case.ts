@@ -3,18 +3,20 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
 import {
   createWeatherEveningFallbackNotificationMessage,
   createWeatherEveningNotificationMessage,
   createWeatherEveningUnavailableNotificationMessage,
-} from "../../../push/application/messages/weather-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
+} from "../../../shared/application/messages/weather-notification.messages.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 import {
   buildWeatherNotification,
   filterUnnotifiedWeatherUsers,
@@ -61,7 +63,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     const total = weather.sent + fallbackSent;
     if (total > 0) {
       this.#dependencies.logger.log({
-        event: NotificationRemindersLogEvent.WEATHER_EVENING_SENT,
+        event: ReminderLogEvent.WEATHER_EVENING_SENT,
         timezones,
         localHour,
         localMinute,

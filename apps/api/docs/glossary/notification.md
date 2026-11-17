@@ -23,19 +23,19 @@
 
 다른 Context는 아래 공개 면으로만 들어온다. notification은 다른 Context 테이블을 읽지 않고 그쪽이 구현한 포트로 설정·동의·할 일을 읽는다.
 
-| 공개 면                               | 코드                                                                                                                                      | 쓰는 쪽                                                                                  |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `notification-delivery.public`        | `PublishNotificationUseCase`, `CreateNotificationData`, 문구 생성 함수                                                                    | 알림을 만드는 모든 Context                                                               |
-| `notification-delivery.public`        | `SessionPushDeviceReleasePort`, `DeleteActorNotificationsUseCase`                                                                         | identity 세션 폐기·계정 정리                                                             |
-| `notification-delivery.public`        | `NotificationRecipientLocaleReaderPort`·`NotificationRecipientTimezoneReaderPort`·`PushQuietHoursReaderPort`·`ClientAppVersionReaderPort` | 수신자 언어·시간대·야간·앱 버전을 묻는 쪽(초대·결제·운영 등)                             |
-| `notification-delivery.public`        | `PushCampaignOutcomeReaderPort`                                                                                                           | operations 캠페인 결과 집계                                                              |
-| `push/notification-push.public`       | `hasPushTokenCondition`                                                                                                                   | 사람을 한 SQL로 고르면서 푸시 토큰이 있는 사람만 남기는 쪽(operations 브로드캐스트 대상) |
-| `notification-delivery-jobs.public`   | `NotificationQueueAdapter`                                                                                                                | social·billing·planning·identity·operations                                              |
-| `notification-email.public`           | `SendTransactionalEmailUseCase`                                                                                                           | identity 코드 메일, support 문의, social 신고                                            |
-| `notification-reminders.public`       | `TodoReminderSchedulerPort`, `NOTIFICATION_SCHEDULE`                                                                                      | planning 할 일 리마인더 예약                                                             |
-| `notification-reminders-jobs.public`  | `TimezoneReminderEnqueuerPort`                                                                                                            | identity 설정(시간대·알림 시각 변경)                                                     |
-| `notification-reminders-cache.public` | `ReminderTimezoneCachePort`                                                                                                               | identity 설정                                                                            |
-| `notification-retention.public`       | `RetentionEnrollmentPort`                                                                                                                 | identity 가입·첫 인증                                                                    |
+| 공개 면                                     | 코드                                                                                                         | 쓰는 쪽                                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `notification-notifications.public`         | `PublishNotificationUseCase`, `CreateNotificationData`, 문구 생성 함수, `DeleteActorNotificationsUseCase`    | 알림을 만드는 모든 Context, identity 계정 정리                                           |
+| `notification-notifications-jobs.public`    | `NotificationQueueModule`, `NotificationQueueAdapter`                                                        | social·billing·planning·identity. 기능 Module을 끌어오면 identity 설정과 파일이 순환한다 |
+| `notification-push-devices.public`          | `SessionPushDeviceReleasePort`, `ClientAppVersionReaderPort`, `hasPushTokenCondition`                        | identity 세션 폐기, ai-assistance 앱 버전, operations 브로드캐스트 대상                  |
+| `notification-push-dispatches.public`       | `NotificationRecipientLocaleReaderPort`·`NotificationRecipientTimezoneReaderPort`·`PushQuietHoursReaderPort` | 수신자 언어·시간대·야간을 묻는 쪽(초대·결제·운영 등)                                     |
+| `notification-push-dispatches.public`       | `PushCampaignOutcomeReaderPort`                                                                              | operations 캠페인 결과 집계                                                              |
+| `notification-email-messages.public`        | `SendTransactionalEmailUseCase`                                                                              | identity 코드 메일, support 문의, social 신고                                            |
+| `notification-reminders.public`             | `TodoReminderSchedulerPort`, `NOTIFICATION_SCHEDULE`                                                         | planning 할 일 리마인더 예약                                                             |
+| `notification-reminders-jobs.public`        | `TimezoneReminderEnqueuerPort`, `ReminderTimezoneCachePort`                                                  | identity 설정(시간대·알림 시각 변경). 기능 Module을 끌어오면 파일이 순환한다             |
+| `notification-retention-assignments.public` | `RetentionEnrollmentPort`                                                                                    | identity 가입·첫 인증                                                                    |
+
+slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 모른다: `push-devices` ← `push-dispatches` ← `notifications` ← `reminders`·`retention-assignments`. 알림 종류·문구 카탈로그·알림 재료처럼 둘 이상이 쓰는 것은 `shared/`다.
 
 ## notifications
 

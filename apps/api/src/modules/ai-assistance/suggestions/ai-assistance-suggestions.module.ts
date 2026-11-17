@@ -4,7 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
 
@@ -26,7 +26,7 @@ import { AiSuggestionController } from "./presentation/http/v1/ai-suggestion.con
     IdentityUserAccessModule,
     AiAssistanceAiGenerationsModule,
     AiAssistanceParsedDraftsModule,
-    NotificationPushModule,
+    NotificationNotificationsModule,
     PlanningTodoQueriesModule,
     PlanningTodosModule,
   ],

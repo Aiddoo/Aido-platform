@@ -42,7 +42,10 @@ module.exports = {
       comment:
         "React(React Email)는 메일 템플릿 폴더에만 둔다. 다른 곳은 템플릿이 돌려준 문자열(제목·HTML·텍스트)만 쓴다.",
       severity: "error",
-      from: { path: "^src/", pathNot: "^src/modules/notification/email/infrastructure/templates/" },
+      from: {
+        path: "^src/",
+        pathNot: "^src/modules/notification/email-messages/infrastructure/templates/",
+      },
       to: { path: "node_modules/(?:react|react-dom|react-email|@react-email/[^/]+)/" },
     },
     {
@@ -53,10 +56,10 @@ module.exports = {
       from: {
         path: "^src/",
         pathNot:
-          "^src/modules/notification/email/infrastructure/templates/(?!email-template\\.mail\\.ts$)",
+          "^src/modules/notification/email-messages/infrastructure/templates/(?!email-template\\.mail\\.ts$)",
       },
       to: {
-        path: "^src/modules/notification/email/infrastructure/templates/[^/]+\\.tsx$",
+        path: "^src/modules/notification/email-messages/infrastructure/templates/[^/]+\\.tsx$",
         dependencyTypesNot: ["dynamic-import", "type-only"],
       },
     },

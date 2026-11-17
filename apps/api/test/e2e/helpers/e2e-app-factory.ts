@@ -34,10 +34,10 @@ import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastruc
 import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
-import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email-messages/infrastructure/jobs/email-delivery-queue.processor";
+import { SendTransactionalEmailUseCase } from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
+import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
 import { TimezoneReminderSweepScheduler } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-sweep.scheduler";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";

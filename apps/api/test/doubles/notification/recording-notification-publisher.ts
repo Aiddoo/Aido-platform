@@ -1,7 +1,7 @@
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
-import type { BatchNotificationOptions } from "#api/modules/notification/push/application/use-cases/persist-batch-notification.use-case";
-import type { PublishNotificationUseCase } from "#api/modules/notification/push/application/use-cases/publish-notification.use-case";
+import type { InboxNotification } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { BatchNotificationOptions } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
+import type { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
+import type { CreateNotificationData } from "#api/modules/notification/shared/application/ports/notification-draft.port";
 
 type PublishMode = "publish" | "publishWithDeduplication" | "publishBatch";
 

@@ -1,6 +1,6 @@
 # 푸시 발송·기기·큐
 
-푸시 delivery/receipt 장애, 기기·토큰 등록, 푸시 큐와 작업 key, 관리자 브로드캐스트 캠페인을 확인할 때 읽는다. 발송 정책·일정·알림 종류는 [푸시 알림](push-notifications.md), 우선순위·지표 설계는 [알림 발송 설계](notifications.md)에 있다. 코드는 `src/modules/notification/push`와 `src/modules/operations/broadcast-campaigns`다.
+푸시 delivery/receipt 장애, 기기·토큰 등록, 푸시 큐와 작업 key, 관리자 브로드캐스트 캠페인을 확인할 때 읽는다. 발송 정책·일정·알림 종류는 [푸시 알림](push-notifications.md), 우선순위·지표 설계는 [알림 발송 설계](notifications.md)에 있다. 코드는 `src/modules/notification/push-devices`·`push-dispatches`와 `src/modules/operations/broadcast-campaigns`다.
 
 ## Delivery·receipt
 
@@ -37,7 +37,7 @@
 
 receipt 확인은 5분마다 돈다(Expo 권장대로 수락 15분 뒤부터 묻는다). 공급자의 대기·보관 시간과 전송 여유는 어댑터가 `PushProviderPort.timing`(`EXPO_PUSH_TIMING`)으로 주고 도메인·UseCase는 공급자 이름 없이 이 값을 쓴다. 한 실행은 45초 예산 안에서 900건씩 남은 ticket이 없을 때까지 이어서 확인한다. 대상은 수락 뒤 15분~24시간이고 아직 확인하지 않았거나 마지막 확인이 15분 지난 `TICKET_ACCEPTED`이며, 확인 시각이 오래된 순서다. 결과가 아직 없는 ticket은 확인 시각만 남겨 뒤로 보낸다. 24시간이 지나도 결과가 없으면 `UNKNOWN`·`RECEIPT_EXPIRED`로 닫는다.
 
-receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 한 UoW에서 처리하고 실패 시 함께 rollback한다([ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)). commit 뒤 사용자별 token cache 무효화는 allSettled로 실패를 격리해 기록한다.
+receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 한 UoW에서 처리하고 실패 시 함께 rollback한다([ReconcilePushReceipts](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)). commit 뒤 사용자별 token cache 무효화는 allSettled로 실패를 격리해 기록한다.
 
 남는 한계:
 
@@ -86,7 +86,7 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 | `notification.marketing-consent-reconfirm.v1` | `reconfirm-marketing-consents`(매시 정각 `missed: skip`, 현지 야간 사용자는 다음 낮 실행으로)                          | 예약 key `hourly-marketing-consent-reconfirm-scheduler`                                                                                                                                  | 2회 재시도. 멱등은 `marketingReconfirmedAt` 조건부 UPDATE         |
 | `todo-reminder.v1`, `timezone-reminder.v1`    | 리마인더(`todo-reminder.v1`은 20건 묶음을 이어 꺼내고 작업마다 끝냄), `send-series-paused-notice`                      | `reminder_<todoId>_<단계>`(`60min`·`10min`), `series-paused_<userId>_<마지막 활동일>`                                                                                                    | 큐 정의의 재시도                                                  |
 
-key builder는 `notification-job-keys.constants.ts`와 각 큐 모듈의 순수 함수다. 다른 Context는 상태를 바꾼 트랜잭션 안에서 `NotificationQueueAdapter`(`notification-delivery-jobs.public.ts`)로 이벤트를 넘기고 기다린다. 작업 행이 그 변경과 함께 커밋되므로(트랜잭셔널 아웃박스) 커밋 직후 프로세스가 멈춰도 알림을 잃지 않고, 저장 실패는 호출자의 트랜잭션을 되돌린다. 사례: 팔로우·친구 성립·응원·넛지·첫 친구 마일스톤.
+key builder는 slice마다 `*-job-keys.constants.ts`(`notification-job-keys`·`push-delivery-job-keys`·`reminder-job-keys`)와 각 큐 모듈의 순수 함수다. 다른 Context는 상태를 바꾼 트랜잭션 안에서 `NotificationQueueAdapter`(`notification-notifications-jobs.public.ts`)로 이벤트를 넘기고 기다린다. 작업 행이 그 변경과 함께 커밋되므로(트랜잭셔널 아웃박스) 커밋 직후 프로세스가 멈춰도 알림을 잃지 않고, 저장 실패는 호출자의 트랜잭션을 되돌린다. 사례: 팔로우·친구 성립·응원·넛지·첫 친구 마일스톤.
 
 DB 연결: 앱 풀(`DATABASE_POOL_MAX` 기본 10)과 pg-boss 풀(`max: 3`)은 따로다. 각 작업은 짧은 transaction(claim·finalize·outbox 쓰기) 동안만 연결을 잡고 Expo 호출과 commit 뒤 enqueue 중에는 잡지 않는다. fan-out 한 페이지는 알림·dispatch·outbox 500건씩을 한 transaction에 쓴다. worker 동시성을 늘릴 때는 풀 크기를 함께 본다.
 

@@ -3,12 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type EnqueueManyJob, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 
-import { todoReminderJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
 import {
   type ReminderSchedule,
   TodoReminderSchedulerPort,
 } from "../../application/ports/todo-reminder-scheduler.port.js";
 import { allReminderLabels, planReminderJobs } from "../../domain/reminder-plan.domain-service.js";
+import { todoReminderJobKey } from "./reminder-job-keys.constants.js";
 import {
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,

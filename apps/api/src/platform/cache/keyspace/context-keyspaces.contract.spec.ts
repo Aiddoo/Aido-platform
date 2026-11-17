@@ -9,12 +9,16 @@ import {
 import {
   NOTIFICATION_CACHE_TTL_MS,
   NotificationCacheKey,
-} from "#api/modules/notification/inbox/infrastructure/cache/notification-cache.keyspace";
+} from "#api/modules/notification/notifications/infrastructure/cache/notification-cache.keyspace";
 import {
   NOTIFICATION_DEDUP_SENTINEL,
   NOTIFICATION_DEDUP_TTL_MS,
   notificationDedupKey,
-} from "#api/modules/notification/push/infrastructure/cache/notification-dedup.keyspace";
+} from "#api/modules/notification/notifications/infrastructure/cache/notification-dedup.keyspace";
+import {
+  PUSH_TOKEN_CACHE_TTL_MS,
+  PushTokenCacheKey,
+} from "#api/modules/notification/push-devices/infrastructure/cache/push-token-cache.keyspace";
 import {
   ReminderCacheKey,
   REMINDER_CACHE_TTL_MS,
@@ -26,7 +30,7 @@ import {
 import {
   RETENTION_CACHE_TTL_MS,
   RetentionCacheKey,
-} from "#api/modules/notification/retention/infrastructure/cache/retention-cache.keyspace";
+} from "#api/modules/notification/retention-assignments/infrastructure/cache/retention-cache.keyspace";
 import {
   TodoCategoryCacheKey,
   TODO_CATEGORY_CACHE_TTL_MS,
@@ -78,7 +82,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "2026-01-01",
       "2026-01-31",
     );
-    const pushTokensKey = NotificationCacheKey.pushTokens("user-1");
+    const pushTokensKey = PushTokenCacheKey.pushTokens("user-1");
     const dedupKey = notificationDedupKey(
       "MORNING_REMINDER",
       Temporal.PlainDate.from("2026-01-01"),
@@ -124,6 +128,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       REMINDER_CACHE_TTL_MS,
       FRIENDSHIP_CACHE_TTL_MS,
       NOTIFICATION_CACHE_TTL_MS,
+      PUSH_TOKEN_CACHE_TTL_MS,
       WEATHER_CACHE_TTL_MS,
       TODO_CACHE_TTL_MS,
       DAILY_COMPLETION_CACHE_TTL_MS,
@@ -153,7 +158,7 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     });
     expect(values.TODO_CACHE_TTL_MS.FRIEND_VIEW).toBe(60_000);
     expect(values.DAILY_COMPLETION_CACHE_TTL_MS).toBe(600_000);
-    expect(values.NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS).toBe(300_000);
+    expect(values.PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS).toBe(300_000);
     expect(values.NOTIFICATION_DEDUP_TTL_MS).toBe(90_000_000);
     expect(values.NOTIFICATION_DEDUP_SENTINEL).toBe("__init__");
     expect(values.RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES).toBe(86_400_000);

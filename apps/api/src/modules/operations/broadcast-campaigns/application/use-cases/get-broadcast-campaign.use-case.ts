@@ -1,4 +1,4 @@
-import type { PushCampaignOutcome } from "#api/modules/notification/notification-delivery.public";
+import type { PushCampaignOutcome } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
 import type { BroadcastCampaignId } from "../../domain/broadcast-campaign-id.vo.js";
 import type { BroadcastCampaign } from "../../domain/broadcast-campaign.aggregate.js";

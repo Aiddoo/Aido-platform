@@ -1,8 +1,8 @@
-import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
 import {
   NotificationDedupPort,
   type NotificationDedupRecord,
-} from "#api/modules/notification/push/application/ports/notification-dedup.port";
+} from "#api/modules/notification/notifications/application/ports/notification-dedup.port";
+import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 
 function keyOf(type: NotificationType, notificationDate: Temporal.PlainDate): string {
   return `${type}:${notificationDate.toString()}`;

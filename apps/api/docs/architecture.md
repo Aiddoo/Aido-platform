@@ -70,7 +70,7 @@ apps/api/src/
 | notes         | `memos`                                                                                                                            |
 | engagement    | `todo-comments`, `todo-comment-likes` (+ `shared/`)                                                                                |
 | social        | `friendships`, `user-blocks`, `cheers`, `nudges`, `reminder-nudges`, `invites`, `invite-redemptions`, `user-reports` (+ `shared/`) |
-| notification  | `inbox`, `push`, `email`, `reminders`, `retention`                                                                                 |
+| notification  | `notifications`, `push-devices`, `push-dispatches`, `email-messages`, `reminders`, `retention-assignments` (+ `shared/`)           |
 | insights      | `daily-completions`, `weekly-achievements` (+ `shared/`)                                                                           |
 | weather       | `weather-reports`, `user-locations` (+ `shared/`)                                                                                  |
 | ai-assistance | `ai-generations`, `parsed-drafts`, `action-plan-drafts`, `ai-reports`, `suggestions` (+ `shared/`)                                 |
@@ -153,7 +153,7 @@ UoW: 잠금 → 최신 자격·상태 확인 → 도메인 행동 → 저장 →
 commit → 캐시 정리
 ```
 
-사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
+사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
 
 ## 교체 가능한 포트
 
@@ -161,7 +161,7 @@ commit → 캐시 정리
 
 | 포트                                                      | 지금 어댑터                                         | 고르는 곳                                                            |
 | --------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
-| `PushProviderPort`                                        | Expo(`ExpoPushSenderAdapter`)                       | `notification-push.providers.ts`                                     |
+| `PushProviderPort`                                        | Expo(`ExpoPushSenderAdapter`)                       | `notification-push-dispatches.providers.ts`                          |
 | `EmailSenderPort`                                         | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                     |
 | `AdminNotifierPort`                                       | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                            |
 | `StoreSubscriptionStatusReaderPort` + 번역기              | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](billing.md#공급자-경계)) |

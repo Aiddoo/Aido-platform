@@ -11,8 +11,8 @@ import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-n
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createWeeklyAchievementNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createWeeklyAchievementNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendWeeklyAchievementUseCase } from "./send-weekly-achievement.use-case.js";
 
 describe("SendWeeklyAchievementUseCase — 주간 성취 전략", () => {

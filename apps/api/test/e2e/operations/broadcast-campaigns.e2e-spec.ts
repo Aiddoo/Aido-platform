@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import request from "supertest";
 
-import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push/infrastructure/jobs/push-delivery.queue";
+import { PUSH_DELIVERY_QUEUE } from "#api/modules/notification/push-dispatches/infrastructure/jobs/push-delivery.queue";
 import { BROADCAST_DELIVERY_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-delivery.queue";
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-fan-out.queue";
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";

@@ -4,7 +4,7 @@ import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access
 import { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
-import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notification-delivery.public";
+import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
 import { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { NudgeUsageReaderPort } from "#api/modules/social/nudges/social-nudges.public";

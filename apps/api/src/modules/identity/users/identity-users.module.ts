@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { EngagementTodoCommentsModule } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { SocialCheersModule } from "#api/modules/social/cheers/social-cheers.public";
 import { SocialNudgesModule } from "#api/modules/social/nudges/social-nudges.public";
 
@@ -23,7 +23,7 @@ import { UserAccountController } from "./presentation/http/v1/user-account.contr
     AccessQuotaChargesModule,
     BillingPremiumGrantsModule,
     EngagementTodoCommentsModule,
-    NotificationPushModule,
+    NotificationNotificationsModule,
     SocialCheersModule,
     SocialNudgesModule,
   ],

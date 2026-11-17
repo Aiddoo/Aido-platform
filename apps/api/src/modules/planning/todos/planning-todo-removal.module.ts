@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
+import { NotificationRemindersModule } from "#api/modules/notification/reminders/notification-reminders.public";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 

@@ -4,16 +4,18 @@ import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface EveningReminderStrategyDependencies {
   readonly reader: Pick<
@@ -132,7 +134,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
     this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.EVENING_REMINDER_SENT,
+      event: ReminderLogEvent.EVENING_REMINDER_SENT,
       timezones,
       localHour,
       localMinute,
