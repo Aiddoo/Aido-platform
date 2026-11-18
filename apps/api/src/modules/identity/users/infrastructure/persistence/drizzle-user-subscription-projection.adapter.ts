@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, gt, isNull, not } from "drizzle-orm";
 
 import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { user } from "#api/platform/database/schema/identity.schema";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

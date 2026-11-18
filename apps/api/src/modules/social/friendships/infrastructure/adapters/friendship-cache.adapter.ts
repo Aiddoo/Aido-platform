@@ -60,12 +60,12 @@ export class FriendshipCacheAdapter implements FriendshipCachePort {
   }
 
   wrapMutualFriendIds(userId: UserId, factory: () => Promise<string[]>): Promise<string[]> {
-    return this.#friendIds.wrap(
-      idsKey(userId),
-      z.array(z.string()),
+    return this.#friendIds.wrap({
+      key: idsKey(userId),
+      schema: z.array(z.string()),
       factory,
-      FRIENDSHIP_CACHE_TTL_MS.IDS,
-    );
+      ttlMs: FRIENDSHIP_CACHE_TTL_MS.IDS,
+    });
   }
 
   invalidateMutualFriendIds(userId: UserId): Promise<void> {
@@ -73,12 +73,12 @@ export class FriendshipCacheAdapter implements FriendshipCachePort {
   }
 
   wrapFriendCount(userId: UserId, factory: () => Promise<number>): Promise<number> {
-    return this.#friendCounts.wrap(
-      countKey(userId),
-      z.number(),
+    return this.#friendCounts.wrap({
+      key: countKey(userId),
+      schema: z.number(),
       factory,
-      FRIENDSHIP_CACHE_TTL_MS.COUNT,
-    );
+      ttlMs: FRIENDSHIP_CACHE_TTL_MS.COUNT,
+    });
   }
 
   invalidateFriendCount(userId: UserId): Promise<void> {

@@ -252,7 +252,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(new Error("boom"), host);
 
       // Then
-      expect(reporter.reports.map((report) => report.context.userId)).toEqual(["user-1", null]);
+      expect(reporter.reports.map((report) => report.context.userId?.value ?? null)).toEqual([
+        "user-1",
+        null,
+      ]);
       expect(JSON.stringify(reporter.reports)).not.toContain("ip_address");
     });
 

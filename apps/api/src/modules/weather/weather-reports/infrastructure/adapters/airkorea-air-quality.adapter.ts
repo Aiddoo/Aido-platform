@@ -162,7 +162,7 @@ export class AirkoreaAirQualityAdapter implements AirQualityProviderPort {
 
   async #request(operation: AirkoreaOperation, url: string, query: HttpQuery): Promise<unknown> {
     const outcome = await this.#policy
-      .execute((signal) => requestVendorJson(this.#http, url, query, { signal }))
+      .execute((signal) => requestVendorJson(this.#http, { url, query, signal }))
       .catch((error: unknown) => {
         this.#logger.warn({
           event: WeatherProviderLogEvent.REQUEST_FAILED,

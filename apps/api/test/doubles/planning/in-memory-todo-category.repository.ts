@@ -8,7 +8,7 @@ import type { ReorderPlan } from "#api/modules/planning/todo-categories/domain/c
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { TodoCategory } from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";

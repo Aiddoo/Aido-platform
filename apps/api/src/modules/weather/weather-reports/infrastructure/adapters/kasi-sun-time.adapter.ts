@@ -55,10 +55,9 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
       const locdate = localDateOf(at, TimeZone.SEOUL).toString().replaceAll("-", "");
 
       const outcome = await this.#policy.execute((signal) =>
-        requestVendorJson(
-          this.#http,
-          "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
-          {
+        requestVendorJson(this.#http, {
+          url: "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
+          query: {
             serviceKey: apiKey,
             longitude: lon,
             latitude: lat,
@@ -66,8 +65,8 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
             dnYn: "Y",
             _type: "json",
           },
-          { signal },
-        ),
+          signal,
+        }),
       );
 
       if (outcome.kind === "http_failure") {

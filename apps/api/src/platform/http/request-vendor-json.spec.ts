@@ -16,10 +16,13 @@ describe("requestVendorJson", () => {
     );
 
     // When
-    const outcome = await requestVendorJson(clientResponding(fetchSpy), url, {
-      serviceKey: "a+b/c=",
-      nx: 60,
-      skipped: undefined,
+    const outcome = await requestVendorJson(clientResponding(fetchSpy), {
+      url,
+      query: {
+        serviceKey: "a+b/c=",
+        nx: 60,
+        skipped: undefined,
+      },
     });
 
     // Then
@@ -46,8 +49,7 @@ describe("requestVendorJson", () => {
     // When
     const outcome = await requestVendorJson(
       clientResponding(async () => respond()),
-      url,
-      {},
+      { url, query: {} },
     );
 
     // Then
@@ -58,8 +60,7 @@ describe("requestVendorJson", () => {
     // When
     const result = requestVendorJson(
       clientResponding(async () => new Response("<xml/>")),
-      url,
-      {},
+      { url, query: {} },
     );
 
     // Then
@@ -74,7 +75,7 @@ describe("requestVendorJson", () => {
       });
 
     // When
-    const result = requestVendorJson(clientResponding(neverResponding, 10), url, {});
+    const result = requestVendorJson(clientResponding(neverResponding, 10), { url, query: {} });
 
     // Then
     await expect(result).rejects.toBeInstanceOf(HttpTimeoutError);

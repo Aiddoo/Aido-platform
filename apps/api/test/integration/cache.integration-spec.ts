@@ -378,14 +378,14 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue("factory-value");
 
         // When
-        const result = await cacheService.wrap(key, z.unknown(), factory);
+        const result = await cacheService.wrap({ key, schema: z.unknown(), factory });
 
         // Then
         expect(result).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시 히트 확인
-        const cachedResult = await cacheService.wrap(key, z.unknown(), factory);
+        const cachedResult = await cacheService.wrap({ key, schema: z.unknown(), factory });
         expect(cachedResult).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1); // factory는 다시 호출되지 않음
       });
@@ -401,12 +401,12 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(session);
 
         // When
-        const result = await cacheService.wrap(
-          SessionCacheKey.session(sessionId),
-          z.unknown(),
+        const result = await cacheService.wrap({
+          key: SessionCacheKey.session(sessionId),
+          schema: z.unknown(),
           factory,
-          SESSION_CACHE_TTL_MS,
-        );
+          ttlMs: SESSION_CACHE_TTL_MS,
+        });
 
         // Then
         expect(result).toEqual(session);
@@ -429,12 +429,12 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(profile);
 
         // When
-        const result = await cacheService.wrap(
-          UserProfileCacheKey.userProfile(userId),
-          z.unknown(),
+        const result = await cacheService.wrap({
+          key: UserProfileCacheKey.userProfile(userId),
+          schema: z.unknown(),
           factory,
-          USER_PROFILE_CACHE_TTL_MS,
-        );
+          ttlMs: USER_PROFILE_CACHE_TTL_MS,
+        });
 
         // Then
         expect(result).toEqual(profile);
@@ -452,12 +452,12 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(true);
 
         // When
-        const result = await cacheService.wrap(
-          FriendshipCacheKey.mutual(userId, targetUserId),
-          z.unknown(),
+        const result = await cacheService.wrap({
+          key: FriendshipCacheKey.mutual(userId, targetUserId),
+          schema: z.unknown(),
           factory,
-          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
-        );
+          ttlMs: FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        });
 
         // Then
         expect(result).toBe(true);
@@ -642,11 +642,21 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         const factory = vi.fn();
-        const result = await service.wrap("key", z.unknown(), factory, 300_000);
+        const result = await service.wrap({
+          key: "key",
+          schema: z.unknown(),
+          factory,
+          ttlMs: 300_000,
+        });
 
         // Then
         expect(result).toBe("wrapped-value");
-        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, 300_000);
+        expect(mockAdapter.wrap).toHaveBeenCalledWith({
+          key: "key",
+          schema: expect.anything(),
+          factory,
+          ttlMs: 300_000,
+        });
       } finally {
         await module.close();
       }

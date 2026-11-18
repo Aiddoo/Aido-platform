@@ -215,10 +215,9 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
       const authorization = `Bearer ${await this.#tokenResolver.resolve()}`;
       return this.#call(
         (signal) =>
-          requestVendorJson(
-            this.#http,
-            this.#cellUrl("weather", cell, request.language),
-            {
+          requestVendorJson(this.#http, {
+            url: this.#cellUrl("weather", cell, request.language),
+            query: {
               dataSets: dataSets.join(","),
               timezone: request.timezone,
               countryCode: request.countryCode,
@@ -226,8 +225,10 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
               hourlyEnd: toIsoString(hourlyStart.add({ milliseconds: HOURLY_RANGE_MS })),
               dailyEnd: toIsoString(requestedAt.add({ milliseconds: DAILY_RANGE_MS })),
             },
-            { headers: { authorization }, signal, timeoutMs: WEATHER_TIMEOUT_MS },
-          ),
+            headers: { authorization },
+            signal,
+            timeoutMs: WEATHER_TIMEOUT_MS,
+          }),
         request.signal,
       );
     };
@@ -265,19 +266,20 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
       return BASE_DATA_SETS;
     }
     try {
-      return await this.#cache.wrap(
-        WeatherReportCacheKey.availability(cell.key),
-        cachedAvailabilitySchema,
-        async () => {
+      return await this.#cache.wrap({
+        key: WeatherReportCacheKey.availability(cell.key),
+        schema: cachedAvailabilitySchema,
+        factory: async () => {
           const authorization = `Bearer ${await this.#tokenResolver.resolve()}`;
           const outcome = await this.#call(
             (signal) =>
-              requestVendorJson(
-                this.#http,
-                this.#cellUrl("availability", cell),
-                { country: request.countryCode },
-                { headers: { authorization }, signal, timeoutMs: AVAILABILITY_TIMEOUT_MS },
-              ),
+              requestVendorJson(this.#http, {
+                url: this.#cellUrl("availability", cell),
+                query: { country: request.countryCode },
+                headers: { authorization },
+                signal,
+                timeoutMs: AVAILABILITY_TIMEOUT_MS,
+              }),
             request.signal,
           );
           if (outcome.kind === "http_failure") {
@@ -289,8 +291,8 @@ export class WeatherKitReportAdapter implements WeatherReportProviderPort {
           }
           return parsed.data;
         },
-        WEATHER_REPORT_CACHE_TTL_MS.AVAILABILITY,
-      );
+        ttlMs: WEATHER_REPORT_CACHE_TTL_MS.AVAILABILITY,
+      });
     } catch (error) {
       if (error instanceof WeatherKitNotConfiguredError) {
         throw error;

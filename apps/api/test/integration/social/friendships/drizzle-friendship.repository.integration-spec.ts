@@ -1,6 +1,6 @@
 import { FriendshipId } from "#api/modules/social/friendships/domain/friendship-id.vo";
 import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/infrastructure/persistence/drizzle-friendship.repository";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { user } from "#api/platform/database/schema/index";
 import { describeFriendshipRepositoryContract } from "#test/contracts/social/friendship-repository.contract";
 import { UserFixture } from "#test/fixtures/index";

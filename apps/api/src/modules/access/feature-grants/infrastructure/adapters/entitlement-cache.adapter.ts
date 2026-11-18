@@ -48,12 +48,12 @@ export class EntitlementCacheAdapter
     userId: UserId,
     factory: () => Promise<CachedAccessState>,
   ): Promise<CachedAccessState | null> {
-    return this.#cache.wrap(
-      subscriptionKey(userId),
-      CACHED_ACCESS_STATE_SCHEMA,
+    return this.#cache.wrap({
+      key: subscriptionKey(userId),
+      schema: CACHED_ACCESS_STATE_SCHEMA,
       factory,
-      ENTITLEMENT_CACHE_TTL_MS,
-    );
+      ttlMs: ENTITLEMENT_CACHE_TTL_MS,
+    });
   }
 
   async invalidate(userId: UserId): Promise<void> {

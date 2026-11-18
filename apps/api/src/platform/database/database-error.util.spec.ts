@@ -5,13 +5,13 @@ import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
 import {
   classifyDatabaseError,
   databaseConstraint,
-  DatabaseRecordNotFoundError,
   databaseSqlState,
   isRecordNotFoundError,
   isTransactionWriteConflict,
   isUniqueConstraintViolation,
   uniqueConstraintTargets,
 } from "./database-error.util.js";
+import { DatabaseRecordNotFoundError } from "./database.errors.js";
 
 describe("PostgreSQL 오류 변환 경계", () => {
   it.each(["40001", "40P01"])("transaction 오류 %s는 재시도한다", (state) => {

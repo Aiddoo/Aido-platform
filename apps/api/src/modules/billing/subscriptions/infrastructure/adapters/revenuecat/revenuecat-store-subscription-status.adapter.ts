@@ -127,7 +127,9 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
     schema: TSchema,
   ): Promise<z.infer<TSchema>> {
     const outcome = await this.#policy.execute((signal) =>
-      requestVendorJson(this.#http, `${REVENUECAT_API_BASE_URL}${path}`, query, {
+      requestVendorJson(this.#http, {
+        url: `${REVENUECAT_API_BASE_URL}${path}`,
+        query,
         headers: { authorization: `Bearer ${this.#config.revenuecat.apiV2SecretKey ?? ""}` },
         signal,
         timeoutMs: REVENUECAT_TIMEOUT_MS,

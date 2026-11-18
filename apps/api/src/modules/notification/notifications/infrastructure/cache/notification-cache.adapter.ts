@@ -39,12 +39,12 @@ export class NotificationCacheAdapter implements NotificationCachePort {
     factory: () => Promise<number>,
     scope: NotificationInboxScope = "all",
   ): Promise<number> {
-    return this.#unreadCounts.wrap(
-      unreadCountKey(userId, scope),
-      z.number(),
+    return this.#unreadCounts.wrap({
+      key: unreadCountKey(userId, scope),
+      schema: z.number(),
       factory,
-      NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT,
-    );
+      ttlMs: NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT,
+    });
   }
 
   async invalidateUnreadCount(userId: UserId): Promise<void> {

@@ -27,21 +27,21 @@ export class NudgeCountCacheAdapter implements NudgeCountCachePort {
     userId: UserId,
     factory: () => Promise<ReceivedNudgeCounts>,
   ): Promise<ReceivedNudgeCounts> {
-    return this.#cache.wrap(
-      NudgeCountCacheKey.received(userId.value),
-      RECEIVED_COUNTS_SCHEMA,
+    return this.#cache.wrap({
+      key: NudgeCountCacheKey.received(userId.value),
+      schema: RECEIVED_COUNTS_SCHEMA,
       factory,
-      NUDGE_COUNT_CACHE_TTL_MS,
-    );
+      ttlMs: NUDGE_COUNT_CACHE_TTL_MS,
+    });
   }
 
   wrapSentCount(userId: UserId, factory: () => Promise<number>): Promise<number> {
-    return this.#cache.wrap(
-      NudgeCountCacheKey.sent(userId.value),
-      z.number(),
+    return this.#cache.wrap({
+      key: NudgeCountCacheKey.sent(userId.value),
+      schema: z.number(),
       factory,
-      NUDGE_COUNT_CACHE_TTL_MS,
-    );
+      ttlMs: NUDGE_COUNT_CACHE_TTL_MS,
+    });
   }
 
   async invalidate(userIds: readonly UserId[]): Promise<void> {

@@ -29,6 +29,7 @@ import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-key
 import { ExceptionReporterPort } from "#api/shared/application/ports/exception-reporter.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   concurrentModification,
@@ -106,13 +107,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = httpContext.getRequest<HttpRequest>();
     const { statusCode, errorResponse } = this.#toResponse(exception);
 
-    const userId = readRequestUserId(request) ?? "anonymous";
+    const requestUserId = readRequestUserId(request);
+    const userId = requestUserId ?? "anonymous";
     const requestPath = httpRequestPath(request.url);
 
     // 4xx는 앱이 처리하는 업무 거부라 보고하지 않는다
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.#exceptionReporter.report(exception, {
-        userId: userId === "anonymous" ? null : userId,
+        userId: requestUserId == null ? null : UserId.reconstitute(requestUserId),
         tags: {
           [SENTRY_TAG.HTTP_METHOD]: request.method,
           [SENTRY_TAG.HTTP_ROUTE]: readRouteTemplate(request) ?? "unmatched",

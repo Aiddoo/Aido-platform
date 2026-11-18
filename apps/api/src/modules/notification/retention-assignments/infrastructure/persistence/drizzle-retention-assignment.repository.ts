@@ -247,10 +247,10 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
   }
 
   #postgresTimezoneNames(): Promise<string[]> {
-    return this.#cache.wrap(
-      RetentionCacheKey.postgresTimezoneNames(),
-      z.array(z.string()),
-      async () => {
+    return this.#cache.wrap({
+      key: RetentionCacheKey.postgresTimezoneNames(),
+      schema: z.array(z.string()),
+      factory: async () => {
         // 시스템 뷰라 Drizzle 스키마에 없다. 시간대 파일 600여 개를 읽으므로 캐시 미스 때만 부른다
         const result = await this.#db.execute<{ name: string }>(
           sql`SELECT name FROM pg_timezone_names`,
@@ -260,8 +260,8 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
           .parse(result.rows)
           .map((row) => row.name);
       },
-      RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
-    );
+      ttlMs: RETENTION_CACHE_TTL_MS.POSTGRES_TIMEZONE_NAMES,
+    });
   }
 }
 

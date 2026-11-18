@@ -53,15 +53,15 @@ export class SessionCacheAdapter implements SessionCachePort {
     sessionId: SessionId,
     factory: () => Promise<CachedSession>,
   ): Promise<CachedSession> {
-    const value = await this.#sessions.wrap<CachedSessionValue>(
-      sessionKey(sessionId),
-      CACHED_SESSION_SCHEMA,
-      async () => {
+    const value = await this.#sessions.wrap<CachedSessionValue>({
+      key: sessionKey(sessionId),
+      schema: CACHED_SESSION_SCHEMA,
+      factory: async () => {
         const session = await factory();
         return { ...session, userId: session.userId.value };
       },
-      SESSION_CACHE_TTL_MS,
-    );
+      ttlMs: SESSION_CACHE_TTL_MS,
+    });
     return { ...value, userId: UserId.reconstitute(value.userId) };
   }
 

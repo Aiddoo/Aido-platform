@@ -15,23 +15,25 @@ export type VendorJsonOutcome =
  * client는 `throwOnHttpError: false`로 등록되어 있어야 한다. 본문 형태 검증은 호출부가
  * 자신의 스키마로 수행하며, 2xx 응답의 잘못된 JSON과 전송 오류는 그대로 던진다.
  */
+export interface VendorJsonRequest {
+  readonly url: string;
+  readonly query: HttpQuery;
+  readonly headers?: HttpHeadersInit;
+  readonly signal?: AbortSignal;
+  readonly timeoutMs?: number;
+}
+
 export async function requestVendorJson(
   http: HttpClient,
-  url: string,
-  query: HttpQuery,
-  options: {
-    readonly headers?: HttpHeadersInit;
-    readonly signal?: AbortSignal;
-    readonly timeoutMs?: number;
-  } = {},
+  request: VendorJsonRequest,
 ): Promise<VendorJsonOutcome> {
   try {
-    const response = await http.request(url, {
-      query,
+    const response = await http.request(request.url, {
+      query: request.query,
       responseType: "json",
-      headers: options.headers,
-      signal: options.signal,
-      timeout: options.timeoutMs,
+      headers: request.headers,
+      signal: request.signal,
+      timeout: request.timeoutMs,
     });
     if (!response.ok) {
       return { kind: "http_failure", statusCode: response.status };

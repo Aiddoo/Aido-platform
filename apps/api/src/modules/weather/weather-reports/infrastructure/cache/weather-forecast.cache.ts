@@ -124,10 +124,10 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
     timing: ForecastTiming,
     load: () => Promise<WeatherForecastReadModel>,
   ): Promise<WeatherForecastReadModel> {
-    const cached = await this.#cache.wrap(
-      forecastKey(grid, timing),
-      CACHED_FORECAST_SCHEMA,
-      async () => {
+    const cached = await this.#cache.wrap({
+      key: forecastKey(grid, timing),
+      schema: CACHED_FORECAST_SCHEMA,
+      factory: async () => {
         const forecast = toCachedForecast(await load());
         await this.#cache.set(
           latestForecastKey(grid),
@@ -136,8 +136,8 @@ export class WeatherForecastCache implements WeatherForecastCachePort {
         );
         return forecast;
       },
-      WEATHER_CACHE_TTL_MS.FORECAST,
-    );
+      ttlMs: WEATHER_CACHE_TTL_MS.FORECAST,
+    });
     return toWeatherForecast(cached);
   }
 

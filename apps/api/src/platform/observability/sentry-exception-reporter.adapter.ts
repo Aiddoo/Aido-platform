@@ -30,7 +30,7 @@ export class SentryExceptionReporter implements ExceptionReporterPort {
         return;
       }
       Sentry.withScope((scope) => {
-        scope.setUser(context.userId == null ? null : { id: context.userId });
+        scope.setUser(context.userId == null ? null : { id: context.userId.value });
         scope.setTags(context.tags);
         if (context.groupKey != null) {
           scope.setFingerprint([context.groupKey]);

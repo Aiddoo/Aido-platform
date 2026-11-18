@@ -6,7 +6,7 @@ import type {
   TodoEngagementCounterPort,
   TodoViewRecording,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";

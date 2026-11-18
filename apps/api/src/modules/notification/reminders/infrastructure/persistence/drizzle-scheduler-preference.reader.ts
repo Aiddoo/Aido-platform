@@ -30,10 +30,10 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
   }
 
   async findActiveTimezones(): Promise<string[]> {
-    return this.#cacheService.wrap(
-      ReminderCacheKey.activeTimezones(),
-      z.array(z.string()),
-      async (): Promise<string[]> => {
+    return this.#cacheService.wrap({
+      key: ReminderCacheKey.activeTimezones(),
+      schema: z.array(z.string()),
+      factory: async (): Promise<string[]> => {
         const preference = userDeliveryPreference();
         const rows = await this.#db
           .selectDistinct({ timezone: preference.timezone })
@@ -42,8 +42,8 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
           normalizeIanaTimezone(row.timezone) != null ? [row.timezone] : [],
         );
       },
-      REMINDER_CACHE_TTL_MS,
-    );
+      ttlMs: REMINDER_CACHE_TTL_MS,
+    });
   }
 
   async getUserLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf> {

@@ -4,7 +4,7 @@ import type {
   UserSubscriptionProjection,
   UserSubscriptionProjectionPort,
 } from "#api/modules/identity/users/application/ports/user-subscription-projection.port";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SUBSCRIPTION_FIXTURE_NOW } from "#test/fixtures/billing/subscription.fixture";
 

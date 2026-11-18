@@ -13,11 +13,8 @@ import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cas
 import { RewriteMemoUseCase } from "#api/modules/notes/memos/application/use-cases/rewrite-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import {
-  DatabaseRecordNotFoundError,
-  databaseSqlState,
-  requireRecord,
-} from "#api/platform/database/database-error.util";
+import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { memo, todoCategory, todoItem, user } from "#api/platform/database/schema/index";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";

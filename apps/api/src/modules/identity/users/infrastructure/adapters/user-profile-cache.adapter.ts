@@ -77,15 +77,15 @@ export class UserProfileCacheAdapter implements UserProfileCachePort, UserProfil
     userId: UserId,
     factory: () => Promise<CachedUserProfile | null>,
   ): Promise<CachedUserProfile | null> {
-    const profile = await this.#userProfiles.wrap(
-      userProfileKey(userId),
-      CACHED_USER_PROFILE_SCHEMA.optional(),
-      async () => {
+    const profile = await this.#userProfiles.wrap({
+      key: userProfileKey(userId),
+      schema: CACHED_USER_PROFILE_SCHEMA.optional(),
+      factory: async () => {
         const loaded = await factory();
         return loaded == null ? undefined : { ...loaded, id: loaded.id.value };
       },
-      (cached) => userProfileTtlMs(cached ?? null, instantToDate(this.#clock.now())),
-    );
+      ttlMs: (cached) => userProfileTtlMs(cached ?? null, instantToDate(this.#clock.now())),
+    });
     return profile == null ? null : { ...profile, id: UserId.reconstitute(profile.id) };
   }
 }

@@ -57,12 +57,7 @@ export abstract class CacheStorePort {
   /** `*` 와일드카드 패턴과 맞는 키를 지우고 지운 개수를 돌려준다. Redis는 SCAN으로 지운다. */
   abstract delByPattern(pattern: string): Promise<number>;
   /** 미스면 factory 결과를 저장해 돌려준다. 같은 key의 동시 미스는 factory를 한 번만 부른다. */
-  abstract wrap<T>(
-    key: string,
-    schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs?: CacheWrapTtlMs<T>,
-  ): Promise<T>;
+  abstract wrap<T>(request: CacheWrapRequest<T>): Promise<T>;
   abstract has(key: string): Promise<boolean>;
   /** 남은 밀리초. 키가 없으면 -2(Redis PTTL 규칙) */
   abstract ttl(key: string): Promise<number>;

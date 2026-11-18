@@ -10,7 +10,7 @@ import {
   type CacheStats,
   CacheStorePort,
   type CacheValueSchema,
-  type CacheWrapTtlMs,
+  type CacheWrapRequest,
 } from "../cache-store.port.js";
 
 const KEY_PREFIX = "cache:";
@@ -119,13 +119,8 @@ export class RedisCacheStore extends CacheStorePort {
     return progress.deleted;
   }
 
-  wrap<T>(
-    key: string,
-    schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs?: CacheWrapTtlMs<T>,
-  ): Promise<T> {
-    return this.#singleflight.wrap(this, { key, schema, factory, ttlMs });
+  wrap<T>(request: CacheWrapRequest<T>): Promise<T> {
+    return this.#singleflight.wrap(this, request);
   }
 
   has(key: string): Promise<boolean> {

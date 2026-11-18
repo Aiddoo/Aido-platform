@@ -96,12 +96,12 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
         timezone: "Asia/Seoul",
       });
       const load = vi.fn(async () => ["Asia/Seoul"]);
-      const result = await fixture.cache.wrap(
-        activeKey,
-        z.array(z.string()),
-        load,
-        REMINDER_CACHE_TTL_MS,
-      );
+      const result = await fixture.cache.wrap({
+        key: activeKey,
+        schema: z.array(z.string()),
+        factory: load,
+        ttlMs: REMINDER_CACHE_TTL_MS,
+      });
 
       // Then
       expect(fixture.settings.preferenceRepository.stored(fixture.settings.userId)?.timezone).toBe(

@@ -79,18 +79,17 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     const time = `${localDate}${String(local.hour).padStart(2, "0")}`;
 
     const outcome = await this.#policy.execute((signal) =>
-      requestVendorJson(
-        this.#http,
-        "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
-        {
+      requestVendorJson(this.#http, {
+        url: "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
+        query: {
           serviceKey: apiKey,
           numOfRows: 10,
           dataType: "JSON",
           areaNo: kmaLifestyleAreaCodeAt(lat, lon),
           time,
         },
-        { signal },
-      ),
+        signal,
+      }),
     );
 
     if (outcome.kind === "http_failure") {

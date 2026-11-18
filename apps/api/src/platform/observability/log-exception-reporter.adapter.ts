@@ -17,7 +17,7 @@ export class LogExceptionReporterAdapter implements ExceptionReporterPort {
     this.#logger.error(
       {
         event: PlatformLogEvent.EXCEPTION_REPORTED,
-        userId: context.userId,
+        userId: context.userId?.value ?? null,
         tags: context.tags,
         errorType: toErrorType(error),
       },

@@ -6,7 +6,7 @@ import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { DrizzleTodoOccurrenceWriterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-occurrence-writer.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { describeTodoReadRepositoryContract } from "#test/contracts/planning/todo-read-repository.contract";
 import {

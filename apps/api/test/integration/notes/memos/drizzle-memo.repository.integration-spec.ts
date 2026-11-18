@@ -1,5 +1,5 @@
 import { DrizzleMemoRepository } from "#api/modules/notes/memos/infrastructure/persistence/drizzle-memo.repository";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { user } from "#api/platform/database/schema/index";
 import { describeMemoRepositoryContract } from "#test/contracts/notes/memo-repository.contract";
 import { UserFixture } from "#test/fixtures/index";

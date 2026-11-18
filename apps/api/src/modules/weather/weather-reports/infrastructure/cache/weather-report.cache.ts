@@ -44,10 +44,10 @@ export class WeatherReportCache implements WeatherReportCachePort {
     scope: WeatherReportCacheScope,
     load: () => Promise<WeatherReport>,
   ): Promise<CellWeatherReportReadModel> {
-    const cached = await this.#cache.wrap(
-      WeatherReportCacheKey.report(cell.key, scope),
-      CACHED_REPORT_SCHEMA,
-      async () => {
+    const cached = await this.#cache.wrap({
+      key: WeatherReportCacheKey.report(cell.key, scope),
+      schema: CACHED_REPORT_SCHEMA,
+      factory: async () => {
         const report = await load();
         const now = this.#clock.now();
         const stored = toCachedWeatherReport(
@@ -61,8 +61,8 @@ export class WeatherReportCache implements WeatherReportCachePort {
         );
         return stored;
       },
-      (stored) => this.#remainingMs(expiresAtOf(stored)),
-    );
+      ttlMs: (stored) => this.#remainingMs(expiresAtOf(stored)),
+    });
     return { report: toWeatherReport(cached, cell), expiresAt: expiresAtOf(cached) };
   }
 
@@ -82,10 +82,10 @@ export class WeatherReportCache implements WeatherReportCachePort {
     load: () => Promise<AirQuality | null>,
   ): Promise<AirQuality | null> {
     const key = WeatherReportCacheKey.airQuality(cell.key);
-    return this.#cache.wrap(
+    return this.#cache.wrap({
       key,
-      AIR_QUALITY_SCHEMA,
-      async () => {
+      schema: AIR_QUALITY_SCHEMA,
+      factory: async () => {
         const airQuality = await load();
         // wrap은 null을 저장하지 않으므로 측정 없음은 짧게 따로 저장한다. load 실패는 저장하지 않는다
         if (airQuality == null) {
@@ -93,8 +93,8 @@ export class WeatherReportCache implements WeatherReportCachePort {
         }
         return airQuality;
       },
-      WEATHER_REPORT_CACHE_TTL_MS.AIR_QUALITY,
-    );
+      ttlMs: WEATHER_REPORT_CACHE_TTL_MS.AIR_QUALITY,
+    });
   }
 
   #reportTtlMs(report: WeatherReport, now: Temporal.Instant): number {

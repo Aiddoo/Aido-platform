@@ -54,12 +54,12 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
     userId: UserId,
     factory: () => Promise<PreferenceSettingsReadModel>,
   ): Promise<PreferenceSettingsReadModel> {
-    return this.#preferences.wrap(
-      preferenceKey(userId),
-      PREFERENCE_SETTINGS_SCHEMA,
+    return this.#preferences.wrap({
+      key: preferenceKey(userId),
+      schema: PREFERENCE_SETTINGS_SCHEMA,
       factory,
-      USER_SETTINGS_CACHE_TTL_MS,
-    );
+      ttlMs: USER_SETTINGS_CACHE_TTL_MS,
+    });
   }
 
   invalidateUserPreference(userId: UserId): Promise<void> {

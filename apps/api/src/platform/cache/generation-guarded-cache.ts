@@ -5,7 +5,6 @@ import { z } from "zod";
 import { CacheSingleflight } from "./cache-singleflight.js";
 import {
   type CacheStorePort,
-  type CacheValueSchema,
   type CacheWrapRequest,
   type CacheWrapTtlMs,
   resolveWrapTtlMs,
@@ -15,6 +14,11 @@ export interface GenerationGuardedCacheKey {
   readonly valueKey: string;
   /** 무효화할 때마다 바뀌는 세대 키. 없으면 처음 세대다 */
   readonly generationKey: string;
+}
+
+export interface GenerationGuardedCacheWrapRequest<T> extends Omit<CacheWrapRequest<T>, "key"> {
+  readonly key: GenerationGuardedCacheKey;
+  readonly ttlMs: CacheWrapTtlMs<T>;
 }
 
 const INITIAL_GENERATION = "initial";
@@ -36,12 +40,8 @@ export class GenerationGuardedCache {
     this.#generationTtlMs = generationTtlMs;
   }
 
-  async wrap<T>(
-    key: GenerationGuardedCacheKey,
-    schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs: CacheWrapTtlMs<T>,
-  ): Promise<T> {
+  async wrap<T>(request: GenerationGuardedCacheWrapRequest<T>): Promise<T> {
+    const { key, schema, factory, ttlMs } = request;
     const cached = await this.#store.get(key.valueKey, schema);
     // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 cache miss, null은 저장해 둔 값이다
     if (cached !== undefined) {

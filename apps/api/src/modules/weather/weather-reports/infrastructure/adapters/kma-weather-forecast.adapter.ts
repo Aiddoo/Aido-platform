@@ -98,10 +98,9 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   ): Promise<KmaApiResponse> {
     const outcome = await this.#policy
       .execute((signal) =>
-        requestVendorJson(
-          this.#http,
-          `${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`,
-          {
+        requestVendorJson(this.#http, {
+          url: `${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`,
+          query: {
             serviceKey: this.#config.kmaApiKey ?? "",
             pageNo: 1,
             numOfRows: 1000,
@@ -111,8 +110,8 @@ export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
             nx: grid.gridX,
             ny: grid.gridY,
           },
-          { signal },
-        ),
+          signal,
+        }),
       )
       .catch((error: unknown) => {
         // 회로가 열려 부르지 않은 요청은 공용 정책이 연 순간 한 번만 남긴다.

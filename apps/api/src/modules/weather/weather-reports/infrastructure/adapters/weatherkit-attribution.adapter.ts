@@ -88,20 +88,20 @@ export class WeatherKitAttributionAdapter {
       return null;
     }
     try {
-      return await this.#cache.wrap(
-        WeatherReportCacheKey.attribution(language),
-        attributionLogoSchema,
-        async () => {
+      return await this.#cache.wrap({
+        key: WeatherReportCacheKey.attribution(language),
+        schema: attributionLogoSchema,
+        factory: async () => {
           const outcome = await this.#policy.execute(async (signal) => {
             if (!(await this.#budget.reserveCall())) {
               throw new WeatherKitAttributionRequestError(null);
             }
-            return requestVendorJson(
-              this.#http,
-              `${WEATHERKIT_ORIGIN}/attribution/${encodeURIComponent(language)}`,
-              {},
-              { signal, timeoutMs: ATTRIBUTION_TIMEOUT_MS },
-            );
+            return requestVendorJson(this.#http, {
+              url: `${WEATHERKIT_ORIGIN}/attribution/${encodeURIComponent(language)}`,
+              query: {},
+              signal,
+              timeoutMs: ATTRIBUTION_TIMEOUT_MS,
+            });
           });
           if (outcome.kind === "http_failure") {
             throw new WeatherKitAttributionRequestError(outcome.statusCode);
@@ -120,8 +120,8 @@ export class WeatherKitAttributionAdapter {
             },
           };
         },
-        WEATHER_REPORT_CACHE_TTL_MS.ATTRIBUTION,
-      );
+        ttlMs: WEATHER_REPORT_CACHE_TTL_MS.ATTRIBUTION,
+      });
     } catch (error) {
       this.#logger.warn({
         event: WeatherKitLogEvent.ATTRIBUTION_FAILED,

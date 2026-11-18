@@ -27,21 +27,21 @@ export class CheerCountCacheAdapter implements CheerCountCachePort {
     userId: UserId,
     factory: () => Promise<ReceivedCheerCounts>,
   ): Promise<ReceivedCheerCounts> {
-    return this.#cache.wrap(
-      CheerCountCacheKey.received(userId.value),
-      RECEIVED_COUNTS_SCHEMA,
+    return this.#cache.wrap({
+      key: CheerCountCacheKey.received(userId.value),
+      schema: RECEIVED_COUNTS_SCHEMA,
       factory,
-      CHEER_COUNT_CACHE_TTL_MS,
-    );
+      ttlMs: CHEER_COUNT_CACHE_TTL_MS,
+    });
   }
 
   wrapSentCount(userId: UserId, factory: () => Promise<number>): Promise<number> {
-    return this.#cache.wrap(
-      CheerCountCacheKey.sent(userId.value),
-      z.number(),
+    return this.#cache.wrap({
+      key: CheerCountCacheKey.sent(userId.value),
+      schema: z.number(),
       factory,
-      CHEER_COUNT_CACHE_TTL_MS,
-    );
+      ttlMs: CHEER_COUNT_CACHE_TTL_MS,
+    });
   }
 
   async invalidate(userIds: readonly UserId[]): Promise<void> {

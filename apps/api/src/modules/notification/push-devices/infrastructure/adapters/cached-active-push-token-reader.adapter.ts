@@ -32,18 +32,18 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   }
 
   findByUserId(userId: UserId): Promise<readonly string[]> {
-    return this.#pushTokens.wrap(
-      pushTokensCacheKey(userId.value),
-      PUSH_TOKENS_SCHEMA,
-      async () => {
+    return this.#pushTokens.wrap({
+      key: pushTokensCacheKey(userId.value),
+      schema: PUSH_TOKENS_SCHEMA,
+      factory: async () => {
         const records = await this.#pushTokenRepository.findPushTokensByUser({
           userId,
           activeOnly: true,
         });
         return records.map((record) => record.token);
       },
-      PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS,
-    );
+      ttlMs: PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS,
+    });
   }
 
   // 아침·저녁 묶음 발송은 수신자마다 키를 새로 쓰면 공용 LRU의 세션·권한 키를 밀어내므로 읽기만 한다

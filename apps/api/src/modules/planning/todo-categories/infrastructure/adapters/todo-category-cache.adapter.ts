@@ -48,12 +48,12 @@ export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
     userId: UserId,
     factory: () => Promise<TodoCategoryWithCountReadModel[]>,
   ): Promise<TodoCategoryWithCountReadModel[]> {
-    return this.#lists.wrap(
-      listKey(userId),
-      TODO_CATEGORY_LIST_SCHEMA,
+    return this.#lists.wrap({
+      key: listKey(userId),
+      schema: TODO_CATEGORY_LIST_SCHEMA,
       factory,
-      TODO_CATEGORY_CACHE_TTL_MS,
-    );
+      ttlMs: TODO_CATEGORY_CACHE_TTL_MS,
+    });
   }
 
   invalidate(userId: UserId): Promise<void> {

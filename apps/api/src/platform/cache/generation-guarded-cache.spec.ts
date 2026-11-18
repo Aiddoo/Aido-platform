@@ -35,10 +35,15 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
   it("무효화가 없으면 factory 값을 저장해 다음 읽기는 factory를 부르지 않는다", async () => {
     // Given
     const { cache } = setUp();
-    await cache.wrap(KEY, z.string(), async () => "first", TTL_MS);
+    await cache.wrap({ key: KEY, schema: z.string(), factory: async () => "first", ttlMs: TTL_MS });
 
     // When
-    const second = await cache.wrap(KEY, z.string(), async () => "second", TTL_MS);
+    const second = await cache.wrap({
+      key: KEY,
+      schema: z.string(),
+      factory: async () => "second",
+      ttlMs: TTL_MS,
+    });
 
     // Then
     expect(second).toBe("first");
@@ -55,8 +60,18 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
     };
 
     // When
-    const returned = await cache.wrap(KEY, z.string(), readBeforeCommit, TTL_MS);
-    const next = await cache.wrap(KEY, z.string(), async () => "fresh", TTL_MS);
+    const returned = await cache.wrap({
+      key: KEY,
+      schema: z.string(),
+      factory: readBeforeCommit,
+      ttlMs: TTL_MS,
+    });
+    const next = await cache.wrap({
+      key: KEY,
+      schema: z.string(),
+      factory: async () => "fresh",
+      ttlMs: TTL_MS,
+    });
 
     // Then
     expect(returned).toBe("stale");
@@ -70,7 +85,7 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
     store.interleaveBeforeSet(KEY.valueKey, () => cache.invalidate(KEY));
 
     // When
-    await cache.wrap(KEY, z.string(), async () => "stale", TTL_MS);
+    await cache.wrap({ key: KEY, schema: z.string(), factory: async () => "stale", ttlMs: TTL_MS });
 
     // Then
     expect(await store.get(KEY.valueKey, z.string())).toBeUndefined();
@@ -81,7 +96,12 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
     const { store, cache } = setUp();
 
     // When
-    const result = await cache.wrap(KEY, z.string().optional(), async () => undefined, TTL_MS);
+    const result = await cache.wrap({
+      key: KEY,
+      schema: z.string().optional(),
+      factory: async () => undefined,
+      ttlMs: TTL_MS,
+    });
 
     // Then
     expect(result).toBeUndefined();
@@ -100,8 +120,8 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
 
     // When
     const results = await Promise.all([
-      cache.wrap(KEY, z.string(), factory, TTL_MS),
-      cache.wrap(KEY, z.string(), factory, TTL_MS),
+      cache.wrap({ key: KEY, schema: z.string(), factory, ttlMs: TTL_MS }),
+      cache.wrap({ key: KEY, schema: z.string(), factory, ttlMs: TTL_MS }),
     ]);
 
     // Then
@@ -117,21 +137,26 @@ describe("GenerationGuardedCache — 커밋 전에 읽은 값의 재저장 막�
     const staleGate = new Promise<void>((resolve) => {
       releaseStale = resolve;
     });
-    const staleRead = cache.wrap(
-      KEY,
-      z.string(),
-      async () => {
+    const staleRead = cache.wrap({
+      key: KEY,
+      schema: z.string(),
+      factory: async () => {
         staleFactoryStarted = true;
         await staleGate;
         return "stale";
       },
-      TTL_MS,
-    );
+      ttlMs: TTL_MS,
+    });
     await vi.waitFor(() => expect(staleFactoryStarted).toBe(true));
     await cache.invalidate(KEY);
 
     // When
-    const freshRead = await cache.wrap(KEY, z.string(), async () => "fresh", TTL_MS);
+    const freshRead = await cache.wrap({
+      key: KEY,
+      schema: z.string(),
+      factory: async () => "fresh",
+      ttlMs: TTL_MS,
+    });
     releaseStale();
 
     // Then

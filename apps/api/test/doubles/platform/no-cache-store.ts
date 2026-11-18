@@ -3,7 +3,7 @@ import {
   type CacheStats,
   CacheStorePort,
   type CacheValueSchema,
-  type CacheWrapTtlMs,
+  type CacheWrapRequest,
 } from "#api/platform/cache/cache-store.port";
 
 // 아무것도 저장하지 않고 늘 미스로 읽는다. 키·TTL 계약을 확인하도록 set·del 키만 남긴다
@@ -38,13 +38,8 @@ export class NoCacheStore extends CacheStorePort {
     return 0;
   }
 
-  wrap<T>(
-    _key: string,
-    _schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    _ttlMs?: CacheWrapTtlMs<T>,
-  ): Promise<T> {
-    return factory();
+  wrap<T>(request: CacheWrapRequest<T>): Promise<T> {
+    return request.factory();
   }
 
   async has(): Promise<boolean> {

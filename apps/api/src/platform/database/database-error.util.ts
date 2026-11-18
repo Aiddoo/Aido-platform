@@ -2,6 +2,7 @@ import { DrizzleQueryError } from "drizzle-orm/errors";
 import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
 import { DatabaseError } from "pg";
 
+import { DatabaseRecordNotFoundError } from "./database.errors.js";
 import * as tables from "./schema/tables.schema.js";
 
 function uniqueColumnEntries(table: PgTable): [string, string[]][] {
@@ -51,14 +52,6 @@ export function databaseSqlState(error: unknown): string | undefined {
 
 export function databaseConstraint(error: unknown): string | undefined {
   return findDatabaseError(error)?.constraint;
-}
-
-/** 단건 변경이 대상 행을 찾지 못했음을 repository 계약의 부재 오류로 드러낸다. */
-export class DatabaseRecordNotFoundError extends Error {
-  constructor() {
-    super("Database record not found");
-    this.name = "DatabaseRecordNotFoundError";
-  }
 }
 
 export function requireRecord<Row>(row: Row | null | undefined): Row {
