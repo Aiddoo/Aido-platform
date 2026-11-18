@@ -12,7 +12,7 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";

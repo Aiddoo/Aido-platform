@@ -9,7 +9,6 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import {
@@ -17,7 +16,8 @@ import {
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture } from "#test/fixtures/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -86,30 +86,36 @@ describe("구독 웹훅 뒤 스토어 상태 대조 (실제 PostgreSQL)", () => 
 
   function storeEvent(
     userId: string,
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     eventId: string,
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(CHAIN)
-      .withTransactionId(CHAIN)
-      .withEventId(eventId)
-      .withPurchasedAtMs(startedAt.getTime())
-      .withExpirationAtMs(expiresAt.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: eventId,
+        purchased_at_ms: startedAt.getTime(),
+        expiration_at_ms: expiresAt.getTime(),
+      },
+    };
   }
 
   it("같은 1분 안의 웹훅은 대조 잡 하나로 묶이고, 대조가 놓친 갱신·해지 철회를 스토어 상태로 맞춘다", async () => {
     // Given
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       createdAt: instantFromDate(startedAt),
     });
     await client.insert(userTable).values(user);
     await webhook.receive(
-      storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
+      storeEvent(user.id, createSubscriptionEventFixture("INITIAL_PURCHASE"), "purchase"),
     );
-    await webhook.receive(storeEvent(user.id, SubscriptionEventBuilder.cancellation(), "cancel"));
+    await webhook.receive(
+      storeEvent(user.id, createSubscriptionEventFixture("CANCELLATION"), "cancel"),
+    );
     statusReader.states.set(CHAIN, {
       storeSubscriptionId: CHAIN,
       productId: "premium_monthly",

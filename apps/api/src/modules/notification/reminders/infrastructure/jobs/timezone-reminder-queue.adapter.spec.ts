@@ -1,7 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 
 import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.js";
 import { TimezoneReminderSweepScheduler } from "./timezone-reminder-sweep.scheduler.js";

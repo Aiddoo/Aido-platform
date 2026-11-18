@@ -7,7 +7,7 @@ import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserWithProfileRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -36,7 +36,7 @@ describe("구독 사용자 조회 — identity 스토어 앱 사용자 포트 (�
       reader: new IdentitySubscriptionUserAdapter(new DrizzleStoreAppUserReader(transactionHost)),
       seedUser: async ({ id, email, name, appUserAlias }) => {
         seeded += 1;
-        const { user: userRow, profile } = UserFixture.createWithProfile(
+        const { user: userRow, profile } = createUserWithProfileRowFixture(
           {
             id,
             email,
@@ -59,12 +59,12 @@ describe("구독 사용자 조회 — identity 스토어 앱 사용자 포트 (�
     const reader = new IdentitySubscriptionUserAdapter(
       new DrizzleStoreAppUserReader(transactionHost),
     );
-    const idOwner = UserFixture.createWithProfile({
+    const idOwner = createUserWithProfileRowFixture({
       id: SUBSCRIPTION_FIXTURE_USER_ID,
       email: "id-owner@example.com",
       userTag: "SUBU0001",
     });
-    const aliasOwner = UserFixture.createWithProfile({
+    const aliasOwner = createUserWithProfileRowFixture({
       id: SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
       email: "alias-owner@example.com",
       userTag: "SUBU0002",

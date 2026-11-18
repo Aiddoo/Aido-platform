@@ -9,12 +9,12 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { notification, user } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { nowInstant } from "#test/fixtures/clock.fixture";
 import {
   createNotificationDraftFixture,
   NOTIFICATION_FIXTURE_ACTOR_ID,
   NOTIFICATION_FIXTURE_USER_ID,
 } from "#test/fixtures/notification/notification.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 

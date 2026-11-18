@@ -33,8 +33,9 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { StubCurrentUserAccess } from "#test/fixtures/auth-credential.fixture";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { StubCurrentUserAccess } from "#test/fixtures/identity/auth-credential-scenario.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -112,7 +113,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     userTag: string,
     activity: { lastActiveAt: Date | null; createdAt?: Date; timezone?: string },
   ) {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email,
       userTag,
@@ -129,7 +130,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
     }
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: user.id, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: user.id, sortOrder: 0 }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");
@@ -518,7 +519,7 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
       const [goneCategory] = await client
         .insert(todoCategory)
         .values(
-          omit(TodoCategoryFixture.create({ userId, sortOrder: 1, name: "사라질 카테고리" }), [
+          omit(createTodoCategoryRowFixture({ userId, sortOrder: 1, name: "사라질 카테고리" }), [
             "id",
           ]),
         )

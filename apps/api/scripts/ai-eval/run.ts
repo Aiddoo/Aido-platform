@@ -75,6 +75,7 @@ import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
 import { SystemClock } from "../../src/platform/time/system-clock.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
+import { InMemoryUsageMeterAdapter } from "../../test/doubles/platform/in-memory-usage-meter.adapter.js";
 import {
   GOLDEN_MEMO_CATEGORY_ID,
   GOLDEN_TASKS,
@@ -103,7 +104,6 @@ import {
   type VoiceNoteDigestGoldenCase,
   voiceNoteDigestGoldenCaseSchema,
 } from "../../test/fixtures/ai-golden/golden-cases.js";
-import { InMemoryUsageMeterAdapter } from "../../test/mocks/in-memory-usage-meter.adapter.js";
 
 const THRESHOLDS = { date: 0.97, title: 0.9, duplicate: 0.9, noAction: 1 } as const;
 const SUGGESTION_THRESHOLDS = {

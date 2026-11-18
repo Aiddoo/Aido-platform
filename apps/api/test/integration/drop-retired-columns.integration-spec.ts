@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { sql } from "drizzle-orm";
 
 import { user as userTable } from "#api/platform/database/schema/index";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
@@ -58,7 +58,7 @@ describe("drop_retired_columns 마이그레이션 (실제 PostgreSQL)", () => {
     "$column 칸에 값이 있으면 지우지 않고 migrate 트랜잭션 전체를 실패시킨다",
     async ({ seed, message }) => {
       // Given
-      const user = UserFixture.create();
+      const user = createUserRowFixture();
 
       // When
       const run = client.transaction(async (transaction) => {

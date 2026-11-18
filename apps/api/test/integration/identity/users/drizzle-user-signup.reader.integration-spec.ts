@@ -1,7 +1,8 @@
 import { DrizzleUserSignupReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-signup.reader";
 import { linkedAccount, user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
+import { createLinkedAccountRowFixture } from "#test/fixtures/identity/linked-account-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -23,18 +24,16 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
   afterAll(async () => database?.stop());
   beforeEach(async () => {
     await database.cleanup();
-    UserFixture.reset();
-    AccountFixture.reset();
   });
 
   it("가입 방식은 나중에 연결한 수단이 아니라 처음 만든 로그인 수단이다", async () => {
     // Given
-    const owner = UserFixture.create({ userTag: "MATT2025", createdAt: JOINED_AT });
+    const owner = createUserRowFixture({ userTag: "MATT2025", createdAt: JOINED_AT });
     await client.insert(user).values(owner);
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
     await client.insert(linkedAccount).values([
-      AccountFixture.create({ userId: owner.id, provider: "APPLE", createdAt: JOINED_AT }),
-      AccountFixture.create({
+      createLinkedAccountRowFixture({ userId: owner.id, provider: "APPLE", createdAt: JOINED_AT }),
+      createLinkedAccountRowFixture({
         userId: owner.id,
         provider: "GOOGLE",
         createdAt: JOINED_AT.add({ hours: 1 }),
@@ -57,7 +56,7 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
 
   it("탈퇴한 사용자는 찾지 않는다", async () => {
     // Given
-    const deleted = UserFixture.create({ deletedAt: END });
+    const deleted = createUserRowFixture({ deletedAt: END });
     await client.insert(user).values(deleted);
 
     // When
@@ -69,7 +68,7 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
 
   it("프로필·계정이 없는 사용자는 이름·가입 방식을 비운다", async () => {
     // Given
-    const bare = UserFixture.create({ userTag: "BARE0001", createdAt: JOINED_AT });
+    const bare = createUserRowFixture({ userTag: "BARE0001", createdAt: JOINED_AT });
     await client.insert(user).values(bare);
 
     // When
@@ -88,11 +87,11 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
       { provider: "GOOGLE", createdAt: END },
     ] as const;
     for (const signup of signups) {
-      const created = UserFixture.create({ createdAt: signup.createdAt });
+      const created = createUserRowFixture({ createdAt: signup.createdAt });
       await client.insert(user).values(created);
       await client
         .insert(linkedAccount)
-        .values(AccountFixture.create({ ...signup, userId: created.id }));
+        .values(createLinkedAccountRowFixture({ ...signup, userId: created.id }));
     }
 
     // When
@@ -109,15 +108,15 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
 
   it("기존 사용자가 그날 다른 공급자를 연동해도 가입으로 세지 않는다", async () => {
     // Given
-    const existing = UserFixture.create({ createdAt: START.subtract({ hours: 24 }) });
+    const existing = createUserRowFixture({ createdAt: START.subtract({ hours: 24 }) });
     await client.insert(user).values(existing);
     await client.insert(linkedAccount).values([
-      AccountFixture.create({
+      createLinkedAccountRowFixture({
         userId: existing.id,
         provider: "KAKAO",
         createdAt: existing.createdAt,
       }),
-      AccountFixture.create({
+      createLinkedAccountRowFixture({
         userId: existing.id,
         provider: "GOOGLE",
         createdAt: START.add({ hours: 1 }),
@@ -135,14 +134,14 @@ describe("DrizzleUserSignupReader — 가입 정보 조회 (실제 PostgreSQL)",
 
   it("전체 사용자에서 인증 계정 없는 내부 사용자와 탈퇴한 사용자를 뺀다", async () => {
     // Given
-    const active = UserFixture.create();
-    const deleted = UserFixture.create({ deletedAt: START });
-    await client.insert(user).values([active, deleted, UserFixture.create()]);
+    const active = createUserRowFixture();
+    const deleted = createUserRowFixture({ deletedAt: START });
+    await client.insert(user).values([active, deleted, createUserRowFixture()]);
     await client
       .insert(linkedAccount)
       .values([
-        AccountFixture.create({ userId: active.id, provider: "KAKAO" }),
-        AccountFixture.create({ userId: deleted.id, provider: "GOOGLE" }),
+        createLinkedAccountRowFixture({ userId: active.id, provider: "KAKAO" }),
+        createLinkedAccountRowFixture({ userId: deleted.id, provider: "GOOGLE" }),
       ]);
 
     // When

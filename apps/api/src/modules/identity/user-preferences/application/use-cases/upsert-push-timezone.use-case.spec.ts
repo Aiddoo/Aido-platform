@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import { GetPreferenceUseCase } from "./get-preference.use-case.js";
 import { UpsertPushTimezoneUseCase } from "./upsert-push-timezone.use-case.js";

@@ -1,6 +1,6 @@
 import { DrizzleQueryError } from "drizzle-orm/errors";
 
-import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
+import { postgresError, sqlQueryError } from "#test/doubles/platform/fake-database";
 
 import {
   classifyDatabaseError,

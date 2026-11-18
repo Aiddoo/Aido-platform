@@ -2,11 +2,18 @@ import { ErrorCode } from "@aido/api/errors";
 import { ACTION_PLAN_LIMITS, PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  createAiGenerationError,
+  FakeAiGenerator,
+} from "#test/doubles/ai-assistance/fake-ai.generator";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
-import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
+import {
+  digestDraft,
+  memoActionDraft,
+  todoActionDraft,
+} from "#test/fixtures/voice/voice-plan.fixture";
 
 import {
   PLANNING_CATEGORY_LIMIT,

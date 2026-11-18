@@ -1,4 +1,4 @@
-import { TodoBuilder } from "#test/builders/index";
+import { createPlanningTodoRecordFixture } from "#test/fixtures/planning/todo-response.fixture";
 
 import type { RepeatRuleRow } from "../../../todo-series/infrastructure/persistence/repeat-rule-row.mapper.js";
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
@@ -15,12 +15,13 @@ const WEEKLY_RULE = {
 describe("할 일 Read Model 행 매퍼", () => {
   it("시각은 ms 3자리 UTC 문자열, 날짜 칸은 YYYY-MM-DD로 준다", () => {
     // Given
-    const row = TodoBuilder.create("user-123")
-      .withStartDate(Temporal.PlainDate.from("2024-01-15"))
-      .withEndDate(Temporal.PlainDate.from("2024-01-16"))
-      .withScheduledTime(Temporal.Instant.from("2024-01-15T10:00:00Z"))
-      .withCreatedAt(Temporal.Instant.from("2024-01-10T12:00:00Z"))
-      .build();
+    const row = createPlanningTodoRecordFixture({
+      userId: "user-123",
+      startDate: Temporal.PlainDate.from("2024-01-15"),
+      endDate: Temporal.PlainDate.from("2024-01-16"),
+      scheduledTime: Temporal.Instant.from("2024-01-15T10:00:00Z"),
+      createdAt: Temporal.Instant.from("2024-01-10T12:00:00Z"),
+    });
 
     // When
     const todo = toFriendTodoReadModel(row);
@@ -36,7 +37,10 @@ describe("할 일 Read Model 행 매퍼", () => {
 
   it("순간이 없는 옛 행은 남은 벽시계 칸을 버린다", () => {
     // Given
-    const row = { ...TodoBuilder.create("user-123").build(), scheduledLocalTime: "09:00" };
+    const row = {
+      ...createPlanningTodoRecordFixture({ userId: "user-123" }),
+      scheduledLocalTime: "09:00",
+    };
 
     // When
     const todo = toFriendTodoReadModel({ ...row, scheduledTime: null });
@@ -47,7 +51,7 @@ describe("할 일 Read Model 행 매퍼", () => {
 
   it("규칙이 없으면 repeat와 occurrenceDate가 null이다", () => {
     // Given
-    const row = TodoBuilder.create("user-123").build();
+    const row = createPlanningTodoRecordFixture({ userId: "user-123" });
 
     // When
     const todo = toTodoReadModel({ ...row, series: null });
@@ -58,11 +62,12 @@ describe("할 일 Read Model 행 매퍼", () => {
 
   it("규칙 행을 반복 규칙으로 바꾸고 회차 날짜를 YYYY-MM-DD로 준다", () => {
     // Given
-    const row = TodoBuilder.create("user-123")
-      .withSeriesId("series-1")
-      .withOccurrenceDate(Temporal.PlainDate.from("2026-11-02"))
-      .withStartDate(Temporal.PlainDate.from("2026-11-04"))
-      .build();
+    const row = createPlanningTodoRecordFixture({
+      userId: "user-123",
+      seriesId: "series-1",
+      occurrenceDate: Temporal.PlainDate.from("2026-11-02"),
+      startDate: Temporal.PlainDate.from("2026-11-04"),
+    });
 
     // When
     const todo = toTodoReadModel({ ...row, series: WEEKLY_RULE });
@@ -83,7 +88,7 @@ describe("할 일 Read Model 행 매퍼", () => {
 
   it("끝난 규칙도 종료 조건을 그대로 준다", () => {
     // Given
-    const row = TodoBuilder.create("user-123").withSeriesId("series-1").build();
+    const row = createPlanningTodoRecordFixture({ userId: "user-123", seriesId: "series-1" });
 
     // When
     const todo = toTodoReadModel({

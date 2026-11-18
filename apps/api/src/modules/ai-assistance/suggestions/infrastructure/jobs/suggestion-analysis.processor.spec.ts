@@ -1,7 +1,7 @@
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { AnalyzeAndCreateSuggestionsCommand } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";

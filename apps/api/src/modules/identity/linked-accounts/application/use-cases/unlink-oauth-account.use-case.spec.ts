@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { UnlinkOAuthAccountUseCase } from "./unlink-oauth-account.use-case.js";
 

@@ -15,15 +15,16 @@ import { linkedAccount, user as userTable, userProfile } from "#api/platform/dat
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
+import type { FakeAdminNotifier } from "#test/doubles/operations/fake-admin-notifier";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
-import type { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createLinkedAccountRowFixture } from "#test/fixtures/identity/linked-account-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -64,7 +65,7 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const owner = UserFixture.create({
+    const owner = createUserRowFixture({
       id: createEntityId(),
       email: "matthew@example.com",
       userTag: "MATT2025",
@@ -75,12 +76,12 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
     await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
     // 가입 방식은 처음 만든 계정이다. 나중에 연결한 Google 계정이 아니다
     await client.insert(linkedAccount).values([
-      AccountFixture.create({
+      createLinkedAccountRowFixture({
         userId: owner.id,
         provider: "APPLE",
         createdAt: instantFromDate(JOINED_AT),
       }),
-      AccountFixture.create({
+      createLinkedAccountRowFixture({
         userId: owner.id,
         provider: "GOOGLE",
         createdAt: instantFromDate(AT),
@@ -115,17 +116,19 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
 
   it("운영 연간 구매 1건은 저장된 사용자 블록과 웹훅 금액·국가·만료로 결제 알림이 된다", async () => {
     // Given
-    const purchase = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withProductId("com.aido.pro.yearly")
-      .withEventId("evt-discord-purchase")
-      .withTransactionId("2000000812345678")
-      .withOriginalTransactionId("2000000812345678")
-      .withPeriodType("NORMAL")
-      .withPurchasedAtMs(AT.getTime() - 60_000)
-      .withExpirationAtMs(EXPIRES_AT.getTime())
-      .withPrice(27.99, "KRW", 39_000)
-      .build();
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.yearly",
+      id: "evt-discord-purchase",
+      transaction_id: "2000000812345678",
+      original_transaction_id: "2000000812345678",
+      period_type: "NORMAL",
+      purchased_at_ms: AT.getTime() - 60_000,
+      expiration_at_ms: EXPIRES_AT.getTime(),
+      price: 27.99,
+      currency: "KRW",
+      price_in_purchased_currency: 39_000,
+    });
 
     // When
     await receiver.receive(withCountry(purchase, "KR"));
@@ -194,25 +197,27 @@ describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
   it("결제 실패로 만료되면 위험 색과 결제 실패 사유를 보여 준다", async () => {
     // Given
     const transactionId = "2000000899990000";
-    const purchase = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withProductId("com.aido.pro.monthly")
-      .withEventId("evt-discord-monthly")
-      .withTransactionId(transactionId)
-      .withOriginalTransactionId(transactionId)
-      .withPurchasedAtMs(AT.getTime() - 31 * 24 * 60 * 60 * 1000)
-      .withExpirationAtMs(AT.getTime() - 60_000)
-      .withPrice(2.99, "KRW", 3900)
-      .build();
-    const expiration = SubscriptionEventBuilder.expiration()
-      .withAppUserId(userId)
-      .withProductId("com.aido.pro.monthly")
-      .withEventId("evt-discord-expired")
-      .withTransactionId(transactionId)
-      .withOriginalTransactionId(transactionId)
-      .withExpirationAtMs(AT.getTime() - 60_000)
-      .withExpirationReason("BILLING_ERROR")
-      .build();
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.monthly",
+      id: "evt-discord-monthly",
+      transaction_id: transactionId,
+      original_transaction_id: transactionId,
+      purchased_at_ms: AT.getTime() - 31 * 24 * 60 * 60 * 1000,
+      expiration_at_ms: AT.getTime() - 60_000,
+      price: 2.99,
+      currency: "KRW",
+      price_in_purchased_currency: 3900,
+    });
+    const expiration = createSubscriptionEventFixture("EXPIRATION", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.monthly",
+      id: "evt-discord-expired",
+      transaction_id: transactionId,
+      original_transaction_id: transactionId,
+      expiration_at_ms: AT.getTime() - 60_000,
+      expiration_reason: "BILLING_ERROR",
+    });
     await receiver.receive(purchase);
 
     // When

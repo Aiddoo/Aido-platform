@@ -2,7 +2,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp } from "./helpers/index.js";
+import { createE2eApp, destroyE2eApp } from "#test/e2e/helpers/e2e-app-factory";
+
 import { preparePgBossSchema, useRealJobQueue } from "./helpers/real-job-queue.js";
 
 // Vitest fork worker의 stdin·stdout·stderr·IPC 파이프다. 앱과 무관하게 처음부터 열려 있다

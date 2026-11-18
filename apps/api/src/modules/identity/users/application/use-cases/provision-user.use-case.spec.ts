@@ -1,7 +1,7 @@
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 describe("ProvisionUser — 신규 계정과 기본 설정 생성", () => {
   it("이메일 계정은 미인증 상태로 계정·프로필·동의와 기본 설정을 생성한다", async () => {

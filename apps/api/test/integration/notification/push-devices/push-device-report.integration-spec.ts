@@ -11,7 +11,8 @@ import { DrizzlePushTokenRepository } from "#api/modules/notification/push-devic
 import { pushDevice, pushToken, session, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { SessionFixture, UserFixture } from "#test/fixtures/index";
+import { createSessionRowFixture } from "#test/fixtures/identity/session-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -32,8 +33,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    const firstUser = UserFixture.create();
-    const secondUser = UserFixture.create();
+    const firstUser = createUserRowFixture();
+    const secondUser = createUserRowFixture();
     await client.insert(user).values([firstUser, secondUser]);
     firstUserId = firstUser.id;
     secondUserId = secondUser.id;
@@ -113,8 +114,8 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   it("허용 기기가 토큰 발급 실패로 null을 보고해도 토큰 행을 지우지 않고 지금 세션으로 옮긴다", async () => {
     // Given
     const [oldSession, newSession] = [
-      SessionFixture.create({ userId: firstUserId }),
-      SessionFixture.create({ userId: firstUserId }),
+      createSessionRowFixture({ userId: firstUserId }),
+      createSessionRowFixture({ userId: firstUserId }),
     ];
     await client.insert(session).values([oldSession, newSession]);
     const { reportPushDevice } = createReportPushDevice();
@@ -162,7 +163,10 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
   it("세션이 만료돼도 지우는 작업이 없어 그 세션의 기기는 계정 푸시 대상에 남는다", async () => {
     // Given
     // 갱신 기한(7일)이 지나 앱이 로그인 화면으로 돌아간 세션의 기기
-    const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
+    const expiredSession = createSessionRowFixture({
+      userId: firstUserId,
+      expiresAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({ hours: 24 }),
+    });
     await client.insert(session).values(expiredSession);
     const { reportPushDevice, transactionHost } = createReportPushDevice();
     await reportPushDevice.execute(command({ sessionId: expiredSession.id }));
@@ -180,8 +184,11 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
 
   it("세션이 끝난 기기가 기기 ID와 토큰으로 해제하면 그 기기만 계정 푸시 대상에서 빠진다", async () => {
     // Given
-    const expiredSession = SessionFixture.createExpired({ userId: firstUserId });
-    const activeSession = SessionFixture.create({ userId: firstUserId });
+    const expiredSession = createSessionRowFixture({
+      userId: firstUserId,
+      expiresAt: Temporal.Instant.fromEpochMilliseconds(Date.now()).subtract({ hours: 24 }),
+    });
+    const activeSession = createSessionRowFixture({ userId: firstUserId });
     await client.insert(session).values([expiredSession, activeSession]);
     const { reportPushDevice, transactionHost } = createReportPushDevice();
     await reportPushDevice.execute(command({ sessionId: expiredSession.id }));

@@ -7,7 +7,7 @@ import {
   ACCESS_FIXTURE_USER_ID,
 } from "#test/fixtures/access/access-user.fixture";
 import { createQuotaChargeFixture } from "#test/fixtures/access/quota-charge.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -25,8 +25,8 @@ describe("DrizzleQuotaChargeRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: ACCESS_FIXTURE_USER_ID }),
-        UserFixture.create({ id: ACCESS_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: ACCESS_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: ACCESS_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 

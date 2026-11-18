@@ -31,12 +31,12 @@ import {
 } from "#test/doubles/notification/fake-push-channel";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createRegisteringPushDeviceFixture,
   type PushTokenRegistrationFixture,
 } from "#test/fixtures/notification/push-token.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
 import { createPushDispatchStaging } from "#test/integration/helpers/push-dispatch-staging";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -107,7 +107,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     suffix: string,
     options: { readonly acceptedAt?: Temporal.Instant; readonly legacy?: boolean } = {},
   ) {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       email: `receipt-${suffix}@example.com`,
       userTag: suffix.padEnd(8, "X").slice(0, 8),
     });

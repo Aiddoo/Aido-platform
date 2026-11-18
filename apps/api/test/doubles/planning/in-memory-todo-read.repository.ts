@@ -20,7 +20,7 @@ import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository
 import {
   createTodoReadModelFromRecord,
   type PlanningTodoRecord,
-} from "#test/fixtures/todo-response.fixture";
+} from "#test/fixtures/planning/todo-response.fixture";
 
 export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   queryResults: TodoReadModel[] = [];

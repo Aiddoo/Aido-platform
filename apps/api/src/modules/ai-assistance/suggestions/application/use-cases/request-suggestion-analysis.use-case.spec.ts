@@ -5,7 +5,7 @@ import {
   AI_ASSISTANCE_TODAY,
   createAiAssistanceFixture,
   withAiAssistanceTime,
-} from "#test/fixtures/ai-assistance.fixture";
+} from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
 import { createSuggestionAnalysisRunFixture } from "#test/fixtures/ai-assistance/suggestion-analysis-run.fixture";
 
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";

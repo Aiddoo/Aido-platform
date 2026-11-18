@@ -4,7 +4,11 @@ import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastru
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -28,7 +32,7 @@ describe("할 일 목록 커서 (실제 PostgreSQL)", () => {
   });
 
   async function givenOwnerWithPublicTodos(userTag: string, count: number) {
-    const owner = UserFixture.create({
+    const owner = createUserRowFixture({
       id: createEntityId(),
       email: `${userTag.toLowerCase()}@example.com`,
       userTag,
@@ -36,7 +40,7 @@ describe("할 일 목록 커서 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(owner);
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: owner.id, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: owner.id, sortOrder: 0 }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");
@@ -46,7 +50,7 @@ describe("할 일 목록 커서 (실제 PostgreSQL)", () => {
       .values(
         Array.from({ length: count }, (_, index) => ({
           ...omit(
-            TodoFixture.create({ userId: owner.id, categoryId: category.id, sortOrder: index }),
+            createTodoRowFixture({ userId: owner.id, categoryId: category.id, sortOrder: index }),
             ["id"],
           ),
           visibility: "PUBLIC" as const,

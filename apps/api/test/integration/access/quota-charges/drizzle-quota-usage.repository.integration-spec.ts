@@ -2,7 +2,7 @@ import { DrizzleQuotaUsageRepository } from "#api/modules/access/quota-charges/i
 import { DrizzleUserAiUsageCounterAdapter } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-ai-usage-counter.adapter";
 import { user } from "#api/platform/database/schema/index";
 import { describeQuotaUsageRepositoryContract } from "#test/contracts/access/quota-usage-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -35,7 +35,7 @@ describe("DrizzleQuotaUsageRepository (실제 PostgreSQL)", () => {
       seedUser: async ({ id, aiUsageCount, aiUsageResetAt }) => {
         seeded += 1;
         await client.insert(user).values(
-          UserFixture.create({
+          createUserRowFixture({
             id,
             userTag: `QUSG${String(seeded).padStart(4, "0")}`,
             aiUsageCount,

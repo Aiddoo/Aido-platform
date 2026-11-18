@@ -1,12 +1,12 @@
 import type { MockInstance } from "vitest";
 
-import { createTodoDraftResponse } from "#test/fixtures/ai-response.fixture";
 import {
   aiProviderErrorResponse,
   captureProviderError,
   createAiTestConfig,
   createAiSdkGenerator,
-} from "#test/mocks/ai-provider-http.stub";
+} from "#test/doubles/ai-assistance/stub-ai-provider-http";
+import { createTodoDraftResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import { quickPlanPrompt } from "../../../action-plan-drafts/application/messages/quick-plan-prompt.messages.js";
 import { AnthropicProviderAdapter } from "./anthropic-provider.adapter.js";

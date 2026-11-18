@@ -4,8 +4,11 @@ import {
   type SupportInquiriesConfig,
   supportInquiriesConfig,
 } from "#api/modules/support/inquiries/support-inquiries.config";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("문의 E2E", () => {
   let testContext: E2eTestContext;

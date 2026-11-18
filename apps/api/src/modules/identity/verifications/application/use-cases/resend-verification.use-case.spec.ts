@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { RequestPasswordResetUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/request-password-reset.use-case";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 import { ResendVerificationUseCase } from "./resend-verification.use-case.js";
 

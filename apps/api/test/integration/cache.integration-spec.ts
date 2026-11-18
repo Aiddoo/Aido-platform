@@ -35,8 +35,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
-
-import { createMockUserProfile } from "../mocks/cache-test-utils.js";
+import { createCachedUserProfileFixture } from "#test/fixtures/identity/cached-user-profile.fixture";
 
 describe("CacheModule 통합 테스트", () => {
   describe("인메모리 어댑터 (기본 설정)", () => {
@@ -159,7 +158,7 @@ describe("CacheModule 통합 테스트", () => {
       it("사용자 프로필을 캐시하고 조회할 수 있다", async () => {
         // Given
         const userId = "user_1";
-        const profile = createMockUserProfile({
+        const profile = createCachedUserProfileFixture({
           id: userId,
           email: "test@example.com",
           name: "Test User",
@@ -181,7 +180,7 @@ describe("CacheModule 통합 테스트", () => {
       it("사용자 프로필을 무효화할 수 있다", async () => {
         // Given
         const userId = "user_2";
-        const profile = createMockUserProfile({
+        const profile = createCachedUserProfileFixture({
           id: userId,
           email: "test2@example.com",
           name: "Test User 2",
@@ -420,7 +419,7 @@ describe("CacheModule 통합 테스트", () => {
       it("wrapUserProfile이 실제로 캐시에 저장한다", async () => {
         // Given
         const userId = "wrap-profile-test";
-        const profile = createMockUserProfile({
+        const profile = createCachedUserProfileFixture({
           id: userId,
           email: "test@example.com",
           name: "Test",

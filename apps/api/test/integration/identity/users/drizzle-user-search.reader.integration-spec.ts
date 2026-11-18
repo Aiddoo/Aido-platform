@@ -5,7 +5,7 @@ import { DrizzleUserSearchReader } from "#api/modules/identity/users/infrastruct
 import type { UserExclusionCondition } from "#api/modules/identity/users/infrastructure/persistence/user-conditions.query-fragment";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -40,16 +40,16 @@ describe("DrizzleUserSearchReader (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({ id: SEARCHER_ID, userTag: "KIMS0001" }),
-      UserFixture.create({ id: FIRST_MATCH_ID, userTag: "KIMA0002" }),
-      UserFixture.create({ id: SECOND_MATCH_ID, userTag: "KIMB0003" }),
-      UserFixture.create({
+      createUserRowFixture({ id: SEARCHER_ID, userTag: "KIMS0001" }),
+      createUserRowFixture({ id: FIRST_MATCH_ID, userTag: "KIMA0002" }),
+      createUserRowFixture({ id: SECOND_MATCH_ID, userTag: "KIMB0003" }),
+      createUserRowFixture({
         id: DELETED_MATCH_ID,
         userTag: "KIMD0004",
         deletedAt: Temporal.Instant.from("2026-10-01T00:00:00Z"),
       }),
-      UserFixture.create({ id: LOCKED_MATCH_ID, userTag: "KIML0005", status: "LOCKED" }),
-      UserFixture.create({ userTag: "ZZZZ0006" }),
+      createUserRowFixture({ id: LOCKED_MATCH_ID, userTag: "KIML0005", status: "LOCKED" }),
+      createUserRowFixture({ userTag: "ZZZZ0006" }),
     ]);
   });
 

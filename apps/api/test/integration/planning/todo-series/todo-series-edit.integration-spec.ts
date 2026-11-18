@@ -36,8 +36,12 @@ import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -88,7 +92,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "series-edit@example.com",
       userTag: "SEREDIT1",
@@ -97,7 +101,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");
@@ -562,11 +566,11 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       const { todos } = await start();
       const [target] = await client
         .insert(todoCategory)
-        .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+        .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
         .returning();
       await client.insert(todo).values(
         Array.from({ length: TODO_LIMITS.MAX_PER_CATEGORY }, (_, index) => ({
-          ...omit(TodoFixture.create({ userId, categoryId: target?.id ?? 0, sortOrder: index }), [
+          ...omit(createTodoRowFixture({ userId, categoryId: target?.id ?? 0, sortOrder: index }), [
             "id",
           ]),
           startDate: plainDateFromDate(AT),
@@ -698,7 +702,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
 
     it("다른 사용자의 할 일은 전체 삭제에 휘말리지 않는다", async () => {
       // Given
-      const other = UserFixture.create({
+      const other = createUserRowFixture({
         id: createEntityId(),
         email: "series-edit-other@example.com",
         userTag: "SEREDIT2",
@@ -706,7 +710,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       await client.insert(userTable).values(other);
       const [otherCategory] = await client
         .insert(todoCategory)
-        .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
+        .values(omit(createTodoCategoryRowFixture({ userId: other.id, sortOrder: 0 }), ["id"]))
         .returning();
       const otherTodos = await context.module.get(CreateTodoUseCase).execute({
         userId: UserId.reconstitute(other.id),
@@ -945,7 +949,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const { laterSeriesId, earlier } = await startSplit();
         const [other] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
           .returning();
         // When
         await following({
@@ -966,13 +970,14 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const { laterSeriesId, earlier } = await startSplit();
         const [other] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
           .returning();
         await client.insert(todo).values(
           Array.from({ length: TODO_LIMITS.MAX_PER_CATEGORY }, (_, index) => ({
-            ...omit(TodoFixture.create({ userId, categoryId: other?.id ?? 0, sortOrder: index }), [
-              "id",
-            ]),
+            ...omit(
+              createTodoRowFixture({ userId, categoryId: other?.id ?? 0, sortOrder: index }),
+              ["id"],
+            ),
             completed: false,
             seriesId: null,
             occurrenceDate: null,
@@ -1059,7 +1064,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         const { seriesId, laterSeriesId, earlier, later } = await startSplit();
         const sameDate = later[0]?.occurrenceDate;
         await client.insert(todo).values({
-          ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 99 }), ["id"]),
+          ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: 99 }), ["id"]),
           title: "앞 구간의 완료 회차",
           seriesId,
           occurrenceDate: sameDate,
@@ -1123,7 +1128,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
         .insert(todo)
         .values(
           ["2026-11-02", "2026-11-03", "2026-11-04"].map((date, index) => ({
-            ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
+            ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: index }), ["id"]),
             seriesId: groupId,
             occurrenceDate: null,
             startDate: Temporal.PlainDate.from(date),
@@ -1483,7 +1488,7 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
           const { seriesId, todos } = await start();
           const [target] = await client
             .insert(todoCategory)
-            .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+            .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
             .returning();
           if (target == null) {
             throw new Error("이동할 카테고리 fixture 누락");

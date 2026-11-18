@@ -20,11 +20,11 @@ import { describeRetentionAssignmentRepositoryContract } from "#test/contracts/n
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { nowInstant } from "#test/fixtures/clock.fixture";
 import {
   enrollRetentionAssignment,
   retentionAssignmentOf,
 } from "#test/fixtures/notification/retention-assignment.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";

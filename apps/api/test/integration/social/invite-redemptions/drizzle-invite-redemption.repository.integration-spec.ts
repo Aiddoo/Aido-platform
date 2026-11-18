@@ -17,6 +17,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeInviteRedemptionRepositoryContract } from "#test/contracts/social/invite-redemption-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";
 import {
   INVITE_FIXTURE_ID,
@@ -25,7 +26,6 @@ import {
   INVITE_FIXTURE_NOW,
   insertInviteFixtureRows,
 } from "#test/fixtures/social/invite.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -78,7 +78,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     const ids = Array.from({ length: count }, () => createEntityId());
     await client.insert(userTable).values(
       ids.map((id, index) =>
-        UserFixture.create({
+        createUserRowFixture({
           id,
           userTag: `BLK${String(index).padStart(5, "0")}`,
           email: `blk${index}@example.test`,

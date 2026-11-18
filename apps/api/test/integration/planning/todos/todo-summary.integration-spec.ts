@@ -27,14 +27,14 @@ import { GetTodoSummaryUseCase } from "#api/modules/planning/todos/application/u
 import { StreakAdapter } from "#api/modules/planning/todos/infrastructure/adapters/streak.adapter";
 import { provideUseCase } from "#api/platform/di/provide-use-case";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
+import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let useCase: GetTodoSummaryUseCase;
 
-  const mockReadRepository = createTodoReadRepositoryMock();
+  const todoReadRepository = new InMemoryTodoReadRepository(new Map(), new Map());
 
   const mockUserStreakAccess = {
     findPreferenceReadModel: vi.fn(),
@@ -52,7 +52,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
           streakPort: StreakPort,
           seriesCatchUp: CatchUpTodoSeriesUseCase,
         }),
-        { provide: TodoReadRepositoryPort, useValue: mockReadRepository },
+        { provide: TodoReadRepositoryPort, useValue: todoReadRepository },
         { provide: StreakPort, useClass: StreakAdapter },
         { provide: UserStreakAccessPort, useValue: mockUserStreakAccess },
         { provide: CatchUpTodoSeriesUseCase, useValue: { execute: vi.fn() } },
@@ -72,11 +72,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 
   it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
     // Given
-    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-      total: 2,
-      completed: 2,
-    });
-    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    todoReadRepository.dayStats = { total: 2, completed: 2 };
     // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
     mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue({
       currentStreak: 7,
@@ -98,11 +94,7 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 
   it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
     // Given
-    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-      total: 0,
-      completed: 0,
-    });
-    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    todoReadRepository.dayStats = { total: 0, completed: 0 };
     mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue(null);
 
     // When

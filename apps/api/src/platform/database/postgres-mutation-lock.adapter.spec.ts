@@ -1,4 +1,4 @@
-import { createFakeTransactionHost, queryResult } from "#test/mocks/drizzle.mock";
+import { createFakeTransactionHost, queryResult } from "#test/doubles/platform/fake-database";
 
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
 

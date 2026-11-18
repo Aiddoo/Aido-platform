@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG, PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 import { GetCurrentUserUseCase } from "./get-current-user.use-case.js";
 

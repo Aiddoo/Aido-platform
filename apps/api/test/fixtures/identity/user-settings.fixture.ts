@@ -1,4 +1,4 @@
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import type { User } from "#test/types/database-rows";
 
 // 재확인 대상 페이지 순서가 DB 정렬과 같도록 id는 길이가 같고 이 순서대로 정렬된다
@@ -18,23 +18,23 @@ export const USER_SETTINGS_FIXTURE_INACTIVE_USER_IDS = [
 /** integration spec이 설정·동의 행의 외래 키로 넣는 User 행 */
 export function createUserSettingsFixtureUsers(): User[] {
   return [
-    UserFixture.create({
+    createUserRowFixture({
       id: USER_SETTINGS_FIXTURE_USER_ID,
       email: "settings-owner@example.com",
       userTag: "SETOWN01",
     }),
-    UserFixture.create({
+    createUserRowFixture({
       id: USER_SETTINGS_FIXTURE_OTHER_USER_ID,
       email: "settings-other@example.com",
       userTag: "SETOTH01",
     }),
-    UserFixture.create({
+    createUserRowFixture({
       id: USER_SETTINGS_FIXTURE_INACTIVE_USER_ID,
       email: "settings-locked@example.com",
       userTag: "SETLCK01",
       status: "LOCKED",
     }),
-    UserFixture.create({
+    createUserRowFixture({
       id: USER_SETTINGS_FIXTURE_DELETED_USER_ID,
       email: "settings-deleted@example.com",
       userTag: "SETDEL01",

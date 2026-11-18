@@ -9,14 +9,14 @@ import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -47,7 +47,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "lifecycle-edge@example.com",
       userTag: "EDGE0001",
@@ -72,19 +72,23 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   }
 
   function chainEvent(
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     eventId: string,
     expiresAt: Date,
     chain = CHAIN,
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(chain)
-      .withTransactionId(`${chain}-${eventId}`)
-      .withEventId(eventId)
-      .withPurchasedAtMs(AT.getTime())
-      .withExpirationAtMs(expiresAt.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: chain,
+        transaction_id: `${chain}-${eventId}`,
+        id: eventId,
+        purchased_at_ms: AT.getTime(),
+        expiration_at_ms: expiresAt.getTime(),
+      },
+    };
   }
 
   function premiumAccess() {
@@ -118,7 +122,7 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
   describe("늦게 도착한 지난 기간의 웹훅", () => {
     async function givenRenewedWithBankedInvite(): Promise<void> {
       await webhook(
-        chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY),
+        chainEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "purchase", FIRST_EXPIRY),
       );
       await granter.grant({
         userId: UserId.reconstitute(userId),
@@ -127,14 +131,14 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
         durationDays: 7,
       });
       vi.setSystemTime(RENEWED_AT);
-      await webhook(chainEvent(SubscriptionEventBuilder.renewal(), "renewal", NEXT_EXPIRY));
+      await webhook(chainEvent(createSubscriptionEventFixture("RENEWAL"), "renewal", NEXT_EXPIRY));
       vi.setSystemTime(LATE_AT);
     }
 
     it.each([
-      ["해지(UNSUBSCRIBE)", () => SubscriptionEventBuilder.cancellation()],
-      ["해지 철회", () => SubscriptionEventBuilder.uncancellation()],
-      ["기간 연장", () => SubscriptionEventBuilder.subscriptionExtended()],
+      ["해지(UNSUBSCRIBE)", () => createSubscriptionEventFixture("CANCELLATION")],
+      ["해지 철회", () => createSubscriptionEventFixture("UNCANCELLATION")],
+      ["기간 연장", () => createSubscriptionEventFixture("SUBSCRIPTION_EXTENDED")],
     ])(
       "갱신 뒤 도착한 지난 기간의 %s은 다음 기간의 자동 갱신과 쌓아 둔 보상을 되돌리지 않는다",
       async (_label, eventOf) => {
@@ -172,7 +176,9 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
 
   it("환불 뒤 다시 온 환불과 늦은 만료는 이미 시작한 보상을 다시 시작하거나 두 번 세지 않는다", async () => {
     // Given
-    await webhook(chainEvent(SubscriptionEventBuilder.initialPurchase(), "purchase", FIRST_EXPIRY));
+    await webhook(
+      chainEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "purchase", FIRST_EXPIRY),
+    );
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -182,15 +188,25 @@ describe("결제 생애주기의 순서 뒤바뀜·환불 경계 (실제 Postgre
     const refundedAt = new Date("2028-03-01T04:00:00.000Z");
     vi.setSystemTime(refundedAt);
     await webhook(
-      chainEvent(SubscriptionEventBuilder.refundCancellation(), "refund", FIRST_EXPIRY),
+      chainEvent(
+        createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" }),
+        "refund",
+        FIRST_EXPIRY,
+      ),
     );
 
     // When
     vi.setSystemTime(new Date(refundedAt.getTime() + DAY_MS));
     await webhook(
-      chainEvent(SubscriptionEventBuilder.refundCancellation(), "refund-resent", FIRST_EXPIRY),
+      chainEvent(
+        createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" }),
+        "refund-resent",
+        FIRST_EXPIRY,
+      ),
     );
-    await webhook(chainEvent(SubscriptionEventBuilder.expiration(), "late-expire", FIRST_EXPIRY));
+    await webhook(
+      chainEvent(createSubscriptionEventFixture("EXPIRATION"), "late-expire", FIRST_EXPIRY),
+    );
 
     // Then
     const grantEndsAt = new Date(refundedAt.getTime() + 7 * DAY_MS);

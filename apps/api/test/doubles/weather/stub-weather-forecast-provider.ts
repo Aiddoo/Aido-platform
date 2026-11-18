@@ -6,7 +6,7 @@ import {
 } from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
 import type { WeatherForecastReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-forecast.read-model";
 import { resolveKmaForecastAvailability } from "#api/modules/weather/weather-reports/infrastructure/adapters/kma-issuance.mapper";
-import { weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import { createWeatherForecastFixture } from "#test/fixtures/weather/weather.fixture";
 
 export interface RecordedForecastCall {
   readonly gridX: number;
@@ -22,7 +22,7 @@ export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   readonly calls: RecordedForecastCall[] = [];
   readonly results = new Map<string, WeatherForecastReadModel | Error>();
   failure: Error | null = null;
-  forecast = weatherForecastFixture();
+  forecast = createWeatherForecastFixture();
 
   constructor(timeZone = "Asia/Seoul") {
     super();
@@ -45,13 +45,13 @@ export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
     if (result instanceof Error) {
       throw result;
     }
-    return weatherForecastFixture({ ...result, date: target });
+    return createWeatherForecastFixture({ ...result, date: target });
   }
 
   clear(): void {
     this.calls.length = 0;
     this.results.clear();
     this.failure = null;
-    this.forecast = weatherForecastFixture();
+    this.forecast = createWeatherForecastFixture();
   }
 }

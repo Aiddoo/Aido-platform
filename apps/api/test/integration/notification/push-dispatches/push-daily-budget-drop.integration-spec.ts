@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { sql } from "drizzle-orm";
 
 import { user as userTable } from "#api/platform/database/schema/index";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
@@ -56,7 +56,7 @@ describe("drop_push_daily_budget 마이그레이션 (실제 PostgreSQL)", () => 
         await transaction.execute(sql.raw(statement));
       }
       if (seedRow) {
-        const user = UserFixture.create();
+        const user = createUserRowFixture();
         await transaction.insert(userTable).values(user);
         await transaction.execute(
           sql`INSERT INTO "PushDailyBudget" ("localDate", "updatedAt", "userId") VALUES ('2026-11-01', now(), ${user.id})`,

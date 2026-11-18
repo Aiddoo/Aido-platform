@@ -31,8 +31,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 import { cacheConfig } from "#api/platform/config/cache.config";
-
-import { createMockUserProfile } from "../mocks/cache-test-utils.js";
+import { createCachedUserProfileFixture } from "#test/fixtures/identity/cached-user-profile.fixture";
 
 describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
   let app: INestApplication;
@@ -156,7 +155,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     it("프로필 수정 시 캐시가 무효화된다", async () => {
       // Given
       const userId = "user_profile_integration";
-      const originalProfile = createMockUserProfile({
+      const originalProfile = createCachedUserProfileFixture({
         id: userId,
         email: "original@test.com",
         name: "Original Name",
@@ -184,7 +183,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       expect(afterUpdate).toBeUndefined();
 
       // When
-      const updatedProfile = createMockUserProfile({
+      const updatedProfile = createCachedUserProfileFixture({
         ...originalProfile,
         name: "Updated Name",
       });
@@ -205,19 +204,19 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     it("여러 사용자 프로필이 독립적으로 관리된다", async () => {
       // Given
       const users = [
-        createMockUserProfile({
+        createCachedUserProfileFixture({
           id: "user_1",
           email: "u1@test.com",
           name: "User 1",
           userTag: "u1#1",
         }),
-        createMockUserProfile({
+        createCachedUserProfileFixture({
           id: "user_2",
           email: "u2@test.com",
           name: "User 2",
           userTag: "u2#2",
         }),
-        createMockUserProfile({
+        createCachedUserProfileFixture({
           id: "user_3",
           email: "u3@test.com",
           name: "User 3",
@@ -376,7 +375,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const id = "same_id_123";
 
       const session = { userId: id, expiresAt: new Date(), revokedAt: null };
-      const profile = createMockUserProfile({
+      const profile = createCachedUserProfileFixture({
         id,
         email: "test@test.com",
         name: "Test",

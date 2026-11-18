@@ -1,7 +1,11 @@
 import type { QueryResult } from "pg";
 import { vi } from "vitest";
 
-import { createFakeDatabase, postgresError, queryResult } from "#test/mocks/drizzle.mock";
+import {
+  createFakeDatabase,
+  postgresError,
+  queryResult,
+} from "#test/doubles/platform/fake-database";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { TestDatabase } from "./test-database.js";

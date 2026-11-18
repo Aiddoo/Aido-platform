@@ -1,4 +1,7 @@
-import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
+import {
+  createUserSettingsFixture,
+  SETTINGS_TIME,
+} from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import { UpdateMarketingConsentUseCase } from "./update-marketing-consent.use-case.js";
 

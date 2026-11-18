@@ -8,7 +8,7 @@ import { DrizzleFriendReader } from "#api/modules/social/friendships/infrastruct
 import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/infrastructure/persistence/drizzle-friendship.repository";
 import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createFriendshipFixture } from "#test/fixtures/social/friendship.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -37,13 +37,13 @@ describe("사용자 검색 조회 (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: VIEWER, userTag: "VIEW0001" }),
-        UserFixture.create({ id: EXACT_TAG, userTag: "KIM" }),
-        UserFixture.create({ id: TAG_PREFIX, userTag: "KIMA0002" }),
-        UserFixture.create({ id: NAME_PREFIX, userTag: "ZZZZ0003" }),
-        UserFixture.create({ id: CONTAINS_FIRST, userTag: "AKIM0004" }),
-        UserFixture.create({ id: CONTAINS_SECOND, userTag: "BKIM0005" }),
-        UserFixture.create({ id: INACTIVE, userTag: "KIMX0006", status: "LOCKED" }),
+        createUserRowFixture({ id: VIEWER, userTag: "VIEW0001" }),
+        createUserRowFixture({ id: EXACT_TAG, userTag: "KIM" }),
+        createUserRowFixture({ id: TAG_PREFIX, userTag: "KIMA0002" }),
+        createUserRowFixture({ id: NAME_PREFIX, userTag: "ZZZZ0003" }),
+        createUserRowFixture({ id: CONTAINS_FIRST, userTag: "AKIM0004" }),
+        createUserRowFixture({ id: CONTAINS_SECOND, userTag: "BKIM0005" }),
+        createUserRowFixture({ id: INACTIVE, userTag: "KIMX0006", status: "LOCKED" }),
       ]);
     await client.insert(userProfile).values([
       { userId: VIEWER, name: "kim 본인" },

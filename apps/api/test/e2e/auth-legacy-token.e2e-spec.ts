@@ -8,9 +8,12 @@ import { TokenIssuerPort } from "#api/modules/identity/sessions/application/port
 import { jwtConfig } from "#api/platform/config/jwt.config";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { session as sessionTable } from "#api/platform/database/schema/index";
-import { decodeJwtSegment } from "#test/fixtures/jwt-token.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { decodeJwtSegment } from "#test/fixtures/identity/jwt-token.fixture";
 
 // 1.15.3 전에 발급한 토큰(iss·aud 없음)은 refresh 수명 7일이 지나 모두 바뀌었으므로 거절한다
 describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {

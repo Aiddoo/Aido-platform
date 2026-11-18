@@ -35,7 +35,11 @@ import { StubNotificationRecipientLocaleReader } from "#test/doubles/notificatio
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -124,7 +128,7 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
       }),
     );
 
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "reminder-throughput@example.com",
       userTag: "THRUPUT1",
@@ -145,14 +149,14 @@ describe("할 일 리마인더 처리량 (실제 PostgreSQL + pg-boss)", () => {
   async function seedTodos(scheduledAt: Temporal.Instant): Promise<number[]> {
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     const startDate = scheduledAt.toZonedDateTimeISO("UTC").toPlainDate();
     const rows = await client
       .insert(todo)
       .values(
         Array.from({ length: REMINDER_COUNT }, (_, index) => ({
-          ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
+          ...omit(createTodoRowFixture({ userId, categoryId: category?.id ?? 0 }), ["id"]),
           title: `throughput-${index}`,
           startDate,
           scheduledLocalTime: scheduledAt.toZonedDateTimeISO("UTC").toPlainTime().toString({

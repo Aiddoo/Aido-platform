@@ -1,6 +1,6 @@
 import { boolean, integer, pgTable, serial } from "drizzle-orm/pg-core";
 
-import { renderSql } from "#test/mocks/drizzle.mock";
+import { renderSql } from "#test/doubles/platform/fake-database";
 
 import { instant } from "./columns/temporal-columns.js";
 import { tupleGreaterThan, tupleLessThan } from "./keyset.js";

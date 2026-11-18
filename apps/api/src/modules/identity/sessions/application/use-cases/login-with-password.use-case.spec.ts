@@ -4,6 +4,7 @@ import type { LinkedAccounts } from "#api/modules/identity/linked-accounts/domai
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
+import { StubPasswordHasher } from "#test/doubles/identity/stub-auth-credentials";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -11,9 +12,8 @@ import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createUserFixture } from "#test/fixtures/identity/session.fixture";
-import { StubPasswordHasher } from "#test/mocks/ports/auth-credentials.stub";
 
 import { LinkedAccountsLogEvent } from "../../../linked-accounts/application/linked-accounts.log-events.js";
 import { ChangePasswordUseCase } from "../../../linked-accounts/application/use-cases/change-password.use-case.js";

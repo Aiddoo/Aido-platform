@@ -5,7 +5,8 @@ import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/inf
 import { todoCategory, todoSeries, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import {
   TODO_FIXTURE_NOW,
   TODO_FIXTURE_OTHER_USER_ID,
@@ -33,8 +34,8 @@ describe("DrizzleRepeatingTodoTitleReader (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: TODO_FIXTURE_USER_ID, userTag: "REPEAT01" }),
-        UserFixture.create({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "REPEAT02" }),
+        createUserRowFixture({ id: TODO_FIXTURE_USER_ID, userTag: "REPEAT01" }),
+        createUserRowFixture({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "REPEAT02" }),
       ]);
   });
 
@@ -53,7 +54,7 @@ describe("DrizzleRepeatingTodoTitleReader (실제 PostgreSQL)", () => {
       .insert(todoCategory)
       .values(
         [TODO_FIXTURE_USER_ID, TODO_FIXTURE_OTHER_USER_ID].map((userId) =>
-          omit(TodoCategoryFixture.create({ userId }), ["id"]),
+          omit(createTodoCategoryRowFixture({ userId }), ["id"]),
         ),
       )
       .returning({ id: todoCategory.id, userId: todoCategory.userId });

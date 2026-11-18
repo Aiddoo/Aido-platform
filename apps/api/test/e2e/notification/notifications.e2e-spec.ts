@@ -39,8 +39,11 @@ import {
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("알림 E2E", () => {
   let testContext: E2eTestContext;

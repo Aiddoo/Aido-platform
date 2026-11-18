@@ -37,7 +37,7 @@ import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";

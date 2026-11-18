@@ -10,9 +10,12 @@ import request from "supertest";
  */
 
 import { todo as todoTable } from "#api/platform/database/schema/index";
-import { nowInstant, todayIn } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { nowInstant, todayIn } from "#test/fixtures/platform/clock.fixture";
 
 describe("오늘의 할 일 요약 E2E", () => {
   let testContext: E2eTestContext;

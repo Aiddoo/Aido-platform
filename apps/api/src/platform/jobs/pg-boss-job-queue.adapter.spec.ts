@@ -19,8 +19,8 @@ import {
   defineQueue,
   JOB_BACKLOG_WARNING_SIZE,
 } from "#api/shared/application/ports/job-queue.port";
+import { createFakeDatabase, type ExecutedStatement } from "#test/doubles/platform/fake-database";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { createFakeDatabase, type ExecutedStatement } from "#test/mocks/drizzle.mock";
 
 import { JobQueueRegistry } from "./job-queue.registry.js";
 import { QueueAlerts } from "./jobs.alerts.js";

@@ -17,15 +17,19 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import {
   nowInstant,
   shiftDateKey,
   todayIn,
   todayUtc,
   wallClockInstant,
-} from "#test/fixtures/clock.fixture";
+} from "#test/fixtures/platform/clock.fixture";
 
 import { releasedTodoSchema } from "../fixtures/released-todo-response.schema.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";

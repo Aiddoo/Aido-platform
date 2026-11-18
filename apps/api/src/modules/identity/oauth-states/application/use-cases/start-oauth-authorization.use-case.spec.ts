@@ -1,8 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { OAUTH_STATE_EXPIRY_MINUTES } from "#api/modules/identity/oauth-states/domain/oauth-states.constants";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { StartOAuthAuthorizationUseCase } from "./start-oauth-authorization.use-case.js";
 

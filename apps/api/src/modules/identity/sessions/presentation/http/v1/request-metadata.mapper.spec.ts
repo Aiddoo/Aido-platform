@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import { parseRequestClient } from "#api/platform/http/request-client/request-client";
-import { TEST_REQUEST_ID } from "#test/mocks/request-client";
+import { TEST_REQUEST_ID } from "#test/doubles/platform/stub-request-client";
 
 import type { RequestSource } from "../decorators/request-source.decorator.js";
 import { toRequestMetadata } from "./request-metadata.mapper.js";

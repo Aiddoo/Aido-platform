@@ -6,8 +6,8 @@ import {
 import type { WeatherReportAttributionReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-report-attribution.read-model";
 import type { WeatherReportLanguage } from "#api/modules/weather/weather-reports/domain/weather-report-language.domain-service";
 import type { WeatherReport } from "#api/modules/weather/weather-reports/domain/weather-report.aggregate";
-import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
+import { createWeatherAttributionFixture } from "#test/fixtures/weather/weather.fixture";
 
 export class StubWeatherReportProvider extends WeatherReportProviderPort {
   readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
@@ -36,7 +36,7 @@ export class StubWeatherReportProvider extends WeatherReportProviderPort {
     language: WeatherReportLanguage,
   ): Promise<WeatherReportAttributionReadModel> {
     this.attributionLanguages.push(language);
-    return weatherAttributionFixture(language);
+    return createWeatherAttributionFixture(language);
   }
 
   clear(): void {

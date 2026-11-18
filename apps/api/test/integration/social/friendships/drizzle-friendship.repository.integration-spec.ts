@@ -3,7 +3,7 @@ import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/inf
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { user } from "#api/platform/database/schema/index";
 import { describeFriendshipRepositoryContract } from "#test/contracts/social/friendship-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createFriendshipFixture,
   FRIENDSHIP_FIXTURE_FRIEND_ID,
@@ -27,9 +27,9 @@ describe("DrizzleFriendshipRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: FRIENDSHIP_FIXTURE_USER_ID }),
-        UserFixture.create({ id: FRIENDSHIP_FIXTURE_FRIEND_ID }),
-        UserFixture.create({ id: FRIENDSHIP_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: FRIENDSHIP_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: FRIENDSHIP_FIXTURE_FRIEND_ID }),
+        createUserRowFixture({ id: FRIENDSHIP_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 

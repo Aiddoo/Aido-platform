@@ -7,9 +7,12 @@ import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/b
 import { type RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { subscription } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 
 const webhookSecret = "subscription-trial-invite-webhook-secret";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -61,20 +64,24 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
   }
 
   function trialEvent(
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     userId: string,
     eventId: string,
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(CHAIN)
-      .withTransactionId(CHAIN)
-      .withEventId(eventId)
-      .withPeriodType("TRIAL")
-      .withProductId("premium_monthly")
-      .withPurchasedAtMs(TRIAL_STARTED_AT.getTime())
-      .withExpirationAtMs(TRIAL_ENDS_AT.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: eventId,
+        period_type: "TRIAL",
+        product_id: "premium_monthly",
+        purchased_at_ms: TRIAL_STARTED_AT.getTime(),
+        expiration_at_ms: TRIAL_ENDS_AT.getTime(),
+      },
+    };
   }
 
   async function meAt(time: Date) {
@@ -91,7 +98,11 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
     // Given
     const { userId } = await context.helpers.createVerifiedUser(EMAIL, PASSWORD);
     await webhook(
-      trialEvent(SubscriptionEventBuilder.initialPurchase().withPrice(0), userId, "trial-start"),
+      trialEvent(
+        createSubscriptionEventFixture("INITIAL_PURCHASE", { price: 0, currency: "KRW" }),
+        userId,
+        "trial-start",
+      ),
     );
     vi.setSystemTime(INVITED_AT);
     await context.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
@@ -104,13 +115,15 @@ describe("무료 체험 중 받은 초대 보상과 체험 종료 뒤 /me (실�
     // When
     const duringTrial = await meAt(INVITED_AT);
     vi.setSystemTime(CANCELLED_AT);
-    await webhook(trialEvent(SubscriptionEventBuilder.cancellation(), userId, "trial-cancel"));
+    await webhook(
+      trialEvent(createSubscriptionEventFixture("CANCELLATION"), userId, "trial-cancel"),
+    );
     const afterCancel = await meAt(CANCELLED_AT);
     const trialEndedAt = new Date(TRIAL_ENDS_AT.getTime() + 5 * 60_000);
     vi.setSystemTime(trialEndedAt);
     await webhook(
       trialEvent(
-        SubscriptionEventBuilder.expiration().withExpirationReason("UNSUBSCRIBE"),
+        createSubscriptionEventFixture("EXPIRATION", { expiration_reason: "UNSUBSCRIBE" }),
         userId,
         "trial-expire",
       ),

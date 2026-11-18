@@ -4,10 +4,13 @@ import { eq, sql } from "drizzle-orm";
 import request from "supertest";
 
 import { memo } from "#api/platform/database/schema/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const CONVERSION_TIME = new Date("2027-01-08T12:00:00.000Z");
 

@@ -16,8 +16,12 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "#test/e2e/helpers/index";
-import { UserFixture } from "#test/fixtures/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 // 같은 seed에서 v1·v2 목록·대화 응답과 cursor 문자열을 스냅샷으로 고정한다. 저장소·reader를 다시 써도 바이트가 같아야 한다
@@ -209,7 +213,7 @@ async function seed(client: TestDatabaseClient): Promise<void> {
   ];
   await client.insert(user).values(
     users.map(({ id, tag }) =>
-      UserFixture.create({
+      createUserRowFixture({
         id,
         email: `${id}@example.com`,
         userTag: tag,

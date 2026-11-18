@@ -9,9 +9,9 @@ import { subscription, user, userPreference } from "#api/platform/database/schem
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { UserPreferenceBuilder } from "#test/builders/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserPreferenceRowFixture } from "#test/fixtures/identity/user-preference-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -80,7 +80,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
       free: createEntityId(),
     };
     const active = (id: string, subscriptionExpiresAt: Date | null) =>
-      UserFixture.create({
+      createUserRowFixture({
         id,
         subscriptionStatus: "ACTIVE",
         subscriptionExpiresAt:
@@ -97,8 +97,8 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
         active(userIds.billingGraceEnded, at(-20 * DAY_MS)),
         active(userIds.noDeadline, null),
         active(userIds.futureProjection, at(24 * HOUR_MS)),
-        UserFixture.create({ id: userIds.admin, role: "ADMIN" }),
-        UserFixture.create({ id: userIds.free }),
+        createUserRowFixture({ id: userIds.admin, role: "ADMIN" }),
+        createUserRowFixture({ id: userIds.free }),
       ]);
     const store = (
       userId: string,
@@ -125,7 +125,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
     ]);
     await client
       .insert(userPreference)
-      .values(Object.values(userIds).map((id) => UserPreferenceBuilder.create(id).build()));
+      .values(Object.values(userIds).map((id) => createUserPreferenceRowFixture({ userId: id })));
   });
 
   afterAll(async () => {

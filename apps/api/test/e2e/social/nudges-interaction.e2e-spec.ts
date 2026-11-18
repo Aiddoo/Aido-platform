@@ -23,13 +23,12 @@ import {
   nudge as nudgeTable,
   user as userTable,
 } from "#api/platform/database/schema/index";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "../helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 
 describe("콕 답장·감사 E2E (실제 DB)", () => {
   let testContext: E2eTestContext;

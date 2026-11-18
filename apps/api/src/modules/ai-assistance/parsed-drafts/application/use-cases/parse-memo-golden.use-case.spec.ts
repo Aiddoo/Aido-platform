@@ -1,9 +1,9 @@
+import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 import {
   GOLDEN_MEMO_CATEGORY_ID,
   GOLDEN_VARIANTS,
   loadParseMemoGoldenCases,
 } from "#test/fixtures/ai-golden/golden-cases";
-import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseMemoUseCase } from "./parse-memo.use-case.js";
 

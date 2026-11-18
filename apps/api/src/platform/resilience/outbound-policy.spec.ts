@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 
 import { defineAlerts } from "#api/shared/application/alerts/define-alerts";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { OutboundRejectedError, OutboundTimeoutError } from "./outbound-policy.errors.js";
 import type { OutboundPolicySpec } from "./outbound-policy.js";

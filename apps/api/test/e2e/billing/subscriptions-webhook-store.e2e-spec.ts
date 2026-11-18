@@ -7,13 +7,17 @@ import {
   type BillingSubscriptionsConfig,
   billingSubscriptionsConfig,
 } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
-import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 
 const webhookSecret = "subscription-store-e2e-webhook-secret";
 const at = new Date("2027-01-04T12:00:00.000Z");
@@ -73,13 +77,19 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
       .send(body);
   }
 
-  function purchase(appUserId: string, eventId: string) {
-    return SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(appUserId)
-      .withEventId(eventId)
-      .withOriginalTransactionId(`${eventId}-chain`)
-      .withPurchasedAtMs(at.getTime())
-      .withExpirationAtMs(expiresAt.getTime());
+  function purchase(
+    appUserId: string,
+    eventId: string,
+    overrides: Partial<RevenueCatWebhookPayload["event"]> = {},
+  ) {
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: appUserId,
+      id: eventId,
+      original_transaction_id: `${eventId}-chain`,
+      purchased_at_ms: at.getTime(),
+      expiration_at_ms: expiresAt.getTime(),
+      ...overrides,
+    });
   }
 
   async function currentUser(accessToken: string) {
@@ -114,10 +124,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
     // When
     const response = await webhook(
-      purchase(user.userId, "test-store-purchase")
-        .withStore("TEST_STORE")
-        .withEnvironment("SANDBOX")
-        .build(),
+      purchase(user.userId, "test-store-purchase", { store: "TEST_STORE", environment: "SANDBOX" }),
     ).expect(200);
 
     // Then
@@ -154,11 +161,11 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
       // When
       await webhook(
-        purchase(user.userId, `${store}-purchase`)
-          .withStore(store)
-          .withEnvironment(environment)
-          .withProductId(productId)
-          .build(),
+        purchase(user.userId, `${store}-purchase`, {
+          store,
+          environment,
+          product_id: productId,
+        }),
       ).expect(200);
 
       // Then
@@ -176,7 +183,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
   it("운영 PRODUCTION 구매의 사용자를 찾지 못하면 200으로 받고 경보를 한 번 올린다", async () => {
     // Given
-    const body = purchase("unknown-production-user", "unknown-user-purchase").build();
+    const body = purchase("unknown-production-user", "unknown-user-purchase");
 
     // When
     await webhook(body).expect(200);
@@ -194,10 +201,10 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
   it("대시보드 TEST 이벤트는 우리 사용자가 아니어도 200으로 받고 원장·경보 없이 로그 한 건만 남긴다", async () => {
     // Given
-    const body = SubscriptionEventBuilder.test()
-      .withAppUserId("dashboard-test-user")
-      .withEventId("dashboard-test-event")
-      .build();
+    const body = createSubscriptionEventFixture("TEST", {
+      app_user_id: "dashboard-test-user",
+      id: "dashboard-test-event",
+    });
 
     // When
     const response = await webhook(body).expect(200);
@@ -212,7 +219,7 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
   it("같은 이벤트 ID를 다시 받으면 한 번만 반영한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("duplicate@example.com", "Test1234!");
-    const body = purchase(user.userId, "duplicate-purchase").build();
+    const body = purchase(user.userId, "duplicate-purchase");
     await webhook(body).expect(200);
 
     // When
@@ -232,10 +239,10 @@ describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)",
 
     // When
     await webhook(
-      purchase(user.userId, "local-test-store-purchase")
-        .withStore("TEST_STORE")
-        .withEnvironment("SANDBOX")
-        .build(),
+      purchase(user.userId, "local-test-store-purchase", {
+        store: "TEST_STORE",
+        environment: "SANDBOX",
+      }),
     ).expect(200);
 
     // Then

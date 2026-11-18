@@ -4,16 +4,16 @@ import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constan
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
+import {
+  StubAccountNotificationCleanup,
+  StubAccountTodoCommentCleanup,
+  StubAccountUsageCleanup,
+} from "#test/doubles/identity/stub-account-lifecycle";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { AUTH_FIXTURE_NOW, createUserFixture } from "#test/fixtures/identity/session.fixture";
-import {
-  StubAccountNotificationCleanup,
-  StubAccountTodoCommentCleanup,
-  StubAccountUsageCleanup,
-} from "#test/mocks/ports/account-lifecycle.stub";
 
 import { UserAlerts } from "../users.alerts.js";
 import { UserLogEvent } from "../users.log-events.js";

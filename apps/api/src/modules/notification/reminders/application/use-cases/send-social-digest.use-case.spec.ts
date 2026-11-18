@@ -3,7 +3,7 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createSocialDigestNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";

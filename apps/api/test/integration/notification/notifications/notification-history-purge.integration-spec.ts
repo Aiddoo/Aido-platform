@@ -14,7 +14,7 @@ import {
 import { PassThroughNotificationCache } from "#test/doubles/notification/pass-through-notification-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -36,7 +36,7 @@ describe("알림·발송 기록 보관 기간 정리 (실제 PostgreSQL)", () =>
 
   beforeEach(async () => {
     await database.cleanup();
-    const user = UserFixture.create();
+    const user = createUserRowFixture();
     await client.insert(userTable).values(user);
     userId = user.id;
   });

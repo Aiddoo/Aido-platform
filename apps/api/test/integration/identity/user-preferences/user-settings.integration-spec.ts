@@ -32,7 +32,11 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -84,7 +88,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "settings-owner@example.com",
       userTag: "SETPG001",
@@ -160,10 +164,10 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
   }
 
   async function givenCompletedTodos() {
-    const category = TodoCategoryFixture.create({ userId });
+    const category = createTodoCategoryRowFixture({ userId });
     await client.insert(todoCategory).values(category);
     for (let index = 0; index < 2; index += 1) {
-      const created = TodoFixture.create({
+      const created = createTodoRowFixture({
         userId,
         categoryId: category.id,
         startDate: todayDate,
@@ -431,7 +435,7 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
 
   it("회원 초기 설정은 상위 프로비저닝 transaction 실패 시 사용자·동의와 함께 rollback된다", async () => {
     // Given
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "settings-rollback@example.com",
       userTag: "SETPG002",

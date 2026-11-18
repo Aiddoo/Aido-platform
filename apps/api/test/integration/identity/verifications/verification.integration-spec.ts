@@ -14,8 +14,9 @@ import { user as userTable, verification } from "#api/platform/database/schema/i
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { UserFixture, VerificationFixture } from "#test/fixtures/index";
-import { FakeEmailService } from "#test/mocks/fake-email.service";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createVerificationRowFixture } from "#test/fixtures/identity/verification-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -44,7 +45,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
     client = await database.start();
-    module = await createAuthTestModule(client, new FakeEmailService());
+    module = await createAuthTestModule(client, new FakeEmailSender());
     repository = module.get(DrizzleVerificationRepository);
     accountRepository = module.get(DrizzleLinkedAccountsRepository);
     consumeCode = module.get(ConsumeVerificationCodeUseCase);
@@ -57,7 +58,7 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(at);
     await database.cleanup();
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email,
       userTag: "OTPTEST1",
@@ -93,9 +94,9 @@ describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
   }
 
   async function givenVerification(
-    overrides: Parameters<typeof VerificationFixture.create>[0] = {},
+    overrides: Parameters<typeof createVerificationRowFixture>[0] = {},
   ) {
-    const fixture = VerificationFixture.create({
+    const fixture = createVerificationRowFixture({
       userId,
       type: "PASSWORD_RESET",
       token: digest,

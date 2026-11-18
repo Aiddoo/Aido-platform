@@ -12,9 +12,12 @@ import request from "supertest";
  */
 
 import { todoCategory, user as userTable } from "#api/platform/database/schema/index";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 
 const FREE_LIMIT = PLAN_CATALOG.TODO_CATEGORY.free;
 

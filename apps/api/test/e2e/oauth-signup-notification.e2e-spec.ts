@@ -2,9 +2,12 @@ import request from "supertest";
 
 import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { StubUserRegistrationNotifier } from "#test/mocks/ports/auth-credentials.stub";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import { StubUserRegistrationNotifier } from "#test/doubles/identity/stub-auth-credentials";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const APP_HEADERS = {
   "X-App-Version": "1.14.2",

@@ -15,7 +15,8 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { FollowFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createFriendshipRowFixture } from "#test/fixtures/social/social-row.fixture";
 
 import {
   createE2eApp,
@@ -45,7 +46,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const owner = UserFixture.create({
+    const owner = createUserRowFixture({
       createdAt: instantFromDate(AT),
       updatedAt: instantFromDate(AT),
     });
@@ -79,22 +80,33 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
   /** 서로 친구 count명과, 친구로 세지 않는 대기 요청·한쪽만 수락한 관계를 하나씩 만든다. */
   async function insertFriends(count: number) {
     const client = context.testDatabase.getClient();
-    const others = Array.from({ length: count + 2 }, () => UserFixture.create());
+    const others = Array.from({ length: count + 2 }, () => createUserRowFixture());
     await client.insert(user).values(others);
     const friends = others.slice(0, count);
     const [pendingTarget, oneWayTarget] = others.slice(count);
     if (pendingTarget === undefined || oneWayTarget === undefined) {
       throw new Error("친구 fixture 사용자가 만들어지지 않았습니다.");
     }
-    await client
-      .insert(friendshipTable)
-      .values([
-        ...friends.flatMap((friend) =>
-          Object.values(FollowFixture.createMutual(userId, friend.id)),
-        ),
-        FollowFixture.create({ followerId: userId, followingId: pendingTarget.id }),
-        FollowFixture.createAccepted({ followerId: userId, followingId: oneWayTarget.id }),
-      ]);
+    await client.insert(friendshipTable).values([
+      ...friends.flatMap((friend) => [
+        createFriendshipRowFixture({
+          status: "ACCEPTED",
+          followerId: userId,
+          followingId: friend.id,
+        }),
+        createFriendshipRowFixture({
+          status: "ACCEPTED",
+          followerId: friend.id,
+          followingId: userId,
+        }),
+      ]),
+      createFriendshipRowFixture({ followerId: userId, followingId: pendingTarget.id }),
+      createFriendshipRowFixture({
+        status: "ACCEPTED",
+        followerId: userId,
+        followingId: oneWayTarget.id,
+      }),
+    ]);
     return { target: pendingTarget };
   }
 
@@ -104,7 +116,7 @@ describe("권한 스냅샷의 친구·카테고리 개수는 한도 검사와 �
 
   it("카테고리 개수는 다른 사용자 카테고리를 세지 않고, 한도에 닿으면 스냅샷과 만들기 거절이 같은 0을 말한다", async () => {
     // Given
-    const other = UserFixture.create();
+    const other = createUserRowFixture();
     await context.testDatabase.getClient().insert(user).values(other);
     await insertCategories(other.id, 2);
     await insertCategories(userId, FREE_CATEGORY_LIMIT);

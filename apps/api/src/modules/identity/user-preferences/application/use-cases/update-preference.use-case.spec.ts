@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";
 import { GetPreferenceUseCase } from "./get-preference.use-case.js";

@@ -3,7 +3,7 @@ import { DrizzleFeatureGrantRepository } from "#api/modules/access/feature-grant
 import { featureGrant, user } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeAccessStateReaderContract } from "#test/contracts/access/access-state-reader.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -40,7 +40,7 @@ describe("DrizzleAccessStateReader·DrizzleFeatureGrantRepository (실제 Postgr
       seedUser: async ({ id, role, subscriptionStatus, subscriptionExpiresAt, isActive }) => {
         seeded += 1;
         await client.insert(user).values(
-          UserFixture.create({
+          createUserRowFixture({
             id,
             userTag: `ACCS${String(seeded).padStart(4, "0")}`,
             role,

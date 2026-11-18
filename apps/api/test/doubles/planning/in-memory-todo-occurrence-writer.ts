@@ -12,9 +12,11 @@ import {
 } from "#api/modules/planning/todos/application/ports/todo-occurrence-writer.port";
 import type { TodoOccurrenceReadModel } from "#api/modules/planning/todos/application/read-models/todo-occurrence.read-model";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
-import { TodoBuilder } from "#test/builders/index";
 import { InMemoryTodoSequence } from "#test/doubles/planning/in-memory-todo.repository";
-import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
+import {
+  type PlanningTodoRecord,
+  createPlanningTodoRecordFixture,
+} from "#test/fixtures/planning/todo-response.fixture";
 
 export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
   readonly records: Map<number, PlanningTodoRecord>;
@@ -52,7 +54,7 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
       }
       const id = plan.id.value;
       this.records.set(id, {
-        ...TodoBuilder.create(plan.userId).withId(id).build(),
+        ...createPlanningTodoRecordFixture({ userId: plan.userId, id }),
         ...plan,
         id,
         seriesId,

@@ -5,7 +5,7 @@ import type { MockInstance } from "vitest";
 
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
-import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
+import { createForecastTimingFixture } from "#test/fixtures/weather/weather.fixture";
 
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import { KmaWeatherForecastAdapter } from "./kma-weather-forecast.adapter.js";
@@ -52,7 +52,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    const result = await provider.getForecast(SEOUL_GRID, createForecastTimingFixture(TARGET));
     // Then
     const url = new URL(String(fetchSpy.mock.calls[0]?.[0]));
     expect(url.pathname).toBe("/1360000/VilageFcstInfoService_2.0/getVilageFcst");
@@ -92,7 +92,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     // Given
     fetchSpy.mockResolvedValue(response());
     // When
-    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    const result = provider.getForecast(SEOUL_GRID, createForecastTimingFixture(TARGET));
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.WEATHER_1901 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -119,7 +119,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       ),
     );
     // When
-    const result = await provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    const result = await provider.getForecast(SEOUL_GRID, createForecastTimingFixture(TARGET));
     // Then
     const [current, previous] = fetchSpy.mock.calls.map(
       ([url]) => new URL(String(url)).searchParams,
@@ -149,7 +149,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
       .mockResolvedValueOnce(providerResultResponse("03"))
       .mockResolvedValueOnce(providerResultResponse("99"));
     // When
-    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    const result = provider.getForecast(SEOUL_GRID, createForecastTimingFixture(TARGET));
     // Then
     await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,
@@ -177,7 +177,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     fetchSpy.mockImplementation(async () => providerResultResponse("03", secret));
 
     // When
-    const result = provider.getForecast(SEOUL_GRID, forecastTimingFixture(TARGET));
+    const result = provider.getForecast(SEOUL_GRID, createForecastTimingFixture(TARGET));
     // Then
     await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.WEATHER_1901,

@@ -74,13 +74,13 @@ import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.po
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { UserPreferenceBuilder } from "#test/builders/index";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { createUserPreferenceRowFixture } from "#test/fixtures/identity/user-preference-row.fixture";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 import { createReportPushDeviceCommandFixture } from "#test/fixtures/notification/push-device.fixture";
 import { createPushTokenFixture } from "#test/fixtures/notification/push-token.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -374,7 +374,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   }
 
   async function seedPreference(userId: string, overrides: Partial<UserPreference>) {
-    const { id: _id, ...values } = UserPreferenceBuilder.create(userId).build();
+    const { id: _id, ...values } = createUserPreferenceRowFixture({ userId });
     await client.insert(userPreference).values({ ...values, ...overrides });
   }
 

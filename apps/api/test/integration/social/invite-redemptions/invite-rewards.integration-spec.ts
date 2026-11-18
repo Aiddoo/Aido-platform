@@ -36,9 +36,9 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -92,7 +92,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
     await client.insert(userTable).values(
-      UserFixture.create({
+      createUserRowFixture({
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,
@@ -372,13 +372,13 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
       scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
         webhook.receive(
-          SubscriptionEventBuilder.initialPurchase()
-            .withAppUserId(inviterId)
-            .withOriginalTransactionId(`race-${inviterId}`)
-            .withTransactionId(`race-${inviterId}`)
-            .withEventId(`race-${inviterId}`)
-            .withExpirationAtMs(storeExpiry.getTime())
-            .build(),
+          createSubscriptionEventFixture("INITIAL_PURCHASE", {
+            app_user_id: inviterId,
+            original_transaction_id: `race-${inviterId}`,
+            transaction_id: `race-${inviterId}`,
+            id: `race-${inviterId}`,
+            expiration_at_ms: storeExpiry.getTime(),
+          }),
         ),
       ]),
     );

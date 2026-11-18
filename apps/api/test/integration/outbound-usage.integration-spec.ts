@@ -6,8 +6,8 @@ import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzl
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeUsageMeterContract } from "#test/contracts/platform/usage-meter.contract";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -46,7 +46,7 @@ describe("OutboundUsage 계량기 (실제 PostgreSQL)", () => {
 
   it("계정을 영구 삭제하면 사용자 일 비용 행을 지우고 전역 행은 남긴다", async () => {
     // Given
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "usage-purge@example.com",
       userTag: "USGPURGE",

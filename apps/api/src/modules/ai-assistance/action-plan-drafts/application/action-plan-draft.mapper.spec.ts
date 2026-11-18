@@ -1,6 +1,9 @@
 import { ACTION_PLAN_LIMITS, MEMO_LIMITS, TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
-import { dateRefFixture, planRepeatRefFixture } from "#test/fixtures/ai-response.fixture";
+import {
+  createDateRefFixture,
+  createPlanRepeatRefFixture,
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import type {
   QuickPlanDraft,
@@ -20,10 +23,10 @@ function todo(overrides: Partial<TodoActionDraft> = {}): TodoActionDraft {
   return {
     title: "운동",
     categoryId: null,
-    date: dateRefFixture({ kind: "NONE" }),
+    date: createDateRefFixture({ kind: "NONE" }),
     endDate: null,
     time: null,
-    repeat: planRepeatRefFixture({ pattern: "NONE" }),
+    repeat: createPlanRepeatRefFixture({ pattern: "NONE" }),
     visibility: null,
     items: [],
     duplicateOfTodoId: null,
@@ -106,9 +109,9 @@ describe("normalizeActionPlan", () => {
 
   it("반복 할 일은 하루짜리라 기간(endDate)을 버리고, 반복이 아니면 기간을 둔다", () => {
     // Given
-    const monday = dateRefFixture({ kind: "WEEKDAY", weekday: "MON", weekOffset: 1 });
-    const sunday = dateRefFixture({ kind: "WEEKDAY", weekday: "SUN", weekOffset: 1 });
-    const monthly = planRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 });
+    const monday = createDateRefFixture({ kind: "WEEKDAY", weekday: "MON", weekOffset: 1 });
+    const sunday = createDateRefFixture({ kind: "WEEKDAY", weekday: "SUN", weekOffset: 1 });
+    const monthly = createPlanRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 });
     const todos = [
       todo({ endDate: sunday, repeat: monthly }),
       todo({ title: "출장", date: monday, endDate: sunday }),
@@ -117,7 +120,7 @@ describe("normalizeActionPlan", () => {
     const result = normalizeActionPlan(plan({ todos }), context);
     // Then
     expect(result.todos[0]?.schedule).toEqual({
-      date: dateRefFixture({ kind: "NONE" }),
+      date: createDateRefFixture({ kind: "NONE" }),
       endDate: null,
       time: null,
       repeat: monthly,

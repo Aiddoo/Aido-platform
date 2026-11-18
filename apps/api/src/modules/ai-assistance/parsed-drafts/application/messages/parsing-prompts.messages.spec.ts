@@ -2,7 +2,11 @@ import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 
 import { AI_TASK_OUTPUT_SCHEMAS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-task-output.wire";
 import { repeatRefSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/schedule-expression.wire";
-import { exampleOutputs, readPromptBlock, topLevelTags } from "#test/fixtures/ai-prompt.fixture";
+import {
+  exampleOutputs,
+  readPromptBlock,
+  topLevelTags,
+} from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { PARSE_MEMO_SYSTEM_EN } from "./locales/en/parse-memo-system.messages.js";
 import { PARSE_TODO_SYSTEM_EN } from "./locales/en/parse-todo-system.messages.js";

@@ -15,7 +15,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createPushDeliveryLifecycle } from "#test/integration/helpers/push-delivery-lifecycle";
 import { createPushDispatchStaging } from "#test/integration/helpers/push-dispatch-staging";
 import { createTransactionHost } from "#test/setup/database-context";

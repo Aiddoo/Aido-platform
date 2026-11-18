@@ -1,9 +1,12 @@
 import request from "supertest";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 /**
  * 파싱 HTTP 경로. 모델 출력은 일정 표현(draft)이고, 날짜·시각은 서버가 계산한다.

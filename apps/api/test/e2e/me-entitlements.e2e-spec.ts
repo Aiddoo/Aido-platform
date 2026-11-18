@@ -7,9 +7,12 @@ import request from "supertest";
 import { billingSubscriptionsConfig } from "#api/modules/billing/subscriptions/billing-subscriptions.config";
 import { subscription, user } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
@@ -90,14 +93,14 @@ describe("/me 유효 프리미엄과 기능별 권한 (실제 PostgreSQL)", () =
   it("SANDBOX 구매 웹훅을 받은 사용자도 프리미엄이고 결제 환경을 구독 행에 남긴다", async () => {
     // Given
     const premium = await context.helpers.createVerifiedUser("me-premium@test.com", "Test1234!");
-    const purchase = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(premium.userId)
-      .withOriginalTransactionId("me-sandbox-transaction")
-      .withEventId("me-sandbox-purchase")
-      .withPurchasedAtMs(AT.getTime() - HOUR_MS)
-      .withExpirationAtMs(FUTURE_EXPIRY.getTime())
-      .withEnvironment("SANDBOX")
-      .build();
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: premium.userId,
+      original_transaction_id: "me-sandbox-transaction",
+      id: "me-sandbox-purchase",
+      purchased_at_ms: AT.getTime() - HOUR_MS,
+      expiration_at_ms: FUTURE_EXPIRY.getTime(),
+      environment: "SANDBOX",
+    });
     await request(context.app.getHttpServer())
       .post("/v1/webhooks/revenuecat")
       .set("Authorization", `Bearer ${webhookSecret}`)

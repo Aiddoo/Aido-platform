@@ -5,7 +5,7 @@ import { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
 import { JwtTokenIssuerAdapter } from "#api/modules/identity/sessions/infrastructure/adapters/jwt-token-issuer.adapter";
 import { jwtSchema } from "#api/platform/config/schemas/jwt.schema";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { decodeJwtSegment } from "#test/fixtures/jwt-token.fixture";
+import { decodeJwtSegment } from "#test/fixtures/identity/jwt-token.fixture";
 
 describe("JwtTokenIssuerAdapter — 서명 알고리즘 고정", () => {
   const accessSecret = "test-jwt-secret-at-least-32-chars";

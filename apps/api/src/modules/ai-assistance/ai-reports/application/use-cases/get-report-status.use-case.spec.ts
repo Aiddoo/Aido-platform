@@ -1,8 +1,8 @@
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAiReportFixture } from "#test/fixtures/ai-assistance/ai-report.fixture";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
 import { GetReportStatusUseCase } from "./get-report-status.use-case.js";
 

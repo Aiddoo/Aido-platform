@@ -1,7 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { LoginWithMobileOAuthTokenUseCase } from "./login-with-mobile-oauth-token.use-case.js";
 import { LoginWithOAuthTokenUseCase } from "./login-with-oauth-token.use-case.js";

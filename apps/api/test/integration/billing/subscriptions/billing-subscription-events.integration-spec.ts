@@ -25,13 +25,13 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture } from "#test/fixtures/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -90,7 +90,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     vi.setSystemTime(at);
     events.length = 0;
     failures.length = 0;
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "billing-owner@example.com",
       storeAppUserId: "billing-owner-alias",
@@ -123,25 +123,25 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   });
 
   function expiration(eventId: string): RevenueCatWebhookPayload {
-    const payload = SubscriptionEventBuilder.expiration()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(transactionId)
-      .withTransactionId(transactionId)
-      .withEventId(eventId)
-      .withExpirationAtMs(previousExpiry.getTime())
-      .build();
+    const payload = createSubscriptionEventFixture("EXPIRATION", {
+      app_user_id: userId,
+      original_transaction_id: transactionId,
+      transaction_id: transactionId,
+      id: eventId,
+      expiration_at_ms: previousExpiry.getTime(),
+    });
     payload.event.event_timestamp_ms = previousEventAt;
     return payload;
   }
 
   function renewal(): RevenueCatWebhookPayload {
-    const payload = SubscriptionEventBuilder.renewal()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(transactionId)
-      .withTransactionId(transactionId)
-      .withEventId("B-new-renewal")
-      .withExpirationAtMs(nextExpiry.getTime())
-      .build();
+    const payload = createSubscriptionEventFixture("RENEWAL", {
+      app_user_id: userId,
+      original_transaction_id: transactionId,
+      transaction_id: transactionId,
+      id: "B-new-renewal",
+      expiration_at_ms: nextExpiry.getTime(),
+    });
     payload.event.event_timestamp_ms = renewedEventAt;
     return payload;
   }
@@ -207,15 +207,15 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   it("SANDBOX 구매도 프리미엄을 주고 구독 행·처리 원장에 결제 환경을 남긴다", async () => {
     // Given
     const sandboxTransactionId = "billing-sandbox-transaction";
-    const body = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(sandboxTransactionId)
-      .withTransactionId(sandboxTransactionId)
-      .withEventId("sandbox-purchase")
-      .withPurchasedAtMs(at.getTime())
-      .withExpirationAtMs(nextExpiry.getTime())
-      .withEnvironment("SANDBOX")
-      .build();
+    const body = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      original_transaction_id: sandboxTransactionId,
+      transaction_id: sandboxTransactionId,
+      id: "sandbox-purchase",
+      purchased_at_ms: at.getTime(),
+      expiration_at_ms: nextExpiry.getTime(),
+      environment: "SANDBOX",
+    });
 
     // When
     await useCase.receive(body);
@@ -280,14 +280,14 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   });
 
   function initialPurchase(appUserId = userId) {
-    return SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(appUserId)
-      .withOriginalTransactionId("new-subscription-chain")
-      .withTransactionId("new-subscription-chain")
-      .withEventId("initial-purchase-event")
-      .withPurchasedAtMs(at.getTime())
-      .withExpirationAtMs(nextExpiry.getTime())
-      .build();
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: appUserId,
+      original_transaction_id: "new-subscription-chain",
+      transaction_id: "new-subscription-chain",
+      id: "initial-purchase-event",
+      purchased_at_ms: at.getTime(),
+      expiration_at_ms: nextExpiry.getTime(),
+    });
   }
 
   async function holdUserLock() {
@@ -521,45 +521,49 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   }
 
   it.each([
-    { name: "만료", builder: SubscriptionEventBuilder.expiration },
-    { name: "환불", builder: SubscriptionEventBuilder.refundCancellation },
-  ])("과거 체인의 $name 이벤트는 다른 최신 활성 체인의 권한을 보존한다", async ({ builder }) => {
-    // Given
-    await givenActiveUserProjection();
-    await givenOtherSubscription();
-    expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
-    const body = builder()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(transactionId)
-      .withTransactionId(transactionId)
-      .withEventId("old-chain-negative-event")
-      .withExpirationAtMs(previousExpiry.getTime())
-      .build();
+    { name: "만료", type: "EXPIRATION", cancelReason: undefined },
+    { name: "환불", type: "CANCELLATION", cancelReason: "CUSTOMER_SUPPORT" },
+  ])(
+    "과거 체인의 $name 이벤트는 다른 최신 활성 체인의 권한을 보존한다",
+    async ({ type, cancelReason }) => {
+      // Given
+      await givenActiveUserProjection();
+      await givenOtherSubscription();
+      expect(await entitlement.can(UserId.reconstitute(userId), "AI_REPORT")).toBe(true);
+      const body = createSubscriptionEventFixture(type, {
+        ...(cancelReason === undefined ? {} : { cancel_reason: cancelReason }),
+        app_user_id: userId,
+        original_transaction_id: transactionId,
+        transaction_id: transactionId,
+        id: "old-chain-negative-event",
+        expiration_at_ms: previousExpiry.getTime(),
+      });
 
-    // When
-    await useCase.receive(body);
+      // When
+      await useCase.receive(body);
 
-    // Then
-    expect(
-      await repository.findByStoreSubscriptionId(StoreSubscriptionId.create(transactionId)),
-    ).toMatchObject({ status: "EXPIRED" });
-    expect(
-      await repository.findByStoreSubscriptionId(
-        StoreSubscriptionId.create("other-subscription-chain"),
-      ),
-    ).toSatisfy(
-      (subscription: Subscription | null) =>
-        subscription?.status === "ACTIVE" &&
-        subscription.expiresAt.epochMilliseconds === nextExpiry.getTime(),
-    );
-    expect(await snapshot()).toMatchObject({
-      userStatus: "ACTIVE",
-      userExpiry: nextExpiry.toISOString(),
-      premiumAccess: true,
-    });
-    expect(events).toHaveLength(1);
-    expect(failures).toEqual([]);
-  });
+      // Then
+      expect(
+        await repository.findByStoreSubscriptionId(StoreSubscriptionId.create(transactionId)),
+      ).toMatchObject({ status: "EXPIRED" });
+      expect(
+        await repository.findByStoreSubscriptionId(
+          StoreSubscriptionId.create("other-subscription-chain"),
+        ),
+      ).toSatisfy(
+        (subscription: Subscription | null) =>
+          subscription?.status === "ACTIVE" &&
+          subscription.expiresAt.epochMilliseconds === nextExpiry.getTime(),
+      );
+      expect(await snapshot()).toMatchObject({
+        userStatus: "ACTIVE",
+        userExpiry: nextExpiry.toISOString(),
+        premiumAccess: true,
+      });
+      expect(events).toHaveLength(1);
+      expect(failures).toEqual([]);
+    },
+  );
 
   it("다른 활성 체인의 만료일이 더 짧으면 사용자 권한도 그 기간으로 제한한다", async () => {
     // Given
@@ -626,7 +630,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       status: "ACTIVE",
       expiresAt: new Date(at.getTime() - STORE_RENEWAL_GRACE_MS),
     });
-    const foreignUser = UserFixture.create({
+    const foreignUser = createUserRowFixture({
       id: createEntityId(),
       email: "foreign-billing@example.com",
       userTag: "BILLF001",
@@ -708,7 +712,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       // Given
       await updateUserProjection(userId, { subscriptionStatus, subscriptionExpiresAt: nextExpiry });
       await givenOtherSubscription();
-      const receiver = UserFixture.create({
+      const receiver = createUserRowFixture({
         id: createEntityId(),
         email: `transfer-receiver-${subscriptionStatus.toLowerCase()}@example.com`,
         userTag: `BILLT${subscriptionStatus.slice(0, 3)}`,

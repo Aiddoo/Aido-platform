@@ -4,9 +4,13 @@ import request from "supertest";
 
 import { todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 import { releasedTodoSchema } from "../fixtures/released-todo-response.schema.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -11,6 +11,11 @@ import {
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
+import {
+  StubAccountLifecycleCache,
+  StubAccountPasswordVerifier,
+} from "#test/doubles/identity/stub-account-lifecycle";
+import { StubSessionPushDeviceReleaser } from "#test/doubles/identity/stub-auth-session";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -21,11 +26,6 @@ import {
   createSessionFixture,
   createUserFixture,
 } from "#test/fixtures/identity/session.fixture";
-import {
-  StubAccountLifecycleCache,
-  StubAccountPasswordVerifier,
-} from "#test/mocks/ports/account-lifecycle.stub";
-import { StubSessionPushDeviceReleaser } from "#test/mocks/ports/auth-session.stub";
 
 import { type AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";

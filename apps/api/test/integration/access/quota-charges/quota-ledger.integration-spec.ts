@@ -21,7 +21,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -68,7 +68,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(newMonthAt);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "quota-ledger@example.com",
       userTag: "QUOTLD01",
@@ -430,7 +430,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
 
     it("한 사용자의 잠금 대기는 다른 사용자의 예약을 막지 않는다", async () => {
       // Given
-      const other = UserFixture.create({
+      const other = createUserRowFixture({
         id: createEntityId(),
         email: "other-ledger@example.com",
         userTag: "QUOTLD02",

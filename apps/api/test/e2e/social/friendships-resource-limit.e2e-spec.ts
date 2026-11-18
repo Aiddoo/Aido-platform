@@ -16,9 +16,13 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import { featureGrant, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 import type { VerifiedUser } from "../helpers/e2e-helpers.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const FREE_LIMIT = PLAN_CATALOG.FRIEND.free;
 

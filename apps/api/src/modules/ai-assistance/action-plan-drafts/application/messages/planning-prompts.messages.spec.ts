@@ -1,7 +1,11 @@
 import { ACTION_PLAN_LIMITS, SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 
 import { AI_TASK_OUTPUT_SCHEMAS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-task-output.wire";
-import { exampleOutputs, readPromptBlock, topLevelTags } from "#test/fixtures/ai-prompt.fixture";
+import {
+  exampleOutputs,
+  readPromptBlock,
+  topLevelTags,
+} from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { QUICK_PLAN_SYSTEM_EN } from "./locales/en/quick-plan-system.messages.js";
 import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "./locales/en/voice-note-digest-system.messages.js";

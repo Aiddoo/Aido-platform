@@ -4,7 +4,7 @@ import { HttpClient } from "@nestjs/http-client";
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
-import { forecastTimingFixture } from "#test/fixtures/weather.fixture";
+import { createForecastTimingFixture } from "#test/fixtures/weather/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
@@ -113,7 +113,7 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
       // When
       const outcome = adapter.getForecast(
         GridCoordinate.create(60, 127),
-        forecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
+        createForecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
       );
 
       // Then
@@ -132,7 +132,7 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
     // When
     const outcome = adapter.getForecast(
       GridCoordinate.create(60, 127),
-      forecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
+      createForecastTimingFixture(Temporal.Instant.from("2026-07-23T00:00:00Z")),
     );
 
     // Then

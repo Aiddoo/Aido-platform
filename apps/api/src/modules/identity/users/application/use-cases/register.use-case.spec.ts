@@ -6,7 +6,7 @@ import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 import { VerificationLogEvent } from "../../../verifications/application/verifications.log-events.js";
 import { RegisterUseCase } from "./register.use-case.js";

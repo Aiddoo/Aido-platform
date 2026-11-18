@@ -19,7 +19,8 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -80,7 +81,7 @@ describe("시간대 재계산 규모 측정", () => {
       );
       await jobQueue.start();
       try {
-        const user = UserFixture.create({
+        const user = createUserRowFixture({
           id: createEntityId(),
           email: `scale-${createEntityId()}@example.com`,
           userTag: createEntityId().slice(-8).toUpperCase(),
@@ -89,7 +90,7 @@ describe("시간대 재계산 규모 측정", () => {
         await client.insert(userPreference).values({ userId: user.id, timezone: NEW_YORK });
         const [category] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId: user.id, sortOrder: 0 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId: user.id, sortOrder: 0 }), ["id"]))
           .returning();
         const seriesIds = Array.from({ length: seriesCount }, () => createEntityId());
         await client.execute(sql`
@@ -109,7 +110,7 @@ describe("시간대 재계산 규모 측정", () => {
           n % 10 <> 0, CASE WHEN n % 10 <> 0 THEN now() END, now()
         FROM generate_series(1, ${historyRows}) AS n`);
         for (let index = 0; index < otherUsers; index += 1) {
-          const other = UserFixture.create({
+          const other = createUserRowFixture({
             id: createEntityId(),
             email: `other-${createEntityId()}@example.com`,
             userTag: createEntityId().slice(-8).toUpperCase(),
@@ -117,7 +118,7 @@ describe("시간대 재계산 규모 측정", () => {
           await client.insert(userTable).values(other);
           const [otherCategory] = await client
             .insert(todoCategory)
-            .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
+            .values(omit(createTodoCategoryRowFixture({ userId: other.id, sortOrder: 0 }), ["id"]))
             .returning();
           await client.execute(sql`
           INSERT INTO "Todo" ("userId", "categoryId", "title", "startDate", "scheduledLocalTime", "scheduledTime", "isAllDay", "completed", "updatedAt")

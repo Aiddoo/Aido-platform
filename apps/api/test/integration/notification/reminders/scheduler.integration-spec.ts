@@ -26,7 +26,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {

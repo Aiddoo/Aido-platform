@@ -7,10 +7,13 @@ import request from "supertest";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { VoiceDigestRateLimits } from "#api/modules/voice/voice-digests/presentation/http/voice-digests.rate-limits";
 import { user } from "#api/platform/database/schema/index";
-import { digestDraft } from "#test/fixtures/voice-plan.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { digestDraft } from "#test/fixtures/voice/voice-plan.fixture";
 
 const { maxCharacters } = PLAN_CATALOG.VOICE_NOTE.perUse;
 

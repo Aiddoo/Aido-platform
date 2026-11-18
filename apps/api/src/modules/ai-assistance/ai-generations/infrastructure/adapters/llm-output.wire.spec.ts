@@ -2,7 +2,7 @@ import { zodSchema } from "ai";
 import { isPlainObject, mapValues } from "es-toolkit";
 import { z } from "zod";
 
-import { exampleOutputs } from "#test/fixtures/ai-prompt.fixture";
+import { exampleOutputs } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { QUICK_PLAN_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/locales/en/quick-plan-system.messages.js";
 import { VOICE_NOTE_DIGEST_SYSTEM_EN } from "../../../action-plan-drafts/application/messages/locales/en/voice-note-digest-system.messages.js";

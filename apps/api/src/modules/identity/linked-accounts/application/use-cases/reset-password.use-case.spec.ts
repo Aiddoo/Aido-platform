@@ -7,7 +7,7 @@ import {
   AUTH_CREDENTIAL_NOW,
   AUTH_CREDENTIAL_PASSWORD,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import { createSessionFixture, createUserFixture } from "#test/fixtures/identity/session.fixture";
 

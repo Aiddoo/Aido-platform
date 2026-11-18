@@ -41,14 +41,16 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
-  CheerFixture,
-  FollowFixture,
-  NudgeFixture,
-  TodoCategoryFixture,
-  TodoFixture,
-  UserFixture,
-} from "#test/fixtures/index";
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import {
+  createCheerRowFixture,
+  createFriendshipRowFixture,
+  createNudgeRowFixture,
+} from "#test/fixtures/social/social-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -77,8 +79,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     await database.cleanup();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(BLOCK_TIME);
-    const me = UserFixture.create();
-    const other = UserFixture.create();
+    const me = createUserRowFixture();
+    const other = createUserRowFixture();
     await client.insert(user).values([
       { ...me, status: "ACTIVE" },
       { ...other, status: "ACTIVE" },
@@ -235,7 +237,7 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // Given
     await client
       .insert(friendshipTable)
-      .values(FollowFixture.create({ followerId: otherId, followingId: meId }));
+      .values(createFriendshipRowFixture({ followerId: otherId, followingId: meId }));
 
     // When
     const [acceptance, block] = await compete(
@@ -277,8 +279,8 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     await client
       .insert(friendshipTable)
       .values([
-        FollowFixture.create({ followerId: meId, followingId: otherId, status: "ACCEPTED" }),
-        FollowFixture.create({ followerId: otherId, followingId: meId, status: "ACCEPTED" }),
+        createFriendshipRowFixture({ followerId: meId, followingId: otherId, status: "ACCEPTED" }),
+        createFriendshipRowFixture({ followerId: otherId, followingId: meId, status: "ACCEPTED" }),
       ]);
 
     // When
@@ -315,20 +317,20 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // Given
     const [category] = await client
       .insert(todoCategory)
-      .values(TodoCategoryFixture.create({ userId: meId, sortOrder: 0 }))
+      .values(createTodoCategoryRowFixture({ userId: meId, sortOrder: 0 }))
       .returning();
     const categoryId = requireRecord(category).id;
     const [createdTodo] = await client
       .insert(todo)
-      .values(omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoRowFixture({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
       .returning();
     const todoId = requireRecord(createdTodo).id;
     await client
       .insert(nudge)
-      .values(omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId }), ["id"]));
+      .values(omit(createNudgeRowFixture({ senderId: otherId, receiverId: meId, todoId }), ["id"]));
     await client
       .insert(cheer)
-      .values(omit(CheerFixture.create({ senderId: meId, receiverId: otherId }), ["id"]));
+      .values(omit(createCheerRowFixture({ senderId: meId, receiverId: otherId }), ["id"]));
     await blockUser.execute({ blockerId: meId, blockedId: otherId });
 
     // When
@@ -376,17 +378,17 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
     // Given
     const [category] = await client
       .insert(todoCategory)
-      .values(TodoCategoryFixture.create({ userId: meId, sortOrder: 0 }))
+      .values(createTodoCategoryRowFixture({ userId: meId, sortOrder: 0 }))
       .returning();
     const categoryId = requireRecord(category).id;
     const [createdTodo] = await client
       .insert(todo)
-      .values(omit(TodoFixture.create({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoRowFixture({ userId: meId, categoryId, sortOrder: 0 }), ["id"]))
       .returning();
     const todoId = requireRecord(createdTodo).id;
     const [createdNudge] = await client
       .insert(nudge)
-      .values(omit(NudgeFixture.create({ senderId: otherId, receiverId: meId, todoId }), ["id"]))
+      .values(omit(createNudgeRowFixture({ senderId: otherId, receiverId: meId, todoId }), ["id"]))
       .returning();
     const nudgeId = requireRecord(createdNudge).id;
     const [receivedBeforeBlock, sentBeforeBlock] = await Promise.all([

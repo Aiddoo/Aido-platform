@@ -42,7 +42,12 @@ import {
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture, TodoFixture, TodoCategoryFixture, FollowFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { createFriendshipRowFixture } from "#test/fixtures/social/social-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -95,14 +100,14 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const owner = UserFixture.create();
-    const author = UserFixture.create();
+    const owner = createUserRowFixture();
+    const author = createUserRowFixture();
     await client.insert(userTable).values([owner, author]);
     userId = owner.id;
     authorId = author.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning({ id: todoCategory.id });
     if (category === undefined) {
       throw new Error("category fixture missing");
@@ -111,7 +116,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId,
             categoryId: category.id,
             visibility: "PUBLIC",
@@ -450,12 +455,18 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   it("다른 작성기와 unique 경합한 뒤 권한이 사라지면 저장된 댓글을 다시 보내도 거부한다", async () => {
     // Given
     await client.update(todo).set({ visibility: "PRIVATE" }).where(eq(todo.id, todoId));
-    await client
-      .insert(friendshipTable)
-      .values([
-        FollowFixture.create({ followerId: userId, followingId: authorId, status: "ACCEPTED" }),
-        FollowFixture.create({ followerId: authorId, followingId: userId, status: "ACCEPTED" }),
-      ]);
+    await client.insert(friendshipTable).values([
+      createFriendshipRowFixture({
+        followerId: userId,
+        followingId: authorId,
+        status: "ACCEPTED",
+      }),
+      createFriendshipRowFixture({
+        followerId: authorId,
+        followingId: userId,
+        status: "ACCEPTED",
+      }),
+    ]);
     const outside = new DrizzleTodoCommentRepository(
       createDatabaseTransactionFixture(client).transactionHost,
     );

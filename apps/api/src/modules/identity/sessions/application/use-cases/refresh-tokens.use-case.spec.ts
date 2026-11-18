@@ -10,6 +10,11 @@ import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constan
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
+import {
+  StubSessionCache,
+  StubTokenIssuer,
+  StubSessionPushDeviceReleaser,
+} from "#test/doubles/identity/stub-auth-session";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -20,11 +25,6 @@ import {
   createSessionFixture,
   createUserFixture,
 } from "#test/fixtures/identity/session.fixture";
-import {
-  StubSessionCache,
-  StubTokenIssuer,
-  StubSessionPushDeviceReleaser,
-} from "#test/mocks/ports/auth-session.stub";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";

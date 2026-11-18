@@ -10,10 +10,16 @@ import request from "supertest";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { user } from "#api/platform/database/schema/index";
-import { memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
-import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createAiGenerationError,
+  FakeAiGenerator,
+} from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { memoActionDraft, todoActionDraft } from "#test/fixtures/voice/voice-plan.fixture";
 
 describe("빠른 계획·계획 적용 E2E", () => {
   let testContext: E2eTestContext;

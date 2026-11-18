@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 import { UpdateProfileUseCase } from "./update-profile.use-case.js";
 

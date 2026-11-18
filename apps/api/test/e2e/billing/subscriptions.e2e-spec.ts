@@ -11,9 +11,12 @@ import { UserProfileInvalidatorPort } from "#api/modules/identity/users/applicat
 import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 
 const webhookSecret = "subscription-e2e-webhook-secret";
 const at = new Date("2027-01-04T12:00:00.000Z");
@@ -58,13 +61,13 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
   }
 
   function purchase(userId: string, transactionId: string, expiresAt = futureExpiry) {
-    return SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(transactionId)
-      .withEventId(`${transactionId}-purchase`)
-      .withPurchasedAtMs(pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1000)
-      .withExpirationAtMs(expiresAt.getTime())
-      .build();
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      original_transaction_id: transactionId,
+      id: `${transactionId}-purchase`,
+      purchased_at_ms: pastExpiry.getTime() - 30 * 24 * 60 * 60 * 1000,
+      expiration_at_ms: expiresAt.getTime(),
+    });
   }
 
   function currentUser(accessToken: string) {
@@ -120,19 +123,19 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     );
     const transactionId = "billing-replay";
     await webhook(purchase(user.userId, transactionId, pastExpiry)).expect(200);
-    const expiration = SubscriptionEventBuilder.expiration()
-      .withAppUserId(user.userId)
-      .withOriginalTransactionId(transactionId)
-      .withEventId("billing-replay-expiration")
-      .withExpirationAtMs(pastExpiry.getTime())
-      .build();
+    const expiration = createSubscriptionEventFixture("EXPIRATION", {
+      app_user_id: user.userId,
+      original_transaction_id: transactionId,
+      id: "billing-replay-expiration",
+      expiration_at_ms: pastExpiry.getTime(),
+    });
     await webhook(expiration).expect(200);
-    const renewal = SubscriptionEventBuilder.renewal()
-      .withAppUserId(user.userId)
-      .withOriginalTransactionId(transactionId)
-      .withEventId("billing-replay-renewal")
-      .withExpirationAtMs(futureExpiry.getTime())
-      .build();
+    const renewal = createSubscriptionEventFixture("RENEWAL", {
+      app_user_id: user.userId,
+      original_transaction_id: transactionId,
+      id: "billing-replay-renewal",
+      expiration_at_ms: futureExpiry.getTime(),
+    });
     await webhook(renewal).expect(200);
     await currentUser(user.accessToken).expect(200);
     await premiumPreference(user.accessToken).expect(200);
@@ -170,16 +173,20 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       await webhook(purchase(user.userId, "billing-current-chain")).expect(200);
       await currentUser(user.accessToken).expect(200);
       await premiumPreference(user.accessToken).expect(200);
-      const builder =
+      const basePayload =
         type === "EXPIRATION"
-          ? SubscriptionEventBuilder.expiration()
-          : SubscriptionEventBuilder.refundCancellation();
-      const payload = builder
-        .withAppUserId(user.userId)
-        .withOriginalTransactionId("billing-old-chain")
-        .withEventId(`billing-other-chain-${type}`)
-        .withExpirationAtMs(pastExpiry.getTime())
-        .build();
+          ? createSubscriptionEventFixture("EXPIRATION")
+          : createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" });
+      const payload = {
+        ...basePayload,
+        event: {
+          ...basePayload.event,
+          app_user_id: user.userId,
+          original_transaction_id: "billing-old-chain",
+          id: `billing-other-chain-${type}`,
+          expiration_at_ms: pastExpiry.getTime(),
+        },
+      };
 
       // When
       await webhook(payload).expect(200);
@@ -207,12 +214,12 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     );
     const transactionId = "billing-refund";
     await webhook(purchase(user.userId, transactionId)).expect(200);
-    const cancellation = SubscriptionEventBuilder.cancellation()
-      .withAppUserId(user.userId)
-      .withOriginalTransactionId(transactionId)
-      .withEventId("billing-refund-cancel")
-      .withExpirationAtMs(futureExpiry.getTime())
-      .build();
+    const cancellation = createSubscriptionEventFixture("CANCELLATION", {
+      app_user_id: user.userId,
+      original_transaction_id: transactionId,
+      id: "billing-refund-cancel",
+      expiration_at_ms: futureExpiry.getTime(),
+    });
     await webhook(cancellation).expect(200);
     expect((await currentUser(user.accessToken).expect(200)).body.data.subscriptionStatus).toBe(
       "ACTIVE",
@@ -401,22 +408,24 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     const user = await context.helpers.createVerifiedUser("billing-trial@example.com", "Test1234!");
     const trialEndsAt = new Date("2027-02-04T00:00:00.000Z");
     const nextYear = new Date("2028-02-28T00:00:00.000Z");
-    const trial = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(user.userId)
-      .withOriginalTransactionId("billing-trial")
-      .withEventId("billing-trial-start")
-      .withPeriodType("TRIAL")
-      .withPrice(0)
-      .withPurchasedAtMs(at.getTime())
-      .withExpirationAtMs(trialEndsAt.getTime())
-      .build();
-    const conversion = SubscriptionEventBuilder.renewal()
-      .withAppUserId(user.userId)
-      .withOriginalTransactionId("billing-trial")
-      .withEventId("billing-trial-convert")
-      .withTrialConversion()
-      .withExpirationAtMs(nextYear.getTime())
-      .build();
+    const trial = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: user.userId,
+      original_transaction_id: "billing-trial",
+      id: "billing-trial-start",
+      period_type: "TRIAL",
+      price: 0,
+      currency: "KRW",
+      purchased_at_ms: at.getTime(),
+      expiration_at_ms: trialEndsAt.getTime(),
+    });
+    const conversion = createSubscriptionEventFixture("RENEWAL", {
+      app_user_id: user.userId,
+      original_transaction_id: "billing-trial",
+      id: "billing-trial-convert",
+      is_trial_conversion: true,
+      period_type: "NORMAL",
+      expiration_at_ms: nextYear.getTime(),
+    });
 
     // When
     const before = currentUserSchema.parse(
@@ -457,14 +466,14 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
         "billing-plan@example.com",
         "Test1234!",
       );
-      const purchased = SubscriptionEventBuilder.initialPurchase()
-        .withAppUserId(user.userId)
-        .withOriginalTransactionId("billing-plan")
-        .withEventId("billing-plan-purchase")
-        .withProductId(productId)
-        .withPurchasedAtMs(at.getTime())
-        .withExpirationAtMs(futureExpiry.getTime())
-        .build();
+      const purchased = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+        app_user_id: user.userId,
+        original_transaction_id: "billing-plan",
+        id: "billing-plan-purchase",
+        product_id: productId,
+        purchased_at_ms: at.getTime(),
+        expiration_at_ms: futureExpiry.getTime(),
+      });
 
       // When
       const before = currentUserSchema.parse(

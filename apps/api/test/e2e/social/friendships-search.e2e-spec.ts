@@ -18,7 +18,11 @@
 
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("사용자 검색 E2E", () => {
   let testContext: E2eTestContext;

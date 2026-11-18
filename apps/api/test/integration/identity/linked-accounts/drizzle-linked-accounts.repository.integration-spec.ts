@@ -5,7 +5,7 @@ import {
   AUTH_FIXTURE_OTHER_USER_ID,
   AUTH_FIXTURE_USER_ID,
 } from "#test/fixtures/identity/session.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -21,12 +21,12 @@ describe("DrizzleLinkedAccountsRepository (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({
+      createUserRowFixture({
         id: AUTH_FIXTURE_USER_ID,
         email: "owner@example.com",
         userTag: "AUTHOWN1",
       }),
-      UserFixture.create({
+      createUserRowFixture({
         id: AUTH_FIXTURE_OTHER_USER_ID,
         email: "other@example.com",
         userTag: "AUTHOTH1",

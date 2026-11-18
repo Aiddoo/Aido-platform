@@ -2,7 +2,7 @@ import { DrizzleAdminUserDirectoryReader } from "#api/modules/operations/broadca
 import { pushToken, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -22,20 +22,19 @@ describe("DrizzleAdminUserDirectoryReader — 브로드캐스트 대상 (실제 
   afterAll(async () => database?.stop());
   beforeEach(async () => {
     await database.cleanup();
-    UserFixture.reset();
   });
 
   it("500명 경계를 넘는 전체 대상은 cursor로 활성 사용자만 ID 순서대로 누락과 중복 없이 나눈다", async () => {
     // Given
     const activeUsers = Array.from({ length: 501 }, (_, index) =>
-      UserFixture.create({ id: `active-${String(index).padStart(4, "0")}` }),
+      createUserRowFixture({ id: `active-${String(index).padStart(4, "0")}` }),
     );
     await client
       .insert(user)
       .values([
         ...activeUsers,
-        UserFixture.create({ status: "SUSPENDED" }),
-        UserFixture.create({ deletedAt: END }),
+        createUserRowFixture({ status: "SUSPENDED" }),
+        createUserRowFixture({ deletedAt: END }),
       ]);
 
     // When
@@ -61,9 +60,9 @@ describe("DrizzleAdminUserDirectoryReader — 브로드캐스트 대상 (실제 
 
   it("지정 발송은 기존 상태 필터를 바꾸지 않고 삭제되거나 없는 사용자만 제외한다", async () => {
     // Given
-    const active = UserFixture.create();
-    const suspended = UserFixture.create({ status: "SUSPENDED" });
-    const deleted = UserFixture.create({ deletedAt: END });
+    const active = createUserRowFixture();
+    const suspended = createUserRowFixture({ status: "SUSPENDED" });
+    const deleted = createUserRowFixture({ deletedAt: END });
     await client.insert(user).values([active, suspended, deleted]);
 
     // When
@@ -81,9 +80,9 @@ describe("DrizzleAdminUserDirectoryReader — 브로드캐스트 대상 (실제 
 
   it("푸시 토큰 대상은 토큰이 있는 활성 사용자만 세고 고른다", async () => {
     // Given
-    const withToken = UserFixture.create({ id: "token-user" });
-    const withoutToken = UserFixture.create({ id: "no-token-user" });
-    const suspendedWithToken = UserFixture.create({ id: "suspended-user", status: "SUSPENDED" });
+    const withToken = createUserRowFixture({ id: "token-user" });
+    const withoutToken = createUserRowFixture({ id: "no-token-user" });
+    const suspendedWithToken = createUserRowFixture({ id: "suspended-user", status: "SUSPENDED" });
     await client.insert(user).values([withToken, withoutToken, suspendedWithToken]);
     await client.insert(pushToken).values(
       [withToken, suspendedWithToken].map(({ id }) => ({
@@ -111,8 +110,8 @@ describe("DrizzleAdminUserDirectoryReader — 브로드캐스트 대상 (실제 
   it("최근 7일 활동 대상은 기준 시각 7일 전 이후에 로그인한 사용자다", async () => {
     // Given
     await client.insert(user).values([
-      UserFixture.create({ id: "recent-user", lastLoginAt: END.subtract({ hours: 7 * 24 }) }),
-      UserFixture.create({
+      createUserRowFixture({ id: "recent-user", lastLoginAt: END.subtract({ hours: 7 * 24 }) }),
+      createUserRowFixture({
         id: "stale-user",
         lastLoginAt: END.subtract({ hours: 7 * 24, milliseconds: 1 }),
       }),

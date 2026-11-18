@@ -29,8 +29,9 @@ import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { countTodoRows, insertCategoryTodos } from "#test/fixtures/planning/category-todos.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -106,7 +107,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
   });
 
   async function insertUser(label: string): Promise<string> {
-    const created = UserFixture.create({
+    const created = createUserRowFixture({
       id: createEntityId(),
       email: `${label}-${createEntityId()}@example.com`,
       userTag: createEntityId().slice(-8).toUpperCase(),
@@ -120,7 +121,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       .insert(todoCategory)
       .values(
         Array.from({ length: count }, (_, sortOrder) =>
-          omit(TodoCategoryFixture.create({ userId, sortOrder }), ["id"]),
+          omit(createTodoCategoryRowFixture({ userId, sortOrder }), ["id"]),
         ),
       )
       .returning({ id: todoCategory.id });

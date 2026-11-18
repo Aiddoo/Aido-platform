@@ -2,15 +2,15 @@ import { Logger } from "@nestjs/common";
 import type { MockInstance } from "vitest";
 
 import {
-  createReportAiResponse,
-  createTodoDraftResponse,
-} from "#test/fixtures/ai-response.fixture";
-import {
   aiProviderErrorResponse,
   captureProviderError,
   createAiTestConfig,
   createAiSdkGenerator,
-} from "#test/mocks/ai-provider-http.stub";
+} from "#test/doubles/ai-assistance/stub-ai-provider-http";
+import {
+  createReportAiResponse,
+  createTodoDraftResponse,
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import { AiGenerationError } from "../../application/ai-generations.errors.js";
 import type { AiGenerationRequest, AiTaskId } from "../../application/ports/ai-generator.port.js";

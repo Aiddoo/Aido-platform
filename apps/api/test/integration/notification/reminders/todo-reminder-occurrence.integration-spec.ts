@@ -58,8 +58,17 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoSeriesOwnerDormancy } from "#test/doubles/notification/stub-todo-series-owner-dormancy";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import {
+  nowInstant,
+  shiftDateKey,
+  todayIn,
+  wallClockInstant,
+} from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -226,7 +235,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     await client.execute(
       sql.raw(`DELETE FROM ${SCHEMA}.job WHERE name = '${TODO_REMINDER_QUEUE}'`),
     );
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "occurrence@example.com",
       userTag: "OCCUR001",
@@ -236,7 +245,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     await client.insert(userPreference).values({ userId, timezone: SEOUL });
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
     today = todayIn(SEOUL).toString();
@@ -258,7 +267,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: time,
         scheduledTime,

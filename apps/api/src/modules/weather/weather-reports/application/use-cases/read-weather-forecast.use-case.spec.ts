@@ -5,7 +5,10 @@ import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache
 import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
-import { forecastTimingFixture, weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import {
+  createForecastTimingFixture,
+  createWeatherForecastFixture,
+} from "#test/fixtures/weather/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
@@ -43,8 +46,8 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
     // Given
     const { cache, weatherProvider, useCase } = setup(target);
-    const cached = weatherForecastFixture({ temperatureMax: 17 });
-    await cache.getOrLoadForecast(SEOUL, forecastTimingFixture(target), async () => cached);
+    const cached = createWeatherForecastFixture({ temperatureMax: 17 });
+    await cache.getOrLoadForecast(SEOUL, createForecastTimingFixture(target), async () => cached);
 
     // When
     const result = await useCase.execute({ grid: SEOUL, target });
@@ -64,7 +67,7 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
 
     // Then
     expect(second).toEqual(first);
-    expect(await cache.findForecast(SEOUL, forecastTimingFixture(target))).toEqual(first);
+    expect(await cache.findForecast(SEOUL, createForecastTimingFixture(target))).toEqual(first);
     expect(await cache.findLatestForecast(SEOUL)).toEqual(first);
     expect(weatherProvider.calls).toHaveLength(1);
   });
@@ -72,8 +75,8 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
   it("공급자 실패 시 이전 발표 latest를 반환한다", async () => {
     // Given
     const { cache, weatherProvider, useCase } = setup(target);
-    const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.getOrLoadForecast(SEOUL, forecastTimingFixture(previous), async () => saved);
+    const saved = createWeatherForecastFixture({ date: previous, temperatureMax: 18 });
+    await cache.getOrLoadForecast(SEOUL, createForecastTimingFixture(previous), async () => saved);
     weatherProvider.failure = new Error("provider down");
 
     // When
@@ -104,8 +107,8 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
   it("실패한 격자는 1분 동안 공급자를 부르지 않고 latest로 넘어가고 1분 뒤 다시 부른다", async () => {
     // Given
     const { cache, weatherProvider, useCase } = setup(target);
-    const saved = weatherForecastFixture({ date: previous, temperatureMax: 18 });
-    await cache.getOrLoadForecast(SEOUL, forecastTimingFixture(previous), async () => saved);
+    const saved = createWeatherForecastFixture({ date: previous, temperatureMax: 18 });
+    await cache.getOrLoadForecast(SEOUL, createForecastTimingFixture(previous), async () => saved);
     weatherProvider.failure = new Error("provider down");
     await useCase.execute({ grid: SEOUL, target });
 

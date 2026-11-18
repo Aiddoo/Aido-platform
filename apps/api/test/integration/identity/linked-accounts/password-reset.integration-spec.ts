@@ -11,11 +11,12 @@ import { RegisterUseCase } from "#api/modules/identity/users/application/use-cas
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { securityLog, session as sessionTable } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
-import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import { createLinkedAccountRowFixture } from "#test/fixtures/identity/linked-account-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-import { FakeEmailService } from "../../../mocks/fake-email.service.js";
 import { TestDatabase } from "../../../setup/test-database.js";
 import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
 
@@ -26,13 +27,13 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
   let requestPasswordReset: RequestPasswordResetUseCase;
   let resetPassword: ResetPasswordUseCase;
   let loginWithPassword: LoginWithPasswordUseCase;
-  let fakeEmailService: FakeEmailService;
+  let fakeEmailService: FakeEmailSender;
   let testDb: TestDatabase;
 
   beforeAll(async () => {
     testDb = new TestDatabase();
     await testDb.start();
-    fakeEmailService = new FakeEmailService();
+    fakeEmailService = new FakeEmailSender();
 
     module = await createAuthTestModule(testDb.getClient(), fakeEmailService);
     register = module.get(RegisterUseCase);
@@ -72,11 +73,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     email: string,
     provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
   ): Promise<string> {
-    const userFixture = UserFixture.create({ email });
+    const userFixture = createUserRowFixture({ email });
     const user = await createUserDatabaseFixture(testDb.getClient(), userFixture, {
       accounts: [
         omit(
-          AccountFixture.create({
+          createLinkedAccountRowFixture({
             userId: userFixture.id,
             provider,
             providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,

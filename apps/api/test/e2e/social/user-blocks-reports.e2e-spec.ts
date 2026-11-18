@@ -10,13 +10,12 @@ import request from "supertest";
 
 import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable } from "#api/platform/database/schema/index";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "../helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 
 describe("사용자 차단·신고 E2E", () => {
   let testContext: E2eTestContext;

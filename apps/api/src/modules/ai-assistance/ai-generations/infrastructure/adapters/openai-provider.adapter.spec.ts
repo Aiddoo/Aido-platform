@@ -1,12 +1,12 @@
 import type { MockInstance } from "vitest";
 
-import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 import {
   aiProviderErrorResponse,
   captureProviderError,
   createAiTestConfig,
   createAiSdkGenerator,
-} from "#test/mocks/ai-provider-http.stub";
+} from "#test/doubles/ai-assistance/stub-ai-provider-http";
+import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import { OpenAiProviderAdapter } from "./openai-provider.adapter.js";
 

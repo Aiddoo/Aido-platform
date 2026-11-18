@@ -1,7 +1,7 @@
 import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
 import { user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -24,13 +24,13 @@ describe("DrizzleUserBriefReader (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({ id: ACTIVE_USER_ID, userTag: "BRIEF001" }),
-      UserFixture.create({
+      createUserRowFixture({ id: ACTIVE_USER_ID, userTag: "BRIEF001" }),
+      createUserRowFixture({
         id: DELETED_USER_ID,
         userTag: "BRIEF002",
         deletedAt: Temporal.Instant.from("2026-10-01T00:00:00Z"),
       }),
-      UserFixture.create({ id: LOCKED_USER_ID, userTag: "BRIEF003", status: "LOCKED" }),
+      createUserRowFixture({ id: LOCKED_USER_ID, userTag: "BRIEF003", status: "LOCKED" }),
     ]);
     await client
       .insert(userProfile)

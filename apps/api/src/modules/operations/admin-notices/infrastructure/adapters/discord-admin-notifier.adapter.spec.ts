@@ -3,7 +3,7 @@ import { HttpClient } from "@nestjs/http-client";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import {
   type AdminNotifierContractScenario,

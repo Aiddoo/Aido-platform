@@ -13,14 +13,15 @@ import {
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserPreferenceRowFixture } from "#test/fixtures/identity/user-preference-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -78,7 +79,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
   });
 
   async function givenUser(tag: string): Promise<string> {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `renewal-${tag.toLowerCase()}@example.com`,
       userTag: tag,
@@ -89,23 +90,27 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     await client.insert(userTable).values(user);
     await client
       .insert(userPreference)
-      .values(UserPreferenceBuilder.create(user.id).withTimezone("Europe/London").build());
+      .values(createUserPreferenceRowFixture({ userId: user.id, timezone: "Europe/London" }));
     return user.id;
   }
 
   function storeEvent(
     userId: string,
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     input: { chain: string; eventId: string; productId: string; expiresAt: Date },
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(input.chain)
-      .withTransactionId(input.chain)
-      .withEventId(input.eventId)
-      .withProductId(input.productId)
-      .withExpirationAtMs(input.expiresAt.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: input.chain,
+        transaction_id: input.chain,
+        id: input.eventId,
+        product_id: input.productId,
+        expiration_at_ms: input.expiresAt.getTime(),
+      },
+    };
   }
 
   async function givenPurchase(
@@ -116,7 +121,9 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     await webhook.receive(
       storeEvent(
         userId,
-        SubscriptionEventBuilder.initialPurchase().withPurchasedAtMs(startedAt.getTime()),
+        createSubscriptionEventFixture("INITIAL_PURCHASE", {
+          purchased_at_ms: startedAt.getTime(),
+        }),
         { chain, eventId: `purchase-${chain}`, productId, expiresAt },
       ),
     );
@@ -151,7 +158,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     ]);
     const repeated = await notifyUpcomingRenewals.execute({ now: instantFromDate(at) });
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.renewal(), {
+      storeEvent(userId, createSubscriptionEventFixture("RENEWAL"), {
         chain: `chain-${userId}`,
         eventId: "renew-2027",
         productId: YEARLY,
@@ -198,19 +205,23 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
 
     // When
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(MONTHLY), {
-        chain,
-        eventId: "change-to-monthly",
-        productId: YEARLY,
-        expiresAt: periodEndsAt,
-      }),
+      storeEvent(
+        userId,
+        createSubscriptionEventFixture("PRODUCT_CHANGE", { new_product_id: MONTHLY }),
+        {
+          chain,
+          eventId: "change-to-monthly",
+          productId: YEARLY,
+          expiresAt: periodEndsAt,
+        },
+      ),
     );
     const beforeRenewal = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
     const notified = await notifyUpcomingRenewals.execute({ now: instantFromDate(at) });
     const monthlyEndsAt = new Date(periodEndsAt.getTime() + 31 * DAY_MS);
     vi.setSystemTime(periodEndsAt);
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.renewal(), {
+      storeEvent(userId, createSubscriptionEventFixture("RENEWAL"), {
         chain,
         eventId: "renew-monthly",
         productId: MONTHLY,
@@ -239,18 +250,22 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
 
     // When
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(YEARLY), {
-        chain,
-        eventId: "change-to-yearly",
-        productId: MONTHLY,
-        expiresAt: periodEndsAt,
-      }),
+      storeEvent(
+        userId,
+        createSubscriptionEventFixture("PRODUCT_CHANGE", { new_product_id: YEARLY }),
+        {
+          chain,
+          eventId: "change-to-yearly",
+          productId: MONTHLY,
+          expiresAt: periodEndsAt,
+        },
+      ),
     );
     const notified = await notifyUpcomingRenewals.execute({ now: instantFromDate(at) });
     const beforeRenewal = await premiumAccess.getPremiumAccess(UserId.reconstitute(userId));
     vi.setSystemTime(periodEndsAt);
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.renewal(), {
+      storeEvent(userId, createSubscriptionEventFixture("RENEWAL"), {
         chain,
         eventId: "renew-yearly",
         productId: YEARLY,
@@ -318,7 +333,7 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
     await givenPurchase(userId, YEARLY);
     const chain = `chain-${userId}`;
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.renewal(), {
+      storeEvent(userId, createSubscriptionEventFixture("RENEWAL"), {
         chain,
         eventId: "renew-before-late-change",
         productId: YEARLY,
@@ -328,12 +343,16 @@ describe("연간 구독 갱신 7일 전 안내와 상품 변경 예약 (실제 P
 
     // When
     await webhook.receive(
-      storeEvent(userId, SubscriptionEventBuilder.productChange().withNewProductId(MONTHLY), {
-        chain,
-        eventId: "late-change",
-        productId: YEARLY,
-        expiresAt: periodEndsAt,
-      }),
+      storeEvent(
+        userId,
+        createSubscriptionEventFixture("PRODUCT_CHANGE", { new_product_id: MONTHLY }),
+        {
+          chain,
+          eventId: "late-change",
+          productId: YEARLY,
+          expiresAt: periodEndsAt,
+        },
+      ),
     );
 
     // Then

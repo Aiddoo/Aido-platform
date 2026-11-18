@@ -2,7 +2,7 @@ import { UserReportId } from "#api/modules/social/user-reports/domain/user-repor
 import { DrizzleUserReportRepository } from "#api/modules/social/user-reports/infrastructure/persistence/drizzle-user-report.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describeUserReportRepositoryContract } from "#test/contracts/social/user-report-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createUserReportFixture,
   USER_REPORT_FIXTURE_ADMIN_ID,
@@ -26,11 +26,11 @@ describe("DrizzleUserReportRepository (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({
+      createUserRowFixture({
         id: USER_REPORT_FIXTURE_REPORTER_ID,
         userTag: USER_REPORT_FIXTURE_REPORTER_TAG,
       }),
-      UserFixture.create({
+      createUserRowFixture({
         id: USER_REPORT_FIXTURE_TARGET_USER_ID,
         userTag: USER_REPORT_FIXTURE_TARGET_USER_TAG,
       }),

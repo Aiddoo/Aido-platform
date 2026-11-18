@@ -1,11 +1,11 @@
 import { AI_TASK_OUTPUT_SCHEMAS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-task-output.wire";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import {
   exampleOutputs,
   readExamples,
   readPromptBlock,
   topLevelTags,
-} from "#test/fixtures/ai-prompt.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
+} from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import {

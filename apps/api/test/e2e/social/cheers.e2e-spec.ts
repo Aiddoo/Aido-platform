@@ -17,9 +17,12 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import request from "supertest";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
-import { nowInstant, dayWindowIn } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { nowInstant, dayWindowIn } from "#test/fixtures/platform/clock.fixture";
 
 describe("응원 E2E", () => {
   let testContext: E2eTestContext;

@@ -16,8 +16,9 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 
 import {
   createE2eApp,
@@ -49,7 +50,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
       .getClient()
       .insert(user)
       .values(
-        UserFixture.create({
+        createUserRowFixture({
           id: userId,
           email: "planning-category-owner@example.com",
           userTag: "PLANCA01",
@@ -213,7 +214,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     const client = context.testDatabase.getClient();
     await client.insert(todo).values([
       omit(
-        TodoFixture.create({
+        createTodoRowFixture({
           userId,
           categoryId,
           completed: false,
@@ -224,7 +225,9 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
         ["id"],
       ),
       omit(
-        TodoFixture.createCompleted({
+        createTodoRowFixture({
+          completed: true,
+          completedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
           userId,
           categoryId,
           sortOrder: 1,

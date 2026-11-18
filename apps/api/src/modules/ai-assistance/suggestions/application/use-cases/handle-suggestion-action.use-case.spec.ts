@@ -4,6 +4,7 @@ import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-t
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -14,7 +15,6 @@ import {
   SUGGESTION_FIXTURE_USER_ID,
 } from "#test/fixtures/ai-assistance/suggestion.fixture";
 import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
 import type { SuggestionPrimitives } from "../../domain/suggestion.aggregate.js";
 import { HandleSuggestionActionUseCase } from "./handle-suggestion-action.use-case.js";

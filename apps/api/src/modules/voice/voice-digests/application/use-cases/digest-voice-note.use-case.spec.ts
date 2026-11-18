@@ -3,12 +3,16 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
-import { digestDraft, memoActionDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
 import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
-import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
+import {
+  digestDraft,
+  memoActionDraft,
+  todoActionDraft,
+} from "#test/fixtures/voice/voice-plan.fixture";
 
 import type { VoiceDigestResult } from "../ports/voice-digest-result-replay.port.js";
 import { DigestVoiceNoteUseCase } from "./digest-voice-note.use-case.js";

@@ -12,7 +12,7 @@ import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeNotificationRepositoryContract } from "#test/contracts/notification/notification-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createNotificationDraftFixture,
   NOTIFICATION_FIXTURE_ACTOR_ID,
@@ -36,9 +36,9 @@ describe("DrizzleNotificationRepository·Reader (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: NOTIFICATION_FIXTURE_USER_ID }),
-        UserFixture.create({ id: NOTIFICATION_FIXTURE_OTHER_USER_ID }),
-        UserFixture.create({ id: NOTIFICATION_FIXTURE_ACTOR_ID }),
+        createUserRowFixture({ id: NOTIFICATION_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: NOTIFICATION_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: NOTIFICATION_FIXTURE_ACTOR_ID }),
       ]);
   });
 

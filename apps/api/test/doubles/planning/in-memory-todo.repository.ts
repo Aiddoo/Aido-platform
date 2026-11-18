@@ -13,8 +13,10 @@ import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
 import { Todo } from "#api/modules/planning/todos/domain/todo.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TodoBuilder } from "#test/builders/index";
-import { type PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
+import {
+  type PlanningTodoRecord,
+  createPlanningTodoRecordFixture,
+} from "#test/fixtures/planning/todo-response.fixture";
 
 // Temporal 값은 바뀌지 않아 structuredClone 대신 행과 하위 항목만 복사한다
 export function copyTodoRecord(record: PlanningTodoRecord): PlanningTodoRecord {
@@ -84,7 +86,7 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   async insert(todo: Todo): Promise<void> {
     const primitives = todo.toPrimitives();
     this.records.set(primitives.id, {
-      ...TodoBuilder.create(primitives.userId).withId(primitives.id).build(),
+      ...createPlanningTodoRecordFixture({ userId: primitives.userId, id: primitives.id }),
       ...primitives,
       items: [],
     });

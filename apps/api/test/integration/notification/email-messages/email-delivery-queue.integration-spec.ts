@@ -18,10 +18,13 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import {
+  createResendResponseFixture,
+  StubResendHttp,
+} from "#test/doubles/notification/stub-resend-http";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
-import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
+import { InMemoryUsageMeterAdapter } from "#test/doubles/platform/in-memory-usage-meter.adapter";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
@@ -148,7 +151,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
   it("담긴 잡은 암호화되어 있고 worker가 풀어서 한 번 발송한 뒤 완료한다", async () => {
     // Given
-    http = new StubResendHttp([resendResponseFixture("send.success.json")]);
+    http = new StubResendHttp([createResendResponseFixture("send.success.json")]);
     vi.stubGlobal("fetch", http.fetch);
 
     // When
@@ -177,7 +180,7 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
 
   it("같은 deliveryId로 두 번 요청해도 큐에는 한 번만 담겨 한 번만 발송한다", async () => {
     // Given
-    http = new StubResendHttp([resendResponseFixture("send.success.json")]);
+    http = new StubResendHttp([createResendResponseFixture("send.success.json")]);
     vi.stubGlobal("fetch", http.fetch);
 
     // When
@@ -201,8 +204,8 @@ describe("이메일 발송 큐 (실제 pg-boss + PostgreSQL)", () => {
   it("일시 장애는 pg-boss가 다시 불러 같은 멱등 키로 보내 성공한다", async () => {
     // Given
     http = new StubResendHttp([
-      resendResponseFixture("send.application-error.json", 500),
-      resendResponseFixture("send.success.json"),
+      createResendResponseFixture("send.application-error.json", 500),
+      createResendResponseFixture("send.success.json"),
     ]);
     vi.stubGlobal("fetch", http.fetch);
 

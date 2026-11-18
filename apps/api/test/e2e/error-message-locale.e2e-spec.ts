@@ -1,13 +1,14 @@
 import { ErrorCode, type ErrorCodeType, Errors } from "@aido/api/errors";
 import request, { type Response } from "supertest";
 
-import enErrors from "../../src/i18n/en/errors.json" with { type: "json" };
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "./helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
+
+import enErrors from "../../src/i18n/en/errors.json" with { type: "json" };
 
 describe("오류 응답 message 언어 E2E", () => {
   let testContext: E2eTestContext;

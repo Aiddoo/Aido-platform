@@ -4,8 +4,11 @@ import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { createMockExecutionContext } from "#test/mocks/index";
-import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
+import { createStubExecutionContext } from "#test/doubles/platform/stub-execution-context";
+import {
+  createRequestClientReader,
+  runWithRequestHeaders,
+} from "#test/doubles/platform/stub-request-client";
 
 import { canShareWithAi } from "../../../../shared/domain/ai-data-sharing-consent.domain-service.js";
 import { AiDataSharingConsentGuard } from "./ai-data-sharing-consent.guard.js";
@@ -30,7 +33,7 @@ function createGuard(decision: AiDataSharingDecision) {
 }
 
 function canActivateFor(guard: AiDataSharingConsentGuard, appVersion: string) {
-  const { context } = createMockExecutionContext({ user });
+  const { context } = createStubExecutionContext({ user });
   return runWithRequestHeaders({ "x-app-version": appVersion }, () => guard.canActivate(context));
 }
 

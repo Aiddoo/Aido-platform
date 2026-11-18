@@ -11,8 +11,11 @@ import request from "supertest";
 
 import { TodoCommentNotificationPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-notification.port";
 import { notification } from "#api/platform/database/schema/index";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const COMMENT_TIME = new Date("2026-08-26T12:00:00.000Z");
 

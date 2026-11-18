@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createUserFixture } from "#test/fixtures/identity/session.fixture";
 
 import { RequestPasswordResetUseCase } from "./request-password-reset.use-case.js";

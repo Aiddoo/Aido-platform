@@ -3,6 +3,10 @@ import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.co
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
+import {
+  StubSessionCache,
+  StubSessionPushDeviceReleaser,
+} from "#test/doubles/identity/stub-auth-session";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
@@ -10,10 +14,6 @@ import {
   AUTH_FIXTURE_USER_ID,
   createSessionFixture,
 } from "#test/fixtures/identity/session.fixture";
-import {
-  StubSessionCache,
-  StubSessionPushDeviceReleaser,
-} from "#test/mocks/ports/auth-session.stub";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
 import { LogoutAllUseCase } from "./logout-all.use-case.js";

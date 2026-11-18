@@ -1,14 +1,14 @@
 import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 
+import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
 import {
   createAiAssistanceFixture,
   pauseAiResponse,
   useReportActivity,
   useReportResponse,
   withAiAssistanceTime,
-} from "#test/fixtures/ai-assistance.fixture";
-import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
-import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
+} from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
+import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 

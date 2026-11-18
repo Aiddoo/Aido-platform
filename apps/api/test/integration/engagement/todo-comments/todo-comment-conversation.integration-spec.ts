@@ -35,7 +35,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 

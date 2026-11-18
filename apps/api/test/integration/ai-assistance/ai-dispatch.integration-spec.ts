@@ -21,8 +21,8 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { TodoFixture } from "#test/fixtures/todo.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -90,7 +90,9 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
 
   async function createActiveUser(timezone: string): Promise<string> {
     const id = createEntityId();
-    await client.insert(userTable).values(UserFixture.create({ id, subscriptionStatus: "ACTIVE" }));
+    await client
+      .insert(userTable)
+      .values(createUserRowFixture({ id, subscriptionStatus: "ACTIVE" }));
     await client.insert(userPreference).values({ userId: id, timezone });
     await insertRecentTodo(id, "2026-10-05");
     return id;
@@ -111,7 +113,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
     const categoryId =
       category?.id ??
       requireRecord(await client.query.todoCategory.findFirst({ where: { userId } })).id;
-    const { id: _id, ...row } = TodoFixture.create({
+    const { id: _id, ...row } = createTodoRowFixture({
       userId,
       categoryId,
       title: "최근 기록",
@@ -277,7 +279,7 @@ describe("AI 제안·리포트 디스패치 — 사용자 현지 시각 (실제 
       const userId = createEntityId();
       await client
         .insert(userTable)
-        .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
+        .values(createUserRowFixture({ id: userId, subscriptionStatus: "ACTIVE" }));
       const scheduler = reportScheduler();
 
       // When

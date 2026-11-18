@@ -6,7 +6,8 @@ import { DrizzlePushTokenRepository } from "#api/modules/notification/push-devic
 import { pushToken, session, user } from "#api/platform/database/schema/index";
 import { describePushDeviceRepositoryContract } from "#test/contracts/notification/push-device-repository.contract";
 import { describePushTokenRepositoryContract } from "#test/contracts/notification/push-token-repository.contract";
-import { SessionFixture, UserFixture } from "#test/fixtures/index";
+import { createSessionRowFixture } from "#test/fixtures/identity/session-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createPushDeviceFixture,
   PUSH_DEVICE_FIXTURE_NOW,
@@ -37,14 +38,14 @@ describe("DrizzlePushDeviceRepository·PushTokenRepository (실제 PostgreSQL)",
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: PUSH_DEVICE_FIXTURE_USER_ID }),
-        UserFixture.create({ id: PUSH_DEVICE_FIXTURE_OTHER_USER_ID }),
-        UserFixture.create({ id: PUSH_TOKEN_FIXTURE_USER_ID }),
-        UserFixture.create({ id: PUSH_TOKEN_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: PUSH_DEVICE_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: PUSH_DEVICE_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: PUSH_TOKEN_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: PUSH_TOKEN_FIXTURE_OTHER_USER_ID }),
       ]);
     await client.insert(session).values([
-      SessionFixture.create({ id: PUSH_FIXTURE_SESSION_ID, userId: PUSH_DEVICE_FIXTURE_USER_ID }),
-      SessionFixture.create({
+      createSessionRowFixture({ id: PUSH_FIXTURE_SESSION_ID, userId: PUSH_DEVICE_FIXTURE_USER_ID }),
+      createSessionRowFixture({
         id: PUSH_FIXTURE_OTHER_SESSION_ID,
         userId: PUSH_DEVICE_FIXTURE_OTHER_USER_ID,
       }),

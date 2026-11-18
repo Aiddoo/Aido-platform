@@ -23,10 +23,10 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakeEmailService } from "#test/mocks/fake-email.service";
-import { FakeOAuthProviderRegistry } from "#test/mocks/fake-oauth-provider-registry";
-import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { FakeOAuthProviderRegistry } from "#test/doubles/identity/fake-oauth-provider-registry";
+import { FakeOAuthTokenVerifier } from "#test/doubles/identity/fake-oauth-token-verifier";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -38,10 +38,7 @@ const profileProviders = {
   GOOGLE: "google",
   KAKAO: "kakao",
   NAVER: "naver",
-} satisfies Record<
-  SocialProvider,
-  Parameters<FakeOAuthTokenVerifierService["setCustomProfile"]>[0]
->;
+} satisfies Record<SocialProvider, Parameters<FakeOAuthTokenVerifier["setCustomProfile"]>[0]>;
 const at = new Date("2026-10-07T12:00:00.000Z");
 
 describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
@@ -52,7 +49,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   let listLinkedAccounts: ListLinkedAccountsUseCase;
   let getOAuthRedirectUri: GetOAuthRedirectUriUseCase;
   let exchangeOAuthCode: ExchangeOAuthCodeUseCase;
-  let fakeTokenVerifier: FakeOAuthTokenVerifierService;
+  let fakeTokenVerifier: FakeOAuthTokenVerifier;
   let testDb: TestDatabase;
   let client: TestDatabaseClient;
   let oauthStateRepository: DrizzleOAuthStateRepository;
@@ -60,7 +57,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   beforeAll(async () => {
     testDb = new TestDatabase();
     client = await testDb.start();
-    fakeTokenVerifier = new FakeOAuthTokenVerifierService();
+    fakeTokenVerifier = new FakeOAuthTokenVerifier();
     const oauthClient = {
       clientId: "test-client-id",
       clientSecret: "test-client-secret",
@@ -84,7 +81,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
       ]),
       fakeTokenVerifier,
     ).registry;
-    module = await createAuthTestModule(testDb.getClient(), new FakeEmailService(), {
+    module = await createAuthTestModule(testDb.getClient(), new FakeEmailSender(), {
       oauthProviderRegistry: registry,
     });
     loginWithOAuthToken = module.get(LoginWithOAuthTokenUseCase);
@@ -1392,7 +1389,7 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
     ] satisfies Array<{
       provider: SocialProvider;
       token: string;
-      profile: Parameters<FakeOAuthTokenVerifierService["setCustomProfile"]>[2];
+      profile: Parameters<FakeOAuthTokenVerifier["setCustomProfile"]>[2];
     }>;
 
     it.each(categoryTestCases)(

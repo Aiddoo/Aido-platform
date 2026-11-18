@@ -3,7 +3,7 @@ import { HttpClient } from "@nestjs/http-client";
 import type { AdminNotifierProviderId } from "#api/platform/config/schemas/webhook.schema";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { selectAdminNotifier } from "./admin-notifier-selection.adapter.js";
 import { DiscordAdminNotifierAdapter } from "./discord-admin-notifier.adapter.js";

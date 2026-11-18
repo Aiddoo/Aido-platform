@@ -2,7 +2,7 @@ import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferenc
 import type { PreferenceSettingsReadModel } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserPreferenceReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-preference-reader.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import {
   type NotificationDeliveryPreference,

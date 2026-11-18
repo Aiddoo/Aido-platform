@@ -41,8 +41,17 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant, shiftDateKey, todayIn, wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import {
+  nowInstant,
+  shiftDateKey,
+  todayIn,
+  wallClockInstant,
+} from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -138,7 +147,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
         `DELETE FROM ${SCHEMA}.job WHERE name IN ('${TODO_REMINDER_QUEUE}', '${TODO_TIMEZONE_REBASE_QUEUE.name}')`,
       ),
     );
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "rebase@example.com",
       userTag: "REBASE01",
@@ -148,7 +157,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     await client.insert(userPreference).values({ userId, timezone: NEW_YORK });
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
     today = todayIn(NEW_YORK).toString();
@@ -163,7 +172,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(date),
         scheduledLocalTime: localTime,
         scheduledTime: wallClockInstant(date, localTime, SEOUL),
@@ -324,7 +333,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
 
   it("규칙 시간대를 바꾸고 다른 사용자의 규칙은 건드리지 않는다", async () => {
     // Given
-    const other = UserFixture.create({
+    const other = createUserRowFixture({
       id: createEntityId(),
       email: "rebase-other@example.com",
       userTag: "REBASE02",
@@ -333,7 +342,7 @@ describe("시간대 재계산 (실제 PostgreSQL·pg-boss)", () => {
     const seedSeries = async (owner: string, timezone: string, id: string) => {
       const [category] = await client
         .insert(todoCategory)
-        .values(omit(TodoCategoryFixture.create({ userId: owner, sortOrder: 1 }), ["id"]))
+        .values(omit(createTodoCategoryRowFixture({ userId: owner, sortOrder: 1 }), ["id"]))
         .returning();
       await client.insert(todoSeries).values({
         id,
@@ -592,7 +601,7 @@ describe("Todo.scheduledLocalTime 이관 (실제 PostgreSQL)", () => {
   });
 
   async function seedUser(tag: string, timezone: string | null) {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `${tag}@example.com`,
       userTag: tag,
@@ -603,7 +612,7 @@ describe("Todo.scheduledLocalTime 이관 (실제 PostgreSQL)", () => {
     }
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: user.id, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: user.id, sortOrder: 0 }), ["id"]))
       .returning();
     return { userId: user.id, categoryId: category?.id ?? 0 };
   }
@@ -616,7 +625,7 @@ describe("Todo.scheduledLocalTime 이관 (실제 PostgreSQL)", () => {
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create(owner), ["id"]),
+        ...omit(createTodoRowFixture(owner), ["id"]),
         startDate: Temporal.PlainDate.from("2026-11-05"),
         scheduledTime,
         scheduledLocalTime: null,
@@ -666,7 +675,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
   });
   beforeEach(async () => {
     await context.reset();
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "rebase-race@example.com",
       userTag: "REBASE03",
@@ -676,7 +685,7 @@ describe("시간대 재계산 동시성 (실제 PostgreSQL 잠금)", () => {
     await client.insert(userPreference).values({ userId, timezone: NEW_YORK });
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
     today = todayIn(NEW_YORK).toString();

@@ -1,7 +1,11 @@
 import request from "supertest";
 import { vi } from "vitest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("할 일 부분 수정의 로컬 시간 계약", () => {
   let context: E2eTestContext;

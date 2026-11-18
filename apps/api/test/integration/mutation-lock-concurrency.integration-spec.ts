@@ -63,7 +63,7 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 

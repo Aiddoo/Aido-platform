@@ -8,7 +8,10 @@ import { of } from "rxjs";
 import { UserActivityWriterPort } from "#api/modules/identity/users/application/ports/user-activity-writer.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
+import {
+  createRequestClientReader,
+  runWithRequestHeaders,
+} from "#test/doubles/platform/stub-request-client";
 
 import {
   LAST_ACTIVE_THROTTLE_MAX_ENTRIES,

@@ -9,8 +9,11 @@ import request from "supertest";
 
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { inviteRedemption } from "#api/platform/database/schema/index";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const PASSWORD = "Test1234!";
 

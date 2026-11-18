@@ -22,7 +22,7 @@ import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after
 import { type PublishedDomainEvent } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -114,8 +114,8 @@ describe("초대 사용 시작 기록의 내구성 구독 (실제 PostgreSQL·pg
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: inviterId, userTag: inviterTag, email: `${inviterTag}@e.test` }),
-        UserFixture.create({ id: inviteeId, userTag: inviteeTag, email: `${inviteeTag}@e.test` }),
+        createUserRowFixture({ id: inviterId, userTag: inviterTag, email: `${inviterTag}@e.test` }),
+        createUserRowFixture({ id: inviteeId, userTag: inviteeTag, email: `${inviteeTag}@e.test` }),
       ]);
     const { code } = await context.module.get(IssueMyInviteUseCase).execute({ inviterId });
     const redeemed = await context.module.get(RedeemInviteUseCase).execute({

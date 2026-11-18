@@ -10,8 +10,8 @@ import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "#test/e2e/helpers/index";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 import { preparePgBossSchema, useRealJobQueue } from "#test/e2e/helpers/real-job-queue";
 
 /*

@@ -3,13 +3,17 @@ import { vi } from "vitest";
 
 import { AppReleaseRepositoryPort } from "#api/modules/app-config/app-releases/application/ports/app-release.repository.port";
 import { FeatureDiscoveryCampaignRepositoryPort } from "#api/modules/app-config/feature-discovery-campaigns/application/ports/feature-discovery-campaign.repository.port";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import { createAppReleaseFixture } from "#test/fixtures/app-config/app-release.fixture";
 
 import {
   releasedAppVersionResponseSchema,
   releasedFeatureDiscoveryResponseSchema,
 } from "../fixtures/released-app-config-response.schema.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const enabledEnvironment = {
   FEATURE_DISCOVERY_ENABLED: "true",

@@ -16,15 +16,15 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
-import { DateClock } from "#test/doubles/platform/date-clock";
-import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import {
   type HttpResponseStep,
-  resendResponseFixture,
+  createResendResponseFixture,
   StubResendHttp,
-} from "#test/mocks/resend-http.stub";
+} from "#test/doubles/notification/stub-resend-http";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { InMemoryUsageMeterAdapter } from "#test/doubles/platform/in-memory-usage-meter.adapter";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 const FIXTURE_EMAIL_CONFIG = notificationEmailMessagesConfig.parse({
@@ -37,8 +37,8 @@ const FIXTURE_EMAIL_CONFIG = notificationEmailMessagesConfig.parse({
 const recipient = "private@example.com";
 const code = "987654";
 const expiryMinutes = 15;
-const success = resendResponseFixture("send.success.json");
-const unavailable = resendResponseFixture("send.application-error.json", 500);
+const success = createResendResponseFixture("send.success.json");
+const unavailable = createResendResponseFixture("send.application-error.json", 500);
 
 const jobQueue = new InMemoryJobQueue();
 const meter = new InMemoryUsageMeterAdapter();
@@ -193,7 +193,7 @@ describe("이메일 발송 큐 통합 테스트 — 운영 NotificationEmailMess
 
   it("검증 거절은 재시도 없이 예산을 돌려주고 운영 경보를 올린다", async () => {
     // Given
-    givenResponses([resendResponseFixture("send.validation-error.json", 422)]);
+    givenResponses([createResendResponseFixture("send.validation-error.json", 422)]);
     await sendCodeEmail.execute({
       to: recipient,
       kind: "verification",

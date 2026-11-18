@@ -143,7 +143,3 @@ DB 프로젝트는 worker마다 자기 DB를 받아 파일을 병렬로 돌리�
 ```sh
 AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project performance test/performance/memory-soak.performance-spec.ts
 ```
-
-## 옛 테스트 도우미
-
-`test/mocks`·`test/builders`·`test/fixtures/index.ts`(barrel)는 지울 대상이다. 새 spec은 쓰지 않고, 남은 사용처는 `create<Aggregate>Fixture`와 `test/doubles`로 옮긴 뒤 폴더를 지운다.

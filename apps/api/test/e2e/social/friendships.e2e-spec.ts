@@ -23,13 +23,12 @@ import {
 } from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "../helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 
 describe("팔로우 E2E", () => {
   let testContext: E2eTestContext;

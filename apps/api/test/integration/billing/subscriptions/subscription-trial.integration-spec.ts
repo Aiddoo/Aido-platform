@@ -17,14 +17,15 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserPreferenceRowFixture } from "#test/fixtures/identity/user-preference-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -86,7 +87,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   });
 
   async function givenUser(tag: string, timezone = "Europe/London"): Promise<string> {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `trial-${tag.toLowerCase()}@example.com`,
       userTag: tag,
@@ -97,7 +98,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
     await client.insert(userTable).values(user);
     await client
       .insert(userPreference)
-      .values(UserPreferenceBuilder.create(user.id).withTimezone(timezone).build());
+      .values(createUserPreferenceRowFixture({ userId: user.id, timezone }));
     return user.id;
   }
 
@@ -106,32 +107,37 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
   }
 
   function trialPurchase(userId: string): RevenueCatWebhookPayload {
-    return SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(chainOf(userId))
-      .withTransactionId(chainOf(userId))
-      .withEventId(`start-${userId}`)
-      .withPeriodType("TRIAL")
-      .withProductId("com.aido.pro.yearly")
-      .withPrice(0)
-      .withPurchasedAtMs(trialStartedAt.getTime())
-      .withExpirationAtMs(trialEndsAt.getTime())
-      .build();
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      original_transaction_id: chainOf(userId),
+      transaction_id: chainOf(userId),
+      id: `start-${userId}`,
+      period_type: "TRIAL",
+      product_id: "com.aido.pro.yearly",
+      price: 0,
+      currency: "KRW",
+      purchased_at_ms: trialStartedAt.getTime(),
+      expiration_at_ms: trialEndsAt.getTime(),
+    });
   }
 
   function trialEvent(
     userId: string,
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     eventId: string,
     expiresAt: Date = trialEndsAt,
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(chainOf(userId))
-      .withTransactionId(chainOf(userId))
-      .withEventId(eventId)
-      .withExpirationAtMs(expiresAt.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: chainOf(userId),
+        transaction_id: chainOf(userId),
+        id: eventId,
+        expiration_at_ms: expiresAt.getTime(),
+      },
+    };
   }
 
   async function storedTrial(userId: string) {
@@ -171,7 +177,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           userId,
-          SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
+          createSubscriptionEventFixture("CANCELLATION", { period_type: "TRIAL" }),
           "cancel",
         ),
       );
@@ -180,9 +186,10 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           userId,
-          SubscriptionEventBuilder.expiration()
-            .withPeriodType("TRIAL")
-            .withExpirationReason("UNSUBSCRIBE"),
+          createSubscriptionEventFixture("EXPIRATION", {
+            period_type: "TRIAL",
+            expiration_reason: "UNSUBSCRIBE",
+          }),
           "expire",
         ),
       );
@@ -214,7 +221,13 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           userId,
-          SubscriptionEventBuilder.renewal().withTrialConversion().withPrice(19.99, "KRW", 29_900),
+          createSubscriptionEventFixture("RENEWAL", {
+            is_trial_conversion: true,
+            period_type: "NORMAL",
+            price: 19.99,
+            currency: "KRW",
+            price_in_purchased_currency: 29_900,
+          }),
           "convert",
           nextYear,
         ),
@@ -240,7 +253,10 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(trialPurchase(userId));
       const conversion = trialEvent(
         userId,
-        SubscriptionEventBuilder.renewal().withTrialConversion(),
+        createSubscriptionEventFixture("RENEWAL", {
+          is_trial_conversion: true,
+          period_type: "NORMAL",
+        }),
         "convert",
         nextYear,
       );
@@ -252,14 +268,14 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           userId,
-          SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
+          createSubscriptionEventFixture("CANCELLATION", { period_type: "TRIAL" }),
           "late-cancel",
         ),
       );
       await webhook.receive(
         trialEvent(
           userId,
-          SubscriptionEventBuilder.expiration().withPeriodType("TRIAL"),
+          createSubscriptionEventFixture("EXPIRATION", { period_type: "TRIAL" }),
           "late-expire",
         ),
       );
@@ -290,7 +306,7 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           cancelledUserId,
-          SubscriptionEventBuilder.cancellation().withPeriodType("TRIAL"),
+          createSubscriptionEventFixture("CANCELLATION", { period_type: "TRIAL" }),
           "cancel",
         ),
       );
@@ -340,7 +356,10 @@ describe("무료 체험 구독 저장과 종료 3일 전 안내 (실제 PostgreS
       await webhook.receive(
         trialEvent(
           convertedUserId,
-          SubscriptionEventBuilder.renewal().withTrialConversion(),
+          createSubscriptionEventFixture("RENEWAL", {
+            is_trial_conversion: true,
+            period_type: "NORMAL",
+          }),
           "convert",
           nextYear,
         ),

@@ -9,8 +9,8 @@ import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-p
 import { StubLifestyleIndexProvider } from "#test/doubles/weather/stub-lifestyle-index-provider";
 import { StubSunTimeProvider } from "#test/doubles/weather/stub-sun-time-provider";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
-import { weatherConditionsFixture } from "#test/fixtures/weather.fixture";
-import { weatherLocationFixture } from "#test/fixtures/weather/user-location.fixture";
+import { createWeatherLocationFixture } from "#test/fixtures/weather/user-location.fixture";
+import { createWeatherConditionsFixture } from "#test/fixtures/weather/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
@@ -34,7 +34,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     vi.setSystemTime(date.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherForecastCache(memory);
-    repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
+    repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
     weatherProvider = new StubWeatherForecastProvider();
     airQualityProvider = new StubAirQualityProvider();
     lifestyleIndexProvider = new StubLifestyleIndexProvider();
@@ -75,7 +75,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
 
   it("격자 없는 해외 위치는 위치 없음과 같은 WEATHER_1902이며 공급자에 접근하지 않는다", async () => {
     // Given
-    repository.set(weatherLocationFixture("weather-user", "도쿄"));
+    repository.set(createWeatherLocationFixture("weather-user", "도쿄"));
     // When
     const result = conditions.execute({ userId: "weather-user", target: date });
     // Then
@@ -86,7 +86,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
 
   it("같은 날짜 캐시가 있으면 공급자 장애에도 저장된 결과를 반환한다", async () => {
     // Given
-    const saved = weatherConditionsFixture();
+    const saved = createWeatherConditionsFixture();
     await cache.setConditions(GridCoordinate.create(60, 127), date, saved);
     weatherProvider.failure = new Error("forecast down");
     sunTimeProvider.failure = new Error("sun down");
@@ -181,7 +181,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     const cached = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result).toEqual(
-      weatherConditionsFixture({ feelsLikeTemperature: 0, pm10: null, pm25: null }),
+      createWeatherConditionsFixture({ feelsLikeTemperature: 0, pm10: null, pm25: null }),
     );
     expect(cached).toEqual(result);
     expect(airQualityProvider.calls).toHaveLength(1);
@@ -197,7 +197,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(result).toEqual(
-      weatherConditionsFixture({
+      createWeatherConditionsFixture({
         feelsLikeTemperature: null,
         uvIndex: null,
         sunrise: null,
@@ -215,6 +215,6 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
     const result = await conditions.execute({ userId: "weather-user", target: date });
     // Then
     expect(lifestyleIndexProvider.calls[0]).toMatchObject({ currentTemp: 0, windSpeed: 0 });
-    expect(result).toEqual(weatherConditionsFixture({ feelsLikeTemperature: 0 }));
+    expect(result).toEqual(createWeatherConditionsFixture({ feelsLikeTemperature: 0 }));
   });
 });

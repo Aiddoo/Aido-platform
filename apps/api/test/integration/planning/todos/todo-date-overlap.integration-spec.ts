@@ -6,8 +6,11 @@ import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/in
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { TodoCategoryFixture, TodoFixture } from "#test/fixtures/todo.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -51,13 +54,13 @@ describe("할 일 날짜 겹침 조건 — 두 갈래 조건이 옛 조건과 �
   beforeEach(async () => {
     await database.cleanup();
     userId = createEntityId();
-    await client.insert(user).values(UserFixture.create({ id: userId, userTag: "OVERLAP1" }));
-    const category = TodoCategoryFixture.create({ userId });
+    await client.insert(user).values(createUserRowFixture({ id: userId, userTag: "OVERLAP1" }));
+    const category = createTodoCategoryRowFixture({ userId });
     await client.insert(todoCategory).values(category);
     await client.insert(todo).values(
       TODO_SPANS.map(([startDate, endDate], index) =>
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId,
             categoryId: category.id,
             startDate: day(startDate),

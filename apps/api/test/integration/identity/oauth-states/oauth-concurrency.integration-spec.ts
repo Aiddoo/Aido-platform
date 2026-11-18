@@ -18,9 +18,9 @@ import { linkedAccount, oAuthState, user as userTable } from "#api/platform/data
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { UserFixture } from "#test/fixtures/index";
-import { FakeEmailService } from "#test/mocks/fake-email.service";
-import { CountingOAuthIdentityProvider } from "#test/mocks/ports/auth-oauth.stub";
+import { CountingOAuthIdentityProvider } from "#test/doubles/identity/stub-oauth-identity-provider";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -50,7 +50,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
     client = await database.start();
     provider = new CountingOAuthIdentityProvider();
-    module = await createAuthTestModule(client, new FakeEmailService(), {
+    module = await createAuthTestModule(client, new FakeEmailSender(), {
       oauthProviderRegistry: new Map([[provider.provider, provider]]),
     });
     accounts = module.get(DrizzleLinkedAccountsRepository);
@@ -69,7 +69,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     vi.setSystemTime(at);
     await database.cleanup();
     sequence = 0;
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "oauth-owner@example.com",
       userTag: "OAUTHPG1",
@@ -156,7 +156,7 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
       .transaction(async (transaction) => {
         await transaction
           .insert(userTable)
-          .values(UserFixture.create({ id: createEntityId(), email, userTag: "OAUTHPG2" }));
+          .values(createUserRowFixture({ id: createEntityId(), email, userTag: "OAUTHPG2" }));
         inserted.resolve();
         await rolledBack.promise;
         transaction.rollback();

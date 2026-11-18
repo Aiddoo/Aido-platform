@@ -5,12 +5,15 @@ import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructu
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import {
   TODO_FIXTURE_OTHER_USER_ID,
   TODO_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo.fixture";
-import { TodoCategoryFixture, TodoFixture } from "#test/fixtures/todo.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -34,8 +37,8 @@ describe("DrizzleTodoBriefReader (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: TODO_FIXTURE_USER_ID, userTag: "TBRIEF01" }),
-        UserFixture.create({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "TBRIEF02" }),
+        createUserRowFixture({ id: TODO_FIXTURE_USER_ID, userTag: "TBRIEF01" }),
+        createUserRowFixture({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "TBRIEF02" }),
       ]);
   });
 
@@ -54,7 +57,7 @@ describe("DrizzleTodoBriefReader (실제 PostgreSQL)", () => {
       .insert(todoCategory)
       .values(
         [TODO_FIXTURE_USER_ID, TODO_FIXTURE_OTHER_USER_ID].map((userId) =>
-          omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]),
+          omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]),
         ),
       )
       .returning({ id: todoCategory.id, userId: todoCategory.userId });
@@ -64,7 +67,7 @@ describe("DrizzleTodoBriefReader (실제 PostgreSQL)", () => {
         rows.map((row, index) => {
           const userId = row.userId ?? TODO_FIXTURE_USER_ID;
           return omit(
-            TodoFixture.create({
+            createTodoRowFixture({
               userId,
               categoryId: categories.find((category) => category.userId === userId)?.id ?? 0,
               sortOrder: index,

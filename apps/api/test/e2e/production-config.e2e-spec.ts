@@ -1,9 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 
 const webhookSecret = "production-config-e2e-webhook-secret";
 
@@ -41,10 +44,10 @@ describe("운영 설정(APP_ENV=production)으로 띄운 앱 (실제 PostgreSQL)
 
   it("RevenueCat 웹훅은 Authorization이 없거나 다르면 거절하고 맞으면 받는다", async () => {
     // Given
-    const body = SubscriptionEventBuilder.test()
-      .withAppUserId("production-config-user")
-      .withEventId("production-config-event")
-      .build();
+    const body = createSubscriptionEventFixture("TEST", {
+      app_user_id: "production-config-user",
+      id: "production-config-event",
+    });
 
     // When
     const missing = await server().post("/v1/webhooks/revenuecat").send(body).expect(401);

@@ -23,8 +23,12 @@ import {
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
-import { dayWindowIn } from "#test/fixtures/clock.fixture";
-import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { dayWindowIn } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -66,7 +70,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     vi.setSystemTime(AT);
     const users = [];
     for (let index = 0; index < 5; index++) {
-      const user = UserFixture.create({
+      const user = createUserRowFixture({
         id: createEntityId(),
         email: `social-regression-${index}@example.com`,
         userTag: `SOCPG00${index}`,
@@ -96,12 +100,12 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
       ]);
       const [category] = await client
         .insert(todoCategory)
-        .values(TodoCategoryFixture.create({ userId: receiverId, sortOrder: 0 }))
+        .values(createTodoCategoryRowFixture({ userId: receiverId, sortOrder: 0 }))
         .returning({ id: todoCategory.id });
       if (category === undefined) {
         throw new Error("category fixture 누락");
       }
-      const todoFixture = TodoFixture.create({
+      const todoFixture = createTodoRowFixture({
         userId: receiverId,
         categoryId: category.id,
         visibility: "PUBLIC",

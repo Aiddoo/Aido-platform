@@ -23,7 +23,7 @@ import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.po
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import {
   ReminderCacheKey,

@@ -3,7 +3,7 @@ import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ListLinkedAccountsUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/list-linked-accounts.use-case";
 import { UnlinkOAuthAccountUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/unlink-oauth-account.use-case";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createLinkedAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import { AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
 

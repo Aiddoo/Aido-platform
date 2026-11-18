@@ -6,7 +6,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import { createSessionFixture, createUserFixture } from "#test/fixtures/identity/session.fixture";
 

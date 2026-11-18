@@ -9,8 +9,12 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -37,7 +41,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    const owner = UserFixture.create({
+    const owner = createUserRowFixture({
       id: createEntityId(),
       email: "list-repeat@example.com",
       userTag: "LISTREP1",
@@ -46,7 +50,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     userId = owner.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");
@@ -77,7 +81,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
 
   async function seedOccurrences(count: number, overrides: Partial<typeof todo.$inferInsert> = {}) {
     const rows = Array.from({ length: count }, (_, index) => ({
-      ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
+      ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: index }), ["id"]),
       seriesId: SERIES_ID,
       occurrenceDate: occurrenceDateOf(index),
       startDate: occurrenceDateOf(index),
@@ -89,7 +93,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
 
   async function seedTodos(count: number, overrides: Partial<typeof todo.$inferInsert> = {}) {
     const rows = Array.from({ length: count }, (_, index) => ({
-      ...omit(TodoFixture.create({ userId, categoryId, sortOrder: index }), ["id"]),
+      ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: index }), ["id"]),
       startDate: Temporal.PlainDate.from("2026-11-02"),
       endDate: null,
       ...overrides,

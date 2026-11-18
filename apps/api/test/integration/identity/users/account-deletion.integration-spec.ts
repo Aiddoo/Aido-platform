@@ -63,6 +63,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
@@ -91,7 +92,6 @@ import {
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../../../src/modules/identity/verifications/identity-verifications.providers.js";
-import { FakeEmailService } from "../../../mocks/fake-email.service.js";
 import { TestDatabase, type TestDatabaseClient } from "../../../setup/test-database.js";
 import { provisioningSeederTestProvider } from "../../helpers/provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "../../helpers/retention-enroller.provider.js";
@@ -193,7 +193,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         },
         { provide: PasswordHasherPort, useExisting: Argon2PasswordHasherAdapter },
         { provide: TokenIssuerPort, useExisting: JwtTokenIssuerAdapter },
-        { provide: VerificationCodeEmailSenderPort, useExisting: FakeEmailService },
+        { provide: VerificationCodeEmailSenderPort, useExisting: FakeEmailSender },
         { provide: SessionCachePort, useClass: SessionCacheAdapter },
         { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },
         { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },
@@ -233,7 +233,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           provide: UnitOfWorkPort,
           useValue: transaction.uow,
         },
-        FakeEmailService,
+        FakeEmailSender,
         {
           provide: CacheStorePort,
           useValue: new NoCacheStore(),

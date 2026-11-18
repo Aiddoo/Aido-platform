@@ -2,11 +2,11 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { InMemoryVerificationRepository } from "#test/doubles/identity/in-memory-verification.repository";
+import { StubVerificationCodeSecurity } from "#test/doubles/identity/stub-auth-credentials";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
 import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
-import { StubVerificationCodeSecurity } from "#test/mocks/ports/auth-credentials.stub";
 
 import type { Verification } from "../../domain/verification.aggregate.js";
 import { IssueVerificationCodeUseCase } from "./issue-verification-code.use-case.js";

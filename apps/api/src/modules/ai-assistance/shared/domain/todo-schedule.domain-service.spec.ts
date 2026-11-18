@@ -1,8 +1,8 @@
 import {
-  planRepeatRefFixture,
-  scheduleDraftFixture,
+  createPlanRepeatRefFixture,
+  createScheduleDraftFixture,
   type ScheduleDraftInput,
-} from "#test/fixtures/ai-response.fixture";
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import type { ScheduleDraft } from "./todo-draft.constants.js";
 import { resolvePlanSchedule, resolveTodoSchedule } from "./todo-schedule.domain-service.js";
@@ -14,7 +14,7 @@ const LOS_ANGELES = { now: NOW, timeZone: "America/Los_Angeles" };
 
 const none = { pattern: "NONE" } as const;
 const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
-  scheduleDraftFixture({ repeat: none, ...overrides });
+  createScheduleDraftFixture({ repeat: none, ...overrides });
 
 describe("resolveTodoSchedule — ko golden (서울 수 10:00)", () => {
   it("격주 화요일을 UNSUPPORTED로 받아도 말한 요일이 date에 있어야 다음 화요일이고, NONE이면 오늘로 어긋난다(ko-16)", () => {
@@ -877,7 +877,7 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     { name: "요일 없는 매주", repeat: { pattern: "WEEKLY_DAYS" }, expected: null },
   ] as const)("$name", ({ repeat, expected }) => {
     // Given
-    const input = scheduleDraftFixture({ repeat: { ...repeat } });
+    const input = createScheduleDraftFixture({ repeat: { ...repeat } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
     // Then
@@ -888,9 +888,9 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     // Given
     const said = {
       ...draft(),
-      repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 }),
+      repeat: createPlanRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 }),
     };
-    const unsaid = { ...draft(), repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY" }) };
+    const unsaid = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "MONTHLY_DAY" }) };
     // When
     const results = [said, unsaid].map((input) => resolveTodoSchedule(input, SEOUL).repeat);
     // Then
@@ -976,7 +976,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
     { name: "일요일에 말한 이번 주말은 오늘", clock: SUNDAY, expected: "2026-11-08" },
   ])("$name 한 번이고 반복이 아니다", ({ clock, expected }) => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "THIS_WEEKEND" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "THIS_WEEKEND" }) };
     // When
     const result = resolvePlanSchedule(input, clock);
     // Then
@@ -991,7 +991,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
 
   it("다음 주말은 다음 주 토요일 한 번이다", () => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "NEXT_WEEKEND" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "NEXT_WEEKEND" }) };
     // When
     const result = resolvePlanSchedule(input, THURSDAY);
     // Then
@@ -1000,7 +1000,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
 
   it("주말마다는 끝 없는 반복이다", () => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "WEEKENDS" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "WEEKENDS" }) };
     // When
     const result = resolvePlanSchedule(input, THURSDAY);
     // Then

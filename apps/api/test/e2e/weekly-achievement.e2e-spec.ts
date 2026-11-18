@@ -7,9 +7,12 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { weeklyAchievement } from "#api/platform/database/schema/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import { DAILY_COMPLETION_FIXTURE_NOW } from "#test/fixtures/insights/daily-completion.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("주간 달성 실제 HTTP·PostgreSQL 계약", () => {
   let context: E2eTestContext;

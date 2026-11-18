@@ -16,6 +16,11 @@ import {
   describeEmailSenderContract,
   type EmailContractScenario,
 } from "#test/contracts/notification/email-sender.contract";
+import {
+  type HttpResponseStep,
+  createResendResponseFixture,
+  StubResendHttp,
+} from "#test/doubles/notification/stub-resend-http";
 import { createTestMailer, type TestMailer } from "#test/doubles/notification/test-mailer";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import {
@@ -23,27 +28,22 @@ import {
   EMAIL_MESSAGE_FIXTURE_CODE,
   EMAIL_MESSAGE_FIXTURE_RECIPIENT,
 } from "#test/fixtures/notification/email-message.fixture";
-import {
-  type HttpResponseStep,
-  resendResponseFixture,
-  StubResendHttp,
-} from "#test/mocks/resend-http.stub";
 
 import type { EmailDeliveryOutcome } from "../../application/ports/email-sender.port.js";
 import { EmailLogEvent } from "./email-provider.log-events.js";
 import { NestMailEmailSenderAdapter } from "./nest-mail-email-sender.adapter.js";
 
-const success = resendResponseFixture("send.success.json");
-const unavailable = resendResponseFixture("send.application-error.json", 500);
-const rateLimited = resendResponseFixture("send.rate-limit.json", 429);
+const success = createResendResponseFixture("send.success.json");
+const unavailable = createResendResponseFixture("send.application-error.json", 500);
+const rateLimited = createResendResponseFixture("send.rate-limit.json", 429);
 
 const SCENARIO_RESPONSES: Record<EmailContractScenario, HttpResponseStep> = {
   success,
   unavailable,
   "rate-limited": rateLimited,
-  "daily-quota": resendResponseFixture("send.daily-quota.json", 429),
-  "monthly-quota": resendResponseFixture("send.monthly-quota.json", 429),
-  rejected: resendResponseFixture("send.validation-error.json", 422),
+  "daily-quota": createResendResponseFixture("send.daily-quota.json", 429),
+  "monthly-quota": createResendResponseFixture("send.monthly-quota.json", 429),
+  rejected: createResendResponseFixture("send.validation-error.json", 422),
   unreachable: () => {
     throw new TypeError("Network connection failed");
   },

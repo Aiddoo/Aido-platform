@@ -23,7 +23,8 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
 import { CountingDailyCompletionCache } from "#test/doubles/insights/counting-daily-completion-cache";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -74,7 +75,7 @@ describe("반복 회차 범위 수정·삭제 뒤 일간 완료 캐시 (실제 �
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "series-cache@example.com",
       userTag: "SERCACH1",
@@ -95,7 +96,7 @@ describe("반복 회차 범위 수정·삭제 뒤 일간 완료 캐시 (실제 �
   async function insertCategory(sortOrder: number): Promise<number> {
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");

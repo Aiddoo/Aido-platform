@@ -11,7 +11,7 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate, plainDateToDate } from "#api/shared/domain/time/plain-date";
-import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 

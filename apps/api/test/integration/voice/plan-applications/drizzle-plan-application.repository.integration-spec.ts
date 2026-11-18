@@ -2,7 +2,7 @@ import { DrizzlePlanApplicationRepository } from "#api/modules/voice/plan-applic
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describePlanApplicationRepositoryContract } from "#test/contracts/voice/plan-application-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createPlanApplicationFixture,
   PLAN_APPLICATION_FIXTURE_OTHER_USER_ID,
@@ -25,8 +25,8 @@ describe("DrizzlePlanApplicationRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: PLAN_APPLICATION_FIXTURE_USER_ID }),
-        UserFixture.create({ id: PLAN_APPLICATION_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: PLAN_APPLICATION_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: PLAN_APPLICATION_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 

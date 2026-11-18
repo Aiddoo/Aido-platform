@@ -1,6 +1,10 @@
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("신뢰할 수 있는 요청 식별 E2E (실제 throttler, 직렬 실행)", () => {
   let testContext: E2eTestContext;

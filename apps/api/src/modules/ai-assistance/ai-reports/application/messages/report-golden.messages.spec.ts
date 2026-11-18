@@ -1,9 +1,9 @@
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import {
   GOLDEN_VARIANTS,
   loadReportGoldenCases,
   type ReportGoldenCase,
 } from "#test/fixtures/ai-golden/golden-cases";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { ReportDraft } from "../../../shared/domain/ai-task-outputs.constants.js";

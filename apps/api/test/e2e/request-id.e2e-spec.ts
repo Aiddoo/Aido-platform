@@ -1,7 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const APP_REQUEST_ID = "3f2b8c1e-5d4a-4b6f-9e2d-1a7c8b9d0e1f";

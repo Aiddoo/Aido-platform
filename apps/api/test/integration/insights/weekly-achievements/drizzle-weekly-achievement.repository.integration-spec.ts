@@ -3,7 +3,7 @@ import { databaseSqlState } from "#api/platform/database/database-error.util";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeWeeklyAchievementRepositoryContract } from "#test/contracts/insights/weekly-achievement-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createWeeklyAchievementFixture,
   WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID,
@@ -26,8 +26,8 @@ describe("DrizzleWeeklyAchievementRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID }),
-        UserFixture.create({ id: WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: WEEKLY_ACHIEVEMENT_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 

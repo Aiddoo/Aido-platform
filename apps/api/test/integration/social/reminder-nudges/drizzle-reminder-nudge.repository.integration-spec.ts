@@ -7,8 +7,12 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeReminderNudgeRepositoryContract } from "#test/contracts/social/reminder-nudge-repository.contract";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import {
   createReminderNudgeFixture,
   REMINDER_NUDGE_FIXTURE_OTHER_USER_ID,
@@ -33,9 +37,9 @@ describe("DrizzleReminderNudgeRepository·DrizzleReminderTargetReader (실제 Po
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: REMINDER_NUDGE_FIXTURE_SENDER_ID }),
-        UserFixture.create({ id: REMINDER_NUDGE_FIXTURE_RECEIVER_ID }),
-        UserFixture.create({ id: REMINDER_NUDGE_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: REMINDER_NUDGE_FIXTURE_SENDER_ID }),
+        createUserRowFixture({ id: REMINDER_NUDGE_FIXTURE_RECEIVER_ID }),
+        createUserRowFixture({ id: REMINDER_NUDGE_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 
@@ -51,11 +55,11 @@ describe("DrizzleReminderNudgeRepository·DrizzleReminderTargetReader (실제 Po
   async function addTodo(seed: ReminderTargetTodoSeed): Promise<void> {
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: seed.ownerId }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: seed.ownerId }), ["id"]))
       .returning({ id: todoCategory.id });
     await client.insert(todo).values(
       omit(
-        TodoFixture.create({
+        createTodoRowFixture({
           userId: seed.ownerId,
           categoryId: requireRecord(category).id,
           startDate: seed.startDate,

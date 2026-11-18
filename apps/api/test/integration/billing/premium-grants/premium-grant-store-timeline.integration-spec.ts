@@ -5,20 +5,21 @@ import {
   PremiumGranterPort,
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/shared/domain/store-renewal-grace.domain-service";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { GetCurrentUserUseCase } from "#api/modules/identity/users/application/use-cases/get-current-user.use-case";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -48,7 +49,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "timeline@example.com",
       userTag: "TLINE001",
@@ -72,15 +73,19 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     return context.module.get(RevenueCatWebhookController).receive(body);
   }
 
-  function storeEvent(builder: SubscriptionEventBuilder, eventId: string) {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(CHAIN)
-      .withTransactionId(CHAIN)
-      .withEventId(eventId)
-      .withPurchasedAtMs(AT.getTime())
-      .withExpirationAtMs(STORE_EXPIRY.getTime())
-      .build();
+  function storeEvent(payload: RevenueCatWebhookPayload, eventId: string) {
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: eventId,
+        purchased_at_ms: AT.getTime(),
+        expiration_at_ms: STORE_EXPIRY.getTime(),
+      },
+    };
   }
 
   function premiumAccess() {
@@ -125,7 +130,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("자동 갱신 구독 중 받은 보상은 쌓이고 /me 끝은 유예 3시간 뒤부터 이어 붙인다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s5-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "s5-purchase"));
 
     // When
     await granter.grant({
@@ -151,7 +156,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("자동 갱신을 끈 구독과 쌓아 둔 보상은 /me와 취소 웹훅 projection 모두 만료 시각부터 이어 붙인다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s6-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "s6-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -161,7 +166,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
 
     // When
-    await webhook(storeEvent(SubscriptionEventBuilder.cancellation(), "s6-cancel"));
+    await webhook(storeEvent(createSubscriptionEventFixture("CANCELLATION"), "s6-cancel"));
 
     // Then
     expect(await premiumAccess()).toEqual({
@@ -181,7 +186,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
     // When
     vi.setSystemTime(STORE_EXPIRY);
-    await webhook(storeEvent(SubscriptionEventBuilder.expiration(), "s6-expire"));
+    await webhook(storeEvent(createSubscriptionEventFixture("EXPIRATION"), "s6-expire"));
 
     // Then
     expect(await premiumAccess()).toMatchObject({
@@ -193,7 +198,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("환불되면 스토어는 즉시 끝나고 쌓아 둔 보상은 환불 시각부터 바로 시작한다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s8-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "s8-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -204,7 +209,12 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     vi.setSystemTime(refundedAt);
 
     // When
-    await webhook(storeEvent(SubscriptionEventBuilder.refundCancellation(), "s8-refund"));
+    await webhook(
+      storeEvent(
+        createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" }),
+        "s8-refund",
+      ),
+    );
 
     // Then
     expect(await premiumAccess()).toEqual({
@@ -221,20 +231,20 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   });
 
   function billingIssue(eventId: string, graceEndsAt: Date) {
-    return SubscriptionEventBuilder.billingIssue()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(CHAIN)
-      .withTransactionId(CHAIN)
-      .withEventId(eventId)
-      .withPurchasedAtMs(AT.getTime())
-      .withExpirationAtMs(STORE_EXPIRY.getTime())
-      .withGracePeriodExpirationAtMs(graceEndsAt.getTime())
-      .build();
+    return createSubscriptionEventFixture("BILLING_ISSUE", {
+      app_user_id: userId,
+      original_transaction_id: CHAIN,
+      transaction_id: CHAIN,
+      id: eventId,
+      purchased_at_ms: AT.getTime(),
+      expiration_at_ms: STORE_EXPIRY.getTime(),
+      grace_period_expiration_at_ms: graceEndsAt.getTime(),
+    });
   }
 
   function billingErrorCancellation(eventId: string) {
     return storeEvent(
-      SubscriptionEventBuilder.cancellation().withCancelReason("BILLING_ERROR"),
+      createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "BILLING_ERROR" }),
       eventId,
     );
   }
@@ -242,7 +252,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("스토어 결제 유예 10일째에는 프리미엄을 유지하고 보상을 시작하지 않으며, 결제가 복구되면 쌓아 둔 일수를 그대로 둔다", async () => {
     // Given
     // 결제 실패: RevenueCat은 BILLING_ISSUE와 CANCELLATION(BILLING_ERROR)을 함께 보낸다
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "s7-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "s7-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -271,13 +281,13 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     vi.setSystemTime(recoveredAt);
     const nextExpiry = new Date(STORE_EXPIRY.getTime() + 42 * DAY_MS);
     await webhook(
-      SubscriptionEventBuilder.renewal()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(CHAIN)
-        .withTransactionId(`${CHAIN}-r1`)
-        .withEventId("s7-renewal")
-        .withExpirationAtMs(nextExpiry.getTime())
-        .build(),
+      createSubscriptionEventFixture("RENEWAL", {
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: `${CHAIN}-r1`,
+        id: "s7-renewal",
+        expiration_at_ms: nextExpiry.getTime(),
+      }),
     );
 
     // Then
@@ -308,7 +318,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("결제 유예가 복구 없이 끝나면 쌓아 둔 보상을 유예 끝부터 한 번만 시작하고 늦은 EXPIRATION도 다시 시작하지 않는다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "g-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "g-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -327,13 +337,13 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       .get(SweepPremiumGrantsUseCase)
       .execute({ now: instantFromDate(afterGrace) });
     await webhook(
-      SubscriptionEventBuilder.expiration()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(CHAIN)
-        .withTransactionId(CHAIN)
-        .withEventId("g-expire")
-        .withExpirationAtMs(STORE_EXPIRY.getTime())
-        .build(),
+      createSubscriptionEventFixture("EXPIRATION", {
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: "g-expire",
+        expiration_at_ms: STORE_EXPIRY.getTime(),
+      }),
     );
     await context.module
       .get(SweepPremiumGrantsUseCase)
@@ -367,22 +377,27 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       durationDays: 7,
     });
     vi.setSystemTime(new Date(AT.getTime() + DAY_MS + 21 * 3_600_000));
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "r-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "r-purchase"));
     const refundedAt = new Date(AT.getTime() + 3 * DAY_MS);
     vi.setSystemTime(refundedAt);
-    await webhook(storeEvent(SubscriptionEventBuilder.refundCancellation(), "r-refund"));
+    await webhook(
+      storeEvent(
+        createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" }),
+        "r-refund",
+      ),
+    );
 
     // When
     vi.setSystemTime(new Date(refundedAt.getTime() + DAY_MS + 9 * 3_600_000));
     await webhook(
-      SubscriptionEventBuilder.initialPurchase()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(`${CHAIN}-second`)
-        .withTransactionId(`${CHAIN}-second`)
-        .withEventId("r-purchase-2")
-        .withPurchasedAtMs(Date.now())
-        .withExpirationAtMs(STORE_EXPIRY.getTime())
-        .build(),
+      createSubscriptionEventFixture("INITIAL_PURCHASE", {
+        app_user_id: userId,
+        original_transaction_id: `${CHAIN}-second`,
+        transaction_id: `${CHAIN}-second`,
+        id: "r-purchase-2",
+        purchased_at_ms: Date.now(),
+        expiration_at_ms: STORE_EXPIRY.getTime(),
+      }),
     );
 
     // Then
@@ -406,15 +421,15 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
     // When
     await webhook(
-      SubscriptionEventBuilder.renewal()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(CHAIN)
-        .withTransactionId(`${CHAIN}-r2`)
-        .withEventId("adopt-renewal")
-        .withPurchasedAtMs(STORE_EXPIRY.getTime())
-        .withExpirationAtMs(nextExpiry.getTime())
-        .withEnvironment("SANDBOX")
-        .build(),
+      createSubscriptionEventFixture("RENEWAL", {
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: `${CHAIN}-r2`,
+        id: "adopt-renewal",
+        purchased_at_ms: STORE_EXPIRY.getTime(),
+        expiration_at_ms: nextExpiry.getTime(),
+        environment: "SANDBOX",
+      }),
     );
 
     // Then
@@ -445,7 +460,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("만료 시각 없는 UNCANCELLATION은 저장된 만료 시각을 유지해 유료 기간 중에 쌓아 둔 보상을 시작하지 않는다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "u-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "u-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -453,19 +468,19 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
       durationDays: 7,
     });
     vi.setSystemTime(new Date("2028-03-01T04:00:00.000Z"));
-    await webhook(storeEvent(SubscriptionEventBuilder.cancellation(), "u-cancel"));
+    await webhook(storeEvent(createSubscriptionEventFixture("CANCELLATION"), "u-cancel"));
     const uncancelledAt = new Date("2028-03-02T04:00:00.000Z");
     vi.setSystemTime(uncancelledAt);
 
     // When
     await webhook(
-      SubscriptionEventBuilder.uncancellation()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(CHAIN)
-        .withTransactionId(CHAIN)
-        .withEventId("u-uncancel")
-        .withoutExpiration()
-        .build(),
+      createSubscriptionEventFixture("UNCANCELLATION", {
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: "u-uncancel",
+        expiration_at_ms: undefined,
+      }),
     );
     const grantsAfterUncancel = await grantsOf();
 
@@ -482,7 +497,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
   it("결제 유예가 끝난 직후 sweep·만료 웹훅 전이라도 /me 프로필 캐시가 유예 끝에서 만료돼 무료가 된다", async () => {
     // Given
     // 결제 유예 중 /me를 캐시해 둔다
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "m-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "m-purchase"));
     const graceEndsAt = new Date(STORE_EXPIRY.getTime() + 16 * DAY_MS);
     vi.setSystemTime(STORE_EXPIRY);
     await webhook(billingIssue("m-billing", graceEndsAt));
@@ -542,7 +557,7 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
 
   it("월간에서 연간으로 바꾸면 상품 변경 안내는 기간을 두고, 연간 갱신이 만료만 늘리며 쌓아 둔 보상은 유지된다", async () => {
     // Given
-    await webhook(storeEvent(SubscriptionEventBuilder.initialPurchase(), "p-purchase"));
+    await webhook(storeEvent(createSubscriptionEventFixture("INITIAL_PURCHASE"), "p-purchase"));
     await granter.grant({
       userId: UserId.reconstitute(userId),
       source: "INVITE",
@@ -554,20 +569,20 @@ describe("결제 구독과 보상 기간 결합 타임라인 QA (실제 PostgreS
     // When
     await webhook(
       storeEvent(
-        SubscriptionEventBuilder.productChange().withNewProductId("premium_annual"),
+        createSubscriptionEventFixture("PRODUCT_CHANGE", { new_product_id: "premium_annual" }),
         "p-change",
       ),
     );
     const afterChange = await premiumAccess();
     await webhook(
-      SubscriptionEventBuilder.renewal()
-        .withAppUserId(userId)
-        .withOriginalTransactionId(CHAIN)
-        .withTransactionId(`${CHAIN}-annual`)
-        .withProductId("premium_annual")
-        .withEventId("p-renew-annual")
-        .withExpirationAtMs(annualExpiry.getTime())
-        .build(),
+      createSubscriptionEventFixture("RENEWAL", {
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: `${CHAIN}-annual`,
+        product_id: "premium_annual",
+        id: "p-renew-annual",
+        expiration_at_ms: annualExpiry.getTime(),
+      }),
     );
 
     // Then

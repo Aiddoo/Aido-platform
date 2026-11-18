@@ -9,7 +9,6 @@ import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-s
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TodoBuilder } from "#test/builders/index";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoOccurrenceWriter } from "#test/doubles/planning/in-memory-todo-occurrence-writer";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
@@ -29,7 +28,8 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
+import type { PlanningTodoRecord } from "#test/fixtures/planning/todo-response.fixture";
+import { createPlanningTodoRecordFixture } from "#test/fixtures/planning/todo-response.fixture";
 
 export const PLANNING_TIME = new Date("2026-05-15T03:00:00.000Z");
 export const PLANNING_INSTANT = Temporal.Instant.fromEpochMilliseconds(PLANNING_TIME.getTime());
@@ -162,8 +162,9 @@ export function createPlanningTodoFixture(
 }
 
 export function createPlanningTodo(userId = "planning-user", id = 1) {
-  return TodoBuilder.create(userId)
-    .withId(id)
-    .withStartDate(Temporal.PlainDate.from("2026-05-15"))
-    .build();
+  return createPlanningTodoRecordFixture({
+    userId,
+    id,
+    startDate: Temporal.PlainDate.from("2026-05-15"),
+  });
 }

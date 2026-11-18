@@ -9,9 +9,12 @@ import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-p
 import { StubLifestyleIndexProvider } from "#test/doubles/weather/stub-lifestyle-index-provider";
 import { StubSunTimeProvider } from "#test/doubles/weather/stub-sun-time-provider";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
-import { todayIn } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { todayIn } from "#test/fixtures/platform/clock.fixture";
 
 /** KMA 제공 범위가 오늘(KST) 기준이므로 고정 날짜 대신 오늘에서 떨어진 날짜를 쓴다. */
 function kstDate(offsetDays: number): string {

@@ -10,8 +10,11 @@ import {
 } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { quotaUsage, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const AT = new Date("2026-04-12T12:00:00.000Z");
 const MONTH_RESET = "2026-04-30T15:00:00.000Z";

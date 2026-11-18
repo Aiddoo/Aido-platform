@@ -9,9 +9,13 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { todoSeries } from "#api/platform/database/schema/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 import { releasedTodoSchema } from "../fixtures/released-todo-response.schema.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

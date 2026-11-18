@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { LinkOAuthAccountUseCase } from "./link-oauth-account.use-case.js";
 

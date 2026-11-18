@@ -3,9 +3,12 @@ import { eq } from "drizzle-orm";
 import request from "supertest";
 
 import { userPreference } from "#api/platform/database/schema/index";
-import { todayIn, wallClockInstant, shiftDateKey } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { todayIn, wallClockInstant, shiftDateKey } from "#test/fixtures/platform/clock.fixture";
 
 const SEOUL = "Asia/Seoul";
 const NEW_YORK = "America/New_York";

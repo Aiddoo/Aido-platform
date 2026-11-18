@@ -5,7 +5,7 @@ import { vi } from "vitest";
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { RedisPushRateLimiterAdapter } from "#api/modules/notification/push-dispatches/infrastructure/adapters/redis-push-rate-limiter.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TEST_CUID } from "#test/fixtures/id.fixture";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 
 const REDIS_PORT = 6379;
 

@@ -19,9 +19,9 @@ import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
+import type { PlanningTodoRecord } from "#test/fixtures/planning/todo-response.fixture";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
-import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
 
 import { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 import { DeleteTodoCategoryUseCase } from "./delete-todo-category.use-case.js";

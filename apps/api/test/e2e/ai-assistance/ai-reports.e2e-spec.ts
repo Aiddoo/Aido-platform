@@ -22,11 +22,14 @@ import { toAiReportResponse } from "#api/modules/ai-assistance/ai-reports/presen
  */
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
-import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
-import { TodoFixture } from "#test/fixtures/todo.fixture";
-
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 
 describe("AI 리포트 E2E", () => {
   let testContext: E2eTestContext;
@@ -187,7 +190,7 @@ describe("AI 리포트 E2E", () => {
     assert.exists(category);
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const seoulDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" });
-    const { id: _id, ...row } = TodoFixture.create({
+    const { id: _id, ...row } = createTodoRowFixture({
       userId,
       categoryId: category.id,
       title: "주간 리포트 기록",

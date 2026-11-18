@@ -1,13 +1,22 @@
 import { weatherReportSchema } from "@aido/api/contracts/weather/v2";
 
-import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
-import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
+import { createWeatherAttributionFixture } from "#test/fixtures/weather/weather.fixture";
+import {
+  WEATHERKIT_FIXTURE_FETCHED_AT,
+  createHanoiWithoutNextHourWeatherKitReportFixture,
+  createNewYorkStormWeatherKitReportFixture,
+  createPolarNightWeatherKitReportFixture,
+  createSeoulObservedWeatherKitReportFixture,
+  createSeoulRainWeatherKitReportFixture,
+  createTokyoClearWeatherKitReportFixture,
+  createUnknownConditionCodeWeatherKitReportFixture,
+} from "#test/fixtures/weather/weatherkit-report.fixture";
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { toWeatherReport } from "./weatherkit-report.mapper.js";
 import { weatherKitWeatherSchema } from "./weatherkit.wire.js";
 
-const FETCHED_AT = Temporal.Instant.from(WeatherKitReportFixture.fetchedAt);
+const FETCHED_AT = Temporal.Instant.from(WEATHERKIT_FIXTURE_FETCHED_AT);
 const CELL = GeoCell.reconstitute("wydm9");
 
 function mapFixture(body: unknown, timezone: string) {
@@ -25,7 +34,7 @@ function mapFixture(body: unknown, timezone: string) {
 describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
   it("예보 dataset의 만료를 validUntil로 쓰고 5분마다 만료되는 현재 관측 만료는 쓰지 않는다", () => {
     // Given
-    const body = WeatherKitReportFixture.seoulObserved();
+    const body = createSeoulObservedWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -34,7 +43,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("예보 dataset에 만료가 없으면 validUntil은 null이다", () => {
     // Given
-    const body = WeatherKitReportFixture.seoulRain();
+    const body = createSeoulRainWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -43,7 +52,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("서울 비 응답을 m/s·0~100 정수·hPa로 정규화한다", () => {
     // Given
-    const body = WeatherKitReportFixture.seoulRain();
+    const body = createSeoulRainWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -70,7 +79,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("한국처럼 분 단위 예보·특보 dataset이 없으면 nextHour는 null, alerts는 빈 배열이다", () => {
     // Given
-    const body = WeatherKitReportFixture.seoulRain();
+    const body = createSeoulRainWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -80,7 +89,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("다음 1시간 summary를 periods로, minutes를 1분 간격으로 옮긴다", () => {
     // Given
-    const body = WeatherKitReportFixture.newYorkStorm();
+    const body = createNewYorkStormWeatherKitReportFixture();
     // When
     const { nextHour } = mapFixture(body, "America/New_York");
     // Then
@@ -112,7 +121,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("형태 없이 강수로만 온 구간은 precipitationType을 비로 단정하지 않고 null로 둔다", () => {
     // Given
-    const storm = WeatherKitReportFixture.newYorkStorm();
+    const storm = createNewYorkStormWeatherKitReportFixture();
     const body = {
       ...storm,
       forecastNextHour: {
@@ -138,7 +147,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("특보를 심각도 높은 순으로 정렬하고 description을 제목으로 쓴다", () => {
     // Given
-    const body = WeatherKitReportFixture.newYorkStorm();
+    const body = createNewYorkStormWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "America/New_York");
     // Then
@@ -153,7 +162,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("일별 date는 위치 시간대의 달력 날짜이고 풍향 360도는 0도다", () => {
     // Given
-    const body = WeatherKitReportFixture.seoulRain();
+    const body = createSeoulRainWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -170,7 +179,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("도쿄 응답은 분 단위 예보가 없으면 nextHour가 null이고 특보는 빈 배열이다", () => {
     // Given
-    const body = WeatherKitReportFixture.tokyoClear();
+    const body = createTokyoClearWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Tokyo");
     // Then
@@ -182,7 +191,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("하노이처럼 dataset이 빠진 지역도 남은 dataset으로 리포트를 만든다", () => {
     // Given
-    const body = WeatherKitReportFixture.hanoiWithoutNextHour();
+    const body = createHanoiWithoutNextHourWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Bangkok");
     // Then
@@ -194,7 +203,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("극야의 일출·일몰과 선택 필드가 없으면 0이 아닌 null로 둔다", () => {
     // Given
-    const body = WeatherKitReportFixture.polarNight();
+    const body = createPolarNightWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Europe/Oslo");
     // Then
@@ -214,7 +223,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("모르는 enum 값은 실패하지 않고 안전한 기본값으로 바꾼다", () => {
     // Given
-    const body = WeatherKitReportFixture.unknownConditionCode();
+    const body = createUnknownConditionCodeWeatherKitReportFixture();
     // When
     const report = mapFixture(body, "Asia/Seoul");
     // Then
@@ -228,7 +237,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
 
   it("매핑 결과는 날짜를 ISO로 바꾸면 공유 응답 계약을 통과하고 undefined가 없다", () => {
     // Given
-    const report = mapFixture(WeatherKitReportFixture.polarNight(), "Europe/Oslo");
+    const report = mapFixture(createPolarNightWeatherKitReportFixture(), "Europe/Oslo");
     // When
     const json: unknown = JSON.parse(
       JSON.stringify({
@@ -237,7 +246,7 @@ describe("WeatherKit → 공급자 중립 리포트 매핑", () => {
         daily: report.daily.slice(0, 10),
         location: { latitude: 69.65, longitude: 18.96, timezone: "Europe/Oslo" },
         airQuality: null,
-        attribution: weatherAttributionFixture(),
+        attribution: createWeatherAttributionFixture(),
       }),
     );
     // Then

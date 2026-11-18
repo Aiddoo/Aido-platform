@@ -4,7 +4,7 @@ import { DrizzleCheerRepository } from "#api/modules/social/cheers/infrastructur
 import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeCheerRepositoryContract } from "#test/contracts/social/cheer-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   CHEER_FIXTURE_OTHER_USER_ID,
   CHEER_FIXTURE_RECEIVER_ID,
@@ -31,9 +31,9 @@ describe("DrizzleCheerRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: CHEER_FIXTURE_SENDER_ID, userTag: "SENDER01" }),
-        UserFixture.create({ id: CHEER_FIXTURE_RECEIVER_ID, userTag: "RECEIVE1" }),
-        UserFixture.create({ id: CHEER_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
+        createUserRowFixture({ id: CHEER_FIXTURE_SENDER_ID, userTag: "SENDER01" }),
+        createUserRowFixture({ id: CHEER_FIXTURE_RECEIVER_ID, userTag: "RECEIVE1" }),
+        createUserRowFixture({ id: CHEER_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
       ]);
   });
 

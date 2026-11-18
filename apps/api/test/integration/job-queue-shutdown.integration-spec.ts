@@ -10,7 +10,7 @@ import { JobQueueLifecycle } from "#api/platform/jobs/job-queue.module";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { assertManagedTestDatabaseEnvironment } from "#test/setup/managed-test-database";
 
@@ -74,7 +74,7 @@ it("종료 중 활성 worker가 DB 저장을 마친 뒤 연결이 닫힌다", as
     const [user] = await database
       .insert(userTable)
       .values(
-        UserFixture.create({
+        createUserRowFixture({
           id: createEntityId(),
           email: "controlled-worker@shutdown.test",
           userTag: "SHUT0001",

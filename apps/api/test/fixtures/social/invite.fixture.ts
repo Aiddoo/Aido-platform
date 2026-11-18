@@ -1,7 +1,7 @@
 import { Invite, type InvitePrimitives } from "#api/modules/social/invites/domain/invite.aggregate";
 import type { Database } from "#api/platform/database/database.client";
 import { invite, user, userProfile } from "#api/platform/database/schema/index";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 
 // 2028-02-28 12:00 KST. 윤년 2월 말이라 날짜 경계 계산이 하루 밀리면 드러난다
 export const INVITE_FIXTURE_NOW = Temporal.Instant.from("2028-02-28T03:00:00Z");
@@ -76,7 +76,7 @@ export function createInviteFixture(overrides: Partial<InvitePrimitives> = {}): 
 export async function insertInviteFixtureRows(db: Database): Promise<void> {
   await db.insert(user).values(
     INVITE_FIXTURE_USERS.map((fixtureUser) =>
-      UserFixture.create({
+      createUserRowFixture({
         id: fixtureUser.id,
         userTag: fixtureUser.userTag,
         email: `${fixtureUser.userTag.toLowerCase()}@example.test`,

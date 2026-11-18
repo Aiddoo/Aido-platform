@@ -18,7 +18,11 @@ import {
   type WeeklyStatsUserSeed,
 } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -53,7 +57,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
 
   async function insertUser(seed: Pick<WeeklyStatsUserSeed, "plan"> = {}): Promise<string> {
     sequence += 1;
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `scheduler-${sequence}@example.com`,
       userTag: `SCHED${String(sequence).padStart(3, "0")}`,
@@ -69,11 +73,11 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
     await client.insert(userPreference).values({ userId, timezone: seed.timezone });
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     for (const span of seed.todos ?? []) {
       await client.insert(todo).values({
-        ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId: category?.id ?? 0 }), ["id"]),
         startDate: Temporal.PlainDate.from(span.start),
         endDate: span.end == null ? null : Temporal.PlainDate.from(span.end),
         completed: span.completed ?? false,
@@ -298,11 +302,11 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
         });
         const [category] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
           .returning();
         for (let index = 0; index < seed.todayTodos; index += 1) {
           await client.insert(todo).values({
-            ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
+            ...omit(createTodoRowFixture({ userId, categoryId: category?.id ?? 0 }), ["id"]),
             startDate: TODAY,
             endDate: null,
           });

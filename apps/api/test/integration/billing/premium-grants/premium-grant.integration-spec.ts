@@ -11,24 +11,25 @@ import {
 } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { SubscriptionRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription.repository.port";
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
 import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { UserSubscriptionProjectionPort } from "#api/modules/identity/users/identity-users.public";
 import { notification, premiumGrant, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import {
   saveSubscriptionFixture,
   setUserSubscriptionProjection,
   toDateOrNull,
 } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -62,7 +63,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "premium-grant@example.com",
       userTag: "PGRANT01",
@@ -128,13 +129,13 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 7,
     });
     vi.setSystemTime(STORE_EXPIRY);
-    const body = SubscriptionEventBuilder.expiration()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(TRANSACTION_ID)
-      .withTransactionId(TRANSACTION_ID)
-      .withEventId("store-expired")
-      .withExpirationAtMs(STORE_EXPIRY.getTime())
-      .build();
+    const body = createSubscriptionEventFixture("EXPIRATION", {
+      app_user_id: userId,
+      original_transaction_id: TRANSACTION_ID,
+      transaction_id: TRANSACTION_ID,
+      id: "store-expired",
+      expiration_at_ms: STORE_EXPIRY.getTime(),
+    });
 
     // When
     await context.module.get(RevenueCatWebhookController).receive(body);
@@ -296,7 +297,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       sourceKey: "invite:banked",
       durationDays: 7,
     });
-    const coveredUser = UserFixture.create({
+    const coveredUser = createUserRowFixture({
       id: createEntityId(),
       email: "premium-grant-covered@example.com",
       userTag: "PGRANT02",
@@ -341,7 +342,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
 
   async function createUser(tag: string): Promise<string> {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `${tag.toLowerCase()}@example.com`,
       userTag: tag,
@@ -421,11 +422,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
-    const transfer = SubscriptionEventBuilder.transfer()
-      .withAppUserId(receiverId)
-      .withTransferredFrom([userId])
-      .withEventId("transfer-away")
-      .build();
+    const transfer = createSubscriptionEventFixture("TRANSFER", {
+      app_user_id: receiverId,
+      transferred_from: [userId],
+      id: "transfer-away",
+    });
     await context.module.get(RevenueCatWebhookController).receive(transfer);
     await granter.grant({
       userId: UserId.reconstitute(userId),
@@ -466,11 +467,11 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       startedAt: instantFromDate(AT),
       expiresAt: instantFromDate(STORE_EXPIRY),
     });
-    const transfer = SubscriptionEventBuilder.transfer()
-      .withAppUserId(userId)
-      .withTransferredFrom([giverId])
-      .withEventId("transfer-in")
-      .build();
+    const transfer = createSubscriptionEventFixture("TRANSFER", {
+      app_user_id: userId,
+      transferred_from: [giverId],
+      id: "transfer-in",
+    });
     await context.module.get(RevenueCatWebhookController).receive(transfer);
 
     // When
@@ -565,24 +566,28 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
 
   function purchase(eventId: string, purchasedAt: Date, chainId = TRANSACTION_ID) {
-    return SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(chainId)
-      .withTransactionId(chainId)
-      .withEventId(eventId)
-      .withPurchasedAtMs(purchasedAt.getTime())
-      .withExpirationAtMs(STORE_EXPIRY.getTime())
-      .build();
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      original_transaction_id: chainId,
+      transaction_id: chainId,
+      id: eventId,
+      purchased_at_ms: purchasedAt.getTime(),
+      expiration_at_ms: STORE_EXPIRY.getTime(),
+    });
   }
 
-  function storeEvent(builder: SubscriptionEventBuilder, eventId: string) {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(TRANSACTION_ID)
-      .withTransactionId(TRANSACTION_ID)
-      .withEventId(eventId)
-      .withExpirationAtMs(STORE_EXPIRY.getTime())
-      .build();
+  function storeEvent(payload: RevenueCatWebhookPayload, eventId: string) {
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: TRANSACTION_ID,
+        transaction_id: TRANSACTION_ID,
+        id: eventId,
+        expiration_at_ms: STORE_EXPIRY.getTime(),
+      },
+    };
   }
 
   function premiumAccess() {
@@ -619,7 +624,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     const afterPurchase = await premiumAccess();
     vi.setSystemTime(STORE_EXPIRY);
     await webhook.receive(
-      storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-after-grants"),
+      storeEvent(createSubscriptionEventFixture("EXPIRATION"), "store-expired-after-grants"),
     );
 
     // Then
@@ -721,7 +726,9 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       durationDays: 7,
     });
     const webhook = context.module.get(RevenueCatWebhookController);
-    await webhook.receive(storeEvent(SubscriptionEventBuilder.cancellation(), "store-cancelled"));
+    await webhook.receive(
+      storeEvent(createSubscriptionEventFixture("CANCELLATION"), "store-cancelled"),
+    );
     const notify = context.module.get(NotifyEndingPremiumGrantsUseCase);
     const sweep = context.module.get(SweepPremiumGrantsUseCase);
     const finalEndsAt = new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS);
@@ -773,17 +780,17 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     vi.setSystemTime(STORE_EXPIRY);
     const webhook = context.module.get(RevenueCatWebhookController);
     await webhook.receive(
-      storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-before-resub"),
+      storeEvent(createSubscriptionEventFixture("EXPIRATION"), "store-expired-before-resub"),
     );
     const resubscribedAt = new Date(STORE_EXPIRY.getTime() + 2 * DAY_MS);
     vi.setSystemTime(resubscribedAt);
-    const renewal = SubscriptionEventBuilder.renewal()
-      .withAppUserId(userId)
-      .withOriginalTransactionId(TRANSACTION_ID)
-      .withTransactionId(TRANSACTION_ID)
-      .withEventId("resubscribed")
-      .withExpirationAtMs(new Date("2028-04-12T04:00:00.000Z").getTime())
-      .build();
+    const renewal = createSubscriptionEventFixture("RENEWAL", {
+      app_user_id: userId,
+      original_transaction_id: TRANSACTION_ID,
+      transaction_id: TRANSACTION_ID,
+      id: "resubscribed",
+      expiration_at_ms: new Date("2028-04-12T04:00:00.000Z").getTime(),
+    });
 
     // When
     await webhook.receive(renewal);
@@ -919,10 +926,14 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
   });
 
   it.each([
-    { name: "EXPIRATION", builder: SubscriptionEventBuilder.expiration },
-    { name: "CANCELLATION", builder: SubscriptionEventBuilder.cancellation },
-    { name: "환불 CANCELLATION", builder: SubscriptionEventBuilder.refundCancellation },
-  ])("ADMIN의 스토어 $name 웹훅은 role을 바꾸지 않는다", async ({ builder }) => {
+    { name: "EXPIRATION", createPayload: () => createSubscriptionEventFixture("EXPIRATION") },
+    { name: "CANCELLATION", createPayload: () => createSubscriptionEventFixture("CANCELLATION") },
+    {
+      name: "환불 CANCELLATION",
+      createPayload: () =>
+        createSubscriptionEventFixture("CANCELLATION", { cancel_reason: "CUSTOMER_SUPPORT" }),
+    },
+  ])("ADMIN의 스토어 $name 웹훅은 role을 바꾸지 않는다", async ({ createPayload }) => {
     // Given
     await client.update(userTable).set({ role: "ADMIN" }).where(eq(userTable.id, userId));
     await givenStoreSubscription();
@@ -937,7 +948,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     // When
     await context.module
       .get(RevenueCatWebhookController)
-      .receive(storeEvent(builder(), "admin-store"));
+      .receive(storeEvent(createPayload(), "admin-store"));
     await context.module
       .get(SweepPremiumGrantsUseCase)
       .execute({ now: instantFromDate(STORE_EXPIRY) });

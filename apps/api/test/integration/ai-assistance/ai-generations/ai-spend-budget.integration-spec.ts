@@ -10,8 +10,8 @@ import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { UserFixture } from "#test/fixtures/index";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -135,7 +135,7 @@ describe("AI 비용 예산 누적 (실제 PostgreSQL)", () => {
     "저장된 역할 %s 도 같은 사용자 일 예산에서 막힌다(ADMIN 면제 없음)",
     async (role) => {
       // Given
-      const user = UserFixture.create({
+      const user = createUserRowFixture({
         id: createEntityId(),
         email: `spend-${role.toLowerCase()}@example.com`,
         userTag: `SPEND${role.slice(0, 3)}`,

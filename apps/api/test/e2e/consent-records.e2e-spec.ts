@@ -5,7 +5,11 @@ import {
 } from "@aido/api/contracts/user-consent/v1";
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("가입 약관 기록·광고성 동의 결과 HTTP 계약", () => {
   let testContext: E2eTestContext;

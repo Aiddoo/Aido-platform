@@ -5,13 +5,13 @@ import { user as userTable } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture } from "#test/fixtures/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -76,29 +76,35 @@ describe("구독 웹훅의 일시 실패 재전송 (실제 PostgreSQL)", () => {
 
   function storeEvent(
     userId: string,
-    builder: SubscriptionEventBuilder,
+    payload: RevenueCatWebhookPayload,
     eventId: string,
   ): RevenueCatWebhookPayload {
-    return builder
-      .withAppUserId(userId)
-      .withOriginalTransactionId(CHAIN)
-      .withTransactionId(CHAIN)
-      .withEventId(eventId)
-      .withPurchasedAtMs(at.getTime() - 24 * 60 * 60 * 1000)
-      .withExpirationAtMs(expiresAt.getTime())
-      .build();
+    return {
+      ...payload,
+      event: {
+        ...payload.event,
+        app_user_id: userId,
+        original_transaction_id: CHAIN,
+        transaction_id: CHAIN,
+        id: eventId,
+        purchased_at_ms: at.getTime() - 24 * 60 * 60 * 1000,
+        expiration_at_ms: expiresAt.getTime(),
+      },
+    };
   }
 
   it("트랜잭션 안의 일시 실패는 처리 원장까지 되돌리고 던져, 같은 웹훅을 다시 받으면 한 번만 반영한다", async () => {
     // Given
-    const user = UserFixture.create({ id: createEntityId(), createdAt: instantFromDate(at) });
+    const user = createUserRowFixture({ id: createEntityId(), createdAt: instantFromDate(at) });
     await client.insert(userTable).values(user);
     await receiver.receive(
-      storeEvent(user.id, SubscriptionEventBuilder.initialPurchase(), "purchase"),
+      storeEvent(user.id, createSubscriptionEventFixture("INITIAL_PURCHASE"), "purchase"),
     );
     const billingIssue = storeEvent(
       user.id,
-      SubscriptionEventBuilder.billingIssue().withGracePeriodExpirationAtMs(graceEndsAt.getTime()),
+      createSubscriptionEventFixture("BILLING_ISSUE", {
+        grace_period_expiration_at_ms: graceEndsAt.getTime(),
+      }),
       "billing-issue",
     );
     notifier.failuresLeft = 1;

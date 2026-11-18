@@ -35,7 +35,7 @@ const CITY_PRESETS = {
   },
 } as const satisfies Record<string, Partial<UserLocationPrimitives>>;
 
-export function weatherLocationFixture(
+export function createWeatherLocationFixture(
   userId = "weather-user",
   city: keyof typeof CITY_PRESETS = "서울",
 ): UserLocation {

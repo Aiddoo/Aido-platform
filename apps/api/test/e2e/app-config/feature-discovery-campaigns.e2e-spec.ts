@@ -3,9 +3,12 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { GetFeatureDiscoveryCampaignUseCase } from "#api/modules/app-config/feature-discovery-campaigns/application/use-cases/get-feature-discovery-campaign.use-case";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import { createFeatureDiscoveryCampaignFixture } from "#test/fixtures/app-config/feature-discovery-campaign.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 describe("기능 발견 설정 (E2E)", () => {
   let testContext: E2eTestContext;

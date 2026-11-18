@@ -50,6 +50,7 @@ import { DRIZZLE } from "#api/platform/database/database.client";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import type { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { NoCacheStore } from "#test/doubles/platform/no-cache-store";
 import {
@@ -98,14 +99,13 @@ import {
   sendVerificationCodeProvider,
   consumeVerificationCodeProvider,
 } from "../../../src/modules/identity/verifications/identity-verifications.providers.js";
-import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js";
 import { sessionPushDeviceReleaserTestProvider } from "./session-push-device-releaser.provider.js";
 
 export async function createAuthTestModule(
   client: TestDatabaseClient,
-  fakeEmailService: FakeEmailService,
+  fakeEmailService: FakeEmailSender,
   options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistryPort } = {},
 ): Promise<TestingModule> {
   const transaction = createDatabaseTransactionFixture(client);

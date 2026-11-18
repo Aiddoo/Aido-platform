@@ -15,8 +15,12 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
 import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -47,9 +51,9 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: NUDGE_FIXTURE_SENDER_ID }),
-        UserFixture.create({ id: NUDGE_FIXTURE_RECEIVER_ID }),
-        UserFixture.create({ id: NUDGE_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_SENDER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_RECEIVER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 
@@ -75,13 +79,13 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
   async function addTodo(seed: NudgeTodoSeed): Promise<number> {
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: seed.ownerId }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: seed.ownerId }), ["id"]))
       .returning({ id: todoCategory.id });
     const [created] = await client
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId: seed.ownerId,
             categoryId: requireRecord(category).id,
             title: seed.title,

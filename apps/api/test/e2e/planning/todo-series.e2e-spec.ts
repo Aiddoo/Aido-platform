@@ -12,8 +12,13 @@ import request from "supertest";
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { memo, todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { nowInstant, todayUtc } from "#test/fixtures/platform/clock.fixture";
 
 import {
   releasedConvertMemoToTodosResponseSchema,
@@ -22,7 +27,6 @@ import {
   releasedDeleteTodoResponseSchema,
   releasedParsedTodoSchema,
 } from "../fixtures/released-todo-response.schema.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

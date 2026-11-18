@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 
 import { resolveRequestLocale } from "./request-locale.reader.js";
 

@@ -17,8 +17,8 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { SubscriptionEventBuilder } from "#test/builders/index";
-import { UserFixture } from "#test/fixtures/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -63,7 +63,9 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const id = createEntityId();
     await client
       .insert(user)
-      .values(UserFixture.create({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }));
+      .values(
+        createUserRowFixture({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }),
+      );
     return id;
   }
 
@@ -113,14 +115,14 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const inviteeId = await createUser("CONCPUR2");
     const { code } = await issueMyInvite.execute({ inviterId });
     const purchasedAt = Date.now();
-    const purchase = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(inviteeId)
-      .withOriginalTransactionId("redeem-purchase-chain")
-      .withTransactionId("redeem-purchase-chain")
-      .withEventId("redeem-purchase")
-      .withPurchasedAtMs(purchasedAt)
-      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1000)
-      .build();
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: inviteeId,
+      original_transaction_id: "redeem-purchase-chain",
+      transaction_id: "redeem-purchase-chain",
+      id: "redeem-purchase",
+      purchased_at_ms: purchasedAt,
+      expiration_at_ms: purchasedAt + 30 * 24 * 60 * 60 * 1000,
+    });
 
     // When
     const [redeemed] = await Promise.all([

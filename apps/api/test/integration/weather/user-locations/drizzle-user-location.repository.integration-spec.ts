@@ -7,7 +7,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeUserLocationRepositoryContract } from "#test/contracts/weather/user-location-repository.contract";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createUserLocationFixture,
   USER_LOCATION_FIXTURE_OTHER_USER_ID,
@@ -31,12 +31,12 @@ describe("DrizzleUserLocationRepository (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({
+      createUserRowFixture({
         id: USER_LOCATION_FIXTURE_USER_ID,
         email: "weather-owner@example.com",
         userTag: "WEATHER1",
       }),
-      UserFixture.create({
+      createUserRowFixture({
         id: USER_LOCATION_FIXTURE_OTHER_USER_ID,
         email: "weather-other@example.com",
         userTag: "WEATHER2",

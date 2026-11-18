@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type { OAuthStatePrimitives } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import { InMemoryOAuthStateRepository } from "#test/doubles/identity/in-memory-oauth-state.repository";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createOAuthStateFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { LoginWithOAuthTokenUseCase } from "../../../sessions/application/use-cases/login-with-oauth-token.use-case.js";
 import { CompleteOAuthAuthorizationUseCase } from "./complete-oauth-authorization.use-case.js";

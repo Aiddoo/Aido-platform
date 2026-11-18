@@ -9,7 +9,16 @@ import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { StubWeatherKitAttributionResolver } from "#test/doubles/weather/stub-weatherkit-attribution-resolver";
 import { StubWeatherKitTokenResolver } from "#test/doubles/weather/stub-weatherkit-token-resolver";
 import { createWeatherOutbound } from "#test/doubles/weather/weather-outbound";
-import { WeatherKitReportFixture } from "#test/fixtures/weatherkit-report.fixture";
+import {
+  WEATHERKIT_FIXTURE_FETCHED_AT,
+  createHanoiWithoutNextHourWeatherKitReportFixture,
+  createNewYorkStormWeatherKitReportFixture,
+  createSeoulObservedWeatherKitReportFixture,
+  createSeoulRainWeatherKitReportFixture,
+  createTokyoClearWeatherKitReportFixture,
+  createTokyoObservedWeatherKitReportFixture,
+  createWeatherKitAvailabilityFixture,
+} from "#test/fixtures/weather/weatherkit-report.fixture";
 
 import { WeatherReportAlerts } from "../../application/weather-reports.alerts.js";
 import { WeatherKitReportAdapter } from "./weatherkit-report.adapter.js";
@@ -77,7 +86,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(WeatherKitReportFixture.fetchedAt));
+    vi.setSystemTime(new Date(WEATHERKIT_FIXTURE_FETCHED_AT));
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cacheService = memory;
     tokenResolver = new StubWeatherKitTokenResolver();
@@ -108,8 +117,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("칸 중심 좌표로 가용성을 묻고 제공되는 dataset만 한 번에 요청한다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
     ]);
     const { latitude, longitude } = cell.center;
     // When
@@ -144,8 +153,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("실제 서울 응답은 분 단위 예보·특보 없이 경고 없이 매핑되고 fetchedAt은 공급자 readTime이다", async () => {
     // Given
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
-      jsonResponse(WeatherKitReportFixture.seoulObserved()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse(createSeoulObservedWeatherKitReportFixture()),
     ]);
     // When
     const report = await provider.getReport(cell, REQUEST);
@@ -162,8 +171,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("실제 도쿄 응답의 맑음 구간은 precipitationType NONE이고 분 단위 예보를 모두 담는다", async () => {
     // Given
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability(...ALL_DATA_SETS.slice(0, 4))),
-      jsonResponse(WeatherKitReportFixture.tokyoObserved()),
+      jsonResponse(createWeatherKitAvailabilityFixture(...ALL_DATA_SETS.slice(0, 4))),
+      jsonResponse(createTokyoObservedWeatherKitReportFixture()),
     ]);
     // When
     const report = await provider.getReport(cell, { ...REQUEST, timezone: "Asia/Tokyo" });
@@ -178,11 +187,11 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("가용성은 칸별로 7일 캐시해 다음 요청은 날씨 한 번만 부른다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability(...ALL_DATA_SETS)),
-      jsonResponse(WeatherKitReportFixture.newYorkStorm()),
-      jsonResponse(WeatherKitReportFixture.newYorkStorm()),
-      jsonResponse(WeatherKitReportFixture.availability(...ALL_DATA_SETS)),
-      jsonResponse(WeatherKitReportFixture.newYorkStorm()),
+      jsonResponse(createWeatherKitAvailabilityFixture(...ALL_DATA_SETS)),
+      jsonResponse(createNewYorkStormWeatherKitReportFixture()),
+      jsonResponse(createNewYorkStormWeatherKitReportFixture()),
+      jsonResponse(createWeatherKitAvailabilityFixture(...ALL_DATA_SETS)),
+      jsonResponse(createNewYorkStormWeatherKitReportFixture()),
     ]);
     await provider.getReport(cell, REQUEST);
     // When
@@ -207,7 +216,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     // Given
     const { provider, requests } = createProvider([
       jsonResponse({ reason: "unavailable" }, 503),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
     ]);
     // When
     const report = await provider.getReport(cell, REQUEST);
@@ -230,10 +239,10 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     // 가용성 503 뒤 날씨 성공, 리포트 캐시는 없는 상태로 다시 부른다
     const { provider, requests } = createProvider([
       jsonResponse({ reason: "unavailable" }, 503),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
-      jsonResponse(WeatherKitReportFixture.availability()),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
     ]);
     await provider.getReport(cell, REQUEST);
     // When
@@ -253,8 +262,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("국가를 모르면 country·countryCode 없이 요청한다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
-      jsonResponse(WeatherKitReportFixture.tokyoClear()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse(createTokyoClearWeatherKitReportFixture()),
     ]);
     // When
     await provider.getReport(cell, { ...REQUEST, countryCode: null });
@@ -267,8 +276,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("성공 호출을 칸·상태·지연·받은 dataset으로 기록하고 토큰·좌표는 남기지 않는다", async () => {
     // Given
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
-      jsonResponse(WeatherKitReportFixture.hanoiWithoutNextHour()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse(createHanoiWithoutNextHourWeatherKitReportFixture()),
     ]);
     // When
     await provider.getReport(cell, REQUEST);
@@ -288,12 +297,12 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("요청한 dataset이 빠지거나 형태가 깨져 버려지면 이름만 경고로 남긴다", async () => {
     // Given
     const body = {
-      ...WeatherKitReportFixture.newYorkStorm(),
+      ...createNewYorkStormWeatherKitReportFixture(),
       forecastNextHour: { summary: "broken" },
       weatherAlerts: undefined,
     };
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability(...ALL_DATA_SETS)),
+      jsonResponse(createWeatherKitAvailabilityFixture(...ALL_DATA_SETS)),
       jsonResponse(body),
     ]);
     // When
@@ -313,7 +322,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     async (status) => {
       // Given
       const { provider } = createProvider([
-        jsonResponse(WeatherKitReportFixture.availability()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
         jsonResponse({ reason: "quota" }, status),
       ]);
       // When
@@ -333,9 +342,9 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("401은 토큰을 버리고 한 번만 새 토큰으로 다시 보낸다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       jsonResponse({ reason: "NOT_ENABLED" }, 401),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
     ]);
     // When
     const report = await provider.getReport(cell, REQUEST);
@@ -352,7 +361,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("다시 보낸 요청도 403이면 반복하지 않고 auth_rejected로 실패한다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       jsonResponse({}, 403),
       jsonResponse({}, 403),
     ]);
@@ -369,9 +378,9 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("4초 안에 응답이 없으면 요청을 중단하고 시간 초과로 실패한다", async () => {
     // Given
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
-    vi.setSystemTime(new Date(WeatherKitReportFixture.fetchedAt));
+    vi.setSystemTime(new Date(WEATHERKIT_FIXTURE_FETCHED_AT));
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       neverResponds,
     ]);
     // When
@@ -394,9 +403,9 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("실패한 칸은 1분 동안 공급자를 부르지 않고 바로 실패해 폴백으로 넘긴다", async () => {
     // Given
     const { provider, requests } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       jsonResponse({}, 503),
-      jsonResponse(WeatherKitReportFixture.seoulRain()),
+      jsonResponse(createSeoulRainWeatherKitReportFixture()),
     ]);
     await provider.getReport(cell, REQUEST).catch(() => undefined);
     // When
@@ -412,7 +421,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("currentWeather가 없으면 missing_current로 실패한다", async () => {
     // Given
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       jsonResponse({ forecastDaily: { days: [] } }),
     ]);
     // When
@@ -424,7 +433,7 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
   it("응답 형태가 깨지면 invalid_structure로 실패한다", async () => {
     // Given
     const { provider } = createProvider([
-      jsonResponse(WeatherKitReportFixture.availability()),
+      jsonResponse(createWeatherKitAvailabilityFixture()),
       jsonResponse({ currentWeather: { temperature: "warm" } }),
     ]);
     // When
@@ -457,8 +466,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
 
     function healthyCell(): StubResponse[] {
       return [
-        jsonResponse(WeatherKitReportFixture.availability()),
-        jsonResponse(WeatherKitReportFixture.seoulRain()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
+        jsonResponse(createSeoulRainWeatherKitReportFixture()),
       ];
     }
 
@@ -605,8 +614,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     it("실제로 보낸 가용성·리포트 호출을 이번 달 weatherkit.call에 센다", async () => {
       // Given
       const { provider, meter } = createProvider([
-        jsonResponse(WeatherKitReportFixture.availability()),
-        jsonResponse(WeatherKitReportFixture.seoulRain()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
+        jsonResponse(createSeoulRainWeatherKitReportFixture()),
       ]);
       // When
       await provider.getReport(cell, REQUEST);
@@ -619,8 +628,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     it("무료 한도 60%(30만 회)에 닿은 호출 하나만 운영 경보를 올린다", async () => {
       // Given
       const { provider, meter, alert } = createProvider([
-        jsonResponse(WeatherKitReportFixture.availability()),
-        jsonResponse(WeatherKitReportFixture.seoulRain()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
+        jsonResponse(createSeoulRainWeatherKitReportFixture()),
       ]);
       await meter.add([
         { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 299_999 },
@@ -640,8 +649,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     it("무료 한도 90%(45만 회)에 닿은 호출이 예산 절약 경보를 한 번 올리고 상태를 saving으로 둔다", async () => {
       // Given
       const { provider, meter, alert, usage } = createProvider([
-        jsonResponse(WeatherKitReportFixture.availability()),
-        jsonResponse(WeatherKitReportFixture.seoulRain()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
+        jsonResponse(createSeoulRainWeatherKitReportFixture()),
       ]);
       await meter.add([
         { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 449_999 },
@@ -662,8 +671,8 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     it("한도에 닿은 마지막 호출은 보내고 한도를 다 썼다는 경보를 올린다", async () => {
       // Given
       const { provider, meter, alert, usage } = createProvider([
-        jsonResponse(WeatherKitReportFixture.availability()),
-        jsonResponse(WeatherKitReportFixture.seoulRain()),
+        jsonResponse(createWeatherKitAvailabilityFixture()),
+        jsonResponse(createSeoulRainWeatherKitReportFixture()),
       ]);
       await meter.add([
         { key: { meter: "weatherkit.call", periodKey: "2026-11", subject: "*" }, amount: 499_998 },

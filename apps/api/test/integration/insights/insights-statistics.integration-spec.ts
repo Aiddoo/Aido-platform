@@ -27,7 +27,11 @@ import {
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -64,7 +68,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create();
+    const user = createUserRowFixture();
     await client.insert(userTable).values(user);
     userId = user.id;
   });
@@ -118,7 +122,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
         .insert(todoCategory)
         .values(
           omit(
-            TodoCategoryFixture.create({
+            createTodoCategoryRowFixture({
               userId,
               name: `category ${index}`,
               color: ["#FF0000", "#00FF00", "#0000FF"][index],
@@ -140,7 +144,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
       }
       await client.insert(todo).values(
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId,
             categoryId: category.id,
             startDate: Temporal.PlainDate.from(`2027-01-0${1 + Math.floor(index / 3)}`),
@@ -190,7 +194,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     // Given
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     if (category === undefined) {
       throw new Error("category absent");
@@ -204,7 +208,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     await client.insert(todo).values(
       spans.map((span, index) =>
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId,
             categoryId: category.id,
             startDate: Temporal.PlainDate.from(span.startDate),
@@ -312,7 +316,7 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   it("같은 사용자·연도에 존재하는 cursor만 기준으로 주차 내림차순 목록을 읽는다", async () => {
     // Given
     await weekly.saveAll([snapshot(1), snapshot(2), snapshot(3), snapshot(4)]);
-    const foreign = UserFixture.create();
+    const foreign = createUserRowFixture();
     await client.insert(userTable).values(foreign);
     await weekly.saveAll([snapshot(7, { userId: foreign.id }), snapshot(8, { year: 2026 })]);
     const cases = [

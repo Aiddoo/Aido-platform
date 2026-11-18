@@ -1,12 +1,12 @@
 import { AiActionPlanGeneratorAdapter } from "#api/modules/ai-assistance/action-plan-drafts/infrastructure/adapters/ai-action-plan-generator.adapter";
 import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsed-drafts/infrastructure/adapters/quota-charged-generation.adapter";
 import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/plan-applications/infrastructure/adapters/quota-charged-plan-runner.adapter";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createQuotaLedgerFixture } from "#test/fixtures/access/quota-ledger.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
 
 /** 메모리 원장·FakeAiGenerator 위의 계획 흐름 부품. 원장과 생성기는 실제 구현이다. */
 export function createPlanFlowFixture(

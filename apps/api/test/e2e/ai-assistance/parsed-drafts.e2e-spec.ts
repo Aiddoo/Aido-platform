@@ -22,14 +22,17 @@ import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-as
  */
 import { user } from "#api/platform/database/schema/index";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import {
   createMemoDraftResponse,
   createTodoDraftResponse,
   parsingIntentCases,
-} from "#test/fixtures/ai-response.fixture";
-
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 

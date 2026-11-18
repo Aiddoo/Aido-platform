@@ -39,7 +39,11 @@ import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createSchedulerReaders } from "#test/integration/helpers/scheduler-readers";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -126,7 +130,7 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     suppressLogger();
     await database.cleanup();
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "catch-up@example.com",
       userTag: "CATCHUP1",
@@ -280,12 +284,12 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       async function seedTodo(scheduledAt: Temporal.Instant): Promise<number> {
         const [category] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
           .returning();
         const [row] = await client
           .insert(todo)
           .values({
-            ...omit(TodoFixture.create({ userId, categoryId: category?.id ?? 0 }), ["id"]),
+            ...omit(createTodoRowFixture({ userId, categoryId: category?.id ?? 0 }), ["id"]),
             startDate: Temporal.PlainDate.from("2026-11-10"),
             scheduledLocalTime: "09:00",
             scheduledTime: scheduledAt,

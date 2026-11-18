@@ -1,4 +1,4 @@
-import { createFakeDatabase, queryResult } from "#test/mocks/drizzle.mock";
+import { createFakeDatabase, queryResult } from "#test/doubles/platform/fake-database";
 
 import { transactionJobDatabase } from "./drizzle-pg-boss.database.js";
 

@@ -6,7 +6,7 @@ import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryUserLocationRepository } from "#test/doubles/weather/in-memory-user-location.repository";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
-import { weatherLocationFixture } from "#test/fixtures/weather/user-location.fixture";
+import { createWeatherLocationFixture } from "#test/fixtures/weather/user-location.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { GetWeatherForecastUseCase } from "./get-weather-forecast.use-case.js";
@@ -25,7 +25,7 @@ describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
     vi.setSystemTime(date.epochMilliseconds);
     suppressLogger();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
+    repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
     weatherProvider = new StubWeatherForecastProvider();
     const cache = new WeatherForecastCache(memory);
     const readWeatherForecast = new ReadWeatherForecastUseCase({
@@ -66,7 +66,7 @@ describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
 
   it("격자 없는 해외 위치는 위치 없음과 같은 WEATHER_1902이며 예보를 요청하지 않는다", async () => {
     // Given
-    repository.set(weatherLocationFixture("weather-user", "도쿄"));
+    repository.set(createWeatherLocationFixture("weather-user", "도쿄"));
     // When
     const result = useCase.execute({ userId: "weather-user", target: date });
     // Then

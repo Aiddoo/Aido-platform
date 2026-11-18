@@ -2,13 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import {
   AI_REPORT_FIXTURE_OTHER_USER_ID,
   AI_REPORT_FIXTURE_USER_ID,
   createAiReportFixture,
 } from "#test/fixtures/ai-assistance/ai-report.fixture";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
 
 import { GetReportByIdUseCase } from "./get-report-by-id.use-case.js";
 

@@ -8,7 +8,8 @@ import { DrizzleSessionRepository } from "#api/modules/identity/sessions/infrast
 import { session as sessionTable, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { SessionFixture, UserFixture } from "#test/fixtures/index";
+import { createSessionRowFixture } from "#test/fixtures/identity/session-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -43,7 +44,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     const [user] = await client
       .insert(userTable)
       .values(
-        UserFixture.create({
+        createUserRowFixture({
           id: createEntityId(),
           email: "session-owner@example.com",
           userTag: "SESSION1",
@@ -73,8 +74,8 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     return row;
   }
 
-  async function givenSession(overrides: Parameters<typeof SessionFixture.create>[0] = {}) {
-    const fixture = SessionFixture.create({
+  async function givenSession(overrides: Parameters<typeof createSessionRowFixture>[0] = {}) {
+    const fixture = createSessionRowFixture({
       id: createEntityId(),
       userId,
       tokenFamily: "session-family",
@@ -238,7 +239,7 @@ describe("DrizzleSessionRepository 통합 테스트 — 세션 회전과 폐기 
     });
     const [otherUser] = await client
       .insert(userTable)
-      .values(UserFixture.create({ id: createEntityId(), userTag: "OTHER001" }))
+      .values(createUserRowFixture({ id: createEntityId(), userTag: "OTHER001" }))
       .returning();
     if (otherUser === undefined) {
       throw new Error("other user fixture was not created");

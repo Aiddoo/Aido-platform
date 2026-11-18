@@ -8,7 +8,7 @@ import {
   createPlanningTodo,
   PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
-import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFromRecord } from "#test/fixtures/planning/todo-response.fixture";
 
 import { ListTodosUseCase } from "./list-todos.use-case.js";
 

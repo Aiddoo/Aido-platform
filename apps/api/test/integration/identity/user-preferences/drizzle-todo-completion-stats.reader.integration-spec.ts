@@ -1,8 +1,8 @@
 import { DrizzleTodoCompletionStatsReader } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-todo-completion-stats.reader";
 import { todo, todoCategory } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -29,7 +29,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     await testDatabase.cleanup();
     const user = await createUserDatabaseFixture(
       client,
-      UserFixture.create({ email: "streak@example.com", status: "ACTIVE" }),
+      createUserRowFixture({ email: "streak@example.com", status: "ACTIVE" }),
       {},
     );
     const [category] = await client
@@ -106,7 +106,7 @@ describe("DrizzleTodoCompletionStatsReader — 스트릭용 하루 완료 집계
     await givenTodo("2026-12-01", null, true);
     const other = await createUserDatabaseFixture(
       client,
-      UserFixture.create({ email: "other@example.com", status: "ACTIVE", userTag: "OTHER234" }),
+      createUserRowFixture({ email: "other@example.com", status: "ACTIVE", userTag: "OTHER234" }),
       {},
     );
     await client.insert(todo).values({

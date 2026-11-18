@@ -11,7 +11,7 @@ import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-s
 import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
-import type { PlanningTodoRecord } from "#test/fixtures/todo-response.fixture";
+import type { PlanningTodoRecord } from "#test/fixtures/planning/todo-response.fixture";
 
 // 할 일 개수·옮기기는 같은 planning 대역(InMemoryTodoRepository)의 기록을 함께 본다
 export interface InMemoryPlanningStores {

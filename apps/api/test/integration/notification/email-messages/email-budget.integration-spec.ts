@@ -2,12 +2,12 @@ import { MeteredEmailBudgetAdapter } from "#api/modules/notification/email-messa
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { usagePeriod } from "#api/platform/metering/usage-period";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 

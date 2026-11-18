@@ -1,6 +1,6 @@
 import { AI_PARSE_LIMITS, MEMO_LIMITS } from "@aido/api/vocabulary";
 
-import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
+import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import {
   encodeUntrustedJson,

@@ -11,7 +11,6 @@ import {
 } from "#test/contracts/engagement/todo-comment-like-repository.contract";
 import { describeTodoCommentPurgeRepositoryContract } from "#test/contracts/engagement/todo-comment-purge-repository.contract";
 import { describeTodoCommentRepositoryContract } from "#test/contracts/engagement/todo-comment-repository.contract";
-import { nowInstant } from "#test/fixtures/clock.fixture";
 import {
   createTodoCommentFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -19,7 +18,8 @@ import {
   TODO_COMMENT_FIXTURE_TODO_ID,
   TODO_COMMENT_FIXTURE_VIEWER_ID,
 } from "#test/fixtures/engagement/todo-comment.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -38,10 +38,10 @@ describe("Drizzle 댓글 저장소 (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({ id: TODO_COMMENT_FIXTURE_OWNER_ID }),
-      UserFixture.create({ id: TODO_COMMENT_FIXTURE_VIEWER_ID }),
-      UserFixture.create({ id: TODO_COMMENT_FIXTURE_FRIEND_ID }),
-      UserFixture.create({
+      createUserRowFixture({ id: TODO_COMMENT_FIXTURE_OWNER_ID }),
+      createUserRowFixture({ id: TODO_COMMENT_FIXTURE_VIEWER_ID }),
+      createUserRowFixture({ id: TODO_COMMENT_FIXTURE_FRIEND_ID }),
+      createUserRowFixture({
         id: DELETED_COMMENT_AUTHOR.id,
         email: DELETED_COMMENT_AUTHOR.email,
         userTag: DELETED_COMMENT_AUTHOR.userTag,

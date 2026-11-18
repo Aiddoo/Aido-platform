@@ -14,7 +14,8 @@ import {
   type TodoEngagementCounts,
 } from "#test/contracts/planning/todo-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import {
   createTodoFixture,
   TODO_FIXTURE_OTHER_USER_ID,
@@ -38,12 +39,12 @@ describe("DrizzleTodoRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: TODO_FIXTURE_USER_ID, userTag: "PLANTD01" }),
-        UserFixture.create({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "PLANTD02" }),
+        createUserRowFixture({ id: TODO_FIXTURE_USER_ID, userTag: "PLANTD01" }),
+        createUserRowFixture({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "PLANTD02" }),
       ]);
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: TODO_FIXTURE_USER_ID }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: TODO_FIXTURE_USER_ID }), ["id"]))
       .returning({ id: todoCategory.id });
     if (category == null) {
       throw new Error("카테고리 픽스처를 만들지 못했다");

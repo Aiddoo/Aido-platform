@@ -4,7 +4,7 @@ import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-de
 import { pushToken, user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -27,7 +27,7 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    const user = UserFixture.create();
+    const user = createUserRowFixture();
     await client.insert(userTable).values({ ...user, status: "ACTIVE" });
     userId = user.id;
     const { transactionHost } = createDatabaseTransactionFixture(client);

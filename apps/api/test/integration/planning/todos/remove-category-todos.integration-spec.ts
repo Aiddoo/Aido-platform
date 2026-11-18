@@ -26,12 +26,13 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   countTodoRows,
   insertCategoryTodos,
   type SeededCategoryTodos,
 } from "#test/fixtures/planning/category-todos.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -92,12 +93,12 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     await client.execute(
       sql.raw(`DELETE FROM ${SCHEMA}.job WHERE name = '${TODO_REMINDER_QUEUE}'`),
     );
-    const owner = UserFixture.create({
+    const owner = createUserRowFixture({
       id: createEntityId(),
       email: "category-owner@example.com",
       userTag: "CATOWN01",
     });
-    const friend = UserFixture.create({
+    const friend = createUserRowFixture({
       id: createEntityId(),
       email: "category-friend@example.com",
       userTag: "CATFRN01",
@@ -107,8 +108,8 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     const categories = await client
       .insert(todoCategory)
       .values([
-        omit(TodoCategoryFixture.create({ userId: ownerId, sortOrder: 0 }), ["id"]),
-        omit(TodoCategoryFixture.create({ userId: ownerId, sortOrder: 1 }), ["id"]),
+        omit(createTodoCategoryRowFixture({ userId: ownerId, sortOrder: 0 }), ["id"]),
+        omit(createTodoCategoryRowFixture({ userId: ownerId, sortOrder: 1 }), ["id"]),
       ])
       .returning();
     removedCategoryId = categories[0]?.id ?? 0;

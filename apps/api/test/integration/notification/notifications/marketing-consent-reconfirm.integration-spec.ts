@@ -11,13 +11,14 @@ import {
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserConsentRowFixture } from "#test/fixtures/identity/user-consent-row.fixture";
+import { createUserPreferenceRowFixture } from "#test/fixtures/identity/user-preference-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -56,9 +57,9 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
   async function givenUser(
     tag: string,
     consent: Partial<typeof userConsent.$inferInsert>,
-    overrides: Partial<ReturnType<typeof UserFixture.create>> = {},
+    overrides: Partial<ReturnType<typeof createUserRowFixture>> = {},
   ): Promise<string> {
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: `reconfirm-${tag.toLowerCase()}@example.com`,
       userTag: tag,
@@ -68,10 +69,10 @@ describe("광고성 수신 동의 2년 재확인 (실제 PostgreSQL)", () => {
     await client.insert(userTable).values(user);
     await client
       .insert(userPreference)
-      .values(UserPreferenceBuilder.create(user.id).withTimezone("Asia/Seoul").build());
+      .values(createUserPreferenceRowFixture({ userId: user.id, timezone: "Asia/Seoul" }));
     await client
       .insert(userConsent)
-      .values({ ...UserConsentBuilder.create(user.id).build(), ...consent });
+      .values({ ...createUserConsentRowFixture({ userId: user.id }), ...consent });
     return user.id;
   }
 

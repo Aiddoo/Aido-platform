@@ -12,7 +12,8 @@ import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/inf
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import { friendship as friendshipTable, user } from "#api/platform/database/schema/index";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { UserFixture, FollowFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createFriendshipRowFixture } from "#test/fixtures/social/social-row.fixture";
 import { createTestClient, createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -40,9 +41,9 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     vi.setSystemTime(ACCEPTANCE_TIME);
     mutualNotifications = 0;
     milestoneNotifications = 0;
-    const receiver = UserFixture.create();
-    const firstSender = UserFixture.create();
-    const secondSender = UserFixture.create();
+    const receiver = createUserRowFixture();
+    const firstSender = createUserRowFixture();
+    const secondSender = createUserRowFixture();
     const users = [receiver, firstSender, secondSender];
     await client.insert(user).values(users);
     receiverId = receiver.id;
@@ -50,7 +51,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     secondSenderId = secondSender.id;
     const [request] = await client
       .insert(friendshipTable)
-      .values(FollowFixture.create({ followerId: firstSenderId, followingId: receiverId }))
+      .values(createFriendshipRowFixture({ followerId: firstSenderId, followingId: receiverId }))
       .returning();
     if (request === undefined) {
       throw new Error("친구 요청 fixture가 생성되지 않았습니다.");
@@ -215,7 +216,7 @@ describe("친구 수락 경쟁 (실제 PostgreSQL)", () => {
     // Given
     await client
       .insert(friendshipTable)
-      .values(FollowFixture.create({ followerId: secondSenderId, followingId: receiverId }));
+      .values(createFriendshipRowFixture({ followerId: secondSenderId, followingId: receiverId }));
 
     // When
     const results = await compete(

@@ -4,7 +4,7 @@ import { DrizzleUserSubscriptionProjectionAdapter } from "#api/modules/identity/
 import { user } from "#api/platform/database/schema/index";
 import { describeUserSubscriptionProjectionContract } from "#test/contracts/identity/user-subscription-projection.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -34,7 +34,7 @@ describe("DrizzleUserSubscriptionProjectionAdapter (실제 PostgreSQL)", () => {
       seedUser: async (input) => {
         seeded += 1;
         await client.insert(user).values(
-          UserFixture.create({
+          createUserRowFixture({
             id: input.id,
             email: `projection-${seeded}@example.com`,
             userTag: `PROJ${String(seeded).padStart(4, "0")}`,

@@ -2,6 +2,7 @@ import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { assert } from "vitest";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
 import {
   AI_ASSISTANCE_TODAY,
   createAiAssistanceFixture,
@@ -12,9 +13,8 @@ import {
   seedPendingSuggestion,
   usePickResponse,
   withAiAssistanceTime,
-} from "#test/fixtures/ai-assistance.fixture";
+} from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
 import { createSuggestionAnalysisRunFixture } from "#test/fixtures/ai-assistance/suggestion-analysis-run.fixture";
-import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
 
 import { Suggestion } from "../../domain/suggestion.aggregate.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";

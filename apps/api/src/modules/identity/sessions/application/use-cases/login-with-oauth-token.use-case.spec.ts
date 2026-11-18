@@ -11,8 +11,8 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 import { createSessionFixture, createUserFixture } from "#test/fixtures/identity/session.fixture";
 
 import { GetCurrentUserUseCase } from "../../../users/application/use-cases/get-current-user.use-case.js";

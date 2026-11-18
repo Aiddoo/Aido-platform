@@ -6,7 +6,7 @@ import { DrizzleUserBlockRepository } from "#api/modules/social/user-blocks/infr
 import { user, userBlock, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { describeUserBlockRepositoryContract } from "#test/contracts/social/user-block-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createUserBlockFixture,
   USER_BLOCK_FIXTURE_BLOCKED_ID,
@@ -33,14 +33,14 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
-      UserFixture.create({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
-      UserFixture.create({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
-      UserFixture.create({
+      createUserRowFixture({ id: USER_BLOCK_FIXTURE_BLOCKER_ID }),
+      createUserRowFixture({ id: USER_BLOCK_FIXTURE_BLOCKED_ID, userTag: "BLOCKED1" }),
+      createUserRowFixture({ id: USER_BLOCK_FIXTURE_OTHER_USER_ID, userTag: "OTHER001" }),
+      createUserRowFixture({
         id: DELETED_USER_ID,
         deletedAt: Temporal.Instant.from("2026-11-01T00:00:00Z"),
       }),
-      UserFixture.create({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
+      createUserRowFixture({ id: SUSPENDED_USER_ID, status: "SUSPENDED" }),
     ]);
   });
 

@@ -40,12 +40,15 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { nowInstant, todayUtc } from "#test/fixtures/clock.fixture";
-import { TodoFixture } from "#test/fixtures/todo.fixture";
-
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant, todayUtc } from "#test/fixtures/platform/clock.fixture";
 
 // 실제 할 일 생성 경로를 그대로 쓰고 다음 한 번만 실패를 넣는다
 @Injectable()
@@ -116,7 +119,7 @@ describe("AI 제안 E2E", () => {
 
   async function seedRecentTodo(userId: string, accessToken: string) {
     const categoryId = await testContext.helpers.getDefaultCategoryId(accessToken);
-    const { id: _id, ...row } = TodoFixture.create({
+    const { id: _id, ...row } = createTodoRowFixture({
       userId,
       categoryId,
       title: "책 읽기",

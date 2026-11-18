@@ -19,8 +19,10 @@ import {
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createSessionRowFixture } from "#test/fixtures/identity/session-row.fixture";
 import { AUTH_FIXTURE_NOW, AUTH_FIXTURE_USER_ID } from "#test/fixtures/identity/session.fixture";
-import { SessionFixture, UserFixture, VerificationFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createVerificationRowFixture } from "#test/fixtures/identity/verification-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -46,7 +48,7 @@ describe("PurgeExpiredIdentityRecordsUseCase (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values(
-      UserFixture.create({
+      createUserRowFixture({
         id: AUTH_FIXTURE_USER_ID,
         email: "owner@example.com",
         userTag: "PURGE001",
@@ -81,7 +83,7 @@ describe("PurgeExpiredIdentityRecordsUseCase (실제 PostgreSQL)", () => {
     ended: { revokedAt?: Temporal.Instant; expiresAt: Temporal.Instant },
   ): Promise<void> {
     await client.insert(session).values(
-      SessionFixture.create({
+      createSessionRowFixture({
         id,
         userId: AUTH_FIXTURE_USER_ID,
         revokedAt: ended.revokedAt ?? null,
@@ -184,12 +186,12 @@ describe("PurgeExpiredIdentityRecordsUseCase (실제 PostgreSQL)", () => {
       },
     ]);
     await client.insert(verification).values([
-      VerificationFixture.create({
+      createVerificationRowFixture({
         userId: AUTH_FIXTURE_USER_ID,
         token: "code-over",
         expiresAt: justOverDaysAgo(1),
       }),
-      VerificationFixture.create({
+      createVerificationRowFixture({
         userId: AUTH_FIXTURE_USER_ID,
         token: "code-boundary",
         expiresAt: daysAgo(1),
@@ -240,7 +242,7 @@ describe("PurgeExpiredIdentityRecordsUseCase (실제 PostgreSQL)", () => {
     );
     await client.insert(verification).values(
       indexes.map((index) =>
-        VerificationFixture.create({
+        createVerificationRowFixture({
           userId: AUTH_FIXTURE_USER_ID,
           token: `code-${index}`,
           expiresAt: daysAgo(2),

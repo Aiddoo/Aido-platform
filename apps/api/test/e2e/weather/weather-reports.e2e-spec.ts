@@ -14,9 +14,12 @@ import { userLocation } from "#api/platform/database/schema/index";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
 
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };

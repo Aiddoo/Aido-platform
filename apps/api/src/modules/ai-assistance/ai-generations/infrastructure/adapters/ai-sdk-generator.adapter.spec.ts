@@ -2,11 +2,18 @@ import type { AiDataSharingConsentVersion } from "@aido/api/vocabulary";
 import { Logger } from "@nestjs/common";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  createAiSdkGenerator,
+  createAiTestConfig,
+} from "#test/doubles/ai-assistance/stub-ai-provider-http";
+import {
+  ok,
+  status,
+  StubProviderAdapter,
+} from "#test/doubles/ai-assistance/stub-ai-provider.adapter";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { ok, status, StubProviderAdapter } from "#test/mocks/ai-provider-adapter.stub";
-import { createAiSdkGenerator, createAiTestConfig } from "#test/mocks/ai-provider-http.stub";
-import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { InMemoryUsageMeterAdapter } from "#test/doubles/platform/in-memory-usage-meter.adapter";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { AiGenerationAlerts } from "../../application/ai-generations.alerts.js";
 import {

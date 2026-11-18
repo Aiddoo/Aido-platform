@@ -22,9 +22,12 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
-import { UserFixture } from "#test/fixtures/index";
-import { digestDraft, todoActionDraft } from "#test/fixtures/voice-plan.fixture";
-import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
+import {
+  createAiGenerationError,
+  FakeAiGenerator,
+} from "#test/doubles/ai-assistance/fake-ai.generator";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { digestDraft, todoActionDraft } from "#test/fixtures/voice/voice-plan.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -69,7 +72,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
     await context.reset();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AT);
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "voice-plan@example.com",
       userTag: "VOICEP01",
@@ -581,7 +584,7 @@ describe("계획 사용량·멱등 적용 (실제 PostgreSQL)", () => {
 
     it("다른 사용자의 메모는 MEMO_2001로 거절하고 지우지도 만들지도 않는다", async () => {
       // Given
-      const other = UserFixture.create({
+      const other = createUserRowFixture({
         id: createEntityId(),
         email: "voice-plan-other@example.com",
         userTag: "VOICEP02",

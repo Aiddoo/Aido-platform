@@ -1,5 +1,5 @@
-import { TodoBuilder } from "#test/builders/index";
 import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todos.fixture";
+import { createPlanningTodoRecordFixture } from "#test/fixtures/planning/todo-response.fixture";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 
 const USER_ID = "planning-user";
@@ -13,13 +13,14 @@ function seriesWithOccurrences(titles: readonly string[]) {
     generatedCount: titles.length,
   });
   const todos = titles.map((title, index) =>
-    TodoBuilder.create(USER_ID)
-      .withId(index + 1)
-      .withTitle(title)
-      .withStartDate(START.add({ days: index }))
-      .withSeriesId(series.id.value)
-      .withOccurrenceDate(START.add({ days: index }))
-      .build(),
+    createPlanningTodoRecordFixture({
+      userId: USER_ID,
+      id: index + 1,
+      title,
+      startDate: START.add({ days: index }),
+      seriesId: series.id.value,
+      occurrenceDate: START.add({ days: index }),
+    }),
   );
   const fixture = createPlanningTodoFixture({ userId: USER_ID, todos });
   fixture.seriesStore.set(series.id.value, series);

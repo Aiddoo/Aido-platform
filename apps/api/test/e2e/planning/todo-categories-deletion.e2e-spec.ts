@@ -10,8 +10,11 @@ import request from "supertest";
 import { z } from "zod";
 
 import { todo, todoSeries, user as userTable } from "#api/platform/database/schema/index";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PASSWORD = "Test1234!";

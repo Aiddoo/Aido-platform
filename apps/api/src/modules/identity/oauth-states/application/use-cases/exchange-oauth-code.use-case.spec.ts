@@ -5,9 +5,9 @@ import { UserLogEvent } from "#api/modules/identity/users/application/users.log-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemoryOAuthStateRepository } from "#test/doubles/identity/in-memory-oauth-state.repository";
 import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createOAuthStateFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 import { createUserFixture } from "#test/fixtures/identity/session.fixture";
 
 import { NotifyOAuthSignupUseCase } from "../../../users/application/use-cases/notify-oauth-signup.use-case.js";

@@ -1,7 +1,7 @@
 import {
   AUTH_CREDENTIAL_NOW,
   createAuthCredentialFixture,
-} from "#test/fixtures/auth-credential.fixture";
+} from "#test/fixtures/identity/auth-credential-scenario.fixture";
 
 import type { IssueLoginCommand } from "./issue-login.use-case.js";
 

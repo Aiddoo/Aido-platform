@@ -3,8 +3,11 @@ import { and, count, eq } from "drizzle-orm";
 import request from "supertest";
 
 import { friendship as friendshipTable } from "#api/platform/database/schema/index";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const SOCIAL_TIME = new Date("2026-07-26T00:30:00.000Z");
 

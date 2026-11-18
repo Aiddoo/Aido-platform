@@ -2,9 +2,9 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
-import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
+import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
+import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { ParseMemoUseCase, type ParseMemoCommand } from "./parse-memo.use-case.js";
 

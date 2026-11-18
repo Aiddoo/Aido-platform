@@ -1,8 +1,8 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
-import { createAiGenerationError } from "#test/mocks/fake-ai.generator";
+import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 
 import { ParseTodoUseCase, type ParseTodoCommand } from "./parse-todo.use-case.js";
 

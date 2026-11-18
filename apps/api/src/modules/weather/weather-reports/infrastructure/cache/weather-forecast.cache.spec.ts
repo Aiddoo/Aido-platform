@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { forecastTimingFixture, weatherForecastFixture } from "#test/fixtures/weather.fixture";
+import {
+  createForecastTimingFixture,
+  createWeatherForecastFixture,
+} from "#test/fixtures/weather/weather.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
@@ -39,11 +42,11 @@ describe("WeatherForecastCache — 날짜·TTL (실제 캐시 어댑터)", () =>
 
   it("발표·대상 날짜에서 만든 Redis 키와 저장 값의 시각 문자열이 Date JSON 때와 같다", async () => {
     // Given
-    const timing = forecastTimingFixture(
+    const timing = createForecastTimingFixture(
       Temporal.Instant.from("2026-04-02T00:00:00Z"),
       Temporal.Instant.from("2026-04-01T00:00:00Z"),
     );
-    const forecast = weatherForecastFixture({ date: timing.target });
+    const forecast = createWeatherForecastFixture({ date: timing.target });
 
     // When
     await weather.getOrLoadForecast(SEOUL, timing, async () => forecast);
@@ -91,16 +94,19 @@ describe("WeatherForecastCache — 날짜·TTL (실제 캐시 어댑터)", () =>
 
   it("조건 1시간·정규 3시간·latest 24시간 TTL을 유지한다", async () => {
     // Given
-    const forecast = weatherForecastFixture({ date: at });
+    const forecast = createWeatherForecastFixture({ date: at });
     await weather.setConditions(SEOUL, at, conditions);
-    await weather.getOrLoadForecast(SEOUL, forecastTimingFixture(at), async () => forecast);
+    await weather.getOrLoadForecast(SEOUL, createForecastTimingFixture(at), async () => forecast);
 
     // When
     vi.setSystemTime(at.epochMilliseconds + 60 * 60_000 + 1);
     const conditionsAfterHour = await weather.findConditions(SEOUL, at);
-    const forecastAfterHour = await weather.findForecast(SEOUL, forecastTimingFixture(at));
+    const forecastAfterHour = await weather.findForecast(SEOUL, createForecastTimingFixture(at));
     vi.setSystemTime(at.epochMilliseconds + 3 * 60 * 60_000 + 1);
-    const forecastAfterThreeHours = await weather.findForecast(SEOUL, forecastTimingFixture(at));
+    const forecastAfterThreeHours = await weather.findForecast(
+      SEOUL,
+      createForecastTimingFixture(at),
+    );
     const latestAfterThreeHours = await weather.findLatestForecast(SEOUL);
     vi.setSystemTime(at.epochMilliseconds + 24 * 60 * 60_000 + 1);
     const latestAfterDay = await weather.findLatestForecast(SEOUL);

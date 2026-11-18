@@ -10,7 +10,11 @@ import { DatabaseRecordNotFoundError } from "#api/platform/database/database.err
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -39,17 +43,17 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: OWNER_ID, email: "owner@example.com", userTag: "COUNT001" }),
-        UserFixture.create({ id: VIEWER_ID, email: "viewer@example.com", userTag: "COUNT002" }),
+        createUserRowFixture({ id: OWNER_ID, email: "owner@example.com", userTag: "COUNT001" }),
+        createUserRowFixture({ id: VIEWER_ID, email: "viewer@example.com", userTag: "COUNT002" }),
       ]);
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: OWNER_ID, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: OWNER_ID, sortOrder: 0 }), ["id"]))
       .returning();
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId: OWNER_ID, categoryId: category?.id ?? 0 }), ["id"]),
+        ...omit(createTodoRowFixture({ userId: OWNER_ID, categoryId: category?.id ?? 0 }), ["id"]),
         commentCount: 0,
         viewCount: 0,
       })

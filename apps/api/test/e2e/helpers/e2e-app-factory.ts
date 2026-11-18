@@ -63,25 +63,25 @@ import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { FakeOAuthProviderRegistry } from "#test/doubles/identity/fake-oauth-provider-registry";
+import { FakeOAuthTokenVerifier } from "#test/doubles/identity/fake-oauth-token-verifier";
+import { FakePasswordHasher } from "#test/doubles/identity/fake-password-hasher";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
 import {
   FakePushChannel,
   pushChannelRegistryOf,
 } from "#test/doubles/notification/fake-push-channel";
+import { FakeAdminNotifier } from "#test/doubles/operations/fake-admin-notifier";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { FakeLogger } from "#test/doubles/platform/fake-logger";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { FakeAirQualityProvider } from "#test/doubles/weather/fake-air-quality.provider";
+import { FakeLifestyleIndexProvider } from "#test/doubles/weather/fake-lifestyle-index.provider";
+import { FakeSunTimeProvider } from "#test/doubles/weather/fake-sun-time.provider";
+import { FakeWeatherProvider } from "#test/doubles/weather/fake-weather.provider";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 
-import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
-import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
-import { FakeEmailService } from "../../mocks/fake-email.service.js";
-import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
-import { FakeLogger } from "../../mocks/fake-logger.service.js";
-import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
-import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
-import { FakePasswordHasher } from "../../mocks/fake-password-hasher.js";
-import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
-import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
 import { TestDatabase } from "../../setup/test-database.js";
 import { E2eHelpers } from "./e2e-helpers.js";
 import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state.js";
@@ -115,8 +115,8 @@ export interface E2eTestContext {
   app: INestApplication<App>;
   module: TestingModule;
   testDatabase: TestDatabase;
-  fakeEmailService: FakeEmailService;
-  fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+  fakeEmailService: FakeEmailSender;
+  fakeOAuthTokenVerifierService: FakeOAuthTokenVerifier;
   fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
   helpers: E2eHelpers;
   reset(): Promise<void>;
@@ -151,8 +151,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     await testDatabase.start();
   }
 
-  const fakeEmailService = new FakeEmailService();
-  const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
+  const fakeEmailService = new FakeEmailSender();
+  const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifier();
   const fakeAdminNotifier = new FakeAdminNotifier();
   const fakePushProvider = new FakePushChannel();
   const fakeAiGenerator = new FakeAiGenerator();

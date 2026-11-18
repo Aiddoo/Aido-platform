@@ -1,8 +1,8 @@
 import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { topLevelTags } from "#test/fixtures/ai-prompt.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { topLevelTags } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import type { QuickPlanDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { buildLanguagePolicy } from "./language-policy.messages.js";

@@ -10,9 +10,12 @@ import {
 import { notification } from "#api/platform/database/schema/index";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { nowInstant, shiftDateKey, todayIn } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { nowInstant, shiftDateKey, todayIn } from "#test/fixtures/platform/clock.fixture";
 
 const SEOUL = "Asia/Seoul";
 const PASSWORD = "Test1234!";

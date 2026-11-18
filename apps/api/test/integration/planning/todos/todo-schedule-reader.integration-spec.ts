@@ -3,8 +3,11 @@ import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { TodoCategoryFixture, TodoFixture } from "#test/fixtures/todo.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -39,8 +42,8 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
     userId = createEntityId();
     otherUserId = createEntityId();
     await client.insert(user).values([
-      UserFixture.create({ id: userId, email: "weather-todo@example.com", userTag: "WTODO1" }),
-      UserFixture.create({
+      createUserRowFixture({ id: userId, email: "weather-todo@example.com", userTag: "WTODO1" }),
+      createUserRowFixture({
         id: otherUserId,
         email: "weather-other@example.com",
         userTag: "WTODO2",
@@ -52,17 +55,17 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  async function givenTodos(rows: Parameters<typeof TodoFixture.create>[0][]) {
+  async function givenTodos(rows: Parameters<typeof createTodoRowFixture>[0][]) {
     const categories = [
-      TodoCategoryFixture.create({ userId }),
-      TodoCategoryFixture.create({ userId: otherUserId }),
+      createTodoCategoryRowFixture({ userId }),
+      createTodoCategoryRowFixture({ userId: otherUserId }),
     ];
     await client.insert(todoCategory).values(categories);
     const categoryOf = (owner: string | undefined) =>
       (owner === otherUserId ? categories[1] : categories[0])?.id;
     await client.insert(todo).values(
       rows.map((row) =>
-        TodoFixture.create({
+        createTodoRowFixture({
           startDate: dateColumn("2026-11-02"),
           isAllDay: false,
           ...row,

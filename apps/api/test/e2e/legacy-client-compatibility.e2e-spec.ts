@@ -5,8 +5,11 @@ import request from "supertest";
 import { z } from "zod";
 
 import { notification } from "#api/platform/database/schema/index";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 // 현재 validator를 가져오면 새 계약으로 구 클라이언트를 검증하게 되므로 소비 필드를 고정한다.
 const legacyTodoSchema = z.object({

@@ -21,8 +21,12 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -55,7 +59,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
   });
   beforeEach(async () => {
     await database.cleanup();
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "series-schema@example.com",
       userTag: "SERIES01",
@@ -64,7 +68,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     if (category == null) {
       throw new Error("카테고리 fixture 누락");
@@ -83,7 +87,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 0 }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: 0 }), ["id"]),
         title: "옛 반복",
         seriesId,
         occurrenceDate: null,
@@ -268,7 +272,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await client.insert(userPreference).values({ userId, timezone: "Asia/Seoul" });
       const [other] = await client
         .insert(todoCategory)
-        .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+        .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
         .returning();
       // When
       const series = await migrateGroup([
@@ -300,7 +304,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       await client.insert(userPreference).values({ userId, timezone: "Asia/Seoul" });
       const [other] = await client
         .insert(todoCategory)
-        .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 1 }), ["id"]))
+        .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 1 }), ["id"]))
         .returning();
       // When
       const series = await migrateGroup([
@@ -469,7 +473,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       const inserted = await client
         .insert(todo)
         .values({
-          ...omit(TodoFixture.create({ userId, categoryId, sortOrder: 1 }), ["id"]),
+          ...omit(createTodoRowFixture({ userId, categoryId, sortOrder: 1 }), ["id"]),
           seriesId: "group-e",
           occurrenceDate,
           startDate: occurrenceDate,

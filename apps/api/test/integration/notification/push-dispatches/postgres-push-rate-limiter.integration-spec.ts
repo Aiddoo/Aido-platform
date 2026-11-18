@@ -11,7 +11,7 @@ import {
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {

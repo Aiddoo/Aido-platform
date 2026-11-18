@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoBuilder } from "#test/builders/index";
 import {
   createPlanningTodo,
   createPlanningTodoFixture,
 } from "#test/fixtures/planning/planning-todos.fixture";
+import { createPlanningTodoRecordFixture } from "#test/fixtures/planning/todo-response.fixture";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 
 const START = Temporal.PlainDate.from("2026-11-10");
@@ -15,12 +15,13 @@ function occurrence(input: {
   readonly seriesId: string;
   readonly occurrenceDate: Temporal.PlainDate | null;
 }) {
-  return TodoBuilder.create(input.userId)
-    .withId(input.id)
-    .withStartDate(input.occurrenceDate ?? START)
-    .withSeriesId(input.seriesId)
-    .withOccurrenceDate(input.occurrenceDate)
-    .build();
+  return createPlanningTodoRecordFixture({
+    userId: input.userId,
+    id: input.id,
+    startDate: input.occurrenceDate ?? START,
+    seriesId: input.seriesId,
+    occurrenceDate: input.occurrenceDate,
+  });
 }
 
 function publishedSeriesFacts(fixture: ReturnType<typeof createPlanningTodoFixture>) {

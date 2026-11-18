@@ -5,7 +5,7 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 
 import {
   type RecipientLocaleOf,

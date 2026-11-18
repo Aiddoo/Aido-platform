@@ -6,9 +6,9 @@ import { LogoutUseCase } from "#api/modules/identity/sessions/application/use-ca
 import { RefreshTokensUseCase } from "#api/modules/identity/sessions/application/use-cases/refresh-tokens.use-case";
 import { VerifyEmailUseCase } from "#api/modules/identity/sessions/application/use-cases/verify-email.use-case";
 import { parseRequestClient } from "#api/platform/http/request-client/request-client";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { TEST_REQUEST_ID } from "#test/doubles/platform/stub-request-client";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createSessionFixture } from "#test/fixtures/identity/session.fixture";
-import { TEST_REQUEST_ID } from "#test/mocks/request-client";
 
 import { LoginController } from "./login.controller.js";
 

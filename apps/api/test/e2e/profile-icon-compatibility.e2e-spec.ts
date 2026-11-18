@@ -1,6 +1,10 @@
 import request from "supertest";
 
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("프로필 아이콘 배포 버전 호환", () => {
   let testContext: E2eTestContext;

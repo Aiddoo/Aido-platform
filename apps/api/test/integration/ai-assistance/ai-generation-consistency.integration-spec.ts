@@ -53,15 +53,15 @@ import type { AfterCommitTask } from "#api/shared/application/ports/after-commit
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-import { createSuggestionPick } from "#test/fixtures/ai-assistance.fixture";
-import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import { createSuggestionPick } from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
+import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTodoReadModelFixture } from "#test/fixtures/planning/todo-read-model.fixture";
-import { TodoFixture } from "#test/fixtures/todo.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
-import { FakeAiGenerator } from "#test/mocks/fake-ai.generator";
-import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-parsing.stub";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -130,7 +130,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     userId = createEntityId();
     await client
       .insert(userTable)
-      .values(UserFixture.create({ id: userId, subscriptionStatus: "ACTIVE" }));
+      .values(createUserRowFixture({ id: userId, subscriptionStatus: "ACTIVE" }));
     const [category] = await client
       .insert(todoCategory)
       .values({
@@ -144,7 +144,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     categoryId = requireRecord(category).id;
     await client.insert(todo).values(
       ["2026-10-01", "2026-10-02", "2026-10-03"].map((date) => {
-        const { id: _id, ...row } = TodoFixture.create({
+        const { id: _id, ...row } = createTodoRowFixture({
           userId,
           categoryId,
           title: "책 읽기 10분",
@@ -300,7 +300,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       await client.delete(todo).where(eq(todo.userId, userId));
       await client.insert(todo).values(
         ["2026-09-22", "2026-09-23", "2026-09-24", "2026-10-08", "2026-10-09"].map((date) => {
-          const { id: _id, ...row } = TodoFixture.create({
+          const { id: _id, ...row } = createTodoRowFixture({
             userId,
             categoryId,
             title: date,
@@ -385,7 +385,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
           { date: "2026-09-28", completed: true },
           { date: "2026-10-04", completed: true },
         ].map(({ date, completed }) => {
-          const { id: _id, ...row } = TodoFixture.create({
+          const { id: _id, ...row } = createTodoRowFixture({
             userId,
             categoryId,
             title: "주간 날짜 경계",
@@ -600,7 +600,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
 
   const creator: Pick<StagedTodoCreatorPort, "stage"> = {
     async stage(input) {
-      const { id: _id, ...row } = TodoFixture.create({
+      const { id: _id, ...row } = createTodoRowFixture({
         userId: input.userId.value,
         categoryId: input.categoryId.value,
         title: input.title,

@@ -1,7 +1,7 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
-import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
+import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 
 import { GetAiUsageUseCase } from "./get-ai-usage.use-case.js";
 

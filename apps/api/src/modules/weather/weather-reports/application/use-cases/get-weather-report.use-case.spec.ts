@@ -12,12 +12,12 @@ import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-p
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
 import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
-import { weatherAttributionFixture } from "#test/fixtures/weather.fixture";
 import {
   createUserLocationFixture,
-  weatherLocationFixture,
+  createWeatherLocationFixture,
 } from "#test/fixtures/weather/user-location.fixture";
 import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
+import { createWeatherAttributionFixture } from "#test/fixtures/weather/weather.fixture";
 
 import { GetWeatherReportUseCase } from "./get-weather-report.use-case.js";
 import { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
@@ -62,7 +62,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     vi.setSystemTime(now.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherReportCache(memory, new FakeTimerClock(), new StubWeatherProviderBudget());
-    repository = new InMemoryUserLocationRepository([weatherLocationFixture()]);
+    repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     airQuality = new StubAirQualityProvider();
@@ -161,8 +161,8 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     const english = await useCase.execute({ userId: "weather-user", language: "en" });
     // Then
     expect(provider.calls).toHaveLength(1);
-    expect(korean.attribution).toEqual(weatherAttributionFixture("ko"));
-    expect(english.attribution).toEqual(weatherAttributionFixture("en"));
+    expect(korean.attribution).toEqual(createWeatherAttributionFixture("ko"));
+    expect(english.attribution).toEqual(createWeatherAttributionFixture("en"));
   });
 
   it("특보처럼 번역 문구가 있는 칸은 언어별로 캐시를 나눈다", async () => {
@@ -245,7 +245,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
 
   it("한국 밖 위치는 대기질 공급자를 부르지 않고 airQuality가 null이다", async () => {
     // Given
-    repository.set(weatherLocationFixture("weather-user", "도쿄"));
+    repository.set(createWeatherLocationFixture("weather-user", "도쿄"));
     timezoneResolver.region = { timezone: "Asia/Tokyo", countryCode: "JP" };
     // When
     const result = await useCase.execute({ userId: "weather-user", language: "en" });

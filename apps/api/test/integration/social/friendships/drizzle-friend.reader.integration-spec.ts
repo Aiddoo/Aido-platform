@@ -9,7 +9,7 @@ import { DrizzleFriendReader } from "#api/modules/social/friendships/infrastruct
 import { DrizzleFriendshipRepository } from "#api/modules/social/friendships/infrastructure/persistence/drizzle-friendship.repository";
 import { user, userProfile } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createFriendshipFixture,
   FRIENDSHIP_FIXTURE_NOW,
@@ -41,12 +41,12 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: ME, userTag: "MEME0001" }),
-        UserFixture.create({ id: ALPHA, userTag: "ALPHA001" }),
-        UserFixture.create({ id: BRAVO, userTag: "BRAVO002" }),
-        UserFixture.create({ id: UNDERSCORE, userTag: "AL_PHA03" }),
-        UserFixture.create({ id: ONE_WAY, userTag: "ONEWAY04" }),
-        UserFixture.create({ id: LOCKED, userTag: "LOCKED05", status: "LOCKED" }),
+        createUserRowFixture({ id: ME, userTag: "MEME0001" }),
+        createUserRowFixture({ id: ALPHA, userTag: "ALPHA001" }),
+        createUserRowFixture({ id: BRAVO, userTag: "BRAVO002" }),
+        createUserRowFixture({ id: UNDERSCORE, userTag: "AL_PHA03" }),
+        createUserRowFixture({ id: ONE_WAY, userTag: "ONEWAY04" }),
+        createUserRowFixture({ id: LOCKED, userTag: "LOCKED05", status: "LOCKED" }),
       ]);
     await client.insert(userProfile).values([
       { userId: ME, name: "나" },

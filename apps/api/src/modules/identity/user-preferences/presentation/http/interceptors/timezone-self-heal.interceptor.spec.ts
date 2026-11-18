@@ -5,8 +5,11 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { of } from "rxjs";
 
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
-import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
+import {
+  createRequestClientReader,
+  runWithRequestHeaders,
+} from "#test/doubles/platform/stub-request-client";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import {
   type RefreshPushTimezoneCommand,

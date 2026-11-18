@@ -1,13 +1,13 @@
 import { AI_SUGGESTION_LIMITS, TODO_LIMITS } from "@aido/api/vocabulary";
 
 import { AI_TASK_OUTPUT_SCHEMAS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-task-output.wire";
-import { createAnalysisTodo } from "#test/fixtures/ai-assistance.fixture";
+import { createAnalysisTodo } from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
 import {
   exampleOutputs,
   readExamples,
   readPromptBlock,
   topLevelTags,
-} from "#test/fixtures/ai-prompt.fixture";
+} from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
 import { MAX_SUGGESTION_CANDIDATES } from "../../domain/suggestion-candidates.domain-service.js";
 import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";

@@ -25,7 +25,10 @@ import {
 } from "#api/modules/ai-assistance/shared/domain/todo-schedule.domain-service";
 import type { SuggestionContextReadModel } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
 import { SUGGESTION_MODES } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
-import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
+import {
+  createRepeatRefFixture,
+  createScheduleDraftFixture,
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 /** golden 묶음. mixed는 한국어·영어를 섞어 말한 입력이고 locale은 앱 언어다. */
 export const GOLDEN_VARIANTS = ["ko", "en", "mixed"] as const;
@@ -251,14 +254,15 @@ export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClo
       const repeats = planned.repeat != null;
       const resolved = repeats
         ? resolveTodoSchedule(
-            { ...todo.schedule, repeat: repeatRefFixture({ pattern: "NONE" }) },
+            { ...todo.schedule, repeat: createRepeatRefFixture({ pattern: "NONE" }) },
             clock,
           )
         : planned;
       const until =
         repeat.until == null || repeat.until.kind === "NONE"
           ? null
-          : resolveTodoSchedule(scheduleDraftFixture({ date: repeat.until }), clock).startDate;
+          : resolveTodoSchedule(createScheduleDraftFixture({ date: repeat.until }), clock)
+              .startDate;
       return {
         title: todo.title,
         categoryId: todo.categoryId,

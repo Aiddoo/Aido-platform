@@ -13,7 +13,7 @@ import { memo, user } from "#api/platform/database/schema/index";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -69,7 +69,7 @@ describe("Drizzle 동일 연결 savepoint (실제 PostgreSQL)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    const userFixture = UserFixture.create();
+    const userFixture = createUserRowFixture();
     userId = userFixture.id;
     await database.getClient().insert(user).values(userFixture);
   });

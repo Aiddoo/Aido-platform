@@ -17,9 +17,15 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import { user as userTable } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { createAiGenerationError, FakeAiGenerator } from "#test/mocks/fake-ai.generator";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createAiGenerationError,
+  FakeAiGenerator,
+} from "#test/doubles/ai-assistance/fake-ai.generator";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 

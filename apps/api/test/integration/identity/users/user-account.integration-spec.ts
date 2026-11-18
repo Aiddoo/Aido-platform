@@ -11,7 +11,7 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -47,8 +47,8 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     await testDatabase?.stop();
   });
 
-  async function givenUser(overrides: Parameters<typeof UserFixture.create>[0] = {}) {
-    const fixture = UserFixture.create({
+  async function givenUser(overrides: Parameters<typeof createUserRowFixture>[0] = {}) {
+    const fixture = createUserRowFixture({
       id: createEntityId(),
       createdAt: now,
       updatedAt: now,

@@ -2,13 +2,13 @@ import { PlanningCompletionGroupReaderAdapter } from "#api/modules/insights/dail
 import { DrizzleTodoCompletionGroupReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-completion-group.reader";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { describeCompletionGroupReaderContract } from "#test/contracts/insights/completion-group-reader.contract";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   DAILY_COMPLETION_FIXTURE_FRIEND_ID,
   DAILY_COMPLETION_FIXTURE_USER_ID,
   type TodoSeed,
 } from "#test/fixtures/insights/daily-completion.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -26,8 +26,8 @@ describe("planning 조회 포트로 센 일간 완료 (실제 PostgreSQL)", () =
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: DAILY_COMPLETION_FIXTURE_USER_ID }),
-        UserFixture.create({ id: DAILY_COMPLETION_FIXTURE_FRIEND_ID }),
+        createUserRowFixture({ id: DAILY_COMPLETION_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: DAILY_COMPLETION_FIXTURE_FRIEND_ID }),
       ]);
   });
 

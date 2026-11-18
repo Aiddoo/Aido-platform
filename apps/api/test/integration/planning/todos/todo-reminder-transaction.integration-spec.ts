@@ -25,8 +25,12 @@ import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -122,7 +126,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     );
     publisher.failsOnPublish = false;
     publisher.published.length = 0;
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "reminder-tx@example.com",
       userTag: "REMTX001",
@@ -131,7 +135,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
   });
@@ -145,7 +149,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(FUTURE_DATE),
         scheduledLocalTime: scheduled ? "10:00" : null,
         scheduledTime: scheduled ? wallClockInstant(FUTURE_DATE, "10:00", SEOUL) : null,

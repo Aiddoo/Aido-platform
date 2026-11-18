@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { HealthIndicatorService } from "@nestjs/terminus";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { OutboundHealthIndicator } from "./outbound.health.js";
 

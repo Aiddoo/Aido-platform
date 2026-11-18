@@ -19,10 +19,10 @@ import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.transla
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { sqlQueryError } from "#test/doubles/platform/fake-database";
 import { RecordingExceptionReporter } from "#test/doubles/platform/recording-exception-reporter";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { RecordingPinoLogger } from "#test/doubles/platform/recording-pino-logger";
-import { sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 

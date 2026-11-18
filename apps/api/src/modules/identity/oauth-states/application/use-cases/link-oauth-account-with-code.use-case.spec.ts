@@ -3,9 +3,9 @@ import { ErrorCode } from "@aido/api/errors";
 import type { OAuthStatePrimitives } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { InMemoryOAuthStateRepository } from "#test/doubles/identity/in-memory-oauth-state.repository";
-import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/auth-credential.fixture";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { AUTH_CREDENTIAL_NOW } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import { createOAuthStateFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { LinkOAuthIdentityUseCase } from "../../../linked-accounts/application/use-cases/link-oauth-identity.use-case.js";
 import { LinkOAuthAccountWithCodeUseCase } from "./link-oauth-account-with-code.use-case.js";

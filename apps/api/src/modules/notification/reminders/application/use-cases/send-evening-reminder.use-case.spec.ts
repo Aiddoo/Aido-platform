@@ -2,7 +2,7 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
 import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";

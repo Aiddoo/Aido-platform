@@ -11,14 +11,13 @@ import request from "supertest";
 
 import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
 import { user as userTable } from "#api/platform/database/schema/index";
-
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-  type VerifiedUser,
-} from "../helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 
 describe("AI 데이터 처리 동의 E2E", () => {
   let testContext: E2eTestContext;

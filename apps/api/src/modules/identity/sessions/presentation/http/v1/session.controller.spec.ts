@@ -3,7 +3,7 @@ import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ListActiveSessionsUseCase } from "#api/modules/identity/sessions/application/use-cases/list-active-sessions.use-case";
 import { RevokeSessionUseCase } from "#api/modules/identity/sessions/application/use-cases/revoke-session.use-case";
 import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
-import { createAuthCredentialFixture } from "#test/fixtures/auth-credential.fixture";
+import { createAuthCredentialFixture } from "#test/fixtures/identity/auth-credential-scenario.fixture";
 import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_USER_ID,

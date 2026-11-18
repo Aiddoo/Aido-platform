@@ -8,8 +8,11 @@ import { DRIZZLE, type Database } from "#api/platform/database/database.client";
 import { user as userTable, userPreference } from "#api/platform/database/schema/index";
 import { JobQueuePort, type QueueDefinition } from "#api/shared/application/ports/job-queue.port";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("관리자 알림 발송·브로드캐스트 캠페인 E2E", () => {
   let testContext: E2eTestContext;

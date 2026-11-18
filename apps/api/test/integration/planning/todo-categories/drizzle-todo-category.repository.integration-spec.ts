@@ -4,7 +4,8 @@ import { DrizzleTodoCategoryRepository } from "#api/modules/planning/todo-catego
 import { todo, user } from "#api/platform/database/schema/index";
 import { describeTodoCategoryRepositoryContract } from "#test/contracts/planning/todo-category-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import {
   TODO_FIXTURE_OTHER_USER_ID,
   TODO_FIXTURE_USER_ID,
@@ -26,8 +27,8 @@ describe("DrizzleTodoCategoryRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: TODO_FIXTURE_USER_ID, userTag: "PLANTC01" }),
-        UserFixture.create({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "PLANTC02" }),
+        createUserRowFixture({ id: TODO_FIXTURE_USER_ID, userTag: "PLANTC01" }),
+        createUserRowFixture({ id: TODO_FIXTURE_OTHER_USER_ID, userTag: "PLANTC02" }),
       ]);
   });
 
@@ -43,7 +44,7 @@ describe("DrizzleTodoCategoryRepository (실제 PostgreSQL)", () => {
     async seedTodo(categoryId, options) {
       await client.insert(todo).values(
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId: TODO_FIXTURE_USER_ID,
             categoryId,
             completed: options?.completed ?? false,

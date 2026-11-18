@@ -2,7 +2,7 @@ import type { StreakState } from "#api/modules/identity/user-preferences/domain/
 import type { UserPreference } from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { InMemoryUserPreferenceRepository } from "#test/doubles/identity/in-memory-user-preference.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
+import { createUserSettingsFixture } from "#test/fixtures/identity/user-settings-scenario.fixture";
 
 import { TodoCompletionStatsReaderPort } from "../ports/todo-completion-stats.reader.port.js";
 import { UserPreferenceLogEvent } from "../user-preferences.log-events.js";

@@ -5,7 +5,7 @@ import {
   AI_REPORT_FIXTURE_USER_ID,
   AI_REPORT_FIXTURE_OTHER_USER_ID,
 } from "#test/fixtures/ai-assistance/ai-report.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -23,8 +23,8 @@ describe("DrizzleAiReportRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: AI_REPORT_FIXTURE_USER_ID }),
-        UserFixture.create({ id: AI_REPORT_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: AI_REPORT_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: AI_REPORT_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 

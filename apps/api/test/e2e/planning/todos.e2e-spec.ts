@@ -9,9 +9,12 @@
 import type { Todo } from "@aido/api/contracts/todo/v1";
 import request from "supertest";
 
-import { todayIn } from "#test/fixtures/clock.fixture";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "../helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { todayIn } from "#test/fixtures/platform/clock.fixture";
 
 describe("할 일 E2E", () => {
   let testContext: E2eTestContext;

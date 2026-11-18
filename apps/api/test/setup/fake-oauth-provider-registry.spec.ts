@@ -1,11 +1,10 @@
 import { vi } from "vitest";
 
 import type { OAuthIdentityProviderPort } from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
-
 import {
   FakeOAuthProviderRegistry,
   type OAuthIdentityProviders,
-} from "../mocks/fake-oauth-provider-registry.js";
+} from "#test/doubles/identity/fake-oauth-provider-registry";
 
 function createGoogleProvider(): OAuthIdentityProviderPort {
   return {

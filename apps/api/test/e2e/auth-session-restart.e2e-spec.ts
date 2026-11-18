@@ -5,7 +5,7 @@ import {
   destroyE2eApp,
   type E2eTestContext,
   restartE2eAppPreservingDatabase,
-} from "./helpers/index.js";
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("인증 세션 재시작 내구성 E2E", () => {
   let testContext: E2eTestContext;

@@ -13,13 +13,16 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
+  type JwtTestAlgorithm,
+  signJwtWithAlgorithm,
+} from "#test/fixtures/identity/jwt-token.fixture";
+import {
   AUTH_FIXTURE_NOW,
   AUTH_FIXTURE_SESSION_ID,
   AUTH_FIXTURE_USER_ID,
   createSessionFixture,
   createUserFixture,
 } from "#test/fixtures/identity/session.fixture";
-import { type JwtTestAlgorithm, signJwtWithAlgorithm } from "#test/fixtures/jwt-token.fixture";
 
 import { Public } from "../decorators/public.decorator.js";
 import { JwtAuthGuard } from "./jwt-auth.guard.js";

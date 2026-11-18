@@ -11,7 +11,7 @@ import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance
 import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SUGGESTION_FIXTURE_USER_ID } from "#test/fixtures/ai-assistance/suggestion.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -30,7 +30,7 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
 
   beforeEach(async () => {
     await database.cleanup();
-    await client.insert(user).values(UserFixture.create({ id: SUGGESTION_FIXTURE_USER_ID }));
+    await client.insert(user).values(createUserRowFixture({ id: SUGGESTION_FIXTURE_USER_ID }));
   });
 
   afterAll(async () => {

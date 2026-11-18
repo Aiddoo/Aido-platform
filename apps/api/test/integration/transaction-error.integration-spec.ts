@@ -6,7 +6,7 @@ import {
   isTransactionWriteConflict,
 } from "#api/platform/database/database-error.util";
 import { user } from "#api/platform/database/schema/index";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -22,8 +22,8 @@ describe("트랜잭션 커밋 오류 (실제 PostgreSQL)", () => {
 
   it("Serializable 커밋 wrapper의 SQLSTATE를 찾아 재시도 가능 오류로 분류한다", async () => {
     // Given
-    const first = UserFixture.create({ aiUsageCount: 0 });
-    const second = UserFixture.create({ aiUsageCount: 0 });
+    const first = createUserRowFixture({ aiUsageCount: 0 });
+    const second = createUserRowFixture({ aiUsageCount: 0 });
     await database.insert(user).values([first, second]);
     const bothRead = Promise.withResolvers<void>();
     const bothWritten = Promise.withResolvers<void>();

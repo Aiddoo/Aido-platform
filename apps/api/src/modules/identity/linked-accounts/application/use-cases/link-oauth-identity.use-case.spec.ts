@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
-import { createAuthOAuthFixture } from "#test/fixtures/auth-oauth.fixture";
+import { createAuthOAuthFixture } from "#test/fixtures/identity/auth-oauth-scenario.fixture";
 
 import { LinkOAuthIdentityUseCase } from "./link-oauth-identity.use-case.js";
 

@@ -1,8 +1,8 @@
 import { omit } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 import { GOLDEN_VARIANTS, loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
-import { createAiParsingFixture } from "#test/fixtures/ai-parsing.fixture";
 
 import { ParseTodoUseCase } from "./parse-todo.use-case.js";
 

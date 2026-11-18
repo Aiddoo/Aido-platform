@@ -3,8 +3,11 @@ import { vi, type MockInstance } from "vitest";
 
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
-
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 describe("작업 큐 상태 확인 E2E", () => {
   let testContext: E2eTestContext;

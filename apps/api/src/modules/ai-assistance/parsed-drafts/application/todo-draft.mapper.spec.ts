@@ -1,4 +1,7 @@
-import { createTodoDraftResponse, type TodoDraftInput } from "#test/fixtures/ai-response.fixture";
+import {
+  createTodoDraftResponse,
+  type TodoDraftInput,
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import { normalizeMemoDraft } from "./todo-draft.mapper.js";
 
