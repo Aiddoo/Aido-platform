@@ -668,7 +668,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     expect((await readSent(id)).sent).toEqual(["D0 series-paused", "D0 60min"]);
   });
 
-  it("알림 metadata는 앱이 받던 모양 그대로다", async () => {
+  it("알림 metadata는 앱이 받던 칸을 그대로 두고 할 일 시작 시각만 더한다", async () => {
     // Given
     const id = await seedTodo(0, "10:00");
     // When
@@ -677,6 +677,7 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     const row = await client.query.notification.findFirst({ where: { todoId: id } });
     expect(row?.metadata).toEqual({
       stage: "60min",
+      startsAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/),
       todoOwnerId: userId,
       todoDate: dayKey(0),
       copyRevision: expect.any(String),

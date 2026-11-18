@@ -457,15 +457,15 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
   });
 
   describe("야간 경계 — 사용자가 정한 리마인더만 야간 수신을 꺼도 보낸다", () => {
-    // 21:00까지 5분 미만이면 대기열·공급자 지연으로 야간에 뜰 수 있어 야간처럼 건너뛴다
+    // 21:00까지 1분 미만이면 보관 시간이 0에 가까워 야간처럼 건너뛴다
     it.each([
-      ["Asia/Seoul", "20:55", false],
-      ["Asia/Seoul", "20:56", true],
+      ["Asia/Seoul", "20:59", false],
+      ["Asia/Seoul", "20:59:30", true],
       ["Asia/Seoul", "21:00", true],
       ["Asia/Seoul", "07:59", true],
       ["Asia/Seoul", "08:00", false],
-      ["America/Los_Angeles", "20:55", false],
-      ["America/Los_Angeles", "20:56", true],
+      ["America/Los_Angeles", "20:59", false],
+      ["America/Los_Angeles", "20:59:30", true],
       ["America/Los_Angeles", "21:00", true],
       ["America/Los_Angeles", "07:59", true],
       ["America/Los_Angeles", "08:00", false],

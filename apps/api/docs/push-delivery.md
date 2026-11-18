@@ -33,8 +33,8 @@
 | SOCIAL        | 12시간 | `FOLLOW_NEW`, `FOLLOW_ACCEPTED`, `NUDGE_RECEIVED`, `NUDGE_REPLIED`, `NUDGE_THANKED`, `CHEER_RECEIVED`, `TODO_SHARED`, `INVITE_JOINED` | 반나절 늦어도 읽을 만함, 그 뒤는 알림함                                                             |
 | INFORMATIONAL | 24시간 | 그 밖(`WINBACK`, `AI_SUGGESTION`, `NUDGE_SUGGEST`, `INVITE_*`, 리포트, 공지·관리자 발송, `PREMIUM_*`)                                 | 하루 안에 닿으면 되고 그 뒤는 알림함                                                                |
 
-- 야간 전 만료: 광고성(`ENGAGEMENT` 목적·광고성 종류)과, `nightPushEnabled=false`인 사람에게 가는 야간 예외 아닌 알림은 받는 사람 다음 21:00까지만 보관한다. 20:15 스트릭 위기는 3시간이 아니라 45분이다. 21:00까지 5분 미만이면 대기열·공급자 지연으로 야간에 뜰 수 있어 보내지 않고 야간과 같은 사유(`MARKETING_QUIET_HOURS`·`NIGHT_PUSH_DISABLED`)로 건너뛴다.
-- 할 일 시작은 알림 행의 회차(`reminderOccurrenceKey`, 날짜 + 벽시계)와 받는 사람 시간대로 만든다. 회차가 없는 반복 멈춤 안내는 1시간이다.
+- 야간 전 만료: 광고성(`ENGAGEMENT` 목적·광고성 종류)과, `nightPushEnabled=false`인 사람에게 가는 야간 예외 아닌 알림은 받는 사람 다음 21:00까지만 보관한다. 20:15 스트릭 위기는 3시간이 아니라 45분이다. 21:00까지 1분 미만이면 보관 시간이 0에 가까워 꺼진 기기에 닿지 못하므로 그날만 알림의 자정 규칙처럼 보내지 않고 야간과 같은 사유(`MARKETING_QUIET_HOURS`·`NIGHT_PUSH_DISABLED`)로 건너뛴다. 그 전에는 남은 시간만큼 보관해 보낸다.
+- 할 일 시작은 알림을 만들 때 처리기가 본 할 일 순간(`metadata.startsAt`)이다. 시간대를 옮긴 직후 할 일 재계산(`todo-timezone-rebase`) 전에도 실제 시작에서 끝난다. `startsAt`이 없는 옛 행은 회차(`reminderOccurrenceKey`, 날짜 + 벽시계)와 받는 사람 시간대로 만든다. 회차가 없는 반복 멈춤 안내는 1시간이다.
 - 다시 알림(`metadata.stage = "snooze"`, `SNOOZED_TODO_REMINDER_STAGE`)은 할 일 시작 뒤에 울리는 것이 정상이고 회차 칸이 누른 알림 id라 회차로 읽지 않는다. 처리기가 보내 주는 늦음 한도와 같이 울릴 시각(`metadata.remindAt`) + 15분(`REMINDER_LATE_LIMIT_MINUTES`)까지, 최소 60초·최대 1시간 보관한다(`todoReminderPushEndsAt`).
 - 관리자 강제 발송은 수신 설정을 따르지 않아 야간 전 만료도 걸지 않는다.
 

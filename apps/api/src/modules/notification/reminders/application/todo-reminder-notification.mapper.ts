@@ -11,6 +11,7 @@ import { NotificationId } from "../../shared/domain/notification-id.vo.js";
 import {
   createReminderOccurrenceKey,
   createSnoozedReminderMetadata,
+  createTodoReminderMetadata,
 } from "../../shared/domain/reminder-occurrence.domain-service.js";
 import {
   SNOOZED_TODO_REMINDER_STAGE,
@@ -61,7 +62,7 @@ export function toTodoReminderNotification(
     copyKey: message.copyKey,
     copyFacts: message.copyFacts,
     todoId,
-    metadata: { stage: stageLabel },
+    metadata: createTodoReminderMetadata(stageLabel, todo.scheduledAt),
     reminderOccurrenceKey: createReminderOccurrenceKey(todo.startDate, todo.scheduledLocalTime),
   };
 }

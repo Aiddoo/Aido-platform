@@ -163,18 +163,31 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
         utc: "2026-11-18T11:55:00Z",
         expected: { status: "deliverable", ttlSeconds: 300 },
       },
-      { local: "20:56", utc: "2026-11-18T11:56:00Z", expected: { status: "quiet-hours" } },
-    ] as const)("21:00까지 5분 미만이면 보내지 않는다(서울 $local)", ({ utc, expected }) => {
-      // When
-      const expiry = expiryOf({
-        type: "WINBACK",
-        now: Temporal.Instant.from(utc),
-        expiresBeforeQuietHours: true,
-      });
+      {
+        local: "20:56",
+        utc: "2026-11-18T11:56:00Z",
+        expected: { status: "deliverable", ttlSeconds: 240 },
+      },
+      {
+        local: "20:59",
+        utc: "2026-11-18T11:59:00Z",
+        expected: { status: "deliverable", ttlSeconds: 60 },
+      },
+      { local: "20:59:30", utc: "2026-11-18T11:59:30Z", expected: { status: "quiet-hours" } },
+    ] as const)(
+      "21:00까지 남은 만큼 보관하고 1분 미만이면 보내지 않는다(서울 $local)",
+      ({ utc, expected }) => {
+        // When
+        const expiry = expiryOf({
+          type: "WINBACK",
+          now: Temporal.Instant.from(utc),
+          expiresBeforeQuietHours: true,
+        });
 
-      // Then
-      expect(expiry).toEqual(expected);
-    });
+        // Then
+        expect(expiry).toEqual(expected);
+      },
+    );
 
     it("야간 수신을 끈 사람의 친구 알림(12시간)은 서울 15:00에 21:00까지 6시간이다", () => {
       // When

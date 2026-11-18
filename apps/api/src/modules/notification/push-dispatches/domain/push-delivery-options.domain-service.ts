@@ -79,8 +79,8 @@ const EXPIRY_CLASS_BY_TYPE = {
 const TODO_REMINDER_MIN_TTL_MS = MINUTE_MS;
 // 그날만 뜻이 있는 알림도 이보다 짧게는 보관하지 않는다
 const TODAY_ONLY_MIN_TTL_MS = MINUTE_MS;
-// 야간까지 이보다 덜 남았으면 보내지 않는다. 대기열·공급자 지연으로 21시를 넘겨 뜰 수 있어서다
-const QUIET_HOURS_SEND_MARGIN_MS = 5 * MINUTE_MS;
+// 야간까지 이보다 덜 남았으면 ttl이 0에 가까워 꺼진 기기에 닿지 못하므로 보내지 않는다(그날만 알림의 자정 규칙과 같다)
+const QUIET_HOURS_MIN_TTL_MS = MINUTE_MS;
 
 export interface PushExpiryInput {
   readonly type: NotificationType;
@@ -128,7 +128,7 @@ export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
       timeZone,
       window: PUSH_QUIET_HOURS_WINDOW,
     });
-    if (now.until(quietHoursStart).total("milliseconds") < QUIET_HOURS_SEND_MARGIN_MS) {
+    if (now.until(quietHoursStart).total("milliseconds") < QUIET_HOURS_MIN_TTL_MS) {
       return { status: "quiet-hours" };
     }
     candidates.push(quietHoursStart);

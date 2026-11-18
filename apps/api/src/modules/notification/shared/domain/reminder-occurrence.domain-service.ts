@@ -21,6 +21,14 @@ export function createReminderOccurrenceKey(
   return scheduledLocalTime == null ? startDate : `${startDate}T${scheduledLocalTime}`;
 }
 
+/** 회차 알림(60·10분 전) 행의 metadata. 할 일 순간을 남겨 푸시 보관 시간이 처리기가 본 시작에서 끝나게 한다 */
+export function createTodoReminderMetadata(
+  stage: string,
+  startsAt: Temporal.Instant | null,
+): Readonly<Record<string, string>> {
+  return startsAt == null ? { stage } : { stage, startsAt: toIsoString(startsAt) };
+}
+
 /** 다시 알림 행의 metadata. 울릴 시각을 남겨 푸시 보관 시간이 처리기와 같은 늦음 한도에서 끝나게 한다 */
 export function createSnoozedReminderMetadata(
   remindAt: Temporal.Instant,
@@ -30,8 +38,8 @@ export function createSnoozedReminderMetadata(
 
 /**
  * 할 일 리마인더 푸시가 쓸모를 잃는 순간. 모르면 null이고 종류 기본 보관 시간을 쓴다.
- * 회차 알림(60·10분 전)은 할 일 시작이다. 다시 알림은 시작 뒤에 울리는 것이 정상이라 처리기가 보내 주는
- * 늦음 한도(울릴 시각 + REMINDER_LATE_LIMIT_MINUTES)까지다.
+ * 회차 알림(60·10분 전)은 할 일 시작(metadata.startsAt, 없는 옛 행은 회차를 받는 사람 시간대로 읽은 값)이다.
+ * 다시 알림은 시작 뒤에 울리는 것이 정상이라 처리기가 보내 주는 늦음 한도(울릴 시각 + REMINDER_LATE_LIMIT_MINUTES)까지다.
  */
 export function todoReminderPushEndsAt(
   notification: Pick<CreateNotificationData, "metadata" | "reminderOccurrenceKey">,
@@ -42,6 +50,11 @@ export function todoReminderPushEndsAt(
   if (metadata?.["stage"] === SNOOZED_TODO_REMINDER_STAGE) {
     const remindAt = parseInstant(metadata["remindAt"]);
     return remindAt == null ? null : remindAt.add({ minutes: REMINDER_LATE_LIMIT_MINUTES });
+  }
+  // 시간대를 옮긴 뒤 할 일 재계산 전에는 회차 + 지금 시간대가 실제 시작과 어긋나 남긴 시작 시각을 먼저 쓴다
+  const startsAt = parseInstant(metadata?.["startsAt"]);
+  if (startsAt != null) {
+    return startsAt;
   }
   return reminderOccurrenceKey == null
     ? null
