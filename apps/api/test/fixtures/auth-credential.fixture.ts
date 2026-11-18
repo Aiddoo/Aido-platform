@@ -3,7 +3,7 @@ import type { AccessTier } from "@aido/api/vocabulary";
 import type {
   EntitlementReaderPort,
   UserEntitlementsReadModel,
-} from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type {
   MeteredFeatureQuotaReadModel,
   QuotaLedgerPort,

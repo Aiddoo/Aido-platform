@@ -29,7 +29,7 @@
     "dev": "nest start --watch",
     "email:preview": "tsx --tsconfig tsconfig.json scripts/email-preview.ts",
     "fixture:todo-comments": "NODE_ENV=development DATABASE_URL=postgresql://postgres:postgres@localhost:5433/aido API_BASE_URL=http://localhost:8080 tsx --tsconfig test/dev-fixtures/tsconfig.json --env-file=.env.development test/dev-fixtures/todo-comment-development-fixture.ts",
-    "lint:deps": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "lint:deps": "depcruise src --config .dependency-cruiser.cjs",
     "start": "nest start",
     "start:prod": "NODE_ENV=production node ./dist/src/bootstrap.js",
     "test": "vitest run --project unit",

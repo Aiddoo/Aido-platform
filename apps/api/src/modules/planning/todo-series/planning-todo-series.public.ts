@@ -9,7 +9,10 @@ export {
   todoNotRepeating,
   todoSeriesLimitReached,
 } from "./application/todo-series.errors.js";
-export { todoSeriesChangedPayloadSchema } from "./application/todo-series-published-events.constants.js";
+export {
+  TODO_SERIES_CHANGE_EVENT_NAMES,
+  todoSeriesChangedPayloadSchema,
+} from "./domain/todo-series-published-events.constants.js";
 export {
   ApplyFollowingTodosUpdateUseCase,
   type UpdateFollowingTodosInput,
@@ -31,7 +34,6 @@ export { UpdateFollowingTodosUseCase } from "./application/use-cases/update-foll
 export { RepeatRule, type RepeatSpec } from "./domain/repeat-rule.vo.js";
 export { isSeriesOwnerDormant } from "./domain/series-dormancy.domain-service.js";
 export { TodoOccurrencesChangedEvent } from "./domain/todo-occurrences-changed.event.js";
-export { TODO_SERIES_CHANGE_EVENT_NAMES } from "./domain/todo-series-changed.event.js";
 export { TodoSeriesId } from "./domain/todo-series-id.vo.js";
 export { TodoSeries } from "./domain/todo-series.aggregate.js";
 export {

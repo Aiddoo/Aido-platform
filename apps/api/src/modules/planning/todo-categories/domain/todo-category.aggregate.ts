@@ -3,10 +3,11 @@ import { randomUUID } from "node:crypto";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { CategoryChangedEvent, type CategoryChangeEventName } from "./category-changed.event.js";
+import { CategoryChangedEvent } from "./category-changed.event.js";
 import { CategoryColor } from "./category-color.vo.js";
 import { CategoryName } from "./category-name.vo.js";
 import { TodoCategoryId } from "./todo-category-id.vo.js";
+import type { CategoryChangeEventName } from "./todo-category-published-events.constants.js";
 
 export interface TodoCategoryPrimitives {
   readonly id: number;

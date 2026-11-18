@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 
-import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationPushDevicesQueriesModule } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { jwtConfig } from "#api/platform/config/jwt.config";
 

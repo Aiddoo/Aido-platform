@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { sortBy } from "es-toolkit";
 
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { StoreEntitlementReaderPort } from "#api/modules/billing/premium-grants/application/ports/store-entitlement.reader.port";
 import { SubscriptionEventNotifierPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-notifier.port";
 import { SubscriptionEventReceiptRepositoryPort } from "#api/modules/billing/subscriptions/application/ports/subscription-event-receipt.repository.port";

@@ -13,7 +13,7 @@
 **레이어·slice**([구조](docs/architecture.md))
 
 - [ ] `modules/<context>/<slice>/{domain,application,infrastructure,presentation}`. slice 하나 = Aggregate Root 하나, slice 폴더는 그 Aggregate의 kebab 복수형(`Memo` → `memos`). `<context>/shared`에는 Aggregate를 두지 않는다.
-- [ ] Module은 기능 `<context>-<slice>.module.ts` 하나. 다른 Context가 읽는 포트만 import 없는 `-queries` Module, 관리자 HTTP는 `-admin` Module에 둔다. 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다.
+- [ ] Module은 기능 `<context>-<slice>.module.ts` 하나. 다른 Context가 읽는 포트만 import 없는 `-queries` Module, 관리자 HTTP는 `-admin` Module에 둔다. 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다(순환을 끊을 때만 `-queries.public.ts`).
 - [ ] presentation → application → domain, infrastructure → application(ports)·domain. 다른 Context는 `*.public.ts`로만, 그 Context 테이블을 직접 읽지 않는다.
 - [ ] Domain·Application은 Nest·ORM·SDK·platform·`@aido/api` 계약을 모른다(`/vocabulary`·`/errors`만).
 - [ ] 재수출은 slice public·`@aido/api` 진입 파일·Drizzle schema 묶음에서만. barrel·`export *` 금지.

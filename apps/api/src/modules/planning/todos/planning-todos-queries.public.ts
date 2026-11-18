@@ -14,8 +14,10 @@ export { TodoCompletionGroupReaderPort } from "./application/ports/todo-completi
 export { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 export { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 export { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";
-export { todoChangedPayloadSchema } from "./application/todo-published-events.constants.js";
-export { TODO_CHANGE_EVENT_NAMES } from "./domain/todo-changed.event.js";
+export {
+  TODO_CHANGE_EVENT_NAMES,
+  todoChangedPayloadSchema,
+} from "./domain/todo-published-events.constants.js";
 export { TodoTimezoneRebaseQueuePort } from "./application/ports/todo-timezone-rebase-queue.port.js";
 export { TodoId } from "./domain/todo-id.vo.js";
 // 사람 id 칸 옆에 그 사람의 할 일을 붙이는 다른 Context의 한 SQL이 할 일 테이블을 직접 읽지 않게 한다

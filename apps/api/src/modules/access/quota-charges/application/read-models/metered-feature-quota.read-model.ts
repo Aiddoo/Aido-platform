@@ -1,7 +1,7 @@
 import {
   toFeatureQuotaReadModel,
   type FeatureQuotaReadModel,
-} from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import type { MeteredQuotaState } from "../../domain/quota-allowance.vo.js";

@@ -15,7 +15,7 @@ const SLICE_SHAPE_RULES = [
   "<context>/shared에 Aggregate가 없다",
   "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
   "-queries Module에는 controller가 없다",
-  "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+  "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO·발행 이벤트 계약만 다시 내보낸다",
 ] as const;
 type SliceShapeRule = (typeof SLICE_SHAPE_RULES)[number];
 
@@ -27,63 +27,33 @@ interface SliceShapeViolation {
 // 이유를 적은 예외. 순환을 푸는 층에서 남길지 정하고, 이유가 사라지면 지운다
 const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: string })[] = [
   {
+    rule: "slice마다 Aggregate Root가 하나다",
+    path: "notification/reminders",
+    reason:
+      "일정 정책 slice다. 이미 보냈는지는 알림 행으로 판단해 가진 상태가 없다(domain-modeling.md)",
+  },
+  {
     rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
     path: "notification/notifications/notification-notifications-jobs.public.ts",
-    reason: "identity preferences ↔ notification 파일 순환 때문에 기능 Module 대신 큐만 연다",
+    reason:
+      "네 Context가 쓰는 구체 큐 어댑터를 열고, 기능 Module을 열면 identity 설정과 파일이 순환한다",
   },
   {
     rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
     path: "notification/notifications/infrastructure/jobs/notification-queue.module.ts",
-    reason: "notification-notifications-jobs.public.ts가 여는 큐 Module이다",
-  },
-  {
-    rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
-    path: "notification/reminders/notification-reminders-jobs.public.ts",
-    reason: "identity preferences ↔ notification 파일 순환 때문에 큐·시간대 캐시만 연다",
-  },
-  {
-    rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
-    path: "notification/reminders/infrastructure/jobs/timezone-reminder-queue.module.ts",
-    reason: "notification-reminders-jobs.public.ts가 여는 큐 Module이다",
+    reason:
+      "jobs public이 여는 큐 Module이다. 포트가 아닌 큐 어댑터를 내보내고 PushReceiptScheduler를 둔다",
   },
   {
     rule: "slice의 Module·providers·public은 slice 루트의 <context>-<slice> 이름 셋뿐이다",
     path: "planning/todos/planning-todo-ports.module.ts",
-    reason: "todos와 todo-series가 함께 쓰는 아래층 포트 Module이다",
-  },
-  {
-    rule: "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
-    path: "planning/todos/planning-todos-queries.module.ts#TodoTimezoneRebaseQueueService",
-    reason: "다른 Context가 시간대를 바꾼 뒤 할 일 시각 다시 맞추기를 enqueue한다",
-  },
-  {
-    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
-    path: "planning/todos/planning-todos-queries.public.ts#./infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter.js",
-    reason: "-queries Module이 내보내는 시간대 재계산 enqueue 서비스를 같은 이유로 연다",
+    reason:
+      "todos 기능 Module이 todo-series 기능 Module을 import하고 todo-series가 할 일 저장·리마인더 포트를 써서, 두 Module이 함께 쓰는 포트 바인딩을 한 곳에 둔다(없애면 Module 순환이거나 9개 바인딩 중복)",
   },
 ];
 
 // 아직 고치지 않은 위반. 고치면 여기서 지운다. 새 위반은 목록에 더하지 않고 코드를 고친다
-const REMAINING_VIOLATIONS: readonly SliceShapeViolation[] = [
-  { rule: "slice마다 Aggregate Root가 하나다", path: "notification/reminders" },
-  {
-    rule: "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
-    path: "identity/sessions/identity-sessions-queries.module.ts#imports",
-  },
-  // 할 일 이벤트 schema·이름(insights·social 구독)과 오류(engagement·todo-series)다. planning이 둘 곳을 정한다
-  {
-    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
-    path: "planning/todos/planning-todos-queries.public.ts#./application/todo-published-events.constants.js",
-  },
-  {
-    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
-    path: "planning/todos/planning-todos-queries.public.ts#./application/todos.errors.js",
-  },
-  {
-    rule: "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
-    path: "planning/todos/planning-todos-queries.public.ts#./domain/todo-changed.event.js",
-  },
-];
+const REMAINING_VIOLATIONS: readonly SliceShapeViolation[] = [];
 
 interface SourceFile {
   readonly path: string;
@@ -288,6 +258,27 @@ const QUERIES_PUBLIC_SOURCES = [
   /^\.\/domain\/[a-z-]+-id\.vo\.js$/,
 ];
 
+// 구독 Context가 쓰는 이벤트 이름 튜플과 payload schema다. zod 밖을 import하면 계약 파일이 아니다
+const PUBLISHED_EVENT_CONTRACT_SOURCE = /^\.\/domain\/[a-z-]+-published-events\.constants\.js$/;
+const PUBLISHED_EVENT_CONTRACT_IMPORTS = new Set(["zod"]);
+
+function isImportFreeEventContract(slice: Slice, source: string): boolean {
+  if (!PUBLISHED_EVENT_CONTRACT_SOURCE.test(source)) {
+    return false;
+  }
+  const contractPath = join(slice.context, slice.name, source.replace(/\.js$/, ".ts"));
+  const contract = slice.files.find((candidate) => candidate.path === contractPath);
+  return (
+    contract != null &&
+    contract.source.statements.every(
+      (statement) =>
+        !ts.isImportDeclaration(statement) ||
+        (ts.isStringLiteral(statement.moduleSpecifier) &&
+          PUBLISHED_EVENT_CONTRACT_IMPORTS.has(statement.moduleSpecifier.text)),
+    )
+  );
+}
+
 function checkQueriesPublic(slice: Slice): string[] {
   const queriesPublicPath = `${slice.context}/${slice.name}/${slice.context}-${slice.name}-queries.public.ts`;
   const file = slice.files.find((candidate) => candidate.path === queriesPublicPath);
@@ -302,7 +293,11 @@ function checkQueriesPublic(slice: Slice): string[] {
       : [],
   );
   return [...new Set(sources)]
-    .filter((source) => !QUERIES_PUBLIC_SOURCES.some((pattern) => pattern.test(source)))
+    .filter(
+      (source) =>
+        !QUERIES_PUBLIC_SOURCES.some((pattern) => pattern.test(source)) &&
+        !isImportFreeEventContract(slice, source),
+    )
     .map((source) => `${file.path}#${source}`);
 }
 
@@ -317,7 +312,7 @@ function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolat
     ["-queries Module은 아무것도 import하지 않고 포트만 내보낸다", checkQueriesModule],
     ["-queries Module에는 controller가 없다", checkQueriesModuleControllers],
     [
-      "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO만 다시 내보낸다",
+      "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO·발행 이벤트 계약만 다시 내보낸다",
       checkQueriesPublic,
     ],
   ];

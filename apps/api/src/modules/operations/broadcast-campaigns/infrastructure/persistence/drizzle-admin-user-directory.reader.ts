@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, gt, inArray } from "drizzle-orm";
 import { match } from "ts-pattern";
 
-import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { activeSubscriptionCondition } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import {
   userAudience,
   type UserAudience,

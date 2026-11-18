@@ -7,15 +7,14 @@ import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
 import { TodoOccurrencesChangedEvent } from "../../../todo-series/domain/todo-occurrences-changed.event.js";
 import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
-import {
-  TodoSeriesChangedEvent,
-  type TodoSeriesChangeEventName,
-} from "../../../todo-series/domain/todo-series-changed.event.js";
+import { TodoSeriesChangedEvent } from "../../../todo-series/domain/todo-series-changed.event.js";
+import type { TodoSeriesChangeEventName } from "../../../todo-series/domain/todo-series-published-events.constants.js";
 import { TodoCategoryChangedEvent } from "../../domain/todo-category-changed.event.js";
-import { TodoChangedEvent, type TodoChangeEventName } from "../../domain/todo-changed.event.js";
+import { TodoChangedEvent } from "../../domain/todo-changed.event.js";
 import { TodoCreatedEvent } from "../../domain/todo-created.event.js";
 import { TodoDeletedEvent } from "../../domain/todo-deleted.event.js";
 import { TodoId } from "../../domain/todo-id.vo.js";
+import type { TodoChangeEventName } from "../../domain/todo-published-events.constants.js";
 import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";

@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 
-import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
-import { TimezoneReminderQueueModule } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
+import { NotificationRemindersQueriesModule } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 import { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-sharing-consent.reader.port.js";
@@ -34,13 +34,13 @@ import { DrizzleUserPreferenceRepository } from "./infrastructure/persistence/dr
 import { TimezoneSelfHealInterceptor } from "./presentation/http/interceptors/timezone-self-heal.interceptor.js";
 import { SettingsController } from "./presentation/http/v1/user-settings.controller.js";
 
-// 리마인더 시각 변경·3일 달성 알림 작업을 notification 큐에 바로 넣어 그 큐 Module을 import한다. 큐 Module만 연
-// jobs public이라 notification 기능 Module을 거쳐 이 Module로 돌아오는 순환은 없다(durable 이벤트로 바꾸려면 새 큐가 필요하다)
+// 리마인더 시각 변경·3일 달성 알림 작업을 notification 큐에 바로 넣어 그 큐 Module을 import한다. 큐 Module만 연 jobs public과
+// 포트만 연 queries public이라 notification 기능 Module을 거쳐 이 Module로 돌아오는 순환은 없다(durable 이벤트로 바꾸려면 새 큐가 필요하다)
 @Module({
   imports: [
     AccessFeatureGrantsQueriesModule,
     NotificationQueueModule,
-    TimezoneReminderQueueModule,
+    NotificationRemindersQueriesModule,
     PlanningTodosQueriesModule,
   ],
   controllers: [SettingsController],

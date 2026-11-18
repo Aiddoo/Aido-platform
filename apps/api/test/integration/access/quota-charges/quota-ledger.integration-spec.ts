@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 import { and, eq, sql } from "drizzle-orm";
 
-import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import {
   QuotaLedgerPort,
   type QuotaReserveInput,

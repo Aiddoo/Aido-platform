@@ -44,6 +44,7 @@ apps/api/src/
       domain/          <noun>.aggregate.ts  <noun>.entity.ts  <noun>-id.vo.ts  <noun>.vo.ts
                        <noun>-<past-verb>.event.ts  <topic>.domain-service.ts  <slice>.constants.ts
                        <slice>.errors.ts(불변식 DomainException)
+                       <noun>-published-events.constants.ts(다른 Context가 구독하는 이벤트 이름·payload schema, zod만 import)
       application/     use-cases/<verb>-<noun>.use-case.ts  ports/<noun>.repository.port.ts
                        ports/<noun>.reader.port.ts  read-models/<noun>.read-model.ts
                        messages/<topic>.messages.ts  <slice>.lock-keys.ts  <slice>.log-events.ts
@@ -107,7 +108,7 @@ presentation → application → domain        infrastructure → application(po
 | 타입 검사는 `src`만 읽는다. `#api/*`가 낡은 `dist`로 빠지지 않는다                                                                                             | `apps/api/package.json` `imports`의 `"types": ["./src/*.ts", null]`(TypeScript는 `null`에서 멈추고 Node는 `types`를 읽지 않는다)                                                                                                                                                                                                             |
 
 - 규칙은 모든 Context에 같은 세기로 걸린다. "옮긴 Context만" 같은 단계 구분을 두지 않는다.
-- 아직 고치지 않은 위반은 도구의 기준선 한 곳에만 두고 줄이기만 한다. 아키텍처 테스트는 `REMAINING_VIOLATIONS`와 이유를 적은 `DOCUMENTED_EXCEPTIONS`가 실제 위반과 같아야 통과한다(새 위반도, 고친 뒤 남은 항목도 실패). dependency-cruiser는 `apps/api/.dependency-cruiser-known-violations.json`(`--ignore-known`)이다.
+- 위반 기준선을 두지 않는다. 아키텍처 테스트는 비어 있는 `REMAINING_VIOLATIONS`와 이유를 적은 `DOCUMENTED_EXCEPTIONS`가 실제 위반과 같아야 통과하고(새 위반도, 고친 뒤 남은 항목도 실패), dependency-cruiser는 기준선 없이 돈다. 새 위반은 목록에 더하지 않고 코드를 고친다.
 - 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.
 - `-queries` Module은 import 없이 Port만 내보낸다. 같은 트랜잭션에서 써야 하는 좁은 쓰기 포트(access `FeatureGranterPort`)도 Port면 된다. UseCase·controller·서비스는 내보내지 않고 controller를 두지 않는다.
@@ -117,12 +118,12 @@ presentation → application → domain        infrastructure → application(po
 
 다른 코드가 import하는 진입 파일은 세 종류뿐이다. 나머지 파일은 정의한 파일에서 바로 import하고 `export … from`으로 다시 내보내지 않는다(barrel `index.ts` 금지).
 
-| 진입 파일                                                | 규칙                                                                                                                    |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| slice `<context>-<slice>.public.ts`                      | 다른 Context가 쓰는 Module·Port·이벤트 payload schema·SQL 조건만 이름을 적어 export. `export *` 금지                    |
-| slice `<context>-<slice>-queries.public.ts`              | 기능 public을 import하면 파일 순환이 될 때만. `-queries` Module·Port·Read Model·`*.query-fragment.ts`·id VO만 연다      |
-| `@aido/api` package exports 진입 파일                    | `packages/api/package.json` `exports`의 `/common`·`/errors`·`/vocabulary`·`/contracts/<x>/v<n>` index. 루트 진입은 없다 |
-| Drizzle schema 묶음(`platform/database/schema/index.ts`) | drizzle-kit과 RQB가 schema 객체 하나를 요구해 `tables.schema.ts`가 Context별 schema를 모은다                            |
+| 진입 파일                                                | 규칙                                                                                                                                                                                                |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| slice `<context>-<slice>.public.ts`                      | 다른 Context가 쓰는 Module·Port·이벤트 payload schema·SQL 조건만 이름을 적어 export. `export *` 금지                                                                                                |
+| slice `<context>-<slice>-queries.public.ts`              | 기능 public을 import하면 파일 순환이 될 때만. `-queries` Module·Port·Read Model·`*.query-fragment.ts`·id VO·발행 이벤트 계약(zod만 import하는 `domain/<noun>-published-events.constants.ts`)만 연다 |
+| `@aido/api` package exports 진입 파일                    | `packages/api/package.json` `exports`의 `/common`·`/errors`·`/vocabulary`·`/contracts/<x>/v<n>` index. 루트 진입은 없다                                                                             |
+| Drizzle schema 묶음(`platform/database/schema/index.ts`) | drizzle-kit과 RQB가 schema 객체 하나를 요구해 `tables.schema.ts`가 Context별 schema를 모은다                                                                                                        |
 
 - public에는 실제 소비되는 값·타입만 둔다. 내부 UseCase·구현 Repository·테스트 helper를 내보내지 않는다.
 - 포트 파일이 도메인 타입이나 계약 타입을 다시 내보내지 않는다. 쓰는 쪽이 원래 파일을 import한다.

@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { AccessQuotaChargesModule } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import { EngagementTodoCommentsModule } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";

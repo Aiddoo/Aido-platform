@@ -12,10 +12,10 @@ import { NotificationNotificationsModule } from "../notifications/notification-n
 import { NotificationPushDispatchesModule } from "../push-dispatches/notification-push-dispatches.public.js";
 import { notificationRetentionAssignmentsConfig } from "../retention-assignments/notification-retention-assignments.public.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
-import { TimezoneReminderQueueModule } from "./infrastructure/jobs/timezone-reminder-queue.module.js";
 import { TimezoneReminderQueueProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
 import { TimezoneReminderSweepScheduler } from "./infrastructure/jobs/timezone-reminder-sweep.scheduler.js";
 import { TodoReminderQueueProcessor } from "./infrastructure/jobs/todo-reminder-queue.processor.js";
+import { NotificationRemindersQueriesModule } from "./notification-reminders-queries.module.js";
 import {
   NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
   NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,
@@ -24,7 +24,7 @@ import { TodoReminderController } from "./presentation/http/v1/todo-reminder.con
 
 @Module({
   imports: [
-    TimezoneReminderQueueModule,
+    NotificationRemindersQueriesModule,
     DatabaseModule,
     NotificationNotificationsModule,
     NotificationPushDispatchesModule,

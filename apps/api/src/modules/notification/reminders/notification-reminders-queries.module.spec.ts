@@ -14,7 +14,7 @@ import {
   updatePreferenceProvider,
   upsertPushTimezoneProvider,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.providers";
-import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -25,8 +25,11 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { ReminderCacheKey, REMINDER_CACHE_TTL_MS } from "../cache/reminder-cache.keyspace.js";
-import { TimezoneReminderQueueModule } from "./timezone-reminder-queue.module.js";
+import {
+  ReminderCacheKey,
+  REMINDER_CACHE_TTL_MS,
+} from "./infrastructure/cache/reminder-cache.keyspace.js";
+import { NotificationRemindersQueriesModule } from "./notification-reminders-queries.module.js";
 
 @Global()
 @Module({})
@@ -53,7 +56,7 @@ async function createFixture() {
         ],
         exports: [CacheStorePort, JobQueuePort, ClockPort],
       },
-      TimezoneReminderQueueModule,
+      NotificationRemindersQueriesModule,
     ],
     providers: [
       refreshPushTimezoneProvider,
@@ -79,7 +82,7 @@ async function createFixture() {
   };
 }
 
-describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", () => {
+describe("NotificationRemindersQueriesModule — 활성 timezone 캐시 capability", () => {
   it("기존 활성 timezone 캐시만 지우고 다음 조회가 새 목록을 로드한다", async () => {
     // Given
     // 실제 Module이 제공한 Adapter와 실제 CacheStorePort에 이전 목록이 캐시되어 있다.

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { TimezoneReminderEnqueuerPort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
+import { TimezoneReminderEnqueuerPort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 
 import type {
   ReminderHourChangedPayload,

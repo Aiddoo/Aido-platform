@@ -2,14 +2,14 @@ import type { PublishedDomainEvent } from "#api/shared/application/ports/domain-
 import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 
-import { todoSeriesChangedPayloadSchema } from "../../../todo-series/application/todo-series-published-events.constants.js";
 import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
+import { todoSeriesChangedPayloadSchema } from "../../../todo-series/domain/todo-series-published-events.constants.js";
 import { TodoCreatedEvent } from "../../domain/todo-created.event.js";
 import { TodoDeletedEvent } from "../../domain/todo-deleted.event.js";
+import { todoChangedPayloadSchema } from "../../domain/todo-published-events.constants.js";
 import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";
-import { todoChangedPayloadSchema } from "../todo-published-events.constants.js";
 import { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 const AT = Temporal.Instant.from("2026-11-10T00:00:00Z");

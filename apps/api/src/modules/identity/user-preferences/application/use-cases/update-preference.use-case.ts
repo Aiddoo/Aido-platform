@@ -1,4 +1,4 @@
-import { assertEntitled } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { assertEntitled } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";

@@ -1,7 +1,7 @@
 import { ErrorCode, type ErrorCodeType } from "@aido/api/errors";
 import type { MeteredFeatureKey } from "@aido/api/vocabulary";
 
-import type { FeatureQuotaReadModel } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import type { FeatureQuotaReadModel } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
 /** 기능별 한도 초과 코드. 출시 앱은 AI_PARSE의 AI_1303을 안다. */

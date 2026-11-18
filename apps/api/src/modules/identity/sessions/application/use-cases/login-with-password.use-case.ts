@@ -1,4 +1,4 @@
-import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { LoginReadModel } from "#api/modules/identity/sessions/application/read-models/login.read-model";
 import { LOGIN_FAILURE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { LOGIN_ATTEMPT } from "#api/modules/identity/sessions/domain/sessions.constants";

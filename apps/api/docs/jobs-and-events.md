@@ -22,7 +22,7 @@
 - `durable`은 구독마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. idempotency key는 `<eventId>:<subscription name>`이라 구독 이름을 바꾸면 같은 이벤트가 다시 전달된다. worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
 - `after-commit`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 그 구독 이름 채널을 `EventEmitter2`로 듣고, 실패는 구독 단위로 로그(`PlatformLogEvent.DOMAIN_EVENT_PUBLISH_FAILED`)만 남긴다.
 - `after-commit` 구독의 `coalesceKey(payload)`가 같은 전달은 한 Unit of Work에서 처음 하나만 보낸다. 범위 수정처럼 한 커밋이 사실을 여럿 내도 사용자 단위 캐시를 한 번만 지울 때 쓴다.
-- payload는 발행 Context `*.public.ts`의 Zod schema(`todoChangedPayloadSchema`)로 구독자가 다시 `parse`한다. payload에 Temporal 객체를 넣지 않고 `toIsoString`으로 직렬화한다.
+- 이벤트 이름 튜플과 payload Zod schema(`todoChangedPayloadSchema`)는 발행 slice의 `domain/<noun>-published-events.constants.ts` 한 파일(zod만 import)에 두고 public으로 연다. 구독자는 그 schema로 다시 `parse`한다. payload에 Temporal 객체를 넣지 않고 `toIsoString`으로 직렬화한다.
 - pg-boss 내장 `publish`/`subscribe`는 쓰지 않는다: 구독자 조회가 pg-boss 자체 풀(트랜잭션 밖)에서 돌고, 구독이 없으면 조용히 지나가고, 구독자별 결정적 id를 쓸 수 없다.
 - 메시지 브로커가 필요해지면 어댑터만 아웃박스 행 + 릴레이로 바꾼다. Port·발행 코드·구독 계약은 그대로다. `PushDispatchOutbox`는 이벤트 아웃박스가 아니라 기기별 발송을 추적하는 도메인 데이터다.
 

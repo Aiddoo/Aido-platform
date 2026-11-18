@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";

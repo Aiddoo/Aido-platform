@@ -39,7 +39,7 @@
 
 - slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
 - Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 쓰는 Port만 내보내고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`(좁은 쓰기 포트 포함, UseCase·controller·서비스 없음), 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 포트를 `-queries`로 옮겨 없앤다.
-- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. 그 public을 import하면 파일 순환이 될 때만 `-queries` Module·Port·Read Model·조회 조각·id VO만 다시 내보내는 `<context>-<slice>-queries.public.ts`를 더 둔다(`planning-todos-queries.public.ts`). Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
+- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. 그 public을 import하면 파일 순환이 될 때만 `-queries` Module·Port·Read Model·조회 조각·id VO·발행 이벤트 계약(zod만 import하는 `domain/<noun>-published-events.constants.ts`)만 다시 내보내는 `<context>-<slice>-queries.public.ts`를 더 둔다(`planning-todos-queries.public.ts`). Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
 - presentation의 Controller·DTO·응답 매퍼 이름은 HTTP 자원(경로·DTO component id가 계약)을 따르고, domain·application은 Aggregate 이름을 따른다(voice `voice-digests` slice의 `VoiceNoteController`는 `/v1/voice-notes` 자원 이름이다).
 - HTTP 버전은 폴더(`http/v2/`)로만 나눈다. 클래스(`WeatherReportController`)·Swagger 태그·상수 이름에 버전을 넣지 않고, 버전 폴더끼리 import하지 않는다(공용은 버전 밖 `presentation/http/`).
 

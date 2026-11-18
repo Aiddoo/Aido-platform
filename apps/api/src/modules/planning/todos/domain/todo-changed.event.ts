@@ -1,24 +1,9 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-// 다른 Context에 트랜잭션 안에서 보내는 할 일 사실. durable 구독 이름이라 바꾸지 않는다
-export const TODO_CHANGE_EVENT_NAMES = [
-  "planning.todo.created",
-  "planning.todo.updated",
-  "planning.todo.completed",
-  "planning.todo.reopened",
-  "planning.todo.rescheduled",
-  "planning.todo.category-changed",
-  "planning.todo.visibility-changed",
-  "planning.todo.deleted",
-] as const;
-
-export type TodoChangeEventName = (typeof TODO_CHANGE_EVENT_NAMES)[number];
-
-export type TodoChangedPayload = {
-  readonly todoId: number;
-  readonly userId: string;
-  readonly occurredAt: string;
-};
+import {
+  type TodoChangeEventName,
+  type TodoChangedPayload,
+} from "./todo-published-events.constants.js";
 
 export class TodoChangedEvent {
   readonly eventName: TodoChangeEventName;

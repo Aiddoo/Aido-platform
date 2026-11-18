@@ -1,6 +1,6 @@
 import { type OAUTH_PROVIDERS, resolveSupportedLocale } from "@aido/api/vocabulary";
 
-import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import type { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import {
   TRUSTED_EMAIL_PROVIDERS,
   type AccountProvider,

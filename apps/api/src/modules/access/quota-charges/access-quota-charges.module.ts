@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 
 import { ACCESS_QUOTA_CHARGES_PROVIDERS } from "./access-quota-charges.providers.js";

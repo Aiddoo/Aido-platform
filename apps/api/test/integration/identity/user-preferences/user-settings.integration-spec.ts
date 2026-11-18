@@ -17,7 +17,7 @@ import {
 } from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
-import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
   todo,

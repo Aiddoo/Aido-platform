@@ -13,7 +13,7 @@ import type {
 import type { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import type { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
 import type { PreferenceSettingsReadModel } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
-import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-jobs.public";
+import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubUserSettingsCache implements UserSettingsCachePort {

@@ -6,7 +6,7 @@ import type {
   UserRole,
 } from "@aido/api/vocabulary";
 
-import type { FeatureEntitlement } from "#api/modules/access/feature-grants/access-feature-grants-queries.public";
+import type { FeatureEntitlement } from "#api/modules/access/feature-grants/access-feature-grants.public";
 
 import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
 import type { UserStatus } from "../../domain/users.constants.js";
